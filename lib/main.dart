@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/theme/app_theme.dart';
+import 'core/services/notification_service.dart';
 import 'features/dashboard/main_navigation_scaffold.dart';
 import 'data/repositories/sync_manager.dart';
 
@@ -24,6 +25,10 @@ void main() async {
   } catch (e) {
     debugPrint("Supabase initialization bypassed or failed: $e");
   }
+
+  // Initialize local notification service & schedule reminders
+  await NotificationService.initialize();
+  await NotificationService.scheduleAllReminders();
 
   runApp(
     const ProviderScope(

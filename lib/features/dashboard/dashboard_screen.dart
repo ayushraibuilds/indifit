@@ -10,6 +10,7 @@ import '../../data/repositories/food_repository.dart';
 import '../food_log/food_search_screen.dart';
 import '../food_log/ai_meal_logger_screen.dart';
 import '../food_log/ai_meal_planner_screen.dart';
+import '../settings/settings_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -148,7 +149,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         
-        // AI Planner & Streak Badge Row
+        // AI Planner, Settings & Streak Badge Row
         Row(
           children: [
             IconButton(
@@ -158,6 +159,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const AiMealPlannerScreen()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings_rounded, color: AppColors.textSecondary),
+              tooltip: 'Settings & Reminders',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
                 );
               },
             ),
