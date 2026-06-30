@@ -1,0 +1,153 @@
+import 'package:drift/drift.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/di/providers.dart';
+import '../database/app_database.dart';
+
+final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return WorkoutRepository(db);
+});
+
+class RoutineDayWithExercises {
+  final String dayName;
+  final int dayOfWeek;
+  final bool isRestDay;
+  final List<RoutineExerciseInput> exercises;
+
+  RoutineDayWithExercises({
+    required this.dayName,
+    required this.dayOfWeek,
+    required this.isRestDay,
+    required this.exercises,
+  });
+}
+
+class RoutineExerciseInput {
+  final String name;
+  final int sets;
+  final String repsRange;
+
+  RoutineExerciseInput({
+    required this.name,
+    required this.sets,
+    required this.repsRange,
+  });
+}
+
+class WorkoutRepository {
+  final AppDatabase _db;
+
+  WorkoutRepository(this._db);
+
+  // 1. Search exercises locally (Fuzzy search)
+  Future<List<Exercise>> searchExercises(String query) async {
+    if (query.trim().isEmpty) return [];
+    final clean = query.toLowerCase().trim();
+    return (await (_db.select(_db.exercises)
+          ..where((tbl) => tbl.name.lower().contains(clean) | tbl.muscleGroups.lower().contains(clean)))
+        .get());
+  }
+
+  // 2. Save dynamic AI routine inside a database transaction
+  Future<int> saveRoutine({
+    required String name,
+    required String goal,
+    String? notes,
+    required List<RoutineDayWithExercises> days,
+  }) async {
+    return await _db.transaction(() async {
+      // 1. Insert routine header
+      final routineId = await _db.into(_db.workoutRoutines).insert(
+            WorkoutRoutinesCompanion.insert(
+              name: name,
+              goal: goal,
+              notes: Value(notes),
+            ),
+          );
+
+      // 2. Insert days and exercises
+      for (final dayData in days) {
+        final dayId = await _db.into(_db.routineDays).insert(
+              RoutineDaysCompanion.insert(
+                routineId: routineId,
+                dayOfWeek: dayData.dayOfWeek,
+                name: dayData.dayName,
+                isRestDay: Value(dayData.isRestDay),
+              ),
+            );
+
+        if (!dayData.isRestDay) {
+          for (int i = 0; i < dayData.exercises.length; i++) {
+            final exInput = dayData.exercises[i];
+            await _db.into(_db.routineExercises).insert(
+                  RoutineExercisesCompanion.insert(
+                    dayId: dayId,
+                    exerciseName: exInput.name,
+                    sets: exInput.sets,
+                    repsRange: exInput.repsRange,
+                    orderIndex: i,
+                  ),
+                );
+          }
+        }
+      }
+
+      return routineId;
+    });
+  }
+
+  // 3. Retrieve all cached routines
+  Future<List<WorkoutRoutine>> getSavedRoutines() async {
+    return await _db.select(_db.workoutRoutines).get();
+  }
+
+  // 4. Retrieve single routine structure (days and exercises)
+  Future<List<Map<String, dynamic>>> getRoutineDetails(int routineId) async {
+    final days = await (_db.select(_db.routineDays)..where((tbl) => tbl.routineId.equals(routineId))).get();
+    
+    final List<Map<String, dynamic>> results = [];
+    for (final day in days) {
+      final exercises = await (_db.select(_db.routineExercises)..where((tbl) => tbl.dayId.equals(day.id))).get();
+      results.add({
+        'day': day,
+        'exercises': exercises,
+      });
+    }
+    return results;
+  }
+
+  // 5. Watch completed workout sessions
+  Stream<List<WorkoutSession>> watchSessions() {
+    return (_db.select(_db.workoutSessions)
+          ..orderBy([(tbl) => OrderingTerm(expression: tbl.completedAt, mode: OrderingMode.desc)]))
+        .watch();
+  }
+
+  // 6. Log a completed session and its sets in a transaction
+  Future<int> logSession({
+    required String name,
+    required double volume,
+    required int durationSeconds,
+    required int calories,
+    required List<WorkoutSetsCompanion> sets,
+  }) async {
+    return await _db.transaction(() async {
+      final sessionId = await _db.into(_db.workoutSessions).insert(
+            WorkoutSessionsCompanion.insert(
+              name: name,
+              totalVolume: volume,
+              durationSeconds: durationSeconds,
+              estimatedCalories: calories,
+            ),
+          );
+
+      for (final set in sets) {
+        // Inject generated session ID into each set before insert
+        final completedSet = set.copyWith(sessionId: Value(sessionId));
+        await _db.into(_db.workoutSets).insert(completedSet);
+      }
+
+      return sessionId;
+    });
+  }
+}

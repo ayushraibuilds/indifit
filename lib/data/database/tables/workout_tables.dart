@@ -41,3 +41,29 @@ class BodyMeasurements extends Table {
   DateTimeColumn get recordedAt => dateTime().withDefault(currentDateAndTime)();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
 }
+
+// Phase 2: AI Routine Cache Schema
+class WorkoutRoutines extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()(); // e.g., "AI 3-Day Split"
+  TextColumn get goal => text()(); // "hypertrophy", "strength", "weight_loss"
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+class RoutineDays extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get routineId => integer().references(WorkoutRoutines, #id)();
+  IntColumn get dayOfWeek => integer()(); // 1 = Mon, 7 = Sun
+  TextColumn get name => text()(); // e.g., "Pull Day", "Rest Day"
+  BoolColumn get isRestDay => boolean().withDefault(const Constant(false))();
+}
+
+class RoutineExercises extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get dayId => integer().references(RoutineDays, #id)();
+  TextColumn get exerciseName => text()();
+  IntColumn get sets => integer()();
+  TextColumn get repsRange => text()(); // e.g., "8-12" or "10"
+  IntColumn get orderIndex => integer()();
+}

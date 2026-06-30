@@ -17,7 +17,10 @@ part 'app_database.g.dart';
   Exercises,
   WorkoutSessions,
   WorkoutSets,
-  BodyMeasurements
+  BodyMeasurements,
+  WorkoutRoutines,
+  RoutineDays,
+  RoutineExercises
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());

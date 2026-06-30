@@ -2774,6 +2774,951 @@ class BodyMeasurementsCompanion extends UpdateCompanion<BodyMeasurement> {
   }
 }
 
+class $WorkoutRoutinesTable extends WorkoutRoutines
+    with TableInfo<$WorkoutRoutinesTable, WorkoutRoutine> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WorkoutRoutinesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _goalMeta = const VerificationMeta('goal');
+  @override
+  late final GeneratedColumn<String> goal = GeneratedColumn<String>(
+      'goal', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [id, name, goal, notes, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'workout_routines';
+  @override
+  VerificationContext validateIntegrity(Insertable<WorkoutRoutine> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('goal')) {
+      context.handle(
+          _goalMeta, goal.isAcceptableOrUnknown(data['goal']!, _goalMeta));
+    } else if (isInserting) {
+      context.missing(_goalMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  WorkoutRoutine map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WorkoutRoutine(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      goal: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}goal'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $WorkoutRoutinesTable createAlias(String alias) {
+    return $WorkoutRoutinesTable(attachedDatabase, alias);
+  }
+}
+
+class WorkoutRoutine extends DataClass implements Insertable<WorkoutRoutine> {
+  final int id;
+  final String name;
+  final String goal;
+  final String? notes;
+  final DateTime createdAt;
+  const WorkoutRoutine(
+      {required this.id,
+      required this.name,
+      required this.goal,
+      this.notes,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['goal'] = Variable<String>(goal);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  WorkoutRoutinesCompanion toCompanion(bool nullToAbsent) {
+    return WorkoutRoutinesCompanion(
+      id: Value(id),
+      name: Value(name),
+      goal: Value(goal),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory WorkoutRoutine.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WorkoutRoutine(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      goal: serializer.fromJson<String>(json['goal']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'goal': serializer.toJson<String>(goal),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  WorkoutRoutine copyWith(
+          {int? id,
+          String? name,
+          String? goal,
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt}) =>
+      WorkoutRoutine(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        goal: goal ?? this.goal,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  WorkoutRoutine copyWithCompanion(WorkoutRoutinesCompanion data) {
+    return WorkoutRoutine(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      goal: data.goal.present ? data.goal.value : this.goal,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkoutRoutine(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('goal: $goal, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, goal, notes, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WorkoutRoutine &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.goal == this.goal &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt);
+}
+
+class WorkoutRoutinesCompanion extends UpdateCompanion<WorkoutRoutine> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> goal;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  const WorkoutRoutinesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.goal = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  WorkoutRoutinesCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required String goal,
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : name = Value(name),
+        goal = Value(goal);
+  static Insertable<WorkoutRoutine> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? goal,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (goal != null) 'goal': goal,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  WorkoutRoutinesCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? name,
+      Value<String>? goal,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt}) {
+    return WorkoutRoutinesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      goal: goal ?? this.goal,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (goal.present) {
+      map['goal'] = Variable<String>(goal.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkoutRoutinesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('goal: $goal, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RoutineDaysTable extends RoutineDays
+    with TableInfo<$RoutineDaysTable, RoutineDay> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RoutineDaysTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _routineIdMeta =
+      const VerificationMeta('routineId');
+  @override
+  late final GeneratedColumn<int> routineId = GeneratedColumn<int>(
+      'routine_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES workout_routines (id)'));
+  static const VerificationMeta _dayOfWeekMeta =
+      const VerificationMeta('dayOfWeek');
+  @override
+  late final GeneratedColumn<int> dayOfWeek = GeneratedColumn<int>(
+      'day_of_week', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _isRestDayMeta =
+      const VerificationMeta('isRestDay');
+  @override
+  late final GeneratedColumn<bool> isRestDay = GeneratedColumn<bool>(
+      'is_rest_day', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_rest_day" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, routineId, dayOfWeek, name, isRestDay];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'routine_days';
+  @override
+  VerificationContext validateIntegrity(Insertable<RoutineDay> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('routine_id')) {
+      context.handle(_routineIdMeta,
+          routineId.isAcceptableOrUnknown(data['routine_id']!, _routineIdMeta));
+    } else if (isInserting) {
+      context.missing(_routineIdMeta);
+    }
+    if (data.containsKey('day_of_week')) {
+      context.handle(
+          _dayOfWeekMeta,
+          dayOfWeek.isAcceptableOrUnknown(
+              data['day_of_week']!, _dayOfWeekMeta));
+    } else if (isInserting) {
+      context.missing(_dayOfWeekMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('is_rest_day')) {
+      context.handle(
+          _isRestDayMeta,
+          isRestDay.isAcceptableOrUnknown(
+              data['is_rest_day']!, _isRestDayMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RoutineDay map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RoutineDay(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      routineId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}routine_id'])!,
+      dayOfWeek: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}day_of_week'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      isRestDay: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_rest_day'])!,
+    );
+  }
+
+  @override
+  $RoutineDaysTable createAlias(String alias) {
+    return $RoutineDaysTable(attachedDatabase, alias);
+  }
+}
+
+class RoutineDay extends DataClass implements Insertable<RoutineDay> {
+  final int id;
+  final int routineId;
+  final int dayOfWeek;
+  final String name;
+  final bool isRestDay;
+  const RoutineDay(
+      {required this.id,
+      required this.routineId,
+      required this.dayOfWeek,
+      required this.name,
+      required this.isRestDay});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['routine_id'] = Variable<int>(routineId);
+    map['day_of_week'] = Variable<int>(dayOfWeek);
+    map['name'] = Variable<String>(name);
+    map['is_rest_day'] = Variable<bool>(isRestDay);
+    return map;
+  }
+
+  RoutineDaysCompanion toCompanion(bool nullToAbsent) {
+    return RoutineDaysCompanion(
+      id: Value(id),
+      routineId: Value(routineId),
+      dayOfWeek: Value(dayOfWeek),
+      name: Value(name),
+      isRestDay: Value(isRestDay),
+    );
+  }
+
+  factory RoutineDay.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RoutineDay(
+      id: serializer.fromJson<int>(json['id']),
+      routineId: serializer.fromJson<int>(json['routineId']),
+      dayOfWeek: serializer.fromJson<int>(json['dayOfWeek']),
+      name: serializer.fromJson<String>(json['name']),
+      isRestDay: serializer.fromJson<bool>(json['isRestDay']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'routineId': serializer.toJson<int>(routineId),
+      'dayOfWeek': serializer.toJson<int>(dayOfWeek),
+      'name': serializer.toJson<String>(name),
+      'isRestDay': serializer.toJson<bool>(isRestDay),
+    };
+  }
+
+  RoutineDay copyWith(
+          {int? id,
+          int? routineId,
+          int? dayOfWeek,
+          String? name,
+          bool? isRestDay}) =>
+      RoutineDay(
+        id: id ?? this.id,
+        routineId: routineId ?? this.routineId,
+        dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+        name: name ?? this.name,
+        isRestDay: isRestDay ?? this.isRestDay,
+      );
+  RoutineDay copyWithCompanion(RoutineDaysCompanion data) {
+    return RoutineDay(
+      id: data.id.present ? data.id.value : this.id,
+      routineId: data.routineId.present ? data.routineId.value : this.routineId,
+      dayOfWeek: data.dayOfWeek.present ? data.dayOfWeek.value : this.dayOfWeek,
+      name: data.name.present ? data.name.value : this.name,
+      isRestDay: data.isRestDay.present ? data.isRestDay.value : this.isRestDay,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoutineDay(')
+          ..write('id: $id, ')
+          ..write('routineId: $routineId, ')
+          ..write('dayOfWeek: $dayOfWeek, ')
+          ..write('name: $name, ')
+          ..write('isRestDay: $isRestDay')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, routineId, dayOfWeek, name, isRestDay);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RoutineDay &&
+          other.id == this.id &&
+          other.routineId == this.routineId &&
+          other.dayOfWeek == this.dayOfWeek &&
+          other.name == this.name &&
+          other.isRestDay == this.isRestDay);
+}
+
+class RoutineDaysCompanion extends UpdateCompanion<RoutineDay> {
+  final Value<int> id;
+  final Value<int> routineId;
+  final Value<int> dayOfWeek;
+  final Value<String> name;
+  final Value<bool> isRestDay;
+  const RoutineDaysCompanion({
+    this.id = const Value.absent(),
+    this.routineId = const Value.absent(),
+    this.dayOfWeek = const Value.absent(),
+    this.name = const Value.absent(),
+    this.isRestDay = const Value.absent(),
+  });
+  RoutineDaysCompanion.insert({
+    this.id = const Value.absent(),
+    required int routineId,
+    required int dayOfWeek,
+    required String name,
+    this.isRestDay = const Value.absent(),
+  })  : routineId = Value(routineId),
+        dayOfWeek = Value(dayOfWeek),
+        name = Value(name);
+  static Insertable<RoutineDay> custom({
+    Expression<int>? id,
+    Expression<int>? routineId,
+    Expression<int>? dayOfWeek,
+    Expression<String>? name,
+    Expression<bool>? isRestDay,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (routineId != null) 'routine_id': routineId,
+      if (dayOfWeek != null) 'day_of_week': dayOfWeek,
+      if (name != null) 'name': name,
+      if (isRestDay != null) 'is_rest_day': isRestDay,
+    });
+  }
+
+  RoutineDaysCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? routineId,
+      Value<int>? dayOfWeek,
+      Value<String>? name,
+      Value<bool>? isRestDay}) {
+    return RoutineDaysCompanion(
+      id: id ?? this.id,
+      routineId: routineId ?? this.routineId,
+      dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+      name: name ?? this.name,
+      isRestDay: isRestDay ?? this.isRestDay,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (routineId.present) {
+      map['routine_id'] = Variable<int>(routineId.value);
+    }
+    if (dayOfWeek.present) {
+      map['day_of_week'] = Variable<int>(dayOfWeek.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (isRestDay.present) {
+      map['is_rest_day'] = Variable<bool>(isRestDay.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoutineDaysCompanion(')
+          ..write('id: $id, ')
+          ..write('routineId: $routineId, ')
+          ..write('dayOfWeek: $dayOfWeek, ')
+          ..write('name: $name, ')
+          ..write('isRestDay: $isRestDay')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RoutineExercisesTable extends RoutineExercises
+    with TableInfo<$RoutineExercisesTable, RoutineExercise> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RoutineExercisesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _dayIdMeta = const VerificationMeta('dayId');
+  @override
+  late final GeneratedColumn<int> dayId = GeneratedColumn<int>(
+      'day_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES routine_days (id)'));
+  static const VerificationMeta _exerciseNameMeta =
+      const VerificationMeta('exerciseName');
+  @override
+  late final GeneratedColumn<String> exerciseName = GeneratedColumn<String>(
+      'exercise_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _setsMeta = const VerificationMeta('sets');
+  @override
+  late final GeneratedColumn<int> sets = GeneratedColumn<int>(
+      'sets', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _repsRangeMeta =
+      const VerificationMeta('repsRange');
+  @override
+  late final GeneratedColumn<String> repsRange = GeneratedColumn<String>(
+      'reps_range', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _orderIndexMeta =
+      const VerificationMeta('orderIndex');
+  @override
+  late final GeneratedColumn<int> orderIndex = GeneratedColumn<int>(
+      'order_index', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, dayId, exerciseName, sets, repsRange, orderIndex];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'routine_exercises';
+  @override
+  VerificationContext validateIntegrity(Insertable<RoutineExercise> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('day_id')) {
+      context.handle(
+          _dayIdMeta, dayId.isAcceptableOrUnknown(data['day_id']!, _dayIdMeta));
+    } else if (isInserting) {
+      context.missing(_dayIdMeta);
+    }
+    if (data.containsKey('exercise_name')) {
+      context.handle(
+          _exerciseNameMeta,
+          exerciseName.isAcceptableOrUnknown(
+              data['exercise_name']!, _exerciseNameMeta));
+    } else if (isInserting) {
+      context.missing(_exerciseNameMeta);
+    }
+    if (data.containsKey('sets')) {
+      context.handle(
+          _setsMeta, sets.isAcceptableOrUnknown(data['sets']!, _setsMeta));
+    } else if (isInserting) {
+      context.missing(_setsMeta);
+    }
+    if (data.containsKey('reps_range')) {
+      context.handle(_repsRangeMeta,
+          repsRange.isAcceptableOrUnknown(data['reps_range']!, _repsRangeMeta));
+    } else if (isInserting) {
+      context.missing(_repsRangeMeta);
+    }
+    if (data.containsKey('order_index')) {
+      context.handle(
+          _orderIndexMeta,
+          orderIndex.isAcceptableOrUnknown(
+              data['order_index']!, _orderIndexMeta));
+    } else if (isInserting) {
+      context.missing(_orderIndexMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RoutineExercise map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RoutineExercise(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      dayId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}day_id'])!,
+      exerciseName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}exercise_name'])!,
+      sets: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sets'])!,
+      repsRange: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}reps_range'])!,
+      orderIndex: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}order_index'])!,
+    );
+  }
+
+  @override
+  $RoutineExercisesTable createAlias(String alias) {
+    return $RoutineExercisesTable(attachedDatabase, alias);
+  }
+}
+
+class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
+  final int id;
+  final int dayId;
+  final String exerciseName;
+  final int sets;
+  final String repsRange;
+  final int orderIndex;
+  const RoutineExercise(
+      {required this.id,
+      required this.dayId,
+      required this.exerciseName,
+      required this.sets,
+      required this.repsRange,
+      required this.orderIndex});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['day_id'] = Variable<int>(dayId);
+    map['exercise_name'] = Variable<String>(exerciseName);
+    map['sets'] = Variable<int>(sets);
+    map['reps_range'] = Variable<String>(repsRange);
+    map['order_index'] = Variable<int>(orderIndex);
+    return map;
+  }
+
+  RoutineExercisesCompanion toCompanion(bool nullToAbsent) {
+    return RoutineExercisesCompanion(
+      id: Value(id),
+      dayId: Value(dayId),
+      exerciseName: Value(exerciseName),
+      sets: Value(sets),
+      repsRange: Value(repsRange),
+      orderIndex: Value(orderIndex),
+    );
+  }
+
+  factory RoutineExercise.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RoutineExercise(
+      id: serializer.fromJson<int>(json['id']),
+      dayId: serializer.fromJson<int>(json['dayId']),
+      exerciseName: serializer.fromJson<String>(json['exerciseName']),
+      sets: serializer.fromJson<int>(json['sets']),
+      repsRange: serializer.fromJson<String>(json['repsRange']),
+      orderIndex: serializer.fromJson<int>(json['orderIndex']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'dayId': serializer.toJson<int>(dayId),
+      'exerciseName': serializer.toJson<String>(exerciseName),
+      'sets': serializer.toJson<int>(sets),
+      'repsRange': serializer.toJson<String>(repsRange),
+      'orderIndex': serializer.toJson<int>(orderIndex),
+    };
+  }
+
+  RoutineExercise copyWith(
+          {int? id,
+          int? dayId,
+          String? exerciseName,
+          int? sets,
+          String? repsRange,
+          int? orderIndex}) =>
+      RoutineExercise(
+        id: id ?? this.id,
+        dayId: dayId ?? this.dayId,
+        exerciseName: exerciseName ?? this.exerciseName,
+        sets: sets ?? this.sets,
+        repsRange: repsRange ?? this.repsRange,
+        orderIndex: orderIndex ?? this.orderIndex,
+      );
+  RoutineExercise copyWithCompanion(RoutineExercisesCompanion data) {
+    return RoutineExercise(
+      id: data.id.present ? data.id.value : this.id,
+      dayId: data.dayId.present ? data.dayId.value : this.dayId,
+      exerciseName: data.exerciseName.present
+          ? data.exerciseName.value
+          : this.exerciseName,
+      sets: data.sets.present ? data.sets.value : this.sets,
+      repsRange: data.repsRange.present ? data.repsRange.value : this.repsRange,
+      orderIndex:
+          data.orderIndex.present ? data.orderIndex.value : this.orderIndex,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoutineExercise(')
+          ..write('id: $id, ')
+          ..write('dayId: $dayId, ')
+          ..write('exerciseName: $exerciseName, ')
+          ..write('sets: $sets, ')
+          ..write('repsRange: $repsRange, ')
+          ..write('orderIndex: $orderIndex')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, dayId, exerciseName, sets, repsRange, orderIndex);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RoutineExercise &&
+          other.id == this.id &&
+          other.dayId == this.dayId &&
+          other.exerciseName == this.exerciseName &&
+          other.sets == this.sets &&
+          other.repsRange == this.repsRange &&
+          other.orderIndex == this.orderIndex);
+}
+
+class RoutineExercisesCompanion extends UpdateCompanion<RoutineExercise> {
+  final Value<int> id;
+  final Value<int> dayId;
+  final Value<String> exerciseName;
+  final Value<int> sets;
+  final Value<String> repsRange;
+  final Value<int> orderIndex;
+  const RoutineExercisesCompanion({
+    this.id = const Value.absent(),
+    this.dayId = const Value.absent(),
+    this.exerciseName = const Value.absent(),
+    this.sets = const Value.absent(),
+    this.repsRange = const Value.absent(),
+    this.orderIndex = const Value.absent(),
+  });
+  RoutineExercisesCompanion.insert({
+    this.id = const Value.absent(),
+    required int dayId,
+    required String exerciseName,
+    required int sets,
+    required String repsRange,
+    required int orderIndex,
+  })  : dayId = Value(dayId),
+        exerciseName = Value(exerciseName),
+        sets = Value(sets),
+        repsRange = Value(repsRange),
+        orderIndex = Value(orderIndex);
+  static Insertable<RoutineExercise> custom({
+    Expression<int>? id,
+    Expression<int>? dayId,
+    Expression<String>? exerciseName,
+    Expression<int>? sets,
+    Expression<String>? repsRange,
+    Expression<int>? orderIndex,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (dayId != null) 'day_id': dayId,
+      if (exerciseName != null) 'exercise_name': exerciseName,
+      if (sets != null) 'sets': sets,
+      if (repsRange != null) 'reps_range': repsRange,
+      if (orderIndex != null) 'order_index': orderIndex,
+    });
+  }
+
+  RoutineExercisesCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? dayId,
+      Value<String>? exerciseName,
+      Value<int>? sets,
+      Value<String>? repsRange,
+      Value<int>? orderIndex}) {
+    return RoutineExercisesCompanion(
+      id: id ?? this.id,
+      dayId: dayId ?? this.dayId,
+      exerciseName: exerciseName ?? this.exerciseName,
+      sets: sets ?? this.sets,
+      repsRange: repsRange ?? this.repsRange,
+      orderIndex: orderIndex ?? this.orderIndex,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (dayId.present) {
+      map['day_id'] = Variable<int>(dayId.value);
+    }
+    if (exerciseName.present) {
+      map['exercise_name'] = Variable<String>(exerciseName.value);
+    }
+    if (sets.present) {
+      map['sets'] = Variable<int>(sets.value);
+    }
+    if (repsRange.present) {
+      map['reps_range'] = Variable<String>(repsRange.value);
+    }
+    if (orderIndex.present) {
+      map['order_index'] = Variable<int>(orderIndex.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoutineExercisesCompanion(')
+          ..write('id: $id, ')
+          ..write('dayId: $dayId, ')
+          ..write('exerciseName: $exerciseName, ')
+          ..write('sets: $sets, ')
+          ..write('repsRange: $repsRange, ')
+          ..write('orderIndex: $orderIndex')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2785,6 +3730,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $WorkoutSetsTable workoutSets = $WorkoutSetsTable(this);
   late final $BodyMeasurementsTable bodyMeasurements =
       $BodyMeasurementsTable(this);
+  late final $WorkoutRoutinesTable workoutRoutines =
+      $WorkoutRoutinesTable(this);
+  late final $RoutineDaysTable routineDays = $RoutineDaysTable(this);
+  late final $RoutineExercisesTable routineExercises =
+      $RoutineExercisesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2795,7 +3745,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         exercises,
         workoutSessions,
         workoutSets,
-        bodyMeasurements
+        bodyMeasurements,
+        workoutRoutines,
+        routineDays,
+        routineExercises
       ];
 }
 
@@ -3967,6 +4920,447 @@ class $$BodyMeasurementsTableOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
+typedef $$WorkoutRoutinesTableCreateCompanionBuilder = WorkoutRoutinesCompanion
+    Function({
+  Value<int> id,
+  required String name,
+  required String goal,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+});
+typedef $$WorkoutRoutinesTableUpdateCompanionBuilder = WorkoutRoutinesCompanion
+    Function({
+  Value<int> id,
+  Value<String> name,
+  Value<String> goal,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+});
+
+class $$WorkoutRoutinesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $WorkoutRoutinesTable,
+    WorkoutRoutine,
+    $$WorkoutRoutinesTableFilterComposer,
+    $$WorkoutRoutinesTableOrderingComposer,
+    $$WorkoutRoutinesTableCreateCompanionBuilder,
+    $$WorkoutRoutinesTableUpdateCompanionBuilder> {
+  $$WorkoutRoutinesTableTableManager(
+      _$AppDatabase db, $WorkoutRoutinesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$WorkoutRoutinesTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$WorkoutRoutinesTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> goal = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              WorkoutRoutinesCompanion(
+            id: id,
+            name: name,
+            goal: goal,
+            notes: notes,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String name,
+            required String goal,
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              WorkoutRoutinesCompanion.insert(
+            id: id,
+            name: name,
+            goal: goal,
+            notes: notes,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$WorkoutRoutinesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $WorkoutRoutinesTable> {
+  $$WorkoutRoutinesTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get goal => $state.composableBuilder(
+      column: $state.table.goal,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ComposableFilter routineDaysRefs(
+      ComposableFilter Function($$RoutineDaysTableFilterComposer f) f) {
+    final $$RoutineDaysTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.routineDays,
+        getReferencedColumn: (t) => t.routineId,
+        builder: (joinBuilder, parentComposers) =>
+            $$RoutineDaysTableFilterComposer(ComposerState($state.db,
+                $state.db.routineDays, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+}
+
+class $$WorkoutRoutinesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $WorkoutRoutinesTable> {
+  $$WorkoutRoutinesTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get goal => $state.composableBuilder(
+      column: $state.table.goal,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$RoutineDaysTableCreateCompanionBuilder = RoutineDaysCompanion
+    Function({
+  Value<int> id,
+  required int routineId,
+  required int dayOfWeek,
+  required String name,
+  Value<bool> isRestDay,
+});
+typedef $$RoutineDaysTableUpdateCompanionBuilder = RoutineDaysCompanion
+    Function({
+  Value<int> id,
+  Value<int> routineId,
+  Value<int> dayOfWeek,
+  Value<String> name,
+  Value<bool> isRestDay,
+});
+
+class $$RoutineDaysTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RoutineDaysTable,
+    RoutineDay,
+    $$RoutineDaysTableFilterComposer,
+    $$RoutineDaysTableOrderingComposer,
+    $$RoutineDaysTableCreateCompanionBuilder,
+    $$RoutineDaysTableUpdateCompanionBuilder> {
+  $$RoutineDaysTableTableManager(_$AppDatabase db, $RoutineDaysTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$RoutineDaysTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$RoutineDaysTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> routineId = const Value.absent(),
+            Value<int> dayOfWeek = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<bool> isRestDay = const Value.absent(),
+          }) =>
+              RoutineDaysCompanion(
+            id: id,
+            routineId: routineId,
+            dayOfWeek: dayOfWeek,
+            name: name,
+            isRestDay: isRestDay,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int routineId,
+            required int dayOfWeek,
+            required String name,
+            Value<bool> isRestDay = const Value.absent(),
+          }) =>
+              RoutineDaysCompanion.insert(
+            id: id,
+            routineId: routineId,
+            dayOfWeek: dayOfWeek,
+            name: name,
+            isRestDay: isRestDay,
+          ),
+        ));
+}
+
+class $$RoutineDaysTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $RoutineDaysTable> {
+  $$RoutineDaysTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get dayOfWeek => $state.composableBuilder(
+      column: $state.table.dayOfWeek,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isRestDay => $state.composableBuilder(
+      column: $state.table.isRestDay,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$WorkoutRoutinesTableFilterComposer get routineId {
+    final $$WorkoutRoutinesTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.routineId,
+            referencedTable: $state.db.workoutRoutines,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$WorkoutRoutinesTableFilterComposer(ComposerState($state.db,
+                    $state.db.workoutRoutines, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  ComposableFilter routineExercisesRefs(
+      ComposableFilter Function($$RoutineExercisesTableFilterComposer f) f) {
+    final $$RoutineExercisesTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.routineExercises,
+            getReferencedColumn: (t) => t.dayId,
+            builder: (joinBuilder, parentComposers) =>
+                $$RoutineExercisesTableFilterComposer(ComposerState($state.db,
+                    $state.db.routineExercises, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+}
+
+class $$RoutineDaysTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $RoutineDaysTable> {
+  $$RoutineDaysTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get dayOfWeek => $state.composableBuilder(
+      column: $state.table.dayOfWeek,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isRestDay => $state.composableBuilder(
+      column: $state.table.isRestDay,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$WorkoutRoutinesTableOrderingComposer get routineId {
+    final $$WorkoutRoutinesTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.routineId,
+            referencedTable: $state.db.workoutRoutines,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$WorkoutRoutinesTableOrderingComposer(ComposerState($state.db,
+                    $state.db.workoutRoutines, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$RoutineExercisesTableCreateCompanionBuilder
+    = RoutineExercisesCompanion Function({
+  Value<int> id,
+  required int dayId,
+  required String exerciseName,
+  required int sets,
+  required String repsRange,
+  required int orderIndex,
+});
+typedef $$RoutineExercisesTableUpdateCompanionBuilder
+    = RoutineExercisesCompanion Function({
+  Value<int> id,
+  Value<int> dayId,
+  Value<String> exerciseName,
+  Value<int> sets,
+  Value<String> repsRange,
+  Value<int> orderIndex,
+});
+
+class $$RoutineExercisesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RoutineExercisesTable,
+    RoutineExercise,
+    $$RoutineExercisesTableFilterComposer,
+    $$RoutineExercisesTableOrderingComposer,
+    $$RoutineExercisesTableCreateCompanionBuilder,
+    $$RoutineExercisesTableUpdateCompanionBuilder> {
+  $$RoutineExercisesTableTableManager(
+      _$AppDatabase db, $RoutineExercisesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$RoutineExercisesTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$RoutineExercisesTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> dayId = const Value.absent(),
+            Value<String> exerciseName = const Value.absent(),
+            Value<int> sets = const Value.absent(),
+            Value<String> repsRange = const Value.absent(),
+            Value<int> orderIndex = const Value.absent(),
+          }) =>
+              RoutineExercisesCompanion(
+            id: id,
+            dayId: dayId,
+            exerciseName: exerciseName,
+            sets: sets,
+            repsRange: repsRange,
+            orderIndex: orderIndex,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int dayId,
+            required String exerciseName,
+            required int sets,
+            required String repsRange,
+            required int orderIndex,
+          }) =>
+              RoutineExercisesCompanion.insert(
+            id: id,
+            dayId: dayId,
+            exerciseName: exerciseName,
+            sets: sets,
+            repsRange: repsRange,
+            orderIndex: orderIndex,
+          ),
+        ));
+}
+
+class $$RoutineExercisesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $RoutineExercisesTable> {
+  $$RoutineExercisesTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get exerciseName => $state.composableBuilder(
+      column: $state.table.exerciseName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get sets => $state.composableBuilder(
+      column: $state.table.sets,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get repsRange => $state.composableBuilder(
+      column: $state.table.repsRange,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get orderIndex => $state.composableBuilder(
+      column: $state.table.orderIndex,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$RoutineDaysTableFilterComposer get dayId {
+    final $$RoutineDaysTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.dayId,
+        referencedTable: $state.db.routineDays,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$RoutineDaysTableFilterComposer(ComposerState($state.db,
+                $state.db.routineDays, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$RoutineExercisesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $RoutineExercisesTable> {
+  $$RoutineExercisesTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get exerciseName => $state.composableBuilder(
+      column: $state.table.exerciseName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get sets => $state.composableBuilder(
+      column: $state.table.sets,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get repsRange => $state.composableBuilder(
+      column: $state.table.repsRange,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get orderIndex => $state.composableBuilder(
+      column: $state.table.orderIndex,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$RoutineDaysTableOrderingComposer get dayId {
+    final $$RoutineDaysTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.dayId,
+        referencedTable: $state.db.routineDays,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$RoutineDaysTableOrderingComposer(ComposerState($state.db,
+                $state.db.routineDays, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -3982,4 +5376,10 @@ class $AppDatabaseManager {
       $$WorkoutSetsTableTableManager(_db, _db.workoutSets);
   $$BodyMeasurementsTableTableManager get bodyMeasurements =>
       $$BodyMeasurementsTableTableManager(_db, _db.bodyMeasurements);
+  $$WorkoutRoutinesTableTableManager get workoutRoutines =>
+      $$WorkoutRoutinesTableTableManager(_db, _db.workoutRoutines);
+  $$RoutineDaysTableTableManager get routineDays =>
+      $$RoutineDaysTableTableManager(_db, _db.routineDays);
+  $$RoutineExercisesTableTableManager get routineExercises =>
+      $$RoutineExercisesTableTableManager(_db, _db.routineExercises);
 }
