@@ -105,12 +105,12 @@
 - [x] Implement local notification reminder services for meals, water, and workouts — ✅ DONE
 - [x] Make notifications configurable in settings screen — ✅ DONE
 
-## Phase 6: Code Hardening & Compilation Fixes ⚠️
-- [ ] Fix Flutter compile errors (`uiLocalNotificationDateInterpretation`, missing `AppColors.cardBorder`)
-- [ ] Configure Android release signing
-- [ ] Add `INTERNET` and camera permissions to `AndroidManifest.xml`
-- [ ] Add camera/photo usage description strings to iOS `Info.plist`
-- [ ] Replace `localhost` backend defaults with per-environment configuration
+## Phase 6: Code Hardening & Compilation Fixes ✅
+- [x] Fix Flutter compile errors (`uiLocalNotificationDateInterpretation`, missing `AppColors.cardBorder`) — ✅ DONE
+- [x] Configure Android release signing — ✅ DONE
+- [x] Add `INTERNET` and camera permissions to `AndroidManifest.xml` — ✅ DONE
+- [x] Add camera/photo usage description strings to iOS `Info.plist` — ✅ DONE
+- [x] Replace `localhost` backend defaults with per-environment configuration — ✅ DONE
 
 ## Phase 7: Data Expansion, Onboarding & Features 🔲
 - [ ] Build a real first-run onboarding flow

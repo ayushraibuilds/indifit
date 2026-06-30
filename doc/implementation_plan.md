@@ -630,8 +630,11 @@ Use **Cloudflare** for DNS (free) + free SSL + DDoS protection + CDN caching.
 ├── Phase 5: AI Chat                       🔲 NOT STARTED
 ├── Phase 6: Razorpay Payments             🔲 NOT STARTED
 ├── Phase 7: Local Notifications           ✅ DONE (workout, meals, water, evening, weekly)
-├── Phase 8: Supabase Cloud Setup          🔲 DEFERRED BY USER
-└── Phase 9: Build + Test on Phones        🔲 NOT STARTED
+├── Phase 8: Code Hardening                ✅ DONE (Sprint 4.6 compilation fixes, signing & permissions)
+├── Phase 9: Data Expansion & Onboarding   🔲 NOT STARTED (Sprint 4.7)
+├── Phase 10: Core Feature Additions       🔲 NOT STARTED (Sprint 4.8)
+├── Phase 11: Supabase Cloud Setup         🔲 DEFERRED BY USER
+└── Phase 12: Build + Test on Phones       🔲 NOT STARTED (Sprint 4.9)
 
 🔗 SHARED
 ├── Supabase Project (Mumbai)              🔲 DEFERRED BY USER
