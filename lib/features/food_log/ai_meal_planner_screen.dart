@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/colors.dart';
 
 class AiMealPlannerScreen extends StatefulWidget {
@@ -17,6 +18,20 @@ class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
   // Selected weekday tab in split view
   int _selectedDayIndex = 0;
   final List<String> _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _calorieGoal = prefs.getInt('calorie_goal') ?? 2000;
+      _dietPreference = prefs.getString('user_diet_preference') ?? 'veg';
+    });
+  }
 
   final List<Map<String, dynamic>> _mockWeeklyPlan = [
     // Monday
@@ -190,7 +205,28 @@ class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
           'Design an Indian macro-balanced weekly diet plan instantly using AI.',
           style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Demo Mode: Offline plan preview. AI Meal Planner connection is simulated locally.',
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
 
         // Calorie Input Card
         Card(

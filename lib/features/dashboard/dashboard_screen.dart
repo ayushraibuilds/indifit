@@ -24,11 +24,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double _currentWeight = 74.5;
   int _streakCount = 3;
   
-  // Goals parameters
-  final int _calorieGoal = 2000;
-  final double _proteinGoal = 120.0;
-  final double _carbsGoal = 230.0;
-  final double _fatGoal = 65.0;
+  // Goals parameters (loaded dynamically from SharedPreferences, falling back to defaults)
+  int _calorieGoal = 2000;
+  double _proteinGoal = 120.0;
+  double _carbsGoal = 230.0;
+  double _fatGoal = 65.0;
 
   @override
   void initState() {
@@ -42,6 +42,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _waterGlasses = prefs.getInt('water_glasses') ?? 0;
       _currentWeight = prefs.getDouble('current_weight') ?? 74.5;
       _streakCount = prefs.getInt('streak_count') ?? 3;
+      
+      // Load user goals computed during onboarding
+      _calorieGoal = prefs.getInt('calorie_goal') ?? 2000;
+      _proteinGoal = prefs.getDouble('protein_goal') ?? 120.0;
+      _carbsGoal = prefs.getDouble('carbs_goal') ?? 230.0;
+      _fatGoal = prefs.getDouble('fat_goal') ?? 65.0;
     });
   }
 

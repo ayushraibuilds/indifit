@@ -113,10 +113,10 @@
 - [x] Replace `localhost` backend defaults with per-environment configuration — ✅ DONE
 
 ## Phase 7: Data Expansion, Onboarding & Features 🔲
-- [ ] Build a real first-run onboarding flow
-- [ ] Persist macro/water/weight goals
-- [ ] Expand local seed data (300-500 foods, 100-200 exercises)
-- [ ] Remove/label mock/demo claims from UI
+- [x] Build a real first-run onboarding flow — ✅ DONE
+- [x] Persist macro/water/weight goals — ✅ DONE
+- [x] Expand local seed data (300-500 foods, 100-200 exercises) — ✅ DONE
+- [x] Remove/label mock/demo claims from UI — ✅ DONE
 - [ ] Workout history per exercise with previous weight/reps autofill
 - [ ] Real PR calculation from past sets
 - [ ] Body measurement logging screen

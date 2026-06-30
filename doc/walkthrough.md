@@ -10,10 +10,11 @@ Repository: [ayushraibuilds/dropalert](https://github.com/ayushraibuilds/dropale
 ### Completed Features:
 1. **Scrapers**: Implemented 7 retailer scrapers (Amazon, Flipkart, Vijay Sales, Croma, PlayStation Direct, Reliance Digital, Games The Shop) with user-agent rotation and Playwright Chromium stealth overlays.
 2. **Unified Backend Engine**: FastAPI server running an internal event-loop scheduler to scrape items every 5 minutes on a single free Render worker.
-3. **Alert Services**: Email notification handlers (Resend), Telegram Chat bot command handlers (`/start`, `/status`, `/subscribe`), Twilio WhatsApp message senders, and **Browser Web Push Notifications** (using `pywebpush` and Service Worker registration).
+3. **Alert Services**: Email notification handlers (Resend), Telegram Chat bot command handlers (`/start`, `/status`, `/subscribe`, `/unsubscribe`), Twilio WhatsApp message senders, and **Browser Web Push Notifications** (using `pywebpush` and Service Worker registration).
 4. **Next.js Frontend Dashboard**: Custom CSS dark glassmorphic dashboard (`dropalert/frontend`) with dynamic alert setup forms, service worker hooks to receive browser pushes, and an automated **Demo Fallback Mode** when the backend is offline.
 5. **Live Stock Drops Timeline**: Replaced the simple drops list with a visual vertical timeline representing active drops and price drops with markers and timestamps.
 6. **SEO Blog Section**: Interactive console stock tracking articles embedded directly into the homepage dashboard to enhance organic engagement and search visibility.
+7. **Pylance Import Resolution Config**: Integrated `.vscode/settings.json` with workspace `extraPaths` definitions to natively clear import warnings for local modules and site packages.
 
 ---
 
@@ -97,6 +98,18 @@ We have completed the core features for IndiFit! The app runs cleanly on mobile 
    - Clean UI accessible from the Dashboard App Bar.
    - Custom toggle switches matching target category colors (Orange, Green, Blue, Purple, Teal).
    - Dynamically reschedules active alarms in the background using `shared_preferences` states when switches are changed.
+
+#### Phase 5: Onboarding Flow, Dynamic Goals & Seed Data (Sprint 4.7)
+1. **Interactive Step-by-Step Onboarding Flow (`onboarding_screen.dart`)**:
+   - Introduced a gorgeous multi-page stepper to capture user metrics: Sex, Age, Height, Weight, Activity Level, Main Goal, Target Weight, and Diet Preference.
+   - Incorporates the Mifflin-St Jeor BMR equation with physical TDEE activity scale multipliers to calculate customized daily caloric budgets and precise target distributions for protein, carbs, and fat.
+   - Integrated as a boot-time resolver in `main.dart` that dynamically routes first-time users to the wizard.
+2. **Persistent Goal Limits**:
+   - Dynamic load and save parameters connected to `SharedPreferences` in both the main dashboard and the AI meal planner screens, removing the previous hardcoded calorie defaults.
+3. **Seed Database Expansion**:
+   - Utilized program generation algorithms to expand the static asset databases to **413 regional Indian foods** and **140 custom gym exercises**, offering comprehensive search coverage.
+4. **Explicit Demo/Simulated Badges**:
+   - Styled informational notice banners in the AI meal layout and workout player checking states to inform the user of offline demo configurations.
 
 ---
 

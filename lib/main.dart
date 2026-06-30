@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/theme/app_theme.dart';
+import 'core/theme/colors.dart';
 import 'core/services/notification_service.dart';
 import 'features/dashboard/main_navigation_scaffold.dart';
+import 'features/onboarding/onboarding_screen.dart';
 import 'data/repositories/sync_manager.dart';
 
 void main() async {
@@ -49,7 +52,22 @@ class IndiFitApp extends ConsumerWidget {
       title: 'IndiFit',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const MainNavigationScaffold(),
+      home: FutureBuilder<bool>(
+        future: SharedPreferences.getInstance().then((prefs) => prefs.getBool('onboarding_completed') ?? false),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            );
+          }
+          if (snapshot.data == true) {
+            return const MainNavigationScaffold();
+          }
+          return const OnboardingScreen();
+        },
+      ),
     );
   }
 }

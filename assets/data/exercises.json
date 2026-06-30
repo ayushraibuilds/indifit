@@ -1,140 +1,2359 @@
 [
-  {
-    "name": "Flat Barbell Bench Press",
-    "muscle_groups": ["Chest", "Triceps", "Shoulders"],
-    "equipment": "Barbell",
-    "difficulty": "Beginner",
-    "form_cues": [
-      "Keep your feet flat on the floor",
-      "Retract your scapula (pull shoulders back and down)",
-      "Touch the bar to your mid-chest gently, then press up"
-    ],
-    "common_mistakes": [
-      "Flaring elbows out too wide (90 degrees)",
-      "Bouncing the bar off the chest",
-      "Lifting hips off the bench"
-    ],
-    "youtube_id": "rT7DgCrgW94"
-  },
-  {
-    "name": "Dumbbell Shoulder Press",
-    "muscle_groups": ["Shoulders", "Triceps"],
-    "equipment": "Dumbbell",
-    "difficulty": "Beginner",
-    "form_cues": [
-      "Set bench to a high incline (approx 75-80 degrees)",
-      "Brace core and press dumbbells straight up until arms are straight",
-      "Lower dumbbells under control until they are about ear height"
-    ],
-    "common_mistakes": [
-      "Arching the lower back excessively",
-      "Banging dumbbells together at the top",
-      "Not using full range of motion"
-    ],
-    "youtube_id": "qEwKCR5JCog"
-  },
-  {
-    "name": "Lat Pulldown",
-    "muscle_groups": ["Back", "Biceps"],
-    "equipment": "Machine",
-    "difficulty": "Beginner",
-    "form_cues": [
-      "Pull the bar down to your upper chest",
-      "Lead the movement with your elbows",
-      "Control the ascent (eccentric phase)"
-    ],
-    "common_mistakes": [
-      "Leaning back too far and using momentum",
-      "Pulling the bar behind the neck",
-      "Shrugging shoulders up at the bottom of the pull"
-    ],
-    "youtube_id": "CAwf7n6Luuc"
-  },
-  {
-    "name": "Barbell Squat",
-    "muscle_groups": ["Quads", "Glutes", "Hamstrings", "Core"],
-    "equipment": "Barbell",
-    "difficulty": "Intermediate",
-    "form_cues": [
-      "Place bar across your traps/upper back",
-      "Hinge at the hips first, then bend knees to descend",
-      "Squat down until thighs are at least parallel to floor",
-      "Drive up through the mid-foot"
-    ],
-    "common_mistakes": [
-      "Allowing knees to cave inward (valgus collapse)",
-      "Lifting heels off the ground",
-      "Rounding the lower back at the bottom (butt wink)"
-    ],
-    "youtube_id": "ultWZbUMDU8"
-  },
-  {
-    "name": "Incline Dumbbell Press",
-    "muscle_groups": ["Chest", "Shoulders", "Triceps"],
-    "equipment": "Dumbbell",
-    "difficulty": "Intermediate",
-    "form_cues": [
-      "Set bench to 30-45 degree incline",
-      "Keep elbows tucked slightly (about 45 degrees relative to torso)",
-      "Press dumbbells up in a slight arc path"
-    ],
-    "common_mistakes": [
-      "Incline too steep (making it a shoulder press)",
-      "Allowing dumbbells to drift backward over the head",
-      "Short-changing the depth at the bottom"
-    ],
-    "youtube_id": "8iPwtTc_bns"
-  },
-  {
-    "name": "Romanian Deadlift (RDL)",
-    "muscle_groups": ["Hamstrings", "Glutes", "Lower Back"],
-    "equipment": "Barbell",
-    "difficulty": "Intermediate",
-    "form_cues": [
-      "Hold bar with shoulder-width grip, feet hip-width apart",
-      "Push hips backward, keeping knees slightly bent but static",
-      "Lower bar close to legs until you feel deep stretch in hamstrings",
-      "Keep back flat and squeeze glutes to return to top"
-    ],
-    "common_mistakes": [
-      "Rounding the spine",
-      "Bending knees too much (turning it into a standard deadlift)",
-      "Letting the bar drift away from the shins/thighs"
-    ],
-    "youtube_id": "JCXUYtwSS08"
-  },
-  {
-    "name": "Tricep Pushdown",
-    "muscle_groups": ["Triceps"],
-    "equipment": "Cable",
-    "difficulty": "Beginner",
-    "form_cues": [
-      "Pin your elbows to the sides of your ribs",
-      "Extend arms down fully, squeezing the triceps at the bottom",
-      "Return the weight slowly without moving your elbows"
-    ],
-    "common_mistakes": [
-      "Allowing elbows to flare or drift forward",
-      "Using hips or bodyweight to push the cable down",
-      "Not extending to full elbow lockout"
-    ],
-    "youtube_id": "2-LAMcpzODU"
-  },
-  {
-    "name": "Bicep Dumbbell Curl",
-    "muscle_groups": ["Biceps"],
-    "equipment": "Dumbbell",
-    "difficulty": "Beginner",
-    "form_cues": [
-      "Stand tall, brace core, elbows at your sides",
-      "Curl weights up, rotating palms forward and up",
-      "Lower weights under control to full extension"
-    ],
-    "common_mistakes": [
-      "Swinging the body to lift the weight",
-      "Lifting elbows forward to bring weights higher",
-      "Not extending the arm fully at the bottom"
-    ],
-    "youtube_id": "ytwo7gtKD_M"
-  }
+    {
+        "name": "Flat Barbell Bench Press",
+        "muscle_groups": "Chest,Triceps,Shoulders",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Keep feet flat on the floor",
+            "Lower the bar to your mid-chest",
+            "Press the bar up while keeping shoulders back"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out too much",
+            "Bouncing the bar off your chest",
+            "Lifting hips off the bench"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Flat Barbell Bench Press (Standard)",
+        "muscle_groups": "Chest,Triceps,Shoulders",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Keep feet flat on the floor",
+            "Lower the bar to your mid-chest",
+            "Press the bar up while keeping shoulders back",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out too much",
+            "Bouncing the bar off your chest",
+            "Lifting hips off the bench"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Flat Barbell Bench Press",
+        "muscle_groups": "Chest,Triceps,Shoulders",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Keep feet flat on the floor",
+            "Lower the bar to your mid-chest",
+            "Press the bar up while keeping shoulders back",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out too much",
+            "Bouncing the bar off your chest",
+            "Lifting hips off the bench"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Flat Barbell Bench Press",
+        "muscle_groups": "Chest,Triceps,Shoulders",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Keep feet flat on the floor",
+            "Lower the bar to your mid-chest",
+            "Press the bar up while keeping shoulders back",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out too much",
+            "Bouncing the bar off your chest",
+            "Lifting hips off the bench"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Incline Dumbbell Bench Press",
+        "muscle_groups": "Chest,Shoulders,Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Set bench to 30-45 degree angle",
+            "Keep dumbbells at 45 degree elbow angle",
+            "Press weights straight up"
+        ],
+        "common_mistakes": [
+            "Setting bench angle too high (shifts to shoulders)",
+            "Clashing dumbbells at the top"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Incline Dumbbell Bench Press (Standard)",
+        "muscle_groups": "Chest,Shoulders,Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Set bench to 30-45 degree angle",
+            "Keep dumbbells at 45 degree elbow angle",
+            "Press weights straight up",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Setting bench angle too high (shifts to shoulders)",
+            "Clashing dumbbells at the top"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Incline Dumbbell Bench Press",
+        "muscle_groups": "Chest,Shoulders,Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Set bench to 30-45 degree angle",
+            "Keep dumbbells at 45 degree elbow angle",
+            "Press weights straight up",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Setting bench angle too high (shifts to shoulders)",
+            "Clashing dumbbells at the top"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Incline Dumbbell Bench Press",
+        "muscle_groups": "Chest,Shoulders,Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Set bench to 30-45 degree angle",
+            "Keep dumbbells at 45 degree elbow angle",
+            "Press weights straight up",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Setting bench angle too high (shifts to shoulders)",
+            "Clashing dumbbells at the top"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Decline Hammer Strength Press",
+        "muscle_groups": "Chest,Triceps",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit back firmly against pad",
+            "Press handles forward fully",
+            "Control weight back slowly"
+        ],
+        "common_mistakes": [
+            "Not completing full range of motion",
+            "Arching lower back excessively"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Decline Hammer Strength Press (Standard)",
+        "muscle_groups": "Chest,Triceps",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit back firmly against pad",
+            "Press handles forward fully",
+            "Control weight back slowly",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Not completing full range of motion",
+            "Arching lower back excessively"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Decline Hammer Strength Press",
+        "muscle_groups": "Chest,Triceps",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit back firmly against pad",
+            "Press handles forward fully",
+            "Control weight back slowly",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Not completing full range of motion",
+            "Arching lower back excessively"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Decline Hammer Strength Press",
+        "muscle_groups": "Chest,Triceps",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit back firmly against pad",
+            "Press handles forward fully",
+            "Control weight back slowly",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Not completing full range of motion",
+            "Arching lower back excessively"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Cable Chest Fly",
+        "muscle_groups": "Chest",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Position cables at shoulder height",
+            "Bring hands together in wide arc",
+            "Squeeze chest at the center"
+        ],
+        "common_mistakes": [
+            "Bending elbows too much (making it a press)",
+            "Letting cables pull arms back too aggressively"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Cable Chest Fly (Standard)",
+        "muscle_groups": "Chest",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Position cables at shoulder height",
+            "Bring hands together in wide arc",
+            "Squeeze chest at the center",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Bending elbows too much (making it a press)",
+            "Letting cables pull arms back too aggressively"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Cable Chest Fly",
+        "muscle_groups": "Chest",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Position cables at shoulder height",
+            "Bring hands together in wide arc",
+            "Squeeze chest at the center",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Bending elbows too much (making it a press)",
+            "Letting cables pull arms back too aggressively"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Cable Chest Fly",
+        "muscle_groups": "Chest",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Position cables at shoulder height",
+            "Bring hands together in wide arc",
+            "Squeeze chest at the center",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Bending elbows too much (making it a press)",
+            "Letting cables pull arms back too aggressively"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Push-Ups",
+        "muscle_groups": "Chest,Triceps,Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Position hands shoulder-width apart",
+            "Maintain straight line head to toe",
+            "Lower chest close to floor"
+        ],
+        "common_mistakes": [
+            "Sagging hips",
+            "Elbows flaring at 90 degrees",
+            "Looking up instead of down"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Push-Ups (Standard)",
+        "muscle_groups": "Chest,Triceps,Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Position hands shoulder-width apart",
+            "Maintain straight line head to toe",
+            "Lower chest close to floor",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Sagging hips",
+            "Elbows flaring at 90 degrees",
+            "Looking up instead of down"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Push-Ups",
+        "muscle_groups": "Chest,Triceps,Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Position hands shoulder-width apart",
+            "Maintain straight line head to toe",
+            "Lower chest close to floor",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Sagging hips",
+            "Elbows flaring at 90 degrees",
+            "Looking up instead of down"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Push-Ups",
+        "muscle_groups": "Chest,Triceps,Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Position hands shoulder-width apart",
+            "Maintain straight line head to toe",
+            "Lower chest close to floor",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Sagging hips",
+            "Elbows flaring at 90 degrees",
+            "Looking up instead of down"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Chest Dips",
+        "muscle_groups": "Chest,Triceps",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Lean forward slightly to engage chest",
+            "Lower body until shoulders are below elbows",
+            "Press back up"
+        ],
+        "common_mistakes": [
+            "Keep torso upright (focuses too much on triceps)",
+            "Swinging legs for momentum"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Chest Dips (Standard)",
+        "muscle_groups": "Chest,Triceps",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Lean forward slightly to engage chest",
+            "Lower body until shoulders are below elbows",
+            "Press back up",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Keep torso upright (focuses too much on triceps)",
+            "Swinging legs for momentum"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Chest Dips",
+        "muscle_groups": "Chest,Triceps",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Lean forward slightly to engage chest",
+            "Lower body until shoulders are below elbows",
+            "Press back up",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Keep torso upright (focuses too much on triceps)",
+            "Swinging legs for momentum"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Chest Dips",
+        "muscle_groups": "Chest,Triceps",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Lean forward slightly to engage chest",
+            "Lower body until shoulders are below elbows",
+            "Press back up",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Keep torso upright (focuses too much on triceps)",
+            "Swinging legs for momentum"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Barbell Deadlift",
+        "muscle_groups": "Back,Glutes,Hamstrings",
+        "equipment": "Barbell",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Keep bar close to shins",
+            "Flat back, chest up",
+            "Drive through legs to stand upright"
+        ],
+        "common_mistakes": [
+            "Rounding the back (high risk of injury)",
+            "Hyperextending spine at lock out"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Barbell Deadlift (Standard)",
+        "muscle_groups": "Back,Glutes,Hamstrings",
+        "equipment": "Barbell",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Keep bar close to shins",
+            "Flat back, chest up",
+            "Drive through legs to stand upright",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Rounding the back (high risk of injury)",
+            "Hyperextending spine at lock out"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Barbell Deadlift",
+        "muscle_groups": "Back,Glutes,Hamstrings",
+        "equipment": "Barbell",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Keep bar close to shins",
+            "Flat back, chest up",
+            "Drive through legs to stand upright",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Rounding the back (high risk of injury)",
+            "Hyperextending spine at lock out"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Barbell Deadlift",
+        "muscle_groups": "Back,Glutes,Hamstrings",
+        "equipment": "Barbell",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Keep bar close to shins",
+            "Flat back, chest up",
+            "Drive through legs to stand upright",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Rounding the back (high risk of injury)",
+            "Hyperextending spine at lock out"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Lat Pulldown",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit upright, pull bar to upper chest",
+            "Squeeze shoulder blades together",
+            "Extend arms fully on return"
+        ],
+        "common_mistakes": [
+            "Pulling bar behind the neck",
+            "Leaning back too much and using body weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Lat Pulldown (Standard)",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit upright, pull bar to upper chest",
+            "Squeeze shoulder blades together",
+            "Extend arms fully on return",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Pulling bar behind the neck",
+            "Leaning back too much and using body weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Lat Pulldown",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit upright, pull bar to upper chest",
+            "Squeeze shoulder blades together",
+            "Extend arms fully on return",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Pulling bar behind the neck",
+            "Leaning back too much and using body weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Lat Pulldown",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit upright, pull bar to upper chest",
+            "Squeeze shoulder blades together",
+            "Extend arms fully on return",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Pulling bar behind the neck",
+            "Leaning back too much and using body weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Bent Over Barbell Row",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Hinge hips, back flat at 45 degrees",
+            "Pull bar to lower chest/navel",
+            "Squeeze lats at the top"
+        ],
+        "common_mistakes": [
+            "Rounding the lower back",
+            "Pulling with upper body swing instead of lats"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Bent Over Barbell Row (Standard)",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Hinge hips, back flat at 45 degrees",
+            "Pull bar to lower chest/navel",
+            "Squeeze lats at the top",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Rounding the lower back",
+            "Pulling with upper body swing instead of lats"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Bent Over Barbell Row",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Hinge hips, back flat at 45 degrees",
+            "Pull bar to lower chest/navel",
+            "Squeeze lats at the top",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Rounding the lower back",
+            "Pulling with upper body swing instead of lats"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Bent Over Barbell Row",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Hinge hips, back flat at 45 degrees",
+            "Pull bar to lower chest/navel",
+            "Squeeze lats at the top",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Rounding the lower back",
+            "Pulling with upper body swing instead of lats"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "One-Arm Dumbbell Row",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Place one knee and hand on bench",
+            "Pull dumbbell to hip crease",
+            "Keep elbow close to body"
+        ],
+        "common_mistakes": [
+            "Shrugging shoulder up",
+            "Rotating torso to lift weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "One-Arm Dumbbell Row (Standard)",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Place one knee and hand on bench",
+            "Pull dumbbell to hip crease",
+            "Keep elbow close to body",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Shrugging shoulder up",
+            "Rotating torso to lift weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause One-Arm Dumbbell Row",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Place one knee and hand on bench",
+            "Pull dumbbell to hip crease",
+            "Keep elbow close to body",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Shrugging shoulder up",
+            "Rotating torso to lift weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric One-Arm Dumbbell Row",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Place one knee and hand on bench",
+            "Pull dumbbell to hip crease",
+            "Keep elbow close to body",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Shrugging shoulder up",
+            "Rotating torso to lift weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pull-Ups",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Grip bar wider than shoulder-width",
+            "Pull chest up to bar",
+            "Lower down slowly to dead hang"
+        ],
+        "common_mistakes": [
+            "Kipping or swinging legs",
+            "Not pulling high enough"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pull-Ups (Standard)",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Grip bar wider than shoulder-width",
+            "Pull chest up to bar",
+            "Lower down slowly to dead hang",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Kipping or swinging legs",
+            "Not pulling high enough"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Pull-Ups",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Grip bar wider than shoulder-width",
+            "Pull chest up to bar",
+            "Lower down slowly to dead hang",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Kipping or swinging legs",
+            "Not pulling high enough"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Pull-Ups",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Grip bar wider than shoulder-width",
+            "Pull chest up to bar",
+            "Lower down slowly to dead hang",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Kipping or swinging legs",
+            "Not pulling high enough"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Seated Cable Row",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit flat, pull handle to abs",
+            "Keep back straight, chest out",
+            "Release slowly"
+        ],
+        "common_mistakes": [
+            "Rounding upper back",
+            "Leaning back too far at completion"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Seated Cable Row (Standard)",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit flat, pull handle to abs",
+            "Keep back straight, chest out",
+            "Release slowly",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Rounding upper back",
+            "Leaning back too far at completion"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Seated Cable Row",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit flat, pull handle to abs",
+            "Keep back straight, chest out",
+            "Release slowly",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Rounding upper back",
+            "Leaning back too far at completion"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Seated Cable Row",
+        "muscle_groups": "Back,Biceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit flat, pull handle to abs",
+            "Keep back straight, chest out",
+            "Release slowly",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Rounding upper back",
+            "Leaning back too far at completion"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Barbell Squat",
+        "muscle_groups": "Legs,Glutes,Core",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Bar on traps, feet shoulder-width",
+            "Hinge hips back, squat to parallel",
+            "Drive up through heels"
+        ],
+        "common_mistakes": [
+            "Knees caving inwards",
+            "Heels rising off the floor",
+            "Rounding lower back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Barbell Squat (Standard)",
+        "muscle_groups": "Legs,Glutes,Core",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Bar on traps, feet shoulder-width",
+            "Hinge hips back, squat to parallel",
+            "Drive up through heels",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Knees caving inwards",
+            "Heels rising off the floor",
+            "Rounding lower back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Barbell Squat",
+        "muscle_groups": "Legs,Glutes,Core",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Bar on traps, feet shoulder-width",
+            "Hinge hips back, squat to parallel",
+            "Drive up through heels",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Knees caving inwards",
+            "Heels rising off the floor",
+            "Rounding lower back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Barbell Squat",
+        "muscle_groups": "Legs,Glutes,Core",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Bar on traps, feet shoulder-width",
+            "Hinge hips back, squat to parallel",
+            "Drive up through heels",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Knees caving inwards",
+            "Heels rising off the floor",
+            "Rounding lower back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Leg Press",
+        "muscle_groups": "Legs,Glutes",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Place feet shoulder-width on sled",
+            "Lower sled until knees are at 90 degrees",
+            "Press up without locking knees"
+        ],
+        "common_mistakes": [
+            "Locking knees at the top (extremely dangerous)",
+            "Lifting lower back off seat pad"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Leg Press (Standard)",
+        "muscle_groups": "Legs,Glutes",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Place feet shoulder-width on sled",
+            "Lower sled until knees are at 90 degrees",
+            "Press up without locking knees",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Locking knees at the top (extremely dangerous)",
+            "Lifting lower back off seat pad"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Leg Press",
+        "muscle_groups": "Legs,Glutes",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Place feet shoulder-width on sled",
+            "Lower sled until knees are at 90 degrees",
+            "Press up without locking knees",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Locking knees at the top (extremely dangerous)",
+            "Lifting lower back off seat pad"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Leg Press",
+        "muscle_groups": "Legs,Glutes",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Place feet shoulder-width on sled",
+            "Lower sled until knees are at 90 degrees",
+            "Press up without locking knees",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Locking knees at the top (extremely dangerous)",
+            "Lifting lower back off seat pad"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Romanian Deadlift (RDL)",
+        "muscle_groups": "Hamstrings,Glutes,Back",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Slight bend in knees, push hips back",
+            "Lower bar down shins until stretch felt",
+            "Squeeze glutes to stand"
+        ],
+        "common_mistakes": [
+            "Bending knees too much (making it a squat)",
+            "Rounding back to reach lower"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Romanian Deadlift (RDL) (Standard)",
+        "muscle_groups": "Hamstrings,Glutes,Back",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Slight bend in knees, push hips back",
+            "Lower bar down shins until stretch felt",
+            "Squeeze glutes to stand",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Bending knees too much (making it a squat)",
+            "Rounding back to reach lower"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Romanian Deadlift (RDL)",
+        "muscle_groups": "Hamstrings,Glutes,Back",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Slight bend in knees, push hips back",
+            "Lower bar down shins until stretch felt",
+            "Squeeze glutes to stand",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Bending knees too much (making it a squat)",
+            "Rounding back to reach lower"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Romanian Deadlift (RDL)",
+        "muscle_groups": "Hamstrings,Glutes,Back",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Slight bend in knees, push hips back",
+            "Lower bar down shins until stretch felt",
+            "Squeeze glutes to stand",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Bending knees too much (making it a squat)",
+            "Rounding back to reach lower"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Leg Extensions",
+        "muscle_groups": "Legs",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Adjust pad to sit on lower shins",
+            "Extend legs fully, squeeze quads",
+            "Lower weight slowly"
+        ],
+        "common_mistakes": [
+            "Swinging the legs too fast",
+            "Hyperextending knees"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Leg Extensions (Standard)",
+        "muscle_groups": "Legs",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Adjust pad to sit on lower shins",
+            "Extend legs fully, squeeze quads",
+            "Lower weight slowly",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Swinging the legs too fast",
+            "Hyperextending knees"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Leg Extensions",
+        "muscle_groups": "Legs",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Adjust pad to sit on lower shins",
+            "Extend legs fully, squeeze quads",
+            "Lower weight slowly",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Swinging the legs too fast",
+            "Hyperextending knees"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Leg Extensions",
+        "muscle_groups": "Legs",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Adjust pad to sit on lower shins",
+            "Extend legs fully, squeeze quads",
+            "Lower weight slowly",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Swinging the legs too fast",
+            "Hyperextending knees"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Seated Leg Curl",
+        "muscle_groups": "Hamstrings",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Adjust pad above ankles",
+            "Curl heels down towards thighs",
+            "Return slowly"
+        ],
+        "common_mistakes": [
+            "Lifting hips off the seat",
+            "Using body swing"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Seated Leg Curl (Standard)",
+        "muscle_groups": "Hamstrings",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Adjust pad above ankles",
+            "Curl heels down towards thighs",
+            "Return slowly",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Lifting hips off the seat",
+            "Using body swing"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Seated Leg Curl",
+        "muscle_groups": "Hamstrings",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Adjust pad above ankles",
+            "Curl heels down towards thighs",
+            "Return slowly",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Lifting hips off the seat",
+            "Using body swing"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Seated Leg Curl",
+        "muscle_groups": "Hamstrings",
+        "equipment": "Machine",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Adjust pad above ankles",
+            "Curl heels down towards thighs",
+            "Return slowly",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Lifting hips off the seat",
+            "Using body swing"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Standing Calf Raise",
+        "muscle_groups": "Calves",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand on step edge, drop heels",
+            "Press up fully onto toes",
+            "Hold contraction 1 sec"
+        ],
+        "common_mistakes": [
+            "Bouncing quickly without full stretch",
+            "Bending knees to assist"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Standing Calf Raise (Standard)",
+        "muscle_groups": "Calves",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand on step edge, drop heels",
+            "Press up fully onto toes",
+            "Hold contraction 1 sec",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Bouncing quickly without full stretch",
+            "Bending knees to assist"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Standing Calf Raise",
+        "muscle_groups": "Calves",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand on step edge, drop heels",
+            "Press up fully onto toes",
+            "Hold contraction 1 sec",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Bouncing quickly without full stretch",
+            "Bending knees to assist"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Standing Calf Raise",
+        "muscle_groups": "Calves",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand on step edge, drop heels",
+            "Press up fully onto toes",
+            "Hold contraction 1 sec",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Bouncing quickly without full stretch",
+            "Bending knees to assist"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Walking Lunges",
+        "muscle_groups": "Legs,Glutes",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Take big step forward, lower hips",
+            "Keep front knee behind toes",
+            "Push through front heel to step forward"
+        ],
+        "common_mistakes": [
+            "Letting back knee hit floor hard",
+            "Leaning torso too far forward"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Walking Lunges (Standard)",
+        "muscle_groups": "Legs,Glutes",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Take big step forward, lower hips",
+            "Keep front knee behind toes",
+            "Push through front heel to step forward",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Letting back knee hit floor hard",
+            "Leaning torso too far forward"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Walking Lunges",
+        "muscle_groups": "Legs,Glutes",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Take big step forward, lower hips",
+            "Keep front knee behind toes",
+            "Push through front heel to step forward",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Letting back knee hit floor hard",
+            "Leaning torso too far forward"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Walking Lunges",
+        "muscle_groups": "Legs,Glutes",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Take big step forward, lower hips",
+            "Keep front knee behind toes",
+            "Push through front heel to step forward",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Letting back knee hit floor hard",
+            "Leaning torso too far forward"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Overhead Barbell Press",
+        "muscle_groups": "Shoulders,Triceps,Core",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Grip slightly wider than shoulders",
+            "Press bar straight overhead",
+            "Lock out arms at the top"
+        ],
+        "common_mistakes": [
+            "Arching lower back excessively",
+            "Bouncing bar off collarbone"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Overhead Barbell Press (Standard)",
+        "muscle_groups": "Shoulders,Triceps,Core",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Grip slightly wider than shoulders",
+            "Press bar straight overhead",
+            "Lock out arms at the top",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Arching lower back excessively",
+            "Bouncing bar off collarbone"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Overhead Barbell Press",
+        "muscle_groups": "Shoulders,Triceps,Core",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Grip slightly wider than shoulders",
+            "Press bar straight overhead",
+            "Lock out arms at the top",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Arching lower back excessively",
+            "Bouncing bar off collarbone"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Overhead Barbell Press",
+        "muscle_groups": "Shoulders,Triceps,Core",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Grip slightly wider than shoulders",
+            "Press bar straight overhead",
+            "Lock out arms at the top",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Arching lower back excessively",
+            "Bouncing bar off collarbone"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Seated Dumbbell Shoulder Press",
+        "muscle_groups": "Shoulders,Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit back on bench, weights at ears",
+            "Press weights up in slight arc",
+            "Control down slowly"
+        ],
+        "common_mistakes": [
+            "Elbows pointing straight out to sides (flaring)",
+            "Arching back off the seat"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Seated Dumbbell Shoulder Press (Standard)",
+        "muscle_groups": "Shoulders,Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit back on bench, weights at ears",
+            "Press weights up in slight arc",
+            "Control down slowly",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Elbows pointing straight out to sides (flaring)",
+            "Arching back off the seat"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Seated Dumbbell Shoulder Press",
+        "muscle_groups": "Shoulders,Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit back on bench, weights at ears",
+            "Press weights up in slight arc",
+            "Control down slowly",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Elbows pointing straight out to sides (flaring)",
+            "Arching back off the seat"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Seated Dumbbell Shoulder Press",
+        "muscle_groups": "Shoulders,Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Sit back on bench, weights at ears",
+            "Press weights up in slight arc",
+            "Control down slowly",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Elbows pointing straight out to sides (flaring)",
+            "Arching back off the seat"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Dumbbell Lateral Raise",
+        "muscle_groups": "Shoulders",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand tall, weights at sides",
+            "Raise arms out to sides until parallel",
+            "Keep pinky fingers slightly higher"
+        ],
+        "common_mistakes": [
+            "Swinging body to throw weight up",
+            "Raising hands above elbow height"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Dumbbell Lateral Raise (Standard)",
+        "muscle_groups": "Shoulders",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand tall, weights at sides",
+            "Raise arms out to sides until parallel",
+            "Keep pinky fingers slightly higher",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Swinging body to throw weight up",
+            "Raising hands above elbow height"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Dumbbell Lateral Raise",
+        "muscle_groups": "Shoulders",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand tall, weights at sides",
+            "Raise arms out to sides until parallel",
+            "Keep pinky fingers slightly higher",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Swinging body to throw weight up",
+            "Raising hands above elbow height"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Dumbbell Lateral Raise",
+        "muscle_groups": "Shoulders",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand tall, weights at sides",
+            "Raise arms out to sides until parallel",
+            "Keep pinky fingers slightly higher",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Swinging body to throw weight up",
+            "Raising hands above elbow height"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Dumbbell Front Raise",
+        "muscle_groups": "Shoulders",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand tall, raise weights forward",
+            "Stop at shoulder height",
+            "Lower slowly"
+        ],
+        "common_mistakes": [
+            "Using hip drive to raise weight",
+            "Leaning back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Dumbbell Front Raise (Standard)",
+        "muscle_groups": "Shoulders",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand tall, raise weights forward",
+            "Stop at shoulder height",
+            "Lower slowly",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Using hip drive to raise weight",
+            "Leaning back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Dumbbell Front Raise",
+        "muscle_groups": "Shoulders",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand tall, raise weights forward",
+            "Stop at shoulder height",
+            "Lower slowly",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Using hip drive to raise weight",
+            "Leaning back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Dumbbell Front Raise",
+        "muscle_groups": "Shoulders",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Stand tall, raise weights forward",
+            "Stop at shoulder height",
+            "Lower slowly",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Using hip drive to raise weight",
+            "Leaning back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Face Pulls",
+        "muscle_groups": "Shoulders,Back",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Pull cable rope towards nose",
+            "Separate hands to ears, squeeze shoulder blades",
+            "Control return"
+        ],
+        "common_mistakes": [
+            "Pulling to chin instead of forehead",
+            "Using too much weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Face Pulls (Standard)",
+        "muscle_groups": "Shoulders,Back",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Pull cable rope towards nose",
+            "Separate hands to ears, squeeze shoulder blades",
+            "Control return",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Pulling to chin instead of forehead",
+            "Using too much weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Face Pulls",
+        "muscle_groups": "Shoulders,Back",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Pull cable rope towards nose",
+            "Separate hands to ears, squeeze shoulder blades",
+            "Control return",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Pulling to chin instead of forehead",
+            "Using too much weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Face Pulls",
+        "muscle_groups": "Shoulders,Back",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Pull cable rope towards nose",
+            "Separate hands to ears, squeeze shoulder blades",
+            "Control return",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Pulling to chin instead of forehead",
+            "Using too much weight"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Standing Barbell Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold bar shoulder-width palms up",
+            "Curl bar up to shoulders, squeeze biceps",
+            "Keep elbows pinned to ribs"
+        ],
+        "common_mistakes": [
+            "Swinging hips/back to lift weight",
+            "Letting elbows move forward during lift"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Standing Barbell Curl (Standard)",
+        "muscle_groups": "Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold bar shoulder-width palms up",
+            "Curl bar up to shoulders, squeeze biceps",
+            "Keep elbows pinned to ribs",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Swinging hips/back to lift weight",
+            "Letting elbows move forward during lift"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Standing Barbell Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold bar shoulder-width palms up",
+            "Curl bar up to shoulders, squeeze biceps",
+            "Keep elbows pinned to ribs",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Swinging hips/back to lift weight",
+            "Letting elbows move forward during lift"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Standing Barbell Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold bar shoulder-width palms up",
+            "Curl bar up to shoulders, squeeze biceps",
+            "Keep elbows pinned to ribs",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Swinging hips/back to lift weight",
+            "Letting elbows move forward during lift"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Dumbbell Hammer Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold dumbbells with neutral grip (palms facing)",
+            "Curl up while keeping palms facing",
+            "Lower slowly"
+        ],
+        "common_mistakes": [
+            "Using wrist rotation during curl",
+            "Swinging elbows back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Dumbbell Hammer Curl (Standard)",
+        "muscle_groups": "Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold dumbbells with neutral grip (palms facing)",
+            "Curl up while keeping palms facing",
+            "Lower slowly",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Using wrist rotation during curl",
+            "Swinging elbows back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Dumbbell Hammer Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold dumbbells with neutral grip (palms facing)",
+            "Curl up while keeping palms facing",
+            "Lower slowly",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Using wrist rotation during curl",
+            "Swinging elbows back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Dumbbell Hammer Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold dumbbells with neutral grip (palms facing)",
+            "Curl up while keeping palms facing",
+            "Lower slowly",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Using wrist rotation during curl",
+            "Swinging elbows back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Incline Dumbbell Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Sit on 45 degree incline bench",
+            "Let arms hang straight down",
+            "Curl weights up, keeping elbows locked in space"
+        ],
+        "common_mistakes": [
+            "Moving elbows forward to shorten range",
+            "Letting back lift off bench"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Incline Dumbbell Curl (Standard)",
+        "muscle_groups": "Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Sit on 45 degree incline bench",
+            "Let arms hang straight down",
+            "Curl weights up, keeping elbows locked in space",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Moving elbows forward to shorten range",
+            "Letting back lift off bench"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Incline Dumbbell Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Sit on 45 degree incline bench",
+            "Let arms hang straight down",
+            "Curl weights up, keeping elbows locked in space",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Moving elbows forward to shorten range",
+            "Letting back lift off bench"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Incline Dumbbell Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Sit on 45 degree incline bench",
+            "Let arms hang straight down",
+            "Curl weights up, keeping elbows locked in space",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Moving elbows forward to shorten range",
+            "Letting back lift off bench"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Preacher Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Rest arms flat on preacher pad",
+            "Curl bar up fully",
+            "Extend arms down close to lock out"
+        ],
+        "common_mistakes": [
+            "Hyperextending elbows at the bottom",
+            "Rocking shoulders back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Preacher Curl (Standard)",
+        "muscle_groups": "Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Rest arms flat on preacher pad",
+            "Curl bar up fully",
+            "Extend arms down close to lock out",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Hyperextending elbows at the bottom",
+            "Rocking shoulders back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Preacher Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Rest arms flat on preacher pad",
+            "Curl bar up fully",
+            "Extend arms down close to lock out",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Hyperextending elbows at the bottom",
+            "Rocking shoulders back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Preacher Curl",
+        "muscle_groups": "Biceps",
+        "equipment": "Barbell",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Rest arms flat on preacher pad",
+            "Curl bar up fully",
+            "Extend arms down close to lock out",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Hyperextending elbows at the bottom",
+            "Rocking shoulders back"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Tricep Pushdown",
+        "muscle_groups": "Triceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Keep elbows pinned at sides",
+            "Press rope down fully to hips",
+            "Squeeze triceps at the bottom"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out to sides",
+            "Letting shoulders move to press down"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Tricep Pushdown (Standard)",
+        "muscle_groups": "Triceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Keep elbows pinned at sides",
+            "Press rope down fully to hips",
+            "Squeeze triceps at the bottom",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out to sides",
+            "Letting shoulders move to press down"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Tricep Pushdown",
+        "muscle_groups": "Triceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Keep elbows pinned at sides",
+            "Press rope down fully to hips",
+            "Squeeze triceps at the bottom",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out to sides",
+            "Letting shoulders move to press down"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Tricep Pushdown",
+        "muscle_groups": "Triceps",
+        "equipment": "Cables",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Keep elbows pinned at sides",
+            "Press rope down fully to hips",
+            "Squeeze triceps at the bottom",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out to sides",
+            "Letting shoulders move to press down"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Skull Crushers (EZ Bar)",
+        "muscle_groups": "Triceps",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Lie flat, hold EZ bar over face",
+            "Lower bar to forehead by bending elbows",
+            "Extend arms back up"
+        ],
+        "common_mistakes": [
+            "Moving elbows back and forth (shoulder movement)",
+            "Bouncing bar off forehead"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Skull Crushers (EZ Bar) (Standard)",
+        "muscle_groups": "Triceps",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Lie flat, hold EZ bar over face",
+            "Lower bar to forehead by bending elbows",
+            "Extend arms back up",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Moving elbows back and forth (shoulder movement)",
+            "Bouncing bar off forehead"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Skull Crushers (EZ Bar)",
+        "muscle_groups": "Triceps",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Lie flat, hold EZ bar over face",
+            "Lower bar to forehead by bending elbows",
+            "Extend arms back up",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Moving elbows back and forth (shoulder movement)",
+            "Bouncing bar off forehead"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Skull Crushers (EZ Bar)",
+        "muscle_groups": "Triceps",
+        "equipment": "Barbell",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Lie flat, hold EZ bar over face",
+            "Lower bar to forehead by bending elbows",
+            "Extend arms back up",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Moving elbows back and forth (shoulder movement)",
+            "Bouncing bar off forehead"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Overhead Dumbbell Tricep Extension",
+        "muscle_groups": "Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold dumbbell overhead with both hands",
+            "Lower weight behind head",
+            "Press back up to lock out"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out extremely wide",
+            "Lowering weight too shallowly"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Overhead Dumbbell Tricep Extension (Standard)",
+        "muscle_groups": "Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold dumbbell overhead with both hands",
+            "Lower weight behind head",
+            "Press back up to lock out",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out extremely wide",
+            "Lowering weight too shallowly"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Overhead Dumbbell Tricep Extension",
+        "muscle_groups": "Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold dumbbell overhead with both hands",
+            "Lower weight behind head",
+            "Press back up to lock out",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out extremely wide",
+            "Lowering weight too shallowly"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Overhead Dumbbell Tricep Extension",
+        "muscle_groups": "Triceps",
+        "equipment": "Dumbbells",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Hold dumbbell overhead with both hands",
+            "Lower weight behind head",
+            "Press back up to lock out",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Flaring elbows out extremely wide",
+            "Lowering weight too shallowly"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Ab Wheel Rollout",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Kneel, roll wheel forward slowly",
+            "Keep core tight, back slightly rounded",
+            "Pull back using abs"
+        ],
+        "common_mistakes": [
+            "Arching lower back (puts load on spine)",
+            "Pulling back with hips/arms instead of abs"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Ab Wheel Rollout (Standard)",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Kneel, roll wheel forward slowly",
+            "Keep core tight, back slightly rounded",
+            "Pull back using abs",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Arching lower back (puts load on spine)",
+            "Pulling back with hips/arms instead of abs"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Ab Wheel Rollout",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Kneel, roll wheel forward slowly",
+            "Keep core tight, back slightly rounded",
+            "Pull back using abs",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Arching lower back (puts load on spine)",
+            "Pulling back with hips/arms instead of abs"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Ab Wheel Rollout",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Kneel, roll wheel forward slowly",
+            "Keep core tight, back slightly rounded",
+            "Pull back using abs",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Arching lower back (puts load on spine)",
+            "Pulling back with hips/arms instead of abs"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Cable Crunch",
+        "muscle_groups": "Core",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Kneel, hold rope behind neck",
+            "Crunch down bringing elbows to thighs",
+            "Squeeze abs at bottom"
+        ],
+        "common_mistakes": [
+            "Pulling with arms / hip hinge instead of abs",
+            "Sitting down on heels"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Cable Crunch (Standard)",
+        "muscle_groups": "Core",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Kneel, hold rope behind neck",
+            "Crunch down bringing elbows to thighs",
+            "Squeeze abs at bottom",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Pulling with arms / hip hinge instead of abs",
+            "Sitting down on heels"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Cable Crunch",
+        "muscle_groups": "Core",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Kneel, hold rope behind neck",
+            "Crunch down bringing elbows to thighs",
+            "Squeeze abs at bottom",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Pulling with arms / hip hinge instead of abs",
+            "Sitting down on heels"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Cable Crunch",
+        "muscle_groups": "Core",
+        "equipment": "Cables",
+        "difficulty": "Intermediate",
+        "form_cues": [
+            "Kneel, hold rope behind neck",
+            "Crunch down bringing elbows to thighs",
+            "Squeeze abs at bottom",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Pulling with arms / hip hinge instead of abs",
+            "Sitting down on heels"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Plank",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Place elbows under shoulders",
+            "Keep body in straight line",
+            "Squeeze abs and glutes"
+        ],
+        "common_mistakes": [
+            "Sagging lower back / hips",
+            "Lifting butt in the air"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Plank (Standard)",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Place elbows under shoulders",
+            "Keep body in straight line",
+            "Squeeze abs and glutes",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Sagging lower back / hips",
+            "Lifting butt in the air"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Plank",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Place elbows under shoulders",
+            "Keep body in straight line",
+            "Squeeze abs and glutes",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Sagging lower back / hips",
+            "Lifting butt in the air"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Plank",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Beginner",
+        "form_cues": [
+            "Place elbows under shoulders",
+            "Keep body in straight line",
+            "Squeeze abs and glutes",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Sagging lower back / hips",
+            "Lifting butt in the air"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Hanging Leg Raise",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Hang from bar, raise legs to 90 deg",
+            "Keep legs straight, control swing",
+            "Lower down slowly"
+        ],
+        "common_mistakes": [
+            "Swinging torso for momentum",
+            "Letting shoulders shrug down"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Hanging Leg Raise (Standard)",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Hang from bar, raise legs to 90 deg",
+            "Keep legs straight, control swing",
+            "Lower down slowly",
+            "Standard version"
+        ],
+        "common_mistakes": [
+            "Swinging torso for momentum",
+            "Letting shoulders shrug down"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Pause Hanging Leg Raise",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Hang from bar, raise legs to 90 deg",
+            "Keep legs straight, control swing",
+            "Lower down slowly",
+            "Hold the contraction at the peak for 2 seconds"
+        ],
+        "common_mistakes": [
+            "Swinging torso for momentum",
+            "Letting shoulders shrug down"
+        ],
+        "youtube_id": ""
+    },
+    {
+        "name": "Slow Eccentric Hanging Leg Raise",
+        "muscle_groups": "Core",
+        "equipment": "Bodyweight",
+        "difficulty": "Advanced",
+        "form_cues": [
+            "Hang from bar, raise legs to 90 deg",
+            "Keep legs straight, control swing",
+            "Lower down slowly",
+            "Lower the weight over 3-4 seconds"
+        ],
+        "common_mistakes": [
+            "Swinging torso for momentum",
+            "Letting shoulders shrug down"
+        ],
+        "youtube_id": ""
+    }
 ]
