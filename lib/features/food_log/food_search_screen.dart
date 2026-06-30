@@ -5,6 +5,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/food_api_service.dart';
 import '../../data/repositories/food_repository.dart';
 import 'barcode_scanner_screen.dart';
+import 'custom_food_editor_screen.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
   final String mealType; // "breakfast", "lunch", "dinner", "snack"
@@ -226,6 +227,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary),
+            tooltip: 'Scan Barcode',
             onPressed: () async {
               final result = await Navigator.push<FoodApiResult?>(
                 context,
@@ -243,6 +245,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   result.servingUnit,
                   null
                 );
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_rounded, color: AppColors.primary),
+            tooltip: 'Create Custom Food',
+            onPressed: () async {
+              final result = await Navigator.push<bool?>(
+                context,
+                MaterialPageRoute(builder: (context) => const CustomFoodEditorScreen()),
+              );
+              if (result == true) {
+                _performSearch(_searchController.text);
               }
             },
           )
@@ -312,7 +327,24 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 8.0),
       child: ListTile(
-        title: Text(food.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          children: [
+            Expanded(child: Text(food.name, style: const TextStyle(fontWeight: FontWeight.bold))),
+            if (food.isCustom)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                ),
+                child: const Text(
+                  'Custom',
+                  style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
+          ],
+        ),
         subtitle: Text(
           '${food.calories} kcal • P: ${food.proteinG}g | C: ${food.carbsG}g | F: ${food.fatG}g',
           style: const TextStyle(fontSize: 12),
@@ -373,16 +405,35 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Widget _buildNoResultsState() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 40.0),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40.0),
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.search_off_rounded, size: 40, color: AppColors.textMuted),
-            SizedBox(height: 12),
-            Text(
+            const Icon(Icons.search_off_rounded, size: 40, color: AppColors.textMuted),
+            const SizedBox(height: 12),
+            const Text(
               'No items found. Try typing another term.',
               style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final result = await Navigator.push<bool?>(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CustomFoodEditorScreen()),
+                );
+                if (result == true) {
+                  _performSearch(_searchController.text);
+                }
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Create Custom Food'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary.withOpacity(0.1),
+                foregroundColor: AppColors.primary,
+                elevation: 0,
+              ),
             )
           ],
         ),

@@ -1,21 +1,26 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/di/providers.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/colors.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _remindWorkout = true;
   bool _remindMeals = true;
   bool _remindWater = true;
   bool _remindEvening = true;
   bool _remindWeekly = true;
+  bool _offlineOnly = false;
   bool _loading = true;
 
   @override
@@ -32,8 +37,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _remindWater = prefs.getBool(NotificationService.prefRemindWater) ?? true;
       _remindEvening = prefs.getBool(NotificationService.prefRemindEvening) ?? true;
       _remindWeekly = prefs.getBool(NotificationService.prefRemindWeekly) ?? true;
+      _offlineOnly = prefs.getBool('offline_only') ?? false;
       _loading = false;
     });
+  }
+
+  Future<void> _exportData() async {
+    try {
+      final db = ref.read(databaseProvider);
+      
+      final foodItems = await db.select(db.foodItems).get();
+      final foodLogs = await db.select(db.foodLogs).get();
+      final sessions = await db.select(db.workoutSessions).get();
+      final sets = await db.select(db.workoutSets).get();
+      final measurements = await db.select(db.bodyMeasurements).get();
+      final routines = await db.select(db.workoutRoutines).get();
+      final routineDays = await db.select(db.routineDays).get();
+      final routineExercises = await db.select(db.routineExercises).get();
+
+      final exportMap = {
+        'version': 1,
+        'exported_at': DateTime.now().toIso8601String(),
+        'food_items': foodItems.map((f) => {
+          'name': f.name,
+          'name_hindi': f.nameHindi,
+          'calories': f.calories,
+          'protein_g': f.proteinG,
+          'carbs_g': f.carbsG,
+          'fat_g': f.fatG,
+          'fiber_g': f.fiberG,
+          'serving_size': f.servingSize,
+          'serving_unit': f.servingUnit,
+          'category': f.category,
+          'is_custom': f.isCustom,
+        }).toList(),
+        'food_logs': foodLogs.map((l) => {
+          'name': l.name,
+          'calories': l.calories,
+          'protein_g': l.proteinG,
+          'carbs_g': l.carbsG,
+          'fat_g': l.fatG,
+          'serving_logged': l.servingLogged,
+          'serving_unit': l.servingUnit,
+          'meal_type': l.mealType,
+          'logged_at': l.loggedAt.toIso8601String(),
+        }).toList(),
+        'workout_sessions': sessions.map((s) => {
+          'id': s.id,
+          'name': s.name,
+          'total_volume': s.totalVolume,
+          'duration_seconds': s.durationSeconds,
+          'estimated_calories': s.estimatedCalories,
+          'completed_at': s.completedAt.toIso8601String(),
+        }).toList(),
+        'workout_sets': sets.map((s) => {
+          'session_id': s.sessionId,
+          'exercise_name': s.exerciseName,
+          'weight': s.weight,
+          'reps': s.reps,
+          'set_number': s.setNumber,
+          'is_pr': s.isPr,
+        }).toList(),
+        'body_measurements': measurements.map((m) => {
+          'weight': m.weight,
+          'waist': m.waist,
+          'chest': m.chest,
+          'arms': m.arms,
+          'recorded_at': m.recordedAt.toIso8601String(),
+        }).toList(),
+        'workout_routines': routines.map((r) => {
+          'id': r.id,
+          'name': r.name,
+          'goal': r.goal,
+          'notes': r.notes,
+          'created_at': r.createdAt.toIso8601String(),
+        }).toList(),
+        'routine_days': routineDays.map((d) => {
+          'id': d.id,
+          'routine_id': d.routineId,
+          'day_of_week': d.dayOfWeek,
+          'name': d.name,
+          'is_rest_day': d.isRestDay,
+        }).toList(),
+        'routine_exercises': routineExercises.map((e) => {
+          'day_id': e.dayId,
+          'exercise_name': e.exerciseName,
+          'sets': e.sets,
+          'reps_range': e.repsRange,
+          'order_index': e.orderIndex,
+        }).toList(),
+      };
+
+      final jsonString = jsonEncode(exportMap);
+      await Clipboard.setData(ClipboardData(text: jsonString));
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('All data successfully exported and copied to clipboard!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to export data: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _onToggleChanged(String key, bool value) async {
@@ -133,6 +242,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       setState(() => _remindWeekly = val);
                       _onToggleChanged(NotificationService.prefRemindWeekly, val);
                     },
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Section header
+                  _buildSectionHeader(
+                    Icons.security_rounded,
+                    'Privacy & Data Management',
+                    'Manage your local data. Everything remains on your device.',
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Offline Toggle
+                  _buildReminderToggle(
+                    icon: Icons.cloud_off_rounded,
+                    iconColor: Colors.cyan,
+                    title: 'No Backend Mode',
+                    subtitle: 'Disable all cloud features and backups',
+                    value: _offlineOnly,
+                    onChanged: (val) async {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('offline_only', val);
+                      setState(() => _offlineOnly = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Export JSON Database
+                  ElevatedButton.icon(
+                    onPressed: _exportData,
+                    icon: const Icon(Icons.download_rounded),
+                    label: const Text('Export Local Database (JSON)'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary.withOpacity(0.12),
+                      foregroundColor: AppColors.primary,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Section header
+                  _buildSectionHeader(
+                    Icons.health_and_safety_rounded,
+                    'Health & Safety Disclaimer',
+                    'IndiFit is for informational purposes only.',
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Medical Disclaimer Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardBackground,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+                    child: const Text(
+                      'IndiFit provides general fitness tracking, local AI exercise/food estimation, and routine planning tools. We do not provide medical advice or therapy. Consult a physician before starting any workout program or altering your diet. Always exercise caution, maintain proper form, and stop immediately if you experience pain. Nutritional estimations are generated locally and might contain variations or inaccuracies; do not rely on them for severe food allergies or medical diagnoses.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
+                    ),
                   ),
 
                   const SizedBox(height: 32),

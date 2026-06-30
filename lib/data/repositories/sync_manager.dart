@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../core/di/providers.dart';
@@ -27,6 +28,18 @@ class SyncManager {
   // Trigger synchronization from local Drift DB to Supabase Cloud
   Future<void> triggerSync() async {
     if (_syncing) return;
+    
+    // Check if user enabled No Backend Mode (offline_only)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final offlineOnly = prefs.getBool('offline_only') ?? false;
+      if (offlineOnly) {
+        debugPrint("Offline-only mode is active. Sync bypassed.");
+        return;
+      }
+    } catch (e) {
+      // SharedPreferences error fallback
+    }
     
     try {
       // Accessing client throws StateError if Supabase is not initialized

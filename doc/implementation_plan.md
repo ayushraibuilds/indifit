@@ -562,17 +562,71 @@ Repo: [ayushraibuilds/indifit](https://github.com/ayushraibuilds/indifit)
 - [ ] Expand local seed data: 300-500 Indian foods (currently 20) and 100-200 exercises (currently 8).
 - [ ] Remove mock/demo claims from UI or explicitly label them (e.g., AI Meal Planner, PR detection).
 
-### Sprint 4.8: Core Feature Additions 🔲 NOT STARTED
+### Sprint 4.8: Core Feature Additions ⏳ PLANNING
 
-- [ ] Workout history per exercise with previous weight/reps autofill.
-- [ ] Real PR calculation from past sets.
-- [ ] Body measurement logging screen.
-- [ ] Editable custom foods and recipes.
-- [ ] Weekly adherence score: calories, protein, workouts, steps/water.
-- [ ] Export/backup data.
-- [ ] "No backend mode" toggle for fully private personal use.
-- [ ] Health disclaimer and AI uncertainty warnings for nutrition estimates.
+## Proposed Changes
 
+### Database & Repositories
+
+#### [MODIFY] [workout_repository.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/data/repositories/workout_repository.dart)
+- Create `getLatestSetForExercise(String exerciseName)` to query the most recent weight/reps for autofill.
+- Create `getPrForExercise(String exerciseName)` to find the maximum weight ever lifted for an exercise.
+- Add methods for inserting and fetching `BodyMeasurements`.
+
+#### [MODIFY] [food_repository.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/data/repositories/food_repository.dart)
+- Add `createCustomFood(...)` method to save user-defined foods with `isCustom = true`.
+
+### Workout Player
+
+#### [MODIFY] [workout_player_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/workout_player/workout_player_screen.dart)
+- **Autofill**: Fetch `getLatestSetForExercise` during `initState` (or when moving to the next exercise) and prefill `_weightController` and `_repsController`.
+- **Real PR**: Query `getPrForExercise` instead of using the hardcoded `weight > 40` condition. Show confetti if the logged set exceeds the historical PR.
+
+### Progress & Measurements
+
+#### [MODIFY] [progress_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/progress/progress_screen.dart)
+- Add a floating action button or card to open a "Log Body Measurement" modal (Weight, Waist, Chest, Arms).
+- Display historical `BodyMeasurements` in a new section or integrate them into the existing weight chart.
+
+### Food Logging
+
+#### [NEW] [custom_food_editor_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/food_log/custom_food_editor_screen.dart)
+- A form to input food name, calories, protein, carbs, fat, and serving size.
+- Saves to `FoodItems` with `isCustom: true` via the repository.
+
+#### [MODIFY] [food_search_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/food_log/food_search_screen.dart)
+- Add a "Create Custom Food" button that navigates to `custom_food_editor_screen.dart`.
+- Ensure custom foods are queried locally and badged as "Custom".
+
+### Dashboard & Settings
+
+#### [MODIFY] [dashboard_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/dashboard/dashboard_screen.dart)
+- Calculate and display a **Weekly Adherence Score** (e.g. how many days in the last 7 met calorie/water/workout goals).
+
+#### [MODIFY] [settings_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/settings/settings_screen.dart)
+- Add **Export/Backup Data**: Function to dump Drift database to a local JSON text/file or clipboard.
+- Add **No Backend Mode**: A toggle stored in `SharedPreferences` to disable cloud sync.
+- Add **Health Disclaimer**: A text section acknowledging AI nutrition uncertainty and recommending professional medical advice.
+
+#### [MODIFY] [ai_meal_planner_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/food_log/ai_meal_planner_screen.dart) & [ai_meal_logger_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/food_log/ai_meal_logger_screen.dart)
+- Add persistent warning banners: "AI estimates may be inaccurate, double check for allergies."
+
+> [!WARNING]
+> ## Open Questions
+> - **Export Data Format**: Is a raw JSON dump of the local SQLite tables acceptable for the backup format?
+> - **Measurement Inputs**: Are Weight, Waist, Chest, and Arms sufficient for the body measurement tracking, or do you want more fields?
+> - **No Backend Mode**: Should "No Backend Mode" wipe existing auth/sync tokens, or just pause syncing?
+
+## Verification Plan
+### Automated Tests
+- Run `flutter analyze` and `flutter test` to ensure compilation succeeds without errors.
+
+### Manual Verification
+- Log an exercise, start a new workout with the same exercise, verify it autofills previous weight/reps.
+- Log a new PR, verify confetti shows. Log a lower weight, verify no confetti.
+- Create a custom food, verify it appears in search results and can be logged.
+- Log a body measurement, verify it displays on the Progress Screen.
+- Toggle "No Backend Mode" and verify settings persist.
 ### Sprint 4.9: Testing & Launch 🔲 NOT STARTED
 
 - [ ] **Android**: `flutter build apk` → sideload → test all flows

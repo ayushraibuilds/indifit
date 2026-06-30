@@ -148,32 +148,55 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
       ),
-      body: _loading
-          ? _buildLoadingState()
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Estimate nutrition via Gemini Flash AI. Type description or snap a food photo!',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            color: Colors.orange.withOpacity(0.08),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'AI nutritional estimations are approximate. Check ingredients for food allergies and medical safety.',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 10.5),
                   ),
-                  const SizedBox(height: 20),
-
-                  // 1. Text Estimator Input Card
-                  _buildTextEstimatorCard(),
-                  const SizedBox(height: 20),
-
-                  // 2. Photo Estimator Pickers Card
-                  _buildPhotoEstimatorCard(),
-                  const SizedBox(height: 20),
-
-                  // 3. AI Estimate Results Section
-                  if (_estimatedMeal != null) _buildResultSection(),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
+          Expanded(
+            child: _loading
+                ? _buildLoadingState()
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Estimate nutrition via Gemini Flash AI. Type description or snap a food photo!',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // 1. Text Estimator Input Card
+                        _buildTextEstimatorCard(),
+                        const SizedBox(height: 20),
+
+                        // 2. Photo Estimator Pickers Card
+                        _buildPhotoEstimatorCard(),
+                        const SizedBox(height: 20),
+
+                        // 3. AI Estimate Results Section
+                        if (_estimatedMeal != null) _buildResultSection(),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -183,12 +183,35 @@ class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
       ),
-      body: _loading
-          ? _buildLoadingState()
-          : Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: _planGenerated ? _buildPlanLayout() : _buildSetupLayout(),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            color: Colors.orange.withOpacity(0.08),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'AI recommendations are estimates. Verify ingredients for food allergies and consult a health professional.',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 10.5),
+                  ),
+                ),
+              ],
             ),
+          ),
+          Expanded(
+            child: _loading
+                ? _buildLoadingState()
+                : Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: _planGenerated ? _buildPlanLayout() : _buildSetupLayout(),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 

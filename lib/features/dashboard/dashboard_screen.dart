@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
+import '../../data/repositories/workout_repository.dart';
 import '../food_log/food_search_screen.dart';
 import '../food_log/ai_meal_logger_screen.dart';
 import '../food_log/ai_meal_planner_screen.dart';
@@ -30,6 +31,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double _carbsGoal = 230.0;
   double _fatGoal = 65.0;
 
+  double _adherenceScore = 0.0;
+  bool _calculatingAdherence = false;
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +53,60 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _carbsGoal = prefs.getDouble('carbs_goal') ?? 230.0;
       _fatGoal = prefs.getDouble('fat_goal') ?? 65.0;
     });
+    await _calculateWeeklyAdherence();
+  }
+
+  Future<void> _calculateWeeklyAdherence() async {
+    if (!mounted) return;
+    setState(() => _calculatingAdherence = true);
+    
+    try {
+      final foodRepo = ref.read(foodRepositoryProvider);
+      final workoutRepo = ref.read(workoutRepositoryProvider);
+      
+      final now = DateTime.now();
+      int daysHit = 0;
+      
+      for (int i = 0; i < 7; i++) {
+        final day = now.subtract(Duration(days: i));
+        final dayLogs = await foodRepo.watchLogsForDay(day).first;
+        int dayCals = 0;
+        for (final log in dayLogs) {
+          dayCals += log.calories;
+        }
+        
+        if (dayCals > 0) {
+          final diff = (dayCals - _calorieGoal).abs();
+          if (diff <= _calorieGoal * 0.15) { // Within 15% range of calorie goal
+            daysHit++;
+          }
+        }
+      }
+      
+      final sessions = await workoutRepo.watchSessions().first;
+      final weekSessions = sessions.where((s) => s.completedAt.isAfter(now.subtract(const Duration(days: 7)))).toList();
+      
+      double nutritionScore = (daysHit / 7.0) * 100;
+      double workoutScore = 0.0;
+      if (weekSessions.length >= 3) {
+        workoutScore = 100.0;
+      } else if (weekSessions.length == 2) {
+        workoutScore = 80.0;
+      } else if (weekSessions.length == 1) {
+        workoutScore = 50.0;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _adherenceScore = (nutritionScore * 0.7 + workoutScore * 0.3);
+          _calculatingAdherence = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _calculatingAdherence = false);
+      }
+    }
   }
 
   Future<void> _incrementWater() async {
@@ -114,6 +172,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                   // 2. Calorie Ring & Macro Bars
                   _buildCalorieSection(eatenCalories, eatenProtein, eatenCarbs, eatenFat, calPercent),
+                  const SizedBox(height: 16),
+
+                  // Weekly Adherence Score Card
+                  _buildAdherenceCard(),
                   const SizedBox(height: 24),
 
                   // 3. Log Meals Section Cards
@@ -131,6 +193,62 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdherenceCard() {
+    Color scoreColor = AppColors.danger;
+    String feedback = 'Need focus';
+    if (_adherenceScore >= 80) {
+      scoreColor = AppColors.success;
+      feedback = 'Excellent Consistency!';
+    } else if (_adherenceScore >= 50) {
+      scoreColor = AppColors.warning;
+      feedback = 'Good progress, keep going!';
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            CircularPercentIndicator(
+              radius: 36.0,
+              lineWidth: 6.0,
+              percent: _adherenceScore / 100.0,
+              center: Text(
+                '${_adherenceScore.round()}%',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              progressColor: scoreColor,
+              backgroundColor: AppColors.border,
+              circularStrokeCap: CircularStrokeCap.round,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Weekly Adherence',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    feedback,
+                    style: TextStyle(color: scoreColor, fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Calorie accuracy (70%) & workouts completed (30%) in past 7 days.',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

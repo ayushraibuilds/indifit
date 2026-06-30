@@ -150,4 +150,75 @@ class WorkoutRepository {
       return sessionId;
     });
   }
+
+  // 7. Fetch the sets from the most recent session for a given exercise (for autofill)
+  Future<List<WorkoutSet>> getLatestSetsForExercise(String exerciseName) async {
+    final query = _db.select(_db.workoutSets).join([
+      innerJoin(
+        _db.workoutSessions,
+        _db.workoutSessions.id.equalsExp(_db.workoutSets.sessionId),
+      ),
+    ])
+      ..where(_db.workoutSets.exerciseName.equals(exerciseName))
+      ..orderBy([OrderingTerm(expression: _db.workoutSessions.completedAt, mode: OrderingMode.desc)]);
+
+    final rows = await query.get();
+    if (rows.isEmpty) return [];
+
+    // Get the sessionId of the latest session
+    final latestSessionId = rows.first.readTable(_db.workoutSets).sessionId;
+
+    // Fetch all sets for this exercise from that session
+    return await (_db.select(_db.workoutSets)
+          ..where((tbl) => tbl.sessionId.equals(latestSessionId) & tbl.exerciseName.equals(exerciseName))
+          ..orderBy([(tbl) => OrderingTerm(expression: tbl.setNumber)]))
+        .get();
+  }
+
+  // 8. Calculate personal record (PR) from past sets based on estimated 1RM
+  Future<WorkoutSet?> getPersonalRecord(String exerciseName) async {
+    final sets = await (_db.select(_db.workoutSets)
+          ..where((tbl) => tbl.exerciseName.equals(exerciseName)))
+        .get();
+    
+    if (sets.isEmpty) return null;
+    
+    WorkoutSet? bestSet;
+    double max1Rm = 0.0;
+    
+    for (final s in sets) {
+      // Epley formula for 1RM calculation
+      final oneRm = s.weight * (1 + s.reps / 30.0);
+      if (oneRm > max1Rm) {
+        max1Rm = oneRm;
+        bestSet = s;
+      }
+    }
+    return bestSet;
+  }
+
+  // 9. Log body measurements
+  Future<int> logBodyMeasurement({
+    double? weight,
+    double? waist,
+    double? chest,
+    double? arms,
+  }) async {
+    return await _db.into(_db.bodyMeasurements).insert(
+          BodyMeasurementsCompanion.insert(
+            weight: Value(weight),
+            waist: Value(waist),
+            chest: Value(chest),
+            arms: Value(arms),
+          ),
+        );
+  }
+
+  // 10. Fetch body measurements sorted by date descending
+  Future<List<BodyMeasurement>> getBodyMeasurements() async {
+    return await (_db.select(_db.bodyMeasurements)
+          ..orderBy([(tbl) => OrderingTerm(expression: tbl.recordedAt, mode: OrderingMode.desc)]))
+        .get();
+  }
 }
+

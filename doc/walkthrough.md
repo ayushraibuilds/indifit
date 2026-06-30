@@ -147,4 +147,42 @@ We have completed the core features for IndiFit! The app runs cleanly on mobile 
   pip install -r requirements.txt
   uvicorn main:app --reload
   ```
-  Backend will run on `http://127.0.0.1:8000`. The Flutter app is pre-configured to query this endpoint.
+   Backend will run on `http://127.0.0.1:8000`. The Flutter app is pre-configured to query this endpoint.
+
+---
+
+## 🚀 Sprint 4.8: Core Feature Additions (Completed)
+
+We have successfully implemented and verified all core feature additions scheduled for Sprint 4.8:
+
+### 1. Workout History Autofill
+- **Implementation**: Created `getLatestSetsForExercise` in [workout_repository.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/data/repositories/workout_repository.dart) joining completed `WorkoutSessions` with `WorkoutSets`.
+- **UI Integration**: Integrated inside [workout_player_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/workout_player/workout_player_screen.dart)'s `_prefillInputs` method. Completing a set or starting an exercise pulls the exact weight and reps from the last completed session, enabling immediate progressive overload tracking.
+
+### 2. Epley 1RM Personal Records
+- **Implementation**: Wrote `getPersonalRecord` which fetches all past sets for a specific exercise target and dynamically evaluates Epley 1-Rep Max (1RM).
+- **UI Integration**: The player checks the current lift against the historical PR. If the estimated 1RM is surpassed, the screen lights up with a gold crown, registers the new PR flag in the SQLite database, and plays vibration haptic patterns.
+
+### 3. Body Measurements Screen
+- **Implementation**: Configured full logging capability for Weight, Waist, Chest, and Arms into the SQLite `BodyMeasurements` table.
+- **UI Integration**: Created a floating action button on [progress_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/progress/progress_screen.dart) that opens the modal form, dynamically updates local/dashboard weight settings in `SharedPreferences`, plots actual values on the curved line chart, and lists the 3 most recent entries in a history card.
+
+### 4. Custom Food Creator
+- **Implementation**: Built [custom_food_editor_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/food_log/custom_food_editor_screen.dart) letting users save their own nutritional items with name (English/Hindi), serving sizes/units, calories, and custom protein/carb/fat profiles.
+- **UI Integration**: Placed quick access shortcuts in the search page app bar and no-results search states. Custom items are queryable locally and badged with a green "Custom" tag.
+
+### 5. Weekly Adherence Score
+- **Implementation**: Added a composite score calculator in [dashboard_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/dashboard/dashboard_screen.dart) tracking consistency over the past 7 days (70% nutrition consistency within ±15% calorie goals, 30% workout consistency).
+- **UI Integration**: Displays via a circular progress percentage ring at the top of the dashboard.
+
+### 6. Export/Backup Local Data
+- **Implementation**: Created a secure data exporter inside [settings_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/settings/settings_screen.dart) that aggregates all relational SQLite tables (foods, logs, sessions, sets, routines, measurements) into a versioned JSON object.
+- **UI Integration**: Adds a button copying the formatted backup data string to the device Clipboard.
+
+### 7. No Backend Mode Toggle
+- **Implementation**: Integrated a check inside [sync_manager.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/data/repositories/sync_manager.dart) parsing the SharedPreferences key `offline_only`.
+- **UI Integration**: Added a "No Backend Mode" toggle in the Settings screen to pause synchronization calls.
+
+### 8. Health & AI Uncertainty Disclaimers
+- **Implementation**: Implemented persistent warning banners at the top of the AI Meal Planner and AI Meal Logger screens.
+- **UI Integration**: Added a comprehensive medical safety scroll disclaimer inside the Settings screen.

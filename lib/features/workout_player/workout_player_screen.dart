@@ -7,6 +7,7 @@ import 'package:drift/drift.dart' show Value;
 
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/workout_repository.dart';
 import 'workout_summary_screen.dart';
 
 class WorkoutPlayerScreen extends ConsumerStatefulWidget {
@@ -40,6 +41,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
 
   // Confetti trigger
   bool _showPrConfetti = false;
+  String _prExerciseName = '';
+  double _prWeight = 0.0;
+  int _prReps = 0;
 
   @override
   void initState() {
@@ -65,25 +69,42 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     });
   }
 
-  void _prefillInputs() {
+  Future<void> _prefillInputs() async {
     if (widget.exercises.isEmpty) return;
     
     final currentEx = widget.exercises[_currentExerciseIndex];
-    // Strip ranges to find number, e.g. "8-12" -> 10
-    final repsStr = currentEx.repsRange;
+    final repo = ref.read(workoutRepositoryProvider);
+    
+    // 1. Try to fetch latest logged sets for this exercise
+    final latestSets = await repo.getLatestSetsForExercise(currentEx.exerciseName);
+    
+    double weight = 20.0;
     int reps = 10;
-    if (repsStr.contains('-')) {
-      final parts = repsStr.split('-');
-      final min = int.tryParse(parts[0]) ?? 8;
-      final max = int.tryParse(parts[1]) ?? 12;
-      reps = ((min + max) / 2).round();
+    
+    if (latestSets.isNotEmpty) {
+      // Get the set corresponding to our current set index (or the last logged set if we have more sets now)
+      final setIndex = _currentSetIndex.clamp(0, latestSets.length - 1);
+      weight = latestSets[setIndex].weight;
+      reps = latestSets[setIndex].reps;
     } else {
-      reps = int.tryParse(repsStr) ?? 10;
+      // Fallback to repsRange parsed values
+      final repsStr = currentEx.repsRange;
+      if (repsStr.contains('-')) {
+        final parts = repsStr.split('-');
+        final min = int.tryParse(parts[0]) ?? 8;
+        final max = int.tryParse(parts[1]) ?? 12;
+        reps = ((min + max) / 2).round();
+      } else {
+        reps = int.tryParse(repsStr) ?? 10;
+      }
     }
 
-    setState(() {
-      _repsController.text = reps.toString();
-    });
+    if (mounted) {
+      setState(() {
+        _weightController.text = weight.toStringAsFixed(1);
+        _repsController.text = reps.toString();
+      });
+    }
   }
 
   String _formatDuration(int totalSeconds) {
@@ -104,11 +125,23 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       return;
     }
 
-    // Check if PR (Simulated check against local sets for simplicity, would pull query in prod)
+    // Check if PR using Epley 1RM calculation
+    final repo = ref.read(workoutRepositoryProvider);
+    final previousPr = await repo.getPersonalRecord(currentEx.exerciseName);
+    
     bool isPr = false;
-    if (weight > 40) { // Local trigger for demonstration
+    final current1Rm = weight * (1 + reps / 30.0);
+    
+    if (previousPr != null) {
+      final prev1Rm = previousPr.weight * (1 + previousPr.reps / 30.0);
+      if (current1Rm > prev1Rm) {
+        isPr = true;
+        _triggerPrConfetti(currentEx.exerciseName, weight, reps);
+      }
+    } else {
+      // First time logging is a PR
       isPr = true;
-      _triggerPrConfetti();
+      _triggerPrConfetti(currentEx.exerciseName, weight, reps);
     }
 
     final newSet = WorkoutSetsCompanion.insert(
@@ -132,6 +165,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       setState(() {
         _currentSetIndex++;
       });
+      await _prefillInputs();
     } else {
       // Completed all sets of this exercise
       if (_currentExerciseIndex < widget.exercises.length - 1) {
@@ -139,7 +173,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
           _currentExerciseIndex++;
           _currentSetIndex = 0;
         });
-        _prefillInputs();
+        await _prefillInputs();
       } else {
         // Workout Finished!
         _finishWorkout();
@@ -152,8 +186,13 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     return 3; // Fallback
   }
 
-  void _triggerPrConfetti() {
-    setState(() => _showPrConfetti = true);
+  void _triggerPrConfetti(String exerciseName, double weight, int reps) {
+    setState(() {
+      _prExerciseName = exerciseName;
+      _prWeight = weight;
+      _prReps = reps;
+      _showPrConfetti = true;
+    });
     // Vibrate on PR!
     Vibration.hasVibrator().then((hasVib) {
       if (hasVib == true) {
@@ -554,7 +593,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Bench Press: ${_weightController.text} kg x ${_repsController.text} reps',
+                          '$_prExerciseName: ${_prWeight.toStringAsFixed(1)} kg x $_prReps reps',
                           style: const TextStyle(fontSize: 13),
                         )
                       ],
