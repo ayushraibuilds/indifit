@@ -1,0 +1,140 @@
+[
+  {
+    "name": "Flat Barbell Bench Press",
+    "muscle_groups": ["Chest", "Triceps", "Shoulders"],
+    "equipment": "Barbell",
+    "difficulty": "Beginner",
+    "form_cues": [
+      "Keep your feet flat on the floor",
+      "Retract your scapula (pull shoulders back and down)",
+      "Touch the bar to your mid-chest gently, then press up"
+    ],
+    "common_mistakes": [
+      "Flaring elbows out too wide (90 degrees)",
+      "Bouncing the bar off the chest",
+      "Lifting hips off the bench"
+    ],
+    "youtube_id": "rT7DgCrgW94"
+  },
+  {
+    "name": "Dumbbell Shoulder Press",
+    "muscle_groups": ["Shoulders", "Triceps"],
+    "equipment": "Dumbbell",
+    "difficulty": "Beginner",
+    "form_cues": [
+      "Set bench to a high incline (approx 75-80 degrees)",
+      "Brace core and press dumbbells straight up until arms are straight",
+      "Lower dumbbells under control until they are about ear height"
+    ],
+    "common_mistakes": [
+      "Arching the lower back excessively",
+      "Banging dumbbells together at the top",
+      "Not using full range of motion"
+    ],
+    "youtube_id": "qEwKCR5JCog"
+  },
+  {
+    "name": "Lat Pulldown",
+    "muscle_groups": ["Back", "Biceps"],
+    "equipment": "Machine",
+    "difficulty": "Beginner",
+    "form_cues": [
+      "Pull the bar down to your upper chest",
+      "Lead the movement with your elbows",
+      "Control the ascent (eccentric phase)"
+    ],
+    "common_mistakes": [
+      "Leaning back too far and using momentum",
+      "Pulling the bar behind the neck",
+      "Shrugging shoulders up at the bottom of the pull"
+    ],
+    "youtube_id": "CAwf7n6Luuc"
+  },
+  {
+    "name": "Barbell Squat",
+    "muscle_groups": ["Quads", "Glutes", "Hamstrings", "Core"],
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "form_cues": [
+      "Place bar across your traps/upper back",
+      "Hinge at the hips first, then bend knees to descend",
+      "Squat down until thighs are at least parallel to floor",
+      "Drive up through the mid-foot"
+    ],
+    "common_mistakes": [
+      "Allowing knees to cave inward (valgus collapse)",
+      "Lifting heels off the ground",
+      "Rounding the lower back at the bottom (butt wink)"
+    ],
+    "youtube_id": "ultWZbUMDU8"
+  },
+  {
+    "name": "Incline Dumbbell Press",
+    "muscle_groups": ["Chest", "Shoulders", "Triceps"],
+    "equipment": "Dumbbell",
+    "difficulty": "Intermediate",
+    "form_cues": [
+      "Set bench to 30-45 degree incline",
+      "Keep elbows tucked slightly (about 45 degrees relative to torso)",
+      "Press dumbbells up in a slight arc path"
+    ],
+    "common_mistakes": [
+      "Incline too steep (making it a shoulder press)",
+      "Allowing dumbbells to drift backward over the head",
+      "Short-changing the depth at the bottom"
+    ],
+    "youtube_id": "8iPwtTc_bns"
+  },
+  {
+    "name": "Romanian Deadlift (RDL)",
+    "muscle_groups": ["Hamstrings", "Glutes", "Lower Back"],
+    "equipment": "Barbell",
+    "difficulty": "Intermediate",
+    "form_cues": [
+      "Hold bar with shoulder-width grip, feet hip-width apart",
+      "Push hips backward, keeping knees slightly bent but static",
+      "Lower bar close to legs until you feel deep stretch in hamstrings",
+      "Keep back flat and squeeze glutes to return to top"
+    ],
+    "common_mistakes": [
+      "Rounding the spine",
+      "Bending knees too much (turning it into a standard deadlift)",
+      "Letting the bar drift away from the shins/thighs"
+    ],
+    "youtube_id": "JCXUYtwSS08"
+  },
+  {
+    "name": "Tricep Pushdown",
+    "muscle_groups": ["Triceps"],
+    "equipment": "Cable",
+    "difficulty": "Beginner",
+    "form_cues": [
+      "Pin your elbows to the sides of your ribs",
+      "Extend arms down fully, squeezing the triceps at the bottom",
+      "Return the weight slowly without moving your elbows"
+    ],
+    "common_mistakes": [
+      "Allowing elbows to flare or drift forward",
+      "Using hips or bodyweight to push the cable down",
+      "Not extending to full elbow lockout"
+    ],
+    "youtube_id": "2-LAMcpzODU"
+  },
+  {
+    "name": "Bicep Dumbbell Curl",
+    "muscle_groups": ["Biceps"],
+    "equipment": "Dumbbell",
+    "difficulty": "Beginner",
+    "form_cues": [
+      "Stand tall, brace core, elbows at your sides",
+      "Curl weights up, rotating palms forward and up",
+      "Lower weights under control to full extension"
+    ],
+    "common_mistakes": [
+      "Swinging the body to lift the weight",
+      "Lifting elbows forward to bring weights higher",
+      "Not extending the arm fully at the bottom"
+    ],
+    "youtube_id": "ytwo7gtKD_M"
+  }
+]
