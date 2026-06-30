@@ -9,6 +9,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../food_log/food_search_screen.dart';
 import '../food_log/ai_meal_logger_screen.dart';
+import '../food_log/ai_meal_planner_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -147,24 +148,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         
-        // Streak counter badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.orange.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.orange.withOpacity(0.25)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 18),
-              const SizedBox(width: 4),
-              Text(
-                '$_streakCount Days',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 12),
+        // AI Planner & Streak Badge Row
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.menu_book_rounded, color: AppColors.primary),
+              tooltip: 'AI Meal Planner',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AiMealPlannerScreen()),
+                );
+              },
+            ),
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.orange.withOpacity(0.25)),
               ),
-            ],
-          ),
+              child: Row(
+                children: [
+                  const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 18),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$_streakCount Days',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
         )
       ],
     );

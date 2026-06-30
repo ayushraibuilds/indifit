@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/theme/app_theme.dart';
 import 'features/dashboard/main_navigation_scaffold.dart';
+import 'data/repositories/sync_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,11 +32,14 @@ void main() async {
   );
 }
 
-class IndiFitApp extends StatelessWidget {
+class IndiFitApp extends ConsumerWidget {
   const IndiFitApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Initialize SyncManager on startup to listen for online sync triggers
+    ref.read(syncManagerProvider);
+
     return MaterialApp(
       title: 'IndiFit',
       debugShowCheckedModeBanner: false,

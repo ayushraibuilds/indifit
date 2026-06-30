@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/colors.dart';
 import '../exercise_library/exercise_library_screen.dart';
 import '../workout_player/routine_display_screen.dart';
+import '../progress/progress_screen.dart';
 import 'dashboard_screen.dart';
 
 class MainNavigationScaffold extends StatefulWidget {
@@ -18,6 +19,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     const DashboardScreen(),
     const RoutineDisplayScreen(),
     const ExerciseLibraryScreen(),
+    const ProgressScreen(),
   ];
 
   @override
@@ -55,6 +57,11 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
             icon: Icon(Icons.library_books_rounded),
             activeIcon: Icon(Icons.library_books_rounded, color: AppColors.primary),
             label: 'Exercises',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.auto_graph_rounded),
+            activeIcon: Icon(Icons.auto_graph_rounded, color: AppColors.primary),
+            label: 'Progress',
           ),
         ],
       ),
