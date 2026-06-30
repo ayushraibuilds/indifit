@@ -17,6 +17,7 @@ class AppColors {
   
   // Borders
   static const Color border = Color(0x1FFFFFFF);
+  static const Color cardBorder = Color(0x1FFFFFFF);
   static const Color borderHover = Color(0x7F1D9E75);
   
   // Typography

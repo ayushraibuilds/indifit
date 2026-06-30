@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/theme/colors.dart';
+import '../../core/config/app_config.dart';
 import '../../data/repositories/food_repository.dart';
 
 class AiMealLoggerScreen extends ConsumerStatefulWidget {
@@ -56,10 +57,8 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
     try {
       final dio = Dio();
-      const backendUrl = String.fromEnvironment('BACKEND_API_URL', defaultValue: 'http://127.0.0.1:8000');
-      
       final response = await dio.post(
-        '$backendUrl/api/ai/meal-estimate-text',
+        '${AppConfig.backendUrl}/api/ai/meal-estimate-text',
         data: {'text': _textController.text},
       );
 
@@ -87,7 +86,6 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
     try {
       final dio = Dio();
-      const backendUrl = String.fromEnvironment('BACKEND_API_URL', defaultValue: 'http://127.0.0.1:8000');
       
       final filename = _selectedImage!.path.split('/').last;
       final formData = FormData.fromMap({
@@ -95,7 +93,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       });
 
       final response = await dio.post(
-        '$backendUrl/api/ai/meal-estimate-photo',
+        '${AppConfig.backendUrl}/api/ai/meal-estimate-photo',
         data: formData,
       );
 

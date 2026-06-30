@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/config/app_config.dart';
 import 'workout_repository.dart';
 
 final aiRoutineServiceProvider = Provider<AiRoutineService>((ref) {
@@ -36,9 +37,7 @@ class AiRoutineService {
   }) async {
     try {
       // API call to local Python backend running FastAPI AI endpoint
-      const backendUrl = String.fromEnvironment('BACKEND_API_URL', defaultValue: 'http://127.0.0.1:8000');
-      
-      final response = await _dio.post('$backendUrl/api/ai/routine', data: {
+      final response = await _dio.post('${AppConfig.backendUrl}/api/ai/routine', data: {
         'goal': goal,
         'equipment': equipment,
         'days_per_week': daysPerWeek,

@@ -547,7 +547,33 @@ Repo: [ayushraibuilds/indifit](https://github.com/ayushraibuilds/indifit)
 - [x] Weekly AI report push notification (Sunday 10 AM) — ✅ DONE
 - [x] All configurable in settings panel — ✅ DONE
 
-### Sprint 4.6: Testing & Launch 🔲 NOT STARTED
+### Sprint 4.6: Code Hardening & Compilation Fixes ⚠️ (Audit Findings)
+
+- [ ] Fix Flutter compile errors (`uiLocalNotificationDateInterpretation` in `notification_service.dart`, missing `AppColors.cardBorder`).
+- [ ] Configure Android release signing (currently uses debug keys).
+- [ ] Add `INTERNET` and camera permissions to `AndroidManifest.xml`.
+- [ ] Add camera/photo usage description strings to iOS `Info.plist`.
+- [ ] Replace `localhost` backend defaults with proper per-environment configuration.
+
+### Sprint 4.7: Data Expansion & Onboarding ⚠️ (Audit Findings)
+
+- [ ] Build a real first-run onboarding flow (age, height, weight, sex, activity level, goal, target weight, diet preference).
+- [ ] Persist macro/water/weight goals instead of hardcoding them (currently hardcoded in `dashboard_screen.dart`).
+- [ ] Expand local seed data: 300-500 Indian foods (currently 20) and 100-200 exercises (currently 8).
+- [ ] Remove mock/demo claims from UI or explicitly label them (e.g., AI Meal Planner, PR detection).
+
+### Sprint 4.8: Core Feature Additions 🔲 NOT STARTED
+
+- [ ] Workout history per exercise with previous weight/reps autofill.
+- [ ] Real PR calculation from past sets.
+- [ ] Body measurement logging screen.
+- [ ] Editable custom foods and recipes.
+- [ ] Weekly adherence score: calories, protein, workouts, steps/water.
+- [ ] Export/backup data.
+- [ ] "No backend mode" toggle for fully private personal use.
+- [ ] Health disclaimer and AI uncertainty warnings for nutrition estimates.
+
+### Sprint 4.9: Testing & Launch 🔲 NOT STARTED
 
 - [ ] **Android**: `flutter build apk` → sideload → test all flows
 - [ ] **iOS**: Xcode Personal Team → direct-install → test all flows

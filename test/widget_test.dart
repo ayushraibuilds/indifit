@@ -1,17 +1,28 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:indifit/main.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:indifit/features/settings/settings_screen.dart';
 
 void main() {
-  testWidgets('IndiFit App initial render smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  // Disable runtime fetching of fonts in tests to prevent network exceptions
+  GoogleFonts.config.allowRuntimeFetching = false;
+
+  testWidgets('IndiFit Settings Screen render test', (WidgetTester tester) async {
+    // Set mock initial values for SharedPreferences
+    SharedPreferences.setMockInitialValues({});
+
     await tester.pumpWidget(
-      const ProviderScope(
-        child: IndiFitApp(),
+      const MaterialApp(
+        home: SettingsScreen(),
       ),
     );
+    
+    // Wait for the async loading of SharedPreferences to complete and settle
+    await tester.pumpAndSettle();
 
-    // Verify that the app is initialized without crashing
-    expect(find.byType(IndiFitApp), findsOneWidget);
+    // Verify that the SettingsScreen renders its options list
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 }

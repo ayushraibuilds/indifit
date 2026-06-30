@@ -1,0 +1,584 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.wrap{padding:1rem 0;font-family:var(--font-sans);}
+.product-toggle{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:1.25rem;border-radius:var(--border-radius-lg);overflow:hidden;border:1.5px solid var(--color-border-tertiary);}
+.pt-btn{padding:13px 8px;text-align:center;cursor:pointer;transition:all .15s;background:var(--color-background-secondary);}
+.pt-btn.on.ps5{background:#003087;color:white;}
+.pt-btn.on.fit{background:#1D9E75;color:white;}
+.pt-title{font-size:13px;font-weight:500;}
+.pt-sub{font-size:10px;opacity:.7;margin-top:2px;}
+.tabs{display:flex;gap:0;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:1.25rem;overflow-x:auto;}
+.tab{font-size:11px;font-weight:500;padding:7px 12px;cursor:pointer;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}
+.pane{display:none;}.pane.on{display:block;}
+.lbl{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-secondary);margin-bottom:8px;margin-top:.9rem;}
+.lbl:first-child{margin-top:0;}
+.callout{border-radius:var(--border-radius-md);padding:11px 13px;margin-bottom:.9rem;}
+.callout p{font-size:13px;line-height:1.65;}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:.95rem;margin-bottom:8px;}
+.ct{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px;}
+.cb{font-size:12px;color:var(--color-text-secondary);line-height:1.6;}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px;margin-bottom:.9rem;}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:.9rem;}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:.9rem;}
+.met{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:9px 11px;}
+.ml{font-size:10px;color:var(--color-text-secondary);margin-bottom:2px;}
+.mv{font-size:12px;font-weight:500;color:var(--color-text-primary);}
+.code{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:11px 13px;margin-bottom:.9rem;font-family:var(--font-mono);font-size:11px;color:var(--color-text-primary);line-height:1.8;white-space:pre-wrap;overflow-x:auto;}
+.code .kw{font-weight:500;}.code .cm{color:#6B7280;}.code .st{color:#1D9E75;}
+.sprint-block{border-radius:var(--border-radius-md);padding:10px 13px;margin-bottom:7px;}
+.sb-label{font-size:10px;font-weight:500;color:white;padding:2px 9px;border-radius:99px;display:inline-block;margin-bottom:5px;}
+.sb-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:5px;}
+.sb-task{display:flex;gap:7px;font-size:12px;color:var(--color-text-primary);padding:3px 0;line-height:1.45;}
+.sb-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.step-row{display:flex;flex-direction:column;gap:5px;margin-bottom:.9rem;}
+.step{display:flex;gap:10px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:7px 10px;}
+.sw{font-size:11px;font-weight:500;min-width:62px;padding-top:1px;white-space:nowrap;}
+.st2{font-size:12px;color:var(--color-text-primary);line-height:1.5;}
+.retailer-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:9px 12px;margin-bottom:6px;}
+.rc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.rc-name{font-size:13px;font-weight:500;color:var(--color-text-primary);}
+.rc-badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:99px;}
+.rc-body{font-size:12px;color:var(--color-text-secondary);line-height:1.5;}
+.file-tree{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:11px 13px;margin-bottom:.9rem;font-family:var(--font-mono);font-size:11px;line-height:1.9;}
+.ft-dir{font-weight:500;}.ft-file{color:var(--color-text-primary);}.ft-cm{color:#6B7280;}
+.rev-row{display:flex;flex-direction:column;gap:5px;margin-bottom:.9rem;}
+.rv{display:flex;justify-content:space-between;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:7px 10px;}
+.rl{font-size:12px;color:var(--color-text-primary);}
+.rr{font-size:12px;font-weight:500;}
+.feature-list{display:flex;flex-direction:column;gap:6px;margin-bottom:.9rem;}
+.feat{display:flex;gap:10px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px 11px;}
+.feat-icon{font-size:14px;flex-shrink:0;width:20px;}
+.feat-body{}
+.feat-name{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:2px;}
+.feat-desc{font-size:12px;color:var(--color-text-secondary);line-height:1.5;}
+.screen-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:9px 12px;margin-bottom:6px;}
+.sc-title{font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px;}
+.sc-els{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;}
+.sc-el{font-size:10px;font-weight:500;padding:2px 7px;border-radius:99px;background:var(--color-background-primary);color:var(--color-text-secondary);border:0.5px solid var(--color-border-tertiary);}
+.askbtn{width:100%;margin-top:.75rem;padding:10px;border-radius:var(--border-radius-md);border:1.5px solid var(--color-border-secondary);background:var(--color-background-secondary);cursor:pointer;font-size:13px;font-weight:500;color:var(--color-text-primary);}
+</style>
+
+<div class="wrap">
+<div class="product-toggle">
+  <div class="pt-btn ps5 on" onclick="selProduct('ps5',this)">
+    <div class="pt-title">🎮 PS5 Stock Finder</div>
+    <div class="pt-sub">Web app — 1 week build</div>
+  </div>
+  <div class="pt-btn" onclick="selProduct('fit',this)">
+    <div class="pt-title">💪 Diet + Gym App</div>
+    <div class="pt-sub">Flutter app — 4 weeks build</div>
+  </div>
+</div>
+
+<div id="content"></div>
+</div>
+
+<script>
+const PS5_COLOR = '#003087';
+const FIT_COLOR = '#1D9E75';
+let currentProduct = 'ps5';
+let currentTab = 0;
+
+const PS5_TABS = ['overview','architecture','retailers','code','sprints','revenue'];
+const PS5_LABELS = ['Overview','Architecture','Retailers','Key code','Sprints','Revenue'];
+
+const FIT_TABS = ['overview','features','screens','stack','code','sprints','revenue'];
+const FIT_LABELS = ['Overview','Features','Screens','Tech stack','Key code','Sprints','Revenue'];
+
+function selProduct(p, el){
+  currentProduct=p; currentTab=0;
+  document.querySelectorAll('.pt-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  render();
+}
+
+function selTab(i){ currentTab=i; render(); }
+
+function render(){
+  const color = currentProduct==='ps5' ? PS5_COLOR : FIT_COLOR;
+  const tabs = currentProduct==='ps5' ? PS5_TABS : FIT_TABS;
+  const labels = currentProduct==='ps5' ? PS5_LABELS : FIT_LABELS;
+  
+  let tabsHtml = tabs.map((t,i)=>`
+    <div class="tab ${i===currentTab?'on':''}" onclick="selTab(${i})"
+      style="${i===currentTab?'color:'+color+';border-bottom-color:'+color+';':''}">${labels[i]}</div>
+  `).join('');
+
+  let bodyHtml = currentProduct==='ps5' ? renderPS5(currentTab) : renderFit(currentTab);
+
+  document.getElementById('content').innerHTML = `
+    <div class="tabs">${tabsHtml}</div>
+    ${bodyHtml}
+    <button class="askbtn" style="border-color:${color};color:${color};" 
+      onclick="sendPrompt('Write me the complete ${currentProduct==='ps5'?'scraper.py with Playwright for all 5 Indian retailers and the Telegram notification bot':'Claude prompt for gym routine generation and the Flutter workout_screen.dart with exercise cards and timer'} for the ${currentProduct==='ps5'?'PS5 Stock Finder':'Diet and Gym app'}')">
+      ${currentProduct==='ps5'?'Write the scraper + notification code ↗':'Write the Claude prompt + Flutter workout screen ↗'}
+    </button>`;
+}
+
+function renderPS5(tab){
+  const c = PS5_COLOR;
+  if(tab===0) return `
+    <div class="callout" style="background:#E6F1FB;">
+      <p style="color:#042C53;">PS5 has been out of stock repeatedly in India since launch. A dedicated Indian stock tracker — monitoring Amazon.in, Flipkart, Croma, Reliance Digital, Sony Centre, and Games The Shop — with instant WhatsApp/Telegram/email alerts when stock appears is genuinely useful and monetisable. Build time: 5–7 days. Stack: Next.js + FastAPI + Playwright + Celery + Redis.</p>
+    </div>
+    <div class="lbl">What it does</div>
+    <div class="feature-list">
+      <div class="feat"><div class="feat-icon">🔍</div><div class="feat-body"><div class="feat-name">Real-time stock monitoring</div><div class="feat-desc">Checks 6 major Indian retailers every 5 minutes. Detects stock changes within minutes of them going live. Shows: In Stock / Out of Stock / Limited Stock.</div></div></div>
+      <div class="feat"><div class="feat-icon">🔔</div><div class="feat-body"><div class="feat-name">Instant multi-channel alerts</div><div class="feat-desc">Free: email + browser push notification. Premium: WhatsApp message (Twilio) + Telegram bot — delivered within 1 minute of stock appearing. Speed matters — PS5 sells out in minutes.</div></div></div>
+      <div class="feat"><div class="feat-icon">💰</div><div class="feat-body"><div class="feat-name">Price history tracker</div><div class="feat-desc">Track price changes over time. Alert when price drops below your threshold. PS5 Disc vs Digital vs bundles — all tracked separately.</div></div></div>
+      <div class="feat"><div class="feat-icon">📊</div><div class="feat-body"><div class="feat-name">Stock history dashboard</div><div class="feat-desc">"Amazon had PS5 in stock 3 times last month — always on Tuesday mornings." Patterns help buyers plan. This data only you have.</div></div></div>
+      <div class="feat"><div class="feat-icon">🤖</div><div class="feat-body"><div class="feat-name">Telegram bot command interface</div><div class="feat-desc">/status — current stock across all retailers. /price — current prices. /alert — set your alert preferences. /history — last 10 stock events. Clean, fast, no app needed.</div></div></div>
+      <div class="feat"><div class="feat-icon">🌐</div><div class="feat-body"><div class="feat-name">Public live dashboard</div><div class="feat-desc">A public webpage showing live status of all retailers. Green = in stock, Red = out of stock, timestamp of last check. This page is what ranks on Google and drives organic traffic.</div></div></div>
+    </div>
+    <div class="grid4">
+      <div class="met"><div class="ml">Build time</div><div class="mv">5–7 days</div></div>
+      <div class="met"><div class="ml">Stack</div><div class="mv">Next.js + FastAPI</div></div>
+      <div class="met"><div class="ml">Check frequency</div><div class="mv">Every 5 min</div></div>
+      <div class="met"><div class="ml">First revenue</div><div class="mv">Day 1</div></div>
+    </div>`;
+
+  if(tab===1) return `
+    <div class="lbl">Full architecture</div>
+    <div class="code"><span class="cm"># How everything connects:
+
+Celery beat scheduler (every 5 min)
+    │
+    ▼
+scraper.py — Playwright checks each retailer
+    │
+    ├── Compares with last_known_status in Redis
+    │
+    ├── If CHANGED (out→in or in→out):
+    │     ├── Update Supabase stock_events table
+    │     ├── Trigger notification_service.py
+    │     │     ├── Email (Resend) → all email subscribers
+    │     │     ├── WhatsApp (Twilio) → premium subscribers
+    │     │     └── Telegram bot → bot subscribers
+    │     └── Update Redis latest_status
+    │
+    └── Always: update last_checked timestamp
+
+Next.js frontend:
+    ├── /page.tsx — live dashboard (Supabase realtime)
+    ├── /api/subscribe — POST to create alert subscription
+    └── /api/status — GET current status (cached Redis)</span></div>
+
+    <div class="lbl">Tech stack</div>
+    <div class="grid2">
+      <div class="card"><div class="ct">Playwright (Python)</div><div class="cb">Scrapes JavaScript-heavy sites like Amazon and Flipkart. Headless Chrome. Stealth mode to avoid bot detection. Runs in Docker on Railway.</div></div>
+      <div class="card"><div class="ct">Celery + Redis</div><div class="cb">Celery beat triggers scraper task every 5 minutes. Redis stores last known stock status per retailer. Redis also caches the dashboard data to reduce DB load.</div></div>
+      <div class="card"><div class="ct">Supabase</div><div class="cb">stock_events table (all stock in/out events with timestamp). subscribers table (email, phone, preferences). price_history table. You already know this.</div></div>
+      <div class="card"><div class="ct">Next.js + Supabase Realtime</div><div class="cb">Dashboard updates live when new stock event is inserted. No polling needed — Supabase Realtime pushes updates to the browser instantly.</div></div>
+    </div>`;
+
+  if(tab===2) return `
+    <div class="lbl">All 6 Indian retailers — how to scrape each</div>
+    <div class="retailer-card">
+      <div class="rc-head"><div class="rc-name">Amazon India (amazon.in)</div><span class="rc-badge" style="background:#FF980020;color:#FF6600;">Hardest — anti-bot</span></div>
+      <div class="rc-body">URL: amazon.in/dp/B09FH23FQ3 (PS5 ASIN). Check: "Add to Cart" button presence vs "Currently Unavailable" text. Amazon aggressively blocks scrapers — use Playwright with stealth plugin (playwright-stealth), random delays (3–8 sec), rotate user agents. Check every 10 min max (not 5) to avoid IP ban. Consider ScraperAPI as fallback (₹1,500/mo for 100K requests).</div>
+    </div>
+    <div class="retailer-card">
+      <div class="rc-head"><div class="rc-name">Flipkart (flipkart.com)</div><span class="rc-badge" style="background:#FF880020;color:#FF8800;">Medium — needs JS</span></div>
+      <div class="rc-body">URL: flipkart.com/sony-playstation-5-digital-edition/p/itm... Check: "ADD TO CART" button vs "NOTIFY ME" button. Flipkart uses React — content loads after JS execution, so Playwright is required (not requests+BS4). Less aggressive anti-bot than Amazon. 5-min intervals work.</div>
+    </div>
+    <div class="retailer-card">
+      <div class="rc-head"><div class="rc-name">Croma (croma.com)</div><span class="rc-badge" style="background:#00880020;color:#008800;">Easy — API available</span></div>
+      <div class="rc-body">Croma has a product availability API: croma.com/api/v2/products/{sku}/stock-availability. Returns JSON directly. No scraping needed. Product SKU for PS5 is documented. Just call the API every 5 min. Clean, reliable, respectful.</div>
+    </div>
+    <div class="retailer-card">
+      <div class="rc-head"><div class="rc-name">Reliance Digital (reliancedigital.in)</div><span class="rc-badge" style="background:#00440020;color:#004488;">Easy — simple page</span></div>
+      <div class="rc-body">Static-ish product page. Check for "Add to Cart" vs "Notify Me When Available" button. requests + BeautifulSoup works (no JS needed). Very low anti-bot measures. Simple CSS selector on button text.</div>
+    </div>
+    <div class="retailer-card">
+      <div class="rc-head"><div class="rc-name">Sony India Direct (direct.playstation.com)</div><span class="rc-badge" style="background:#00338820;color:#0033AA;">Medium — JSON API</span></div>
+      <div class="rc-body">PlayStation Direct has a product status API endpoint. Check network tab on the product page — you'll find an API call like direct.playstation.com/api/products/availability. Returns JSON with in_stock boolean. Most reliable source since it's Sony's own store.</div>
+    </div>
+    <div class="retailer-card">
+      <div class="rc-head"><div class="rc-name">Games The Shop (gamesthe.shop)</div><span class="rc-badge" style="background:#88008820;color:#880088;">Easy — small site</span></div>
+      <div class="rc-body">Smaller retailer, easier to scrape. Simple HTML page. requests + BS4 sufficient. Often gets PS5 stock before the big retailers. Worth monitoring despite smaller volume — users who know about it are serious buyers.</div>
+    </div>
+    <div class="lbl">Anti-bot strategy</div>
+    <div class="code"><span class="cm"># scraper.py — stealth configuration</span>
+<span class="kw">from</span> playwright.async_api <span class="kw">import</span> async_playwright
+<span class="kw">import</span> random, asyncio
+
+USER_AGENTS = [
+    <span class="st">"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36..."</span>,
+    <span class="st">"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit..."</span>,
+    <span class="st">"Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)..."</span>,
+]
+
+<span class="kw">async def</span> <span class="kw">scrape_amazon</span>():
+    <span class="kw">async with</span> async_playwright() <span class="kw">as</span> p:
+        browser = <span class="kw">await</span> p.chromium.launch(headless=<span class="kw">True</span>)
+        ctx = <span class="kw">await</span> browser.new_context(
+            user_agent=random.choice(USER_AGENTS),
+            viewport={<span class="st">"width"</span>: <span class="kw">1920</span>, <span class="st">"height"</span>: <span class="kw">1080</span>},
+            locale=<span class="st">"en-IN"</span>
+        )
+        page = <span class="kw">await</span> ctx.new_page()
+        <span class="cm"># Random delay before request</span>
+        <span class="kw">await</span> asyncio.sleep(random.uniform(<span class="kw">2</span>, <span class="kw">6</span>))
+        <span class="kw">await</span> page.goto(<span class="st">"https://www.amazon.in/dp/B09FH23FQ3"</span>)
+        <span class="kw">await</span> page.wait_for_load_state(<span class="st">"networkidle"</span>)
+        
+        <span class="cm"># Check availability</span>
+        add_to_cart = <span class="kw">await</span> page.query_selector(<span class="st">"#add-to-cart-button"</span>)
+        unavailable = <span class="kw">await</span> page.query_selector(<span class="st">"#outOfStock"</span>)
+        
+        in_stock = add_to_cart <span class="kw">is not None and</span> unavailable <span class="kw">is None</span>
+        price = <span class="kw">await</span> get_price(page)  <span class="cm"># extract from .a-price-whole</span>
+        
+        <span class="kw">await</span> browser.close()
+        <span class="kw">return</span> {<span class="st">"in_stock"</span>: in_stock, <span class="st">"price"</span>: price, <span class="st">"retailer"</span>: <span class="st">"amazon"</span>}</div>`;
+
+  if(tab===3) return `
+    <div class="lbl">Notification system — the most important code</div>
+    <div class="code"><span class="cm"># notification_service.py</span>
+<span class="kw">async def</span> <span class="kw">handle_stock_change</span>(retailer: str, new_status: dict, old_status: dict):
+    <span class="kw">if not</span> new_status[<span class="st">"in_stock"</span>] <span class="kw">and not</span> old_status[<span class="st">"in_stock"</span>]:
+        <span class="kw">return</span>  <span class="cm"># Still out of stock — no notification</span>
+    
+    <span class="kw">if</span> new_status[<span class="st">"in_stock"</span>] <span class="kw">and not</span> old_status[<span class="st">"in_stock"</span>]:
+        <span class="cm"># 🚨 WENT IN STOCK — notify immediately</span>
+        msg = (
+            <span class="st">f"🎮 PS5 IN STOCK at {retailer.upper()}!\\n"</span>
+            <span class="st">f"💰 Price: ₹{new_status['price']:,}\\n"</span>
+            <span class="st">f"🔗 {new_status['url']}\\n"</span>
+            <span class="st">f"⚡ Act fast — sells out in minutes!"</span>
+        )
+        subscribers = get_subscribers_for_retailer(retailer)
+        
+        <span class="kw">await</span> asyncio.gather(
+            send_emails(subscribers.email_list, msg),
+            send_whatsapp(subscribers.whatsapp_list, msg),  <span class="cm"># premium only</span>
+            send_telegram(msg),   <span class="cm"># all telegram subscribers</span>
+            send_push(msg)        <span class="cm"># browser push subscribers</span>
+        )
+        
+        <span class="cm"># Log to stock_events table</span>
+        supabase.table(<span class="st">"stock_events"</span>).insert({
+            <span class="st">"retailer"</span>: retailer, <span class="st">"event"</span>: <span class="st">"in_stock"</span>,
+            <span class="st">"price"</span>: new_status[<span class="st">"price"</span>], <span class="st">"timestamp"</span>: <span class="st">"now()"</span>
+        }).execute()
+
+<span class="cm"># Telegram bot commands</span>
+<span class="kw">from</span> telegram <span class="kw">import</span> Update
+<span class="kw">from</span> telegram.ext <span class="kw">import</span> Application, CommandHandler
+
+<span class="kw">async def</span> <span class="kw">status_command</span>(update: Update, ctx):
+    statuses = get_all_current_statuses()  <span class="cm"># from Redis</span>
+    msg = <span class="st">"🎮 PS5 Stock Status (Updated 5 min ago)\\n\\n"</span>
+    <span class="kw">for</span> retailer, data <span class="kw">in</span> statuses.items():
+        emoji = <span class="st">"✅"</span> <span class="kw">if</span> data[<span class="st">"in_stock"</span>] <span class="kw">else</span> <span class="st">"❌"</span>
+        msg += <span class="st">f"{emoji} {retailer}: {data['status']} — ₹{data['price']:,}\\n"</span>
+    <span class="kw">await</span> update.message.reply_text(msg)
+
+app = Application.builder().token(TELEGRAM_TOKEN).build()
+app.add_handler(CommandHandler(<span class="st">"status"</span>, status_command))
+app.add_handler(CommandHandler(<span class="st">"alert"</span>, alert_command))
+app.add_handler(CommandHandler(<span class="st">"price"</span>, price_command))</div>
+
+    <div class="lbl">Supabase schema</div>
+    <div class="code"><span class="kw">CREATE TABLE</span> stock_events (
+  id          UUID <span class="kw">PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  retailer    TEXT,       <span class="cm">-- "amazon", "flipkart", "croma", etc.</span>
+  event       TEXT,       <span class="cm">-- "in_stock", "out_of_stock", "price_change"</span>
+  price       INTEGER,    <span class="cm">-- in rupees</span>
+  url         TEXT,
+  created_at  TIMESTAMPTZ <span class="kw">DEFAULT</span> now()
+);
+
+<span class="kw">CREATE TABLE</span> subscribers (
+  id          UUID <span class="kw">PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  email       TEXT <span class="kw">UNIQUE</span>,
+  phone       TEXT,        <span class="cm">-- for WhatsApp</span>
+  telegram_id TEXT,
+  tier        TEXT <span class="kw">DEFAULT</span> <span class="st">'free'</span>,  <span class="cm">-- free / premium</span>
+  retailers   TEXT[],      <span class="cm">-- which retailers to watch</span>
+  max_price   INTEGER,     <span class="cm">-- only alert if price below this</span>
+  created_at  TIMESTAMPTZ <span class="kw">DEFAULT</span> now()
+);</div>`;
+
+  if(tab===4) return `
+    <div class="sprint-block" style="background:#003087 15;border:0.5px solid #003087;">
+      <span class="sb-label" style="background:#003087;">Day 1–2 — Core scraper + Telegram bot</span>
+      <div class="sb-title">Goal: Telegram bot working, showing live stock status</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#003087;"></div>pip install playwright celery redis supabase python-telegram-bot requests beautifulsoup4</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#003087;"></div>Write scraper for Croma (easiest — JSON API) and Reliance Digital (simple HTML). Test both manually. Verify accuracy against the actual website.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#003087;"></div>Write scraper for PlayStation Direct (official API — most reliable). This alone makes the product useful.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#003087;"></div>Telegram bot: /start → subscribe, /status → current stock from all working scrapers. Deploy bot to Railway.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#003087;"></div>Celery + Redis: scraper runs every 5 minutes via Celery beat. Redis stores last known status. On change → Telegram notification fires.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#003087;"></div>Test: manually set a PS5 URL to a product that's "in stock" → verify Telegram fires within 5 min. This is your core product working.</div>
+    </div>
+    <div class="sprint-block" style="background:#00440015;border:0.5px solid #004400;">
+      <span class="sb-label" style="background:#005500;">Day 3–4 — Amazon + Flipkart scrapers</span>
+      <div class="sb-title">Goal: All 6 retailers monitored</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#005500;"></div>Playwright setup: install Chromium browser, configure stealth mode. Write Amazon scraper with random delays and user agent rotation. Test repeatedly — Amazon may block your Railway IP. If so, add ScraperAPI proxy.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#005500;"></div>Flipkart scraper: Playwright, wait for React to load ("networkidle"), check button text. Test manually.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#005500;"></div>Games The Shop scraper: simple requests + BS4. Done in 30 minutes.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#005500;"></div>Notification service: Resend for email. Twilio WhatsApp (reuse from Mera Munshi). All notification types in one async function.</div>
+    </div>
+    <div class="sprint-block" style="background:#00224415;border:0.5px solid #002244;">
+      <span class="sb-label" style="background:#002244;">Day 5–7 — Frontend + launch</span>
+      <div class="sb-title">Goal: Public website live, first subscribers</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#002244;"></div>Next.js dashboard: Supabase Realtime subscription → live green/red status per retailer, last checked timestamp, current price. No page refresh needed.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#002244;"></div>Email subscription form: enter email → click retailers to watch → optional max price → Razorpay for premium (₹99/mo WhatsApp alerts).</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#002244;"></div>Stock history chart: fl_chart style chart showing in/out events over last 30 days per retailer. "Amazon had stock 3 times this month — always Tuesdays."</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#002244;"></div>SEO: page title "PS5 Stock India — Live Availability Tracker". This ranks. Deploy to Vercel. Share on r/IndianGaming, PS5India subreddit, gaming Discord servers.</div>
+    </div>`;
+
+  if(tab===5) return `
+    <div class="lbl">Revenue model</div>
+    <div class="rev-row">
+      <div class="rv"><div class="rl">Free tier (email + browser push alerts)</div><div class="rr" style="color:#003087;">₹0 — drives user base</div></div>
+      <div class="rv"><div class="rl">Premium — WhatsApp instant alerts (₹99/mo)</div><div class="rr" style="color:#1D9E75;">500 users = ₹49,500/mo</div></div>
+      <div class="rv"><div class="rl">Amazon affiliate (commission when user buys via your link)</div><div class="rr" style="color:#1D9E75;">2–4% of sale = ₹750–1,500 per PS5</div></div>
+      <div class="rv"><div class="rl">Flipkart affiliate program</div><div class="rr" style="color:#1D9E75;">Same model, different commission</div></div>
+      <div class="rv"><div class="rl">Expand to: Xbox, Nintendo Switch, GPU tracker</div><div class="rr" style="color:#1D9E75;">Same codebase, 3× users</div></div>
+    </div>
+    <div class="callout" style="background:#E6F1FB;">
+      <p style="color:#042C53;">The affiliate commission is the real money. When a user gets a WhatsApp alert, clicks your affiliate link, and buys a PS5 — you earn ₹750–1,500 per sale with zero additional work. Even 20 conversions/month = ₹15,000–30,000 passively. The premium subscription funds the infrastructure; the affiliates are the profit.</p>
+    </div>`;
+
+  return `<div>Tab ${tab}</div>`;
+}
+
+function renderFit(tab){
+  const c = FIT_COLOR;
+  if(tab===0) return `
+    <div class="callout" style="background:#E1F5EE;">
+      <p style="color:#04342C;">A Flutter app (iOS + Android) with three core engines: (1) a calorie/macro tracker with Indian food database, (2) an AI gym routine generator that creates personalised workout plans, and (3) a workout player with exercises, timers, and progress tracking. Claude powers the routine generation and nutrition advice. Indian food is the key differentiator — most apps have no idea how many calories are in dal makhani.</p>
+    </div>
+    <div class="lbl">Why this is different from MyFitnessPal or HealthifyMe</div>
+    <div class="grid2">
+      <div class="card"><div class="ct">Indian food database first</div><div class="cb">Most apps have generic "Indian curry" as one entry. Yours has: dal makhani, paneer butter masala, aloo paratha, dosa, idli, rajma, kadhai chicken — with accurate macros. Plus "describe your meal" → Claude estimates calories. This is the feature Indian users will pay for.</div></div>
+      <div class="card"><div class="ct">AI routine that adapts</div><div class="cb">Not a generic "beginner program." Claude generates YOUR program based on: your current fitness, equipment (gym/home/no equipment), goal, days per week, injured areas. Updates every 4 weeks based on your progress.</div></div>
+      <div class="card"><div class="ct">Workout player with real exercises</div><div class="cb">Each exercise has: video demonstration (YouTube embed), form cues, sets/reps/rest timer, weight progression. Rest timer vibrates your phone. You never have to think — just follow.</div></div>
+      <div class="card"><div class="ct">Indian meal planning</div><div class="cb">Meal plans that use Indian food: "Breakfast: 2 egg bhurji + 1 chapati. Lunch: 1 bowl dal + 2 chapati + sabzi. Dinner: grilled chicken tikka + salad." No quinoa. No avocado.</div></div>
+    </div>
+    <div class="grid4">
+      <div class="met"><div class="ml">Platform</div><div class="mv">Flutter (iOS + Android)</div></div>
+      <div class="met"><div class="ml">Build time</div><div class="mv">4 weeks</div></div>
+      <div class="met"><div class="ml">AI</div><div class="mv">Claude Haiku</div></div>
+      <div class="met"><div class="ml">Food DB</div><div class="mv">Open Food Facts + custom Indian</div></div>
+    </div>`;
+
+  if(tab===1) return `
+    <div class="feature-list">
+      <div class="feat"><div class="feat-icon">🍽️</div><div class="feat-body"><div class="feat-name">Calorie & Macro Tracker</div><div class="feat-desc">Log meals by: search Indian food database, barcode scanner (camera), or "describe it" (Claude estimates). Daily macro rings (protein/carbs/fat). Weekly calorie trend. Meal history.</div></div></div>
+      <div class="feat"><div class="feat-icon">🤖</div><div class="feat-body"><div class="feat-name">AI Gym Routine Generator</div><div class="feat-desc">Onboarding: goal, equipment, schedule, experience level, injuries. Claude generates a 4-week progressive program. Day-by-day workout plan. Auto-adjusts difficulty after each week based on your logs.</div></div></div>
+      <div class="feat"><div class="feat-icon">⏱️</div><div class="feat-body"><div class="feat-name">Workout Player</div><div class="feat-desc">Follow-along workout mode: exercise name, sets/reps, rest timer (vibrates on end), weight input. Tracks every set. Marks personal records. "Finish workout" saves complete session log.</div></div></div>
+      <div class="feat"><div class="feat-icon">📈</div><div class="feat-body"><div class="feat-name">Progress Tracking</div><div class="feat-desc">Weight log with trend chart. Body measurements (chest, waist, arms). Strength progress per exercise (bench press history). Workout frequency calendar (GitHub heatmap style).</div></div></div>
+      <div class="feat"><div class="feat-icon">🥗</div><div class="feat-body"><div class="feat-name">AI Indian Meal Planner</div><div class="feat-desc">Set your calorie goal and dietary preference (veg/non-veg/egg). Claude generates a week of Indian meals fitting your macros. One-tap log entire meal plan. Grocery list generated automatically.</div></div></div>
+      <div class="feat"><div class="feat-icon">💬</div><div class="feat-body"><div class="feat-name">Nutrition & Fitness AI Chat</div><div class="feat-desc">"Is paneer good for weight loss?", "How to fix my squat form?", "Why am I not losing weight?" Claude answers based on your logged data — not generic advice.</div></div></div>
+      <div class="feat"><div class="feat-icon">🎯</div><div class="feat-body"><div class="feat-name">Exercise Library</div><div class="feat-desc">200+ exercises with: muscle group, equipment needed, difficulty, form cues, common mistakes, YouTube demo link. Filter by muscle/equipment. Build custom workouts.</div></div></div>
+      <div class="feat"><div class="feat-icon">🔔</div><div class="feat-body"><div class="feat-name">Smart Reminders</div><div class="feat-desc">Workout reminder at your scheduled time. Meal logging reminder at lunch and dinner. "You haven't logged water today." Weekly check-in prompt with Claude-generated summary.</div></div></div>
+    </div>`;
+
+  if(tab===2) return `
+    <div class="lbl">Key screens</div>
+    <div class="screen-card">
+      <div class="sc-title">1. Dashboard (Home)</div>
+      <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;">Daily calorie ring (eaten vs goal). Macro breakdown (protein/carbs/fat bars). Today's workout card (tap to start). Water intake tracker. Weight trend mini-chart. Streak counter.</div>
+      <div class="sc-els"><span class="sc-el">Calorie ring</span><span class="sc-el">Macro bars</span><span class="sc-el">Today's workout</span><span class="sc-el">Water log</span><span class="sc-el">Streak</span></div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-title">2. Food Log Screen</div>
+      <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;">Search bar (searches Indian food DB first). Camera button (barcode scanner). "Describe it" button (text field → Claude estimates). Breakfast/Lunch/Dinner/Snacks sections. Quick-add frequent foods.</div>
+      <div class="sc-els"><span class="sc-el">Indian food search</span><span class="sc-el">Barcode scan</span><span class="sc-el">Claude estimate</span><span class="sc-el">Meal sections</span></div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-title">3. Workout Player Screen (most important)</div>
+      <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;">Full-screen exercise display. Large exercise name. Set counter (Set 2 of 4). Rep target. Weight input field. REST TIMER (big countdown, vibrates at 0). Previous session weight shown for reference. Skip exercise button. Mark set complete (satisfying animation).</div>
+      <div class="sc-els"><span class="sc-el">Exercise display</span><span class="sc-el">Rest timer + haptic</span><span class="sc-el">Weight input</span><span class="sc-el">Previous PR</span><span class="sc-el">Set tracking</span></div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-title">4. AI Routine Generator</div>
+      <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;">5-step onboarding: Goal → Equipment → Days/week → Experience level → Any injuries/limitations. Loading animation while Claude generates. Displays: weekly schedule, day-by-day breakdown, exercise list. Regenerate if not happy. Save routine.</div>
+      <div class="sc-els"><span class="sc-el">Goal picker</span><span class="sc-el">Equipment selector</span><span class="sc-el">Schedule picker</span><span class="sc-el">AI generation</span><span class="sc-el">Routine view</span></div>
+    </div>
+    <div class="screen-card">
+      <div class="sc-title">5. Progress Screen</div>
+      <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;">Weight log chart (fl_chart line graph). Body measurements history. Strength progress per exercise (bench: 60kg → 80kg over 8 weeks). Workout heatmap calendar. Weekly report card (AI-generated summary of the week).</div>
+      <div class="sc-els"><span class="sc-el">Weight chart</span><span class="sc-el">Strength progress</span><span class="sc-el">Heatmap</span><span class="sc-el">AI weekly report</span></div>
+    </div>`;
+
+  if(tab===3) return `
+    <div class="lbl">Flutter packages</div>
+    <div class="code"><span class="cm"># pubspec.yaml</span>
+dependencies:
+  flutter_riverpod: ^2.5.1      <span class="cm"># State management</span>
+  isar: ^3.1.0                   <span class="cm"># Local DB (offline-first food log)</span>
+  supabase_flutter: ^2.3.4       <span class="cm"># Cloud sync + auth</span>
+  go_router: ^13.2.0             <span class="cm"># Navigation</span>
+  
+  <span class="cm"># Food logging</span>
+  mobile_scanner: ^5.1.0         <span class="cm"># Barcode scanner (camera)</span>
+  http: ^1.2.1                   <span class="cm"># Open Food Facts API calls</span>
+  
+  <span class="cm"># Charts + UI</span>
+  fl_chart: ^0.67.0              <span class="cm"># Weight/calorie charts</span>
+  percent_indicator: ^4.2.3      <span class="cm"># Macro rings, calorie ring</span>
+  flutter_animate: ^4.5.0        <span class="cm"># Smooth animations</span>
+  lottie: ^3.1.0                 <span class="cm"># PR celebration, workout complete</span>
+  
+  <span class="cm"># Workout player</span>
+  vibration: ^1.9.0              <span class="cm"># Haptic on rest timer end</span>
+  wakelock_plus: ^1.1.4          <span class="cm"># Screen on during workout</span>
+  just_audio: ^0.9.37            <span class="cm"># Timer beep sounds</span>
+  
+  <span class="cm"># Notifications</span>
+  flutter_local_notifications: ^17.1.2
+  
+  <span class="cm"># Other</span>
+  share_plus: ^9.0.0             <span class="cm"># Share progress photos</span>
+  image_picker: ^1.1.2           <span class="cm"># Progress photos</span>
+  hive_flutter: ^1.1.0           <span class="cm"># Settings storage</span>
+  intl: ^0.19.0</div>
+
+    <div class="lbl">Food database strategy</div>
+    <div class="grid2">
+      <div class="card"><div class="ct">Open Food Facts API (free)</div><div class="cb">Largest open food database. Good for packaged Indian foods (Amul, Britannia, MDH, Haldiram's). Barcode lookup works for most supermarket items. Use as primary source for packaged foods.</div></div>
+      <div class="card"><div class="ct">Custom Indian food CSV (build once)</div><div class="cb">~500 common Indian dishes: dal tadka, rajma chawal, idli sambar, chicken biryani, etc. Source: ICMR nutritional data (government, free). Seed into Supabase and Isar at app install. This is your differentiation.</div></div>
+      <div class="card"><div class="ct">Claude "describe your meal" (premium)</div><div class="cb">"I had 2 chapati, one small bowl dal, and a quarter plate aloo sabzi" → Claude estimates: ~480 calories, 18g protein, 75g carbs. Not perfectly accurate but 80% accurate, which is better than guessing.</div></div>
+      <div class="card"><div class="ct">Nutritionix API (paid)</div><div class="cb">More accurate for restaurant foods. $0.001/query. Consider for v2. Not needed for v1 — Open Food Facts + custom Indian DB covers 90% of use cases for free.</div></div>
+    </div>`;
+
+  if(tab===4) return `
+    <div class="lbl">AI gym routine prompt — the most important prompt in the app</div>
+    <div class="code">ROUTINE_PROMPT = <span class="st">"""
+You are an expert personal trainer and sports nutritionist 
+specialising in Indian fitness culture. You create practical,
+progressive workout programs based on real-world constraints.
+
+USER PROFILE:
+Goal: {goal}  # muscle_gain / fat_loss / strength / general_fitness
+Equipment: {equipment}  # full_gym / home_dumbbells / no_equipment
+Days per week: {days}
+Experience: {experience}  # beginner / intermediate / advanced
+Injuries/limitations: {injuries}
+Current weight: {weight}kg | Height: {height}cm
+Age: {age}
+
+Create a 4-week progressive workout program.
+
+RULES:
+- Week 2 should be slightly harder than Week 1 (progressive overload)
+- Include rest days appropriately for recovery
+- For beginners: compound movements first, isolation last
+- For fat_loss: include cardio recommendations
+- For muscle_gain: prioritise progressive overload on big lifts
+- Always include warm-up and cool-down
+- Use actual exercise names (not vague descriptions)
+
+Return JSON:
+{{
+  "program_name": str,
+  "weekly_schedule": {{
+    "monday": "chest_shoulders" | "rest" | "cardio" | etc.,
+    ...
+  }},
+  "weeks": [
+    {{
+      "week": 1,
+      "days": [
+        {{
+          "name": "Chest & Shoulders",
+          "exercises": [
+            {{
+              "name": "Bench Press",
+              "sets": 4,
+              "reps": "8-10",
+              "rest_seconds": 90,
+              "notes": "Focus on controlled descent"
+            }}
+          ]
+        }}
+      ]
+    }}
+  ],
+  "nutrition_tip": str,  # One specific Indian-food nutrition tip
+  "progression_rule": str  # How to know when to increase weight
+}}
+"""</span>
+
+<span class="cm"># Claude estimation for Indian food</span>
+FOOD_ESTIMATE_PROMPT = <span class="st">"""
+Estimate the calories and macros for this meal described by an 
+Indian user. Be realistic about Indian portion sizes.
+
+Meal description: {meal_description}
+
+Common Indian serving sizes:
+- 1 chapati = 80-100 calories
+- 1 bowl dal = 150-200 calories  
+- 1 bowl rice = 200-250 calories
+- 1 piece chicken = 100-150 calories
+
+Return JSON:
+{{
+  "calories": int,
+  "protein_g": float,
+  "carbs_g": float,
+  "fat_g": float,
+  "confidence": "high" | "medium" | "low",
+  "breakdown": [str]  # List each component with its calories
+}}
+"""</span></div>`;
+
+  if(tab===5) return `
+    <div class="sprint-block" style="background:#1D9E7515;border:0.5px solid #1D9E75;">
+      <span class="sb-label" style="background:#1D9E75;">Week 1 — Core data layer + food logging</span>
+      <div class="sb-title">Goal: Log a meal and see calories update</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#1D9E75;"></div>Flutter project setup: Riverpod, Isar, Supabase, Go Router. Dark theme with green accent (#1D9E75). App name: FitBharat or whatever you choose.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#1D9E75;"></div>Indian food database: download ICMR nutritional data CSV + compile 500 common Indian dishes. Seed into Isar at first app launch. This is the foundation — do it right.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#1D9E75;"></div>Food log screen: search bar → query Isar local DB + Open Food Facts API → show results with calories → tap to log. Breakfast/Lunch/Dinner/Snacks sections in Isar.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#1D9E75;"></div>Barcode scanner: mobile_scanner package. Scan → hit Open Food Facts API with barcode → return nutrition data → user confirms → logged.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#1D9E75;"></div>Dashboard: calorie ring (percent_indicator), macro bars (fl_chart bar chart), daily total. Supabase auth (Apple + Google sign-in).</div>
+    </div>
+    <div class="sprint-block" style="background:#00668815;border:0.5px solid #006688;">
+      <span class="sb-label" style="background:#006688;">Week 2 — AI routine generator + exercise library</span>
+      <div class="sb-title">Goal: Claude generates your first workout program</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#006688;"></div>Onboarding wizard: 5-screen flow collecting goal, equipment, days, experience, injuries. Saves to Supabase user_profile table.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#006688;"></div>FastAPI backend (Railway): POST /routine/generate → calls Claude with user profile → returns 4-week program JSON → saved to Supabase routines table.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#006688;"></div>Exercise library: 200 exercises seeded into Isar. Each has: name, muscle_groups[], equipment_needed, sets, reps, youtube_id (for demo), form_cues, common_mistakes.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#006688;"></div>Routine display screen: weekly calendar, tap any day → see the day's workout with all exercises listed. "Start Workout" button leads to workout player.</div>
+    </div>
+    <div class="sprint-block" style="background:#33006615;border:0.5px solid #330066;">
+      <span class="sb-label" style="background:#330066;">Week 3 — Workout player (the core experience)</span>
+      <div class="sb-title">Goal: Complete a workout end-to-end in the app</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#330066;"></div>Workout player screen: full-screen takeover. Exercise name (large). Set tracker (Set 2 of 4). Reps target. Weight input (number pad). Previous session weight shown in grey for reference.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#330066;"></div>Rest timer: circular countdown, wakelock keeps screen on. Haptic vibration at 0 (vibration package). Sound option (beep). Skip rest button. Auto-advances to next set.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#330066;"></div>Personal record detection: if weight × reps > previous best → PR animation (Lottie confetti). Stores PR history per exercise in Isar.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#330066;"></div>Workout summary: at end → total volume lifted, duration, calories estimated, exercises completed. Share as image card (screenshot + share_plus).</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#330066;"></div>Claude "describe your meal": text field → FastAPI → Claude estimates → returns breakdown → user confirms/adjusts → logs to food diary.</div>
+    </div>
+    <div class="sprint-block" style="background:#15330015;border:0.5px solid #153300;">
+      <span class="sb-label" style="background:#153300;">Week 4 — Progress tracking + polish + TestFlight</span>
+      <div class="sb-title">Goal: On your iPhone, fully working daily use app</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#153300;"></div>Progress screen: weight log line chart (fl_chart), strength progress per exercise, workout heatmap calendar, body measurements tracker.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#153300;"></div>AI weekly report: every Sunday → Claude reads your week's logs → generates 5-sentence summary: "You hit protein goal 5/7 days. Your squat improved by 5kg. You missed Wednesday — consider rescheduling." Push notification triggers this.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#153300;"></div">Razorpay: Premium tier ₹299/mo unlocks: Claude meal estimation (free tier: 3/mo), AI meal planner, AI chat. Free tier: unlimited workout tracking + basic food logging.</div>
+      <div class="sb-task"><div class="sb-dot" style="background:#153300;"></div>TestFlight: Apple Developer account → flutter build ipa → upload to TestFlight → install on your iPhone. Use the app for 2 weeks yourself before telling anyone about it.</div>
+    </div>`;
+
+  if(tab===6) return `
+    <div class="lbl">Revenue model</div>
+    <div class="rev-row">
+      <div class="rv"><div class="rl">Free tier (workout tracking + basic food log)</div><div class="rr" style="color:#888;">Grows user base</div></div>
+      <div class="rv"><div class="rl">Premium — ₹299/mo (AI features + meal planner)</div><div class="rr" style="color:#1D9E75;">1,000 users = ₹2,99,000/mo</div></div>
+      <div class="rv"><div class="rl">Annual plan — ₹1,999/yr (save ₹600)</div><div class="rr" style="color:#1D9E75;">Reduces churn, upfront cash</div></div>
+      <div class="rv"><div class="rl">Gym partnership (white-label for gyms)</div><div class="rr" style="color:#1D9E75;">₹2,000–5,000/mo per gym</div></div>
+      <div class="rv"><div class="rl">Play Store (when ready) — 5K–10K downloads/mo</div><div class="rr" style="color:#1D9E75;">Organic search drives installs</div></div>
+    </div>
+    <div class="callout" style="background:#E1F5EE;">
+      <p style="color:#04342C;">The Indian food database is the killer feature. HealthifyMe charges ₹900–1,500/mo and still has poor Indian food coverage. You charge ₹299/mo with better Indian food data and AI estimation. That positioning wins. Every person who's ever had to search "dal makhani calories" 15 times is your target user.</p>
+    </div>`;
+
+  return `<div>Tab ${tab}</div>`;
+}
+
+selProduct('ps5', document.querySelector('.pt-btn.ps5'));
+</script>

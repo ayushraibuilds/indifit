@@ -105,7 +105,28 @@
 - [x] Implement local notification reminder services for meals, water, and workouts — ✅ DONE
 - [x] Make notifications configurable in settings screen — ✅ DONE
 
-## Phase 6: Build & Test 🔲
+## Phase 6: Code Hardening & Compilation Fixes ⚠️
+- [ ] Fix Flutter compile errors (`uiLocalNotificationDateInterpretation`, missing `AppColors.cardBorder`)
+- [ ] Configure Android release signing
+- [ ] Add `INTERNET` and camera permissions to `AndroidManifest.xml`
+- [ ] Add camera/photo usage description strings to iOS `Info.plist`
+- [ ] Replace `localhost` backend defaults with per-environment configuration
+
+## Phase 7: Data Expansion, Onboarding & Features 🔲
+- [ ] Build a real first-run onboarding flow
+- [ ] Persist macro/water/weight goals
+- [ ] Expand local seed data (300-500 foods, 100-200 exercises)
+- [ ] Remove/label mock/demo claims from UI
+- [ ] Workout history per exercise with previous weight/reps autofill
+- [ ] Real PR calculation from past sets
+- [ ] Body measurement logging screen
+- [ ] Editable custom foods and recipes
+- [ ] Weekly adherence score
+- [ ] Export/backup data
+- [ ] "No backend mode" toggle
+- [ ] Health disclaimer and AI uncertainty warnings
+
+## Phase 8: Build & Test 🔲
 - [ ] Build APK (Android) for physical phone testing
 - [ ] Build and install via Xcode Personal Team (iOS) for physical phone testing
 - [ ] Test offline-to-online data sync scenarios (airplane mode simulation)

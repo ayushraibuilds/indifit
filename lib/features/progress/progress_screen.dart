@@ -26,6 +26,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Future<void> _loadProgressLogs() async {
+    if (!mounted) return;
     setState(() => _loading = true);
     
     try {
@@ -37,12 +38,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         act.add(s.completedAt);
       }
 
+      if (!mounted) return;
       setState(() {
         _sessions = list;
         _activityDays.addAll(act);
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _loading = false);
     }
   }
