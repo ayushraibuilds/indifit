@@ -8,6 +8,7 @@ import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../food_log/food_search_screen.dart';
+import '../food_log/ai_meal_logger_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -287,9 +288,53 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         trailing: IconButton(
           icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => FoodSearchScreen(mealType: type)),
+            showModalBottomSheet(
+              context: context,
+              backgroundColor: AppColors.surface,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              builder: (context) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 20.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Log Food Item',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      ListTile(
+                        leading: const Icon(Icons.search_rounded, color: AppColors.primary),
+                        title: const Text('Search Food Database', style: TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: const Text('Search common Indian items & scan barcodes'),
+                        onTap: () {
+                          Navigator.pop(context); // Close selection sheet
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => FoodSearchScreen(mealType: type)),
+                          );
+                        },
+                      ),
+                      const Divider(color: AppColors.border),
+                      ListTile(
+                        leading: const Icon(Icons.psychology_rounded, color: AppColors.success),
+                        title: const Text('AI Meal Estimator', style: TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: const Text('Estimate calories & macros from photos or text'),
+                        onTap: () {
+                          Navigator.pop(context); // Close selection sheet
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => AiMealLoggerScreen(mealType: type)),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
             );
           },
         ),

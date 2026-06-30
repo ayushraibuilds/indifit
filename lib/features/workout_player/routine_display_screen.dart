@@ -4,6 +4,7 @@ import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../onboarding/onboarding_wizard_screen.dart';
+import 'workout_player_screen.dart';
 
 class RoutineDisplayScreen extends ConsumerStatefulWidget {
   const RoutineDisplayScreen({super.key});
@@ -199,9 +200,14 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 20.0),
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // Start workout player action!
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Starting: ${day.name}!')),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => WorkoutPlayerScreen(
+                              routineName: day.name,
+                              exercises: exercises,
+                            ),
+                          ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
