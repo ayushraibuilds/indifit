@@ -670,6 +670,11 @@ class $FoodLogsTable extends FoodLogs with TableInfo<$FoodLogsTable, FoodLog> {
   late final GeneratedColumn<String> mealGroupId = GeneratedColumn<String>(
       'meal_group_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
+  @override
+  late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
+      'uuid', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -684,7 +689,8 @@ class $FoodLogsTable extends FoodLogs with TableInfo<$FoodLogsTable, FoodLog> {
         mealType,
         loggedAt,
         isSynced,
-        mealGroupId
+        mealGroupId,
+        uuid
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -771,6 +777,10 @@ class $FoodLogsTable extends FoodLogs with TableInfo<$FoodLogsTable, FoodLog> {
           mealGroupId.isAcceptableOrUnknown(
               data['meal_group_id']!, _mealGroupIdMeta));
     }
+    if (data.containsKey('uuid')) {
+      context.handle(
+          _uuidMeta, uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta));
+    }
     return context;
   }
 
@@ -806,6 +816,8 @@ class $FoodLogsTable extends FoodLogs with TableInfo<$FoodLogsTable, FoodLog> {
           .read(DriftSqlType.bool, data['${effectivePrefix}is_synced'])!,
       mealGroupId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}meal_group_id']),
+      uuid: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}uuid']),
     );
   }
 
@@ -829,6 +841,7 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
   final DateTime loggedAt;
   final bool isSynced;
   final String? mealGroupId;
+  final String? uuid;
   const FoodLog(
       {required this.id,
       this.foodItemId,
@@ -842,7 +855,8 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
       required this.mealType,
       required this.loggedAt,
       required this.isSynced,
-      this.mealGroupId});
+      this.mealGroupId,
+      this.uuid});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -862,6 +876,9 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
     map['is_synced'] = Variable<bool>(isSynced);
     if (!nullToAbsent || mealGroupId != null) {
       map['meal_group_id'] = Variable<String>(mealGroupId);
+    }
+    if (!nullToAbsent || uuid != null) {
+      map['uuid'] = Variable<String>(uuid);
     }
     return map;
   }
@@ -885,6 +902,7 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
       mealGroupId: mealGroupId == null && nullToAbsent
           ? const Value.absent()
           : Value(mealGroupId),
+      uuid: uuid == null && nullToAbsent ? const Value.absent() : Value(uuid),
     );
   }
 
@@ -905,6 +923,7 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
       loggedAt: serializer.fromJson<DateTime>(json['loggedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
       mealGroupId: serializer.fromJson<String?>(json['mealGroupId']),
+      uuid: serializer.fromJson<String?>(json['uuid']),
     );
   }
   @override
@@ -924,6 +943,7 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
       'loggedAt': serializer.toJson<DateTime>(loggedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
       'mealGroupId': serializer.toJson<String?>(mealGroupId),
+      'uuid': serializer.toJson<String?>(uuid),
     };
   }
 
@@ -940,7 +960,8 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
           String? mealType,
           DateTime? loggedAt,
           bool? isSynced,
-          Value<String?> mealGroupId = const Value.absent()}) =>
+          Value<String?> mealGroupId = const Value.absent(),
+          Value<String?> uuid = const Value.absent()}) =>
       FoodLog(
         id: id ?? this.id,
         foodItemId: foodItemId.present ? foodItemId.value : this.foodItemId,
@@ -955,6 +976,7 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
         loggedAt: loggedAt ?? this.loggedAt,
         isSynced: isSynced ?? this.isSynced,
         mealGroupId: mealGroupId.present ? mealGroupId.value : this.mealGroupId,
+        uuid: uuid.present ? uuid.value : this.uuid,
       );
   FoodLog copyWithCompanion(FoodLogsCompanion data) {
     return FoodLog(
@@ -976,6 +998,7 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
       mealGroupId:
           data.mealGroupId.present ? data.mealGroupId.value : this.mealGroupId,
+      uuid: data.uuid.present ? data.uuid.value : this.uuid,
     );
   }
 
@@ -994,7 +1017,8 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
           ..write('mealType: $mealType, ')
           ..write('loggedAt: $loggedAt, ')
           ..write('isSynced: $isSynced, ')
-          ..write('mealGroupId: $mealGroupId')
+          ..write('mealGroupId: $mealGroupId, ')
+          ..write('uuid: $uuid')
           ..write(')'))
         .toString();
   }
@@ -1013,7 +1037,8 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
       mealType,
       loggedAt,
       isSynced,
-      mealGroupId);
+      mealGroupId,
+      uuid);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1030,7 +1055,8 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
           other.mealType == this.mealType &&
           other.loggedAt == this.loggedAt &&
           other.isSynced == this.isSynced &&
-          other.mealGroupId == this.mealGroupId);
+          other.mealGroupId == this.mealGroupId &&
+          other.uuid == this.uuid);
 }
 
 class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
@@ -1047,6 +1073,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
   final Value<DateTime> loggedAt;
   final Value<bool> isSynced;
   final Value<String?> mealGroupId;
+  final Value<String?> uuid;
   const FoodLogsCompanion({
     this.id = const Value.absent(),
     this.foodItemId = const Value.absent(),
@@ -1061,6 +1088,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
     this.loggedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
     this.mealGroupId = const Value.absent(),
+    this.uuid = const Value.absent(),
   });
   FoodLogsCompanion.insert({
     this.id = const Value.absent(),
@@ -1076,6 +1104,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
     this.loggedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
     this.mealGroupId = const Value.absent(),
+    this.uuid = const Value.absent(),
   })  : name = Value(name),
         calories = Value(calories),
         proteinG = Value(proteinG),
@@ -1098,6 +1127,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
     Expression<DateTime>? loggedAt,
     Expression<bool>? isSynced,
     Expression<String>? mealGroupId,
+    Expression<String>? uuid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1113,6 +1143,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
       if (loggedAt != null) 'logged_at': loggedAt,
       if (isSynced != null) 'is_synced': isSynced,
       if (mealGroupId != null) 'meal_group_id': mealGroupId,
+      if (uuid != null) 'uuid': uuid,
     });
   }
 
@@ -1129,7 +1160,8 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
       Value<String>? mealType,
       Value<DateTime>? loggedAt,
       Value<bool>? isSynced,
-      Value<String?>? mealGroupId}) {
+      Value<String?>? mealGroupId,
+      Value<String?>? uuid}) {
     return FoodLogsCompanion(
       id: id ?? this.id,
       foodItemId: foodItemId ?? this.foodItemId,
@@ -1144,6 +1176,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
       loggedAt: loggedAt ?? this.loggedAt,
       isSynced: isSynced ?? this.isSynced,
       mealGroupId: mealGroupId ?? this.mealGroupId,
+      uuid: uuid ?? this.uuid,
     );
   }
 
@@ -1189,6 +1222,9 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
     if (mealGroupId.present) {
       map['meal_group_id'] = Variable<String>(mealGroupId.value);
     }
+    if (uuid.present) {
+      map['uuid'] = Variable<String>(uuid.value);
+    }
     return map;
   }
 
@@ -1207,7 +1243,8 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
           ..write('mealType: $mealType, ')
           ..write('loggedAt: $loggedAt, ')
           ..write('isSynced: $isSynced, ')
-          ..write('mealGroupId: $mealGroupId')
+          ..write('mealGroupId: $mealGroupId, ')
+          ..write('uuid: $uuid')
           ..write(')'))
         .toString();
   }
@@ -1738,6 +1775,11 @@ class $WorkoutSessionsTable extends WorkoutSessions
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_synced" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
+  @override
+  late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
+      'uuid', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1746,7 +1788,8 @@ class $WorkoutSessionsTable extends WorkoutSessions
         durationSeconds,
         estimatedCalories,
         completedAt,
-        isSynced
+        isSynced,
+        uuid
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1801,6 +1844,10 @@ class $WorkoutSessionsTable extends WorkoutSessions
       context.handle(_isSyncedMeta,
           isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta));
     }
+    if (data.containsKey('uuid')) {
+      context.handle(
+          _uuidMeta, uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta));
+    }
     return context;
   }
 
@@ -1824,6 +1871,8 @@ class $WorkoutSessionsTable extends WorkoutSessions
           .read(DriftSqlType.dateTime, data['${effectivePrefix}completed_at'])!,
       isSynced: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_synced'])!,
+      uuid: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}uuid']),
     );
   }
 
@@ -1841,6 +1890,7 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
   final int estimatedCalories;
   final DateTime completedAt;
   final bool isSynced;
+  final String? uuid;
   const WorkoutSession(
       {required this.id,
       required this.name,
@@ -1848,7 +1898,8 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
       required this.durationSeconds,
       required this.estimatedCalories,
       required this.completedAt,
-      required this.isSynced});
+      required this.isSynced,
+      this.uuid});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1859,6 +1910,9 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
     map['estimated_calories'] = Variable<int>(estimatedCalories);
     map['completed_at'] = Variable<DateTime>(completedAt);
     map['is_synced'] = Variable<bool>(isSynced);
+    if (!nullToAbsent || uuid != null) {
+      map['uuid'] = Variable<String>(uuid);
+    }
     return map;
   }
 
@@ -1871,6 +1925,7 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
       estimatedCalories: Value(estimatedCalories),
       completedAt: Value(completedAt),
       isSynced: Value(isSynced),
+      uuid: uuid == null && nullToAbsent ? const Value.absent() : Value(uuid),
     );
   }
 
@@ -1885,6 +1940,7 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
       estimatedCalories: serializer.fromJson<int>(json['estimatedCalories']),
       completedAt: serializer.fromJson<DateTime>(json['completedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      uuid: serializer.fromJson<String?>(json['uuid']),
     );
   }
   @override
@@ -1898,6 +1954,7 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
       'estimatedCalories': serializer.toJson<int>(estimatedCalories),
       'completedAt': serializer.toJson<DateTime>(completedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'uuid': serializer.toJson<String?>(uuid),
     };
   }
 
@@ -1908,7 +1965,8 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
           int? durationSeconds,
           int? estimatedCalories,
           DateTime? completedAt,
-          bool? isSynced}) =>
+          bool? isSynced,
+          Value<String?> uuid = const Value.absent()}) =>
       WorkoutSession(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -1917,6 +1975,7 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
         estimatedCalories: estimatedCalories ?? this.estimatedCalories,
         completedAt: completedAt ?? this.completedAt,
         isSynced: isSynced ?? this.isSynced,
+        uuid: uuid.present ? uuid.value : this.uuid,
       );
   WorkoutSession copyWithCompanion(WorkoutSessionsCompanion data) {
     return WorkoutSession(
@@ -1933,6 +1992,7 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
       completedAt:
           data.completedAt.present ? data.completedAt.value : this.completedAt,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      uuid: data.uuid.present ? data.uuid.value : this.uuid,
     );
   }
 
@@ -1945,14 +2005,15 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
           ..write('durationSeconds: $durationSeconds, ')
           ..write('estimatedCalories: $estimatedCalories, ')
           ..write('completedAt: $completedAt, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('uuid: $uuid')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, name, totalVolume, durationSeconds,
-      estimatedCalories, completedAt, isSynced);
+      estimatedCalories, completedAt, isSynced, uuid);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1963,7 +2024,8 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
           other.durationSeconds == this.durationSeconds &&
           other.estimatedCalories == this.estimatedCalories &&
           other.completedAt == this.completedAt &&
-          other.isSynced == this.isSynced);
+          other.isSynced == this.isSynced &&
+          other.uuid == this.uuid);
 }
 
 class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
@@ -1974,6 +2036,7 @@ class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
   final Value<int> estimatedCalories;
   final Value<DateTime> completedAt;
   final Value<bool> isSynced;
+  final Value<String?> uuid;
   const WorkoutSessionsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -1982,6 +2045,7 @@ class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
     this.estimatedCalories = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.uuid = const Value.absent(),
   });
   WorkoutSessionsCompanion.insert({
     this.id = const Value.absent(),
@@ -1991,6 +2055,7 @@ class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
     required int estimatedCalories,
     this.completedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.uuid = const Value.absent(),
   })  : name = Value(name),
         totalVolume = Value(totalVolume),
         durationSeconds = Value(durationSeconds),
@@ -2003,6 +2068,7 @@ class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
     Expression<int>? estimatedCalories,
     Expression<DateTime>? completedAt,
     Expression<bool>? isSynced,
+    Expression<String>? uuid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2012,6 +2078,7 @@ class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
       if (estimatedCalories != null) 'estimated_calories': estimatedCalories,
       if (completedAt != null) 'completed_at': completedAt,
       if (isSynced != null) 'is_synced': isSynced,
+      if (uuid != null) 'uuid': uuid,
     });
   }
 
@@ -2022,7 +2089,8 @@ class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
       Value<int>? durationSeconds,
       Value<int>? estimatedCalories,
       Value<DateTime>? completedAt,
-      Value<bool>? isSynced}) {
+      Value<bool>? isSynced,
+      Value<String?>? uuid}) {
     return WorkoutSessionsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -2031,6 +2099,7 @@ class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
       estimatedCalories: estimatedCalories ?? this.estimatedCalories,
       completedAt: completedAt ?? this.completedAt,
       isSynced: isSynced ?? this.isSynced,
+      uuid: uuid ?? this.uuid,
     );
   }
 
@@ -2058,6 +2127,9 @@ class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (uuid.present) {
+      map['uuid'] = Variable<String>(uuid.value);
+    }
     return map;
   }
 
@@ -2070,7 +2142,8 @@ class WorkoutSessionsCompanion extends UpdateCompanion<WorkoutSession> {
           ..write('durationSeconds: $durationSeconds, ')
           ..write('estimatedCalories: $estimatedCalories, ')
           ..write('completedAt: $completedAt, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('uuid: $uuid')
           ..write(')'))
         .toString();
   }
@@ -2152,6 +2225,11 @@ class $WorkoutSetsTable extends WorkoutSets
   late final GeneratedColumn<String> setNotes = GeneratedColumn<String>(
       'set_notes', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _uuidMeta = const VerificationMeta('uuid');
+  @override
+  late final GeneratedColumn<String> uuid = GeneratedColumn<String>(
+      'uuid', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2163,7 +2241,8 @@ class $WorkoutSetsTable extends WorkoutSets
         isPr,
         rpe,
         isWarmUp,
-        setNotes
+        setNotes,
+        uuid
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2226,6 +2305,10 @@ class $WorkoutSetsTable extends WorkoutSets
       context.handle(_setNotesMeta,
           setNotes.isAcceptableOrUnknown(data['set_notes']!, _setNotesMeta));
     }
+    if (data.containsKey('uuid')) {
+      context.handle(
+          _uuidMeta, uuid.isAcceptableOrUnknown(data['uuid']!, _uuidMeta));
+    }
     return context;
   }
 
@@ -2255,6 +2338,8 @@ class $WorkoutSetsTable extends WorkoutSets
           .read(DriftSqlType.bool, data['${effectivePrefix}is_warm_up'])!,
       setNotes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}set_notes']),
+      uuid: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}uuid']),
     );
   }
 
@@ -2275,6 +2360,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
   final int? rpe;
   final bool isWarmUp;
   final String? setNotes;
+  final String? uuid;
   const WorkoutSet(
       {required this.id,
       required this.sessionId,
@@ -2285,7 +2371,8 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       required this.isPr,
       this.rpe,
       required this.isWarmUp,
-      this.setNotes});
+      this.setNotes,
+      this.uuid});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2302,6 +2389,9 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     map['is_warm_up'] = Variable<bool>(isWarmUp);
     if (!nullToAbsent || setNotes != null) {
       map['set_notes'] = Variable<String>(setNotes);
+    }
+    if (!nullToAbsent || uuid != null) {
+      map['uuid'] = Variable<String>(uuid);
     }
     return map;
   }
@@ -2320,6 +2410,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       setNotes: setNotes == null && nullToAbsent
           ? const Value.absent()
           : Value(setNotes),
+      uuid: uuid == null && nullToAbsent ? const Value.absent() : Value(uuid),
     );
   }
 
@@ -2337,6 +2428,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       rpe: serializer.fromJson<int?>(json['rpe']),
       isWarmUp: serializer.fromJson<bool>(json['isWarmUp']),
       setNotes: serializer.fromJson<String?>(json['setNotes']),
+      uuid: serializer.fromJson<String?>(json['uuid']),
     );
   }
   @override
@@ -2353,6 +2445,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       'rpe': serializer.toJson<int?>(rpe),
       'isWarmUp': serializer.toJson<bool>(isWarmUp),
       'setNotes': serializer.toJson<String?>(setNotes),
+      'uuid': serializer.toJson<String?>(uuid),
     };
   }
 
@@ -2366,7 +2459,8 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           bool? isPr,
           Value<int?> rpe = const Value.absent(),
           bool? isWarmUp,
-          Value<String?> setNotes = const Value.absent()}) =>
+          Value<String?> setNotes = const Value.absent(),
+          Value<String?> uuid = const Value.absent()}) =>
       WorkoutSet(
         id: id ?? this.id,
         sessionId: sessionId ?? this.sessionId,
@@ -2378,6 +2472,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
         rpe: rpe.present ? rpe.value : this.rpe,
         isWarmUp: isWarmUp ?? this.isWarmUp,
         setNotes: setNotes.present ? setNotes.value : this.setNotes,
+        uuid: uuid.present ? uuid.value : this.uuid,
       );
   WorkoutSet copyWithCompanion(WorkoutSetsCompanion data) {
     return WorkoutSet(
@@ -2393,6 +2488,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       rpe: data.rpe.present ? data.rpe.value : this.rpe,
       isWarmUp: data.isWarmUp.present ? data.isWarmUp.value : this.isWarmUp,
       setNotes: data.setNotes.present ? data.setNotes.value : this.setNotes,
+      uuid: data.uuid.present ? data.uuid.value : this.uuid,
     );
   }
 
@@ -2408,14 +2504,15 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           ..write('isPr: $isPr, ')
           ..write('rpe: $rpe, ')
           ..write('isWarmUp: $isWarmUp, ')
-          ..write('setNotes: $setNotes')
+          ..write('setNotes: $setNotes, ')
+          ..write('uuid: $uuid')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, sessionId, exerciseName, weight, reps,
-      setNumber, isPr, rpe, isWarmUp, setNotes);
+      setNumber, isPr, rpe, isWarmUp, setNotes, uuid);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2429,7 +2526,8 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           other.isPr == this.isPr &&
           other.rpe == this.rpe &&
           other.isWarmUp == this.isWarmUp &&
-          other.setNotes == this.setNotes);
+          other.setNotes == this.setNotes &&
+          other.uuid == this.uuid);
 }
 
 class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
@@ -2443,6 +2541,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
   final Value<int?> rpe;
   final Value<bool> isWarmUp;
   final Value<String?> setNotes;
+  final Value<String?> uuid;
   const WorkoutSetsCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
@@ -2454,6 +2553,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     this.rpe = const Value.absent(),
     this.isWarmUp = const Value.absent(),
     this.setNotes = const Value.absent(),
+    this.uuid = const Value.absent(),
   });
   WorkoutSetsCompanion.insert({
     this.id = const Value.absent(),
@@ -2466,6 +2566,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     this.rpe = const Value.absent(),
     this.isWarmUp = const Value.absent(),
     this.setNotes = const Value.absent(),
+    this.uuid = const Value.absent(),
   })  : sessionId = Value(sessionId),
         exerciseName = Value(exerciseName),
         weight = Value(weight),
@@ -2482,6 +2583,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     Expression<int>? rpe,
     Expression<bool>? isWarmUp,
     Expression<String>? setNotes,
+    Expression<String>? uuid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2494,6 +2596,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       if (rpe != null) 'rpe': rpe,
       if (isWarmUp != null) 'is_warm_up': isWarmUp,
       if (setNotes != null) 'set_notes': setNotes,
+      if (uuid != null) 'uuid': uuid,
     });
   }
 
@@ -2507,7 +2610,8 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       Value<bool>? isPr,
       Value<int?>? rpe,
       Value<bool>? isWarmUp,
-      Value<String?>? setNotes}) {
+      Value<String?>? setNotes,
+      Value<String?>? uuid}) {
     return WorkoutSetsCompanion(
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
@@ -2519,6 +2623,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       rpe: rpe ?? this.rpe,
       isWarmUp: isWarmUp ?? this.isWarmUp,
       setNotes: setNotes ?? this.setNotes,
+      uuid: uuid ?? this.uuid,
     );
   }
 
@@ -2555,6 +2660,9 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     if (setNotes.present) {
       map['set_notes'] = Variable<String>(setNotes.value);
     }
+    if (uuid.present) {
+      map['uuid'] = Variable<String>(uuid.value);
+    }
     return map;
   }
 
@@ -2570,7 +2678,8 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
           ..write('isPr: $isPr, ')
           ..write('rpe: $rpe, ')
           ..write('isWarmUp: $isWarmUp, ')
-          ..write('setNotes: $setNotes')
+          ..write('setNotes: $setNotes, ')
+          ..write('uuid: $uuid')
           ..write(')'))
         .toString();
   }
@@ -4589,6 +4698,7 @@ typedef $$FoodLogsTableCreateCompanionBuilder = FoodLogsCompanion Function({
   Value<DateTime> loggedAt,
   Value<bool> isSynced,
   Value<String?> mealGroupId,
+  Value<String?> uuid,
 });
 typedef $$FoodLogsTableUpdateCompanionBuilder = FoodLogsCompanion Function({
   Value<int> id,
@@ -4604,6 +4714,7 @@ typedef $$FoodLogsTableUpdateCompanionBuilder = FoodLogsCompanion Function({
   Value<DateTime> loggedAt,
   Value<bool> isSynced,
   Value<String?> mealGroupId,
+  Value<String?> uuid,
 });
 
 class $$FoodLogsTableTableManager extends RootTableManager<
@@ -4636,6 +4747,7 @@ class $$FoodLogsTableTableManager extends RootTableManager<
             Value<DateTime> loggedAt = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
             Value<String?> mealGroupId = const Value.absent(),
+            Value<String?> uuid = const Value.absent(),
           }) =>
               FoodLogsCompanion(
             id: id,
@@ -4651,6 +4763,7 @@ class $$FoodLogsTableTableManager extends RootTableManager<
             loggedAt: loggedAt,
             isSynced: isSynced,
             mealGroupId: mealGroupId,
+            uuid: uuid,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -4666,6 +4779,7 @@ class $$FoodLogsTableTableManager extends RootTableManager<
             Value<DateTime> loggedAt = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
             Value<String?> mealGroupId = const Value.absent(),
+            Value<String?> uuid = const Value.absent(),
           }) =>
               FoodLogsCompanion.insert(
             id: id,
@@ -4681,6 +4795,7 @@ class $$FoodLogsTableTableManager extends RootTableManager<
             loggedAt: loggedAt,
             isSynced: isSynced,
             mealGroupId: mealGroupId,
+            uuid: uuid,
           ),
         ));
 }
@@ -4745,6 +4860,11 @@ class $$FoodLogsTableFilterComposer
 
   ColumnFilters<String> get mealGroupId => $state.composableBuilder(
       column: $state.table.mealGroupId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -4821,6 +4941,11 @@ class $$FoodLogsTableOrderingComposer
 
   ColumnOrderings<String> get mealGroupId => $state.composableBuilder(
       column: $state.table.mealGroupId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -5030,6 +5155,7 @@ typedef $$WorkoutSessionsTableCreateCompanionBuilder = WorkoutSessionsCompanion
   required int estimatedCalories,
   Value<DateTime> completedAt,
   Value<bool> isSynced,
+  Value<String?> uuid,
 });
 typedef $$WorkoutSessionsTableUpdateCompanionBuilder = WorkoutSessionsCompanion
     Function({
@@ -5040,6 +5166,7 @@ typedef $$WorkoutSessionsTableUpdateCompanionBuilder = WorkoutSessionsCompanion
   Value<int> estimatedCalories,
   Value<DateTime> completedAt,
   Value<bool> isSynced,
+  Value<String?> uuid,
 });
 
 class $$WorkoutSessionsTableTableManager extends RootTableManager<
@@ -5067,6 +5194,7 @@ class $$WorkoutSessionsTableTableManager extends RootTableManager<
             Value<int> estimatedCalories = const Value.absent(),
             Value<DateTime> completedAt = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
+            Value<String?> uuid = const Value.absent(),
           }) =>
               WorkoutSessionsCompanion(
             id: id,
@@ -5076,6 +5204,7 @@ class $$WorkoutSessionsTableTableManager extends RootTableManager<
             estimatedCalories: estimatedCalories,
             completedAt: completedAt,
             isSynced: isSynced,
+            uuid: uuid,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -5085,6 +5214,7 @@ class $$WorkoutSessionsTableTableManager extends RootTableManager<
             required int estimatedCalories,
             Value<DateTime> completedAt = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
+            Value<String?> uuid = const Value.absent(),
           }) =>
               WorkoutSessionsCompanion.insert(
             id: id,
@@ -5094,6 +5224,7 @@ class $$WorkoutSessionsTableTableManager extends RootTableManager<
             estimatedCalories: estimatedCalories,
             completedAt: completedAt,
             isSynced: isSynced,
+            uuid: uuid,
           ),
         ));
 }
@@ -5133,6 +5264,11 @@ class $$WorkoutSessionsTableFilterComposer
 
   ColumnFilters<bool> get isSynced => $state.composableBuilder(
       column: $state.table.isSynced,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -5187,6 +5323,11 @@ class $$WorkoutSessionsTableOrderingComposer
       column: $state.table.isSynced,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
 typedef $$WorkoutSetsTableCreateCompanionBuilder = WorkoutSetsCompanion
@@ -5201,6 +5342,7 @@ typedef $$WorkoutSetsTableCreateCompanionBuilder = WorkoutSetsCompanion
   Value<int?> rpe,
   Value<bool> isWarmUp,
   Value<String?> setNotes,
+  Value<String?> uuid,
 });
 typedef $$WorkoutSetsTableUpdateCompanionBuilder = WorkoutSetsCompanion
     Function({
@@ -5214,6 +5356,7 @@ typedef $$WorkoutSetsTableUpdateCompanionBuilder = WorkoutSetsCompanion
   Value<int?> rpe,
   Value<bool> isWarmUp,
   Value<String?> setNotes,
+  Value<String?> uuid,
 });
 
 class $$WorkoutSetsTableTableManager extends RootTableManager<
@@ -5243,6 +5386,7 @@ class $$WorkoutSetsTableTableManager extends RootTableManager<
             Value<int?> rpe = const Value.absent(),
             Value<bool> isWarmUp = const Value.absent(),
             Value<String?> setNotes = const Value.absent(),
+            Value<String?> uuid = const Value.absent(),
           }) =>
               WorkoutSetsCompanion(
             id: id,
@@ -5255,6 +5399,7 @@ class $$WorkoutSetsTableTableManager extends RootTableManager<
             rpe: rpe,
             isWarmUp: isWarmUp,
             setNotes: setNotes,
+            uuid: uuid,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -5267,6 +5412,7 @@ class $$WorkoutSetsTableTableManager extends RootTableManager<
             Value<int?> rpe = const Value.absent(),
             Value<bool> isWarmUp = const Value.absent(),
             Value<String?> setNotes = const Value.absent(),
+            Value<String?> uuid = const Value.absent(),
           }) =>
               WorkoutSetsCompanion.insert(
             id: id,
@@ -5279,6 +5425,7 @@ class $$WorkoutSetsTableTableManager extends RootTableManager<
             rpe: rpe,
             isWarmUp: isWarmUp,
             setNotes: setNotes,
+            uuid: uuid,
           ),
         ));
 }
@@ -5328,6 +5475,11 @@ class $$WorkoutSetsTableFilterComposer
 
   ColumnFilters<String> get setNotes => $state.composableBuilder(
       column: $state.table.setNotes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -5390,6 +5542,11 @@ class $$WorkoutSetsTableOrderingComposer
 
   ColumnOrderings<String> get setNotes => $state.composableBuilder(
       column: $state.table.setNotes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get uuid => $state.composableBuilder(
+      column: $state.table.uuid,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

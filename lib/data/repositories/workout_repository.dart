@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../database/app_database.dart';
 
@@ -131,6 +132,7 @@ class WorkoutRepository {
     required int calories,
     required List<WorkoutSetsCompanion> sets,
   }) async {
+    final sessionUuid = const Uuid().v4();
     return await _db.transaction(() async {
       final sessionId = await _db.into(_db.workoutSessions).insert(
             WorkoutSessionsCompanion.insert(
@@ -138,12 +140,17 @@ class WorkoutRepository {
               totalVolume: volume,
               durationSeconds: durationSeconds,
               estimatedCalories: calories,
+              uuid: Value(sessionUuid),
             ),
           );
 
       for (final set in sets) {
-        // Inject generated session ID into each set before insert
-        final completedSet = set.copyWith(sessionId: Value(sessionId));
+        final setUuid = const Uuid().v4();
+        // Inject generated session ID and set UUID into each set before insert
+        final completedSet = set.copyWith(
+          sessionId: Value(sessionId),
+          uuid: Value(setUuid),
+        );
         await _db.into(_db.workoutSets).insert(completedSet);
       }
 

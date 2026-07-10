@@ -28,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -41,6 +41,11 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(workoutSets, workoutSets.isWarmUp);
             await m.addColumn(workoutSets, workoutSets.setNotes);
             await m.createTable(workoutDrafts);
+          }
+          if (from < 4) {
+            await m.addColumn(foodLogs, foodLogs.uuid);
+            await m.addColumn(workoutSessions, workoutSessions.uuid);
+            await m.addColumn(workoutSets, workoutSets.uuid);
           }
         },
         onCreate: (m) async {

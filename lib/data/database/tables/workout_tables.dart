@@ -20,6 +20,7 @@ class WorkoutSessions extends Table {
   IntColumn get estimatedCalories => integer()();
   DateTimeColumn get completedAt => dateTime().withDefault(currentDateAndTime)();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  TextColumn get uuid => text().nullable()();
 }
 
 class WorkoutSets extends Table {
@@ -33,6 +34,7 @@ class WorkoutSets extends Table {
   IntColumn get rpe => integer().nullable()();
   BoolColumn get isWarmUp => boolean().withDefault(const Constant(false))();
   TextColumn get setNotes => text().nullable()();
+  TextColumn get uuid => text().nullable()();
 }
 
 class BodyMeasurements extends Table {

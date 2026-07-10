@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 import 'exercise_details_sheet.dart';
@@ -146,7 +147,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
             // Exercises List
             Expanded(
               child: _loading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  ? const SkeletonList(count: 6)
                   : _exercises.isEmpty
                       ? _buildEmptyState()
                       : ListView.builder(

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../database/app_database.dart';
 
@@ -81,6 +82,7 @@ class FoodRepository {
       servingUnit: servingUnit,
       mealType: mealType,
       mealGroupId: Value(resolvedGroupId),
+      uuid: Value(const Uuid().v4()),
     );
     return await _db.into(_db.foodLogs).insert(companion);
   }

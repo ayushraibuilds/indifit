@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../core/di/providers.dart';
 import '../database/app_database.dart';
@@ -80,9 +81,17 @@ class SyncManager {
     
     if (unsynced.isEmpty) return;
 
-    final List<Map<String, dynamic>> payload = unsynced.map((log) {
-      return {
-        'id': log.id,
+    final List<Map<String, dynamic>> payload = [];
+    for (final log in unsynced) {
+      String resolvedUuid = log.uuid ?? '';
+      if (resolvedUuid.isEmpty) {
+        resolvedUuid = const Uuid().v4();
+        await (_db.update(_db.foodLogs)..where((tbl) => tbl.id.equals(log.id)))
+            .write(FoodLogsCompanion(uuid: Value(resolvedUuid)));
+      }
+
+      payload.add({
+        'id': resolvedUuid,
         'user_id': userId,
         'name': log.name,
         'calories': log.calories,
@@ -93,8 +102,8 @@ class SyncManager {
         'serving_unit': log.servingUnit,
         'meal_type': log.mealType,
         'logged_at': log.loggedAt.toIso8601String(),
-      };
-    }).toList();
+      });
+    }
 
     // Upsert to Supabase
     await client.from('food_logs').upsert(payload);
@@ -115,35 +124,48 @@ class SyncManager {
     if (unsynced.isEmpty) return;
 
     for (final session in unsynced) {
+      String sessionUuid = session.uuid ?? '';
+      if (sessionUuid.isEmpty) {
+        sessionUuid = const Uuid().v4();
+        await (_db.update(_db.workoutSessions)..where((tbl) => tbl.id.equals(session.id)))
+            .write(WorkoutSessionsCompanion(uuid: Value(sessionUuid)));
+      }
+
       // Fetch sets associated with this session
       final sets = await (_db.select(_db.workoutSets)..where((tbl) => tbl.sessionId.equals(session.id))).get();
 
       // Upload session to Supabase
-      final sessionResponse = await client.from('workout_sessions').upsert({
-        'id': session.id,
+      await client.from('workout_sessions').upsert({
+        'id': sessionUuid,
         'user_id': userId,
         'name': session.name,
         'total_volume': session.totalVolume,
         'duration_seconds': session.durationSeconds,
         'estimated_calories': session.estimatedCalories,
         'completed_at': session.completedAt.toIso8601String(),
-      }).select().single();
-
-      final syncedSessionId = sessionResponse['id'] as int;
+      });
 
       // Upload sets to Supabase
       if (sets.isNotEmpty) {
-        final List<Map<String, dynamic>> setsPayload = sets.map((set) {
-          return {
-            'id': set.id,
-            'session_id': syncedSessionId,
+        final List<Map<String, dynamic>> setsPayload = [];
+        for (final set in sets) {
+          String setUuid = set.uuid ?? '';
+          if (setUuid.isEmpty) {
+            setUuid = const Uuid().v4();
+            await (_db.update(_db.workoutSets)..where((tbl) => tbl.id.equals(set.id)))
+                .write(WorkoutSetsCompanion(uuid: Value(setUuid)));
+          }
+
+          setsPayload.add({
+            'id': setUuid,
+            'session_id': sessionUuid,
             'exercise_name': set.exerciseName,
             'weight': set.weight,
             'reps': set.reps,
             'set_number': set.setNumber,
             'is_pr': set.isPr,
-          };
-        }).toList();
+          });
+        }
 
         await client.from('workout_sets').upsert(setsPayload);
       }

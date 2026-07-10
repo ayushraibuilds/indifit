@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../onboarding/onboarding_wizard_screen.dart';
@@ -79,7 +80,10 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Padding(
+              padding: EdgeInsets.all(20.0),
+              child: SkeletonList(count: 4),
+            )
           : _activeRoutine == null
               ? _buildEmptyState()
               : _buildRoutineLayout(),

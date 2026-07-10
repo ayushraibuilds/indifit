@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/providers.dart';
 
 import '../../core/theme/colors.dart';
+import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -338,6 +339,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   FutureBuilder<double>(
                     future: Future.wait(logs.map((l) => foodRepo.getFiberForLog(l))).then((fibers) => fibers.fold<double>(0.0, (sum, f) => sum + f)),
                     builder: (context, fiberSnapshot) {
+                      if (fiberSnapshot.connectionState == ConnectionState.waiting) {
+                        return _buildSkeletonNutritionCard();
+                      }
                       final fiber = fiberSnapshot.data ?? 0.0;
                       final waterState = ref.watch(waterProvider);
                       return _buildNutritionReviewCard(logs, fiber, waterState.waterLogged, waterState.waterGoal, waterState.glassSize);
@@ -530,7 +534,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 0,
             ),
@@ -545,7 +549,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryGlow,
               foregroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 side: const BorderSide(color: AppColors.primary, width: 1),
                 borderRadius: BorderRadius.circular(12),
@@ -1021,26 +1025,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline_rounded, color: AppColors.textMuted, size: 20),
                     onPressed: _decrementWater,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    tooltip: 'Decrement Water',
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 4),
                   IconButton(
                     icon: const Icon(Icons.refresh, color: AppColors.textMuted, size: 18),
                     onPressed: _resetWater,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    tooltip: 'Reset Water',
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 4),
                 ],
                 ElevatedButton(
                   onPressed: _incrementWater,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0066FF).withOpacity(0.12),
                     foregroundColor: const Color(0xFF0066FF),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     elevation: 0,
                   ),
@@ -1228,6 +1228,53 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 );
               }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonNutritionCard() {
+    return const Card(
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                SkeletonBox(width: 20, height: 20, borderRadius: 4),
+                SizedBox(width: 8),
+                SkeletonBox(width: 120, height: 16),
+              ],
+            ),
+            SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBox(width: 80, height: 12),
+                    SizedBox(height: 6),
+                    SkeletonBox(width: 60, height: 16),
+                  ],
+                ),
+                SizedBox(
+                  height: 40,
+                  width: 1,
+                  child: VerticalDivider(color: AppColors.border),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBox(width: 80, height: 12),
+                    SizedBox(height: 6),
+                    SkeletonBox(width: 60, height: 16),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
