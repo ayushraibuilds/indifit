@@ -220,5 +220,79 @@ class WorkoutRepository {
           ..orderBy([(tbl) => OrderingTerm(expression: tbl.recordedAt, mode: OrderingMode.desc)]))
         .get();
   }
+
+  // 11. Fetch latest completed workout session
+  Future<WorkoutSession?> getLastCompletedSession() async {
+    final query = _db.select(_db.workoutSessions)
+      ..orderBy([(tbl) => OrderingTerm(expression: tbl.completedAt, mode: OrderingMode.desc)])
+      ..limit(1);
+    final rows = await query.get();
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  // 12. Fetch all sets for a given sessionId
+  Future<List<WorkoutSet>> getSetsForSession(int sessionId) async {
+    return await (_db.select(_db.workoutSets)
+      ..where((tbl) => tbl.sessionId.equals(sessionId))
+      ..orderBy([(tbl) => OrderingTerm(expression: tbl.setNumber)]))
+      .get();
+  }
+
+  // 13. Duplicate a completed session for today
+  Future<int> duplicateSession(WorkoutSession session, List<WorkoutSet> sets) async {
+    return await _db.transaction(() async {
+      final sessionId = await _db.into(_db.workoutSessions).insert(
+            WorkoutSessionsCompanion.insert(
+              name: session.name,
+              totalVolume: session.totalVolume,
+              durationSeconds: session.durationSeconds,
+              estimatedCalories: session.estimatedCalories,
+              completedAt: Value(DateTime.now()),
+            ),
+          );
+
+      for (final s in sets) {
+        await _db.into(_db.workoutSets).insert(
+              WorkoutSetsCompanion.insert(
+                sessionId: sessionId,
+                exerciseName: s.exerciseName,
+                weight: s.weight,
+                reps: s.reps,
+                setNumber: s.setNumber,
+                isPr: s.isPr,
+              ),
+            );
+      }
+      return sessionId;
+    });
+  }
+
+  // 14. Fetch complete exercise history (sets grouped by session)
+  Future<List<Map<String, dynamic>>> getExerciseHistory(String exerciseName) async {
+    final query = _db.select(_db.workoutSets).join([
+      innerJoin(
+        _db.workoutSessions,
+        _db.workoutSessions.id.equalsExp(_db.workoutSets.sessionId),
+      ),
+    ])
+      ..where(_db.workoutSets.exerciseName.equals(exerciseName))
+      ..orderBy([OrderingTerm(expression: _db.workoutSessions.completedAt, mode: OrderingMode.desc)]);
+
+    final rows = await query.get();
+    
+    final Map<int, Map<String, dynamic>> grouped = {};
+    for (final row in rows) {
+      final set = row.readTable(_db.workoutSets);
+      final session = row.readTable(_db.workoutSessions);
+      
+      grouped.putIfAbsent(session.id, () => {
+        'session': session,
+        'sets': <WorkoutSet>[],
+      });
+      (grouped[session.id]!['sets'] as List<WorkoutSet>).add(set);
+    }
+    
+    return grouped.values.toList();
+  }
 }
 

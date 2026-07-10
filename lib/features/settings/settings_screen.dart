@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:drift/drift.dart' hide Column;
 import '../../core/di/providers.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/colors.dart';
+import '../../core/utils/encryption_helper.dart';
+import '../../data/database/app_database.dart';
+import 'health_sync_hub_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -22,11 +26,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _remindWeekly = false;
   bool _offlineOnly = false;
   bool _loading = true;
+  int _waterGoal = 8;
+  final TextEditingController _waterGoalController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadPreferences();
+  }
+
+  @override
+  void dispose() {
+    _waterGoalController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPreferences() async {
@@ -38,11 +50,59 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _remindEvening = prefs.getBool(NotificationService.prefRemindEvening) ?? false;
       _remindWeekly = prefs.getBool(NotificationService.prefRemindWeekly) ?? false;
       _offlineOnly = prefs.getBool('offline_only') ?? false;
+      _waterGoal = prefs.getInt('water_goal') ?? 8;
+      _waterGoalController.text = _waterGoal.toString();
       _loading = false;
     });
   }
 
   Future<void> _exportData() async {
+    final passwordController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export & Encrypt Backup'),
+        backgroundColor: AppColors.surface,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Set a password to protect your backup file. If you leave this blank, the backup will be exported in plain text.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Backup Password (Optional)',
+                hintText: 'Leave empty for no encryption',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () async {
+              final password = passwordController.text;
+              Navigator.pop(context); // Close dialog
+              await _performExport(password);
+            },
+            child: const Text('Export Backup'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performExport(String password) async {
+    setState(() => _loading = true);
     try {
       final db = ref.read(databaseProvider);
       
@@ -129,18 +189,248 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       };
 
       final jsonString = jsonEncode(exportMap);
-      await Clipboard.setData(ClipboardData(text: jsonString));
+      final finalString = EncryptionHelper.encrypt(jsonString, password);
+      await Clipboard.setData(ClipboardData(text: finalString));
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All data successfully exported and copied to clipboard!')),
+          SnackBar(
+            content: Text(password.isEmpty 
+              ? 'Data exported and copied to clipboard!' 
+              : 'Password-encrypted backup successfully copied to clipboard!'
+            ),
+            backgroundColor: AppColors.success,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to export data: $e')),
+          SnackBar(content: Text('Failed to export data: $e'), backgroundColor: AppColors.danger),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _showRestoreDialog() async {
+    final backupController = TextEditingController();
+    final passwordController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restore Database Backup'),
+        backgroundColor: AppColors.surface,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Paste the backup text block below:',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: backupController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  hintText: 'Paste backup string here...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Decryption Password (if encrypted)',
+                  hintText: 'Leave blank if unencrypted',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () async {
+              final backup = backupController.text.trim();
+              final password = passwordController.text;
+              if (backup.isEmpty) return;
+              Navigator.pop(context);
+              await _performRestore(backup, password);
+            },
+            child: const Text('Restore Data'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performRestore(String backupText, String password) async {
+    setState(() => _loading = true);
+    try {
+      String jsonText;
+      try {
+        jsonText = EncryptionHelper.decrypt(backupText, password);
+      } catch (e) {
+        throw const FormatException('Decryption failed. Check if password is correct.');
+      }
+
+      final db = ref.read(databaseProvider);
+      final data = jsonDecode(jsonText);
+
+      await db.transaction(() async {
+        // Clear all tables
+        await db.delete(db.foodItems).go();
+        await db.delete(db.foodLogs).go();
+        await db.delete(db.workoutSessions).go();
+        await db.delete(db.workoutSets).go();
+        await db.delete(db.bodyMeasurements).go();
+        await db.delete(db.workoutRoutines).go();
+        await db.delete(db.routineDays).go();
+        await db.delete(db.routineExercises).go();
+
+        // Restore food items
+        if (data['food_items'] != null) {
+          for (final item in data['food_items']) {
+            await db.into(db.foodItems).insert(FoodItemsCompanion.insert(
+              name: item['name'],
+              nameHindi: Value(item['name_hindi']),
+              calories: (item['calories'] as num).toInt(),
+              proteinG: (item['protein_g'] as num).toDouble(),
+              carbsG: (item['carbs_g'] as num).toDouble(),
+              fatG: (item['fat_g'] as num).toDouble(),
+              fiberG: Value(item['fiber_g'] != null ? (item['fiber_g'] as num).toDouble() : null),
+              servingSize: (item['serving_size'] as num).toDouble(),
+              servingUnit: item['serving_unit'],
+              category: item['category'] ?? 'General',
+              isCustom: Value(item['is_custom'] ?? false),
+            ));
+          }
+        }
+
+        // Restore food logs
+        if (data['food_logs'] != null) {
+          for (final item in data['food_logs']) {
+            await db.into(db.foodLogs).insert(FoodLogsCompanion.insert(
+              name: item['name'],
+              calories: (item['calories'] as num).toInt(),
+              proteinG: (item['protein_g'] as num).toDouble(),
+              carbsG: (item['carbs_g'] as num).toDouble(),
+              fatG: (item['fat_g'] as num).toDouble(),
+              servingLogged: (item['serving_logged'] as num).toDouble(),
+              servingUnit: item['serving_unit'],
+              mealType: item['meal_type'],
+              loggedAt: Value(DateTime.parse(item['logged_at'])),
+            ));
+          }
+        }
+
+        // Restore sessions
+        if (data['workout_sessions'] != null) {
+          for (final item in data['workout_sessions']) {
+            await db.into(db.workoutSessions).insert(WorkoutSessionsCompanion.insert(
+              id: Value(item['id']),
+              name: item['name'],
+              totalVolume: (item['total_volume'] as num).toDouble(),
+              durationSeconds: (item['duration_seconds'] as num).toInt(),
+              estimatedCalories: (item['estimated_calories'] as num).toInt(),
+              completedAt: Value(DateTime.parse(item['completed_at'])),
+            ));
+          }
+        }
+
+        // Restore sets
+        if (data['workout_sets'] != null) {
+          for (final item in data['workout_sets']) {
+            await db.into(db.workoutSets).insert(WorkoutSetsCompanion.insert(
+              sessionId: item['session_id'],
+              exerciseName: item['exercise_name'],
+              weight: (item['weight'] as num).toDouble(),
+              reps: (item['reps'] as num).toInt(),
+              setNumber: (item['set_number'] as num).toInt(),
+              isPr: item['is_pr'] ?? false,
+            ));
+          }
+        }
+
+        // Restore body measurements
+        if (data['body_measurements'] != null) {
+          for (final item in data['body_measurements']) {
+            await db.into(db.bodyMeasurements).insert(BodyMeasurementsCompanion.insert(
+              weight: Value(item['weight'] != null ? (item['weight'] as num).toDouble() : null),
+              waist: Value(item['waist'] != null ? (item['waist'] as num).toDouble() : null),
+              chest: Value(item['chest'] != null ? (item['chest'] as num).toDouble() : null),
+              arms: Value(item['arms'] != null ? (item['arms'] as num).toDouble() : null),
+              recordedAt: Value(DateTime.parse(item['recorded_at'])),
+            ));
+          }
+        }
+
+        // Restore routines
+        if (data['workout_routines'] != null) {
+          for (final item in data['workout_routines']) {
+            await db.into(db.workoutRoutines).insert(WorkoutRoutinesCompanion.insert(
+              id: Value(item['id']),
+              name: item['name'],
+              goal: item['goal'],
+              notes: Value(item['notes']),
+              createdAt: Value(DateTime.parse(item['created_at'])),
+            ));
+          }
+        }
+
+        // Restore routine days
+        if (data['routine_days'] != null) {
+          for (final item in data['routine_days']) {
+            await db.into(db.routineDays).insert(RoutineDaysCompanion.insert(
+              id: Value(item['id']),
+              routineId: item['routine_id'],
+              dayOfWeek: (item['day_of_week'] as num).toInt(),
+              name: item['name'],
+              isRestDay: Value(item['is_rest_day'] ?? false),
+            ));
+          }
+        }
+
+        // Restore routine exercises
+        if (data['routine_exercises'] != null) {
+          for (final item in data['routine_exercises']) {
+            await db.into(db.routineExercises).insert(RoutineExercisesCompanion.insert(
+              dayId: item['day_id'],
+              exerciseName: item['exercise_name'],
+              sets: (item['sets'] as num).toInt(),
+              repsRange: item['reps_range'],
+              orderIndex: (item['order_index'] as num).toInt(),
+            ));
+          }
+        }
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Database successfully restored!'), backgroundColor: AppColors.success),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to restore backup: $e'), backgroundColor: AppColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
       }
     }
   }
@@ -243,6 +533,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       _onToggleChanged(NotificationService.prefRemindWeekly, val);
                     },
                   ),
+                  const SizedBox(height: 16),
+
+                  // Daily Water Goal Input
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Daily Water Goal',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Target glasses of water per day (250ml each)',
+                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          SizedBox(
+                            width: 64,
+                            child: TextField(
+                              controller: _waterGoalController,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              decoration: const InputDecoration(
+                                contentPadding: EdgeInsets.symmetric(vertical: 8),
+                              ),
+                              onChanged: (val) async {
+                                final parsed = int.tryParse(val) ?? 8;
+                                if (parsed > 0 && parsed <= 40) {
+                                  final prefs = await SharedPreferences.getInstance();
+                                  await prefs.setInt('water_goal', parsed);
+                                  setState(() {
+                                    _waterGoal = parsed;
+                                  });
+                                }
+                              },
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
 
                   const SizedBox(height: 32),
 
@@ -269,11 +610,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: 12),
 
+                  // Health Sync Hub button
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const HealthSyncHubScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.favorite_rounded, color: Colors.redAccent),
+                    label: const Text('Apple Health & Health Connect Sync'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent.withOpacity(0.12),
+                      foregroundColor: Colors.redAccent,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.redAccent.withOpacity(0.2)),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
                   // Export JSON Database
                   ElevatedButton.icon(
                     onPressed: _exportData,
                     icon: const Icon(Icons.download_rounded),
-                    label: const Text('Export Local Database (JSON)'),
+                    label: const Text('Export Local Backup (Encrypted)'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary.withOpacity(0.12),
                       foregroundColor: AppColors.primary,
@@ -281,6 +645,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Restore JSON Database
+                  ElevatedButton.icon(
+                    onPressed: _showRestoreDialog,
+                    icon: const Icon(Icons.upload_rounded, color: Colors.blueAccent),
+                    label: const Text('Restore Database from Backup'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent.withOpacity(0.12),
+                      foregroundColor: Colors.blueAccent,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.blueAccent.withOpacity(0.2)),
                       ),
                       elevation: 0,
                     ),

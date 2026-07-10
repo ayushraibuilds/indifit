@@ -4,7 +4,7 @@ IndiFit is an offline-first, AI-powered gym tracker and nutrition planner tailor
 
 ## Key Features
 - **Offline-First Storage**: Powered by Drift (SQLite) to log workouts, track body stats, search food, and manage rest timers 100% offline.
-- **Indian Food Database**: Auto-seeded on first install with 500+ common Indian dishes and macros (Whole wheat roti, Dal tadka, Paneer butter masala, Rajma chawal, Chole, etc.).
+- **Indian Food Database**: Auto-seeded on first install with 413 common Indian dishes and macros (Whole wheat roti, Dal tadka, Paneer butter masala, Rajma chawal, Chole, etc.).
 - **FastAPI AI Integration**: Proxied server-side calls utilizing Gemini (free/multimodal) and DeepSeek V4-Flash to build onboarding programs, estimate food via photo/text descriptions, and compile weekly report summaries.
 - **Interactive Workout Player**: Responsive set counters, haptic circular countdown rest timers, and personal record confetti celebrations.
 

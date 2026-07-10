@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
+import 'exercise_history_screen.dart';
 
 class ExerciseDetailsSheet extends StatelessWidget {
   final Exercise exercise;
@@ -98,6 +99,27 @@ class ExerciseDetailsSheet extends StatelessWidget {
               ],
             ),
             const Divider(color: AppColors.border, height: 32),
+
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context); // Close sheet first
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ExerciseHistoryScreen(exerciseName: exercise.name),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.analytics_rounded),
+              label: const Text('View 1RM Trend & Plate Calc'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(44),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // YouTube Video Link
             if (exercise.youtubeId != null) ...[

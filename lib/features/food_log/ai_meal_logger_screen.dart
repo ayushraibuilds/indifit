@@ -25,6 +25,33 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   bool _loading = false;
   Map<String, dynamic>? _estimatedMeal;
 
+  // Edit-before-save controllers
+  final TextEditingController _nameEditController = TextEditingController();
+  final TextEditingController _caloriesEditController = TextEditingController();
+  final TextEditingController _proteinEditController = TextEditingController();
+  final TextEditingController _carbsEditController = TextEditingController();
+  final TextEditingController _fatEditController = TextEditingController();
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _nameEditController.dispose();
+    _caloriesEditController.dispose();
+    _proteinEditController.dispose();
+    _carbsEditController.dispose();
+    _fatEditController.dispose();
+    super.dispose();
+  }
+
+  void _initEditControllers() {
+    if (_estimatedMeal == null) return;
+    _nameEditController.text = _estimatedMeal!['name'] ?? 'AI Estimated Meal';
+    _caloriesEditController.text = (_estimatedMeal!['calories'] ?? '0').toString();
+    _proteinEditController.text = (_estimatedMeal!['protein'] ?? '0.0').toString();
+    _carbsEditController.text = (_estimatedMeal!['carbs'] ?? '0.0').toString();
+    _fatEditController.text = (_estimatedMeal!['fat'] ?? '0.0').toString();
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? file = await _picker.pickImage(
@@ -65,6 +92,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       if (response.statusCode == 200 && response.data != null) {
         setState(() {
           _estimatedMeal = response.data;
+          _initEditControllers();
           _loading = false;
         });
       }
@@ -100,6 +128,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       if (response.statusCode == 200 && response.data != null) {
         setState(() {
           _estimatedMeal = response.data;
+          _initEditControllers();
           _loading = false;
         });
       }
@@ -116,17 +145,19 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
     final repo = ref.read(foodRepositoryProvider);
     
-    final double carbs = (_estimatedMeal!['carbs'] as num).toDouble();
-    final double protein = (_estimatedMeal!['protein'] as num).toDouble();
-    final double fat = (_estimatedMeal!['fat'] as num).toDouble();
+    final String name = _nameEditController.text.trim();
+    final int calories = int.tryParse(_caloriesEditController.text) ?? 0;
+    final double protein = double.tryParse(_proteinEditController.text) ?? 0.0;
+    final double carbs = double.tryParse(_carbsEditController.text) ?? 0.0;
+    final double fat = double.tryParse(_fatEditController.text) ?? 0.0;
 
     await repo.logFoodEntry(
-      name: _estimatedMeal!['name'] ?? 'AI Estimated Meal',
-      calories: (_estimatedMeal!['calories'] as num).toInt(),
+      name: name.isNotEmpty ? name : 'AI Estimated Meal',
+      calories: calories,
       proteinG: protein,
       carbsG: carbs,
       fatG: fat,
-      servingLogged: (_estimatedMeal!['serving_size'] as num).toDouble(),
+      servingLogged: (_estimatedMeal!['serving_size'] as num?)?.toDouble() ?? 1.0,
       servingUnit: _estimatedMeal!['serving_unit'] ?? 'serving',
       mealType: widget.mealType,
       foodItemId: null,
@@ -315,9 +346,9 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   }
 
   Widget _buildResultSection() {
-    final double carbs = (_estimatedMeal!['carbs'] as num).toDouble();
-    final double protein = (_estimatedMeal!['protein'] as num).toDouble();
-    final double fat = (_estimatedMeal!['fat'] as num).toDouble();
+    final isFallback = _estimatedMeal!['is_fallback'] ?? false;
+    final confidenceText = isFallback ? 'Confidence: Low (Offline Mode)' : 'Confidence: High (Gemini AI)';
+    final confidenceColor = isFallback ? AppColors.warning : AppColors.success;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,25 +364,87 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _estimatedMeal!['name'] ?? 'Estimated Food Item',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Estimated portions: ${_estimatedMeal!['serving_size']} ${_estimatedMeal!['serving_unit']}',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                // Confidence Badge Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Edit & verify macro details:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: confidenceColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: confidenceColor.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        confidenceText,
+                        style: TextStyle(color: confidenceColor, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  ],
                 ),
                 const Divider(color: AppColors.border, height: 24),
                 
-                // Macros Grid Layout
+                // Name Field
+                TextField(
+                  controller: _nameEditController,
+                  decoration: const InputDecoration(
+                    labelText: 'Meal Name',
+                    contentPadding: EdgeInsets.symmetric(vertical: 4),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Calories & Macros Inputs Row
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildMacroResult('Calories', '${_estimatedMeal!['calories']} kcal', AppColors.primary),
-                    _buildMacroResult('Protein', '${protein.toStringAsFixed(1)}g', AppColors.success),
-                    _buildMacroResult('Carbs', '${carbs.toStringAsFixed(1)}g', AppColors.warning),
-                    _buildMacroResult('Fat', '${fat.toStringAsFixed(1)}g', AppColors.danger),
+                    Expanded(
+                      child: TextField(
+                        controller: _caloriesEditController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Calories (kcal)',
+                          contentPadding: EdgeInsets.symmetric(vertical: 4),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _proteinEditController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Protein (g)',
+                          contentPadding: EdgeInsets.symmetric(vertical: 4),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _carbsEditController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Carbs (g)',
+                          contentPadding: EdgeInsets.symmetric(vertical: 4),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _fatEditController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Fat (g)',
+                          contentPadding: EdgeInsets.symmetric(vertical: 4),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -374,15 +467,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     );
   }
 
-  Widget _buildMacroResult(String label, String val, Color col) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-        const SizedBox(height: 4),
-        Text(val, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: col)),
-      ],
-    );
-  }
+
 
   Widget _buildLoadingState() {
     return const Center(

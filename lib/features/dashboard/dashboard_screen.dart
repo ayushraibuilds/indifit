@@ -24,6 +24,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _waterGlasses = 0;
+  int _waterGoal = 8;
   double _currentWeight = 74.5;
   int _streakCount = 3;
   
@@ -48,8 +49,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Future<void> _loadStateData() async {
     final prefs = await SharedPreferences.getInstance();
+    final todayStr = DateTime.now().toIso8601String().split('T')[0];
+    final lastLoggedDate = prefs.getString('water_last_logged_date') ?? '';
+    
+    int waterVal = prefs.getInt('water_glasses') ?? 0;
+    if (lastLoggedDate != todayStr) {
+      waterVal = 0;
+      await prefs.setInt('water_glasses', 0);
+      await prefs.setString('water_last_logged_date', todayStr);
+    }
+
     setState(() {
-      _waterGlasses = prefs.getInt('water_glasses') ?? 0;
+      _waterGlasses = waterVal;
+      _waterGoal = prefs.getInt('water_goal') ?? 8;
       _currentWeight = prefs.getDouble('current_weight') ?? 74.5;
       _streakCount = prefs.getInt('streak_count') ?? 3;
       
@@ -142,18 +154,58 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Future<void> _incrementWater() async {
     final prefs = await SharedPreferences.getInstance();
+    final todayStr = DateTime.now().toIso8601String().split('T')[0];
     setState(() {
       _waterGlasses++;
       prefs.setInt('water_glasses', _waterGlasses);
+      prefs.setString('water_last_logged_date', todayStr);
     });
   }
 
   Future<void> _resetWater() async {
     final prefs = await SharedPreferences.getInstance();
+    final todayStr = DateTime.now().toIso8601String().split('T')[0];
     setState(() {
       _waterGlasses = 0;
       prefs.setInt('water_glasses', 0);
+      prefs.setString('water_last_logged_date', todayStr);
     });
+  }
+
+  Future<void> _repeatLastMeal(String type, List<FoodLog> lastMeal) async {
+    final repo = ref.read(foodRepositoryProvider);
+    for (final item in lastMeal) {
+      await repo.logFoodEntry(
+        name: item.name,
+        calories: item.calories,
+        proteinG: item.proteinG,
+        carbsG: item.carbsG,
+        fatG: item.fatG,
+        servingLogged: item.servingLogged,
+        servingUnit: item.servingUnit,
+        mealType: type,
+        foodItemId: item.foodItemId,
+      );
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Repeated last $type!')),
+      );
+      _loadStateData();
+    }
+  }
+
+  Future<void> _repeatLastWorkout(WorkoutSession lastSession) async {
+    final repo = ref.read(workoutRepositoryProvider);
+    final sets = await repo.getSetsForSession(lastSession.id);
+    await repo.duplicateSession(lastSession, sets);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Logged duplicate of ${lastSession.name} for today!')),
+      );
+      _loadStateData();
+    }
   }
 
   Future<void> _updateWeight(double w) async {
@@ -510,47 +562,85 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildTodayWorkoutCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: _isRestDay ? Colors.blue.withOpacity(0.1) : AppColors.primaryGlow,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _isRestDay ? Icons.spa_rounded : Icons.fitness_center_rounded,
-                color: _isRestDay ? Colors.blue : AppColors.primary,
-                size: 24,
-              ),
+    return FutureBuilder<WorkoutSession?>(
+      future: ref.read(workoutRepositoryProvider).getLastCompletedSession(),
+      builder: (context, snapshot) {
+        final lastSession = snapshot.data;
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _isRestDay ? Colors.blue.withOpacity(0.1) : AppColors.primaryGlow,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _isRestDay ? Icons.spa_rounded : Icons.fitness_center_rounded,
+                        color: _isRestDay ? Colors.blue : AppColors.primary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('TODAY\'S WORKOUT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5)),
+                          const SizedBox(height: 4),
+                          Text(_todayWorkoutName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          const SizedBox(height: 2),
+                          Text(
+                            _isRestDay ? 'Time to recover and heal' : '${_todayExercises.length} Exercises scheduled',
+                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!_isRestDay)
+                      IconButton(
+                        icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 32),
+                        onPressed: _startTodayWorkout,
+                      )
+                  ],
+                ),
+                if (lastSession != null) ...[
+                  const SizedBox(height: 12),
+                  const Divider(color: AppColors.border),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Last: ${lastSession.name} (${(lastSession.durationSeconds / 60).round()}m)',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _repeatLastWorkout(lastSession),
+                        icon: const Icon(Icons.history_rounded, size: 14),
+                        label: const Text('Repeat Last', style: TextStyle(fontSize: 11)),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      )
+                    ],
+                  )
+                ]
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('TODAY\'S WORKOUT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5)),
-                  const SizedBox(height: 4),
-                  Text(_todayWorkoutName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 2),
-                  Text(
-                    _isRestDay ? 'Time to recover and heal' : '${_todayExercises.length} Exercises scheduled',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-            if (!_isRestDay)
-              IconButton(
-                icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 32),
-                onPressed: _startTodayWorkout,
-              )
-          ],
-        ),
-      ),
+          ),
+        );
+      }
     );
   }
 
@@ -725,9 +815,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         childrenPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         children: [
           if (mealLogs.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0),
-              child: Text('No food logged yet.', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              child: Column(
+                children: [
+                  const Text('No food logged yet.', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                  const SizedBox(height: 8),
+                  FutureBuilder<List<FoodLog>>(
+                    future: ref.read(foodRepositoryProvider).getLastLoggedMeal(type),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                        final lastMeal = snapshot.data!;
+                        final cals = lastMeal.fold(0, (sum, item) => sum + item.calories);
+                        return TextButton.icon(
+                          onPressed: () => _repeatLastMeal(type, lastMeal),
+                          icon: const Icon(Icons.history_rounded, size: 14),
+                          label: Text('Repeat Last ($cals kcal)', style: const TextStyle(fontSize: 12)),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ],
+              ),
             )
           else
             ...mealLogs.map((log) => _buildLoggedItemRow(log)),
@@ -779,7 +895,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 const Text('Water Intake', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 const SizedBox(height: 4),
                 Text(
-                  'Logged: ${_waterGlasses * 250} ml (Goal: 2.5L)',
+                  'Logged: ${_waterGlasses * 250} ml (Goal: ${(_waterGoal * 250 / 1000.0).toStringAsFixed(1)}L)',
                   style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                 ),
               ],

@@ -1,75 +1,85 @@
-# Implementation Plan - Launch Blockers & UI Improvements (Sprint 4.9 & Hardening)
+# Implementation Plan - Phase 6 Features & Hardening (Sprint 5)
 
-This plan details fixes for all five highlighted launch blockers and seven UI/UX enhancements.
+This plan outlines the implementation of six advanced features and refinements for IndiFit.
 
 ## Proposed Changes
 
-### Core Security & Build Config
-
-#### [MODIFY] [build.gradle.kts](file:///Users/dankmagician/Documents/New%20project/indifit/android/app/build.gradle.kts)
-- Prevent silent fallback to debug signing key when building a release package.
-- Throw a `GradleException` if `key.properties` does not exist during a release build.
-
-#### [MODIFY] [sync_manager.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/data/repositories/sync_manager.dart)
-- Include user identity (`user_id` fetched from `Supabase.instance.client.auth.currentUser?.id`) in the uploaded payloads for `food_logs` and `workout_sessions`.
-- Bypass sync if no authenticated user is signed in to prevent collisions.
-
-#### [MODIFY] [app_config.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/core/config/app_config.dart)
-- Import `package:flutter/foundation.dart`.
-- Change default backend URL configuration to adapt to release modes: use loopback IP `http://10.0.2.2:8000` for local dev emulator testing, and a production URL `https://api.indifit.app` for `kReleaseMode`.
-
-### AI Backend Stability
-
-#### [MODIFY] [main.py](file:///Users/dankmagician/Documents/New%20project/indifit/backend/main.py)
-- Limit CORS origins in production using `ALLOWED_ORIGINS` loaded from environment variables (fallback to localhost / indifit.app).
-- Add an explicit `is_fallback` boolean flag to routine and meal estimation JSON outputs so the UI can detect and label simulated mock data.
-
-### Reminders Setup
-
-#### [MODIFY] [notification_service.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/core/services/notification_service.dart)
-- Default notification preferences to `false` instead of `true`. Users must explicitly opt-in to notifications, aligning with best practices.
-
-### Dashboard & Today Screen
-
-#### [MODIFY] [main_navigation_scaffold.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/dashboard/main_navigation_scaffold.dart)
-- Rename the first tab from "Diet Tracker" to "Today".
-- Change the tab icon to `Icons.today_rounded`.
+### 1. Water Tracker Refinements
 
 #### [MODIFY] [dashboard_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/dashboard/dashboard_screen.dart)
-- **Responsive Header**: Shorten the streak text to `X d` (e.g. `3d`). Group AI planner, settings, and other actions into a compact `PopupMenuButton` to prevent overflow on small screens.
-- **Actual Calorie Goal**: Replace static `2000 kcal` with target from SharedPreferences.
-- **Today's Workout Status**: Add a widget displaying today's scheduled workout status (split name or rest status) and a quick action button to start it.
-- **Quick Action Bar**: Add a prominent row containing "Log Meal" and "Start Workout" buttons.
+- Check the current local date on load. Compare it to the shared preferences value `water_last_logged_date`.
+- If the date has changed (local midnight passed), automatically reset `water_glasses` to `0` and update `water_last_logged_date` to today's date.
+- Support reading `water_goal` from SharedPreferences (default to 8).
 
-### Progress & Charts
+#### [MODIFY] [settings_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/settings/settings_screen.dart)
+- Add a new input setting under Notifications for "Daily Water Goal (glasses)" to let users edit their hydration target.
 
-#### [MODIFY] [progress_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/progress/progress_screen.dart)
-- Remove simulated weight trend points when no records are logged.
-- Display a clean, motivating placeholder illustration/message when measurements are empty.
+---
 
-### Workout Split Selector & Player
+### 2. Fast Daily Logging Shortcuts
 
-#### [MODIFY] [routine_display_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/workout_player/routine_display_screen.dart)
-- Rewrite `_buildWeeklyCalendarHeader` using horizontally scrollable list views, featuring full weekday labels (`Mon`, `Tue`, etc.) instead of single letters.
+#### [MODIFY] [food_repository.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/data/repositories/food_repository.dart)
+- Add `getLastLoggedMeal(String mealType)` to retrieve the most recent food logs for a given meal category.
 
-#### [MODIFY] [workout_player_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/workout_player/workout_player_screen.dart)
-- Enhance screen to display exercise-specific form cues and targeted rest periods from the database.
-- Show target RPE (defaults to RPE 8) and display previous set history values inline for quick reference.
+#### [MODIFY] [workout_repository.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/data/repositories/workout_repository.dart)
+- Add `getLastCompletedSession()` to retrieve the most recently logged workout session and its sets.
+- Add `duplicateSession(WorkoutSession session, List<WorkoutSet> sets)` to log a completed workout today with the same details.
 
-### Debounced Food Search
+#### [MODIFY] [dashboard_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/dashboard/dashboard_screen.dart)
+- In the Today's Workout card, if a previous session exists, show a button **"Repeat Last Workout"** to instantly log the same sets for today.
+- In each expansion meal card (Breakfast, Lunch, etc.), if empty, show a text button **"Repeat Last Breakfast/Lunch"** to copy yesterday's exact portions into today's log in one tap.
 
-#### [MODIFY] [food_search_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/food_log/food_search_screen.dart)
-- Introduce a search debounce timer (375ms) to prevent overlapping API calls on every keystroke.
-- Clearly group results by local database, online searches, and alert if network is offline.
+---
+
+### 3. Per-Exercise History, 1RM Trend & Plate Calculator
+
+#### [NEW] [exercise_history_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/exercise_library/exercise_history_screen.dart)
+- A new details screen displaying:
+  - **History List**: All logged sessions containing this exercise, ordered by date descending.
+  - **1RM Progression Chart**: A line chart (`fl_chart`) plotting estimated 1RM over time (`weight * (1 + reps/30)`).
+  - **Plate Calculator**: A utility tab where users input a target weight (e.g. 60kg). It subtracts a standard 20kg bar and lists the specific plates needed on each side (using denominations: 25, 20, 15, 10, 5, 2.5, 1.25 kg).
+
+#### [MODIFY] [exercise_library_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/exercise_library/exercise_library_screen.dart)
+- Route to `ExerciseHistoryScreen` when tapping an exercise card in the library.
+
+---
+
+### 4. Health Sync Hub & Encrypted Backups
+
+#### [NEW] [health_sync_hub_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/settings/health_sync_hub_screen.dart)
+- A dashboard screen inside Settings showing permissions status for Apple Health and Health Connect.
+- Includes a toggled simulation mode for importing steps, active calories, and sleep statistics to demonstrate sync visual workflows securely offline.
+
+#### [NEW] [encryption_helper.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/core/utils/encryption_helper.dart)
+- Implement a password-based SHA256 key derivation stream XOR cipher to encrypt and decrypt JSON data string bundles.
+
+#### [MODIFY] [settings_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/settings/settings_screen.dart)
+- Add navigation to `HealthSyncHubScreen`.
+- Modify "Export Backup" to prompt for an optional password and encrypt the output.
+- Add a "Restore Encrypted Backup" button that prompts for password, decrypts, and seeds the Drift database tables.
+
+---
+
+### 5. AI Confidence Labels & Edit-Before-Save forms
+
+#### [MODIFY] [ai_meal_logger_screen.dart](file:///Users/dankmagician/Documents/New%20project/indifit/lib/features/food_log/ai_meal_logger_screen.dart)
+- Replace static text labels in the result section with text controllers (`_nameEditController`, `_caloriesEditController`, etc.) so the user can edit estimated portions inline before hitting "Verify & Save".
+- Show a clear AI confidence label: `High (Live AI Estimate)` if `is_fallback` is false, and `Low (Offline Simulation)` if `is_fallback` is true.
+
+---
+
+### 6. Readme Claims Correction
+
+#### [MODIFY] [README.md](file:///Users/dankmagician/Documents/New%20project/indifit/README.md)
+- Correct the seeded food database claim from "500+ common Indian dishes" to "413 common Indian dishes" to accurately represent the seeded database size.
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `flutter analyze` and `flutter test` to ensure compilation and existing logic remain intact.
+- Run `flutter analyze` and `flutter test` to ensure code robustness.
 
 ### Manual Verification
-- Test APK compilation without `key.properties` and verify that the build fails as expected.
-- Toggle notifications in settings and verify they schedule/cancel properly.
-- Test debounced search in simulator, verify local and global results group nicely.
+- Test password-based encrypted export and import, validating that correct decryption restores database logs successfully.
+- Verify midnight reset logic by changing emulator system date manually and checking if water reset triggers.

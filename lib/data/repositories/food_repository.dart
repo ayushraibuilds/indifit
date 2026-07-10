@@ -79,4 +79,26 @@ class FoodRepository {
   Future<List<FoodLog>> getUnsyncedLogs() async {
     return await (_db.select(_db.foodLogs)..where((tbl) => tbl.isSynced.equals(false))).get();
   }
+
+  // 7. Get all items logged for the last occurrence of a meal type
+  Future<List<FoodLog>> getLastLoggedMeal(String mealType) async {
+    final query = _db.select(_db.foodLogs)
+      ..where((tbl) => tbl.mealType.equals(mealType))
+      ..orderBy([(tbl) => OrderingTerm(expression: tbl.loggedAt, mode: OrderingMode.desc)])
+      ..limit(1);
+    
+    final lastEntries = await query.get();
+    if (lastEntries.isEmpty) return [];
+
+    final lastLoggedDate = lastEntries.first.loggedAt;
+    final startOfDay = DateTime(lastLoggedDate.year, lastLoggedDate.month, lastLoggedDate.day);
+    final endOfDay = DateTime(lastLoggedDate.year, lastLoggedDate.month, lastLoggedDate.day, 23, 59, 59);
+
+    return await (_db.select(_db.foodLogs)
+      ..where((tbl) => 
+        tbl.mealType.equals(mealType) & 
+        tbl.loggedAt.isBetweenValues(startOfDay, endOfDay)
+      ))
+      .get();
+  }
 }
