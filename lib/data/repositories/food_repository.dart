@@ -44,7 +44,32 @@ class FoodRepository {
     required String servingUnit,
     required String mealType,
     int? foodItemId,
+    String? mealGroupId,
   }) async {
+    String resolvedGroupId = mealGroupId ?? '';
+    
+    if (resolvedGroupId.isEmpty) {
+      // Check the latest logged entry of this type to see if we can group them
+      final lastQuery = _db.select(_db.foodLogs)
+        ..where((tbl) => tbl.mealType.equals(mealType))
+        ..orderBy([(tbl) => OrderingTerm(expression: tbl.loggedAt, mode: OrderingMode.desc)])
+        ..limit(1);
+      final lastEntries = await lastQuery.get();
+      
+      final now = DateTime.now();
+      if (lastEntries.isNotEmpty) {
+        final lastEntry = lastEntries.first;
+        final diff = now.difference(lastEntry.loggedAt).inMinutes.abs();
+        if (diff < 2 && lastEntry.mealGroupId != null && lastEntry.mealGroupId!.isNotEmpty) {
+          resolvedGroupId = lastEntry.mealGroupId!;
+        }
+      }
+      
+      if (resolvedGroupId.isEmpty) {
+        resolvedGroupId = '${mealType}_${now.millisecondsSinceEpoch}_${now.microsecond}';
+      }
+    }
+
     final companion = FoodLogsCompanion.insert(
       foodItemId: Value(foodItemId),
       name: name,
@@ -55,6 +80,7 @@ class FoodRepository {
       servingLogged: servingLogged,
       servingUnit: servingUnit,
       mealType: mealType,
+      mealGroupId: Value(resolvedGroupId),
     );
     return await _db.into(_db.foodLogs).insert(companion);
   }
@@ -90,15 +116,25 @@ class FoodRepository {
     final lastEntries = await query.get();
     if (lastEntries.isEmpty) return [];
 
-    final lastLoggedDate = lastEntries.first.loggedAt;
-    final startOfDay = DateTime(lastLoggedDate.year, lastLoggedDate.month, lastLoggedDate.day);
-    final endOfDay = DateTime(lastLoggedDate.year, lastLoggedDate.month, lastLoggedDate.day, 23, 59, 59);
+    final lastEntry = lastEntries.first;
+    final groupId = lastEntry.mealGroupId;
+    
+    if (groupId != null && groupId.isNotEmpty) {
+      return await (_db.select(_db.foodLogs)
+        ..where((tbl) => tbl.mealGroupId.equals(groupId)))
+        .get();
+    } else {
+      // Fallback: group by date boundary if no group ID is defined
+      final lastLoggedDate = lastEntry.loggedAt;
+      final startOfDay = DateTime(lastLoggedDate.year, lastLoggedDate.month, lastLoggedDate.day);
+      final endOfDay = DateTime(lastLoggedDate.year, lastLoggedDate.month, lastLoggedDate.day, 23, 59, 59);
 
-    return await (_db.select(_db.foodLogs)
-      ..where((tbl) => 
-        tbl.mealType.equals(mealType) & 
-        tbl.loggedAt.isBetweenValues(startOfDay, endOfDay)
-      ))
-      .get();
+      return await (_db.select(_db.foodLogs)
+        ..where((tbl) => 
+          tbl.mealType.equals(mealType) & 
+          tbl.loggedAt.isBetweenValues(startOfDay, endOfDay)
+        ))
+        .get();
+    }
   }
 }

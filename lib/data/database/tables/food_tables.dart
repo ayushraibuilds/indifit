@@ -28,4 +28,5 @@ class FoodLogs extends Table {
   TextColumn get mealType => text()(); // "breakfast", "lunch", "dinner", "snack"
   DateTimeColumn get loggedAt => dateTime().withDefault(currentDateAndTime)();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  TextColumn get mealGroupId => text().nullable()();
 }

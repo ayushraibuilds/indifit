@@ -664,6 +664,12 @@ class $FoodLogsTable extends FoodLogs with TableInfo<$FoodLogsTable, FoodLog> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_synced" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _mealGroupIdMeta =
+      const VerificationMeta('mealGroupId');
+  @override
+  late final GeneratedColumn<String> mealGroupId = GeneratedColumn<String>(
+      'meal_group_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -677,7 +683,8 @@ class $FoodLogsTable extends FoodLogs with TableInfo<$FoodLogsTable, FoodLog> {
         servingUnit,
         mealType,
         loggedAt,
-        isSynced
+        isSynced,
+        mealGroupId
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -758,6 +765,12 @@ class $FoodLogsTable extends FoodLogs with TableInfo<$FoodLogsTable, FoodLog> {
       context.handle(_isSyncedMeta,
           isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta));
     }
+    if (data.containsKey('meal_group_id')) {
+      context.handle(
+          _mealGroupIdMeta,
+          mealGroupId.isAcceptableOrUnknown(
+              data['meal_group_id']!, _mealGroupIdMeta));
+    }
     return context;
   }
 
@@ -791,6 +804,8 @@ class $FoodLogsTable extends FoodLogs with TableInfo<$FoodLogsTable, FoodLog> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}logged_at'])!,
       isSynced: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_synced'])!,
+      mealGroupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}meal_group_id']),
     );
   }
 
@@ -813,6 +828,7 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
   final String mealType;
   final DateTime loggedAt;
   final bool isSynced;
+  final String? mealGroupId;
   const FoodLog(
       {required this.id,
       this.foodItemId,
@@ -825,7 +841,8 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
       required this.servingUnit,
       required this.mealType,
       required this.loggedAt,
-      required this.isSynced});
+      required this.isSynced,
+      this.mealGroupId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -843,6 +860,9 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
     map['meal_type'] = Variable<String>(mealType);
     map['logged_at'] = Variable<DateTime>(loggedAt);
     map['is_synced'] = Variable<bool>(isSynced);
+    if (!nullToAbsent || mealGroupId != null) {
+      map['meal_group_id'] = Variable<String>(mealGroupId);
+    }
     return map;
   }
 
@@ -862,6 +882,9 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
       mealType: Value(mealType),
       loggedAt: Value(loggedAt),
       isSynced: Value(isSynced),
+      mealGroupId: mealGroupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mealGroupId),
     );
   }
 
@@ -881,6 +904,7 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
       mealType: serializer.fromJson<String>(json['mealType']),
       loggedAt: serializer.fromJson<DateTime>(json['loggedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      mealGroupId: serializer.fromJson<String?>(json['mealGroupId']),
     );
   }
   @override
@@ -899,6 +923,7 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
       'mealType': serializer.toJson<String>(mealType),
       'loggedAt': serializer.toJson<DateTime>(loggedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'mealGroupId': serializer.toJson<String?>(mealGroupId),
     };
   }
 
@@ -914,7 +939,8 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
           String? servingUnit,
           String? mealType,
           DateTime? loggedAt,
-          bool? isSynced}) =>
+          bool? isSynced,
+          Value<String?> mealGroupId = const Value.absent()}) =>
       FoodLog(
         id: id ?? this.id,
         foodItemId: foodItemId.present ? foodItemId.value : this.foodItemId,
@@ -928,6 +954,7 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
         mealType: mealType ?? this.mealType,
         loggedAt: loggedAt ?? this.loggedAt,
         isSynced: isSynced ?? this.isSynced,
+        mealGroupId: mealGroupId.present ? mealGroupId.value : this.mealGroupId,
       );
   FoodLog copyWithCompanion(FoodLogsCompanion data) {
     return FoodLog(
@@ -947,6 +974,8 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
       mealType: data.mealType.present ? data.mealType.value : this.mealType,
       loggedAt: data.loggedAt.present ? data.loggedAt.value : this.loggedAt,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      mealGroupId:
+          data.mealGroupId.present ? data.mealGroupId.value : this.mealGroupId,
     );
   }
 
@@ -964,14 +993,27 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
           ..write('servingUnit: $servingUnit, ')
           ..write('mealType: $mealType, ')
           ..write('loggedAt: $loggedAt, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('mealGroupId: $mealGroupId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, foodItemId, name, calories, proteinG,
-      carbsG, fatG, servingLogged, servingUnit, mealType, loggedAt, isSynced);
+  int get hashCode => Object.hash(
+      id,
+      foodItemId,
+      name,
+      calories,
+      proteinG,
+      carbsG,
+      fatG,
+      servingLogged,
+      servingUnit,
+      mealType,
+      loggedAt,
+      isSynced,
+      mealGroupId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -987,7 +1029,8 @@ class FoodLog extends DataClass implements Insertable<FoodLog> {
           other.servingUnit == this.servingUnit &&
           other.mealType == this.mealType &&
           other.loggedAt == this.loggedAt &&
-          other.isSynced == this.isSynced);
+          other.isSynced == this.isSynced &&
+          other.mealGroupId == this.mealGroupId);
 }
 
 class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
@@ -1003,6 +1046,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
   final Value<String> mealType;
   final Value<DateTime> loggedAt;
   final Value<bool> isSynced;
+  final Value<String?> mealGroupId;
   const FoodLogsCompanion({
     this.id = const Value.absent(),
     this.foodItemId = const Value.absent(),
@@ -1016,6 +1060,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
     this.mealType = const Value.absent(),
     this.loggedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.mealGroupId = const Value.absent(),
   });
   FoodLogsCompanion.insert({
     this.id = const Value.absent(),
@@ -1030,6 +1075,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
     required String mealType,
     this.loggedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.mealGroupId = const Value.absent(),
   })  : name = Value(name),
         calories = Value(calories),
         proteinG = Value(proteinG),
@@ -1051,6 +1097,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
     Expression<String>? mealType,
     Expression<DateTime>? loggedAt,
     Expression<bool>? isSynced,
+    Expression<String>? mealGroupId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1065,6 +1112,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
       if (mealType != null) 'meal_type': mealType,
       if (loggedAt != null) 'logged_at': loggedAt,
       if (isSynced != null) 'is_synced': isSynced,
+      if (mealGroupId != null) 'meal_group_id': mealGroupId,
     });
   }
 
@@ -1080,7 +1128,8 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
       Value<String>? servingUnit,
       Value<String>? mealType,
       Value<DateTime>? loggedAt,
-      Value<bool>? isSynced}) {
+      Value<bool>? isSynced,
+      Value<String?>? mealGroupId}) {
     return FoodLogsCompanion(
       id: id ?? this.id,
       foodItemId: foodItemId ?? this.foodItemId,
@@ -1094,6 +1143,7 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
       mealType: mealType ?? this.mealType,
       loggedAt: loggedAt ?? this.loggedAt,
       isSynced: isSynced ?? this.isSynced,
+      mealGroupId: mealGroupId ?? this.mealGroupId,
     );
   }
 
@@ -1136,6 +1186,9 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (mealGroupId.present) {
+      map['meal_group_id'] = Variable<String>(mealGroupId.value);
+    }
     return map;
   }
 
@@ -1153,7 +1206,8 @@ class FoodLogsCompanion extends UpdateCompanion<FoodLog> {
           ..write('servingUnit: $servingUnit, ')
           ..write('mealType: $mealType, ')
           ..write('loggedAt: $loggedAt, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('mealGroupId: $mealGroupId')
           ..write(')'))
         .toString();
   }
@@ -4010,6 +4064,7 @@ typedef $$FoodLogsTableCreateCompanionBuilder = FoodLogsCompanion Function({
   required String mealType,
   Value<DateTime> loggedAt,
   Value<bool> isSynced,
+  Value<String?> mealGroupId,
 });
 typedef $$FoodLogsTableUpdateCompanionBuilder = FoodLogsCompanion Function({
   Value<int> id,
@@ -4024,6 +4079,7 @@ typedef $$FoodLogsTableUpdateCompanionBuilder = FoodLogsCompanion Function({
   Value<String> mealType,
   Value<DateTime> loggedAt,
   Value<bool> isSynced,
+  Value<String?> mealGroupId,
 });
 
 class $$FoodLogsTableTableManager extends RootTableManager<
@@ -4055,6 +4111,7 @@ class $$FoodLogsTableTableManager extends RootTableManager<
             Value<String> mealType = const Value.absent(),
             Value<DateTime> loggedAt = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
+            Value<String?> mealGroupId = const Value.absent(),
           }) =>
               FoodLogsCompanion(
             id: id,
@@ -4069,6 +4126,7 @@ class $$FoodLogsTableTableManager extends RootTableManager<
             mealType: mealType,
             loggedAt: loggedAt,
             isSynced: isSynced,
+            mealGroupId: mealGroupId,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -4083,6 +4141,7 @@ class $$FoodLogsTableTableManager extends RootTableManager<
             required String mealType,
             Value<DateTime> loggedAt = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
+            Value<String?> mealGroupId = const Value.absent(),
           }) =>
               FoodLogsCompanion.insert(
             id: id,
@@ -4097,6 +4156,7 @@ class $$FoodLogsTableTableManager extends RootTableManager<
             mealType: mealType,
             loggedAt: loggedAt,
             isSynced: isSynced,
+            mealGroupId: mealGroupId,
           ),
         ));
 }
@@ -4156,6 +4216,11 @@ class $$FoodLogsTableFilterComposer
 
   ColumnFilters<bool> get isSynced => $state.composableBuilder(
       column: $state.table.isSynced,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get mealGroupId => $state.composableBuilder(
+      column: $state.table.mealGroupId,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -4227,6 +4292,11 @@ class $$FoodLogsTableOrderingComposer
 
   ColumnOrderings<bool> get isSynced => $state.composableBuilder(
       column: $state.table.isSynced,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get mealGroupId => $state.composableBuilder(
+      column: $state.table.mealGroupId,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

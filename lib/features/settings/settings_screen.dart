@@ -31,7 +31,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _offlineOnly = false;
   bool _loading = true;
   int _waterGoal = 8;
+  int _glassSize = 250;
   final TextEditingController _waterGoalController = TextEditingController();
+  final TextEditingController _glassSizeController = TextEditingController();
 
   @override
   void initState() {
@@ -42,6 +44,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void dispose() {
     _waterGoalController.dispose();
+    _glassSizeController.dispose();
     super.dispose();
   }
 
@@ -56,6 +59,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _offlineOnly = prefs.getBool('offline_only') ?? false;
       _waterGoal = prefs.getInt('water_goal') ?? 8;
       _waterGoalController.text = _waterGoal.toString();
+      _glassSize = prefs.getInt('water_glass_size') ?? 250;
+      _glassSizeController.text = _glassSize.toString();
       _loading = false;
     });
   }
@@ -818,6 +823,54 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   await ref.read(waterProvider.notifier).updateGoal(parsed);
                                   setState(() {
                                     _waterGoal = parsed;
+                                  });
+                                }
+                              },
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Serving (Glass) Size',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Custom volume size per glass of water logged (ml)',
+                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          SizedBox(
+                            width: 64,
+                            child: TextField(
+                              controller: _glassSizeController,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              decoration: const InputDecoration(
+                                contentPadding: EdgeInsets.symmetric(vertical: 8),
+                              ),
+                              onChanged: (val) async {
+                                final parsed = int.tryParse(val) ?? 250;
+                                if (parsed >= 50 && parsed <= 2000) {
+                                  await ref.read(waterProvider.notifier).updateGlassSize(parsed);
+                                  setState(() {
+                                    _glassSize = parsed;
                                   });
                                 }
                               },

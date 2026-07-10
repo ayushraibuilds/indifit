@@ -145,6 +145,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     await ref.read(waterProvider.notifier).logWater(1);
   }
 
+  Future<void> _decrementWater() async {
+    await ref.read(waterProvider.notifier).logWater(-1);
+  }
+
   Future<void> _resetWater() async {
     final current = ref.read(waterProvider).waterLogged;
     await ref.read(waterProvider.notifier).logWater(-current);
@@ -886,41 +890,84 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final waterState = ref.watch(waterProvider);
     final waterGlasses = waterState.waterLogged;
     final waterGoal = waterState.waterGoal;
+    final glassSize = waterState.glassSize;
+
+    final double percent = waterGoal > 0 ? (waterGlasses / waterGoal).clamp(0.0, 1.0) : 0.0;
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Water Intake', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                const SizedBox(height: 4),
-                Text(
-                  'Logged: ${waterGlasses * 250} ml (Goal: ${(waterGoal * 250 / 1000.0).toStringAsFixed(1)}L)',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                ),
-              ],
+            // Goal progress ring
+            CircularPercentIndicator(
+              radius: 22.0,
+              lineWidth: 4.5,
+              percent: percent,
+              animation: true,
+              animateFromLastPercent: true,
+              circularStrokeCap: CircularStrokeCap.round,
+              backgroundColor: const Color(0xFF0066FF).withOpacity(0.08),
+              progressColor: const Color(0xFF0066FF),
+              center: Icon(
+                Icons.local_drink_rounded,
+                color: waterGlasses >= waterGoal ? Colors.green : const Color(0xFF0066FF),
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Water Intake', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Logged: ${waterGlasses * glassSize} ml (Goal: ${(waterGoal * glassSize / 1000.0).toStringAsFixed(1)}L)',
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                  ),
+                ],
+              ),
             ),
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                if (waterGlasses > 0)
+                if (waterGlasses > 0) ...[
                   IconButton(
-                    icon: const Icon(Icons.refresh, color: AppColors.textMuted, size: 20),
-                    onPressed: _resetWater,
+                    icon: const Icon(Icons.remove_circle_outline_rounded, color: AppColors.textMuted, size: 20),
+                    onPressed: _decrementWater,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
-                ElevatedButton.icon(
+                  const SizedBox(width: 12),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: AppColors.textMuted, size: 18),
+                    onPressed: _resetWater,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                ElevatedButton(
                   onPressed: _incrementWater,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0066FF).withOpacity(0.15),
+                    backgroundColor: const Color(0xFF0066FF).withOpacity(0.12),
                     foregroundColor: const Color(0xFF0066FF),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     elevation: 0,
                   ),
-                  icon: const Icon(Icons.local_drink, size: 16),
-                  label: const Text('Add 250ml'),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.add, size: 13),
+                      const SizedBox(width: 2),
+                      Text('${glassSize}ml', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ),
               ],
             )

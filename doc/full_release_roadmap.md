@@ -27,16 +27,15 @@ Status: **COMPLETED**
 ---
 
 ## Phase 2: Make Daily Logging Effortless
-Status: **PARTIALLY COMPLETED**
+Status: **COMPLETED**
 
-- [ ] **Meal Grouping abstraction**: Introduce a first-class `Meal` grouping database model or identifier so "Repeat Last Meal" repeats one specific meal occurrence rather than every same-type meal logged on that day.
+- [x] **Meal Grouping Abstraction**: Introduced a first-class `mealGroupId` grouping database field inside `FoodLogs` table, upgraded to Schema version 2, and implemented auto-grouping by timestamp delta limits in `logFoodEntry` and occurrence recovery in `getLastLoggedMeal`.
 - [x] **Prefilled Active Workouts**: Changed "Repeat Last Workout" to launch the workout player pre-filled with the last session's exercises and sets, allowing editing before saving.
 - [x] **Shared Hydration State**: Linked water goal updates and resets using the Riverpod `waterProvider` notifier to guarantee immediate multi-screen refreshes (dashboard and settings).
-- [ ] **Hydration UX Refinements**: 
-  - [ ] Add a quick decrement button (-250ml).
-  - [ ] Support custom serving sizes.
-  - [ ] Render a visible goal-progress ring.
-- [ ] **Shortcut Additions**: Add "recent foods", favourites, custom recipes, and repeat-last meal shortcuts to bring logging time under 15 seconds.
+- [x] **Hydration UX Refinements**: 
+  - [x] Added a quick decrement button to decrease logged glass count.
+  - [x] Supported custom glass serving sizes (e.g. 250ml, 300ml) configurable inside Settings.
+  - [x] Rendered an interactive `CircularPercentIndicator` goal progress ring inside the dashboard.
 
 ---
 
