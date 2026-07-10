@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -13,11 +14,19 @@ import 'workout_summary_screen.dart';
 class WorkoutPlayerScreen extends ConsumerStatefulWidget {
   final String routineName;
   final List<RoutineExercise> exercises;
+  final int initialExerciseIndex;
+  final int initialSetIndex;
+  final int initialElapsedSeconds;
+  final List<WorkoutSetsCompanion>? initialLoggedSets;
 
   const WorkoutPlayerScreen({
     super.key,
     required this.routineName,
     required this.exercises,
+    this.initialExerciseIndex = 0,
+    this.initialSetIndex = 0,
+    this.initialElapsedSeconds = 0,
+    this.initialLoggedSets,
   });
 
   @override
@@ -47,10 +56,20 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
 
   // New Rest Timer & Prior Session sets state
   List<WorkoutSet> _priorSets = [];
+  final List<RoutineExercise> _activeExercises = [];
+  WorkoutSet? _bestPrSet;
+  double _suggestedWeight = 20.0;
 
   @override
   void initState() {
     super.initState();
+    _activeExercises.addAll(widget.exercises);
+    _currentExerciseIndex = widget.initialExerciseIndex;
+    _currentSetIndex = widget.initialSetIndex;
+    _elapsedSeconds = widget.initialElapsedSeconds;
+    if (widget.initialLoggedSets != null) {
+      _loggedSets.addAll(widget.initialLoggedSets!);
+    }
     _startWorkoutTimer();
     _prefillInputs();
   }
@@ -73,24 +92,42 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
   }
 
   Future<void> _prefillInputs() async {
-    if (widget.exercises.isEmpty) return;
+    if (_activeExercises.isEmpty) return;
     
-    final currentEx = widget.exercises[_currentExerciseIndex];
+    final currentEx = _activeExercises[_currentExerciseIndex];
     final repo = ref.read(workoutRepositoryProvider);
     
-    // 1. Try to fetch latest logged sets for this exercise
+    // 1. Try to fetch latest logged sets and PR for this exercise
     final latestSets = await repo.getLatestSetsForExercise(currentEx.exerciseName);
+    final prSet = await repo.getPersonalRecord(currentEx.exerciseName);
     
     double weight = 20.0;
     int reps = 10;
+    double suggested = 20.0;
     
     if (latestSets.isNotEmpty) {
-      // Get the set corresponding to our current set index (or the last logged set if we have more sets now)
       final setIndex = _currentSetIndex.clamp(0, latestSets.length - 1);
-      weight = latestSets[setIndex].weight;
-      reps = latestSets[setIndex].reps;
+      final lastSet = latestSets[setIndex];
+      weight = lastSet.weight;
+      reps = lastSet.reps;
+      
+      // Parse reps target
+      int targetRepMax = 10;
+      final repsStr = currentEx.repsRange;
+      if (repsStr.contains('-')) {
+        final parts = repsStr.split('-');
+        targetRepMax = int.tryParse(parts[1]) ?? 12;
+      } else {
+        targetRepMax = int.tryParse(repsStr) ?? 10;
+      }
+      
+      // Heuristic: If reps met or exceeded targetRepMax, increment by 2.5 kg!
+      if (lastSet.reps >= targetRepMax) {
+        suggested = lastSet.weight + 2.5;
+      } else {
+        suggested = lastSet.weight;
+      }
     } else {
-      // Fallback to repsRange parsed values
       final repsStr = currentEx.repsRange;
       if (repsStr.contains('-')) {
         final parts = repsStr.split('-');
@@ -100,11 +137,14 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       } else {
         reps = int.tryParse(repsStr) ?? 10;
       }
+      suggested = 20.0;
     }
 
     if (mounted) {
       setState(() {
         _priorSets = latestSets;
+        _bestPrSet = prSet;
+        _suggestedWeight = suggested;
         _weightController.text = weight.toStringAsFixed(1);
         _repsController.text = reps.toString();
       });
@@ -146,7 +186,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
   }
 
   Future<void> _completeSet() async {
-    final currentEx = widget.exercises[_currentExerciseIndex];
+    final currentEx = _activeExercises[_currentExerciseIndex];
     final double weight = double.tryParse(_weightController.text) ?? 0.0;
     final int reps = int.tryParse(_repsController.text) ?? 0;
 
@@ -186,6 +226,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     );
 
     _loggedSets.add(newSet);
+    await _saveDraft();
 
     // Show Rest Timer Bottom Sheet
     await _showRestTimerBottomSheet();
@@ -200,7 +241,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       await _prefillInputs();
     } else {
       // Completed all sets of this exercise
-      if (_currentExerciseIndex < widget.exercises.length - 1) {
+      if (_currentExerciseIndex < _activeExercises.length - 1) {
         setState(() {
           _currentExerciseIndex++;
           _currentSetIndex = 0;
@@ -243,7 +284,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     // Keep screen awake during rest period
     WakelockPlus.enable();
 
-    final currentEx = widget.exercises[_currentExerciseIndex];
+    final currentEx = _activeExercises[_currentExerciseIndex];
     final recommendedRest = _getRecommendedRestSeconds(currentEx.exerciseName);
 
     await showModalBottomSheet(
@@ -381,31 +422,185 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     WakelockPlus.disable();
   }
 
-  void _finishWorkout() {
-    _workoutTimer?.cancel();
+  Future<void> _substituteExercise() async {
+    final repo = ref.read(workoutRepositoryProvider);
+    final currentEx = _activeExercises[_currentExerciseIndex];
     
-    // Save to summary
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WorkoutSummaryScreen(
-          routineName: widget.routineName,
-          elapsedSeconds: _elapsedSeconds,
-          loggedSets: _loggedSets,
-        ),
+    final selectedExerciseName = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        String searchQuery = '';
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              height: MediaQuery.of(context).size.height * 0.75,
+              child: Column(
+                children: [
+                  const Text(
+                    'Substitute Exercise',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search alternative exercise...',
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: AppColors.cardBackground,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: (val) {
+                      setModalState(() {
+                        searchQuery = val;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: FutureBuilder<List<Exercise>>(
+                      future: repo.searchExercises(searchQuery.isEmpty ? 'a' : searchQuery),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        final items = snapshot.data ?? [];
+                        if (items.isEmpty) {
+                          return const Center(child: Text('No matching exercises found.'));
+                        }
+                        return ListView.builder(
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final ex = items[index];
+                            return ListTile(
+                              title: Text(ex.name),
+                              subtitle: Text(ex.muscleGroups),
+                              onTap: () => Navigator.pop(context, ex.name),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (selectedExerciseName != null && mounted) {
+      setState(() {
+        _activeExercises[_currentExerciseIndex] = currentEx.copyWith(
+          exerciseName: selectedExerciseName,
+        );
+      });
+      await _prefillInputs();
+      await _saveDraft();
+    }
+  }
+
+  Future<void> _saveDraft() async {
+    final repo = ref.read(workoutRepositoryProvider);
+    final rawSets = _loggedSets.map((s) => {
+      'sessionId': s.sessionId.value,
+      'exerciseName': s.exerciseName.value,
+      'weight': s.weight.value,
+      'reps': s.reps.value,
+      'setNumber': s.setNumber.value,
+      'isPr': s.isPr.value,
+    }).toList();
+    final jsonStr = jsonEncode(rawSets);
+    
+    await repo.saveWorkoutDraft(
+      WorkoutDraftsCompanion.insert(
+        routineName: widget.routineName,
+        currentExerciseIndex: _currentExerciseIndex,
+        currentSetIndex: _currentSetIndex,
+        elapsedSeconds: _elapsedSeconds,
+        loggedSetsJson: jsonStr,
       ),
     );
   }
 
+  Future<void> _finishWorkout() async {
+    _workoutTimer?.cancel();
+    final repo = ref.read(workoutRepositoryProvider);
+    await repo.deleteActiveDraft();
+    
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WorkoutSummaryScreen(
+            routineName: widget.routineName,
+            elapsedSeconds: _elapsedSeconds,
+            loggedSets: _loggedSets,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (widget.exercises.isEmpty) {
+    if (_activeExercises.isEmpty) {
       return const Scaffold(body: Center(child: Text('No exercises in this split.')));
     }
 
-    final currentEx = widget.exercises[_currentExerciseIndex];
+    final currentEx = _activeExercises[_currentExerciseIndex];
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        showDialog(
+          context: context,
+          builder: (dialogCtx) => AlertDialog(
+            title: const Text('Exit Workout?'),
+            backgroundColor: AppColors.surface,
+            content: const Text('Would you like to pause and save this workout as a draft, or discard your progress?'),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(dialogCtx);
+                  await ref.read(workoutRepositoryProvider).deleteActiveDraft();
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: const Text('Discard', style: TextStyle(color: AppColors.danger)),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogCtx);
+                },
+                child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(dialogCtx);
+                  await _saveDraft();
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: const Text('Save Draft'),
+              ),
+            ],
+          ),
+        );
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: Text(widget.routineName),
         backgroundColor: AppColors.background,
@@ -434,7 +629,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'EXERCISE ${_currentExerciseIndex + 1} of ${widget.exercises.length}',
+                      'EXERCISE ${_currentExerciseIndex + 1} of ${_activeExercises.length}',
                       style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.0),
                     ),
                     Text(
@@ -447,7 +642,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
-                    value: (_currentExerciseIndex) / widget.exercises.length,
+                    value: (_currentExerciseIndex) / _activeExercises.length,
                     backgroundColor: AppColors.border,
                     valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                     minHeight: 6,
@@ -466,9 +661,22 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
-                              child: Text(
-                                currentEx.exerciseName,
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      currentEx.exerciseName,
+                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.swap_horiz_rounded, color: AppColors.primary, size: 20),
+                                    tooltip: 'Substitute Exercise',
+                                    onPressed: _substituteExercise,
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                ],
                               ),
                             ),
                             Container(
@@ -498,6 +706,26 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                               'Target Effort: RPE 8 (2 reps in reserve)',
                               style: TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.w600),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.trending_up_rounded, size: 14, color: Colors.greenAccent),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Suggested Overload: ${_suggestedWeight.toStringAsFixed(1)} kg',
+                              style: const TextStyle(color: Colors.greenAccent, fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                            if (_bestPrSet != null) ...[
+                              const SizedBox(width: 16),
+                              const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                              const SizedBox(width: 4),
+                              Text(
+                                'PR: ${_bestPrSet!.weight.toStringAsFixed(1)}kg x ${_bestPrSet!.reps} (1RM: ${(_bestPrSet!.weight * (1 + _bestPrSet!.reps / 30.0)).toStringAsFixed(1)}kg)',
+                                style: const TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.w600),
+                              ),
+                            ]
                           ],
                         ),
                         if (_priorSets.isNotEmpty) ...[
@@ -694,6 +922,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
             )
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

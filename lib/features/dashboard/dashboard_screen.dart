@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -44,6 +46,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void initState() {
     super.initState();
     _loadStateData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkActiveWorkoutDraft();
+    });
   }
 
   Future<void> _loadStateData() async {
@@ -62,6 +67,75 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
     await _loadTodayWorkout();
     await _calculateWeeklyAdherence();
+  }
+
+  Future<void> _checkActiveWorkoutDraft() async {
+    try {
+      final repo = ref.read(workoutRepositoryProvider);
+      final draft = await repo.getActiveDraft();
+      if (draft != null && mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogCtx) => AlertDialog(
+            title: const Text('Resume Workout?'),
+            backgroundColor: AppColors.surface,
+            content: Text(
+              'You have an unfinished workout session ("${draft.routineName}") from your last visit. Would you like to resume it?',
+              style: const TextStyle(height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(dialogCtx);
+                  await repo.deleteActiveDraft();
+                },
+                child: const Text('Discard', style: TextStyle(color: AppColors.danger)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(dialogCtx);
+                  
+                  final List<dynamic> rawSets = jsonDecode(draft.loggedSetsJson);
+                  final List<WorkoutSetsCompanion> loggedCompanions = rawSets.map((s) {
+                    final map = s as Map<String, dynamic>;
+                    return WorkoutSetsCompanion.insert(
+                      sessionId: map['sessionId'] ?? 0,
+                      exerciseName: map['exerciseName'] ?? '',
+                      weight: (map['weight'] as num).toDouble(),
+                      reps: map['reps'] ?? 0,
+                      setNumber: map['setNumber'] ?? 1,
+                      isPr: Value(map['isPr'] ?? false),
+                    );
+                  }).toList();
+
+                  final exercises = await repo.getExercisesForRoutineName(draft.routineName);
+
+                  if (mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => WorkoutPlayerScreen(
+                          routineName: draft.routineName,
+                          exercises: exercises,
+                          initialExerciseIndex: draft.currentExerciseIndex,
+                          initialSetIndex: draft.currentSetIndex,
+                          initialElapsedSeconds: draft.elapsedSeconds,
+                          initialLoggedSets: loggedCompanions,
+                        ),
+                      ),
+                    ).then((_) => _loadStateData());
+                  }
+                },
+                child: const Text('Resume'),
+              )
+            ],
+          ),
+        );
+      }
+    } catch (_) {
+      // Safe guard against missing routine references
+    }
   }
 
   Future<void> _loadTodayWorkout() async {
@@ -259,6 +333,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                   // 2. Calorie Ring & Macro Bars
                   _buildCalorieSection(eatenCalories, eatenProtein, eatenCarbs, eatenFat, calPercent),
+                  const SizedBox(height: 16),
+
+                  FutureBuilder<double>(
+                    future: Future.wait(logs.map((l) => foodRepo.getFiberForLog(l))).then((fibers) => fibers.fold<double>(0.0, (sum, f) => sum + f)),
+                    builder: (context, fiberSnapshot) {
+                      final fiber = fiberSnapshot.data ?? 0.0;
+                      final waterState = ref.watch(waterProvider);
+                      return _buildNutritionReviewCard(logs, fiber, waterState.waterLogged, waterState.waterGoal, waterState.glassSize);
+                    },
+                  ),
                   const SizedBox(height: 16),
 
                   // Quick Actions Bar
@@ -1053,6 +1137,98 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ),
             )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNutritionReviewCard(List<FoodLog> logs, double fiber, int waterLogged, int waterGoal, int glassSize) {
+    final mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.analytics_outlined, color: AppColors.primary, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Daily Nutrition Review',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Dietary Fiber', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${fiber.toStringAsFixed(1)}g logged',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                    ),
+                    const Text('Goal: 25.0g - 30.0g', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                  ],
+                ),
+                Container(
+                  height: 40,
+                  width: 1,
+                  color: AppColors.border,
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Total Hydration', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${waterLogged * glassSize} ml',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueAccent),
+                    ),
+                    Text('Goal: ${(waterGoal * glassSize / 1000.0).toStringAsFixed(1)}L', style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: AppColors.border),
+            const SizedBox(height: 12),
+            const Text(
+              'PLANNED VS ACTUAL MEALS',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 0.5),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: mealTypes.map((type) {
+                final isLogged = logs.any((l) => l.mealType.toLowerCase() == type);
+                return Column(
+                  children: [
+                    Icon(
+                      isLogged ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                      color: isLogged ? AppColors.success : AppColors.textMuted,
+                      size: 20,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      type.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: isLogged ? Colors.white : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
           ],
         ),
       ),

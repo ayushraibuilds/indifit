@@ -30,6 +30,9 @@ class WorkoutSets extends Table {
   IntColumn get reps => integer()();
   IntColumn get setNumber => integer()();
   BoolColumn get isPr => boolean().withDefault(const Constant(false))();
+  IntColumn get rpe => integer().nullable()();
+  BoolColumn get isWarmUp => boolean().withDefault(const Constant(false))();
+  TextColumn get setNotes => text().nullable()();
 }
 
 class BodyMeasurements extends Table {
@@ -66,4 +69,14 @@ class RoutineExercises extends Table {
   IntColumn get sets => integer()();
   TextColumn get repsRange => text()(); // e.g., "8-12" or "10"
   IntColumn get orderIndex => integer()();
+}
+
+class WorkoutDrafts extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get routineName => text()();
+  IntColumn get currentExerciseIndex => integer()();
+  IntColumn get currentSetIndex => integer()();
+  IntColumn get elapsedSeconds => integer()();
+  TextColumn get loggedSetsJson => text()(); // serialized JSON string of completed sets
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }

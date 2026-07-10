@@ -20,20 +20,27 @@ part 'app_database.g.dart';
   BodyMeasurements,
   WorkoutRoutines,
   RoutineDays,
-  RoutineExercises
+  RoutineExercises,
+  WorkoutDrafts
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onUpgrade: (m, from, to) async {
           if (from < 2) {
             await m.addColumn(foodLogs, foodLogs.mealGroupId);
+          }
+          if (from < 3) {
+            await m.addColumn(workoutSets, workoutSets.rpe);
+            await m.addColumn(workoutSets, workoutSets.isWarmUp);
+            await m.addColumn(workoutSets, workoutSets.setNotes);
+            await m.createTable(workoutDrafts);
           }
         },
         onCreate: (m) async {

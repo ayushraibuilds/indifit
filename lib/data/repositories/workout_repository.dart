@@ -267,5 +267,46 @@ class WorkoutRepository {
     
     return grouped.values.toList();
   }
+
+  // 15. Active Draft Persistence
+  Future<WorkoutDraft?> getActiveDraft() async {
+    final rows = await (_db.select(_db.workoutDrafts)
+      ..orderBy([(tbl) => OrderingTerm(expression: tbl.updatedAt, mode: OrderingMode.desc)])
+      ..limit(1))
+      .get();
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<int> saveWorkoutDraft(WorkoutDraftsCompanion draft) async {
+    // Delete any previous drafts first to maintain at most one active draft
+    await _db.delete(_db.workoutDrafts).go();
+    return await _db.into(_db.workoutDrafts).insert(draft);
+  }
+
+  Future<int> deleteActiveDraft() async {
+    return await _db.delete(_db.workoutDrafts).go();
+  }
+
+  Future<List<RoutineExercise>> getExercisesForRoutineName(String name) async {
+    final routineQuery = _db.select(_db.workoutRoutines)
+      ..where((tbl) => tbl.name.equals(name))
+      ..limit(1);
+    final routines = await routineQuery.get();
+    if (routines.isEmpty) return [];
+
+    final rId = routines.first.id;
+
+    final daysQuery = _db.select(_db.routineDays)
+      ..where((tbl) => tbl.routineId.equals(rId));
+    final days = await daysQuery.get();
+    if (days.isEmpty) return [];
+
+    final dayIds = days.map((d) => d.id).toList();
+
+    final exercisesQuery = _db.select(_db.routineExercises)
+      ..where((tbl) => tbl.dayId.isIn(dayIds))
+      ..orderBy([(tbl) => OrderingTerm(expression: tbl.orderIndex)]);
+    return await exercisesQuery.get();
+  }
 }
 

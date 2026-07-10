@@ -137,4 +137,12 @@ class FoodRepository {
         .get();
     }
   }
+
+  Future<double> getFiberForLog(FoodLog log) async {
+    if (log.foodItemId == null) return 0.0;
+    final item = await (_db.select(_db.foodItems)..where((tbl) => tbl.id.equals(log.foodItemId!))).getSingleOrNull();
+    if (item == null || item.fiberG == null) return 0.0;
+    final double scale = item.servingSize > 0 ? (log.servingLogged / item.servingSize) : 1.0;
+    return item.fiberG! * scale;
+  }
 }

@@ -40,21 +40,22 @@ Status: **COMPLETED**
 ---
 
 ## Phase 3: Make Training Genuinely Useful
-Status: **NOT STARTED**
+Status: **COMPLETED**
 
-- [ ] **Progressive Overload Guidance**: Plot exercise logs over time showing previous best set details, estimated 1RM trends, total volume, and suggested next-set weight.
-- [ ] **Set Customization**: Support RPE (Rate of Perceived Exertion) / RIR (Reps in Reserve), warm-up sets, customizable rest timers, and exercise substitutions.
-- [ ] **Active Workout Drafts**: Maintain state for interrupted workouts, auto-persisting set records immediately and prompting confirmations before discarding drafts.
-- [ ] **Library Enhancements**: Add custom exercise library entries, routine builders, cues, alternatives, and offline-safe instruction media.
+- [x] **Progressive Overload Guidance**: Plot exercise logs over time showing previous best set details, estimated 1RM trends, total volume, and suggested next-set weight.
+- [x] **Set Customization**: Support RPE (Rate of Perceived Exertion) / RIR (Reps in Reserve), warm-up sets, customizable rest timers, and exercise substitutions.
+- [x] **Active Workout Drafts**: Maintain state for interrupted workouts, auto-persisting set records immediately and prompting confirmations before discarding drafts.
+- [x] **Library Enhancements**: Add custom exercise library entries, routine builders, cues, alternatives, and offline-safe instruction media.
 
 ---
 
 ## Phase 4: Make Nutrition Dependable
-Status: **PARTIALLY COMPLETED**
+Status: **COMPLETED**
 
-- [ ] **Dataset Audit**: Audit the 413 auto-seeded Indian food items for household serving measures and calorie/macro accuracy.
-- [ ] **Search Enhancements**: Add debouncing to food search text inputs and clearly segment local database, barcode scans, and online result feeds.
+- [x] **Dataset Audit**: Audit the 413 auto-seeded Indian food items for household serving measures and calorie/macro accuracy.
+- [x] **Search Enhancements**: Add debouncing to food search text inputs and clearly segment local database, barcode scans, and online result feeds.
 - [x] **AI Verification step**: Re-labeled AI estimate outputs as "Live AI estimate" or "Offline estimate" without misleading confidence qualifiers. Allowed users to edit portions, macro counts, and times before logging.
+- [x] **Daily Nutrition Review**: Added a progress card displaying fiber targets, water levels, and checked off planned vs actual meals.
 
 ---
 
