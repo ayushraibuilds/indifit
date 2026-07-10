@@ -146,7 +146,6 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
     final List<Map<String, dynamic>> sortedHistory = List.from(history.reversed);
     
     for (int i = 0; i < sortedHistory.length; i++) {
-      final session = sortedHistory[i]['session'] as WorkoutSession;
       final sets = sortedHistory[i]['sets'] as List<WorkoutSet>;
       
       double best1Rm = 0.0;

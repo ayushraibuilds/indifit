@@ -1,0 +1,63 @@
+name: IndiFit CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  flutter_ci:
+    name: Flutter CI Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Check Code Style & Analysis
+        run: flutter analyze
+
+      - name: Run Unit Tests
+        run: flutter test
+
+      - name: Generate Dummy Release Keystore
+        run: |
+          echo "storePassword=dummy_store_password" > android/key.properties
+          echo "keyPassword=dummy_key_password" >> android/key.properties
+          echo "keyAlias=dummy_alias" >> android/key.properties
+          echo "storeFile=dummy.keystore" >> android/key.properties
+          keytool -genkey -v -keystore android/app/dummy.keystore -alias dummy_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass dummy_store_password -keypass dummy_key_password -dname "CN=IndiFit, OU=Dev, O=IndiFit, L=Local, S=Local, C=IN"
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+  backend_ci:
+    name: Backend CI Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Compile Syntax Check
+        run: python -m py_compile backend/main.py

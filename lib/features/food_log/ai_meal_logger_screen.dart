@@ -68,9 +68,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to select image: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to select image: $e')),
+        );
+      }
     }
   }
 
@@ -98,9 +100,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       }
     } catch (e) {
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('API Error: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('API Error: $e')),
+        );
+      }
     }
   }
 
@@ -134,9 +138,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       }
     } catch (e) {
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('API Error: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('API Error: $e')),
+        );
+      }
     }
   }
 
