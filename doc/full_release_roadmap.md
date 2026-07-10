@@ -20,6 +20,8 @@ Status: **COMPLETED**
 - [x] **Secure Cryptography (AES-GCM)**: Replaced weak custom XOR-streams with AES-GCM (authenticated encryption) using a key derived from a user-supplied password via **PBKDF2** (10,000 iterations). Nonces/salts are generated randomly per backup.
 - [x] **Save to Files Sharing**: Integrated Flutter's system sharesheet (`share_plus` and `path_provider`) to allow standard file storage/exporting instead of clipboard-only sharing.
 - [x] **Destructive Restore Safeguards**: Reordered database wiping commands in a child-first order (e.g., deleting `workoutSets` and `foodLogs` before parent `workoutSessions` and `foodItems`) to prevent foreign-key constraint violations. Added a prominent red warning dialog before wipes.
+- [x] **Backup Metadata & Restore Preview**: Added pre-decryption checking, wrong-password/corruption alerts, backup metadata parsing (version, creation date), and database record counts in a detailed **Restore Preview** modal.
+- [x] **Data Controls & Privacy Disclosures**: Implemented options to export, restore, wipe all local data, and reset onboarding. Added a detailed privacy disclaimer card explaining local storage versus cloud sync.
 - [x] **Platform Disclosures**: Clearly labelled health syncing as a simulated sandbox flow and disabled native triggers when sandbox mode is off to manage user trust honestly.
 
 ---

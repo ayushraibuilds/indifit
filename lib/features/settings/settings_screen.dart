@@ -13,6 +13,7 @@ import '../../core/theme/colors.dart';
 import '../../core/utils/encryption_helper.dart';
 import '../../data/database/app_database.dart';
 import 'health_sync_hub_screen.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -294,33 +295,122 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               final password = passwordController.text;
               if (backup.isEmpty) return;
 
-              // Destructive restore confirmation
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Confirm Destructive Restore?'),
-                  backgroundColor: AppColors.surface,
-                  content: const Text(
-                    'WARNING: Restoring this backup will permanently overwrite all your current local food logs, workout history, routines, and body measurements. This action is destructive and cannot be undone.\n\nAre you sure you want to proceed?',
-                    style: TextStyle(height: 1.4),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancel'),
+              // 1. Try to decrypt and parse the backup
+              Map<String, dynamic> data;
+              try {
+                final decrypted = EncryptionHelper.decrypt(backup, password);
+                data = jsonDecode(decrypted) as Map<String, dynamic>;
+              } catch (e) {
+                if (context.mounted) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Decryption Failed'),
+                      backgroundColor: AppColors.surface,
+                      content: const Text(
+                        'Unable to decrypt backup. Please check your password and verify that the backup string is not corrupted.',
+                        style: TextStyle(height: 1.4),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
                     ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Delete & Overwrite'),
-                    ),
-                  ],
-                ),
-              );
+                  );
+                }
+                return;
+              }
 
-              if (confirm == true && context.mounted) {
-                Navigator.pop(context); // Close backup restore dialog
-                await _performRestore(backup, password);
+              // 2. Extract stats for Restore Preview
+              final version = data['version'] ?? 1;
+              final exportedAtStr = data['exported_at'] ?? 'Unknown';
+              String formattedDate = exportedAtStr;
+              try {
+                final date = DateTime.parse(exportedAtStr);
+                formattedDate = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+              } catch (_) {}
+
+              final foodItemsCount = (data['food_items'] as List?)?.length ?? 0;
+              final foodLogsCount = (data['food_logs'] as List?)?.length ?? 0;
+              final workoutSessionsCount = (data['workout_sessions'] as List?)?.length ?? 0;
+              final workoutSetsCount = (data['workout_sets'] as List?)?.length ?? 0;
+              final measurementsCount = (data['body_measurements'] as List?)?.length ?? 0;
+              final routinesCount = (data['workout_routines'] as List?)?.length ?? 0;
+
+              // 3. Show Destructive Restore Confirmation with Preview Stats
+              if (context.mounted) {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Confirm Destructive Restore?'),
+                    backgroundColor: AppColors.surface,
+                    content: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'BACKUP FILE PREVIEW',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textSecondary,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text('• Backup Version: $version', style: const TextStyle(fontSize: 12)),
+                                Text('• Created: $formattedDate', style: const TextStyle(fontSize: 12)),
+                                const SizedBox(height: 6),
+                                const Divider(height: 12),
+                                const SizedBox(height: 6),
+                                const Text('Records to Restore:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                Text('• Food Items: $foodItemsCount', style: const TextStyle(fontSize: 12)),
+                                Text('• Food Logs: $foodLogsCount', style: const TextStyle(fontSize: 12)),
+                                Text('• Workout Sessions: $workoutSessionsCount ($workoutSetsCount sets)', style: const TextStyle(fontSize: 12)),
+                                Text('• Body Measurements: $measurementsCount', style: const TextStyle(fontSize: 12)),
+                                Text('• Workout Routines: $routinesCount', style: const TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'WARNING: Restoring this backup will permanently overwrite all your current local food logs, workout history, routines, and body measurements. This action is destructive and cannot be undone.\n\nAre you sure you want to proceed?',
+                            style: TextStyle(height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete & Overwrite'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true && context.mounted) {
+                  Navigator.pop(context); // Close backup restore dialog
+                  await _performRestore(backup, password);
+                }
               }
             },
             child: const Text('Restore Data'),
@@ -485,6 +575,106 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } finally {
       if (mounted) {
         setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _deleteAllData() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete All Local Data?'),
+        backgroundColor: AppColors.surface,
+        content: const Text(
+          'WARNING: This will permanently wipe all your logged meals, workout history, routines, and custom body measurements from this device. This action cannot be undone.\n\nAre you sure you want to proceed?',
+          style: TextStyle(height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete Everything'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      setState(() => _loading = true);
+      try {
+        final db = ref.read(databaseProvider);
+        await db.transaction(() async {
+          // Clear all tables in child-first order
+          await db.delete(db.workoutSets).go();
+          await db.delete(db.workoutSessions).go();
+          await db.delete(db.routineExercises).go();
+          await db.delete(db.routineDays).go();
+          await db.delete(db.workoutRoutines).go();
+          await db.delete(db.foodLogs).go();
+          await db.delete(db.foodItems).go();
+          await db.delete(db.bodyMeasurements).go();
+        });
+
+        // Reset water provider too
+        final currentWater = ref.read(waterProvider).waterLogged;
+        await ref.read(waterProvider.notifier).logWater(-currentWater);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('All local data wiped successfully.'), backgroundColor: AppColors.success),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to clear database: $e'), backgroundColor: AppColors.danger),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _loading = false);
+        }
+      }
+    }
+  }
+
+  Future<void> _resetOnboarding() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Onboarding?'),
+        backgroundColor: AppColors.surface,
+        content: const Text(
+          'This will clear your onboarding preferences, target calorie calculations, and default goals. You will be redirected to the onboarding wizard to recalculate them.\n\nDo you want to proceed?',
+          style: TextStyle(height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_completed', false);
+      
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+          (route) => false,
+        );
       }
     }
   }
@@ -716,6 +906,71 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(color: Colors.blueAccent.withOpacity(0.2)),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Data Explanation Box
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.privacy_tip_rounded, color: AppColors.success, size: 18),
+                            SizedBox(width: 8),
+                            Text('Where is my data stored?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '• Local Data Only: All food databases, logged meals, active workouts, training routines, and weight measurements are stored offline-first inside a local SQLite (Drift) database on this device. They are never uploaded or shared.\n\n'
+                          '• Sync Capabilities: Supabase Cloud Sync, if activated, acts purely as an optional secure pipeline to backup or synchronise data across multiple devices under your own authenticated account.',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Reset Onboarding Button
+                  ElevatedButton.icon(
+                    onPressed: _resetOnboarding,
+                    icon: const Icon(Icons.refresh_rounded, color: Colors.orangeAccent),
+                    label: const Text('Reset Onboarding Wizard'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orangeAccent.withOpacity(0.12),
+                      foregroundColor: Colors.orangeAccent,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.orangeAccent.withOpacity(0.2)),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Delete All Data Button
+                  ElevatedButton.icon(
+                    onPressed: _deleteAllData,
+                    icon: const Icon(Icons.delete_forever_rounded, color: AppColors.danger),
+                    label: const Text('Wipe All Local Data'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.danger.withOpacity(0.12),
+                      foregroundColor: AppColors.danger,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: AppColors.danger.withOpacity(0.2)),
                       ),
                       elevation: 0,
                     ),
