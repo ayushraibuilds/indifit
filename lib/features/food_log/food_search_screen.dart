@@ -247,24 +247,26 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           IconButton(
             icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary),
             tooltip: 'Scan Barcode',
-            onPressed: () async {
-              final result = await Navigator.push<FoodApiResult?>(
-                context,
-                MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
-              );
-
-              if (result != null) {
-                _showLogDialog(
-                  result.name,
-                  result.calories,
-                  result.protein,
-                  result.carbs,
-                  result.fat,
-                  result.servingSize,
-                  result.servingUnit,
-                  null
+            onPressed: () {
+              _showBarcodePermissionRationale(context, () async {
+                final result = await Navigator.push<FoodApiResult?>(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
                 );
-              }
+
+                if (result != null && mounted) {
+                  _showLogDialog(
+                    result.name,
+                    result.calories,
+                    result.protein,
+                    result.carbs,
+                    result.fat,
+                    result.servingSize,
+                    result.servingUnit,
+                    null
+                  );
+                }
+              });
             },
           ),
           IconButton(
@@ -479,6 +481,42 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showBarcodePermissionRationale(BuildContext context, VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: const Text(
+            'Camera Permission Request',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            'IndiFit requires access to your camera to scan barcodes on food packaging. This allows instant matching with our offline database and the Open Food Facts API.',
+            style: TextStyle(height: 1.4, color: AppColors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                onConfirm();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Allow'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

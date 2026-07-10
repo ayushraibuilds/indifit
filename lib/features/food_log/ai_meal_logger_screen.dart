@@ -53,27 +53,63 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    try {
-      final XFile? file = await _picker.pickImage(
-        source: source,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
-      );
+    final bool isCamera = source == ImageSource.camera;
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: Text(
+            isCamera ? 'Camera Access Required' : 'Photo Gallery Access Required',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            isCamera 
+              ? 'IndiFit requires access to your camera to snap a photo of your meal. This photo is parsed locally to estimate ingredients, portion weights, and nutritional values.'
+              : 'IndiFit requires access to your photo library to choose an existing image of your meal for ingredient extraction.',
+            style: const TextStyle(height: 1.4, color: AppColors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                try {
+                  final XFile? file = await _picker.pickImage(
+                    source: source,
+                    maxWidth: 800,
+                    maxHeight: 800,
+                    imageQuality: 85,
+                  );
 
-      if (file != null) {
-        setState(() {
-          _selectedImage = File(file.path);
-          _estimatedMeal = null; // Clear previous estimation
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to select image: $e')),
+                  if (file != null && mounted) {
+                    setState(() {
+                      _selectedImage = File(file.path);
+                      _estimatedMeal = null; // Clear previous estimation
+                    });
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to select image: $e')),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Allow'),
+            ),
+          ],
         );
-      }
-    }
+      },
+    );
   }
 
   Future<void> _submitTextEstimate() async {

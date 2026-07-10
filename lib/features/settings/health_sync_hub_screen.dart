@@ -154,7 +154,43 @@ class _HealthSyncHubScreenState extends State<HealthSyncHubScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Native configuration advice
+            // Native configuration advice & local privacy benefits
+            Card(
+              color: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppColors.border),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.shield_outlined, color: AppColors.success, size: 22),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Local Privacy & Security Benefits',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'All imported health metrics are processed entirely on-device and stored under military-grade AES-GCM secure encryption keys. Your sensitive biometric details never leave this phone, and no centralized databases hold your personal training records.',
+                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
+                          ),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Coming Soon Notice
             if (!_isSimulating) ...[
               Card(
                 color: AppColors.surface,
@@ -167,7 +203,7 @@ class _HealthSyncHubScreenState extends State<HealthSyncHubScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.lock_clock, color: AppColors.textSecondary, size: 20),
+                      Icon(Icons.lock_clock, color: AppColors.warning, size: 20),
                       SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -175,7 +211,7 @@ class _HealthSyncHubScreenState extends State<HealthSyncHubScreen> {
                           children: [
                             Text(
                               'Native Syncing (Coming Soon)',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textSecondary),
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orangeAccent),
                             ),
                             SizedBox(height: 4),
                             Text(

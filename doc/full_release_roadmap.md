@@ -80,11 +80,11 @@ Status: **COMPLETED**
 ---
 
 ## Phase 7: Real Platform Integrations
-Status: **NOT STARTED**
+Status: **COMPLETED**
 
-- [ ] **Native Health Integrations**: Write production integrations for iOS HealthKit and Android Health Connect to import steps, active cals, weight, and workouts.
-- [ ] **Permissions & Hardware**: Implement just-in-time permission prompts for camera access, photo libraries, and notification channels.
-- [ ] **Device Robustness**: Verify persistence across timezone shifts, system restarts, and OS battery-optimization events.
+- [x] **Native Health Integrations**: Write production integrations for iOS HealthKit and Android Health Connect to import steps, active cals, weight, and workouts.
+- [x] **Permissions & Hardware**: Implement just-in-time permission prompts for camera access, photo libraries, and notification channels.
+- [x] **Device Robustness**: Verify persistence across timezone shifts, system restarts, and OS battery-optimization events.
 
 ---
 
