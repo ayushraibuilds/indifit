@@ -191,34 +191,49 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Widget _buildWeightChartCard() {
+    if (_measurements.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.scale_rounded, size: 40, color: AppColors.textMuted),
+                SizedBox(height: 12),
+                Text(
+                  'No weight logs yet',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Use the "+" button below to log your body weight and view trends.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final List<FlSpot> spots = [];
     double overallDiff = 0.0;
 
-    if (_measurements.isEmpty) {
-      spots.addAll([
-        const FlSpot(0, 75.6),
-        const FlSpot(1, 75.1),
-        const FlSpot(2, 74.8),
-        const FlSpot(3, 74.5),
-        const FlSpot(4, 74.4),
-        const FlSpot(5, 74.2),
-      ]);
-      overallDiff = -1.4;
-    } else {
-      // Sort oldest to newest for graph
-      final sorted = List<BodyMeasurement>.from(_measurements).reversed.toList();
-      final start = sorted.length > 6 ? sorted.length - 6 : 0;
-      for (int i = start; i < sorted.length; i++) {
-        final double? w = sorted[i].weight;
-        if (w != null) {
-          spots.add(FlSpot((i - start).toDouble(), w));
-        }
+    // Sort oldest to newest for graph
+    final sorted = List<BodyMeasurement>.from(_measurements).reversed.toList();
+    final start = sorted.length > 6 ? sorted.length - 6 : 0;
+    for (int i = start; i < sorted.length; i++) {
+      final double? w = sorted[i].weight;
+      if (w != null) {
+        spots.add(FlSpot((i - start).toDouble(), w));
       }
-      
-      // Calculate overall difference between last and first of the shown set
-      if (spots.length >= 2) {
-        overallDiff = spots.last.y - spots.first.y;
-      }
+    }
+    
+    // Calculate overall difference between last and first of the shown set
+    if (spots.length >= 2) {
+      overallDiff = spots.last.y - spots.first.y;
     }
 
     double minY = 50.0;

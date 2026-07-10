@@ -41,22 +41,28 @@ class SyncManager {
       // SharedPreferences error fallback
     }
     
+    String? userId;
     try {
       // Accessing client throws StateError if Supabase is not initialized
-      Supabase.instance.client;
+      final client = Supabase.instance.client;
+      userId = client.auth.currentUser?.id;
+      if (userId == null) {
+        debugPrint("No authenticated user found. Sync bypassed.");
+        return;
+      }
     } catch (e) {
       return; // Bypassed
     }
 
     _syncing = true;
-    debugPrint("Offline-first sync triggered...");
+    debugPrint("Offline-first sync triggered for user $userId...");
 
     try {
       // 1. Sync food logs
-      await _syncFoodLogs();
+      await _syncFoodLogs(userId);
 
       // 2. Sync workout sessions
-      await _syncWorkoutSessions();
+      await _syncWorkoutSessions(userId);
       
       debugPrint("Offline-first sync completed successfully.");
     } catch (e) {
@@ -66,7 +72,7 @@ class SyncManager {
     }
   }
 
-  Future<void> _syncFoodLogs() async {
+  Future<void> _syncFoodLogs(String userId) async {
     final client = Supabase.instance.client;
     
     // Get unsynced food logs
@@ -77,6 +83,7 @@ class SyncManager {
     final List<Map<String, dynamic>> payload = unsynced.map((log) {
       return {
         'id': log.id,
+        'user_id': userId,
         'name': log.name,
         'calories': log.calories,
         'protein_g': log.proteinG,
@@ -99,7 +106,7 @@ class SyncManager {
     }
   }
 
-  Future<void> _syncWorkoutSessions() async {
+  Future<void> _syncWorkoutSessions(String userId) async {
     final client = Supabase.instance.client;
 
     // Get unsynced workout sessions
@@ -114,6 +121,7 @@ class SyncManager {
       // Upload session to Supabase
       final sessionResponse = await client.from('workout_sessions').upsert({
         'id': session.id,
+        'user_id': userId,
         'name': session.name,
         'total_volume': session.totalVolume,
         'duration_seconds': session.durationSeconds,

@@ -45,6 +45,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
   double _prWeight = 0.0;
   int _prReps = 0;
 
+  // New Rest Timer & Prior Session sets state
+  List<WorkoutSet> _priorSets = [];
+
   @override
   void initState() {
     super.initState();
@@ -101,6 +104,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
 
     if (mounted) {
       setState(() {
+        _priorSets = latestSets;
         _weightController.text = weight.toStringAsFixed(1);
         _repsController.text = reps.toString();
       });
@@ -111,6 +115,34 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  String _getExerciseFormCue(String exerciseName) {
+    final name = exerciseName.toLowerCase();
+    if (name.contains('bench press') || name.contains('chest press')) {
+      return 'Form: Scapula retracted (shoulders back and down), chest up, flat feet on floor. Lower under control to touch your mid-chest and press up.';
+    } else if (name.contains('shoulder press') || name.contains('overhead press')) {
+      return 'Form: Keep core tight, avoid excessive arch in lower back. Drive weight straight up, keeping elbows slightly tucked.';
+    } else if (name.contains('squat')) {
+      return 'Form: Hips back first, push knees outward, keep chest high, brace core. Squat to parallel or lower.';
+    } else if (name.contains('deadlift')) {
+      return 'Form: Hinge at hips, keep flat back, pull bar close to shins. Drive feet into the ground to lock out.';
+    } else if (name.contains('lat pulldown') || name.contains('pull')) {
+      return 'Form: Pull shoulders down and back, pull down to upper chest using elbows, lean back slightly.';
+    } else if (name.contains('curl') || name.contains('tricep') || name.contains('lateral') || name.contains('raise')) {
+      return 'Form: Pin elbows, avoid swinging, squeeze targeted arm muscles.';
+    }
+    return 'Form: Perform with strict form. Keep core braced, breathe out on exertion, and control the negative phase.';
+  }
+
+  int _getRecommendedRestSeconds(String exerciseName) {
+    final name = exerciseName.toLowerCase();
+    if (name.contains('squat') || name.contains('deadlift') || name.contains('bench press')) {
+      return 120;
+    } else if (name.contains('curl') || name.contains('tricep') || name.contains('lateral') || name.contains('raise')) {
+      return 60;
+    }
+    return 90;
   }
 
   Future<void> _completeSet() async {
@@ -211,6 +243,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     // Keep screen awake during rest period
     WakelockPlus.enable();
 
+    final currentEx = widget.exercises[_currentExerciseIndex];
+    final recommendedRest = _getRecommendedRestSeconds(currentEx.exerciseName);
+
     await showModalBottomSheet(
       context: context,
       isDismissible: false,
@@ -220,7 +255,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        int secondsRemaining = 90;
+        int secondsRemaining = recommendedRest;
         Timer? timer;
 
         return StatefulBuilder(
@@ -242,7 +277,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
               }
             });
 
-            final progress = secondsRemaining / 90.0;
+            final progress = secondsRemaining / recommendedRest;
 
             return Padding(
               padding: const EdgeInsets.all(24.0),
@@ -254,11 +289,12 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Catch your breath before the next set.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  Text(
+                    'Recommended rest for ${currentEx.exerciseName}: $recommendedRest seconds.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
                   
                   // Circular timer countdown ring
                   Stack(
@@ -422,19 +458,73 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                 // 2. Exercise details display
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          currentEx.exerciseName,
-                          style: Theme.of(context).textTheme.titleLarge,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                currentEx.exerciseName,
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryGlow,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Rest: ${_getRecommendedRestSeconds(currentEx.exerciseName)}s',
+                                style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Target: Keep your scapula retracted and press upward under control.',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                        )
+                        Text(
+                          _getExerciseFormCue(currentEx.exerciseName),
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
+                        ),
+                        const SizedBox(height: 8),
+                        const Row(
+                          children: [
+                            Icon(Icons.bolt_rounded, size: 14, color: Colors.orange),
+                            SizedBox(width: 4),
+                            Text(
+                              'Target Effort: RPE 8 (2 reps in reserve)',
+                              style: TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                        if (_priorSets.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          const Divider(color: AppColors.border),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'LAST SESSION:',
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primary, letterSpacing: 0.5),
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: _priorSets.map((s) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardBackground,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '${s.weight}kg x ${s.reps}',
+                                style: const TextStyle(fontSize: 11, color: Colors.white70),
+                              ),
+                            )).toList(),
+                          ),
+                        ]
                       ],
                     ),
                   ),

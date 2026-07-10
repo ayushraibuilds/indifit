@@ -12,10 +12,11 @@ load_dotenv()
 
 app = FastAPI(title="IndiFit AI Backend")
 
-# Enable CORS for local app testing
+# Enable CORS for local app testing with restricted origins in production
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost,http://127.0.0.1,http://10.0.2.2,https://indifit.app").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -136,14 +137,14 @@ async def generate_routine(req: RoutineRequest):
     
     try:
         if not GEMINI_API_KEY:
-            # Return high-quality mock split to allow offline testing
-            return _mock_routine(req)
+            return _mock_routine(req, reason="Missing GEMINI_API_KEY env variable")
             
         result = await query_gemini_text(prompt, json_mode=True)
-        return json.loads(result)
+        data = json.loads(result)
+        data["is_fallback"] = False
+        return data
     except Exception as e:
-        # Fallback to mock on exceptions
-        return _mock_routine(req, notes=f"Fallback Mock: {str(e)}")
+        return _mock_routine(req, notes=f"Fallback Mock: {str(e)}", reason=str(e))
 
 
 @app.post("/api/ai/meal-estimate-text")
@@ -167,12 +168,14 @@ async def estimate_meal_text(req: TextMealRequest):
     
     try:
         if not GEMINI_API_KEY:
-            return _mock_meal_estimate(req.text)
+            return _mock_meal_estimate(req.text, reason="Missing GEMINI_API_KEY env variable")
             
         result = await query_gemini_text(prompt, json_mode=True)
-        return json.loads(result)
+        data = json.loads(result)
+        data["is_fallback"] = False
+        return data
     except Exception as e:
-        return _mock_meal_estimate(req.text, name=f"Estimated: {req.text[:20]}")
+        return _mock_meal_estimate(req.text, name=f"Estimated: {req.text[:20]}", reason=str(e))
 
 
 @app.post("/api/ai/meal-estimate-photo")
@@ -197,15 +200,17 @@ async def estimate_meal_photo(image: UploadFile = File(...)):
         mime_type = image.content_type or "image/jpeg"
         
         if not GEMINI_API_KEY:
-            return _mock_meal_estimate("Photo Upload")
+            return _mock_meal_estimate("Photo Upload", reason="Missing GEMINI_API_KEY env variable")
             
         result = await query_gemini_vision(prompt, image_bytes, mime_type)
-        return json.loads(result)
+        data = json.loads(result)
+        data["is_fallback"] = False
+        return data
     except Exception as e:
-        return _mock_meal_estimate(f"Photo Estimate Fallback: {str(e)}")
+        return _mock_meal_estimate("Photo Estimate Fallback", reason=str(e))
 
 
-def _mock_routine(req: RoutineRequest, notes: str = ""):
+def _mock_routine(req: RoutineRequest, notes: str = "", reason: str = ""):
     # High-quality offline fallback constructor for development testing
     name = f"AI {req.experience.title()} {req.goal.title()} Split"
     notes = notes or f"Custom compiled program for {req.equipment} training. Standard tempo: 2-0-2-0. Rest 90s between sets."
@@ -294,15 +299,17 @@ def _mock_routine(req: RoutineRequest, notes: str = ""):
     return {
         "name": name,
         "notes": notes,
-        "days": days
+        "days": days,
+        "is_fallback": True,
+        "fallback_reason": reason
     }
 
 
-def _mock_meal_estimate(text: str, name: str = ""):
+def _mock_meal_estimate(text: str, name: str = "", reason: str = ""):
     # Heuristics based local mock estimator
     text_lower = text.lower()
     if "roti" in text_lower or "chapati" in text_lower:
-        return {
+        meal = {
             "name": name or "Roti with Dal & Veg",
             "calories": 380,
             "protein": 12.5,
@@ -312,7 +319,7 @@ def _mock_meal_estimate(text: str, name: str = ""):
             "serving_unit": "plate"
         }
     elif "chicken" in text_lower or "egg" in text_lower:
-        return {
+        meal = {
             "name": name or "High Protein Chicken Salad",
             "calories": 420,
             "protein": 38.0,
@@ -322,7 +329,7 @@ def _mock_meal_estimate(text: str, name: str = ""):
             "serving_unit": "bowl"
         }
     else:
-        return {
+        meal = {
             "name": name or "Mixed Indian Dish",
             "calories": 350,
             "protein": 8.0,
@@ -331,3 +338,7 @@ def _mock_meal_estimate(text: str, name: str = ""):
             "serving_size": 1.0,
             "serving_unit": "serving"
         }
+    meal["is_fallback"] = True
+    meal["fallback_reason"] = reason
+    return meal
+

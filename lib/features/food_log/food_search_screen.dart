@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/colors.dart';
@@ -21,6 +22,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   List<FoodItem> _localResults = [];
   List<FoodApiResult> _onlineResults = [];
   bool _searching = false;
+  Timer? _debounceTimer;
+  bool _isOnlineSearchOffline = false;
 
   @override
   void initState() {
@@ -30,13 +33,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged() {
-    _performSearch(_searchController.text);
+    if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 375), () {
+      _performSearch(_searchController.text);
+    });
   }
 
   Future<void> _performSearch(String text) async {
@@ -45,6 +52,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _localResults = [];
         _onlineResults = [];
         _searching = false;
+        _isOnlineSearchOffline = false;
       });
       return;
     }
@@ -58,19 +66,30 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       // Perform local fuzzy database search
       final local = await repo.searchFoodLocal(text);
 
-      // Perform online Open Food Facts search
-      final online = await apiService.searchOnline(text);
+      List<FoodApiResult> online = [];
+      bool isOnlineSearchOffline = false;
+
+      try {
+        online = await apiService.searchOnline(text);
+      } catch (e) {
+        isOnlineSearchOffline = true;
+        debugPrint("Online search failed (device offline): $e");
+      }
 
       if (mounted) {
         setState(() {
           _localResults = local;
           _onlineResults = online;
+          _isOnlineSearchOffline = isOnlineSearchOffline;
           _searching = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _searching = false);
+        setState(() {
+          _searching = false;
+          _isOnlineSearchOffline = true;
+        });
       }
     }
   }
@@ -291,6 +310,28 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                       ? _buildEmptyState()
                       : ListView(
                           children: [
+                            if (_isOnlineSearchOffline)
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.warning.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.cloud_off_rounded, color: AppColors.warning, size: 16),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Offline mode. Showing local results only.',
+                                        style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             if (_localResults.isNotEmpty) ...[
                               const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 8.0),

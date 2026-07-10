@@ -12,6 +12,8 @@ import '../food_log/food_search_screen.dart';
 import '../food_log/ai_meal_logger_screen.dart';
 import '../food_log/ai_meal_planner_screen.dart';
 import '../settings/settings_screen.dart';
+import '../workout_player/workout_player_screen.dart';
+import '../workout_player/routine_display_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -32,7 +34,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double _fatGoal = 65.0;
 
   double _adherenceScore = 0.0;
-  bool _calculatingAdherence = false;
+
+  // Today's workout state variables
+  String _todayWorkoutName = 'Rest Day';
+  bool _isRestDay = true;
+  List<RoutineExercise> _todayExercises = [];
 
   @override
   void initState() {
@@ -53,12 +59,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _carbsGoal = prefs.getDouble('carbs_goal') ?? 230.0;
       _fatGoal = prefs.getDouble('fat_goal') ?? 65.0;
     });
+    await _loadTodayWorkout();
     await _calculateWeeklyAdherence();
+  }
+
+  Future<void> _loadTodayWorkout() async {
+    if (!mounted) return;
+    try {
+      final repo = ref.read(workoutRepositoryProvider);
+      final routines = await repo.getSavedRoutines();
+      if (routines.isNotEmpty) {
+        final active = routines.last;
+        final details = await repo.getRoutineDetails(active.id);
+        final todayWeekday = DateTime.now().weekday;
+        final dayData = details.firstWhere(
+          (d) => (d['day'] as RoutineDay).dayOfWeek == todayWeekday,
+          orElse: () => <String, dynamic>{},
+        );
+        if (dayData.isNotEmpty) {
+          final RoutineDay day = dayData['day'];
+          final List<RoutineExercise> exercises = dayData['exercises'] as List<RoutineExercise>;
+          setState(() {
+            _todayWorkoutName = day.name;
+            _isRestDay = day.isRestDay;
+            _todayExercises = exercises;
+          });
+        }
+      }
+    } catch (e) {
+      // Ignored
+    }
   }
 
   Future<void> _calculateWeeklyAdherence() async {
     if (!mounted) return;
-    setState(() => _calculatingAdherence = true);
     
     try {
       final foodRepo = ref.read(foodRepositoryProvider);
@@ -99,13 +133,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       if (mounted) {
         setState(() {
           _adherenceScore = (nutritionScore * 0.7 + workoutScore * 0.3);
-          _calculatingAdherence = false;
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _calculatingAdherence = false);
-      }
+      // Ignored
     }
   }
 
@@ -166,12 +197,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Header (Greeting & Streak)
+                  // 1. Responsive Header (Greeting & Streak & PopupMenu)
                   _buildHeader(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   // 2. Calorie Ring & Macro Bars
                   _buildCalorieSection(eatenCalories, eatenProtein, eatenCarbs, eatenFat, calPercent),
+                  const SizedBox(height: 16),
+
+                  // Quick Actions Bar
+                  _buildQuickActionsRow(),
+                  const SizedBox(height: 16),
+
+                  // Today's Workout Card
+                  _buildTodayWorkoutCard(),
                   const SizedBox(height: 16),
 
                   // Weekly Adherence Score Card
@@ -256,68 +295,262 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildHeader() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Namaste, Fitness Champ',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Let\'s crush your diet goals today!',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-            )
-          ],
+        // Greeting Text
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Namaste, Champ',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'Crush your goals today!',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                overflow: TextOverflow.ellipsis,
+              )
+            ],
+          ),
         ),
         
-        // AI Planner, Settings & Streak Badge Row
-        Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.menu_book_rounded, color: AppColors.primary),
-              tooltip: 'AI Meal Planner',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AiMealPlannerScreen()),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.settings_rounded, color: AppColors.textSecondary),
-              tooltip: 'Settings & Reminders',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                );
-              },
-            ),
-            const SizedBox(width: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.orange.withOpacity(0.25)),
+        // Streak Badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.orange.withOpacity(0.25)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 14),
+              const SizedBox(width: 2),
+              Text(
+                '${_streakCount}d',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 11),
               ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 4),
+
+        // Actions Menu
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
+          onSelected: (val) {
+            if (val == 'planner') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AiMealPlannerScreen()),
+              );
+            } else if (val == 'settings') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'planner',
               child: Row(
                 children: [
-                  const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 18),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$_streakCount Days',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 12),
-                  ),
+                  Icon(Icons.menu_book_rounded, color: AppColors.primary, size: 20),
+                  SizedBox(width: 8),
+                  Text('AI Meal Planner'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'settings',
+              child: Row(
+                children: [
+                  Icon(Icons.settings_rounded, color: AppColors.textSecondary, size: 20),
+                  SizedBox(width: 8),
+                  Text('Settings'),
                 ],
               ),
             ),
           ],
-        )
+        ),
       ],
+    );
+  }
+
+  Widget _buildQuickActionsRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _showQuickLogMealSheet,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            icon: const Icon(Icons.add_circle_outline, size: 18),
+            label: const Text('Log Meal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _startTodayWorkout,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGlow,
+              foregroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                side: const BorderSide(color: AppColors.primary, width: 1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            icon: const Icon(Icons.play_arrow_rounded, size: 18),
+            label: const Text('Start Workout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showQuickLogMealSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Select Meal Type', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _mealQuickActionButton('Breakfast', 'breakfast', Icons.breakfast_dining_rounded),
+                  _mealQuickActionButton('Lunch', 'lunch', Icons.lunch_dining_rounded),
+                  _mealQuickActionButton('Dinner', 'dinner', Icons.dinner_dining_rounded),
+                  _mealQuickActionButton('Snacks', 'snack', Icons.cookie_rounded),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _mealQuickActionButton(String label, String type, IconData icon) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(icon, color: AppColors.primary, size: 28),
+          onPressed: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => FoodSearchScreen(mealType: type)),
+            );
+          },
+        ),
+        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+      ],
+    );
+  }
+
+  void _startTodayWorkout() {
+    if (_isRestDay || _todayExercises.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Rest Day scheduled'),
+          content: const Text('Today is scheduled as a rest day. Would you like to view your training split to start a different workout?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RoutineDisplayScreen()),
+                );
+              },
+              child: const Text('View Split'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WorkoutPlayerScreen(
+            routineName: _todayWorkoutName,
+            exercises: _todayExercises,
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildTodayWorkoutCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _isRestDay ? Colors.blue.withOpacity(0.1) : AppColors.primaryGlow,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _isRestDay ? Icons.spa_rounded : Icons.fitness_center_rounded,
+                color: _isRestDay ? Colors.blue : AppColors.primary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('TODAY\'S WORKOUT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5)),
+                  const SizedBox(height: 4),
+                  Text(_todayWorkoutName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 2),
+                  Text(
+                    _isRestDay ? 'Time to recover and heal' : '${_todayExercises.length} Exercises scheduled',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            if (!_isRestDay)
+              IconButton(
+                icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 32),
+                onPressed: _startTodayWorkout,
+              )
+          ],
+        ),
+      ),
     );
   }
 
@@ -339,9 +572,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     '$eaten',
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
-                  const Text(
-                    'of 2000 kcal',
-                    style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                  Text(
+                    'of $_calorieGoal kcal',
+                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
                   ),
                 ],
               ),

@@ -126,7 +126,21 @@
 - [x] "No backend mode" toggle
 - [x] Health disclaimer and AI uncertainty warnings
 
-## Phase 8: Build & Test 🔲
+## Phase 8: Launch Hardening & Refinement ☑️
+- [x] Fix Gradle release signing fallback error
+- [x] Include user identity in Supabase sync payloads
+- [x] Make backend URL adaptive (release vs dev)
+- [x] Add CORS domain restrictions & is_fallback metadata in backend API
+- [x] Default notifications to disabled on first launch
+- [x] Redesign dashboard header (responsive actions & short streak)
+- [x] Use actual calorie goals in circular ring, remove fake weight sparkline data
+- [x] Add Quick Actions row (Log Meal / Start Workout) on Dashboard Today view
+- [x] Rename Diet Tracker tab to Today, show both food & workout status
+- [x] Redesign routine weekly split selector to horizontally scrollable list
+- [x] Display workout player form cues, RPE, rest times, and prior log history
+- [x] Debounce food search input & display search group categories
+
+## Phase 9: Build & Test 🔲
 - [ ] Build APK (Android) for physical phone testing
 - [ ] Build and install via Xcode Personal Team (iOS) for physical phone testing
 - [ ] Test offline-to-online data sync scenarios (airplane mode simulation)

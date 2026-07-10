@@ -229,60 +229,81 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   }
 
   Widget _buildWeeklyCalendarHeader() {
-    final weekdaysShort = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      color: AppColors.surface,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(7, (index) {
-          final dayNum = index + 1;
-          final isSelected = _selectedDayOfWeek == dayNum;
-          
-          // Check if this day is a rest day
-          final daySplit = _routineDays.firstWhere(
-            (d) => (d['day'] as RoutineDay).dayOfWeek == dayNum,
-            orElse: () => {'day': null},
-          );
-          final RoutineDay? rDay = daySplit['day'];
-          final isRest = rDay?.isRestDay ?? true;
+    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
 
-          return GestureDetector(
-            onTap: () => setState(() => _selectedDayOfWeek = dayNum),
-            child: Container(
-              width: 44,
-              height: 52,
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected ? Colors.transparent : AppColors.border,
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    weekdaysShort[index],
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: List.generate(7, (index) {
+            final dayNum = index + 1;
+            final isSelected = _selectedDayOfWeek == dayNum;
+            final date = monday.add(Duration(days: index));
+            
+            // Check if this day is a rest day
+            final daySplit = _routineDays.firstWhere(
+              (d) => (d['day'] as RoutineDay).dayOfWeek == dayNum,
+              orElse: () => {'day': null},
+            );
+            final RoutineDay? rDay = daySplit['day'];
+            final isRest = rDay?.isRestDay ?? true;
+
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedDayOfWeek = dayNum),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 58,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary : AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? Colors.transparent : AppColors.border,
+                      width: 1,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Icon(
-                    isRest ? Icons.spa_rounded : Icons.fitness_center_rounded,
-                    size: 14,
-                    color: isSelected 
-                        ? Colors.white 
-                        : (isRest ? AppColors.textMuted : AppColors.primary),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        weekdays[index],
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${date.day}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? Colors.white : Colors.white70,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Icon(
+                        isRest ? Icons.spa_rounded : Icons.fitness_center_rounded,
+                        size: 12,
+                        color: isSelected 
+                            ? Colors.white 
+                            : (isRest ? Colors.blue.withOpacity(0.8) : AppColors.primary),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
     );
   }

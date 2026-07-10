@@ -15,11 +15,11 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  bool _remindWorkout = true;
-  bool _remindMeals = true;
-  bool _remindWater = true;
-  bool _remindEvening = true;
-  bool _remindWeekly = true;
+  bool _remindWorkout = false;
+  bool _remindMeals = false;
+  bool _remindWater = false;
+  bool _remindEvening = false;
+  bool _remindWeekly = false;
   bool _offlineOnly = false;
   bool _loading = true;
 
@@ -32,11 +32,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _remindWorkout = prefs.getBool(NotificationService.prefRemindWorkout) ?? true;
-      _remindMeals = prefs.getBool(NotificationService.prefRemindMeals) ?? true;
-      _remindWater = prefs.getBool(NotificationService.prefRemindWater) ?? true;
-      _remindEvening = prefs.getBool(NotificationService.prefRemindEvening) ?? true;
-      _remindWeekly = prefs.getBool(NotificationService.prefRemindWeekly) ?? true;
+      _remindWorkout = prefs.getBool(NotificationService.prefRemindWorkout) ?? false;
+      _remindMeals = prefs.getBool(NotificationService.prefRemindMeals) ?? false;
+      _remindWater = prefs.getBool(NotificationService.prefRemindWater) ?? false;
+      _remindEvening = prefs.getBool(NotificationService.prefRemindEvening) ?? false;
+      _remindWeekly = prefs.getBool(NotificationService.prefRemindWeekly) ?? false;
       _offlineOnly = prefs.getBool('offline_only') ?? false;
       _loading = false;
     });

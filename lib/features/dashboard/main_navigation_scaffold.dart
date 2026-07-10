@@ -44,9 +44,9 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu_rounded),
-            activeIcon: Icon(Icons.restaurant_menu_rounded, color: AppColors.primary),
-            label: 'Diet Tracker',
+            icon: Icon(Icons.today_rounded),
+            activeIcon: Icon(Icons.today_rounded, color: AppColors.primary),
+            label: 'Today',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.fitness_center_rounded),

@@ -90,11 +90,11 @@ class NotificationService {
 
     final prefs = await SharedPreferences.getInstance();
 
-    final workoutEnabled = prefs.getBool(prefRemindWorkout) ?? true;
-    final mealsEnabled = prefs.getBool(prefRemindMeals) ?? true;
-    final waterEnabled = prefs.getBool(prefRemindWater) ?? true;
-    final eveningEnabled = prefs.getBool(prefRemindEvening) ?? true;
-    final weeklyEnabled = prefs.getBool(prefRemindWeekly) ?? true;
+    final workoutEnabled = prefs.getBool(prefRemindWorkout) ?? false;
+    final mealsEnabled = prefs.getBool(prefRemindMeals) ?? false;
+    final waterEnabled = prefs.getBool(prefRemindWater) ?? false;
+    final eveningEnabled = prefs.getBool(prefRemindEvening) ?? false;
+    final weeklyEnabled = prefs.getBool(prefRemindWeekly) ?? false;
 
     if (workoutEnabled) await _scheduleWorkoutReminder();
     if (mealsEnabled) await _scheduleMealReminders();
