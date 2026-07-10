@@ -146,13 +146,30 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     final repo = ref.read(foodRepositoryProvider);
     
     final String name = _nameEditController.text.trim();
-    final int calories = int.tryParse(_caloriesEditController.text) ?? 0;
-    final double protein = double.tryParse(_proteinEditController.text) ?? 0.0;
-    final double carbs = double.tryParse(_carbsEditController.text) ?? 0.0;
-    final double fat = double.tryParse(_fatEditController.text) ?? 0.0;
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Meal name cannot be empty.'), backgroundColor: AppColors.danger),
+      );
+      return;
+    }
+
+    final int? calories = int.tryParse(_caloriesEditController.text);
+    final double? protein = double.tryParse(_proteinEditController.text);
+    final double? carbs = double.tryParse(_carbsEditController.text);
+    final double? fat = double.tryParse(_fatEditController.text);
+
+    if (calories == null || calories < 0 ||
+        protein == null || protein < 0 ||
+        carbs == null || carbs < 0 ||
+        fat == null || fat < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter valid non-negative values for calories and macros.'), backgroundColor: AppColors.danger),
+      );
+      return;
+    }
 
     await repo.logFoodEntry(
-      name: name.isNotEmpty ? name : 'AI Estimated Meal',
+      name: name,
       calories: calories,
       proteinG: protein,
       carbsG: carbs,
@@ -347,14 +364,14 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
   Widget _buildResultSection() {
     final isFallback = _estimatedMeal!['is_fallback'] ?? false;
-    final confidenceText = isFallback ? 'Confidence: Low (Offline Mode)' : 'Confidence: High (Gemini AI)';
-    final confidenceColor = isFallback ? AppColors.warning : AppColors.success;
+    final estimationLabel = isFallback ? 'Offline Estimate' : 'Live AI Estimate';
+    final labelColor = isFallback ? AppColors.warning : AppColors.success;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'GEMINI ESTIMATION RESULT',
+          'ESTIMATION RESULT',
           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
         ),
         const SizedBox(height: 12),
@@ -372,13 +389,13 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: confidenceColor.withOpacity(0.12),
+                        color: labelColor.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: confidenceColor.withOpacity(0.3)),
+                        border: Border.all(color: labelColor.withOpacity(0.3)),
                       ),
                       child: Text(
-                        confidenceText,
-                        style: TextStyle(color: confidenceColor, fontSize: 10, fontWeight: FontWeight.bold),
+                        estimationLabel,
+                        style: TextStyle(color: labelColor, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     )
                   ],

@@ -238,34 +238,7 @@ class WorkoutRepository {
       .get();
   }
 
-  // 13. Duplicate a completed session for today
-  Future<int> duplicateSession(WorkoutSession session, List<WorkoutSet> sets) async {
-    return await _db.transaction(() async {
-      final sessionId = await _db.into(_db.workoutSessions).insert(
-            WorkoutSessionsCompanion.insert(
-              name: session.name,
-              totalVolume: session.totalVolume,
-              durationSeconds: session.durationSeconds,
-              estimatedCalories: session.estimatedCalories,
-              completedAt: Value(DateTime.now()),
-            ),
-          );
 
-      for (final s in sets) {
-        await _db.into(_db.workoutSets).insert(
-              WorkoutSetsCompanion.insert(
-                sessionId: sessionId,
-                exerciseName: s.exerciseName,
-                weight: s.weight,
-                reps: s.reps,
-                setNumber: s.setNumber,
-                isPr: s.isPr,
-              ),
-            );
-      }
-      return sessionId;
-    });
-  }
 
   // 14. Fetch complete exercise history (sets grouped by session)
   Future<List<Map<String, dynamic>>> getExerciseHistory(String exerciseName) async {

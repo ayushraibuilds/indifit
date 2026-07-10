@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drift/drift.dart' hide Column;
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/di/providers.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/colors.dart';
@@ -196,12 +199,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(password.isEmpty 
-              ? 'Data exported and copied to clipboard!' 
-              : 'Password-encrypted backup successfully copied to clipboard!'
+              ? 'Data copied to clipboard! Opening share menu...' 
+              : 'Password-encrypted backup copied to clipboard! Opening share menu...'
             ),
             backgroundColor: AppColors.success,
           ),
         );
+        await _shareBackupFile(finalString, password.isNotEmpty);
       }
     } catch (e) {
       if (mounted) {
@@ -212,6 +216,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } finally {
       if (mounted) {
         setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _shareBackupFile(String backupText, bool isEncrypted) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final dateStr = DateTime.now().toIso8601String().split('T').first;
+      final fileName = isEncrypted ? 'indifit_backup_$dateStr.enc' : 'indifit_backup_$dateStr.json';
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsString(backupText);
+
+      final xFile = XFile(file.path);
+      await Share.shareXFiles([xFile], subject: 'IndiFit Health Backup');
+      
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to share file: $e'), backgroundColor: AppColors.danger),
+        );
       }
     }
   }
@@ -261,13 +288,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () async {
               final backup = backupController.text.trim();
               final password = passwordController.text;
               if (backup.isEmpty) return;
-              Navigator.pop(context);
-              await _performRestore(backup, password);
+
+              // Destructive restore confirmation
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Confirm Destructive Restore?'),
+                  backgroundColor: AppColors.surface,
+                  content: const Text(
+                    'WARNING: Restoring this backup will permanently overwrite all your current local food logs, workout history, routines, and body measurements. This action is destructive and cannot be undone.\n\nAre you sure you want to proceed?',
+                    style: TextStyle(height: 1.4),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Delete & Overwrite'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true && context.mounted) {
+                Navigator.pop(context); // Close backup restore dialog
+                await _performRestore(backup, password);
+              }
             },
             child: const Text('Restore Data'),
           ),
@@ -290,15 +344,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final data = jsonDecode(jsonText);
 
       await db.transaction(() async {
-        // Clear all tables
-        await db.delete(db.foodItems).go();
-        await db.delete(db.foodLogs).go();
-        await db.delete(db.workoutSessions).go();
+        // Clear all tables in child-first order to prevent foreign key violations
         await db.delete(db.workoutSets).go();
-        await db.delete(db.bodyMeasurements).go();
-        await db.delete(db.workoutRoutines).go();
-        await db.delete(db.routineDays).go();
+        await db.delete(db.workoutSessions).go();
         await db.delete(db.routineExercises).go();
+        await db.delete(db.routineDays).go();
+        await db.delete(db.workoutRoutines).go();
+        await db.delete(db.foodLogs).go();
+        await db.delete(db.foodItems).go();
+        await db.delete(db.bodyMeasurements).go();
 
         // Restore food items
         if (data['food_items'] != null) {
@@ -359,7 +413,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               weight: (item['weight'] as num).toDouble(),
               reps: (item['reps'] as num).toInt(),
               setNumber: (item['set_number'] as num).toInt(),
-              isPr: item['is_pr'] ?? false,
+              isPr: Value(item['is_pr'] ?? false),
             ));
           }
         }
@@ -571,8 +625,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               onChanged: (val) async {
                                 final parsed = int.tryParse(val) ?? 8;
                                 if (parsed > 0 && parsed <= 40) {
-                                  final prefs = await SharedPreferences.getInstance();
-                                  await prefs.setInt('water_goal', parsed);
+                                  await ref.read(waterProvider.notifier).updateGoal(parsed);
                                   setState(() {
                                     _waterGoal = parsed;
                                   });

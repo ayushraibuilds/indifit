@@ -157,29 +157,29 @@ class _HealthSyncHubScreenState extends State<HealthSyncHubScreen> {
             // Native configuration advice
             if (!_isSimulating) ...[
               Card(
-                color: AppColors.warning.withOpacity(0.08),
+                color: AppColors.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: AppColors.warning.withOpacity(0.2)),
+                  side: const BorderSide(color: AppColors.border),
                 ),
                 child: const Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 20),
+                      Icon(Icons.lock_clock, color: AppColors.textSecondary, size: 20),
                       SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Native Setup Required',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.warning),
+                              'Native Syncing (Coming Soon)',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textSecondary),
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'To sync live health data, configure permissions in iOS HealthKit or Android Health Connect under system App Settings.',
+                              'Direct background syncing with Apple Health and Google Health Connect is currently under development. To preview the features, enable the Sandbox mode above.',
                               style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
                             ),
                           ],
@@ -194,11 +194,16 @@ class _HealthSyncHubScreenState extends State<HealthSyncHubScreen> {
 
             // Action Button
             ElevatedButton.icon(
-              onPressed: _isSyncing ? null : _triggerSync,
+              onPressed: (_isSyncing || !_isSimulating) ? null : _triggerSync,
               icon: _isSyncing 
                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.sync_rounded),
-              label: Text(_isSyncing ? 'Accessing Health Records...' : 'Sync Health Data Now'),
+              label: Text(!_isSimulating 
+                ? 'Native Sync Disabled' 
+                : _isSyncing 
+                  ? 'Accessing Health Records...' 
+                  : 'Sync Health Data Now'
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

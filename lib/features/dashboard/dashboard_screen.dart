@@ -23,8 +23,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  int _waterGlasses = 0;
-  int _waterGoal = 8;
   double _currentWeight = 74.5;
   int _streakCount = 3;
   
@@ -49,19 +47,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Future<void> _loadStateData() async {
     final prefs = await SharedPreferences.getInstance();
-    final todayStr = DateTime.now().toIso8601String().split('T')[0];
-    final lastLoggedDate = prefs.getString('water_last_logged_date') ?? '';
-    
-    int waterVal = prefs.getInt('water_glasses') ?? 0;
-    if (lastLoggedDate != todayStr) {
-      waterVal = 0;
-      await prefs.setInt('water_glasses', 0);
-      await prefs.setString('water_last_logged_date', todayStr);
-    }
+    await ref.read(waterProvider.notifier).loadState();
 
     setState(() {
-      _waterGlasses = waterVal;
-      _waterGoal = prefs.getInt('water_goal') ?? 8;
       _currentWeight = prefs.getDouble('current_weight') ?? 74.5;
       _streakCount = prefs.getInt('streak_count') ?? 3;
       
@@ -153,23 +141,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _incrementWater() async {
-    final prefs = await SharedPreferences.getInstance();
-    final todayStr = DateTime.now().toIso8601String().split('T')[0];
-    setState(() {
-      _waterGlasses++;
-      prefs.setInt('water_glasses', _waterGlasses);
-      prefs.setString('water_last_logged_date', todayStr);
-    });
+    await ref.read(waterProvider.notifier).logWater(1);
   }
 
   Future<void> _resetWater() async {
-    final prefs = await SharedPreferences.getInstance();
-    final todayStr = DateTime.now().toIso8601String().split('T')[0];
-    setState(() {
-      _waterGlasses = 0;
-      prefs.setInt('water_glasses', 0);
-      prefs.setString('water_last_logged_date', todayStr);
-    });
+    final current = ref.read(waterProvider).waterLogged;
+    await ref.read(waterProvider.notifier).logWater(-current);
   }
 
   Future<void> _repeatLastMeal(String type, List<FoodLog> lastMeal) async {
@@ -198,13 +175,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Future<void> _repeatLastWorkout(WorkoutSession lastSession) async {
     final repo = ref.read(workoutRepositoryProvider);
     final sets = await repo.getSetsForSession(lastSession.id);
-    await repo.duplicateSession(lastSession, sets);
     
+    final Map<String, int> exerciseSets = {};
+    for (final s in sets) {
+      exerciseSets[s.exerciseName] = (exerciseSets[s.exerciseName] ?? 0) + 1;
+    }
+    
+    final List<RoutineExercise> exercises = [];
+    int index = 0;
+    exerciseSets.forEach((name, count) {
+      exercises.add(RoutineExercise(
+        id: index++,
+        dayId: -1,
+        exerciseName: name,
+        sets: count,
+        repsRange: '10',
+        orderIndex: index,
+      ));
+    });
+
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Logged duplicate of ${lastSession.name} for today!')),
-      );
-      _loadStateData();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WorkoutPlayerScreen(
+            routineName: lastSession.name,
+            exercises: exercises,
+          ),
+        ),
+      ).then((_) => _loadStateData());
     }
   }
 
@@ -883,6 +882,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildWaterCard() {
+    final waterState = ref.watch(waterProvider);
+    final waterGlasses = waterState.waterLogged;
+    final waterGoal = waterState.waterGoal;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -895,14 +898,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 const Text('Water Intake', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 const SizedBox(height: 4),
                 Text(
-                  'Logged: ${_waterGlasses * 250} ml (Goal: ${(_waterGoal * 250 / 1000.0).toStringAsFixed(1)}L)',
+                  'Logged: ${waterGlasses * 250} ml (Goal: ${(waterGoal * 250 / 1000.0).toStringAsFixed(1)}L)',
                   style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                 ),
               ],
             ),
             Row(
               children: [
-                if (_waterGlasses > 0)
+                if (waterGlasses > 0)
                   IconButton(
                     icon: const Icon(Icons.refresh, color: AppColors.textMuted, size: 20),
                     onPressed: _resetWater,
