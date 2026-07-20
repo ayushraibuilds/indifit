@@ -28,7 +28,8 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   double _currentWeight = 74.5;
-  int _streakCount = 3;
+  int _streakCount = 0;
+  List<double> _weightHistory = [];
   
   // Goals parameters (loaded dynamically from SharedPreferences, falling back to defaults)
   int _calorieGoal = 2000;
@@ -58,7 +59,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     setState(() {
       _currentWeight = prefs.getDouble('current_weight') ?? 74.5;
-      _streakCount = prefs.getInt('streak_count') ?? 3;
       
       // Load user goals computed during onboarding
       _calorieGoal = prefs.getInt('calorie_goal') ?? 2000;
@@ -68,6 +68,62 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
     await _loadTodayWorkout();
     await _calculateWeeklyAdherence();
+    await _loadWeightHistory();
+    await _computeStreak();
+  }
+
+  Future<void> _loadWeightHistory() async {
+    final repo = ref.read(workoutRepositoryProvider);
+    final measurements = await repo.getBodyMeasurements();
+    final recent = measurements.take(6).toList().reversed.toList();
+    final weights = recent.where((m) => m.weight != null).map((m) => m.weight!).toList();
+    
+    if (mounted) {
+      setState(() {
+        _weightHistory = weights;
+        if (weights.isNotEmpty) {
+          _currentWeight = weights.last;
+        }
+      });
+    }
+  }
+
+  Future<void> _computeStreak() async {
+    final foodRepo = ref.read(foodRepositoryProvider);
+    final workoutRepo = ref.read(workoutRepositoryProvider);
+
+    final foodDates = await foodRepo.getAllLogDates();
+    final workoutDates = await workoutRepo.getAllSessionDates();
+
+    final Set<String> activeDays = {};
+    for (final d in foodDates) {
+      activeDays.add('${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}');
+    }
+    for (final d in workoutDates) {
+      activeDays.add('${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}');
+    }
+
+    final now = DateTime.now();
+    int streak = 0;
+    DateTime checkDate = DateTime(now.year, now.month, now.day);
+    String dateStr = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
+
+    if (!activeDays.contains(dateStr)) {
+      checkDate = checkDate.subtract(const Duration(days: 1));
+      dateStr = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
+    }
+
+    while (activeDays.contains(dateStr)) {
+      streak++;
+      checkDate = checkDate.subtract(const Duration(days: 1));
+      dateStr = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
+    }
+
+    if (mounted) {
+      setState(() {
+        _streakCount = streak;
+      });
+    }
   }
 
   Future<void> _checkActiveWorkoutDraft() async {
@@ -1101,42 +1157,56 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(height: 20),
             
-            // Sparkline LineChart
-            SizedBox(
-              height: 100,
-              child: LineChart(
-                LineChartData(
-                  gridData: const FlGridData(show: false),
-                  titlesData: const FlTitlesData(show: false),
-                  borderData: FlBorderData(show: false),
-                  minX: 0,
-                  maxX: 5,
-                  minY: 73.0,
-                  maxY: 76.0,
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: [
-                        const FlSpot(0, 75.8),
-                        const FlSpot(1, 75.5),
-                        const FlSpot(2, 75.2),
-                        const FlSpot(3, 74.9),
-                        const FlSpot(4, 74.7),
-                        FlSpot(5, _currentWeight),
-                      ],
-                      isCurved: true,
-                      color: AppColors.primary,
-                      barWidth: 3,
-                      isStrokeCapRound: true,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: AppColors.primary.withOpacity(0.08),
+            if (_weightHistory.length < 2)
+              Container(
+                height: 80,
+                alignment: Alignment.center,
+                child: const Text(
+                  'Log at least 2 weight entries to see your trend chart.',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              )
+            else
+              SizedBox(
+                height: 100,
+                child: Builder(
+                  builder: (context) {
+                    final minW = _weightHistory.reduce((a, b) => a < b ? a : b) - 1.0;
+                    final maxW = _weightHistory.reduce((a, b) => a > b ? a : b) + 1.0;
+                    final spots = List.generate(
+                      _weightHistory.length,
+                      (i) => FlSpot(i.toDouble(), _weightHistory[i]),
+                    );
+
+                    return LineChart(
+                      LineChartData(
+                        gridData: const FlGridData(show: false),
+                        titlesData: const FlTitlesData(show: false),
+                        borderData: FlBorderData(show: false),
+                        minX: 0,
+                        maxX: (_weightHistory.length - 1).toDouble(),
+                        minY: minW,
+                        maxY: maxW,
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: spots,
+                            isCurved: true,
+                            color: AppColors.primary,
+                            barWidth: 3,
+                            isStrokeCapRound: true,
+                            dotData: const FlDotData(show: false),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              color: AppColors.primary.withOpacity(0.08),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
-            )
           ],
         ),
       ),

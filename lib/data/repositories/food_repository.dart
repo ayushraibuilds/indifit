@@ -147,4 +147,9 @@ class FoodRepository {
     final double scale = item.servingSize > 0 ? (log.servingLogged / item.servingSize) : 1.0;
     return item.fiberG! * scale;
   }
+
+  Future<List<DateTime>> getAllLogDates() async {
+    final logs = await _db.select(_db.foodLogs).get();
+    return logs.map((l) => l.loggedAt).toList();
+  }
 }

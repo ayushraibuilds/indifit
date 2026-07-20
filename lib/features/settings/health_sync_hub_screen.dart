@@ -1,50 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/theme/colors.dart';
 
-class HealthSyncHubScreen extends StatefulWidget {
+class HealthSyncHubScreen extends StatelessWidget {
   const HealthSyncHubScreen({super.key});
-
-  @override
-  State<HealthSyncHubScreen> createState() => _HealthSyncHubScreenState();
-}
-
-class _HealthSyncHubScreenState extends State<HealthSyncHubScreen> {
-  bool _isSimulating = true;
-  bool _isSyncing = false;
-  String _syncStatus = 'Last Synced: Never';
-  int _simulatedSteps = 0;
-  int _simulatedCalories = 0;
-  double _simulatedSleep = 0.0;
-
-  Future<void> _triggerSync() async {
-    setState(() {
-      _isSyncing = true;
-    });
-
-    // Simulate network/SDK parsing delay
-    await Future.delayed(const Duration(milliseconds: 2200));
-
-    if (mounted) {
-      setState(() {
-        _isSyncing = false;
-        _simulatedSteps = 8450;
-        _simulatedCalories = 320;
-        _simulatedSleep = 7.5;
-        _syncStatus = 'Last Synced: Just Now (${_isSimulating ? "Simulation Mode" : "Native SDK"})';
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_isSimulating 
-            ? 'Imported 8,450 steps and 320 kcal via Health Connect simulation!' 
-            : 'Apple Health/Health Connect synced successfully!'
-          ),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,90 +20,59 @@ class _HealthSyncHubScreenState extends State<HealthSyncHubScreen> {
             // Header Intro
             const Text(
               'HEALTH CONNECTIONS',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+                letterSpacing: 0.5,
+              ),
             ),
             const SizedBox(height: 12),
             const Text(
-              'Sync steps, active training calories, and sleep metrics directly into your daily IndiFit dashboard.',
+              'Connect Apple Health or Google Health Connect to import your steps, active calories, and sleep metrics directly into IndiFit.',
               style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: 24),
 
-            // Mode Selector card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Simulation Sandbox', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          SizedBox(height: 4),
-                          Text(
-                            'Demo health imports without configuring native Apple/Google profiles',
-                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Switch(
-                      value: _isSimulating,
-                      activeColor: AppColors.primary,
-                      onChanged: (val) {
-                        setState(() {
-                          _isSimulating = val;
-                          if (!val) {
-                            _simulatedSteps = 0;
-                            _simulatedCalories = 0;
-                            _simulatedSleep = 0.0;
-                            _syncStatus = 'Last Synced: Never';
-                          }
-                        });
-                      },
-                    )
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Main Status Box
+            // Connection Status Box
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
                   children: [
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Sync Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                            const SizedBox(height: 4),
-                            Text(_syncStatus, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                            Text(
+                              'Connection Status',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Not Connected',
+                              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            ),
                           ],
                         ),
                         Icon(
-                          _simulatedSteps > 0 ? Icons.check_circle_rounded : Icons.sync_disabled_rounded,
-                          color: _simulatedSteps > 0 ? AppColors.success : AppColors.textMuted,
+                          Icons.sync_disabled_rounded,
+                          color: AppColors.textMuted,
                           size: 32,
-                        )
+                        ),
                       ],
                     ),
                     const Divider(color: AppColors.border, height: 32),
-                    
-                    // Stats Row
+
+                    // Zero Stats Display
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStatWidget(Icons.directions_run_rounded, '$_simulatedSteps', 'Steps', Colors.orange),
-                        _buildStatWidget(Icons.local_fire_department_rounded, '$_simulatedCalories kcal', 'Active Cals', Colors.red),
-                        _buildStatWidget(Icons.bedtime_rounded, '${_simulatedSleep}h', 'Sleep', Colors.purple),
+                        _buildStatWidget(Icons.directions_run_rounded, '0', 'Steps', AppColors.textMuted),
+                        _buildStatWidget(Icons.local_fire_department_rounded, '0 kcal', 'Active Cals', AppColors.textMuted),
+                        _buildStatWidget(Icons.bedtime_rounded, '0.0h', 'Sleep', AppColors.textMuted),
                       ],
                     ),
                   ],
@@ -154,7 +81,7 @@ class _HealthSyncHubScreenState extends State<HealthSyncHubScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Native configuration advice & local privacy benefits
+            // Privacy Benefits
             Card(
               color: AppColors.surface,
               shape: RoundedRectangleBorder(
@@ -173,73 +100,64 @@ class _HealthSyncHubScreenState extends State<HealthSyncHubScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Local Privacy & Security Benefits',
+                            'Local Privacy & Security',
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
                           ),
                           SizedBox(height: 6),
                           Text(
-                            'All imported health metrics are processed entirely on-device and stored under military-grade AES-GCM secure encryption keys. Your sensitive biometric details never leave this phone, and no centralized databases hold your personal training records.',
+                            'When health syncing is enabled, all biometric metrics are processed entirely on-device and stored securely. Your sensitive health details never leave this phone.',
                             style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
                           ),
                         ],
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            
-            // Coming Soon Notice
-            if (!_isSimulating) ...[
-              Card(
-                color: AppColors.surface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppColors.border),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.lock_clock, color: AppColors.warning, size: 20),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Native Syncing (Coming Soon)',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orangeAccent),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Direct background syncing with Apple Health and Google Health Connect is currently under development. To preview the features, enable the Sandbox mode above.',
-                              style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
-                            ),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
 
-            // Action Button
-            ElevatedButton.icon(
-              onPressed: (_isSyncing || !_isSimulating) ? null : _triggerSync,
-              icon: _isSyncing 
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.sync_rounded),
-              label: Text(!_isSimulating 
-                ? 'Native Sync Disabled' 
-                : _isSyncing 
-                  ? 'Accessing Health Records...' 
-                  : 'Sync Health Data Now'
+            // Coming Soon Notice
+            Card(
+              color: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppColors.border),
               ),
+              child: const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.lock_clock, color: AppColors.warning, size: 20),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Native Health Integration (Coming Soon)',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orangeAccent),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Direct background syncing with Apple Health and Google Health Connect is currently under development for an upcoming release.',
+                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Connect Action Button (Disabled until native SDK integration)
+            ElevatedButton.icon(
+              onPressed: null,
+              icon: const Icon(Icons.sync_disabled_rounded),
+              label: const Text('Connect Health Service (Coming Soon)'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

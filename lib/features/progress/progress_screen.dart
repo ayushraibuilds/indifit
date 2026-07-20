@@ -515,20 +515,45 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   Widget _buildVolumeChartCard() {
-    // Generate workout volume spots based on actual completed sessions
-    final List<FlSpot> spots = [];
     if (_sessions.isEmpty) {
-      spots.addAll([
-        const FlSpot(0, 850),
-        const FlSpot(1, 920),
-        const FlSpot(2, 1050),
-        const FlSpot(3, 1180),
-      ]);
-    } else {
-      final int count = _sessions.length < 5 ? _sessions.length : 5;
-      for (int i = 0; i < count; i++) {
-        spots.add(FlSpot(i.toDouble(), _sessions[count - 1 - i].totalVolume));
-      }
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Total Lifted per Session',
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                height: 100,
+                alignment: Alignment.center,
+                child: const Text(
+                  'Complete your first workout to track volume progression.',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final List<FlSpot> spots = [];
+    final int count = _sessions.length < 5 ? _sessions.length : 5;
+    for (int i = 0; i < count; i++) {
+      spots.add(FlSpot(i.toDouble(), _sessions[count - 1 - i].totalVolume));
+    }
+
+    String volumeChangeLabel = '';
+    if (spots.length >= 2 && spots.first.y > 0) {
+      final pctChange = ((spots.last.y - spots.first.y) / spots.first.y * 100).round();
+      volumeChangeLabel = pctChange >= 0 ? '+$pctChange% volume' : '$pctChange% volume';
+    } else if (spots.isNotEmpty) {
+      volumeChangeLabel = '${spots.last.y.toInt()} kg';
     }
 
     return Card(
@@ -537,11 +562,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Total Lifted per Session', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.textSecondary)),
-                Text('+25% intensity', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                const Text(
+                  'Total Lifted per Session',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.textSecondary),
+                ),
+                if (volumeChangeLabel.isNotEmpty)
+                  Text(
+                    volumeChangeLabel,
+                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
               ],
             ),
             const SizedBox(height: 24),

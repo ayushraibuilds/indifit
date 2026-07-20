@@ -986,7 +986,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         const SizedBox(height: 8),
                         Text(
                           '• Local Data Only: All food databases, logged meals, active workouts, training routines, and weight measurements are stored offline-first inside a local SQLite (Drift) database on this device. They are never uploaded or shared.\n\n'
-                          '• Sync Capabilities: Supabase Cloud Sync, if activated, acts purely as an optional secure pipeline to backup or synchronise data across multiple devices under your own authenticated account.',
+                          '• Cloud Sync: IndiFit v1 runs completely offline-first on your device. Cloud synchronization is planned for a future release.',
                           style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
                         ),
                       ],

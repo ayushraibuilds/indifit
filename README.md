@@ -66,9 +66,7 @@ Testing on Android is completely free and does not expire:
 
 ## Technical Stack
 - **State Management**: Riverpod (`flutter_riverpod`)
-- **Routing**: GoRouter (`go_router`)
 - **Local Cache & Storage**: Drift SQLite Database (`drift` + `sqlite3_flutter_libs`)
-- **Backend API Sync**: Supabase Client SDK (`supabase_flutter`)
+- **Backend Sync**: Local-only for v1 (Cloud sync planned for future versions)
 - **Networking**: Dio Client (`dio`)
-- **Icons**: Lucide Icons
 - **Visuals**: Lottie animations + Fl Chart

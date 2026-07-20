@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>IndiFit requires access to the camera to scan food barcodes and take pictures of meals for AI macro estimation.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>IndiFit requires access to the microphone for video exercises.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>IndiFit requires access to the photo library to upload food pictures for AI macro estimation.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -66,11 +72,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>IndiFit requires access to the camera to scan food barcodes and take pictures of meals for AI macro estimation.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>IndiFit requires access to the photo library to upload food pictures for AI macro estimation.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>IndiFit requires access to the microphone for video exercises.</string>
 </dict>
 </plist>
