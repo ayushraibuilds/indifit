@@ -3,11 +3,10 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/providers.dart';
-
 import '../../core/theme/colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
@@ -18,6 +17,10 @@ import '../food_log/ai_meal_planner_screen.dart';
 import '../settings/settings_screen.dart';
 import '../workout_player/workout_player_screen.dart';
 import '../workout_player/routine_display_screen.dart';
+import 'widgets/calorie_ring_card.dart';
+import 'widgets/water_tracker_card.dart';
+import 'widgets/weight_sparkline_card.dart';
+import 'widgets/today_workout_card.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -31,11 +34,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _streakCount = 0;
   List<double> _weightHistory = [];
   
-  // Goals parameters (loaded dynamically from SharedPreferences, falling back to defaults)
+  // Goals parameter (loaded dynamically from UserProfileProvider)
   int _calorieGoal = 2000;
-  double _proteinGoal = 120.0;
-  double _carbsGoal = 230.0;
-  double _fatGoal = 65.0;
 
   double _adherenceScore = 0.0;
 
@@ -59,12 +59,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     setState(() {
       _currentWeight = prefs.getDouble('current_weight') ?? 74.5;
-      
-      // Load user goals computed during onboarding
       _calorieGoal = prefs.getInt('calorie_goal') ?? 2000;
-      _proteinGoal = prefs.getDouble('protein_goal') ?? 120.0;
-      _carbsGoal = prefs.getDouble('carbs_goal') ?? 230.0;
-      _fatGoal = prefs.getDouble('fat_goal') ?? 65.0;
     });
     await _loadTodayWorkout();
     await _calculateWeeklyAdherence();
@@ -264,22 +259,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           _adherenceScore = (nutritionScore * 0.7 + workoutScore * 0.3);
         });
       }
-    } catch (e) {
-      // Ignored
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to calculate weekly adherence', e, stackTrace, 'DashboardScreen');
     }
-  }
-
-  Future<void> _incrementWater() async {
-    await ref.read(waterProvider.notifier).logWater(1);
-  }
-
-  Future<void> _decrementWater() async {
-    await ref.read(waterProvider.notifier).logWater(-1);
-  }
-
-  Future<void> _resetWater() async {
-    final current = ref.read(waterProvider).waterLogged;
-    await ref.read(waterProvider.notifier).logWater(-current);
   }
 
   Future<void> _repeatLastMeal(String type, List<FoodLog> lastMeal) async {
@@ -388,7 +370,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const SizedBox(height: 20),
 
                   // 2. Calorie Ring & Macro Bars
-                  _buildCalorieSection(eatenCalories, eatenProtein, eatenCarbs, eatenFat, calPercent),
+                  CalorieRingCard(
+                    eatenCalories: eatenCalories,
+                    eatenProtein: eatenProtein,
+                    eatenCarbs: eatenCarbs,
+                    eatenFat: eatenFat,
+                  ),
                   const SizedBox(height: 16),
 
                   FutureBuilder<double>(
@@ -409,7 +396,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const SizedBox(height: 16),
 
                   // Today's Workout Card
-                  _buildTodayWorkoutCard(),
+                  TodayWorkoutCard(
+                    todayWorkoutName: _todayWorkoutName,
+                    isRestDay: _isRestDay,
+                    exerciseCount: _todayExercises.length,
+                    onStartWorkout: _startTodayWorkout,
+                    onRepeatWorkout: _repeatLastWorkout,
+                  ),
                   const SizedBox(height: 16),
 
                   // Weekly Adherence Score Card
@@ -421,11 +414,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const SizedBox(height: 24),
 
                   // 4. Water Tracker Card
-                  _buildWaterCard(),
+                  const WaterTrackerCard(),
                   const SizedBox(height: 24),
 
                   // 5. Weight Trend Sparkline
-                  _buildWeightSparklineCard(),
+                  WeightSparklineCard(
+                    currentWeight: _currentWeight,
+                    weightHistory: _weightHistory,
+                    onWeightAdjusted: _updateWeight,
+                  ),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -708,166 +705,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
-  Widget _buildTodayWorkoutCard() {
-    return FutureBuilder<WorkoutSession?>(
-      future: ref.read(workoutRepositoryProvider).getLastCompletedSession(),
-      builder: (context, snapshot) {
-        final lastSession = snapshot.data;
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _isRestDay ? Colors.blue.withOpacity(0.1) : AppColors.primaryGlow,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _isRestDay ? Icons.spa_rounded : Icons.fitness_center_rounded,
-                        color: _isRestDay ? Colors.blue : AppColors.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('TODAY\'S WORKOUT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5)),
-                          const SizedBox(height: 4),
-                          Text(_todayWorkoutName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                          const SizedBox(height: 2),
-                          Text(
-                            _isRestDay ? 'Time to recover and heal' : '${_todayExercises.length} Exercises scheduled',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!_isRestDay)
-                      IconButton(
-                        icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 32),
-                        onPressed: _startTodayWorkout,
-                      )
-                  ],
-                ),
-                if (lastSession != null) ...[
-                  const SizedBox(height: 12),
-                  const Divider(color: AppColors.border),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Last: ${lastSession.name} (${(lastSession.durationSeconds / 60).round()}m)',
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () => _repeatLastWorkout(lastSession),
-                        icon: const Icon(Icons.history_rounded, size: 14),
-                        label: const Text('Repeat Last', style: TextStyle(fontSize: 11)),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      )
-                    ],
-                  )
-                ]
-              ],
-            ),
-          ),
-        );
-      }
-    );
-  }
 
-  Widget _buildCalorieSection(int eaten, double p, double c, double f, double calPercent) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Row(
-          children: [
-            // Circular Ring
-            CircularPercentIndicator(
-              radius: 60.0,
-              lineWidth: 10.0,
-              percent: calPercent,
-              center: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '$eaten',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  Text(
-                    'of $_calorieGoal kcal',
-                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-              circularStrokeCap: CircularStrokeCap.round,
-              backgroundColor: AppColors.border,
-              progressColor: AppColors.primary,
-            ),
-            const SizedBox(width: 24),
-
-            // Horizontal Macro Bars
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildMacroBar('Protein', p, _proteinGoal, AppColors.success),
-                  const SizedBox(height: 12),
-                  _buildMacroBar('Carbs', c, _carbsGoal, AppColors.warning),
-                  const SizedBox(height: 12),
-                  _buildMacroBar('Fat', f, _fatGoal, AppColors.danger),
-                ],
-              ),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMacroBar(String label, double eaten, double goal, Color color) {
-    double percent = eaten / goal;
-    if (percent > 1.0) percent = 1.0;
-    if (percent < 0.0) percent = 0.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
-            Text('${eaten.round()}/${goal.round()}g', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: percent,
-            backgroundColor: AppColors.border,
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-            minHeight: 6.0,
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildMealLogSection(List<FoodLog> logs) {
     return Column(
@@ -1029,188 +867,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildWaterCard() {
-    final waterState = ref.watch(waterProvider);
-    final waterGlasses = waterState.waterLogged;
-    final waterGoal = waterState.waterGoal;
-    final glassSize = waterState.glassSize;
 
-    final double percent = waterGoal > 0 ? (waterGlasses / waterGoal).clamp(0.0, 1.0) : 0.0;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-        child: Row(
-          children: [
-            // Goal progress ring
-            CircularPercentIndicator(
-              radius: 22.0,
-              lineWidth: 4.5,
-              percent: percent,
-              animation: true,
-              animateFromLastPercent: true,
-              circularStrokeCap: CircularStrokeCap.round,
-              backgroundColor: const Color(0xFF0066FF).withOpacity(0.08),
-              progressColor: const Color(0xFF0066FF),
-              center: Icon(
-                Icons.local_drink_rounded,
-                color: waterGlasses >= waterGoal ? Colors.green : const Color(0xFF0066FF),
-                size: 16,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Water Intake', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Logged: ${waterGlasses * glassSize} ml (Goal: ${(waterGoal * glassSize / 1000.0).toStringAsFixed(1)}L)',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (waterGlasses > 0) ...[
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline_rounded, color: AppColors.textMuted, size: 20),
-                    onPressed: _decrementWater,
-                    tooltip: 'Decrement Water',
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.refresh, color: AppColors.textMuted, size: 18),
-                    onPressed: _resetWater,
-                    tooltip: 'Reset Water',
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                ElevatedButton(
-                  onPressed: _incrementWater,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0066FF).withOpacity(0.12),
-                    foregroundColor: const Color(0xFF0066FF),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.add, size: 13),
-                      const SizedBox(width: 2),
-                      Text('${glassSize}ml', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWeightSparklineCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Weight Progress', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Current weight: $_currentWeight kg',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-                
-                // Weight entry adjust button
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove, color: AppColors.textSecondary, size: 16),
-                      onPressed: () => _updateWeight(_currentWeight - 0.1),
-                    ),
-                    Text('${_currentWeight.toStringAsFixed(1)} kg', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    IconButton(
-                      icon: const Icon(Icons.add, color: AppColors.primary, size: 16),
-                      onPressed: () => _updateWeight(_currentWeight + 0.1),
-                    ),
-                  ],
-                )
-              ],
-            ),
-            const SizedBox(height: 20),
-            
-            if (_weightHistory.length < 2)
-              Container(
-                height: 80,
-                alignment: Alignment.center,
-                child: const Text(
-                  'Log at least 2 weight entries to see your trend chart.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-              )
-            else
-              SizedBox(
-                height: 100,
-                child: Builder(
-                  builder: (context) {
-                    final minW = _weightHistory.reduce((a, b) => a < b ? a : b) - 1.0;
-                    final maxW = _weightHistory.reduce((a, b) => a > b ? a : b) + 1.0;
-                    final spots = List.generate(
-                      _weightHistory.length,
-                      (i) => FlSpot(i.toDouble(), _weightHistory[i]),
-                    );
-
-                    return LineChart(
-                      LineChartData(
-                        gridData: const FlGridData(show: false),
-                        titlesData: const FlTitlesData(show: false),
-                        borderData: FlBorderData(show: false),
-                        minX: 0,
-                        maxX: (_weightHistory.length - 1).toDouble(),
-                        minY: minW,
-                        maxY: maxW,
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: spots,
-                            isCurved: true,
-                            color: AppColors.primary,
-                            barWidth: 3,
-                            isStrokeCapRound: true,
-                            dotData: const FlDotData(show: false),
-                            belowBarData: BarAreaData(
-                              show: true,
-                              color: AppColors.primary.withOpacity(0.08),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildNutritionReviewCard(List<FoodLog> logs, double fiber, int waterLogged, int waterGoal, int glassSize) {
     final mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];

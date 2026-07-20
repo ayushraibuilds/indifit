@@ -14,6 +14,8 @@ import '../../core/theme/colors.dart';
 import '../../core/utils/encryption_helper.dart';
 import '../../data/database/app_database.dart';
 import 'health_sync_hub_screen.dart';
+import 'widgets/backup_restore_card.dart';
+import 'widgets/privacy_disclosure_card.dart';
 import '../onboarding/onboarding_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -946,69 +948,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Export JSON Database
-                  ElevatedButton.icon(
-                    onPressed: _exportData,
-                    icon: const Icon(Icons.download_rounded),
-                    label: const Text('Export Local Backup (Encrypted)'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary.withOpacity(0.12),
-                      foregroundColor: AppColors.primary,
-                      minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: AppColors.primary.withOpacity(0.2)),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Restore JSON Database
-                  ElevatedButton.icon(
-                    onPressed: _showRestoreDialog,
-                    icon: const Icon(Icons.upload_rounded, color: Colors.blueAccent),
-                    label: const Text('Restore Database from Backup'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent.withOpacity(0.12),
-                      foregroundColor: Colors.blueAccent,
-                      minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.blueAccent.withOpacity(0.2)),
-                      ),
-                      elevation: 0,
-                    ),
+                  // Export / Restore Database Card
+                  BackupRestoreCard(
+                    onExport: _exportData,
+                    onRestore: _showRestoreDialog,
                   ),
                   const SizedBox(height: 16),
 
                   // Data Explanation Box
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.privacy_tip_rounded, color: AppColors.success, size: 18),
-                            SizedBox(width: 8),
-                            Text('Where is my data stored?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '• Local Data Only: All food databases, logged meals, active workouts, training routines, and weight measurements are stored offline-first inside a local SQLite (Drift) database on this device. They are never uploaded or shared.\n\n'
-                          '• Cloud Sync: IndiFit v1 runs completely offline-first on your device. Cloud synchronization is planned for a future release.',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
-                        ),
-                      ],
-                    ),
-                  ),
+                  const PrivacyDisclosureCard(),
                   const SizedBox(height: 16),
 
                   // Reset Onboarding Button
