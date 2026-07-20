@@ -315,5 +315,10 @@ class WorkoutRepository {
       ..orderBy([(tbl) => OrderingTerm(expression: tbl.orderIndex)]);
     return await exercisesQuery.get();
   }
+
+  Future<List<DateTime>> getAllSessionDates() async {
+    final sessions = await _db.select(_db.workoutSessions).get();
+    return sessions.map((s) => s.completedAt).toList();
+  }
 }
 
