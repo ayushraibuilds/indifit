@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/di/providers.dart';
 
 final foodApiServiceProvider = Provider<FoodApiService>((ref) {
-  return FoodApiService();
+  final dio = ref.watch(dioProvider);
+  return FoodApiService(dio);
 });
 
 class FoodApiResult {
@@ -28,10 +30,9 @@ class FoodApiResult {
 }
 
 class FoodApiService {
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 8),
-    receiveTimeout: const Duration(seconds: 8),
-  ));
+  final Dio _dio;
+
+  FoodApiService([Dio? dio]) : _dio = dio ?? Dio();
 
   // 1. Fetch product by barcode (Open Food Facts v2 API)
   Future<FoodApiResult?> fetchByBarcode(String barcode) async {

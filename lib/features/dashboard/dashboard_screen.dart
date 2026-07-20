@@ -231,6 +231,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final workoutRepo = ref.read(workoutRepositoryProvider);
       
       final now = DateTime.now();
+      int activeLoggedDays = 0;
       int daysHit = 0;
       
       for (int i = 0; i < 7; i++) {
@@ -242,6 +243,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         }
         
         if (dayCals > 0) {
+          activeLoggedDays++;
           final diff = (dayCals - _calorieGoal).abs();
           if (diff <= _calorieGoal * 0.15) { // Within 15% range of calorie goal
             daysHit++;
@@ -252,15 +254,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final sessions = await workoutRepo.watchSessions().first;
       final weekSessions = sessions.where((s) => s.completedAt.isAfter(now.subtract(const Duration(days: 7)))).toList();
       
-      double nutritionScore = (daysHit / 7.0) * 100;
-      double workoutScore = 0.0;
-      if (weekSessions.length >= 3) {
-        workoutScore = 100.0;
-      } else if (weekSessions.length == 2) {
-        workoutScore = 80.0;
-      } else if (weekSessions.length == 1) {
-        workoutScore = 50.0;
-      }
+      final double nutritionScore = activeLoggedDays == 0 
+          ? 0.0 
+          : (daysHit / activeLoggedDays.toDouble()) * 100.0;
+      final double workoutScore = ((weekSessions.length / 3.0).clamp(0.0, 1.0)) * 100.0;
       
       if (mounted) {
         setState(() {
@@ -345,10 +342,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Future<void> _updateWeight(double w) async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _currentWeight = w;
-      prefs.setDouble('current_weight', w);
-    });
+    await prefs.setDouble('current_weight', w);
+    
+    // Insert canonical record into BodyMeasurements table
+    await ref.read(workoutRepositoryProvider).logBodyMeasurement(weight: w);
+    
+    await _loadWeightHistory();
   }
 
   @override

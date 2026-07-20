@@ -197,6 +197,30 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       return;
     }
 
+    if (weight > 500.0 || reps > 100) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Unusually High Input'),
+          content: Text(
+            'You entered ${weight.toStringAsFixed(1)} kg for $reps reps. Are you sure this is correct?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Edit'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Confirm Log'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+    }
+
     // Check if PR using Epley 1RM calculation
     final repo = ref.read(workoutRepositoryProvider);
     final previousPr = await repo.getPersonalRecord(currentEx.exerciseName);

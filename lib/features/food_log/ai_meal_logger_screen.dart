@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/theme/colors.dart';
 import '../../core/config/app_config.dart';
+import '../../core/di/providers.dart';
 import '../../data/repositories/food_repository.dart';
 
 class AiMealLoggerScreen extends ConsumerStatefulWidget {
@@ -121,7 +122,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     });
 
     try {
-      final dio = Dio();
+      final dio = ref.read(dioProvider);
       final response = await dio.post(
         '${AppConfig.backendUrl}/api/ai/meal-estimate-text',
         data: {'text': _textController.text},
@@ -153,7 +154,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     });
 
     try {
-      final dio = Dio();
+      final dio = ref.read(dioProvider);
       
       final filename = _selectedImage!.path.split('/').last;
       final formData = FormData.fromMap({

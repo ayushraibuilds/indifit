@@ -20,11 +20,11 @@ class FoodRepository {
 
     final cleanQuery = query.toLowerCase().trim();
     
-    // Search by name or hindi name containing the query
+    // Search by name or hindi name containing the query with null protection
     return (await (_db.select(_db.foodItems)
           ..where((tbl) => 
             tbl.name.lower().contains(cleanQuery) | 
-            tbl.nameHindi.lower().contains(cleanQuery)
+            (tbl.nameHindi.isNotNull() & tbl.nameHindi.lower().contains(cleanQuery))
           ))
         .get());
   }
