@@ -51,47 +51,60 @@ class AppTheme {
     );
   }
 
-  static TextTheme _getTextTheme() {
-    final baseTextTheme = ThemeData.dark().textTheme;
-    
-    // Check if running in a widget test to avoid font loading network calls
-    bool isTest = false;
-    try {
-      if (WidgetsBinding.instance.toString().contains('Test')) {
-        isTest = true;
-      }
-    } catch (_) {}
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.primary,
+        surface: Colors.white,
+        onSurface: Color(0xFF0F172A),
+        error: AppColors.danger,
+      ),
+      textTheme: _getTextTheme(Brightness.light),
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+          side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
+        ),
+        margin: EdgeInsets.zero,
+        elevation: 0,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        fillColor: const Color(0xFFF1F5F9),
+        filled: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+      ),
+    );
+  }
 
-    if (isTest) {
+  static TextTheme _getTextTheme([Brightness brightness = Brightness.dark]) {
+    final baseTextTheme = brightness == Brightness.dark
+        ? ThemeData.dark().textTheme
+        : ThemeData.light().textTheme;
+
+    if (GoogleFonts.config.allowRuntimeFetching == false) {
       return baseTextTheme;
     }
 
-    return GoogleFonts.outfitTextTheme(
-      baseTextTheme,
-    ).copyWith(
-      titleLarge: GoogleFonts.outfit(
-        color: AppColors.textPrimary,
-        fontSize: 22.0,
-        fontWeight: FontWeight.bold,
-      ),
-      titleMedium: GoogleFonts.outfit(
-        color: AppColors.textPrimary,
-        fontSize: 18.0,
-        fontWeight: FontWeight.w600,
-      ),
-      bodyLarge: GoogleFonts.outfit(
-        color: AppColors.textPrimary,
-        fontSize: 16.0,
-      ),
-      bodyMedium: GoogleFonts.outfit(
-        color: AppColors.textSecondary,
-        fontSize: 14.0,
-      ),
-      labelLarge: GoogleFonts.outfit(
-        color: AppColors.textMuted,
-        fontSize: 12.0,
-        fontWeight: FontWeight.w500,
-      ),
-    );
+    try {
+      return GoogleFonts.outfitTextTheme(baseTextTheme);
+    } catch (_) {
+      return baseTextTheme;
+    }
   }
 }

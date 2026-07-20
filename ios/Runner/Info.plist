@@ -32,6 +32,10 @@
 	<string>IndiFit requires access to the microphone for video exercises.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>IndiFit requires access to the photo library to upload food pictures for AI macro estimation.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>IndiFit uses your health data to track daily steps, active calories, and sleep metrics.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>IndiFit updates your fitness activities in Apple Health.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

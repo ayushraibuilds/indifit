@@ -1,5 +1,9 @@
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../data/database/app_database.dart';
+import 'providers.dart';
 
 class UserProfileState {
   final int calorieGoal;
@@ -34,7 +38,9 @@ class UserProfileState {
 }
 
 class UserProfileNotifier extends StateNotifier<UserProfileState> {
-  UserProfileNotifier()
+  final AppDatabase? _db;
+
+  UserProfileNotifier([this._db])
       : super(const UserProfileState(
           calorieGoal: 2000,
           proteinGoal: 120.0,
@@ -47,12 +53,41 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
 
   Future<void> loadProfile() async {
     final prefs = await SharedPreferences.getInstance();
+    int cals = prefs.getInt('calorie_goal') ?? 2000;
+    double protein = prefs.getDouble('protein_goal') ?? 120.0;
+    double carbs = prefs.getDouble('carbs_goal') ?? 230.0;
+    double fat = prefs.getDouble('fat_goal') ?? 65.0;
+    double weight = prefs.getDouble('current_weight') ?? 74.5;
+
+    if (_db != null) {
+      try {
+        final profiles = await _db!.select(_db!.userProfiles).get();
+        if (profiles.isNotEmpty) {
+          final p = profiles.first;
+          cals = p.calorieGoal;
+          protein = p.proteinGoal;
+          carbs = p.carbsGoal;
+          fat = p.fatGoal;
+          weight = p.weight;
+        } else {
+          // Migrate SharedPreferences defaults to initial Drift row
+          await _db!.into(_db!.userProfiles).insert(UserProfilesCompanion.insert(
+            calorieGoal: Value(cals),
+            proteinGoal: Value(protein),
+            carbsGoal: Value(carbs),
+            fatGoal: Value(fat),
+            weight: Value(weight),
+          ));
+        }
+      } catch (_) {}
+    }
+
     state = UserProfileState(
-      calorieGoal: prefs.getInt('calorie_goal') ?? 2000,
-      proteinGoal: prefs.getDouble('protein_goal') ?? 120.0,
-      carbsGoal: prefs.getDouble('carbs_goal') ?? 230.0,
-      fatGoal: prefs.getDouble('fat_goal') ?? 65.0,
-      currentWeight: prefs.getDouble('current_weight') ?? 74.5,
+      calorieGoal: cals,
+      proteinGoal: protein,
+      carbsGoal: carbs,
+      fatGoal: fat,
+      currentWeight: weight,
     );
   }
 
@@ -68,6 +103,23 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     if (carbsGoal != null) await prefs.setDouble('carbs_goal', carbsGoal);
     if (fatGoal != null) await prefs.setDouble('fat_goal', fatGoal);
 
+    if (_db != null) {
+      try {
+        final profiles = await _db!.select(_db!.userProfiles).get();
+        if (profiles.isNotEmpty) {
+          await (_db!.update(_db!.userProfiles)..where((t) => t.id.equals(profiles.first.id))).write(
+            UserProfilesCompanion(
+              calorieGoal: calorieGoal != null ? Value(calorieGoal) : const Value.absent(),
+              proteinGoal: proteinGoal != null ? Value(proteinGoal) : const Value.absent(),
+              carbsGoal: carbsGoal != null ? Value(carbsGoal) : const Value.absent(),
+              fatGoal: fatGoal != null ? Value(fatGoal) : const Value.absent(),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+
     state = state.copyWith(
       calorieGoal: calorieGoal,
       proteinGoal: proteinGoal,
@@ -79,11 +131,27 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
   Future<void> updateWeight(double weight) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('current_weight', weight);
+
+    if (_db != null) {
+      try {
+        final profiles = await _db!.select(_db!.userProfiles).get();
+        if (profiles.isNotEmpty) {
+          await (_db!.update(_db!.userProfiles)..where((t) => t.id.equals(profiles.first.id))).write(
+            UserProfilesCompanion(
+              weight: Value(weight),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+
     state = state.copyWith(currentWeight: weight);
   }
 }
 
 final userProfileProvider =
     StateNotifierProvider<UserProfileNotifier, UserProfileState>((ref) {
-  return UserProfileNotifier();
+  final db = ref.watch(databaseProvider);
+  return UserProfileNotifier(db);
 });

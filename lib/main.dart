@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/di/theme_provider.dart';
+import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/colors.dart';
 import 'core/services/notification_service.dart';
@@ -27,26 +29,27 @@ class IndiFitApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp(
+    final router = ref.watch(appRouterProvider);
+    final themeMode = ref.watch(themeModeProvider);
+
+    NotificationService.onNotificationNavigate = (payload) {
+      if (payload == 'workout') {
+        router.go('/workout');
+      } else if (payload.startsWith('meal_')) {
+        final mealType = payload.replaceFirst('meal_', '');
+        router.go('/food?mealType=$mealType');
+      } else if (payload == 'weekly_report') {
+        router.go('/weekly-report');
+      }
+    };
+
+    return MaterialApp.router(
       title: 'IndiFit',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: FutureBuilder<bool>(
-        future: SharedPreferences.getInstance().then((prefs) => prefs.getBool('onboarding_completed') ?? false),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              ),
-            );
-          }
-          if (snapshot.data == true) {
-            return const MainNavigationScaffold();
-          }
-          return const OnboardingScreen();
-        },
-      ),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
+      routerConfig: router,
     );
   }
 }

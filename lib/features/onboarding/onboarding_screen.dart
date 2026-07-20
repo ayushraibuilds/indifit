@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
+import '../../data/repositories/workout_repository.dart';
 import '../dashboard/main_navigation_scaffold.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   final int _totalPages = 8;
@@ -43,6 +46,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _nextPage() {
+    if (_currentPage == 1) {
+      final ageVal = int.tryParse(_ageController.text);
+      if (ageVal == null || ageVal < 10 || ageVal > 120) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid age between 10 and 120.')),
+        );
+        return;
+      }
+    } else if (_currentPage == 2) {
+      final heightVal = double.tryParse(_heightController.text);
+      if (heightVal == null || heightVal < 80 || heightVal > 250) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid height in cm (80 - 250cm).')),
+        );
+        return;
+      }
+    } else if (_currentPage == 3) {
+      final weightVal = double.tryParse(_weightController.text);
+      if (weightVal == null || weightVal < 25 || weightVal > 350) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid weight in kg (25 - 350kg).')),
+        );
+        return;
+      }
+    }
+
     if (_currentPage < _totalPages - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -142,6 +171,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setString('user_activity_level', _activityLevel);
     await prefs.setString('user_goal', _goal);
     await prefs.setString('user_diet_preference', _dietPreference);
+    
+    // Log canonical initial weight entry in BodyMeasurements Drift table
+    await ref.read(workoutRepositoryProvider).logBodyMeasurement(weight: _weight);
     
     // Complete onboarding flag
     await prefs.setBool('onboarding_completed', true);

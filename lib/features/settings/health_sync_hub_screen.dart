@@ -1,8 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/colors.dart';
+import '../../data/repositories/health_service.dart';
 
-class HealthSyncHubScreen extends StatelessWidget {
+class HealthSyncHubScreen extends ConsumerStatefulWidget {
   const HealthSyncHubScreen({super.key});
+
+  @override
+  ConsumerState<HealthSyncHubScreen> createState() => _HealthSyncHubScreenState();
+}
+
+class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
+  bool _loading = false;
+  HealthDataSummary _data = const HealthDataSummary();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    setState(() => _loading = true);
+    final summary = await ref.read(healthServiceProvider).fetchTodayHealthData();
+    if (mounted) {
+      setState(() {
+        _data = summary;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _handleConnect() async {
+    setState(() => _loading = true);
+    final granted = await ref.read(healthServiceProvider).requestPermissions();
+    if (granted) {
+      await _fetchData();
+    } else {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Health permissions were denied or unavailable on this device.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,6 +56,12 @@ class HealthSyncHubScreen extends StatelessWidget {
         title: const Text('Health Sync Hub'),
         backgroundColor: AppColors.surface,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _loading ? null : _fetchData,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -40,41 +91,66 @@ class HealthSyncHubScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
                   children: [
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Connection Status',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              'Not Connected',
-                              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                              _data.isConnected ? 'Connected' : 'Not Connected',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: _data.isConnected ? AppColors.success : AppColors.textSecondary,
+                              ),
                             ),
                           ],
                         ),
                         Icon(
-                          Icons.sync_disabled_rounded,
-                          color: AppColors.textMuted,
+                          _data.isConnected ? Icons.sync_rounded : Icons.sync_disabled_rounded,
+                          color: _data.isConnected ? AppColors.success : AppColors.textMuted,
                           size: 32,
                         ),
                       ],
                     ),
                     const Divider(color: AppColors.border, height: 32),
 
-                    // Zero Stats Display
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildStatWidget(Icons.directions_run_rounded, '0', 'Steps', AppColors.textMuted),
-                        _buildStatWidget(Icons.local_fire_department_rounded, '0 kcal', 'Active Cals', AppColors.textMuted),
-                        _buildStatWidget(Icons.bedtime_rounded, '0.0h', 'Sleep', AppColors.textMuted),
-                      ],
-                    ),
+                    // Stats Display
+                    if (_loading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: CircularProgressIndicator(color: AppColors.primary),
+                      )
+                    else
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildStatWidget(
+                            Icons.directions_run_rounded,
+                            '${_data.steps}',
+                            'Steps',
+                            _data.isConnected ? AppColors.primary : AppColors.textMuted,
+                          ),
+                          _buildStatWidget(
+                            Icons.local_fire_department_rounded,
+                            '${_data.activeCalories.toInt()} kcal',
+                            'Active Cals',
+                            _data.isConnected ? Colors.orangeAccent : AppColors.textMuted,
+                          ),
+                          _buildStatWidget(
+                            Icons.bedtime_rounded,
+                            '${_data.sleepHours.toStringAsFixed(1)}h',
+                            'Sleep',
+                            _data.isConnected ? Colors.purpleAccent : AppColors.textMuted,
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -115,49 +191,13 @@ class HealthSyncHubScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-
-            // Coming Soon Notice
-            Card(
-              color: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppColors.border),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.lock_clock, color: AppColors.warning, size: 20),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Native Health Integration (Coming Soon)',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orangeAccent),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Direct background syncing with Apple Health and Google Health Connect is currently under development for an upcoming release.',
-                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 24),
 
-            // Connect Action Button (Disabled until native SDK integration)
+            // Connect / Sync Action Button
             ElevatedButton.icon(
-              onPressed: null,
-              icon: const Icon(Icons.sync_disabled_rounded),
-              label: const Text('Connect Health Service (Coming Soon)'),
+              onPressed: _loading ? null : _handleConnect,
+              icon: Icon(_data.isConnected ? Icons.sync_rounded : Icons.health_and_safety_rounded),
+              label: Text(_data.isConnected ? 'Re-Sync Health Data' : 'Connect Health Service'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

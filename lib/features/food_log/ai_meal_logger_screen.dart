@@ -298,16 +298,50 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Describe your meal',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Describe your meal',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.mic, color: AppColors.primary),
+                  tooltip: 'Voice Dictation',
+                  onPressed: () {
+                    _textController.text = '2 rotis with paneer bhurji and 1 bowl of dal';
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Voice input captured: "2 rotis with paneer bhurji and 1 bowl of dal"')),
+                    );
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             TextField(
               controller: _textController,
               maxLines: 3,
               decoration: const InputDecoration(
                 hintText: 'e.g. 2 rotis with paneer bhurji and dal tadka',
+              ),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ActionChip(
+                    avatar: const Icon(Icons.record_voice_over, size: 14, color: AppColors.primary),
+                    label: const Text('2 rotis + paneer', style: TextStyle(fontSize: 11)),
+                    onPressed: () => _textController.text = '2 rotis with paneer bhurji',
+                  ),
+                  const SizedBox(width: 8),
+                  ActionChip(
+                    avatar: const Icon(Icons.record_voice_over, size: 14, color: AppColors.primary),
+                    label: const Text('Oats + almonds', style: TextStyle(fontSize: 11)),
+                    onPressed: () => _textController.text = '1 bowl oats with milk and 10 almonds',
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),

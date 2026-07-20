@@ -152,4 +152,55 @@ class FoodRepository {
     final logs = await _db.select(_db.foodLogs).get();
     return logs.map((l) => l.loggedAt).toList();
   }
+
+  // 8. Update an existing food log entry
+  Future<bool> updateFoodLog({
+    required int id,
+    required String name,
+    required int calories,
+    required double proteinG,
+    required double carbsG,
+    required double fatG,
+    required double servingLogged,
+  }) async {
+    final count = await (_db.update(_db.foodLogs)..where((t) => t.id.equals(id))).write(
+      FoodLogsCompanion(
+        name: Value(name),
+        calories: Value(calories),
+        proteinG: Value(proteinG),
+        carbsG: Value(carbsG),
+        fatG: Value(fatG),
+        servingLogged: Value(servingLogged),
+      ),
+    );
+    return count > 0;
+  }
+
+  // 9. Copy meal group entries to target date / meal type
+  Future<void> copyMealGroup({
+    required String groupId,
+    required DateTime targetDate,
+    required String targetMealType,
+  }) async {
+    final logs = await (_db.select(_db.foodLogs)..where((t) => t.mealGroupId.equals(groupId))).get();
+    if (logs.isEmpty) return;
+
+    final newGroupId = const Uuid().v4();
+    final companions = logs.map((l) => FoodLogsCompanion.insert(
+      foodItemId: Value(l.foodItemId),
+      name: l.name,
+      calories: l.calories,
+      proteinG: l.proteinG,
+      carbsG: l.carbsG,
+      fatG: l.fatG,
+      servingLogged: l.servingLogged,
+      servingUnit: l.servingUnit,
+      mealType: targetMealType,
+      loggedAt: Value(targetDate),
+      mealGroupId: Value(newGroupId),
+      uuid: Value(const Uuid().v4()),
+    )).toList();
+
+    await _db.batch((b) => b.insertAll(_db.foodLogs, companions));
+  }
 }

@@ -42,21 +42,18 @@ class NotificationService {
   static const String prefRemindEvening = 'pref_remind_evening';
   static const String prefRemindWeekly = 'pref_remind_weekly';
 
+  static Function(String payload)? onNotificationNavigate;
+
   /// Initialize the notification plugin, timezone data, and Android channels.
   static Future<void> initialize() async {
     tz_data.initializeTimeZones();
-    try {
-      final timeZoneName = DateTime.now().timeZoneName;
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
-    } catch (_) {
-      tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
-    }
+    _configureLocalTimeZone();
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     const initSettings = InitializationSettings(
@@ -69,18 +66,55 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    // Request Android 13+ notification permission
-    await _plugin
+    debugPrint('NotificationService initialized (just-in-time mode).');
+  }
+
+  static void _onNotificationTapped(NotificationResponse response) {
+    final payload = response.payload;
+    debugPrint('Notification tapped: $payload');
+    if (payload != null && onNotificationNavigate != null) {
+      onNotificationNavigate!(payload);
+    }
+  }
+
+  /// Explicitly request notification permissions (just-in-time)
+  static Future<bool> requestPermissions() async {
+    final androidGranted = await _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
 
-    debugPrint('NotificationService initialized.');
+    final iosGranted = await _plugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+    return (androidGranted ?? false) || (iosGranted ?? false);
   }
 
-  static void _onNotificationTapped(NotificationResponse response) {
-    // Can be extended to deep-link into specific screens
-    debugPrint('Notification tapped: ${response.payload}');
+  /// Show a local push notification when workout rest timer expires
+  static Future<void> showRestTimerFinishedNotification() async {
+    const androidDetails = AndroidNotificationDetails(
+      _workoutChannelId,
+      'Workout Reminders',
+      channelDescription: 'Workout rest timer & session alerts',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const iosDetails = DarwinNotificationDetails();
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await _plugin.show(
+      999,
+      'Rest Time Completed! 💪',
+      'Time to hit your next set. You got this!',
+      details,
+      payload: 'workout',
+    );
   }
 
   // ────────────────────────────────────────
@@ -303,5 +337,45 @@ class NotificationService {
       scheduled = scheduled.add(const Duration(days: 1));
     }
     return scheduled;
+  }
+
+  static void _configureLocalTimeZone() {
+    final now = DateTime.now();
+    final timeZoneName = now.timeZoneName;
+
+    // Direct IANA location name lookup
+    try {
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+      return;
+    } catch (_) {}
+
+    // Fallback based on UTC offset mapping
+    final offsetHours = now.timeZoneOffset.inHours;
+    final offsetMinutes = now.timeZoneOffset.inMinutes.remainder(60).abs();
+
+    String fallbackLocation = 'Asia/Kolkata';
+    if (offsetHours == 5 && offsetMinutes == 30) {
+      fallbackLocation = 'Asia/Kolkata';
+    } else if (offsetHours == 0) {
+      fallbackLocation = 'UTC';
+    } else if (offsetHours == -5) {
+      fallbackLocation = 'America/New_York';
+    } else if (offsetHours == -8) {
+      fallbackLocation = 'America/Los_Angeles';
+    } else if (offsetHours == 1) {
+      fallbackLocation = 'Europe/London';
+    } else if (offsetHours == 2) {
+      fallbackLocation = 'Europe/Paris';
+    } else if (offsetHours == 8) {
+      fallbackLocation = 'Asia/Singapore';
+    } else if (offsetHours == 9) {
+      fallbackLocation = 'Asia/Tokyo';
+    }
+
+    try {
+      tz.setLocalLocation(tz.getLocation(fallbackLocation));
+    } catch (_) {
+      tz.setLocalLocation(tz.getLocation('UTC'));
+    }
   }
 }

@@ -1,8 +1,10 @@
 import os
 import json
 import base64
-from typing import List, Optional
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+import time
+import hashlib
+from typing import List, Optional, Dict, Any
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Header, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
@@ -23,6 +25,29 @@ app.add_middleware(
 )
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+INDIFIT_API_KEY = os.getenv("INDIFIT_API_KEY", "indifit_secret_key_v1")
+AI_MODEL = os.getenv("AI_MODEL", "gemini-1.5-flash")
+
+# In-memory 24h TTL cache
+RESPONSE_CACHE: Dict[str, dict] = {}
+CACHE_TTL_SECONDS = 86400
+
+async def verify_api_key(x_indifit_key: Optional[str] = Header(None)):
+    if INDIFIT_API_KEY and x_indifit_key != INDIFIT_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing x-indifit-key authentication header",
+        )
+    return x_indifit_key
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "ok",
+        "gemini_configured": bool(GEMINI_API_KEY),
+        "model": AI_MODEL,
+        "timestamp": time.time()
+    }
 
 # Schema definitions
 class RoutineRequest(BaseModel):
@@ -35,6 +60,11 @@ class RoutineRequest(BaseModel):
 class TextMealRequest(BaseModel):
     text: str
 
+class MealPlanRequest(BaseModel):
+    calorie_goal: int = 2000
+    diet_preference: str = "veg"
+    days: int = 7
+
 # Helper to execute Gemini requests
 async def query_gemini_text(prompt: str, json_mode: bool = False) -> str:
     if not GEMINI_API_KEY:
@@ -43,7 +73,7 @@ async def query_gemini_text(prompt: str, json_mode: bool = False) -> str:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     
     headers = {"Content-Type": "application/json"}
-    payload = {
+    payload: Dict[str, Any] = {
         "contents": [{"parts": [{"text": prompt}]}],
     }
     
@@ -74,7 +104,7 @@ async def query_gemini_vision(prompt: str, image_bytes: bytes, mime_type: str) -
     # Format image to inline data
     base64_image = base64.b64encode(image_bytes).decode("utf-8")
     
-    payload = {
+    payload: Dict[str, Any] = {
         "contents": [
             {
                 "parts": [
@@ -210,6 +240,109 @@ async def estimate_meal_photo(image: UploadFile = File(...)):
         return _mock_meal_estimate("Photo Estimate Fallback", reason=str(e))
 
 
+@app.post("/api/ai/meal-plan")
+async def generate_meal_plan(req: MealPlanRequest):
+    prompt = f"""
+    Act as an expert Indian clinical dietitian. Generate a structured 7-day weekly meal plan tailored for:
+    Daily Calorie Target: {req.calorie_goal} kcal
+    Dietary Preference: {req.diet_preference} (veg / non-veg / vegan)
+    
+    Output a single JSON object containing:
+    1. "days": List of 7 daily meal plans (Monday to Sunday), each day having:
+       - "day": String (e.g. "Monday")
+       - "breakfast": String (description with kcal and protein e.g. "Oats Upma - 350 kcal | P: 12g")
+       - "lunch": String (description with kcal and protein)
+       - "dinner": String (description with kcal and protein)
+       - "snacks": String (description with kcal and protein)
+    2. "grocery_list": List of Strings (aggregated ingredients needed for the 7-day plan)
+    
+    Format the response strictly as valid JSON matching this schema. Do not include markdown text.
+    """
+    
+    try:
+        if not GEMINI_API_KEY:
+            return _mock_meal_plan(req, reason="Missing GEMINI_API_KEY env variable")
+            
+        result = await query_gemini_text(prompt, json_mode=True)
+        data = json.loads(result)
+        data["is_fallback"] = False
+        return data
+    except Exception as e:
+        return _mock_meal_plan(req, reason=str(e))
+
+
+def _mock_meal_plan(req: MealPlanRequest, reason: str = ""):
+    days = [
+        {
+            "day": "Monday",
+            "breakfast": "Oats Upma (1 bowl) with almonds (10 pcs) - 350 kcal | P: 12g",
+            "lunch": "Paneer Bhurji (150g) with 2 Chapatis & Curd - 550 kcal | P: 28g",
+            "dinner": "Yellow Dal Tadka (1 bowl) with Mixed Veg & 2 Chapatis - 480 kcal | P: 18g",
+            "snacks": "Roasted Chana (50g) & Green Tea - 180 kcal | P: 9g",
+        },
+        {
+            "day": "Tuesday",
+            "breakfast": "Paneer Stuffed Paratha (1 pc) with curd - 380 kcal | P: 14g",
+            "lunch": "Soya Chunks Curry (1 bowl) with Jeera Rice - 520 kcal | P: 26g",
+            "dinner": "Moong Dal Khichdi (1 plate) with ghee - 440 kcal | P: 12g",
+            "snacks": "Whey Protein Shake with 1 banana - 250 kcal | P: 26g",
+        },
+        {
+            "day": "Wednesday",
+            "breakfast": "Besan Cheela (2 pcs) with mint chutney - 320 kcal | P: 12g",
+            "lunch": "Chickpea (Chole) Salad with cucumber & tomatoes - 480 kcal | P: 18g",
+            "dinner": "Tofu Stir-fry (150g) with brown rice (1 cup) - 510 kcal | P: 22g",
+            "snacks": "Mixed seeds (1 handful) & Green Tea - 190 kcal | P: 6g",
+        },
+        {
+            "day": "Thursday",
+            "breakfast": "Sprouted Moong Salad (1 bowl) - 280 kcal | P: 14g",
+            "lunch": "Dal Makhani (1 bowl) with Jeera Rice & Veg Salad - 540 kcal | P: 16g",
+            "dinner": "Paneer Tikka (150g) with Grilled Bell Peppers - 460 kcal | P: 24g",
+            "snacks": "Roasted Makhana (1 bowl) - 150 kcal | P: 3g",
+        },
+        {
+            "day": "Friday",
+            "breakfast": "Idli (3 pcs) with Sambhar - 310 kcal | P: 8g",
+            "lunch": "Palak Paneer (150g) with 2 Chapatis - 520 kcal | P: 24g",
+            "dinner": "Black Eyed Peas (Lobia) Curry with brown rice - 490 kcal | P: 18g",
+            "snacks": "Boiled Peanut Salad (50g) - 200 kcal | P: 8g",
+        },
+        {
+            "day": "Saturday",
+            "breakfast": "Oats Porridge with 1 scoop Whey Protein - 360 kcal | P: 30g",
+            "lunch": "Rajma Masala (1 bowl) with Jeera Rice - 540 kcal | P: 18g",
+            "dinner": "Paneer Kathi Roll (1 pc) - 480 kcal | P: 20g",
+            "snacks": "Buttermilk (1 glass) & Roasted Chana - 160 kcal | P: 7g",
+        },
+        {
+            "day": "Sunday",
+            "breakfast": "Vegetable Poha (1 bowl) with peanuts - 290 kcal | P: 7g",
+            "lunch": "Mix Dal Khichdi (1 plate) with Curd - 480 kcal | P: 16g",
+            "dinner": "Paneer Bhurji (150g) with 2 multigrain rotis - 530 kcal | P: 28g",
+            "snacks": "Fruit Salad (Papaya, Apple) - 120 kcal | P: 1g",
+        },
+    ]
+    grocery_list = [
+        "Rolled Oats (1 kg)",
+        "Paneer (500g)",
+        "Moong Dal & Toor Dal (1 kg each)",
+        "Soya Chunks (200g)",
+        "Mixed Vegetables (Onion, Tomato, Spinach, Bell Pepper)",
+        "Whole Wheat Atta & Rice",
+        "Roasted Chana & Makhana",
+        "Almonds & Mixed Seeds",
+        "Curd / Yogurt (1 kg)",
+        "Fruits (Apples, Papaya, Bananas)",
+    ]
+    return {
+        "days": days,
+        "grocery_list": grocery_list,
+        "is_fallback": True,
+        "fallback_reason": reason,
+    }
+
+
 def _mock_routine(req: RoutineRequest, notes: str = "", reason: str = ""):
     # High-quality offline fallback constructor for development testing
     name = f"AI {req.experience.title()} {req.goal.title()} Split"
@@ -341,4 +474,66 @@ def _mock_meal_estimate(text: str, name: str = "", reason: str = ""):
     meal["is_fallback"] = True
     meal["fallback_reason"] = reason
     return meal
+
+
+class WeeklyReportRequest(BaseModel):
+    total_calories_logged: int = 14000
+    calorie_goal: int = 14000
+    workout_sessions_count: int = 4
+    total_volume_kg: float = 12500.0
+    prs_count: int = 2
+    adherence_score: float = 85.0
+
+def _mock_weekly_report(req: WeeklyReportRequest, reason: str = ""):
+    return {
+        "headline": "Outstanding Consistency This Week!",
+        "adherence_score": req.adherence_score,
+        "summary": f"You completed {req.workout_sessions_count} workouts and hit {req.prs_count} Personal Records with {req.total_volume_kg:.0f} kg total volume lifted.",
+        "coaching_tip": "Maintain your protein intake post-workout and prioritize 7-8 hours of sleep for optimal recovery.",
+        "top_prs": ["Bench Press 80kg x 5", "Barbell Squat 100kg x 3"],
+        "is_fallback": True,
+        "fallback_reason": reason
+    }
+
+@app.post("/api/ai/weekly-report")
+async def generate_weekly_report(req: WeeklyReportRequest):
+    if not GEMINI_API_KEY:
+        return _mock_weekly_report(req, "Gemini API key not configured")
+
+    prompt = f"""
+    Analyze this user's fitness progress over the past 7 days:
+    - Calories Logged: {req.total_calories_logged} kcal (Goal: {req.calorie_goal} kcal)
+    - Workouts Completed: {req.workout_sessions_count} sessions
+    - Total Volume Lifted: {req.total_volume_kg} kg
+    - Personal Records Hit: {req.prs_count} PRs
+    - Overall Adherence Score: {req.adherence_score:.1f}%
+
+    Return a JSON response with keys:
+    - headline: short encouraging summary title
+    - adherence_score: float
+    - summary: paragraph reviewing nutrition & workout volume progress
+    - coaching_tip: actionable training/nutrition advice for next week
+    - top_prs: list of string achievements
+    """
+
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"response_mime_type": "application/json"}
+        }
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post(url, json=payload)
+
+        if response.status_code != 200:
+            return _mock_weekly_report(req, f"API HTTP {response.status_code}")
+
+        data = response.json()
+        raw_json = data['candidates'][0]['content']['parts'][0]['text']
+        parsed = json.loads(raw_json)
+        parsed['is_fallback'] = False
+        return parsed
+    except Exception as e:
+        return _mock_weekly_report(req, str(e))
 

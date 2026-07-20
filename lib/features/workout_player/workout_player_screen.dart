@@ -6,9 +6,11 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:vibration/vibration.dart';
 import 'package:drift/drift.dart' show Value;
 
+import '../../core/services/notification_service.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
+import 'widgets/plate_calculator_sheet.dart';
 import 'workout_summary_screen.dart';
 
 class WorkoutPlayerScreen extends ConsumerStatefulWidget {
@@ -336,6 +338,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                 });
               } else {
                 t.cancel();
+                NotificationService.showRestTimerFinishedNotification();
                 // Vibration on complete
                 Vibration.hasVibrator().then((hasVib) {
                   if (hasVib == true) {
@@ -795,13 +798,34 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Row(
+                  Row(
                             children: [
                               // Weight input
                               Expanded(
                                 child: Column(
                                   children: [
-                                    const Text('Weight (kg)', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Text('Weight (kg)', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
+                                        const SizedBox(width: 4),
+                                        GestureDetector(
+                                          onTap: () {
+                                            final w = double.tryParse(_weightController.text) ?? 60.0;
+                                            showModalBottomSheet(
+                                              context: context,
+                                              isScrollControlled: true,
+                                              backgroundColor: AppColors.surface,
+                                              shape: const RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                              ),
+                                              builder: (_) => PlateCalculatorSheet(targetWeight: w),
+                                            );
+                                          },
+                                          child: const Icon(Icons.line_weight_rounded, size: 14, color: AppColors.primary),
+                                        ),
+                                      ],
+                                    ),
                                     const SizedBox(height: 10),
                                     TextField(
                                       controller: _weightController,

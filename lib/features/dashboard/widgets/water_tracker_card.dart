@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/theme/colors.dart';
@@ -58,7 +59,10 @@ class WaterTrackerCard extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.remove_circle_outline, color: AppColors.textSecondary, size: 20),
                   onPressed: waterLogged > 0
-                      ? () => ref.read(waterProvider.notifier).logWater(-1)
+                      ? () {
+                          HapticFeedback.lightImpact();
+                          ref.read(waterProvider.notifier).logWater(-1);
+                        }
                       : null,
                   tooltip: 'Decrease water intake',
                 ),
@@ -66,7 +70,10 @@ class WaterTrackerCard extends ConsumerWidget {
                 // Quick Increment (+1 glass)
                 IconButton(
                   icon: const Icon(Icons.add_circle, color: Colors.blueAccent, size: 24),
-                  onPressed: () => ref.read(waterProvider.notifier).logWater(1),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    ref.read(waterProvider.notifier).logWater(1);
+                  },
                   tooltip: 'Add glass of water',
                 ),
               ],

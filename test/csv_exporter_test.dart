@@ -54,6 +54,7 @@ void main() {
           isPr: true,
           isWarmUp: false,
           rpe: 8,
+          setType: 'working',
         ),
       ];
 

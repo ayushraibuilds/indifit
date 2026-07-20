@@ -504,10 +504,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           for (final item in data['workout_sessions']) {
             await db.into(db.workoutSessions).insert(WorkoutSessionsCompanion.insert(
               id: Value(item['id']),
-              name: item['name'],
-              totalVolume: (item['total_volume'] as num).toDouble(),
-              durationSeconds: (item['duration_seconds'] as num).toInt(),
-              estimatedCalories: (item['estimated_calories'] as num).toInt(),
+              name: item['name'] ?? item['routine_name'] ?? 'Workout Session',
+              totalVolume: item['total_volume'] != null ? (item['total_volume'] as num).toDouble() : 0.0,
+              durationSeconds: item['duration_seconds'] != null ? (item['duration_seconds'] as num).toInt() : 0,
+              estimatedCalories: item['estimated_calories'] != null ? (item['estimated_calories'] as num).toInt() : 0,
               uuid: Value(item['uuid'] ?? const Uuid().v4()),
               completedAt: Value(DateTime.parse(item['completed_at'])),
             ));
