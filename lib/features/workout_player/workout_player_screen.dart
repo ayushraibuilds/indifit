@@ -59,6 +59,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
   final List<RoutineExercise> _activeExercises = [];
   WorkoutSet? _bestPrSet;
   double _suggestedWeight = 20.0;
+  bool _isWarmUp = false;
+  int? _selectedRpe;
 
   @override
   void initState() {
@@ -247,6 +249,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       reps: reps,
       setNumber: _currentSetIndex + 1,
       isPr: Value(isPr),
+      isWarmUp: Value(_isWarmUp),
+      rpe: Value(_selectedRpe),
     );
 
     _loggedSets.add(newSet);
@@ -878,7 +882,53 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 30),
+                          const SizedBox(height: 20),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              FilterChip(
+                                label: Text(
+                                  _isWarmUp ? 'Warm-Up Set' : 'Working Set',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: _isWarmUp ? AppColors.warning : AppColors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                selected: _isWarmUp,
+                                selectedColor: AppColors.warning.withOpacity(0.15),
+                                onSelected: (val) {
+                                  setState(() {
+                                    _isWarmUp = val;
+                                  });
+                                },
+                              ),
+                              Row(
+                                children: [
+                                  const Text('RPE: ', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                  DropdownButton<int?>(
+                                    value: _selectedRpe,
+                                    underline: const SizedBox(),
+                                    hint: const Text('Optional', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                                    items: [
+                                      const DropdownMenuItem<int?>(value: null, child: Text('None', style: TextStyle(fontSize: 11))),
+                                      ...[6, 7, 8, 9, 10].map((rpe) => DropdownMenuItem<int?>(
+                                        value: rpe,
+                                        child: Text('@ RPE $rpe', style: const TextStyle(fontSize: 11)),
+                                      )),
+                                    ],
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _selectedRpe = val;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
                           
                           // Complete Set button
                           ElevatedButton(

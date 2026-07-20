@@ -892,34 +892,60 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Dietary Fiber', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${fiber.toStringAsFixed(1)}g logged',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
-                    ),
-                    const Text('Goal: 25.0g - 30.0g', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Dietary Fiber', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${fiber.toStringAsFixed(1)}g / 25.0g',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: (fiber / 25.0).clamp(0.0, 1.0),
+                          backgroundColor: AppColors.border,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            fiber >= 25.0 ? AppColors.success : Colors.orangeAccent,
+                          ),
+                          minHeight: 5,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 16),
                 Container(
                   height: 40,
                   width: 1,
                   color: AppColors.border,
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Total Hydration', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${waterLogged * glassSize} ml',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueAccent),
-                    ),
-                    Text('Goal: ${(waterGoal * glassSize / 1000.0).toStringAsFixed(1)}L', style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
-                  ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Total Hydration', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${waterLogged * glassSize} ml',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.blueAccent),
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: waterGoal > 0 ? (waterLogged / waterGoal).clamp(0.0, 1.0) : 0.0,
+                          backgroundColor: AppColors.border,
+                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                          minHeight: 5,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

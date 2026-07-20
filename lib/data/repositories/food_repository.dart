@@ -61,7 +61,7 @@ class FoodRepository {
       if (lastEntries.isNotEmpty) {
         final lastEntry = lastEntries.first;
         final diff = now.difference(lastEntry.loggedAt).inMinutes.abs();
-        if (diff < 2 && lastEntry.mealGroupId != null && lastEntry.mealGroupId!.isNotEmpty) {
+        if (diff < 15 && lastEntry.mealGroupId != null && lastEntry.mealGroupId!.isNotEmpty) {
           resolvedGroupId = lastEntry.mealGroupId!;
         }
       }
