@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/app_config.dart';
+import '../../core/di/providers.dart';
 import 'workout_repository.dart';
 
 final aiRoutineServiceProvider = Provider<AiRoutineService>((ref) {
-  return AiRoutineService();
+  final dio = ref.watch(dioProvider);
+  return AiRoutineService(dio);
 });
 
 class GeneratedRoutineResult {
@@ -22,10 +24,9 @@ class GeneratedRoutineResult {
 }
 
 class AiRoutineService {
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 12),
-    receiveTimeout: const Duration(seconds: 12),
-  ));
+  final Dio _dio;
+
+  AiRoutineService([Dio? dio]) : _dio = dio ?? Dio();
 
   // 1. Generate routine (attempts online FastAPI API -> falls back to offline local rule generator)
   Future<GeneratedRoutineResult> generateRoutine({

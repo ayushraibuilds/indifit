@@ -45,8 +45,12 @@ class NotificationService {
   /// Initialize the notification plugin, timezone data, and Android channels.
   static Future<void> initialize() async {
     tz_data.initializeTimeZones();
-    // Default to IST for Indian fitness app
-    tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
+    try {
+      final timeZoneName = DateTime.now().timeZoneName;
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+    } catch (_) {
+      tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
+    }
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(

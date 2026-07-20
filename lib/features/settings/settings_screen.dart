@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/colors.dart';
@@ -125,7 +126,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final routineExercises = await db.select(db.routineExercises).get();
 
       final exportMap = {
-        'version': 1,
+        'version': 2,
         'exported_at': DateTime.now().toIso8601String(),
         'food_items': foodItems.map((f) => {
           'name': f.name,
@@ -141,6 +142,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           'is_custom': f.isCustom,
         }).toList(),
         'food_logs': foodLogs.map((l) => {
+          'food_item_id': l.foodItemId,
           'name': l.name,
           'calories': l.calories,
           'protein_g': l.proteinG,
@@ -149,6 +151,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           'serving_logged': l.servingLogged,
           'serving_unit': l.servingUnit,
           'meal_type': l.mealType,
+          'meal_group_id': l.mealGroupId,
+          'uuid': l.uuid,
           'logged_at': l.loggedAt.toIso8601String(),
         }).toList(),
         'workout_sessions': sessions.map((s) => {
@@ -157,6 +161,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           'total_volume': s.totalVolume,
           'duration_seconds': s.durationSeconds,
           'estimated_calories': s.estimatedCalories,
+          'uuid': s.uuid,
           'completed_at': s.completedAt.toIso8601String(),
         }).toList(),
         'workout_sets': sets.map((s) => {
@@ -166,6 +171,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           'reps': s.reps,
           'set_number': s.setNumber,
           'is_pr': s.isPr,
+          'rpe': s.rpe,
+          'is_warm_up': s.isWarmUp,
+          'set_notes': s.setNotes,
+          'uuid': s.uuid,
         }).toList(),
         'body_measurements': measurements.map((m) => {
           'weight': m.weight,
@@ -472,6 +481,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         if (data['food_logs'] != null) {
           for (final item in data['food_logs']) {
             await db.into(db.foodLogs).insert(FoodLogsCompanion.insert(
+              foodItemId: Value(item['food_item_id']),
               name: item['name'],
               calories: (item['calories'] as num).toInt(),
               proteinG: (item['protein_g'] as num).toDouble(),
@@ -480,6 +490,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               servingLogged: (item['serving_logged'] as num).toDouble(),
               servingUnit: item['serving_unit'],
               mealType: item['meal_type'],
+              mealGroupId: Value(item['meal_group_id']),
+              uuid: Value(item['uuid'] ?? const Uuid().v4()),
               loggedAt: Value(DateTime.parse(item['logged_at'])),
             ));
           }
@@ -494,6 +506,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               totalVolume: (item['total_volume'] as num).toDouble(),
               durationSeconds: (item['duration_seconds'] as num).toInt(),
               estimatedCalories: (item['estimated_calories'] as num).toInt(),
+              uuid: Value(item['uuid'] ?? const Uuid().v4()),
               completedAt: Value(DateTime.parse(item['completed_at'])),
             ));
           }
@@ -509,6 +522,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               reps: (item['reps'] as num).toInt(),
               setNumber: (item['set_number'] as num).toInt(),
               isPr: Value(item['is_pr'] ?? false),
+              rpe: Value(item['rpe'] != null ? (item['rpe'] as num).toInt() : null),
+              isWarmUp: Value(item['is_warm_up'] ?? false),
+              setNotes: Value(item['set_notes']),
+              uuid: Value(item['uuid'] ?? const Uuid().v4()),
             ));
           }
         }
