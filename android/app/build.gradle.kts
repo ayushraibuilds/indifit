@@ -56,6 +56,7 @@ android {
             } else {
                 throw GradleException("Release build requires key.properties keystore configuration. Production signing config is missing!")
             }
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
