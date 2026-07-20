@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: indifit-ai-backend
+    env: python
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: INDIFIT_API_KEY
+        sync: false
+      - key: AI_MODEL
+        value: gemini-1.5-flash
+      - key: ALLOWED_ORIGINS
+        value: "http://localhost,http://127.0.0.1,http://10.0.2.2,https://indifit.app"

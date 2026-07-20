@@ -31,3 +31,22 @@ class FoodLogs extends Table {
   TextColumn get mealGroupId => text().nullable()();
   TextColumn get uuid => text().nullable()();
 }
+
+class MealTemplates extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+  TextColumn get defaultMealType => text().withDefault(const Constant('breakfast'))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+class MealTemplateItems extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get templateId => integer().references(MealTemplates, #id)();
+  TextColumn get name => text()();
+  IntColumn get calories => integer()();
+  RealColumn get proteinG => real()();
+  RealColumn get carbsG => real()();
+  RealColumn get fatG => real()();
+  RealColumn get servingLogged => real()();
+  TextColumn get servingUnit => text()();
+}

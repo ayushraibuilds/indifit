@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/colors.dart';
+import '../../data/repositories/meal_plan_service.dart';
 
-class AiMealPlannerScreen extends StatefulWidget {
+class AiMealPlannerScreen extends ConsumerStatefulWidget {
   const AiMealPlannerScreen({super.key});
 
   @override
-  State<AiMealPlannerScreen> createState() => _AiMealPlannerScreenState();
+  ConsumerState<AiMealPlannerScreen> createState() => _AiMealPlannerScreenState();
 }
 
-class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
+class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
   int _calorieGoal = 2000;
   String _dietPreference = 'veg'; // 'veg', 'non-veg', 'vegan'
   bool _loading = false;
   bool _planGenerated = false;
+  GeneratedMealPlanResult? _currentPlanResult;
 
   // Selected weekday tab in split view
   int _selectedDayIndex = 0;
@@ -33,71 +36,26 @@ class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
     });
   }
 
-  final List<Map<String, dynamic>> _mockWeeklyPlan = [
-    // Monday
-    {
-      'breakfast': 'Oats Upma (1 bowl) with almonds (10 pcs) - 350 kcal | P: 12g',
-      'lunch': 'Paneer Bhurji (150g) with 2 Chapatis & Curd - 550 kcal | P: 28g',
-      'dinner': 'Yellow Dal Tadka (1 bowl) with Mixed Veg & 2 Chapatis - 480 kcal | P: 18g',
-      'snacks': 'Roasted Chana (50g) & Green Tea - 180 kcal | P: 9g',
-    },
-    // Tuesday
-    {
-      'breakfast': 'Paneer Stuffed Paratha (1 pc) with curd - 380 kcal | P: 14g',
-      'lunch': 'Soya Chunks Curry (1 bowl) with Jeera Rice - 520 kcal | P: 26g',
-      'dinner': 'Moong Dal Khichdi (1 plate) with ghee - 440 kcal | P: 12g',
-      'snacks': 'Whey Protein Shake with 1 banana - 250 kcal | P: 26g',
-    },
-    // Wednesday
-    {
-      'breakfast': 'Besan Cheela (2 pcs) with mint chutney - 320 kcal | P: 12g',
-      'lunch': 'Chickpea (Chole) Salad with cucumber & tomatoes - 480 kcal | P: 18g',
-      'dinner': 'Tofu Stir-fry (150g) with brown rice (1 cup) - 510 kcal | P: 22g',
-      'snacks': 'Mixed seeds (1 handful) & Green Tea - 190 kcal | P: 6g',
-    },
-    // Thursday
-    {
-      'breakfast': 'Sprouted Moong Salad (1 bowl) - 280 kcal | P: 14g',
-      'lunch': 'Dal Makhani (1 bowl) with Jeera Rice & Veg Salad - 540 kcal | P: 16g',
-      'dinner': 'Paneer Tikka (150g) with Grilled Bell Peppers - 460 kcal | P: 24g',
-      'snacks': 'Roasted Makhana (1 bowl) - 150 kcal | P: 3g',
-    },
-    // Friday
-    {
-      'breakfast': 'Idli (3 pcs) with Sambhar - 310 kcal | P: 8g',
-      'lunch': 'Palak Paneer (150g) with 2 Chapatis - 520 kcal | P: 24g',
-      'dinner': 'Black Eyed Peas (Lobia) Curry with brown rice - 490 kcal | P: 18g',
-      'snacks': 'Boiled Peanut Salad (50g) - 200 kcal | P: 8g',
-    },
-    // Saturday
-    {
-      'breakfast': 'Oats Porridge with 1 scoop Whey Protein - 360 kcal | P: 30g',
-      'lunch': 'Rajma Masala (1 bowl) with Jeera Rice - 540 kcal | P: 18g',
-      'dinner': 'Paneer Kathi Roll (1 pc) - 480 kcal | P: 20g',
-      'snacks': 'Buttermilk (1 glass) & Roasted Chana - 160 kcal | P: 7g',
-    },
-    // Sunday
-    {
-      'breakfast': 'Vegetable Poha (1 bowl) with peanuts - 290 kcal | P: 7g',
-      'lunch': 'Mix Dal Khichdi (1 plate) with Curd - 480 kcal | P: 16g',
-      'dinner': 'Paneer Bhurji (150g) with 2 multigrain rotis - 530 kcal | P: 28g',
-      'snacks': 'Fruit Salad (Papaya, Apple) - 120 kcal | P: 1g',
-    },
-  ];
-
   Future<void> _generatePlan() async {
     setState(() => _loading = true);
-    
-    // Simulate API compile wait
-    await Future.delayed(const Duration(seconds: 2));
-    
-    setState(() {
-      _planGenerated = true;
-      _loading = false;
-    });
+
+    final result = await ref.read(mealPlanServiceProvider).generateMealPlan(
+          calorieGoal: _calorieGoal,
+          dietPreference: _dietPreference,
+        );
+
+    if (mounted) {
+      setState(() {
+        _currentPlanResult = result;
+        _planGenerated = true;
+        _loading = false;
+      });
+    }
   }
 
   void _showGroceryList() {
+    final groceryList = _currentPlanResult?.groceryList ?? [];
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -121,24 +79,22 @@ class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
               const Divider(color: AppColors.border, height: 24),
-              
-              // Ingredients Checklist
               Expanded(
-                child: ListView(
-                  children: [
-                    _buildGroceryRow('Paneer (Cottage Cheese)', '1.2 kg'),
-                    _buildGroceryRow('Whole Wheat Flour (Atta)', '3 kg'),
-                    _buildGroceryRow('Brown Rice / Jeera Rice', '1.5 kg'),
-                    _buildGroceryRow('Lentils (Toor Dal, Moong, Rajma)', '1.8 kg'),
-                    _buildGroceryRow('Rolled Oats', '500g'),
-                    _buildGroceryRow('Soya Chunks', '250g'),
-                    _buildGroceryRow('Roasted Chana & Makhana', '400g'),
-                    _buildGroceryRow('Curd (Yoghurt)', '1.5 kg'),
-                  ],
-                ),
+                child: groceryList.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No grocery list generated.',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: groceryList.length,
+                        itemBuilder: (context, index) {
+                          return _buildGroceryRow(groceryList[index]);
+                        },
+                      ),
               ),
               const SizedBox(height: 12),
-              
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
@@ -156,20 +112,16 @@ class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
     );
   }
 
-  Widget _buildGroceryRow(String name, String qty) {
+  Widget _buildGroceryRow(String item) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.check_box_outline_blank_rounded, color: AppColors.textMuted, size: 20),
-              const SizedBox(width: 8),
-              Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-            ],
+          const Icon(Icons.check_box_outline_blank_rounded, color: AppColors.textMuted, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(item, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
           ),
-          Text(qty, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13)),
         ],
       ),
     );
@@ -227,27 +179,6 @@ class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
         const Text(
           'Design an Indian macro-balanced weekly diet plan instantly using AI.',
           style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.info_outline, color: AppColors.primary, size: 20),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Demo Mode: Offline plan preview. AI Meal Planner connection is simulated locally.',
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-          ),
         ),
         const SizedBox(height: 20),
 
@@ -325,9 +256,9 @@ class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 11, 
-              fontWeight: FontWeight.bold, 
-              color: active ? AppColors.primary : AppColors.textSecondary
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: active ? AppColors.primary : AppColors.textSecondary,
             ),
           ),
         ),
@@ -336,10 +267,43 @@ class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
   }
 
   Widget _buildPlanLayout() {
-    final dayPlan = _mockWeeklyPlan[_selectedDayIndex];
+    final days = _currentPlanResult?.days ?? [];
+    final safeIndex = _selectedDayIndex.clamp(0, days.isEmpty ? 0 : days.length - 1);
+    final dayPlan = days.isNotEmpty ? days[safeIndex] : <String, dynamic>{};
+    final isFallback = _currentPlanResult?.isFallback ?? true;
 
     return Column(
       children: [
+        // Mode badge indicator
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isFallback ? Colors.amber.withOpacity(0.12) : AppColors.success.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: isFallback ? Colors.amber : AppColors.success),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isFallback ? Icons.cloud_off_rounded : Icons.auto_awesome_rounded,
+                size: 14,
+                color: isFallback ? Colors.amber : AppColors.success,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isFallback ? 'Offline Sample Plan' : 'AI-Generated Plan (Gemini 1.5 Flash)',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: isFallback ? Colors.amber : AppColors.success,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
         // 1. Horizontal Mon-Sun tabs
         SizedBox(
           height: 38,
@@ -380,13 +344,13 @@ class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
         Expanded(
           child: ListView(
             children: [
-              _buildMealSectionCard('Breakfast', dayPlan['breakfast']!, Icons.breakfast_dining_rounded),
+              _buildMealSectionCard('Breakfast', dayPlan['breakfast']?.toString() ?? 'N/A', Icons.breakfast_dining_rounded),
               const SizedBox(height: 10),
-              _buildMealSectionCard('Lunch', dayPlan['lunch']!, Icons.lunch_dining_rounded),
+              _buildMealSectionCard('Lunch', dayPlan['lunch']?.toString() ?? 'N/A', Icons.lunch_dining_rounded),
               const SizedBox(height: 10),
-              _buildMealSectionCard('Dinner', dayPlan['dinner']!, Icons.dinner_dining_rounded),
+              _buildMealSectionCard('Dinner', dayPlan['dinner']?.toString() ?? 'N/A', Icons.dinner_dining_rounded),
               const SizedBox(height: 10),
-              _buildMealSectionCard('Snacks', dayPlan['snacks']!, Icons.cookie_rounded),
+              _buildMealSectionCard('Snacks', dayPlan['snacks']?.toString() ?? 'N/A', Icons.cookie_rounded),
             ],
           ),
         ),
@@ -465,9 +429,9 @@ class _AiMealPlannerScreenState extends State<AiMealPlannerScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(color: AppColors.primary),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Text('AI is creating your meal plans...', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Balancing portion sizes and local Indian macro splits using Gemini...',
             textAlign: TextAlign.center,

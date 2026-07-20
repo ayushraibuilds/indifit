@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/utils/streak_calculator.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
@@ -21,6 +22,8 @@ import 'widgets/calorie_ring_card.dart';
 import 'widgets/water_tracker_card.dart';
 import 'widgets/weight_sparkline_card.dart';
 import 'widgets/today_workout_card.dart';
+import 'widgets/dashboard_date_bar.dart';
+import 'widgets/todays_activity_card.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -38,6 +41,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _calorieGoal = 2000;
 
   double _adherenceScore = 0.0;
+  DateTime _selectedDate = DateTime.now();
 
   // Today's workout state variables
   String _todayWorkoutName = 'Rest Day';
@@ -99,20 +103,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
 
     final now = DateTime.now();
-    int streak = 0;
-    DateTime checkDate = DateTime(now.year, now.month, now.day);
-    String dateStr = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
-
-    if (!activeDays.contains(dateStr)) {
-      checkDate = checkDate.subtract(const Duration(days: 1));
-      dateStr = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
-    }
-
-    while (activeDays.contains(dateStr)) {
-      streak++;
-      checkDate = checkDate.subtract(const Duration(days: 1));
-      dateStr = '${checkDate.year}-${checkDate.month.toString().padLeft(2, '0')}-${checkDate.day.toString().padLeft(2, '0')}';
-    }
+    int streak = StreakCalculator.calculateStreak(activeDays);
 
     if (mounted) {
       setState(() {
@@ -249,10 +240,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final sessions = await workoutRepo.watchSessions().first;
       final weekSessions = sessions.where((s) => s.completedAt.isAfter(now.subtract(const Duration(days: 7)))).toList();
       
+      int targetWorkoutDays = 3;
+      final savedRoutines = await workoutRepo.getSavedRoutines();
+      if (savedRoutines.isNotEmpty) {
+        final details = await workoutRepo.getRoutineDetails(savedRoutines.last.id);
+        final nonRestDays = details.where((d) {
+          final day = d['day'] as RoutineDay;
+          return !day.isRestDay;
+        }).length;
+        if (nonRestDays > 0) {
+          targetWorkoutDays = nonRestDays;
+        }
+      }
+
       final double nutritionScore = activeLoggedDays == 0 
           ? 0.0 
           : (daysHit / activeLoggedDays.toDouble()) * 100.0;
-      final double workoutScore = ((weekSessions.length / 3.0).clamp(0.0, 1.0)) * 100.0;
+      final double workoutScore = ((weekSessions.length / targetWorkoutDays.toDouble()).clamp(0.0, 1.0)) * 100.0;
       
       if (mounted) {
         setState(() {
@@ -339,7 +343,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Scaffold(
       body: SafeArea(
         child: StreamBuilder<List<FoodLog>>(
-          stream: foodRepo.watchLogsForDay(DateTime.now()),
+          stream: foodRepo.watchLogsForDay(_selectedDate),
           builder: (context, snapshot) {
             final logs = snapshot.data ?? [];
             
@@ -367,7 +371,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 children: [
                   // 1. Responsive Header (Greeting & Streak & PopupMenu)
                   _buildHeader(),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
+
+                  // Date Navigation Bar
+                  DashboardDateBar(
+                    selectedDate: _selectedDate,
+                    onDateChanged: (newDate) {
+                      setState(() {
+                        _selectedDate = newDate;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
 
                   // 2. Calorie Ring & Macro Bars
                   CalorieRingCard(
@@ -376,6 +391,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     eatenCarbs: eatenCarbs,
                     eatenFat: eatenFat,
                   ),
+                  const SizedBox(height: 16),
+
+                  // Health OS Today's Activity Card
+                  const TodaysActivityCard(),
                   const SizedBox(height: 16),
 
                   FutureBuilder<double>(

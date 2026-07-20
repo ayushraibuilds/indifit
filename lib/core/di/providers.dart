@@ -19,6 +19,9 @@ final dioProvider = Provider<Dio>((ref) {
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       sendTimeout: const Duration(seconds: 15),
+      headers: {
+        'x-indifit-key': const String.fromEnvironment('INDIFIT_API_KEY', defaultValue: 'indifit_secret_key_v1'),
+      },
     ),
   );
   if (kDebugMode) {

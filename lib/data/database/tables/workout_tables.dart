@@ -35,6 +35,7 @@ class WorkoutSets extends Table {
   BoolColumn get isWarmUp => boolean().withDefault(const Constant(false))();
   TextColumn get setNotes => text().nullable()();
   TextColumn get uuid => text().nullable()();
+  TextColumn get setType => text().withDefault(const Constant('working'))(); // "working", "warmup", "dropset", "failure", "amrap"
 }
 
 class BodyMeasurements extends Table {

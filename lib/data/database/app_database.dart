@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 import 'tables/food_tables.dart';
+import 'tables/user_tables.dart';
 import 'tables/workout_tables.dart';
 
 part 'app_database.g.dart';
@@ -21,14 +22,17 @@ part 'app_database.g.dart';
   WorkoutRoutines,
   RoutineDays,
   RoutineExercises,
-  WorkoutDrafts
+  WorkoutDrafts,
+  UserProfiles,
+  MealTemplates,
+  MealTemplateItems,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -46,6 +50,14 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(foodLogs, foodLogs.uuid);
             await m.addColumn(workoutSessions, workoutSessions.uuid);
             await m.addColumn(workoutSets, workoutSets.uuid);
+          }
+          if (from < 5) {
+            await m.createTable(userProfiles);
+          }
+          if (from < 6) {
+            await m.createTable(mealTemplates);
+            await m.createTable(mealTemplateItems);
+            await m.addColumn(workoutSets, workoutSets.setType);
           }
         },
         onCreate: (m) async {

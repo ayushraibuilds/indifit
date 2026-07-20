@@ -32,7 +32,12 @@ class FoodApiResult {
 class FoodApiService {
   final Dio _dio;
 
-  FoodApiService([Dio? dio]) : _dio = dio ?? Dio();
+  FoodApiService([Dio? dio])
+      : _dio = dio ??
+            Dio(BaseOptions(
+              connectTimeout: const Duration(seconds: 3),
+              receiveTimeout: const Duration(seconds: 5),
+            ));
 
   // 1. Fetch product by barcode (Open Food Facts v2 API)
   Future<FoodApiResult?> fetchByBarcode(String barcode) async {
