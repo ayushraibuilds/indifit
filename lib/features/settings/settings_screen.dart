@@ -1053,6 +1053,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                   const SizedBox(height: 24),
 
+                  Center(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        showLicensePage(
+                          context: context,
+                          applicationName: 'IndiFit',
+                          applicationVersion: '1.0.0',
+                          applicationIcon: const Icon(Icons.fitness_center_rounded, size: 32, color: AppColors.primary),
+                        );
+                      },
+                      icon: const Icon(Icons.info_outline_rounded, size: 18),
+                      label: const Text('Open Source Licenses & Attributions'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textSecondary,
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
                   // App version
                   Center(
                     child: Text(
