@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_api_service.dart';
 import '../../data/repositories/food_repository.dart';
@@ -307,7 +308,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             // Search loading indicator or results list
             Expanded(
               child: _searching
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  ? const SkeletonList(count: 6)
                   : _searchController.text.isEmpty
                       ? _buildEmptyState()
                       : ListView(
