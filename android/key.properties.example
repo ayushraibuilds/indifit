@@ -1,0 +1,6 @@
+# Template for Android Production Release Keystore Configuration
+# Copy this file to key.properties and update with your release credentials
+storePassword=<YOUR_RELEASE_STORE_PASSWORD>
+keyPassword=<YOUR_RELEASE_KEY_PASSWORD>
+keyAlias=upload
+storeFile=<PATH_TO_YOUR_RELEASE_KEYSTORE_FILE>

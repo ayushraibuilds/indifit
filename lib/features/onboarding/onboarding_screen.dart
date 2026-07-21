@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
+import '../../core/utils/tdee_calculator.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../dashboard/main_navigation_scaffold.dart';
 
@@ -99,61 +100,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _weight = double.tryParse(_weightController.text) ?? 70.0;
     _targetWeight = double.tryParse(_targetWeightController.text) ?? _weight;
 
-    // 1. Calculate BMR
-    double bmr;
-    if (_sex == 'male') {
-      bmr = (10 * _weight) + (6.25 * _height) - (5 * _age) + 5;
-    } else {
-      bmr = (10 * _weight) + (6.25 * _height) - (5 * _age) - 161;
-    }
+    final gender = _sex == 'female' ? Gender.female : Gender.male;
+    final actLevel = switch (_activityLevel) {
+      'sedentary' => ActivityLevel.sedentary,
+      'light' => ActivityLevel.lightlyActive,
+      'active' => ActivityLevel.veryActive,
+      _ => ActivityLevel.moderatelyActive,
+    };
+    final fitnessGoal = switch (_goal) {
+      'lose' => FitnessGoal.weightLoss,
+      'gain' => FitnessGoal.muscleGain,
+      _ => FitnessGoal.maintain,
+    };
 
-    // 2. Calculate TDEE
-    double activityMultiplier;
-    switch (_activityLevel) {
-      case 'sedentary':
-        activityMultiplier = 1.2;
-        break;
-      case 'light':
-        activityMultiplier = 1.375;
-        break;
-      case 'moderate':
-        activityMultiplier = 1.55;
-        break;
-      case 'active':
-        activityMultiplier = 1.725;
-        break;
-      default:
-        activityMultiplier = 1.375;
-    }
-    double tdee = bmr * activityMultiplier;
+    final bmr = TdeeCalculator.calculateBmr(weightKg: _weight, heightCm: _height, ageYears: _age, gender: gender);
+    final tdee = TdeeCalculator.calculateTdee(bmr: bmr, activityLevel: actLevel);
+    final macros = TdeeCalculator.calculateMacros(tdee: tdee, goal: fitnessGoal, weightKg: _weight);
 
-    // 3. Goal Adjustment
-    double dailyCalories;
-    if (_goal == 'lose') {
-      dailyCalories = tdee - 500; // Caloric deficit
-    } else if (_goal == 'gain') {
-      dailyCalories = tdee + 300; // Caloric surplus
-    } else {
-      dailyCalories = tdee; // Maintenance
-    }
-    
-    // Clamp calories to healthy limits
-    if (dailyCalories < 1200) dailyCalories = 1200;
-
-    // 4. Calculate Macronutrients
-    // Protein: 2.0g per kg of bodyweight for active gym-goers
-    double dailyProtein = _weight * 2.0;
-    if (dailyProtein < 50) dailyProtein = 50;
-
-    // Fat: 22% of daily calories
-    double dailyFat = (dailyCalories * 0.22) / 9;
-    if (dailyFat < 30) dailyFat = 30;
-
-    // Carbs: Remaining calories
-    double proteinCal = dailyProtein * 4;
-    double fatCal = dailyFat * 9;
-    double dailyCarbs = (dailyCalories - proteinCal - fatCal) / 4;
-    if (dailyCarbs < 80) dailyCarbs = 80;
+    double dailyCalories = macros.calories.toDouble();
+    double dailyProtein = macros.proteinG;
+    double dailyCarbs = macros.carbsG;
+    double dailyFat = macros.fatG;
 
     // 5. Store targets in SharedPreferences
     final prefs = await SharedPreferences.getInstance();

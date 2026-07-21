@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/theme/colors.dart';
 import '../../core/config/app_config.dart';
 import '../../core/di/providers.dart';
+import '../../core/utils/natural_meal_parser.dart';
 import '../../data/repositories/food_repository.dart';
 
 class AiMealLoggerScreen extends ConsumerStatefulWidget {
@@ -330,6 +331,20 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
+                  ActionChip(
+                    avatar: const Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.primary),
+                    label: const Text('Parse Items', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      final items = NaturalMealParser.parse(_textController.text);
+                      if (items.isNotEmpty) {
+                        final summary = items.map((i) => '${i.quantity} ${i.unit} ${i.foodName}').join(', ');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Parsed ${items.length} items: $summary')),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 8),
                   ActionChip(
                     avatar: const Icon(Icons.record_voice_over, size: 14, color: AppColors.primary),
                     label: const Text('2 rotis + paneer', style: TextStyle(fontSize: 11)),

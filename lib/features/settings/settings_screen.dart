@@ -12,6 +12,7 @@ import '../../core/di/providers.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/encryption_helper.dart';
+import '../../core/utils/csv_exporter.dart';
 import '../../data/database/app_database.dart';
 import 'health_sync_hub_screen.dart';
 import 'widgets/backup_restore_card.dart';
@@ -257,6 +258,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           SnackBar(content: Text('Failed to share file: $e'), backgroundColor: AppColors.danger),
         );
       }
+    }
+  }
+
+  Future<void> _exportCsvData() async {
+    final db = ref.read(databaseProvider);
+    final foodLogs = await db.select(db.foodLogs).get();
+    final foodCsv = CsvExporter.exportFoodLogsToCsv(foodLogs);
+
+    final sessions = await db.select(db.workoutSessions).get();
+    final sets = await db.select(db.workoutSets).get();
+    final workoutCsv = CsvExporter.exportWorkoutSessionsToCsv(sessions, sets);
+
+    final fullCsv = "=== FOOD LOGS ===\n$foodCsv\n\n=== WORKOUT SESSIONS ===\n$workoutCsv";
+    await Clipboard.setData(ClipboardData(text: fullCsv));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Food & Workout data copied as CSV to clipboard!')),
+      );
     }
   }
 
@@ -952,6 +972,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   BackupRestoreCard(
                     onExport: _exportData,
                     onRestore: _showRestoreDialog,
+                  ),
+                  const SizedBox(height: 8),
+
+                  ElevatedButton.icon(
+                    onPressed: _exportCsvData,
+                    icon: const Icon(Icons.table_chart_rounded, color: AppColors.primary),
+                    label: const Text('Export Food & Workout Data (CSV)'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary.withOpacity(0.12),
+                      foregroundColor: AppColors.primary,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+                      ),
+                      elevation: 0,
+                    ),
                   ),
                   const SizedBox(height: 16),
 
