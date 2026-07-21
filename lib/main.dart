@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'core/di/providers.dart';
 import 'core/di/theme_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/services/auto_backup_service.dart';
