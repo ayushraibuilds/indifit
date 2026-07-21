@@ -6,7 +6,8 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 
 class CustomFoodEditorScreen extends ConsumerStatefulWidget {
-  const CustomFoodEditorScreen({super.key});
+  final String? initialBarcode;
+  const CustomFoodEditorScreen({super.key, this.initialBarcode});
 
   @override
   ConsumerState<CustomFoodEditorScreen> createState() => _CustomFoodEditorScreenState();
@@ -16,6 +17,7 @@ class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen>
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _nameHindiController = TextEditingController();
+  final _brandController = TextEditingController();
   final _caloriesController = TextEditingController();
   final _proteinController = TextEditingController();
   final _carbsController = TextEditingController();
@@ -28,6 +30,7 @@ class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen>
   void dispose() {
     _nameController.dispose();
     _nameHindiController.dispose();
+    _brandController.dispose();
     _caloriesController.dispose();
     _proteinController.dispose();
     _carbsController.dispose();
@@ -53,6 +56,9 @@ class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen>
       name: _nameController.text.trim(),
       nameHindi: _nameHindiController.text.trim().isNotEmpty
           ? Value(_nameHindiController.text.trim())
+          : const Value.absent(),
+      brand: _brandController.text.trim().isNotEmpty
+          ? Value(_brandController.text.trim())
           : const Value.absent(),
       calories: calories,
       proteinG: protein,
@@ -110,6 +116,14 @@ class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen>
                 decoration: const InputDecoration(
                   labelText: 'Food Name (Hindi/Optional)',
                   hintText: 'e.g., पनीर भुर्जी',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _brandController,
+                decoration: const InputDecoration(
+                  labelText: 'Brand (Optional)',
+                  hintText: 'e.g., Amul, Mother Dairy, Haldirams',
                 ),
               ),
               const SizedBox(height: 16),

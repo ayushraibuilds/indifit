@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final healthServiceProvider = Provider<HealthService>((ref) {
   return HealthService();
@@ -30,13 +31,28 @@ class HealthService {
     HealthDataType.STEPS,
     HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.SLEEP_SESSION,
+    HealthDataType.WEIGHT,
+    HealthDataType.WORKOUT,
   ];
 
   static const List<HealthDataAccess> _permissions = [
     HealthDataAccess.READ,
     HealthDataAccess.READ,
     HealthDataAccess.READ,
+    HealthDataAccess.READ_WRITE,
+    HealthDataAccess.READ,
   ];
+
+  Future<String?> getLastSyncTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('health_last_sync_time');
+  }
+
+  Future<void> setLastSyncTime([DateTime? time]) async {
+    final prefs = await SharedPreferences.getInstance();
+    final t = time ?? DateTime.now();
+    await prefs.setString('health_last_sync_time', t.toIso8601String());
+  }
 
   /// Request permissions from the native Health OS SDK
   Future<bool> requestPermissions() async {
@@ -90,6 +106,8 @@ class HealthService {
         }
       }
 
+      await setLastSyncTime(now);
+
       return HealthDataSummary(
         steps: steps,
         activeCalories: activeCals,
@@ -101,6 +119,42 @@ class HealthService {
         isConnected: false,
         statusMessage: 'Health sync unavailable: $e',
       );
+    }
+  }
+
+  /// Fetch outdoor walking/running workout activities
+  Future<List<Map<String, dynamic>>> importOutdoorActivities() async {
+    try {
+      await _health.configure();
+      final now = DateTime.now();
+      final startTime = now.subtract(const Duration(days: 7));
+
+      final data = await _health.getHealthDataFromTypes(
+        startTime: startTime,
+        endTime: now,
+        types: [HealthDataType.WORKOUT],
+      );
+
+      final List<Map<String, dynamic>> activities = [];
+      for (final p in data) {
+        final val = p.value;
+        if (val is WorkoutHealthValue) {
+          final typeStr = val.workoutActivityType.name.toLowerCase();
+          if (typeStr.contains('walking') || typeStr.contains('running')) {
+            final duration = p.dateTo.difference(p.dateFrom).inMinutes;
+            final cals = val.totalEnergyBurned ?? 0;
+            activities.add({
+              'title': typeStr.contains('running') ? 'Outdoor Run' : 'Outdoor Walk',
+              'durationMinutes': duration,
+              'calories': cals,
+              'date': p.dateFrom,
+            });
+          }
+        }
+      }
+      return activities;
+    } catch (_) {
+      return [];
     }
   }
 
@@ -142,3 +196,4 @@ class HealthService {
     }
   }
 }
+

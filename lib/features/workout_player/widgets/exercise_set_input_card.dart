@@ -9,9 +9,14 @@ class ExerciseSetInputCard extends StatelessWidget {
   final int currentSetIndex;
   final TextEditingController weightController;
   final TextEditingController repsController;
+  final TextEditingController durationController;
+  final TextEditingController distanceController;
+  final TextEditingController inclineController;
   final bool isWarmUp;
+  final String selectedSetType;
   final int? selectedRpe;
   final ValueChanged<bool> onWarmUpChanged;
+  final ValueChanged<String> onSetTypeChanged;
   final ValueChanged<int?> onRpeChanged;
   final VoidCallback onCompleteSet;
 
@@ -21,9 +26,14 @@ class ExerciseSetInputCard extends StatelessWidget {
     required this.currentSetIndex,
     required this.weightController,
     required this.repsController,
+    required this.durationController,
+    required this.distanceController,
+    required this.inclineController,
     required this.isWarmUp,
+    required this.selectedSetType,
     required this.selectedRpe,
     required this.onWarmUpChanged,
+    required this.onSetTypeChanged,
     required this.onRpeChanged,
     required this.onCompleteSet,
   });
@@ -61,31 +71,20 @@ class ExerciseSetInputCard extends StatelessWidget {
                   'Set ${currentSetIndex + 1} of ${currentExercise.sets}',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 20),
-                      tooltip: 'Plate Calculator',
-                      onPressed: () {
-                        final double w = double.tryParse(weightController.text) ?? 20.0;
-                        showModalBottomSheet(
-                          context: context,
-                          backgroundColor: AppColors.surface,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                          ),
-                          builder: (context) => PlateCalculatorSheet(targetWeight: w),
-                        );
-                      },
-                    ),
-                    FilterChip(
-                      label: const Text('Warm-up', style: TextStyle(fontSize: 11)),
-                      selected: isWarmUp,
-                      selectedColor: Colors.orange.withValues(alpha: 0.2),
-                      checkmarkColor: Colors.orange,
-                      onSelected: (val) => onWarmUpChanged(val),
-                    ),
-                  ],
+                IconButton(
+                  icon: const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 20),
+                  tooltip: 'Plate Calculator',
+                  onPressed: () {
+                    final double w = double.tryParse(weightController.text) ?? 20.0;
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: AppColors.surface,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
+                      builder: (context) => PlateCalculatorSheet(targetWeight: w),
+                    );
+                  },
                 ),
               ],
             ),
@@ -114,6 +113,80 @@ class ExerciseSetInputCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            if (currentExercise.exerciseName.toLowerCase().contains('run') ||
+                currentExercise.exerciseName.toLowerCase().contains('treadmill') ||
+                currentExercise.exerciseName.toLowerCase().contains('cardio') ||
+                currentExercise.exerciseName.toLowerCase().contains('cycle') ||
+                currentExercise.exerciseName.toLowerCase().contains('cycling') ||
+                currentExercise.exerciseName.toLowerCase().contains('elliptical') ||
+                currentExercise.exerciseName.toLowerCase().contains('walk') ||
+                currentExercise.exerciseName.toLowerCase().contains('swim')) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: durationController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Duration',
+                        suffixText: 'sec',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: distanceController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Distance',
+                        suffixText: 'km',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: inclineController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Incline',
+                        suffixText: '%',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 16),
+            const Text('Set Type', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  {'id': 'working', 'label': 'Working'},
+                  {'id': 'warmup', 'label': 'Warm-up'},
+                  {'id': 'dropset', 'label': 'Drop Set'},
+                  {'id': 'amrap', 'label': 'AMRAP'},
+                  {'id': 'failure', 'label': 'Failure'},
+                ].map((type) {
+                  final isSelected = selectedSetType == type['id'];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6.0),
+                    child: ChoiceChip(
+                      label: Text(type['label']!, style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : AppColors.textSecondary)),
+                      selected: isSelected,
+                      selectedColor: AppColors.primary,
+                      onSelected: (val) {
+                        if (val) onSetTypeChanged(type['id']!);
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
             const SizedBox(height: 16),
             const Text('Rate of Perceived Exertion (RPE)', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),

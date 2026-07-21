@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/colors.dart';
+import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/meal_plan_service.dart';
 
 class AiMealPlannerScreen extends ConsumerStatefulWidget {
@@ -395,7 +396,71 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
     );
   }
 
+  Future<void> _logPlannedMeal(String title, String description) async {
+    if (description == 'N/A' || description.trim().isEmpty) return;
+
+    final mealType = title.toLowerCase() == 'snacks' ? 'snack' : title.toLowerCase();
+
+    // Default macro fallbacks in case regex fails to parse
+    int calories = 300;
+    double protein = 15.0;
+    double carbs = 40.0;
+    double fat = 10.0;
+
+    // Try to parse calories (e.g., "550 kcal")
+    final calMatch = RegExp(r'(\d+)\s*kcal', caseSensitive: false).firstMatch(description);
+    if (calMatch != null) {
+      calories = int.tryParse(calMatch.group(1)!) ?? calories;
+    }
+
+    // Try to parse protein (e.g., "P: 28g" or "protein: 28g")
+    final proteinMatch = RegExp(r'(?:p|protein):\s*(\d+(?:\.\d+)?)\s*g', caseSensitive: false).firstMatch(description);
+    if (proteinMatch != null) {
+      protein = double.tryParse(proteinMatch.group(1)!) ?? protein;
+    }
+
+    // Try to parse carbs (e.g., "C: 45g" or "carbs: 45g")
+    final carbsMatch = RegExp(r'(?:c|carbs):\s*(\d+(?:\.\d+)?)\s*g', caseSensitive: false).firstMatch(description);
+    if (carbsMatch != null) {
+      carbs = double.tryParse(carbsMatch.group(1)!) ?? carbs;
+    }
+
+    // Try to parse fat (e.g., "F: 12g" or "fat: 12g")
+    final fatMatch = RegExp(r'(?:f|fat):\s*(\d+(?:\.\d+)?)\s*g', caseSensitive: false).firstMatch(description);
+    if (fatMatch != null) {
+      fat = double.tryParse(fatMatch.group(1)!) ?? fat;
+    }
+
+    // Clean up the name by removing macro text suffix
+    String name = description.split(RegExp(r'\s*-\s*|\s*\|')).first.trim();
+    if (name.length > 60) {
+      name = name.substring(0, 57) + '...';
+    }
+
+    final repo = ref.read(foodRepositoryProvider);
+    await repo.logFoodEntry(
+      name: name,
+      calories: calories,
+      proteinG: protein,
+      carbsG: carbs,
+      fatG: fat,
+      servingLogged: 1.0,
+      servingUnit: 'serving',
+      mealType: mealType,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Logged planned meal "$name" to ${mealType.toUpperCase()}!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
   Widget _buildMealSectionCard(String title, String desc, IconData icon) {
+    final canLog = desc != 'N/A' && desc.trim().isNotEmpty;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -416,7 +481,13 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                   ),
                 ],
               ),
-            )
+            ),
+            if (canLog)
+              IconButton(
+                icon: const Icon(Icons.add_task_rounded, color: AppColors.primary, size: 20),
+                tooltip: 'Log This Meal',
+                onPressed: () => _logPlannedMeal(title, desc),
+              ),
           ],
         ),
       ),

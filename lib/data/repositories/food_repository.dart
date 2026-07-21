@@ -1,7 +1,10 @@
+import 'dart:convert' show jsonDecode;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
+import '../../core/utils/app_logger.dart';
 import '../database/app_database.dart';
 
 final foodRepositoryProvider = Provider<FoodRepository>((ref) {
@@ -351,6 +354,195 @@ class FoodRepository {
     return (_db.update(_db.mealTemplates)..where((t) => t.id.equals(templateId)))
         .write(MealTemplatesCompanion(name: Value(newName.trim())));
   }
+
+  Future<List<FoodItem>> getRecentFoods(int limit) async {
+    final query = 'SELECT name, food_item_id, calories, protein_g, carbs_g, fat_g, serving_unit, COUNT(*) as log_count '
+        'FROM food_logs '
+        'GROUP BY name '
+        'ORDER BY log_count DESC, max(logged_at) DESC '
+        'LIMIT ?';
+    final rows = await _db.customSelect(query, variables: [Variable.withInt(limit)]).get();
+
+    return rows.map((row) {
+      final name = row.read<String>('name');
+      final foodItemId = row.readNullable<int>('food_item_id');
+      final calories = row.read<int>('calories');
+      final protein = row.read<double>('protein_g');
+      final carbs = row.read<double>('carbs_g');
+      final fat = row.read<double>('fat_g');
+      final unit = row.read<String>('serving_unit');
+
+      return FoodItem(
+        id: foodItemId ?? -1,
+        name: name,
+        nameHindi: null,
+        calories: calories,
+        proteinG: protein,
+        carbsG: carbs,
+        fatG: fat,
+        fiberG: null,
+        servingSize: 1.0,
+        servingUnit: unit,
+        category: 'Recent',
+        isCustom: false,
+      );
+    }).toList();
+  }
+
+  /// Import a regional food pack from a JSON asset path, tagging them with regionPack.
+  Future<void> importRegionalPack({
+    required String packId,
+    required String assetPath,
+  }) async {
+    try {
+      final jsonStr = await rootBundle.loadString(assetPath);
+      final List<dynamic> list = jsonDecode(jsonStr);
+
+      await _db.transaction(() async {
+        // First delete any existing items from this regional pack to avoid duplicates
+        await (_db.delete(_db.foodItems)..where((t) => t.regionPack.equals(packId))).go();
+
+        final toInsert = list.map((raw) {
+          return FoodItemsCompanion.insert(
+            name: raw['name'] as String,
+            nameHindi: Value(raw['name_hindi'] as String?),
+            calories: raw['calories'] as int,
+            proteinG: (raw['protein_g'] as num).toDouble(),
+            carbsG: (raw['carbs_g'] as num).toDouble(),
+            fatG: (raw['fat_g'] as num).toDouble(),
+            fiberG: Value((raw['fiber_g'] as num?)?.toDouble() ?? 0.0),
+            servingSize: (raw['serving_size'] as num).toDouble(),
+            servingUnit: raw['serving_unit'] as String,
+            category: raw['category'] as String,
+            regionPack: Value(packId),
+          );
+        }).toList();
+
+        await _db.batch((b) => b.insertAll(_db.foodItems, toInsert));
+      });
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to import regional food pack: $packId', e, stackTrace, 'FoodRepository');
+      rethrow;
+    }
+  }
+
+  /// Remove a regional pack (delete from DB)
+  Future<void> removeRegionalPack(String packId) async {
+    await (_db.delete(_db.foodItems)..where((t) => t.regionPack.equals(packId))).go();
+  }
+
+  /// Check if a regional pack is loaded (has items in DB)
+  Future<bool> isRegionalPackLoaded(String packId) async {
+    final query = _db.select(_db.foodItems)
+      ..where((t) => t.regionPack.equals(packId))
+      ..limit(1);
+    final results = await query.get();
+    return results.isNotEmpty;
+  }
+
+  // ────────────────────────────────────────
+  // Meal Templates API
+  // ────────────────────────────────────────
+
+  /// Get all saved meal templates with their items
+  Future<List<MealTemplateWithItems>> getMealTemplates() async {
+    final templates = await _db.select(_db.mealTemplates).get();
+    final List<MealTemplateWithItems> result = [];
+
+    for (final template in templates) {
+      final items = await (_db.select(_db.mealTemplateItems)
+            ..where((t) => t.templateId.equals(template.id)))
+          .get();
+      result.add(MealTemplateWithItems(template: template, items: items));
+    }
+    return result;
+  }
+
+  /// Create a new meal template with items
+  Future<int> createMealTemplate({
+    required String name,
+    required String defaultMealType,
+    required List<MealTemplateItemInput> items,
+  }) async {
+    return await _db.transaction(() async {
+      final templateId = await _db.into(_db.mealTemplates).insert(
+            MealTemplatesCompanion.insert(
+              name: name,
+              defaultMealType: Value(defaultMealType),
+            ),
+          );
+
+      for (final item in items) {
+        await _db.into(_db.mealTemplateItems).insert(
+              MealTemplateItemsCompanion.insert(
+                templateId: templateId,
+                name: item.name,
+                calories: item.calories,
+                proteinG: item.proteinG,
+                carbsG: item.carbsG,
+                fatG: item.fatG,
+                servingLogged: item.servingLogged,
+                servingUnit: item.servingUnit,
+              ),
+            );
+      }
+      return templateId;
+    });
+  }
+
+
+  /// Batch log all items from a template into food logs
+  Future<List<int>> logMealTemplate({
+    required int templateId,
+    required String targetMealType,
+    DateTime? targetDate,
+  }) async {
+    final templateItems = await (_db.select(_db.mealTemplateItems)
+          ..where((t) => t.templateId.equals(templateId)))
+        .get();
+
+    if (templateItems.isEmpty) return [];
+
+    final logDate = targetDate ?? DateTime.now();
+    final mealGroupId = const Uuid().v4();
+    final List<int> logIds = [];
+
+    for (final item in templateItems) {
+      final id = await logFoodEntry(
+        name: item.name,
+        calories: item.calories,
+        proteinG: item.proteinG,
+        carbsG: item.carbsG,
+        fatG: item.fatG,
+        servingLogged: item.servingLogged,
+        servingUnit: item.servingUnit,
+        mealType: targetMealType,
+        mealGroupId: mealGroupId,
+      );
+      logIds.add(id);
+    }
+    return logIds;
+  }
+}
+
+class MealTemplateItemInput {
+  final String name;
+  final int calories;
+  final double proteinG;
+  final double carbsG;
+  final double fatG;
+  final double servingLogged;
+  final String servingUnit;
+
+  const MealTemplateItemInput({
+    required this.name,
+    required this.calories,
+    required this.proteinG,
+    required this.carbsG,
+    required this.fatG,
+    required this.servingLogged,
+    required this.servingUnit,
+  });
 }
 
 class MealTemplateWithItems {
@@ -371,3 +563,4 @@ class MealTemplateWithItems {
 
   double get totalFatG => items.fold(0.0, (sum, i) => sum + i.fatG);
 }
+

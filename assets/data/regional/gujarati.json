@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Khaman Dhokla",
+    "name_hindi": "खमन ढोकला",
+    "calories": 160,
+    "protein_g": 6.0,
+    "carbs_g": 24.0,
+    "fat_g": 4.5,
+    "fiber_g": 2.0,
+    "serving_size": 2.0,
+    "serving_unit": "piece",
+    "category": "Snacks & Street Food"
+  },
+  {
+    "name": "Thepla (Methi)",
+    "name_hindi": "मेथी थेपला",
+    "calories": 115,
+    "protein_g": 3.2,
+    "carbs_g": 18.0,
+    "fat_g": 3.5,
+    "fiber_g": 1.8,
+    "serving_size": 1.0,
+    "serving_unit": "piece",
+    "category": "Grains & Breads"
+  },
+  {
+    "name": "Gujarati Kadhi",
+    "name_hindi": "गुजराती कढ़ी",
+    "calories": 95,
+    "protein_g": 2.8,
+    "carbs_g": 11.0,
+    "fat_g": 4.2,
+    "fiber_g": 0.5,
+    "serving_size": 1.0,
+    "serving_unit": "katori",
+    "category": "Dals & Legumes"
+  },
+  {
+    "name": "Undhiyu",
+    "name_hindi": "उंधियू",
+    "calories": 280,
+    "protein_g": 5.5,
+    "carbs_g": 32.0,
+    "fat_g": 15.0,
+    "fiber_g": 6.0,
+    "serving_size": 1.0,
+    "serving_unit": "katori",
+    "category": "Vegetables & Sabjis"
+  },
+  {
+    "name": "Shrikhand",
+    "name_hindi": "श्रीखंड",
+    "calories": 250,
+    "protein_g": 5.0,
+    "carbs_g": 38.0,
+    "fat_g": 8.0,
+    "fiber_g": 0.0,
+    "serving_size": 0.5,
+    "serving_unit": "cup",
+    "category": "Paneer & Dairy"
+  }
+]

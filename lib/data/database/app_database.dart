@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'tables/food_tables.dart';
 import 'tables/user_tables.dart';
 import 'tables/workout_tables.dart';
+import 'tables/settings_tables.dart';
 
 part 'app_database.g.dart';
 
@@ -26,15 +27,15 @@ part 'app_database.g.dart';
   UserProfiles,
   MealTemplates,
   MealTemplateItems,
+  UserSettings,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.memory() : super(NativeDatabase.memory());
 
-  /// Schema v7: meal templates (v6) + food data quality reseed (household units,
-  /// expanded sabjis, explicit fiber values).
+  /// Schema v11: enriched fiber values & added 40+ Indian vegetable and sabji items
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -66,7 +67,24 @@ class AppDatabase extends _$AppDatabase {
             // or breaking existing food_logs foreign keys for matched names.
             await upsertSeededFoodsFromAsset();
           }
+          if (from < 8) {
+            await m.addColumn(foodItems, foodItems.brand);
+            await m.addColumn(foodItems, foodItems.regionPack);
+          }
+          if (from < 9) {
+            await m.addColumn(workoutSets, workoutSets.durationSeconds);
+            await m.addColumn(workoutSets, workoutSets.distanceKm);
+            await m.addColumn(workoutSets, workoutSets.inclinePercentage);
+          }
+          if (from < 10) {
+            await m.createTable(userSettings);
+          }
+          if (from < 11) {
+            await upsertSeededFoodsFromAsset();
+          }
         },
+
+
         onCreate: (m) async {
           await m.createAll();
           await seedFoodsFromAsset();

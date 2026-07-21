@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Masala Dosa",
+    "name_hindi": "मसाला डोसा",
+    "calories": 387,
+    "protein_g": 6.8,
+    "carbs_g": 62.0,
+    "fat_g": 12.0,
+    "fiber_g": 3.5,
+    "serving_size": 1.0,
+    "serving_unit": "piece",
+    "category": "Snacks & Street Food"
+  },
+  {
+    "name": "Idli with Sambar",
+    "name_hindi": "इडली सांभर",
+    "calories": 230,
+    "protein_g": 7.0,
+    "carbs_g": 44.0,
+    "fat_g": 2.5,
+    "fiber_g": 4.2,
+    "serving_size": 2.0,
+    "serving_unit": "piece",
+    "category": "Breakfast"
+  },
+  {
+    "name": "Medu Vada",
+    "name_hindi": "मेदु वड़ा",
+    "calories": 195,
+    "protein_g": 4.5,
+    "carbs_g": 22.0,
+    "fat_g": 10.0,
+    "fiber_g": 2.1,
+    "serving_size": 1.0,
+    "serving_unit": "piece",
+    "category": "Snacks & Street Food"
+  },
+  {
+    "name": "Coconut Chutney",
+    "name_hindi": "नारियल की चटनी",
+    "calories": 45,
+    "protein_g": 0.6,
+    "carbs_g": 2.2,
+    "fat_g": 3.8,
+    "fiber_g": 1.2,
+    "serving_size": 2.0,
+    "serving_unit": "tablespoon",
+    "category": "Healthy & Salads"
+  },
+  {
+    "name": "Tomato Rasam",
+    "name_hindi": "टमाटर रसम",
+    "calories": 60,
+    "protein_g": 1.2,
+    "carbs_g": 8.0,
+    "fat_g": 2.5,
+    "fiber_g": 1.5,
+    "serving_size": 1.0,
+    "serving_unit": "katori",
+    "category": "Vegetables & Sabjis"
+  }
+]

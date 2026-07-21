@@ -17,6 +17,7 @@ class WorkoutPlayerState {
   final WorkoutSet? bestPrSet;
   final double suggestedWeight;
   final bool isWarmUp;
+  final String selectedSetType;
   final int? selectedRpe;
   final bool showPrConfetti;
   final String prExerciseName;
@@ -33,6 +34,7 @@ class WorkoutPlayerState {
     this.bestPrSet,
     this.suggestedWeight = 20.0,
     this.isWarmUp = false,
+    this.selectedSetType = 'working',
     this.selectedRpe,
     this.showPrConfetti = false,
     this.prExerciseName = '',
@@ -50,6 +52,7 @@ class WorkoutPlayerState {
     WorkoutSet? bestPrSet,
     double? suggestedWeight,
     bool? isWarmUp,
+    String? selectedSetType,
     int? selectedRpe,
     bool? showPrConfetti,
     String? prExerciseName,
@@ -66,6 +69,7 @@ class WorkoutPlayerState {
       bestPrSet: bestPrSet ?? this.bestPrSet,
       suggestedWeight: suggestedWeight ?? this.suggestedWeight,
       isWarmUp: isWarmUp ?? this.isWarmUp,
+      selectedSetType: selectedSetType ?? this.selectedSetType,
       selectedRpe: selectedRpe,
       showPrConfetti: showPrConfetti ?? this.showPrConfetti,
       prExerciseName: prExerciseName ?? this.prExerciseName,
@@ -149,7 +153,17 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
   }
 
   void toggleWarmUp(bool val) {
-    state = state.copyWith(isWarmUp: val);
+    state = state.copyWith(
+      isWarmUp: val,
+      selectedSetType: val ? 'warmup' : 'working',
+    );
+  }
+
+  void setSelectedSetType(String setType) {
+    state = state.copyWith(
+      selectedSetType: setType,
+      isWarmUp: setType == 'warmup',
+    );
   }
 
   void setSelectedRpe(int? rpe) {
@@ -163,7 +177,13 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     }
   }
 
-  Future<bool> recordSet({required double weight, required int reps}) async {
+  Future<bool> recordSet({
+    required double weight,
+    required int reps,
+    int? durationSeconds,
+    double? distanceKm,
+    double? inclinePercentage,
+  }) async {
     final currentEx = state.activeExercises[state.currentExerciseIndex];
     final repo = _ref.read(workoutRepositoryProvider);
     final previousPr = await repo.getPersonalRecord(currentEx.exerciseName);
@@ -191,6 +211,10 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
       isPr: Value(isPr),
       isWarmUp: Value(state.isWarmUp),
       rpe: Value(state.selectedRpe),
+      setType: Value(state.selectedSetType),
+      durationSeconds: Value(durationSeconds),
+      distanceKm: Value(distanceKm),
+      inclinePercentage: Value(inclinePercentage),
     );
 
     final updatedLoggedSets = [...state.loggedSets, newSet];

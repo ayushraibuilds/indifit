@@ -91,7 +91,83 @@ class NotificationSettingsSection extends ConsumerWidget {
           value: state.remindWeekly,
           onChanged: (val) => controller.toggleReminder(NotificationService.prefRemindWeekly, val),
         ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.do_not_disturb_on_rounded, color: Colors.indigo, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Quiet Hours',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                    Switch(
+                      value: state.quietHoursEnabled,
+                      activeColor: AppColors.primary,
+                      onChanged: (val) => controller.updateQuietHours(enabled: val),
+                    ),
+                  ],
+                ),
+                if (state.quietHoursEnabled) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'No notification alerts will sound during these hours:',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          value: state.quietHoursStart,
+                          decoration: const InputDecoration(
+                            labelText: 'Start Time',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          items: List.generate(24, (h) => DropdownMenuItem(value: h, child: Text(_formatHour(h)))),
+                          onChanged: (val) => controller.updateQuietHours(start: val),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          value: state.quietHoursEnd,
+                          decoration: const InputDecoration(
+                            labelText: 'End Time',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          items: List.generate(24, (h) => DropdownMenuItem(value: h, child: Text(_formatHour(h)))),
+                          onChanged: (val) => controller.updateQuietHours(end: val),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
+
+  String _formatHour(int h) {
+    if (h == 0) return '12:00 AM';
+    if (h == 12) return '12:00 PM';
+    if (h < 12) return '$h:00 AM';
+    return '${h - 12}:00 PM';
+  }
 }
+
