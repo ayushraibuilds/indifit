@@ -6,13 +6,19 @@ import '../../../data/database/app_database.dart';
 import '../../../data/repositories/food_repository.dart';
 import '../../food_log/ai_meal_logger_screen.dart';
 import '../../food_log/food_search_screen.dart';
+import '../../food_log/meal_templates_screen.dart';
 import '../../food_log/widgets/edit_food_log_sheet.dart';
 import '../dashboard_controller.dart';
 
 class DashboardMealSection extends ConsumerWidget {
   final List<FoodLog> logs;
+  final DateTime? selectedDate;
 
-  const DashboardMealSection({super.key, required this.logs});
+  const DashboardMealSection({
+    super.key,
+    required this.logs,
+    this.selectedDate,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,13 +30,13 @@ class DashboardMealSection extends ConsumerWidget {
           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
         ),
         const SizedBox(height: 12),
-        _MealCard(title: 'Breakfast', type: 'breakfast', allLogs: logs),
+        _MealCard(title: 'Breakfast', type: 'breakfast', allLogs: logs, selectedDate: selectedDate ?? DateTime.now()),
         const SizedBox(height: 8),
-        _MealCard(title: 'Lunch', type: 'lunch', allLogs: logs),
+        _MealCard(title: 'Lunch', type: 'lunch', allLogs: logs, selectedDate: selectedDate ?? DateTime.now()),
         const SizedBox(height: 8),
-        _MealCard(title: 'Dinner', type: 'dinner', allLogs: logs),
+        _MealCard(title: 'Dinner', type: 'dinner', allLogs: logs, selectedDate: selectedDate ?? DateTime.now()),
         const SizedBox(height: 8),
-        _MealCard(title: 'Snacks', type: 'snack', allLogs: logs),
+        _MealCard(title: 'Snacks', type: 'snack', allLogs: logs, selectedDate: selectedDate ?? DateTime.now()),
       ],
     );
   }
@@ -40,11 +46,13 @@ class _MealCard extends ConsumerWidget {
   final String title;
   final String type;
   final List<FoodLog> allLogs;
+  final DateTime selectedDate;
 
   const _MealCard({
     required this.title,
     required this.type,
     required this.allLogs,
+    required this.selectedDate,
   });
 
   void _showAddMealSheet(BuildContext context) {
@@ -80,6 +88,21 @@ class _MealCard extends ConsumerWidget {
               ),
               const Divider(color: AppColors.border),
               ListTile(
+                leading: const Icon(Icons.bookmark_outline_rounded, color: AppColors.warning),
+                title: const Text('Meal Templates', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('One-tap log your usual multi-item meals'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MealTemplatesScreen(mealType: type),
+                    ),
+                  );
+                },
+              ),
+              const Divider(color: AppColors.border),
+              ListTile(
                 leading: const Icon(Icons.psychology_rounded, color: AppColors.success),
                 title: const Text('AI Meal Estimator', style: TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: const Text('Estimate calories & macros from photos or text'),
@@ -95,6 +118,145 @@ class _MealCard extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _saveAsTemplate(BuildContext context, WidgetRef ref, List<FoodLog> mealLogs) async {
+    final controller = TextEditingController(
+      text: 'My $title',
+    );
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Save as meal template'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: 'Template name',
+            hintText: 'e.g. Office $title',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (name == null || name.isEmpty) return;
+
+    try {
+      await ref.read(foodRepositoryProvider).saveMealTemplate(
+            name: name,
+            defaultMealType: type,
+            items: mealLogs,
+          );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Saved template “$name”'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not save template: $e'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  }
+
+  Future<void> _copyMeal(BuildContext context, WidgetRef ref, List<FoodLog> mealLogs) async {
+    // Prefer group id when all items share one; otherwise save+log via synthetic group.
+    final groupIds = mealLogs
+        .map((l) => l.mealGroupId)
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    final targetType = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final options = <String, String>{
+          'breakfast': 'Breakfast',
+          'lunch': 'Lunch',
+          'dinner': 'Dinner',
+          'snack': 'Snacks',
+        };
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Copy meal to…',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              ...options.entries.map(
+                (e) => ListTile(
+                  title: Text(e.value),
+                  trailing: e.key == type
+                      ? const Text('(same meal)', style: TextStyle(fontSize: 12, color: AppColors.textMuted))
+                      : null,
+                  onTap: () => Navigator.pop(ctx, e.key),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (targetType == null) return;
+
+    final repo = ref.read(foodRepositoryProvider);
+    final now = DateTime.now();
+
+    if (groupIds.length == 1) {
+      await repo.copyMealGroup(
+        groupId: groupIds.first,
+        targetDate: now,
+        targetMealType: targetType,
+      );
+    } else {
+      // Fallback: re-log each item as a fresh group under the target meal.
+      final tempId = await repo.saveMealTemplate(
+        name: '_copy_tmp_${now.millisecondsSinceEpoch}',
+        defaultMealType: targetType,
+        items: mealLogs,
+      );
+      await repo.logFromMealTemplate(templateId: tempId, mealType: targetType, loggedAt: now);
+      await repo.deleteMealTemplate(tempId);
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Copied $title → $targetType')),
     );
   }
 
@@ -129,39 +291,96 @@ class _MealCard extends ConsumerWidget {
                 children: [
                   const Text('No food logged yet.', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
                   const SizedBox(height: 8),
-                  FutureBuilder<List<FoodLog>>(
-                    future: ref.read(foodRepositoryProvider).getLastLoggedMeal(type),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                        final lastMeal = snapshot.data!;
-                        final cals = lastMeal.fold(0, (sum, item) => sum + item.calories);
-                        return TextButton.icon(
-                          onPressed: () async {
-                            await ref.read(dashboardControllerProvider.notifier).repeatLastMeal(type, lastMeal);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Repeated last $type!')),
-                              );
-                            }
-                          },
-                          icon: const Icon(Icons.history_rounded, size: 14),
-                          label: Text('Repeat Last ($cals kcal)', style: const TextStyle(fontSize: 12)),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MealTemplatesScreen(mealType: type),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.bookmark_outline_rounded, size: 14),
+                        label: const Text('Templates', style: TextStyle(fontSize: 12)),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.warning,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                      FutureBuilder<List<FoodLog>>(
+                        future: ref.read(foodRepositoryProvider).getLastLoggedMeal(type),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                            final lastMeal = snapshot.data!;
+                            final cals = lastMeal.fold(0, (sum, item) => sum + item.calories);
+                            return TextButton.icon(
+                              onPressed: () async {
+                                await ref.read(dashboardControllerProvider.notifier).repeatLastMeal(type, lastMeal);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Repeated last $type!')),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.history_rounded, size: 14),
+                              label: Text('Repeat Last ($cals kcal)', style: const TextStyle(fontSize: 12)),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
             )
-          else
+          else ...[
             ...mealLogs.map((log) => _LoggedItemRow(log: log)),
+            const Divider(color: AppColors.border, height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _saveAsTemplate(context, ref, mealLogs),
+                    icon: const Icon(Icons.bookmark_add_outlined, size: 16),
+                    label: const Text('Save as template', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.border),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _copyMeal(context, ref, mealLogs),
+                    icon: const Icon(Icons.copy_all_outlined, size: 16),
+                    label: const Text('Copy meal', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      side: const BorderSide(color: AppColors.border),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
         ],
       ),
     );

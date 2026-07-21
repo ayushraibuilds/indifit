@@ -31,8 +31,10 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.memory() : super(NativeDatabase.memory());
 
+  /// Schema v7: meal templates (v6) + food data quality reseed (household units,
+  /// expanded sabjis, explicit fiber values).
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -59,58 +61,134 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(mealTemplateItems);
             await m.addColumn(workoutSets, workoutSets.setType);
           }
+          if (from < 7) {
+            // Upsert improved offline food catalog without wiping custom foods
+            // or breaking existing food_logs foreign keys for matched names.
+            await upsertSeededFoodsFromAsset();
+          }
         },
         onCreate: (m) async {
-          // Create all database tables
           await m.createAll();
-
-          // 1. Seed Indian Foods Database from offline JSON asset
-          try {
-            final foodsJson = await rootBundle.loadString('assets/data/indian_foods.json');
-            final List<dynamic> foodsList = jsonDecode(foodsJson);
-            final foodCompanions = foodsList.map((item) {
-              return FoodItemsCompanion.insert(
-                name: item['name'],
-                nameHindi: Value(item['name_hindi']),
-                calories: item['calories'],
-                proteinG: (item['protein_g'] as num).toDouble(),
-                carbsG: (item['carbs_g'] as num).toDouble(),
-                fatG: (item['fat_g'] as num).toDouble(),
-                fiberG: Value((item['fiber_g'] as num?)?.toDouble()),
-                servingSize: (item['serving_size'] as num).toDouble(),
-                servingUnit: item['serving_unit'],
-                category: item['category'],
-              );
-            }).toList();
-            
-            await batch((b) => b.insertAll(foodItems, foodCompanions));
-          } catch (e) {
-            driftRuntimeOptions.defaultSerializer; // simple line to prevent lint warnings
-            // In a production app, we would log this to Sentry/Crashlytics
-          }
-
-          // 2. Seed Exercise Library from offline JSON asset
-          try {
-            final exercisesJson = await rootBundle.loadString('assets/data/exercises.json');
-            final List<dynamic> exercisesList = jsonDecode(exercisesJson);
-            final exerciseCompanions = exercisesList.map((item) {
-              return ExercisesCompanion.insert(
-                name: item['name'],
-                muscleGroups: (item['muscle_groups'] as List).join(','),
-                equipment: item['equipment'],
-                difficulty: item['difficulty'],
-                formCues: (item['form_cues'] as List).join('\n'),
-                commonMistakes: (item['common_mistakes'] as List).join('\n'),
-                youtubeId: Value(item['youtube_id']),
-              );
-            }).toList();
-
-            await batch((b) => b.insertAll(exercises, exerciseCompanions));
-          } catch (e) {
-            // Error handling
-          }
+          await seedFoodsFromAsset();
+          await seedExercisesFromAsset();
         },
       );
+
+  /// Full seed used on first install.
+  Future<void> seedFoodsFromAsset() async {
+    try {
+      final companions = await _loadFoodCompanionsFromAsset();
+      if (companions.isEmpty) return;
+      await batch((b) => b.insertAll(foodItems, companions));
+    } catch (_) {
+      // Seed failures are non-fatal; app still runs with empty catalog.
+    }
+  }
+
+  /// Upsert by name for non-custom rows; insert brand-new catalog items.
+  Future<void> upsertSeededFoodsFromAsset() async {
+    try {
+      final foodsList = await _loadFoodJsonList();
+      if (foodsList.isEmpty) return;
+
+      final existing = await select(foodItems).get();
+      final byName = <String, FoodItem>{
+        for (final item in existing.where((e) => !e.isCustom)) item.name: item,
+      };
+
+      final toInsert = <FoodItemsCompanion>[];
+      await transaction(() async {
+        for (final raw in foodsList) {
+          final name = raw['name'] as String;
+          final companionValues = FoodItemsCompanion(
+            name: Value(name),
+            nameHindi: Value(raw['name_hindi'] as String?),
+            calories: Value(raw['calories'] as int),
+            proteinG: Value((raw['protein_g'] as num).toDouble()),
+            carbsG: Value((raw['carbs_g'] as num).toDouble()),
+            fatG: Value((raw['fat_g'] as num).toDouble()),
+            fiberG: Value((raw['fiber_g'] as num?)?.toDouble() ?? 0.0),
+            servingSize: Value((raw['serving_size'] as num).toDouble()),
+            servingUnit: Value(raw['serving_unit'] as String),
+            category: Value(raw['category'] as String),
+            isCustom: const Value(false),
+          );
+
+          final match = byName[name];
+          if (match != null) {
+            await (update(foodItems)..where((t) => t.id.equals(match.id)))
+                .write(companionValues);
+          } else {
+            toInsert.add(FoodItemsCompanion.insert(
+              name: name,
+              nameHindi: Value(raw['name_hindi'] as String?),
+              calories: raw['calories'] as int,
+              proteinG: (raw['protein_g'] as num).toDouble(),
+              carbsG: (raw['carbs_g'] as num).toDouble(),
+              fatG: (raw['fat_g'] as num).toDouble(),
+              fiberG: Value((raw['fiber_g'] as num?)?.toDouble() ?? 0.0),
+              servingSize: (raw['serving_size'] as num).toDouble(),
+              servingUnit: raw['serving_unit'] as String,
+              category: raw['category'] as String,
+            ));
+          }
+        }
+        if (toInsert.isNotEmpty) {
+          await batch((b) => b.insertAll(foodItems, toInsert));
+        }
+      });
+    } catch (_) {
+      // Non-fatal; user keeps prior catalog.
+    }
+  }
+
+  Future<void> seedExercisesFromAsset() async {
+    try {
+      final exercisesJson =
+          await rootBundle.loadString('assets/data/exercises.json');
+      final List<dynamic> exercisesList = jsonDecode(exercisesJson);
+      final exerciseCompanions = exercisesList.map((item) {
+        return ExercisesCompanion.insert(
+          name: item['name'],
+          muscleGroups: (item['muscle_groups'] as List).join(','),
+          equipment: item['equipment'],
+          difficulty: item['difficulty'],
+          formCues: (item['form_cues'] as List).join('\n'),
+          commonMistakes: (item['common_mistakes'] as List).join('\n'),
+          youtubeId: Value(item['youtube_id']),
+        );
+      }).toList();
+      await batch((b) => b.insertAll(exercises, exerciseCompanions));
+    } catch (_) {
+      // Non-fatal
+    }
+  }
+
+  Future<List<dynamic>> _loadFoodJsonList() async {
+    final foodsJson =
+        await rootBundle.loadString('assets/data/indian_foods.json');
+    final decoded = jsonDecode(foodsJson);
+    if (decoded is List) return decoded;
+    return const [];
+  }
+
+  Future<List<FoodItemsCompanion>> _loadFoodCompanionsFromAsset() async {
+    final foodsList = await _loadFoodJsonList();
+    return foodsList.map((item) {
+      return FoodItemsCompanion.insert(
+        name: item['name'],
+        nameHindi: Value(item['name_hindi']),
+        calories: item['calories'],
+        proteinG: (item['protein_g'] as num).toDouble(),
+        carbsG: (item['carbs_g'] as num).toDouble(),
+        fatG: (item['fat_g'] as num).toDouble(),
+        fiberG: Value((item['fiber_g'] as num?)?.toDouble() ?? 0.0),
+        servingSize: (item['serving_size'] as num).toDouble(),
+        servingUnit: item['serving_unit'],
+        category: item['category'],
+      );
+    }).toList();
+  }
 }
 
 LazyDatabase _openConnection() {

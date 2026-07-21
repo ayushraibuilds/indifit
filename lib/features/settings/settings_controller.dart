@@ -14,6 +14,8 @@ import '../../core/utils/encryption_helper.dart';
 import '../../core/utils/csv_exporter.dart';
 import '../../data/database/app_database.dart';
 
+import '../../core/services/crash_reporting_service.dart';
+
 class SettingsState {
   final bool remindWorkout;
   final bool remindMeals;
@@ -21,6 +23,7 @@ class SettingsState {
   final bool remindEvening;
   final bool remindWeekly;
   final bool offlineOnly;
+  final bool crashReportingEnabled;
   final bool loading;
   final int waterGoal;
   final int glassSize;
@@ -32,6 +35,7 @@ class SettingsState {
     this.remindEvening = false,
     this.remindWeekly = false,
     this.offlineOnly = false,
+    this.crashReportingEnabled = true,
     this.loading = true,
     this.waterGoal = 8,
     this.glassSize = 250,
@@ -44,6 +48,7 @@ class SettingsState {
     bool? remindEvening,
     bool? remindWeekly,
     bool? offlineOnly,
+    bool? crashReportingEnabled,
     bool? loading,
     int? waterGoal,
     int? glassSize,
@@ -55,6 +60,7 @@ class SettingsState {
       remindEvening: remindEvening ?? this.remindEvening,
       remindWeekly: remindWeekly ?? this.remindWeekly,
       offlineOnly: offlineOnly ?? this.offlineOnly,
+      crashReportingEnabled: crashReportingEnabled ?? this.crashReportingEnabled,
       loading: loading ?? this.loading,
       waterGoal: waterGoal ?? this.waterGoal,
       glassSize: glassSize ?? this.glassSize,
@@ -78,6 +84,7 @@ class SettingsController extends StateNotifier<SettingsState> {
       remindEvening: prefs.getBool(NotificationService.prefRemindEvening) ?? false,
       remindWeekly: prefs.getBool(NotificationService.prefRemindWeekly) ?? false,
       offlineOnly: prefs.getBool('offline_only') ?? false,
+      crashReportingEnabled: prefs.getBool(CrashReportingService.prefCrashReportingEnabled) ?? true,
       waterGoal: prefs.getInt('water_goal') ?? 8,
       glassSize: prefs.getInt('water_glass_size') ?? 250,
       loading: false,
@@ -95,6 +102,11 @@ class SettingsController extends StateNotifier<SettingsState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('offline_only', value);
     state = state.copyWith(offlineOnly: value);
+  }
+
+  Future<void> toggleCrashReporting(bool value) async {
+    await CrashReportingService.setEnabled(value);
+    state = state.copyWith(crashReportingEnabled: value);
   }
 
   Future<void> updateWaterGoal(int goal) async {

@@ -334,6 +334,17 @@ class DataManagementSection extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
 
+        // Crash Reporting Toggle
+        SettingsReminderToggle(
+          icon: Icons.bug_report_rounded,
+          iconColor: Colors.amber,
+          title: 'Anonymous Crash Reporting',
+          subtitle: 'Send sanitized telemetry to help fix crashes. Zero food/body data is ever included.',
+          value: state.crashReportingEnabled,
+          onChanged: (val) => controller.toggleCrashReporting(val),
+        ),
+        const SizedBox(height: 12),
+
         // Health Sync Hub button
         ElevatedButton.icon(
           onPressed: () {

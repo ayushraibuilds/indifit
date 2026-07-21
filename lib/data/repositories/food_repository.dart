@@ -203,4 +203,171 @@ class FoodRepository {
 
     await _db.batch((b) => b.insertAll(_db.foodLogs, companions));
   }
+
+  // ---------------------------------------------------------------------------
+  // Meal templates (saved multi-item meals for one-tap re-logging)
+  // ---------------------------------------------------------------------------
+
+  /// Save a list of food logs as a reusable named template.
+  Future<int> saveMealTemplate({
+    required String name,
+    required String defaultMealType,
+    required List<FoodLog> items,
+  }) async {
+    if (name.trim().isEmpty) {
+      throw ArgumentError('Template name cannot be empty');
+    }
+    if (items.isEmpty) {
+      throw ArgumentError('Cannot save an empty meal template');
+    }
+
+    return _db.transaction(() async {
+      final templateId = await _db.into(_db.mealTemplates).insert(
+            MealTemplatesCompanion.insert(
+              name: name.trim(),
+              defaultMealType: Value(defaultMealType),
+            ),
+          );
+
+      final companions = items
+          .map(
+            (item) => MealTemplateItemsCompanion.insert(
+              templateId: templateId,
+              name: item.name,
+              calories: item.calories,
+              proteinG: item.proteinG,
+              carbsG: item.carbsG,
+              fatG: item.fatG,
+              servingLogged: item.servingLogged,
+              servingUnit: item.servingUnit,
+            ),
+          )
+          .toList();
+
+      await _db.batch((b) => b.insertAll(_db.mealTemplateItems, companions));
+      return templateId;
+    });
+  }
+
+  /// Save current meal-type logs for a given day as a template.
+  Future<int> saveMealTemplateFromDay({
+    required String name,
+    required String mealType,
+    required DateTime day,
+  }) async {
+    final startOfDay = DateTime(day.year, day.month, day.day);
+    final endOfDay = DateTime(day.year, day.month, day.day, 23, 59, 59);
+    final logs = await (_db.select(_db.foodLogs)
+          ..where(
+            (t) =>
+                t.mealType.equals(mealType) &
+                t.loggedAt.isBetweenValues(startOfDay, endOfDay),
+          ))
+        .get();
+    return saveMealTemplate(
+      name: name,
+      defaultMealType: mealType,
+      items: logs,
+    );
+  }
+
+  Future<List<MealTemplate>> getAllMealTemplates() async {
+    return (_db.select(_db.mealTemplates)
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+          ]))
+        .get();
+  }
+
+  Stream<List<MealTemplate>> watchMealTemplates() {
+    return (_db.select(_db.mealTemplates)
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+          ]))
+        .watch();
+  }
+
+  Future<List<MealTemplateItem>> getMealTemplateItems(int templateId) async {
+    return (_db.select(_db.mealTemplateItems)
+          ..where((t) => t.templateId.equals(templateId)))
+        .get();
+  }
+
+  Future<MealTemplateWithItems?> getMealTemplateWithItems(int templateId) async {
+    final template = await (_db.select(_db.mealTemplates)
+          ..where((t) => t.id.equals(templateId)))
+        .getSingleOrNull();
+    if (template == null) return null;
+    final items = await getMealTemplateItems(templateId);
+    return MealTemplateWithItems(template: template, items: items);
+  }
+
+  /// Log every item from a template into the target meal/day as one group.
+  Future<void> logFromMealTemplate({
+    required int templateId,
+    required String mealType,
+    DateTime? loggedAt,
+  }) async {
+    final items = await getMealTemplateItems(templateId);
+    if (items.isEmpty) return;
+
+    final when = loggedAt ?? DateTime.now();
+    final groupId = 'template_${templateId}_${when.millisecondsSinceEpoch}';
+
+    final companions = items
+        .map(
+          (item) => FoodLogsCompanion.insert(
+            name: item.name,
+            calories: item.calories,
+            proteinG: item.proteinG,
+            carbsG: item.carbsG,
+            fatG: item.fatG,
+            servingLogged: item.servingLogged,
+            servingUnit: item.servingUnit,
+            mealType: mealType,
+            loggedAt: Value(when),
+            mealGroupId: Value(groupId),
+            uuid: Value(const Uuid().v4()),
+          ),
+        )
+        .toList();
+
+    await _db.batch((b) => b.insertAll(_db.foodLogs, companions));
+  }
+
+  Future<int> deleteMealTemplate(int templateId) async {
+    return _db.transaction(() async {
+      await (_db.delete(_db.mealTemplateItems)
+            ..where((t) => t.templateId.equals(templateId)))
+          .go();
+      return (_db.delete(_db.mealTemplates)
+            ..where((t) => t.id.equals(templateId)))
+          .go();
+    });
+  }
+
+  Future<int> renameMealTemplate(int templateId, String newName) async {
+    if (newName.trim().isEmpty) return 0;
+    return (_db.update(_db.mealTemplates)..where((t) => t.id.equals(templateId)))
+        .write(MealTemplatesCompanion(name: Value(newName.trim())));
+  }
+}
+
+class MealTemplateWithItems {
+  final MealTemplate template;
+  final List<MealTemplateItem> items;
+
+  const MealTemplateWithItems({
+    required this.template,
+    required this.items,
+  });
+
+  int get totalCalories => items.fold(0, (sum, i) => sum + i.calories);
+
+  double get totalProteinG =>
+      items.fold(0.0, (sum, i) => sum + i.proteinG);
+
+  double get totalCarbsG => items.fold(0.0, (sum, i) => sum + i.carbsG);
+
+  double get totalFatG => items.fold(0.0, (sum, i) => sum + i.fatG);
 }
