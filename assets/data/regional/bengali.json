@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Machher Jhol (Rohu)",
+    "name_hindi": "मछली का झोल",
+    "calories": 220,
+    "protein_g": 22.0,
+    "carbs_g": 4.5,
+    "fat_g": 12.0,
+    "fiber_g": 1.0,
+    "serving_size": 1.0,
+    "serving_unit": "plate",
+    "category": "Non-Veg"
+  },
+  {
+    "name": "Luchi",
+    "name_hindi": "लूची",
+    "calories": 130,
+    "protein_g": 2.2,
+    "carbs_g": 16.0,
+    "fat_g": 6.5,
+    "fiber_g": 0.5,
+    "serving_size": 1.0,
+    "serving_unit": "piece",
+    "category": "Grains & Breads"
+  },
+  {
+    "name": "Begun Bhaja",
+    "name_hindi": "बैंगन भाजा",
+    "calories": 110,
+    "protein_g": 1.5,
+    "carbs_g": 8.0,
+    "fat_g": 8.5,
+    "fiber_g": 2.5,
+    "serving_size": 2.0,
+    "serving_unit": "piece",
+    "category": "Vegetables & Sabjis"
+  },
+  {
+    "name": "Chholar Dal",
+    "name_hindi": "छोलार दाल",
+    "calories": 165,
+    "protein_g": 7.2,
+    "carbs_g": 24.0,
+    "fat_g": 4.5,
+    "fiber_g": 5.0,
+    "serving_size": 1.0,
+    "serving_unit": "katori",
+    "category": "Dals & Legumes"
+  },
+  {
+    "name": "Mishti Doi",
+    "name_hindi": "मिष्टी दोई",
+    "calories": 180,
+    "protein_g": 4.5,
+    "carbs_g": 28.0,
+    "fat_g": 5.0,
+    "fiber_g": 0.0,
+    "serving_size": 1.0,
+    "serving_unit": "cup",
+    "category": "Paneer & Dairy"
+  }
+]

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/food_api_service.dart';
+import 'custom_food_editor_screen.dart';
 
 class BarcodeScannerScreen extends ConsumerStatefulWidget {
   const BarcodeScannerScreen({super.key});
@@ -53,7 +54,24 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
                   _scannerController.start(); // Restart scanner
                 },
                 child: const Text('Try Again', style: TextStyle(color: AppColors.primary)),
-              )
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context); // Close dialog
+                  final created = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CustomFoodEditorScreen(initialBarcode: code),
+                    ),
+                  );
+                  if (created == true && mounted) {
+                    Navigator.pop(context, true); // Return true to indicate custom item created
+                  } else {
+                    _scannerController.start();
+                  }
+                },
+                child: const Text('Create Custom Food', style: TextStyle(color: AppColors.success)),
+              ),
             ],
           ),
         );

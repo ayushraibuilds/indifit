@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/di/theme_provider.dart';
 import 'core/router/app_router.dart';
@@ -9,31 +10,44 @@ import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_logger.dart';
 import 'data/database/app_database.dart';
-
+import 'data/repositories/health_service.dart';
 import 'core/services/crash_reporting_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Register global crash & error handlers
+  // Log uncaught Flutter framework errors
   FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    AppLogger.recordCrash(details.exception, details.stack, context: 'FlutterError');
+    AppLogger.error('Flutter Framework Error', details.exception, details.stack);
+    CrashReportingService.recordCrash(details.exception, details.stack ?? StackTrace.current, reason: 'Flutter Framework Error');
   };
 
+  // Log uncaught asynchronous errors in the root zone
   PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    AppLogger.recordCrash(error, stack, context: 'PlatformDispatcher');
+    AppLogger.error('Async Root Zone Error', error, stack);
+    CrashReportingService.recordCrash(error, stack, reason: 'Async Root Zone Error');
     return true;
   };
 
   // Initialize local notification service & schedule reminders
+  final db = AppDatabase();
   await NotificationService.initialize();
-  await NotificationService.scheduleAllReminders();
+  await NotificationService.scheduleAllReminders(db);
 
   // Trigger auto-backup check in background
-  final db = AppDatabase();
   AutoBackupService.performBackup(db).catchError((e) {
     AppLogger.warning('Auto-backup startup check failed: $e');
+  });
+
+  // Trigger Health Service auto-sync on open if enabled
+  SharedPreferences.getInstance().then((prefs) {
+    final autoSync = prefs.getBool('auto_sync_health_on_open') ?? true;
+    if (autoSync) {
+      HealthService().fetchTodayHealthData().catchError((e) {
+        AppLogger.warning('Health auto-sync startup check failed: $e');
+        return const HealthDataSummary();
+      });
+    }
   });
 
   await CrashReportingService.initialize(() {

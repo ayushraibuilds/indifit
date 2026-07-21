@@ -22,6 +22,9 @@ class SettingsState {
   final bool remindWater;
   final bool remindEvening;
   final bool remindWeekly;
+  final bool quietHoursEnabled;
+  final int quietHoursStart;
+  final int quietHoursEnd;
   final bool offlineOnly;
   final bool crashReportingEnabled;
   final bool loading;
@@ -34,6 +37,9 @@ class SettingsState {
     this.remindWater = false,
     this.remindEvening = false,
     this.remindWeekly = false,
+    this.quietHoursEnabled = true,
+    this.quietHoursStart = 22,
+    this.quietHoursEnd = 7,
     this.offlineOnly = false,
     this.crashReportingEnabled = true,
     this.loading = true,
@@ -47,6 +53,9 @@ class SettingsState {
     bool? remindWater,
     bool? remindEvening,
     bool? remindWeekly,
+    bool? quietHoursEnabled,
+    int? quietHoursStart,
+    int? quietHoursEnd,
     bool? offlineOnly,
     bool? crashReportingEnabled,
     bool? loading,
@@ -59,6 +68,9 @@ class SettingsState {
       remindWater: remindWater ?? this.remindWater,
       remindEvening: remindEvening ?? this.remindEvening,
       remindWeekly: remindWeekly ?? this.remindWeekly,
+      quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
+      quietHoursStart: quietHoursStart ?? this.quietHoursStart,
+      quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
       offlineOnly: offlineOnly ?? this.offlineOnly,
       crashReportingEnabled: crashReportingEnabled ?? this.crashReportingEnabled,
       loading: loading ?? this.loading,
@@ -83,6 +95,9 @@ class SettingsController extends StateNotifier<SettingsState> {
       remindWater: prefs.getBool(NotificationService.prefRemindWater) ?? false,
       remindEvening: prefs.getBool(NotificationService.prefRemindEvening) ?? false,
       remindWeekly: prefs.getBool(NotificationService.prefRemindWeekly) ?? false,
+      quietHoursEnabled: prefs.getBool(NotificationService.prefQuietHoursEnabled) ?? true,
+      quietHoursStart: prefs.getInt(NotificationService.prefQuietHoursStart) ?? 22,
+      quietHoursEnd: prefs.getInt(NotificationService.prefQuietHoursEnd) ?? 7,
       offlineOnly: prefs.getBool('offline_only') ?? false,
       crashReportingEnabled: prefs.getBool(CrashReportingService.prefCrashReportingEnabled) ?? true,
       waterGoal: prefs.getInt('water_goal') ?? 8,
@@ -94,9 +109,19 @@ class SettingsController extends StateNotifier<SettingsState> {
   Future<void> toggleReminder(String key, bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(key, value);
-    await NotificationService.scheduleAllReminders();
+    await NotificationService.scheduleAllReminders(_ref.read(databaseProvider));
     await loadPreferences();
   }
+
+  Future<void> updateQuietHours({bool? enabled, int? start, int? end}) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (enabled != null) await prefs.setBool(NotificationService.prefQuietHoursEnabled, enabled);
+    if (start != null) await prefs.setInt(NotificationService.prefQuietHoursStart, start);
+    if (end != null) await prefs.setInt(NotificationService.prefQuietHoursEnd, end);
+    await NotificationService.scheduleAllReminders(_ref.read(databaseProvider));
+    await loadPreferences();
+  }
+
 
   Future<void> toggleOfflineOnly(bool value) async {
     final prefs = await SharedPreferences.getInstance();

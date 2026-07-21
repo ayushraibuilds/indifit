@@ -31,10 +31,17 @@ class AutoBackupService {
       final workoutRoutines = await _db.select(_db.workoutRoutines).get();
       final routineDays = await _db.select(_db.routineDays).get();
       final routineExercises = await _db.select(_db.routineExercises).get();
+      final userSettings = await _db.select(_db.userSettings).get();
 
       final backupData = {
-        'version': 2,
+        'version': 3,
         'timestamp': DateTime.now().toIso8601String(),
+        'user_settings': userSettings.map((s) => {
+          'key': s.key,
+          'value': s.value,
+          'updated_at': s.updatedAt.toIso8601String(),
+        }).toList(),
+
         'food_items': foodItems.where((f) => f.isCustom).map((f) => {
           'id': f.id,
           'name': f.name,

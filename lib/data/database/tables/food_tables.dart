@@ -13,6 +13,8 @@ class FoodItems extends Table {
   TextColumn get servingUnit => text()();
   TextColumn get category => text()(); // "roti", "rice", "dal", "sabzi", "snack", "drink", etc.
   BoolColumn get isCustom => boolean().withDefault(const Constant(false))();
+  TextColumn get brand => text().nullable()();
+  TextColumn get regionPack => text().nullable()();
 }
 
 class FoodLogs extends Table {

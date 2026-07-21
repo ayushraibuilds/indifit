@@ -84,6 +84,17 @@ class $FoodItemsTable extends FoodItems
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_custom" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _brandMeta = const VerificationMeta('brand');
+  @override
+  late final GeneratedColumn<String> brand = GeneratedColumn<String>(
+      'brand', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _regionPackMeta =
+      const VerificationMeta('regionPack');
+  @override
+  late final GeneratedColumn<String> regionPack = GeneratedColumn<String>(
+      'region_pack', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -97,7 +108,9 @@ class $FoodItemsTable extends FoodItems
         servingSize,
         servingUnit,
         category,
-        isCustom
+        isCustom,
+        brand,
+        regionPack
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -176,6 +189,16 @@ class $FoodItemsTable extends FoodItems
       context.handle(_isCustomMeta,
           isCustom.isAcceptableOrUnknown(data['is_custom']!, _isCustomMeta));
     }
+    if (data.containsKey('brand')) {
+      context.handle(
+          _brandMeta, brand.isAcceptableOrUnknown(data['brand']!, _brandMeta));
+    }
+    if (data.containsKey('region_pack')) {
+      context.handle(
+          _regionPackMeta,
+          regionPack.isAcceptableOrUnknown(
+              data['region_pack']!, _regionPackMeta));
+    }
     return context;
   }
 
@@ -209,6 +232,10 @@ class $FoodItemsTable extends FoodItems
           .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
       isCustom: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_custom'])!,
+      brand: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}brand']),
+      regionPack: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}region_pack']),
     );
   }
 
@@ -231,6 +258,8 @@ class FoodItem extends DataClass implements Insertable<FoodItem> {
   final String servingUnit;
   final String category;
   final bool isCustom;
+  final String? brand;
+  final String? regionPack;
   const FoodItem(
       {required this.id,
       required this.name,
@@ -243,7 +272,9 @@ class FoodItem extends DataClass implements Insertable<FoodItem> {
       required this.servingSize,
       required this.servingUnit,
       required this.category,
-      required this.isCustom});
+      required this.isCustom,
+      this.brand,
+      this.regionPack});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -263,6 +294,12 @@ class FoodItem extends DataClass implements Insertable<FoodItem> {
     map['serving_unit'] = Variable<String>(servingUnit);
     map['category'] = Variable<String>(category);
     map['is_custom'] = Variable<bool>(isCustom);
+    if (!nullToAbsent || brand != null) {
+      map['brand'] = Variable<String>(brand);
+    }
+    if (!nullToAbsent || regionPack != null) {
+      map['region_pack'] = Variable<String>(regionPack);
+    }
     return map;
   }
 
@@ -283,6 +320,11 @@ class FoodItem extends DataClass implements Insertable<FoodItem> {
       servingUnit: Value(servingUnit),
       category: Value(category),
       isCustom: Value(isCustom),
+      brand:
+          brand == null && nullToAbsent ? const Value.absent() : Value(brand),
+      regionPack: regionPack == null && nullToAbsent
+          ? const Value.absent()
+          : Value(regionPack),
     );
   }
 
@@ -302,6 +344,8 @@ class FoodItem extends DataClass implements Insertable<FoodItem> {
       servingUnit: serializer.fromJson<String>(json['servingUnit']),
       category: serializer.fromJson<String>(json['category']),
       isCustom: serializer.fromJson<bool>(json['isCustom']),
+      brand: serializer.fromJson<String?>(json['brand']),
+      regionPack: serializer.fromJson<String?>(json['regionPack']),
     );
   }
   @override
@@ -320,6 +364,8 @@ class FoodItem extends DataClass implements Insertable<FoodItem> {
       'servingUnit': serializer.toJson<String>(servingUnit),
       'category': serializer.toJson<String>(category),
       'isCustom': serializer.toJson<bool>(isCustom),
+      'brand': serializer.toJson<String?>(brand),
+      'regionPack': serializer.toJson<String?>(regionPack),
     };
   }
 
@@ -335,7 +381,9 @@ class FoodItem extends DataClass implements Insertable<FoodItem> {
           double? servingSize,
           String? servingUnit,
           String? category,
-          bool? isCustom}) =>
+          bool? isCustom,
+          Value<String?> brand = const Value.absent(),
+          Value<String?> regionPack = const Value.absent()}) =>
       FoodItem(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -349,6 +397,8 @@ class FoodItem extends DataClass implements Insertable<FoodItem> {
         servingUnit: servingUnit ?? this.servingUnit,
         category: category ?? this.category,
         isCustom: isCustom ?? this.isCustom,
+        brand: brand.present ? brand.value : this.brand,
+        regionPack: regionPack.present ? regionPack.value : this.regionPack,
       );
   FoodItem copyWithCompanion(FoodItemsCompanion data) {
     return FoodItem(
@@ -366,6 +416,9 @@ class FoodItem extends DataClass implements Insertable<FoodItem> {
           data.servingUnit.present ? data.servingUnit.value : this.servingUnit,
       category: data.category.present ? data.category.value : this.category,
       isCustom: data.isCustom.present ? data.isCustom.value : this.isCustom,
+      brand: data.brand.present ? data.brand.value : this.brand,
+      regionPack:
+          data.regionPack.present ? data.regionPack.value : this.regionPack,
     );
   }
 
@@ -383,14 +436,29 @@ class FoodItem extends DataClass implements Insertable<FoodItem> {
           ..write('servingSize: $servingSize, ')
           ..write('servingUnit: $servingUnit, ')
           ..write('category: $category, ')
-          ..write('isCustom: $isCustom')
+          ..write('isCustom: $isCustom, ')
+          ..write('brand: $brand, ')
+          ..write('regionPack: $regionPack')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, nameHindi, calories, proteinG,
-      carbsG, fatG, fiberG, servingSize, servingUnit, category, isCustom);
+  int get hashCode => Object.hash(
+      id,
+      name,
+      nameHindi,
+      calories,
+      proteinG,
+      carbsG,
+      fatG,
+      fiberG,
+      servingSize,
+      servingUnit,
+      category,
+      isCustom,
+      brand,
+      regionPack);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -406,7 +474,9 @@ class FoodItem extends DataClass implements Insertable<FoodItem> {
           other.servingSize == this.servingSize &&
           other.servingUnit == this.servingUnit &&
           other.category == this.category &&
-          other.isCustom == this.isCustom);
+          other.isCustom == this.isCustom &&
+          other.brand == this.brand &&
+          other.regionPack == this.regionPack);
 }
 
 class FoodItemsCompanion extends UpdateCompanion<FoodItem> {
@@ -422,6 +492,8 @@ class FoodItemsCompanion extends UpdateCompanion<FoodItem> {
   final Value<String> servingUnit;
   final Value<String> category;
   final Value<bool> isCustom;
+  final Value<String?> brand;
+  final Value<String?> regionPack;
   const FoodItemsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -435,6 +507,8 @@ class FoodItemsCompanion extends UpdateCompanion<FoodItem> {
     this.servingUnit = const Value.absent(),
     this.category = const Value.absent(),
     this.isCustom = const Value.absent(),
+    this.brand = const Value.absent(),
+    this.regionPack = const Value.absent(),
   });
   FoodItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -449,6 +523,8 @@ class FoodItemsCompanion extends UpdateCompanion<FoodItem> {
     required String servingUnit,
     required String category,
     this.isCustom = const Value.absent(),
+    this.brand = const Value.absent(),
+    this.regionPack = const Value.absent(),
   })  : name = Value(name),
         calories = Value(calories),
         proteinG = Value(proteinG),
@@ -470,6 +546,8 @@ class FoodItemsCompanion extends UpdateCompanion<FoodItem> {
     Expression<String>? servingUnit,
     Expression<String>? category,
     Expression<bool>? isCustom,
+    Expression<String>? brand,
+    Expression<String>? regionPack,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -484,6 +562,8 @@ class FoodItemsCompanion extends UpdateCompanion<FoodItem> {
       if (servingUnit != null) 'serving_unit': servingUnit,
       if (category != null) 'category': category,
       if (isCustom != null) 'is_custom': isCustom,
+      if (brand != null) 'brand': brand,
+      if (regionPack != null) 'region_pack': regionPack,
     });
   }
 
@@ -499,7 +579,9 @@ class FoodItemsCompanion extends UpdateCompanion<FoodItem> {
       Value<double>? servingSize,
       Value<String>? servingUnit,
       Value<String>? category,
-      Value<bool>? isCustom}) {
+      Value<bool>? isCustom,
+      Value<String?>? brand,
+      Value<String?>? regionPack}) {
     return FoodItemsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -513,6 +595,8 @@ class FoodItemsCompanion extends UpdateCompanion<FoodItem> {
       servingUnit: servingUnit ?? this.servingUnit,
       category: category ?? this.category,
       isCustom: isCustom ?? this.isCustom,
+      brand: brand ?? this.brand,
+      regionPack: regionPack ?? this.regionPack,
     );
   }
 
@@ -555,6 +639,12 @@ class FoodItemsCompanion extends UpdateCompanion<FoodItem> {
     if (isCustom.present) {
       map['is_custom'] = Variable<bool>(isCustom.value);
     }
+    if (brand.present) {
+      map['brand'] = Variable<String>(brand.value);
+    }
+    if (regionPack.present) {
+      map['region_pack'] = Variable<String>(regionPack.value);
+    }
     return map;
   }
 
@@ -572,7 +662,9 @@ class FoodItemsCompanion extends UpdateCompanion<FoodItem> {
           ..write('servingSize: $servingSize, ')
           ..write('servingUnit: $servingUnit, ')
           ..write('category: $category, ')
-          ..write('isCustom: $isCustom')
+          ..write('isCustom: $isCustom, ')
+          ..write('brand: $brand, ')
+          ..write('regionPack: $regionPack')
           ..write(')'))
         .toString();
   }
@@ -2238,6 +2330,24 @@ class $WorkoutSetsTable extends WorkoutSets
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('working'));
+  static const VerificationMeta _durationSecondsMeta =
+      const VerificationMeta('durationSeconds');
+  @override
+  late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
+      'duration_seconds', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _distanceKmMeta =
+      const VerificationMeta('distanceKm');
+  @override
+  late final GeneratedColumn<double> distanceKm = GeneratedColumn<double>(
+      'distance_km', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _inclinePercentageMeta =
+      const VerificationMeta('inclinePercentage');
+  @override
+  late final GeneratedColumn<double> inclinePercentage =
+      GeneratedColumn<double>('incline_percentage', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2251,7 +2361,10 @@ class $WorkoutSetsTable extends WorkoutSets
         isWarmUp,
         setNotes,
         uuid,
-        setType
+        setType,
+        durationSeconds,
+        distanceKm,
+        inclinePercentage
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2322,6 +2435,24 @@ class $WorkoutSetsTable extends WorkoutSets
       context.handle(_setTypeMeta,
           setType.isAcceptableOrUnknown(data['set_type']!, _setTypeMeta));
     }
+    if (data.containsKey('duration_seconds')) {
+      context.handle(
+          _durationSecondsMeta,
+          durationSeconds.isAcceptableOrUnknown(
+              data['duration_seconds']!, _durationSecondsMeta));
+    }
+    if (data.containsKey('distance_km')) {
+      context.handle(
+          _distanceKmMeta,
+          distanceKm.isAcceptableOrUnknown(
+              data['distance_km']!, _distanceKmMeta));
+    }
+    if (data.containsKey('incline_percentage')) {
+      context.handle(
+          _inclinePercentageMeta,
+          inclinePercentage.isAcceptableOrUnknown(
+              data['incline_percentage']!, _inclinePercentageMeta));
+    }
     return context;
   }
 
@@ -2355,6 +2486,12 @@ class $WorkoutSetsTable extends WorkoutSets
           .read(DriftSqlType.string, data['${effectivePrefix}uuid']),
       setType: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}set_type'])!,
+      durationSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}duration_seconds']),
+      distanceKm: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}distance_km']),
+      inclinePercentage: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}incline_percentage']),
     );
   }
 
@@ -2377,6 +2514,9 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
   final String? setNotes;
   final String? uuid;
   final String setType;
+  final int? durationSeconds;
+  final double? distanceKm;
+  final double? inclinePercentage;
   const WorkoutSet(
       {required this.id,
       required this.sessionId,
@@ -2389,7 +2529,10 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       required this.isWarmUp,
       this.setNotes,
       this.uuid,
-      required this.setType});
+      required this.setType,
+      this.durationSeconds,
+      this.distanceKm,
+      this.inclinePercentage});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2411,6 +2554,15 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       map['uuid'] = Variable<String>(uuid);
     }
     map['set_type'] = Variable<String>(setType);
+    if (!nullToAbsent || durationSeconds != null) {
+      map['duration_seconds'] = Variable<int>(durationSeconds);
+    }
+    if (!nullToAbsent || distanceKm != null) {
+      map['distance_km'] = Variable<double>(distanceKm);
+    }
+    if (!nullToAbsent || inclinePercentage != null) {
+      map['incline_percentage'] = Variable<double>(inclinePercentage);
+    }
     return map;
   }
 
@@ -2430,6 +2582,15 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           : Value(setNotes),
       uuid: uuid == null && nullToAbsent ? const Value.absent() : Value(uuid),
       setType: Value(setType),
+      durationSeconds: durationSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationSeconds),
+      distanceKm: distanceKm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(distanceKm),
+      inclinePercentage: inclinePercentage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inclinePercentage),
     );
   }
 
@@ -2449,6 +2610,10 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       setNotes: serializer.fromJson<String?>(json['setNotes']),
       uuid: serializer.fromJson<String?>(json['uuid']),
       setType: serializer.fromJson<String>(json['setType']),
+      durationSeconds: serializer.fromJson<int?>(json['durationSeconds']),
+      distanceKm: serializer.fromJson<double?>(json['distanceKm']),
+      inclinePercentage:
+          serializer.fromJson<double?>(json['inclinePercentage']),
     );
   }
   @override
@@ -2467,6 +2632,9 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       'setNotes': serializer.toJson<String?>(setNotes),
       'uuid': serializer.toJson<String?>(uuid),
       'setType': serializer.toJson<String>(setType),
+      'durationSeconds': serializer.toJson<int?>(durationSeconds),
+      'distanceKm': serializer.toJson<double?>(distanceKm),
+      'inclinePercentage': serializer.toJson<double?>(inclinePercentage),
     };
   }
 
@@ -2482,7 +2650,10 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           bool? isWarmUp,
           Value<String?> setNotes = const Value.absent(),
           Value<String?> uuid = const Value.absent(),
-          String? setType}) =>
+          String? setType,
+          Value<int?> durationSeconds = const Value.absent(),
+          Value<double?> distanceKm = const Value.absent(),
+          Value<double?> inclinePercentage = const Value.absent()}) =>
       WorkoutSet(
         id: id ?? this.id,
         sessionId: sessionId ?? this.sessionId,
@@ -2496,6 +2667,13 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
         setNotes: setNotes.present ? setNotes.value : this.setNotes,
         uuid: uuid.present ? uuid.value : this.uuid,
         setType: setType ?? this.setType,
+        durationSeconds: durationSeconds.present
+            ? durationSeconds.value
+            : this.durationSeconds,
+        distanceKm: distanceKm.present ? distanceKm.value : this.distanceKm,
+        inclinePercentage: inclinePercentage.present
+            ? inclinePercentage.value
+            : this.inclinePercentage,
       );
   WorkoutSet copyWithCompanion(WorkoutSetsCompanion data) {
     return WorkoutSet(
@@ -2513,6 +2691,14 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       setNotes: data.setNotes.present ? data.setNotes.value : this.setNotes,
       uuid: data.uuid.present ? data.uuid.value : this.uuid,
       setType: data.setType.present ? data.setType.value : this.setType,
+      durationSeconds: data.durationSeconds.present
+          ? data.durationSeconds.value
+          : this.durationSeconds,
+      distanceKm:
+          data.distanceKm.present ? data.distanceKm.value : this.distanceKm,
+      inclinePercentage: data.inclinePercentage.present
+          ? data.inclinePercentage.value
+          : this.inclinePercentage,
     );
   }
 
@@ -2530,14 +2716,31 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           ..write('isWarmUp: $isWarmUp, ')
           ..write('setNotes: $setNotes, ')
           ..write('uuid: $uuid, ')
-          ..write('setType: $setType')
+          ..write('setType: $setType, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('distanceKm: $distanceKm, ')
+          ..write('inclinePercentage: $inclinePercentage')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, sessionId, exerciseName, weight, reps,
-      setNumber, isPr, rpe, isWarmUp, setNotes, uuid, setType);
+  int get hashCode => Object.hash(
+      id,
+      sessionId,
+      exerciseName,
+      weight,
+      reps,
+      setNumber,
+      isPr,
+      rpe,
+      isWarmUp,
+      setNotes,
+      uuid,
+      setType,
+      durationSeconds,
+      distanceKm,
+      inclinePercentage);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2553,7 +2756,10 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           other.isWarmUp == this.isWarmUp &&
           other.setNotes == this.setNotes &&
           other.uuid == this.uuid &&
-          other.setType == this.setType);
+          other.setType == this.setType &&
+          other.durationSeconds == this.durationSeconds &&
+          other.distanceKm == this.distanceKm &&
+          other.inclinePercentage == this.inclinePercentage);
 }
 
 class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
@@ -2569,6 +2775,9 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
   final Value<String?> setNotes;
   final Value<String?> uuid;
   final Value<String> setType;
+  final Value<int?> durationSeconds;
+  final Value<double?> distanceKm;
+  final Value<double?> inclinePercentage;
   const WorkoutSetsCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
@@ -2582,6 +2791,9 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     this.setNotes = const Value.absent(),
     this.uuid = const Value.absent(),
     this.setType = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.distanceKm = const Value.absent(),
+    this.inclinePercentage = const Value.absent(),
   });
   WorkoutSetsCompanion.insert({
     this.id = const Value.absent(),
@@ -2596,6 +2808,9 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     this.setNotes = const Value.absent(),
     this.uuid = const Value.absent(),
     this.setType = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.distanceKm = const Value.absent(),
+    this.inclinePercentage = const Value.absent(),
   })  : sessionId = Value(sessionId),
         exerciseName = Value(exerciseName),
         weight = Value(weight),
@@ -2614,6 +2829,9 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     Expression<String>? setNotes,
     Expression<String>? uuid,
     Expression<String>? setType,
+    Expression<int>? durationSeconds,
+    Expression<double>? distanceKm,
+    Expression<double>? inclinePercentage,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2628,6 +2846,9 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       if (setNotes != null) 'set_notes': setNotes,
       if (uuid != null) 'uuid': uuid,
       if (setType != null) 'set_type': setType,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (distanceKm != null) 'distance_km': distanceKm,
+      if (inclinePercentage != null) 'incline_percentage': inclinePercentage,
     });
   }
 
@@ -2643,7 +2864,10 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       Value<bool>? isWarmUp,
       Value<String?>? setNotes,
       Value<String?>? uuid,
-      Value<String>? setType}) {
+      Value<String>? setType,
+      Value<int?>? durationSeconds,
+      Value<double?>? distanceKm,
+      Value<double?>? inclinePercentage}) {
     return WorkoutSetsCompanion(
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
@@ -2657,6 +2881,9 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       setNotes: setNotes ?? this.setNotes,
       uuid: uuid ?? this.uuid,
       setType: setType ?? this.setType,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      distanceKm: distanceKm ?? this.distanceKm,
+      inclinePercentage: inclinePercentage ?? this.inclinePercentage,
     );
   }
 
@@ -2699,6 +2926,15 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     if (setType.present) {
       map['set_type'] = Variable<String>(setType.value);
     }
+    if (durationSeconds.present) {
+      map['duration_seconds'] = Variable<int>(durationSeconds.value);
+    }
+    if (distanceKm.present) {
+      map['distance_km'] = Variable<double>(distanceKm.value);
+    }
+    if (inclinePercentage.present) {
+      map['incline_percentage'] = Variable<double>(inclinePercentage.value);
+    }
     return map;
   }
 
@@ -2716,7 +2952,10 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
           ..write('isWarmUp: $isWarmUp, ')
           ..write('setNotes: $setNotes, ')
           ..write('uuid: $uuid, ')
-          ..write('setType: $setType')
+          ..write('setType: $setType, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('distanceKm: $distanceKm, ')
+          ..write('inclinePercentage: $inclinePercentage')
           ..write(')'))
         .toString();
   }
@@ -5790,6 +6029,234 @@ class MealTemplateItemsCompanion extends UpdateCompanion<MealTemplateItem> {
   }
 }
 
+class $UserSettingsTable extends UserSettings
+    with TableInfo<$UserSettingsTable, UserSetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+      'key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+      'value', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [key, value, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_settings';
+  @override
+  VerificationContext validateIntegrity(Insertable<UserSetting> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+          _keyMeta, key.isAcceptableOrUnknown(data['key']!, _keyMeta));
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+          _valueMeta, value.isAcceptableOrUnknown(data['value']!, _valueMeta));
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  UserSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserSetting(
+      key: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}key'])!,
+      value: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}value'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $UserSettingsTable createAlias(String alias) {
+    return $UserSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class UserSetting extends DataClass implements Insertable<UserSetting> {
+  final String key;
+  final String value;
+  final DateTime updatedAt;
+  const UserSetting(
+      {required this.key, required this.value, required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['value'] = Variable<String>(value);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  UserSettingsCompanion toCompanion(bool nullToAbsent) {
+    return UserSettingsCompanion(
+      key: Value(key),
+      value: Value(value),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory UserSetting.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserSetting(
+      key: serializer.fromJson<String>(json['key']),
+      value: serializer.fromJson<String>(json['value']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'value': serializer.toJson<String>(value),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  UserSetting copyWith({String? key, String? value, DateTime? updatedAt}) =>
+      UserSetting(
+        key: key ?? this.key,
+        value: value ?? this.value,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  UserSetting copyWithCompanion(UserSettingsCompanion data) {
+    return UserSetting(
+      key: data.key.present ? data.key.value : this.key,
+      value: data.value.present ? data.value.value : this.value,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSetting(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, value, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserSetting &&
+          other.key == this.key &&
+          other.value == this.value &&
+          other.updatedAt == this.updatedAt);
+}
+
+class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
+  final Value<String> key;
+  final Value<String> value;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const UserSettingsCompanion({
+    this.key = const Value.absent(),
+    this.value = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UserSettingsCompanion.insert({
+    required String key,
+    required String value,
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : key = Value(key),
+        value = Value(value);
+  static Insertable<UserSetting> custom({
+    Expression<String>? key,
+    Expression<String>? value,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (value != null) 'value': value,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UserSettingsCompanion copyWith(
+      {Value<String>? key,
+      Value<String>? value,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return UserSettingsCompanion(
+      key: key ?? this.key,
+      value: value ?? this.value,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSettingsCompanion(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5811,6 +6278,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MealTemplatesTable mealTemplates = $MealTemplatesTable(this);
   late final $MealTemplateItemsTable mealTemplateItems =
       $MealTemplateItemsTable(this);
+  late final $UserSettingsTable userSettings = $UserSettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5828,7 +6296,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         workoutDrafts,
         userProfiles,
         mealTemplates,
-        mealTemplateItems
+        mealTemplateItems,
+        userSettings
       ];
 }
 
@@ -5845,6 +6314,8 @@ typedef $$FoodItemsTableCreateCompanionBuilder = FoodItemsCompanion Function({
   required String servingUnit,
   required String category,
   Value<bool> isCustom,
+  Value<String?> brand,
+  Value<String?> regionPack,
 });
 typedef $$FoodItemsTableUpdateCompanionBuilder = FoodItemsCompanion Function({
   Value<int> id,
@@ -5859,6 +6330,8 @@ typedef $$FoodItemsTableUpdateCompanionBuilder = FoodItemsCompanion Function({
   Value<String> servingUnit,
   Value<String> category,
   Value<bool> isCustom,
+  Value<String?> brand,
+  Value<String?> regionPack,
 });
 
 class $$FoodItemsTableTableManager extends RootTableManager<
@@ -5890,6 +6363,8 @@ class $$FoodItemsTableTableManager extends RootTableManager<
             Value<String> servingUnit = const Value.absent(),
             Value<String> category = const Value.absent(),
             Value<bool> isCustom = const Value.absent(),
+            Value<String?> brand = const Value.absent(),
+            Value<String?> regionPack = const Value.absent(),
           }) =>
               FoodItemsCompanion(
             id: id,
@@ -5904,6 +6379,8 @@ class $$FoodItemsTableTableManager extends RootTableManager<
             servingUnit: servingUnit,
             category: category,
             isCustom: isCustom,
+            brand: brand,
+            regionPack: regionPack,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -5918,6 +6395,8 @@ class $$FoodItemsTableTableManager extends RootTableManager<
             required String servingUnit,
             required String category,
             Value<bool> isCustom = const Value.absent(),
+            Value<String?> brand = const Value.absent(),
+            Value<String?> regionPack = const Value.absent(),
           }) =>
               FoodItemsCompanion.insert(
             id: id,
@@ -5932,6 +6411,8 @@ class $$FoodItemsTableTableManager extends RootTableManager<
             servingUnit: servingUnit,
             category: category,
             isCustom: isCustom,
+            brand: brand,
+            regionPack: regionPack,
           ),
         ));
 }
@@ -5996,6 +6477,16 @@ class $$FoodItemsTableFilterComposer
 
   ColumnFilters<bool> get isCustom => $state.composableBuilder(
       column: $state.table.isCustom,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get brand => $state.composableBuilder(
+      column: $state.table.brand,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get regionPack => $state.composableBuilder(
+      column: $state.table.regionPack,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -6073,6 +6564,16 @@ class $$FoodItemsTableOrderingComposer
 
   ColumnOrderings<bool> get isCustom => $state.composableBuilder(
       column: $state.table.isCustom,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get brand => $state.composableBuilder(
+      column: $state.table.brand,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get regionPack => $state.composableBuilder(
+      column: $state.table.regionPack,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
@@ -6737,6 +7238,9 @@ typedef $$WorkoutSetsTableCreateCompanionBuilder = WorkoutSetsCompanion
   Value<String?> setNotes,
   Value<String?> uuid,
   Value<String> setType,
+  Value<int?> durationSeconds,
+  Value<double?> distanceKm,
+  Value<double?> inclinePercentage,
 });
 typedef $$WorkoutSetsTableUpdateCompanionBuilder = WorkoutSetsCompanion
     Function({
@@ -6752,6 +7256,9 @@ typedef $$WorkoutSetsTableUpdateCompanionBuilder = WorkoutSetsCompanion
   Value<String?> setNotes,
   Value<String?> uuid,
   Value<String> setType,
+  Value<int?> durationSeconds,
+  Value<double?> distanceKm,
+  Value<double?> inclinePercentage,
 });
 
 class $$WorkoutSetsTableTableManager extends RootTableManager<
@@ -6783,6 +7290,9 @@ class $$WorkoutSetsTableTableManager extends RootTableManager<
             Value<String?> setNotes = const Value.absent(),
             Value<String?> uuid = const Value.absent(),
             Value<String> setType = const Value.absent(),
+            Value<int?> durationSeconds = const Value.absent(),
+            Value<double?> distanceKm = const Value.absent(),
+            Value<double?> inclinePercentage = const Value.absent(),
           }) =>
               WorkoutSetsCompanion(
             id: id,
@@ -6797,6 +7307,9 @@ class $$WorkoutSetsTableTableManager extends RootTableManager<
             setNotes: setNotes,
             uuid: uuid,
             setType: setType,
+            durationSeconds: durationSeconds,
+            distanceKm: distanceKm,
+            inclinePercentage: inclinePercentage,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -6811,6 +7324,9 @@ class $$WorkoutSetsTableTableManager extends RootTableManager<
             Value<String?> setNotes = const Value.absent(),
             Value<String?> uuid = const Value.absent(),
             Value<String> setType = const Value.absent(),
+            Value<int?> durationSeconds = const Value.absent(),
+            Value<double?> distanceKm = const Value.absent(),
+            Value<double?> inclinePercentage = const Value.absent(),
           }) =>
               WorkoutSetsCompanion.insert(
             id: id,
@@ -6825,6 +7341,9 @@ class $$WorkoutSetsTableTableManager extends RootTableManager<
             setNotes: setNotes,
             uuid: uuid,
             setType: setType,
+            durationSeconds: durationSeconds,
+            distanceKm: distanceKm,
+            inclinePercentage: inclinePercentage,
           ),
         ));
 }
@@ -6884,6 +7403,21 @@ class $$WorkoutSetsTableFilterComposer
 
   ColumnFilters<String> get setType => $state.composableBuilder(
       column: $state.table.setType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get durationSeconds => $state.composableBuilder(
+      column: $state.table.durationSeconds,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get distanceKm => $state.composableBuilder(
+      column: $state.table.distanceKm,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get inclinePercentage => $state.composableBuilder(
+      column: $state.table.inclinePercentage,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -6956,6 +7490,21 @@ class $$WorkoutSetsTableOrderingComposer
 
   ColumnOrderings<String> get setType => $state.composableBuilder(
       column: $state.table.setType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get durationSeconds => $state.composableBuilder(
+      column: $state.table.durationSeconds,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get distanceKm => $state.composableBuilder(
+      column: $state.table.distanceKm,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get inclinePercentage => $state.composableBuilder(
+      column: $state.table.inclinePercentage,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -8298,6 +8847,102 @@ class $$MealTemplateItemsTableOrderingComposer
   }
 }
 
+typedef $$UserSettingsTableCreateCompanionBuilder = UserSettingsCompanion
+    Function({
+  required String key,
+  required String value,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+typedef $$UserSettingsTableUpdateCompanionBuilder = UserSettingsCompanion
+    Function({
+  Value<String> key,
+  Value<String> value,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$UserSettingsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $UserSettingsTable,
+    UserSetting,
+    $$UserSettingsTableFilterComposer,
+    $$UserSettingsTableOrderingComposer,
+    $$UserSettingsTableCreateCompanionBuilder,
+    $$UserSettingsTableUpdateCompanionBuilder> {
+  $$UserSettingsTableTableManager(_$AppDatabase db, $UserSettingsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$UserSettingsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$UserSettingsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> key = const Value.absent(),
+            Value<String> value = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              UserSettingsCompanion(
+            key: key,
+            value: value,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String key,
+            required String value,
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              UserSettingsCompanion.insert(
+            key: key,
+            value: value,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$UserSettingsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $UserSettingsTable> {
+  $$UserSettingsTableFilterComposer(super.$state);
+  ColumnFilters<String> get key => $state.composableBuilder(
+      column: $state.table.key,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get value => $state.composableBuilder(
+      column: $state.table.value,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$UserSettingsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $UserSettingsTable> {
+  $$UserSettingsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get key => $state.composableBuilder(
+      column: $state.table.key,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get value => $state.composableBuilder(
+      column: $state.table.value,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -8327,4 +8972,6 @@ class $AppDatabaseManager {
       $$MealTemplatesTableTableManager(_db, _db.mealTemplates);
   $$MealTemplateItemsTableTableManager get mealTemplateItems =>
       $$MealTemplateItemsTableTableManager(_db, _db.mealTemplateItems);
+  $$UserSettingsTableTableManager get userSettings =>
+      $$UserSettingsTableTableManager(_db, _db.userSettings);
 }

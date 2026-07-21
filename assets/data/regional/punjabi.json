@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Sarson ka Saag",
+    "name_hindi": "सरसों का साग",
+    "calories": 140,
+    "protein_g": 3.5,
+    "carbs_g": 12.0,
+    "fat_g": 8.0,
+    "fiber_g": 4.5,
+    "serving_size": 1.0,
+    "serving_unit": "katori",
+    "category": "Vegetables & Sabjis"
+  },
+  {
+    "name": "Makki di Roti",
+    "name_hindi": "मक्के की रोटी",
+    "calories": 150,
+    "protein_g": 3.0,
+    "carbs_g": 28.0,
+    "fat_g": 3.0,
+    "fiber_g": 3.2,
+    "serving_size": 1.0,
+    "serving_unit": "piece",
+    "category": "Grains & Breads"
+  },
+  {
+    "name": "Chole Bhature",
+    "name_hindi": "छोले भटूरे",
+    "calories": 550,
+    "protein_g": 12.0,
+    "carbs_g": 68.0,
+    "fat_g": 24.0,
+    "fiber_g": 8.0,
+    "serving_size": 1.0,
+    "serving_unit": "plate",
+    "category": "Snacks & Street Food"
+  },
+  {
+    "name": "Dal Makhani",
+    "name_hindi": "दाल मखनी",
+    "calories": 210,
+    "protein_g": 8.5,
+    "carbs_g": 22.0,
+    "fat_g": 10.5,
+    "fiber_g": 6.2,
+    "serving_size": 1.0,
+    "serving_unit": "katori",
+    "category": "Dals & Legumes"
+  },
+  {
+    "name": "Sweet Lassi",
+    "name_hindi": "मीठी लस्सी",
+    "calories": 220,
+    "protein_g": 6.0,
+    "carbs_g": 32.0,
+    "fat_g": 7.0,
+    "fiber_g": 0.0,
+    "serving_size": 1.0,
+    "serving_unit": "glass",
+    "category": "Beverages"
+  }
+]

@@ -8,6 +8,8 @@ import '../../data/repositories/food_api_service.dart';
 import '../../data/repositories/food_repository.dart';
 import 'barcode_scanner_screen.dart';
 import 'custom_food_editor_screen.dart';
+import 'meal_templates_screen.dart';
+
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
   final String mealType; // "breakfast", "lunch", "dinner", "snack"
@@ -22,7 +24,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<FoodItem> _localResults = [];
   List<FoodApiResult> _onlineResults = [];
+  List<FoodItem> _recentResults = [];
   bool _searching = false;
+  bool _loadingRecent = true;
   Timer? _debounceTimer;
   bool _isOnlineSearchOffline = false;
 
@@ -30,6 +34,26 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _loadRecentFoods();
+  }
+
+  Future<void> _loadRecentFoods() async {
+    try {
+      final repo = ref.read(foodRepositoryProvider);
+      final recent = await repo.getRecentFoods(20);
+      if (mounted) {
+        setState(() {
+          _recentResults = recent;
+          _loadingRecent = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingRecent = false;
+        });
+      }
+    }
   }
 
   @override
@@ -246,9 +270,23 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: const Icon(Icons.bookmark_border_rounded, color: AppColors.primary),
+            tooltip: 'My Meal Templates',
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MealTemplatesScreen(initialMealType: widget.mealType),
+                ),
+              );
+              if (result == true && mounted) Navigator.pop(context);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary),
             tooltip: 'Scan Barcode',
             onPressed: () {
+
               _showBarcodePermissionRationale(context, () async {
                 final result = await Navigator.push<FoodApiResult?>(
                   context,
@@ -310,7 +348,20 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               child: _searching
                   ? const SkeletonList(count: 6)
                   : _searchController.text.isEmpty
-                      ? _buildEmptyState()
+                      ? (_recentResults.isNotEmpty
+                          ? ListView(
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Text(
+                                    'RECENTLY LOGGED FOODS',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary, letterSpacing: 1.0),
+                                  ),
+                                ),
+                                ..._recentResults.map((food) => _buildLocalItemRow(food)),
+                              ],
+                            )
+                          : _buildEmptyState())
                       : ListView(
                           children: [
                             if (_isOnlineSearchOffline)

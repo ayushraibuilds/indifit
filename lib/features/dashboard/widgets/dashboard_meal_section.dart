@@ -7,6 +7,7 @@ import '../../../data/repositories/food_repository.dart';
 import '../../food_log/ai_meal_logger_screen.dart';
 import '../../food_log/food_search_screen.dart';
 import '../../food_log/meal_templates_screen.dart';
+import '../../food_log/thali_builder_screen.dart';
 import '../../food_log/widgets/edit_food_log_sheet.dart';
 import '../dashboard_controller.dart';
 
@@ -103,6 +104,19 @@ class _MealCard extends ConsumerWidget {
               ),
               const Divider(color: AppColors.border),
               ListTile(
+                leading: const Icon(Icons.restaurant_menu_rounded, color: AppColors.success),
+                title: const Text('Thali Builder (Multi-item)', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Compose a custom plate with running macros'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ThaliBuilderScreen(mealType: type)),
+                  );
+                },
+              ),
+              const Divider(color: AppColors.border),
+              ListTile(
                 leading: const Icon(Icons.psychology_rounded, color: AppColors.success),
                 title: const Text('AI Meal Estimator', style: TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: const Text('Estimate calories & macros from photos or text'),
@@ -189,6 +203,66 @@ class _MealCard extends ConsumerWidget {
         .where((id) => id.isNotEmpty)
         .toSet();
 
+    // 1. Pick target date
+    final targetDate = await showModalBottomSheet<DateTime>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final today = DateTime.now();
+        final tomorrow = today.add(const Duration(days: 1));
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Copy to target date…',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.today_rounded, color: AppColors.primary),
+                title: const Text('Today'),
+                onTap: () => Navigator.pop(ctx, today),
+              ),
+              ListTile(
+                leading: const Icon(Icons.next_plan_rounded, color: AppColors.success),
+                title: const Text('Tomorrow'),
+                onTap: () => Navigator.pop(ctx, tomorrow),
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_month_rounded, color: AppColors.textSecondary),
+                title: const Text('Pick custom date…'),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: today,
+                    firstDate: today.subtract(const Duration(days: 30)),
+                    lastDate: today.add(const Duration(days: 30)),
+                  );
+                  if (picked != null) {
+                    if (ctx.mounted) Navigator.pop(ctx, picked);
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (targetDate == null) return;
+
+    // 2. Pick target meal type
+    if (!context.mounted) return;
     final targetType = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.surface,
@@ -211,7 +285,7 @@ class _MealCard extends ConsumerWidget {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Copy meal to…',
+                    'Copy to meal…',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -219,8 +293,8 @@ class _MealCard extends ConsumerWidget {
               ...options.entries.map(
                 (e) => ListTile(
                   title: Text(e.value),
-                  trailing: e.key == type
-                      ? const Text('(same meal)', style: TextStyle(fontSize: 12, color: AppColors.textMuted))
+                  trailing: e.key == type && targetDate.day == DateTime.now().day
+                      ? const Text('(same)', style: TextStyle(fontSize: 12, color: AppColors.textMuted))
                       : null,
                   onTap: () => Navigator.pop(ctx, e.key),
                 ),
@@ -235,28 +309,35 @@ class _MealCard extends ConsumerWidget {
     if (targetType == null) return;
 
     final repo = ref.read(foodRepositoryProvider);
-    final now = DateTime.now();
 
     if (groupIds.length == 1) {
       await repo.copyMealGroup(
         groupId: groupIds.first,
-        targetDate: now,
+        targetDate: targetDate,
         targetMealType: targetType,
       );
     } else {
       // Fallback: re-log each item as a fresh group under the target meal.
       final tempId = await repo.saveMealTemplate(
-        name: '_copy_tmp_${now.millisecondsSinceEpoch}',
+        name: '_copy_tmp_${targetDate.millisecondsSinceEpoch}',
         defaultMealType: targetType,
         items: mealLogs,
       );
-      await repo.logFromMealTemplate(templateId: tempId, mealType: targetType, loggedAt: now);
+      await repo.logFromMealTemplate(templateId: tempId, mealType: targetType, loggedAt: targetDate);
       await repo.deleteMealTemplate(tempId);
     }
 
     if (!context.mounted) return;
+    final dateStr = targetDate.day == DateTime.now().day
+        ? 'Today'
+        : targetDate.day == DateTime.now().add(const Duration(days: 1)).day
+            ? 'Tomorrow'
+            : '${targetDate.day}/${targetDate.month}';
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Copied $title → $targetType')),
+      SnackBar(
+        content: Text('Copied $title → $targetType ($dateStr)'),
+        backgroundColor: AppColors.success,
+      ),
     );
   }
 

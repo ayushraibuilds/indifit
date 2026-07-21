@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' show Value;
 
 import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/confetti_overlay.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -17,10 +18,12 @@ import 'widgets/calorie_ring_card.dart';
 import 'widgets/dashboard_date_bar.dart';
 import 'widgets/dashboard_meal_section.dart';
 import 'widgets/quick_log_bottom_sheet.dart';
+import 'widgets/streak_freeze_card.dart';
 import 'widgets/today_workout_card.dart';
 import 'widgets/todays_activity_card.dart';
 import 'widgets/water_tracker_card.dart';
 import 'widgets/weight_sparkline_card.dart';
+
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -166,60 +169,111 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               eatenFat += log.fatG;
             }
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(context, state),
-                  const SizedBox(height: 12),
-                  DashboardDateBar(
-                    selectedDate: state.selectedDate,
-                    onDateChanged: (newDate) => controller.setSelectedDate(newDate),
-                  ),
-                  const SizedBox(height: 16),
-                  CalorieRingCard(
-                    eatenCalories: eatenCalories,
-                    eatenProtein: eatenProtein,
-                    eatenCarbs: eatenCarbs,
-                    eatenFat: eatenFat,
-                  ),
-                  const SizedBox(height: 16),
-                  const TodaysActivityCard(),
-                  const SizedBox(height: 16),
-                  _buildQuickActionsRow(state),
-                  const SizedBox(height: 16),
-                  DashboardMealSection(logs: logs),
-                  const SizedBox(height: 16),
-                  TodayWorkoutCard(
-                    todayWorkoutName: state.todayWorkoutName,
-                    isRestDay: state.isRestDay,
-                    exerciseCount: state.todayExercises.length,
-                    onStartWorkout: () => _startTodayWorkout(state),
-                    onRepeatWorkout: (lastSession) async {
-                      final exercises = await controller.getRepeatWorkoutExercises(lastSession);
-                      if (context.mounted) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => WorkoutPlayerScreen(
-                              routineName: lastSession.name,
-                              exercises: exercises,
-                            ),
+            final isCalorieGoalMet = eatenCalories >= state.calorieGoal && state.calorieGoal > 0;
+
+            return ConfettiOverlay(
+              isPlaying: isCalorieGoalMet,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(context, state),
+                    const SizedBox(height: 12),
+                    DashboardDateBar(
+                      selectedDate: state.selectedDate,
+                      onDateChanged: (newDate) => controller.setSelectedDate(newDate),
+                    ),
+                    if (state.weeklyActionText != null) ...[
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'WEEKLY FOCUS ACTION',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${state.weeklyActionProgress}/${state.weeklyActionTarget}',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                state.weeklyActionText!,
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 8),
+                              LinearProgressIndicator(
+                                value: state.weeklyActionTarget > 0
+                                    ? (state.weeklyActionProgress / state.weeklyActionTarget).clamp(0.0, 1.0)
+                                    : 0.0,
+                                backgroundColor: AppColors.border,
+                                color: AppColors.primary,
+                                minHeight: 6,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ],
                           ),
-                        ).then((_) => controller.loadStateData());
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  const WaterTrackerCard(),
-                  const SizedBox(height: 16),
-                  WeightSparklineCard(
-                    currentWeight: state.currentWeight,
-                    weightHistory: state.weightHistory,
-                    onWeightAdjusted: (w) => controller.updateWeight(w),
-                  ),
-                ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    const StreakFreezeCard(),
+                    const SizedBox(height: 16),
+                    CalorieRingCard(
+                      eatenCalories: eatenCalories,
+                      eatenProtein: eatenProtein,
+                      eatenCarbs: eatenCarbs,
+                      eatenFat: eatenFat,
+                    ),
+                    const SizedBox(height: 16),
+                    const TodaysActivityCard(),
+                    const SizedBox(height: 16),
+                    DashboardMealSection(logs: logs),
+                    const SizedBox(height: 16),
+                    TodayWorkoutCard(
+                      todayWorkoutName: state.todayWorkoutName,
+                      isRestDay: state.isRestDay,
+                      exerciseCount: state.todayExercises.length,
+                      onStartWorkout: () => _startTodayWorkout(state),
+                      onRepeatWorkout: (lastSession) async {
+                        final exercises = await controller.getRepeatWorkoutExercises(lastSession);
+                        if (context.mounted) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => WorkoutPlayerScreen(
+                                routineName: lastSession.name,
+                                exercises: exercises,
+                              ),
+                            ),
+                          ).then((_) => controller.loadStateData());
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    const WaterTrackerCard(),
+                    const SizedBox(height: 16),
+                    WeightSparklineCard(
+                      currentWeight: state.currentWeight,
+                      weightHistory: state.weightHistory,
+                      onWeightAdjusted: (w) => controller.updateWeight(w),
+                    ),
+
+                  ],
+                ),
               ),
             );
           },

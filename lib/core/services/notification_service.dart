@@ -3,6 +3,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:drift/drift.dart';
+import '../../data/database/app_database.dart';
 
 /// Non-annoying, engagement-optimized local notification service.
 ///
@@ -41,6 +43,9 @@ class NotificationService {
   static const String prefRemindWater = 'pref_remind_water';
   static const String prefRemindEvening = 'pref_remind_evening';
   static const String prefRemindWeekly = 'pref_remind_weekly';
+  static const String prefQuietHoursEnabled = 'pref_quiet_hours_enabled';
+  static const String prefQuietHoursStart = 'pref_quiet_hours_start';
+  static const String prefQuietHoursEnd = 'pref_quiet_hours_end';
 
   static Function(String payload)? onNotificationNavigate;
 
@@ -122,7 +127,7 @@ class NotificationService {
   // ────────────────────────────────────────
 
   /// Re-schedules all enabled reminders. Call after any preference change.
-  static Future<void> scheduleAllReminders() async {
+  static Future<void> scheduleAllReminders([AppDatabase? db]) async {
     // Cancel everything first to prevent duplicates on re-schedule
     await _plugin.cancelAll();
 
@@ -134,13 +139,53 @@ class NotificationService {
     final eveningEnabled = prefs.getBool(prefRemindEvening) ?? false;
     final weeklyEnabled = prefs.getBool(prefRemindWeekly) ?? false;
 
-    if (workoutEnabled) await _scheduleWorkoutReminder();
-    if (mealsEnabled) await _scheduleMealReminders();
-    if (waterEnabled) await _scheduleWaterReminders();
-    if (eveningEnabled) await _scheduleEveningNudge();
-    if (weeklyEnabled) await _scheduleWeeklyReport();
+    final quietHoursEnabled = prefs.getBool(prefQuietHoursEnabled) ?? true;
+    final quietHoursStart = prefs.getInt(prefQuietHoursStart) ?? 22; // 10 PM
+    final quietHoursEnd = prefs.getInt(prefQuietHoursEnd) ?? 7; // 7 AM
 
-    debugPrint('All notification reminders rescheduled.');
+    bool hasWorkoutToday = false;
+    bool hasLunchToday = false;
+    bool hasDinnerToday = false;
+    bool hasAnyFoodToday = false;
+
+    if (db != null) {
+      try {
+        final now = DateTime.now();
+        final startOfDay = DateTime(now.year, now.month, now.day);
+        final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+        final sessions = await (db.select(db.workoutSessions)
+              ..where((tbl) => tbl.completedAt.isBetweenValues(startOfDay, endOfDay)))
+            .get();
+        hasWorkoutToday = sessions.isNotEmpty;
+
+        final foodLogs = await (db.select(db.foodLogs)
+              ..where((tbl) => tbl.loggedAt.isBetweenValues(startOfDay, endOfDay)))
+            .get();
+
+        hasAnyFoodToday = foodLogs.isNotEmpty;
+        hasLunchToday = foodLogs.any((l) => l.mealType.toLowerCase() == 'lunch');
+        hasDinnerToday = foodLogs.any((l) => l.mealType.toLowerCase() == 'dinner');
+      } catch (_) {}
+    }
+
+    if (workoutEnabled && !hasWorkoutToday) {
+      await _scheduleWorkoutReminder(quietHoursEnabled, quietHoursStart, quietHoursEnd);
+    }
+    if (mealsEnabled) {
+      await _scheduleMealReminders(hasLunchToday, hasDinnerToday, quietHoursEnabled, quietHoursStart, quietHoursEnd);
+    }
+    if (waterEnabled) {
+      await _scheduleWaterReminders(quietHoursEnabled, quietHoursStart, quietHoursEnd);
+    }
+    if (eveningEnabled && (!hasAnyFoodToday || !hasWorkoutToday)) {
+      await _scheduleEveningNudge(quietHoursEnabled, quietHoursStart, quietHoursEnd);
+    }
+    if (weeklyEnabled) {
+      await _scheduleWeeklyReport(quietHoursEnabled, quietHoursStart, quietHoursEnd);
+    }
+
+    debugPrint('All notification reminders rescheduled cleanly.');
   }
 
   // ────────────────────────────────────────
@@ -148,7 +193,7 @@ class NotificationService {
   // ────────────────────────────────────────
 
   /// 🏋️ Daily workout reminder at 7:30 AM
-  static Future<void> _scheduleWorkoutReminder() async {
+  static Future<void> _scheduleWorkoutReminder(bool quietHoursEnabled, int quietStart, int quietEnd) async {
     await _scheduleDailyNotification(
       id: _idWorkout,
       channelId: _workoutChannelId,
@@ -158,40 +203,49 @@ class NotificationService {
       title: '🏋️ Time to Train!',
       body: 'Your muscles are waiting. Open IndiFit and start your workout.',
       payload: 'workout',
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietStart,
+      quietHoursEnd: quietEnd,
     );
   }
 
   /// 🍱 Meal logging reminders — only post-lunch and post-dinner
-  /// (Skipping breakfast avoids annoying early-morning buzzes)
-  static Future<void> _scheduleMealReminders() async {
-    // Post-lunch: 1:30 PM
-    await _scheduleDailyNotification(
-      id: _idMealLunch,
-      channelId: _mealChannelId,
-      channelName: 'Meal Reminders',
-      hour: 13,
-      minute: 30,
-      title: '🍱 Log your lunch',
-      body: 'Ate something good? Snap a photo or search for it to track macros.',
-      payload: 'meal_lunch',
-    );
+  static Future<void> _scheduleMealReminders(bool hasLunchToday, bool hasDinnerToday, bool quietHoursEnabled, int quietStart, int quietEnd) async {
+    if (!hasLunchToday) {
+      await _scheduleDailyNotification(
+        id: _idMealLunch,
+        channelId: _mealChannelId,
+        channelName: 'Meal Reminders',
+        hour: 13,
+        minute: 30,
+        title: '🍱 Log your lunch',
+        body: 'Ate something good? Snap a photo or search for it to track macros.',
+        payload: 'meal_lunch',
+        quietHoursEnabled: quietHoursEnabled,
+        quietHoursStart: quietStart,
+        quietHoursEnd: quietEnd,
+      );
+    }
 
-    // Post-dinner: 8:30 PM
-    await _scheduleDailyNotification(
-      id: _idMealDinner,
-      channelId: _mealChannelId,
-      channelName: 'Meal Reminders',
-      hour: 20,
-      minute: 30,
-      title: '🍽️ Log your dinner',
-      body: 'Almost done for the day — log dinner to complete your macro tracker.',
-      payload: 'meal_dinner',
-    );
+    if (!hasDinnerToday) {
+      await _scheduleDailyNotification(
+        id: _idMealDinner,
+        channelId: _mealChannelId,
+        channelName: 'Meal Reminders',
+        hour: 20,
+        minute: 30,
+        title: '🍽️ Log your dinner',
+        body: 'Almost done for the day — log dinner to complete your macro tracker.',
+        payload: 'meal_dinner',
+        quietHoursEnabled: quietHoursEnabled,
+        quietHoursStart: quietStart,
+        quietHoursEnd: quietEnd,
+      );
+    }
   }
 
-  /// 💧 Water intake — gentle twice-daily nudges (not hourly!)
-  static Future<void> _scheduleWaterReminders() async {
-    // Mid-morning: 11:00 AM
+  /// 💧 Water intake — gentle twice-daily nudges
+  static Future<void> _scheduleWaterReminders(bool quietHoursEnabled, int quietStart, int quietEnd) async {
     await _scheduleDailyNotification(
       id: _idWaterMorning,
       channelId: _waterChannelId,
@@ -201,9 +255,11 @@ class NotificationService {
       title: '💧 Hydration check',
       body: 'Have you had enough water this morning? Tap to log glasses.',
       payload: 'water',
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietStart,
+      quietHoursEnd: quietEnd,
     );
 
-    // Mid-afternoon: 4:00 PM
     await _scheduleDailyNotification(
       id: _idWaterAfternoon,
       channelId: _waterChannelId,
@@ -213,11 +269,14 @@ class NotificationService {
       title: '💧 Afternoon hydration',
       body: 'Staying hydrated boosts workout performance. Log your water intake.',
       payload: 'water',
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietStart,
+      quietHoursEnd: quietEnd,
     );
   }
 
-  /// 🌙 Evening nudge at 9:15 PM — "Did you log today?"
-  static Future<void> _scheduleEveningNudge() async {
+  /// 🌙 Evening nudge at 9:15 PM
+  static Future<void> _scheduleEveningNudge(bool quietHoursEnabled, int quietStart, int quietEnd) async {
     await _scheduleDailyNotification(
       id: _idEveningNudge,
       channelId: _nudgeChannelId,
@@ -227,11 +286,14 @@ class NotificationService {
       title: '🌙 Log your day',
       body: 'Take 30 seconds to log anything you missed — meals, water, or workouts. Keep your streak alive!',
       payload: 'evening_nudge',
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietStart,
+      quietHoursEnd: quietEnd,
     );
   }
 
   /// 📊 Weekly AI report — Sunday at 10:00 AM
-  static Future<void> _scheduleWeeklyReport() async {
+  static Future<void> _scheduleWeeklyReport(bool quietHoursEnabled, int quietStart, int quietEnd) async {
     await _scheduleWeeklyNotification(
       id: _idWeeklyReport,
       channelId: _weeklyChannelId,
@@ -242,6 +304,9 @@ class NotificationService {
       title: '📊 Your Weekly AI Fitness Report',
       body: 'Your personalized weekly summary is ready. See calories, macros, workout volume trends, and AI coaching tips.',
       payload: 'weekly_report',
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietStart,
+      quietHoursEnd: quietEnd,
     );
   }
 
@@ -258,8 +323,17 @@ class NotificationService {
     required String title,
     required String body,
     String? payload,
+    bool quietHoursEnabled = false,
+    int quietHoursStart = 22,
+    int quietHoursEnd = 7,
   }) async {
-    final scheduledTime = _nextInstanceOfTime(hour, minute);
+    final scheduledTime = _nextInstanceOfTime(
+      hour,
+      minute,
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietHoursStart,
+      quietHoursEnd: quietHoursEnd,
+    );
 
     await _plugin.zonedSchedule(
       id,
@@ -293,8 +367,18 @@ class NotificationService {
     required String title,
     required String body,
     String? payload,
+    bool quietHoursEnabled = false,
+    int quietHoursStart = 22,
+    int quietHoursEnd = 7,
   }) async {
-    final scheduledTime = _nextInstanceOfDayAndTime(dayOfWeek, hour, minute);
+    final scheduledTime = _nextInstanceOfDayAndTime(
+      dayOfWeek,
+      hour,
+      minute,
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietHoursStart,
+      quietHoursEnd: quietHoursEnd,
+    );
 
     await _plugin.zonedSchedule(
       id,
@@ -322,22 +406,58 @@ class NotificationService {
   // Timezone-aware time calculators
   // ────────────────────────────────────────
 
-  static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+  static tz.TZDateTime _nextInstanceOfTime(
+    int hour,
+    int minute, {
+    bool quietHoursEnabled = false,
+    int quietHoursStart = 22,
+    int quietHoursEnd = 7,
+  }) {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
+
+    if (quietHoursEnabled && isInQuietHours(scheduled.hour, scheduled.minute, quietHoursStart, quietHoursEnd)) {
+      scheduled = tz.TZDateTime(tz.local, scheduled.year, scheduled.month, scheduled.day, quietHoursEnd, 0);
+      if (scheduled.isBefore(now)) {
+        scheduled = scheduled.add(const Duration(days: 1));
+      }
+    }
+
     return scheduled;
   }
 
-  static tz.TZDateTime _nextInstanceOfDayAndTime(int dayOfWeek, int hour, int minute) {
-    var scheduled = _nextInstanceOfTime(hour, minute);
+  static bool isInQuietHours(int hour, int minute, int startHour, int endHour) {
+    if (startHour > endHour) {
+      return hour >= startHour || hour < endHour;
+    } else {
+      return hour >= startHour && hour < endHour;
+    }
+  }
+
+  static tz.TZDateTime _nextInstanceOfDayAndTime(
+    int dayOfWeek,
+    int hour,
+    int minute, {
+    bool quietHoursEnabled = false,
+    int quietHoursStart = 22,
+    int quietHoursEnd = 7,
+  }) {
+    var scheduled = _nextInstanceOfTime(
+      hour,
+      minute,
+      quietHoursEnabled: quietHoursEnabled,
+      quietHoursStart: quietHoursStart,
+      quietHoursEnd: quietHoursEnd,
+    );
     while (scheduled.weekday != dayOfWeek) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
     return scheduled;
   }
+
 
   static void _configureLocalTimeZone() {
     final now = DateTime.now();
