@@ -8,6 +8,7 @@ import 'package:drift/drift.dart' show Value;
 
 import '../../core/services/notification_service.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/confetti_overlay.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 import 'widgets/plate_calculator_sheet.dart';
@@ -991,28 +992,31 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
           
           // 5. Personal Record (PR) overlay panel
           if (_showPrConfetti)
-            Container(
-              color: AppColors.primary.withOpacity(0.15),
-              child: Center(
-                child: Card(
-                  color: AppColors.surface,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('👑', style: TextStyle(fontSize: 48)),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'NEW PERSONAL RECORD!',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 16),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '$_prExerciseName: ${_prWeight.toStringAsFixed(1)} kg x $_prReps reps',
-                          style: const TextStyle(fontSize: 13),
-                        )
-                      ],
+            ConfettiOverlay(
+              isPlaying: true,
+              child: Container(
+                color: AppColors.primary.withOpacity(0.15),
+                child: Center(
+                  child: Card(
+                    color: AppColors.surface,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('👑', style: TextStyle(fontSize: 48)),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'NEW PERSONAL RECORD!',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 16),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$_prExerciseName: ${_prWeight.toStringAsFixed(1)} kg x $_prReps reps',
+                            style: const TextStyle(fontSize: 13),
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 ),

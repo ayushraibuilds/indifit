@@ -15,6 +15,7 @@ import '../../data/repositories/workout_repository.dart';
 import '../food_log/food_search_screen.dart';
 import '../food_log/ai_meal_logger_screen.dart';
 import '../food_log/ai_meal_planner_screen.dart';
+import '../food_log/widgets/edit_food_log_sheet.dart';
 import '../settings/settings_screen.dart';
 import '../workout_player/workout_player_screen.dart';
 import '../workout_player/routine_display_screen.dart';
@@ -873,6 +874,45 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 18),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: AppColors.surface,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (context) => Padding(
+                  padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                  child: EditFoodLogSheet(
+                    log: log,
+                    onSave: ({
+                      required int id,
+                      required String name,
+                      required int calories,
+                      required double proteinG,
+                      required double carbsG,
+                      required double fatG,
+                      required double servingLogged,
+                    }) async {
+                      final repo = ref.read(foodRepositoryProvider);
+                      await repo.updateFoodLog(
+                        id: id,
+                        name: name,
+                        calories: calories,
+                        proteinG: proteinG,
+                        carbsG: carbsG,
+                        fatG: fatG,
+                        servingLogged: servingLogged,
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),

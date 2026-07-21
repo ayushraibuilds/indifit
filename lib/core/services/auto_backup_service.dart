@@ -9,6 +9,11 @@ class AutoBackupService {
 
   AutoBackupService(this._db);
 
+  static Future<void> performBackup(AppDatabase db) async {
+    final service = AutoBackupService(db);
+    await service.runAutoBackup();
+  }
+
   Future<void> runAutoBackup() async {
     try {
       final docDir = await getApplicationDocumentsDirectory();

@@ -4,7 +4,7 @@ import base64
 import time
 import hashlib
 from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Header, Depends, status
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Header, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
@@ -28,9 +28,13 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 INDIFIT_API_KEY = os.getenv("INDIFIT_API_KEY", "indifit_secret_key_v1")
 AI_MODEL = os.getenv("AI_MODEL", "gemini-1.5-flash")
 
-# In-memory 24h TTL cache
+# In-memory 24h TTL cache & per-IP rate limiter
 RESPONSE_CACHE: Dict[str, dict] = {}
 CACHE_TTL_SECONDS = 86400
+
+IP_REQUEST_LOGS: Dict[str, List[float]] = {}
+RATE_LIMIT_WINDOW = 3600  # 1 hour
+MAX_REQUESTS_PER_WINDOW = 30
 
 async def verify_api_key(x_indifit_key: Optional[str] = Header(None)):
     if INDIFIT_API_KEY and x_indifit_key != INDIFIT_API_KEY:
@@ -39,6 +43,21 @@ async def verify_api_key(x_indifit_key: Optional[str] = Header(None)):
             detail="Invalid or missing x-indifit-key authentication header",
         )
     return x_indifit_key
+
+async def enforce_rate_limit(request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    timestamps = IP_REQUEST_LOGS.get(client_ip, [])
+    timestamps = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW]
+    
+    if len(timestamps) >= MAX_REQUESTS_PER_WINDOW:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded. Maximum 30 AI requests per hour per IP allowed.",
+        )
+    
+    timestamps.append(now)
+    IP_REQUEST_LOGS[client_ip] = timestamps
 
 @app.get("/health")
 async def health_check():
@@ -70,7 +89,7 @@ async def query_gemini_text(prompt: str, json_mode: bool = False) -> str:
     if not GEMINI_API_KEY:
         raise ValueError("Missing GEMINI_API_KEY env variable")
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{AI_MODEL}:generateContent?key={GEMINI_API_KEY}"
     
     headers = {"Content-Type": "application/json"}
     payload: Dict[str, Any] = {
@@ -97,7 +116,7 @@ async def query_gemini_vision(prompt: str, image_bytes: bytes, mime_type: str) -
     if not GEMINI_API_KEY:
         raise ValueError("Missing GEMINI_API_KEY env variable")
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{AI_MODEL}:generateContent?key={GEMINI_API_KEY}"
     
     headers = {"Content-Type": "application/json"}
     
@@ -226,8 +245,13 @@ async def estimate_meal_photo(image: UploadFile = File(...)):
     """
     
     try:
-        image_bytes = await image.read()
         mime_type = image.content_type or "image/jpeg"
+        if mime_type not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
+            raise HTTPException(status_code=400, detail="Invalid image MIME type. Allowed: JPEG, PNG, WebP.")
+
+        image_bytes = await image.read()
+        if len(image_bytes) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="File size exceeds maximum upload limit of 5 MB.")
         
         if not GEMINI_API_KEY:
             return _mock_meal_estimate("Photo Upload", reason="Missing GEMINI_API_KEY env variable")
@@ -517,7 +541,7 @@ async def generate_weekly_report(req: WeeklyReportRequest):
     """
 
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{AI_MODEL}:generateContent?key={GEMINI_API_KEY}"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {"response_mime_type": "application/json"}

@@ -1,21 +1,39 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/di/providers.dart';
 import 'core/di/theme_provider.dart';
 import 'core/router/app_router.dart';
-import 'core/theme/app_theme.dart';
-import 'core/theme/colors.dart';
+import 'core/services/auto_backup_service.dart';
 import 'core/services/notification_service.dart';
-import 'features/dashboard/main_navigation_scaffold.dart';
-import 'features/onboarding/onboarding_screen.dart';
+import 'core/theme/app_theme.dart';
+import 'core/utils/app_logger.dart';
+import 'data/database/app_database.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Register global crash & error handlers
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    AppLogger.recordCrash(details.exception, details.stack, context: 'FlutterError');
+  };
+
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    AppLogger.recordCrash(error, stack, context: 'PlatformDispatcher');
+    return true;
+  };
+
   // Initialize local notification service & schedule reminders
   await NotificationService.initialize();
   await NotificationService.scheduleAllReminders();
+
+  // Trigger auto-backup check in background
+  final db = AppDatabase();
+  AutoBackupService.performBackup(db).catchError((e) {
+    AppLogger.warning('Auto-backup startup check failed: $e');
+  });
 
   runApp(
     const ProviderScope(

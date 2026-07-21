@@ -43,4 +43,11 @@ class AppLogger {
       if (stackTrace != null) debugPrint('Stacktrace:\n$stackTrace');
     }
   }
+
+  static void recordCrash(dynamic exception, StackTrace? stackTrace, {String context = 'Global'}) {
+    debugPrint('[CRASH-REPORT] [$context]: $exception');
+    if (stackTrace != null) {
+      debugPrint('Stacktrace:\n$stackTrace');
+    }
+  }
 }
