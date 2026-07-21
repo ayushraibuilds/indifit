@@ -10,6 +10,8 @@ import 'core/theme/app_theme.dart';
 import 'core/utils/app_logger.dart';
 import 'data/database/app_database.dart';
 
+import 'core/services/crash_reporting_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -34,11 +36,13 @@ void main() async {
     AppLogger.warning('Auto-backup startup check failed: $e');
   });
 
-  runApp(
-    const ProviderScope(
-      child: IndiFitApp(),
-    ),
-  );
+  await CrashReportingService.initialize(() {
+    runApp(
+      const ProviderScope(
+        child: IndiFitApp(),
+      ),
+    );
+  });
 }
 
 class IndiFitApp extends ConsumerWidget {

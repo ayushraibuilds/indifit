@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../services/crash_reporting_service.dart';
 
 abstract class AppException implements Exception {
   final String message;
@@ -40,7 +41,6 @@ class AppLogger {
     if (kDebugMode) {
       debugPrint('[ERROR]${tag != null ? ' [$tag]' : ''}: $message');
       if (error != null) debugPrint('Error details: $error');
-      if (stackTrace != null) debugPrint('Stacktrace:\n$stackTrace');
     }
   }
 
@@ -49,5 +49,6 @@ class AppLogger {
     if (stackTrace != null) {
       debugPrint('Stacktrace:\n$stackTrace');
     }
+    CrashReportingService.captureException(exception, stackTrace, context: context);
   }
 }

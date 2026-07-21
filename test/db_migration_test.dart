@@ -6,10 +6,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Drift DB Schema Migration Integration Tests', () {
-    test('AppDatabase schema version 6 initializes and supports CRUD operations', () async {
+    test('AppDatabase schema version 7 initializes and supports CRUD operations', () async {
       final db = AppDatabase.memory();
 
-      expect(db.schemaVersion, 6);
+      expect(db.schemaVersion, 7);
 
       // Verify UserProfiles table CRUD (added in v5)
       await db.into(db.userProfiles).insert(
