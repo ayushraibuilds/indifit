@@ -90,6 +90,12 @@ class CrashReportingService {
     );
   }
 
+  /// Alias for captureException to support recordCrash calls
+  static void recordCrash(dynamic exception, StackTrace? stackTrace, {String context = 'Global', String? reason}) {
+    captureException(exception, stackTrace, context: reason ?? context);
+  }
+
+
   /// Enables or disables crash reporting preference
   static Future<void> setEnabled(bool enabled) async {
     _isEnabled = enabled;
