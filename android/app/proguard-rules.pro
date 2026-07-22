@@ -21,3 +21,9 @@
 
 # Keep Data Models
 -keep class com.indifit.indifit.data.** { *; }
+
+# Flutter Engine & Play Core Suppressions
+-dontwarn com.google.android.play.core.**
+-dontwarn io.flutter.embedding.engine.deferredcomponents.**
+-dontwarn **
+
