@@ -50,6 +50,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     _loadExercises();
   }
 
+  Map<String, int> _muscleCounts = {};
+
   Future<void> _loadExercises() async {
     setState(() => _loading = true);
 
@@ -59,6 +61,13 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
       // Fuzzy search based on query
       final list = await repo.searchExercises(_searchController.text);
       
+      // Calculate counts for each muscle filter badge
+      final Map<String, int> counts = {'All': list.length};
+      for (final m in _muscleFilters) {
+        if (m == 'All') continue;
+        counts[m] = list.where((ex) => ex.muscleGroups.toLowerCase().contains(m.toLowerCase())).length;
+      }
+
       // If we have a muscle filter, apply it
       List<Exercise> filtered = list;
       if (_selectedMuscle != 'All') {
@@ -67,6 +76,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
       setState(() {
         _exercises = filtered;
+        _muscleCounts = counts;
         _loading = false;
       });
     } catch (e) {
@@ -111,11 +121,14 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                 itemBuilder: (context, index) {
                   final muscle = _muscleFilters[index];
                   final isSelected = _selectedMuscle == muscle;
+                  final count = _muscleCounts[muscle] ?? 0;
+                  final labelText = '$muscle · $count';
+
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     key: ValueKey(muscle),
                     child: ChoiceChip(
-                      label: Text(muscle),
+                      label: Text(labelText),
                       selected: isSelected,
                       onSelected: (selected) {
                         if (selected) {

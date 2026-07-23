@@ -29,38 +29,35 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
         backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textMuted,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-        unselectedLabelStyle: const TextStyle(fontSize: 11),
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.today_rounded),
-            activeIcon: Icon(Icons.today_rounded, color: AppColors.primary),
+        indicatorColor: AppColors.primaryGlow,
+        animationDuration: const Duration(milliseconds: 300),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.today_outlined),
+            selectedIcon: Icon(Icons.today_rounded, color: AppColors.primary),
             label: 'Today',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center_rounded),
-            activeIcon: Icon(Icons.fitness_center_rounded, color: AppColors.primary),
+          NavigationDestination(
+            icon: Icon(Icons.fitness_center_outlined),
+            selectedIcon: Icon(Icons.fitness_center_rounded, color: AppColors.primary),
             label: 'Workouts',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.library_books_rounded),
-            activeIcon: Icon(Icons.library_books_rounded, color: AppColors.primary),
+          NavigationDestination(
+            icon: Icon(Icons.library_books_outlined),
+            selectedIcon: Icon(Icons.library_books_rounded, color: AppColors.primary),
             label: 'Exercises',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.auto_graph_rounded),
-            activeIcon: Icon(Icons.auto_graph_rounded, color: AppColors.primary),
+          NavigationDestination(
+            icon: Icon(Icons.auto_graph_outlined),
+            selectedIcon: Icon(Icons.auto_graph_rounded, color: AppColors.primary),
             label: 'Progress',
           ),
         ],

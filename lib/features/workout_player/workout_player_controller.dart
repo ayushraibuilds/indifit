@@ -242,6 +242,29 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     }
   }
 
+  void goToPreviousSet() {
+    if (state.currentSetIndex > 0) {
+      state = state.copyWith(currentSetIndex: state.currentSetIndex - 1);
+      prefillInputs();
+    } else if (state.currentExerciseIndex > 0) {
+      final prevExIndex = state.currentExerciseIndex - 1;
+      final prevEx = state.activeExercises[prevExIndex];
+      state = state.copyWith(
+        currentExerciseIndex: prevExIndex,
+        currentSetIndex: prevEx.sets - 1,
+      );
+      prefillInputs();
+    }
+  }
+
+  void selectSetIndex(int setIndex) {
+    final currentEx = state.activeExercises[state.currentExerciseIndex];
+    if (setIndex >= 0 && setIndex < currentEx.sets) {
+      state = state.copyWith(currentSetIndex: setIndex);
+      prefillInputs();
+    }
+  }
+
   void triggerPrConfetti(String exerciseName, double weight, int reps) {
     state = state.copyWith(
       prExerciseName: exerciseName,
