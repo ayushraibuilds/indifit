@@ -12,16 +12,21 @@ class DashboardDateBar extends StatelessWidget {
     required this.onDateChanged,
   });
 
-  bool get _isToday {
+  String get _formattedLabel {
     final now = DateTime.now();
-    return selectedDate.year == now.year &&
-        selectedDate.month == now.month &&
-        selectedDate.day == now.day;
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final diff = target.difference(today).inDays;
+
+    final dateStr = DateFormat('EEE, MMM d').format(selectedDate);
+    if (diff == 0) return 'Today ($dateStr)';
+    if (diff == -1) return 'Yesterday ($dateStr)';
+    if (diff == 1) return 'Tomorrow ($dateStr)';
+    return dateStr;
   }
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('EEE, MMM d').format(selectedDate);
 
     return Card(
       margin: EdgeInsets.zero,
@@ -60,7 +65,7 @@ class DashboardDateBar extends StatelessWidget {
                     const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
                     const SizedBox(width: 8),
                     Text(
-                      _isToday ? 'Today ($dateStr)' : dateStr,
+                      _formattedLabel,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ],

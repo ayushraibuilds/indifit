@@ -9,6 +9,7 @@ class CalorieRingCard extends ConsumerWidget {
   final double eatenProtein;
   final double eatenCarbs;
   final double eatenFat;
+  final double eatenFiber;
 
   const CalorieRingCard({
     super.key,
@@ -16,6 +17,7 @@ class CalorieRingCard extends ConsumerWidget {
     required this.eatenProtein,
     required this.eatenCarbs,
     required this.eatenFat,
+    this.eatenFiber = 0.0,
   });
 
   @override
@@ -82,10 +84,12 @@ class CalorieRingCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildMacroBar('Protein', eatenProtein, proteinGoal, AppColors.success),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   _buildMacroBar('Carbs', eatenCarbs, carbsGoal, AppColors.warning),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   _buildMacroBar('Fat', eatenFat, fatGoal, AppColors.danger),
+                  const SizedBox(height: 10),
+                  _buildMacroBar('Fiber', eatenFiber, 30.0, Colors.teal),
                 ],
               ),
             ),

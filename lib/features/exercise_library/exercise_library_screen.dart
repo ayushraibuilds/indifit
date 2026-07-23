@@ -197,17 +197,36 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
   }
 
   Widget _buildEmptyState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.fitness_center_rounded, size: 48, color: AppColors.textMuted),
-          SizedBox(height: 12),
-          Text(
-            'No exercises found.',
-            style: TextStyle(color: AppColors.textSecondary),
-          )
-        ],
+    final query = _searchController.text.trim();
+    final message = query.isNotEmpty
+        ? 'No exercises match "$query".\nTry a different search term or change muscle filters.'
+        : 'No exercises found in database.';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search_off_rounded, size: 48, color: AppColors.textMuted),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+            ),
+            if (query.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () {
+                  _searchController.clear();
+                },
+                icon: const Icon(Icons.clear_rounded, size: 16),
+                label: const Text('Clear Search'),
+              ),
+            ]
+          ],
+        ),
       ),
     );
   }

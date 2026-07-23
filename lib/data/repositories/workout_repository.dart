@@ -42,7 +42,9 @@ class WorkoutRepository {
 
   // 1. Search exercises locally (Fuzzy search)
   Future<List<Exercise>> searchExercises(String query) async {
-    if (query.trim().isEmpty) return [];
+    if (query.trim().isEmpty) {
+      return (await _db.select(_db.exercises).get());
+    }
     final clean = query.toLowerCase().trim();
     return (await (_db.select(_db.exercises)
           ..where((tbl) => tbl.name.lower().contains(clean) | tbl.muscleGroups.lower().contains(clean)))
@@ -211,14 +213,35 @@ class WorkoutRepository {
     double? chest,
     double? arms,
   }) async {
-    return await _db.into(_db.bodyMeasurements).insert(
-          BodyMeasurementsCompanion.insert(
-            weight: Value(weight),
-            waist: Value(waist),
-            chest: Value(chest),
-            arms: Value(arms),
-          ),
-        );
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+
+    final existing = await (_db.select(_db.bodyMeasurements)
+          ..where((tbl) => tbl.recordedAt.isBiggerOrEqualValue(todayStart) & tbl.recordedAt.isSmallerThanValue(todayEnd)))
+        .get();
+
+    if (existing.isNotEmpty) {
+      final id = existing.first.id;
+      await (_db.update(_db.bodyMeasurements)..where((tbl) => tbl.id.equals(id))).write(
+        BodyMeasurementsCompanion(
+          weight: Value(weight),
+          waist: Value(waist),
+          chest: Value(chest),
+          arms: Value(arms),
+        ),
+      );
+      return id;
+    } else {
+      return await _db.into(_db.bodyMeasurements).insert(
+            BodyMeasurementsCompanion.insert(
+              weight: Value(weight),
+              waist: Value(waist),
+              chest: Value(chest),
+              arms: Value(arms),
+            ),
+          );
+    }
   }
 
   // 10. Fetch body measurements sorted by date descending

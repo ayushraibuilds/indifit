@@ -82,6 +82,23 @@ class WeightSparklineCard extends StatelessWidget {
                         gridData: const FlGridData(show: false),
                         titlesData: const FlTitlesData(show: false),
                         borderData: FlBorderData(show: false),
+                        lineTouchData: LineTouchData(
+                          enabled: true,
+                          touchTooltipData: LineTouchTooltipData(
+                            getTooltipItems: (touchedSpots) {
+                              return touchedSpots.map((spot) {
+                                return LineTooltipItem(
+                                  '${spot.y.toStringAsFixed(1)} kg',
+                                  const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                );
+                              }).toList();
+                            },
+                          ),
+                        ),
                         minX: 0,
                         maxX: (weightHistory.length - 1).toDouble(),
                         minY: minW,
@@ -93,7 +110,7 @@ class WeightSparklineCard extends StatelessWidget {
                             color: AppColors.primary,
                             barWidth: 3,
                             isStrokeCapRound: true,
-                            dotData: const FlDotData(show: false),
+                            dotData: const FlDotData(show: true),
                             belowBarData: BarAreaData(
                               show: true,
                               color: AppColors.primary.withOpacity(0.08),

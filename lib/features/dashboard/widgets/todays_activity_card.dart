@@ -43,12 +43,38 @@ class TodaysActivityCard extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    Text(
-                      data.isConnected ? 'Health Sync Active' : 'Not Connected',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: data.isConnected ? AppColors.success : AppColors.textMuted,
+                    InkWell(
+                      onTap: () async {
+                        await healthService.requestPermissions();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: data.isConnected ? AppColors.success.withValues(alpha: 0.12) : AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: data.isConnected ? AppColors.success.withValues(alpha: 0.3) : AppColors.primary.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              data.isConnected ? Icons.check_circle_rounded : Icons.link_rounded,
+                              size: 12,
+                              color: data.isConnected ? AppColors.success : AppColors.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              data.isConnected ? 'Health Sync Active' : 'Connect Health',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: data.isConnected ? AppColors.success : AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

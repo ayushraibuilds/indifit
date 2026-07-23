@@ -81,6 +81,7 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 11) {
             await upsertSeededFoodsFromAsset();
+            await seedExercisesFromAsset();
           }
         },
 
