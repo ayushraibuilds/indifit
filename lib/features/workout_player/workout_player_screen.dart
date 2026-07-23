@@ -143,7 +143,13 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
 
     final recommendedRest = _getRecommendedRestSeconds(currentEx.exerciseName);
     if (mounted) {
-      await RestTimerBottomSheet.show(context, recommendedRest);
+      final updatedState = ref.read(_controllerProvider);
+      if (updatedState.showPrConfetti) {
+        await Future.delayed(const Duration(milliseconds: 1500));
+      }
+      if (mounted) {
+        await RestTimerBottomSheet.show(context, recommendedRest);
+      }
     }
 
     final totalSetsRequired = currentEx.sets;

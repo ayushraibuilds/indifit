@@ -88,6 +88,44 @@ class WaterTrackerCard extends ConsumerWidget {
                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
               ),
             ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildQuickChip(ref, '+250ml', 1),
+                _buildQuickChip(ref, '+500ml', 2),
+                _buildQuickChip(ref, '+750ml', 3),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickChip(WidgetRef ref, String label, int glasses) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        ref.read(waterProvider.notifier).logWater(glasses);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.blue.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.add_rounded, size: 12, color: Colors.blueAccent),
+            const SizedBox(width: 2),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+            ),
           ],
         ),
       ),

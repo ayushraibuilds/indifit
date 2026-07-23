@@ -56,14 +56,14 @@ class _MealCard extends ConsumerWidget {
     required this.selectedDate,
   });
 
-  void _showAddMealSheet(BuildContext context) {
+  void _showAddMealSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
+      builder: (sheetCtx) {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 20.0),
           child: Column(
@@ -74,7 +74,55 @@ class _MealCard extends ConsumerWidget {
                 'Log Food Item',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+              FutureBuilder<List<FoodLog>>(
+                future: ref.read(foodRepositoryProvider).getLastLoggedMeal(type),
+                builder: (context, snapshot) {
+                  final recent = snapshot.data ?? [];
+                  if (recent.isEmpty) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final repo = ref.read(foodRepositoryProvider);
+                          for (final item in recent) {
+                            await repo.logFoodEntry(
+                              name: item.name,
+                              calories: item.calories,
+                              proteinG: item.proteinG,
+                              carbsG: item.carbsG,
+                              fatG: item.fatG,
+                              servingLogged: item.servingLogged,
+                              servingUnit: item.servingUnit,
+                              mealType: type,
+                              foodItemId: item.foodItemId,
+                            );
+                          }
+                          if (context.mounted) {
+                            Navigator.pop(sheetCtx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Re-logged recent $title items!'),
+                                backgroundColor: AppColors.success,
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.history_toggle_off_rounded, size: 16),
+                        label: Text('Repeat ${recent.length} recent item${recent.length > 1 ? 's' : ''}'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          minimumSize: const Size.fromHeight(36),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
               ListTile(
                 leading: const Icon(Icons.search_rounded, color: AppColors.primary),
                 title: const Text('Search Food Database', style: TextStyle(fontWeight: FontWeight.w600)),
@@ -346,13 +394,37 @@ class _MealCard extends ConsumerWidget {
     final mealLogs = allLogs.where((l) => l.mealType == type).toList();
     int totalCals = mealLogs.fold(0, (sum, item) => sum + item.calories);
 
+    Color accentColor = AppColors.primary;
+    IconData mealIcon = Icons.restaurant_rounded;
+    if (type == 'breakfast') {
+      accentColor = Colors.amber;
+      mealIcon = Icons.wb_sunny_outlined;
+    } else if (type == 'lunch') {
+      accentColor = Colors.green;
+      mealIcon = Icons.wb_twilight_rounded;
+    } else if (type == 'dinner') {
+      accentColor = Colors.indigoAccent;
+      mealIcon = Icons.nightlight_round;
+    } else if (type == 'snack') {
+      accentColor = Colors.deepOrangeAccent;
+      mealIcon = Icons.cookie_outlined;
+    }
+
     return Card(
       child: ExpansionTile(
+        leading: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(mealIcon, color: accentColor, size: 18),
+        ),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            Text('$totalCals kcal', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
+            Text('$totalCals kcal', style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 14)),
           ],
         ),
         subtitle: Text(
@@ -361,7 +433,7 @@ class _MealCard extends ConsumerWidget {
         ),
         trailing: IconButton(
           icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
-          onPressed: () => _showAddMealSheet(context),
+          onPressed: () => _showAddMealSheet(context, ref),
         ),
         childrenPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         children: [

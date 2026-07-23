@@ -91,9 +91,13 @@ class PriorSessionCard extends StatelessWidget {
                 children: [
                   const Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 14),
                   const SizedBox(width: 8),
-                  Text(
-                    'AI Recommendation: ${suggestedWeight.toStringAsFixed(1)} kg for progressive overload',
-                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 11),
+                  Expanded(
+                    child: Text(
+                      'AI Recommendation: ${suggestedWeight.toStringAsFixed(1)} kg for progressive overload',
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 11),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),

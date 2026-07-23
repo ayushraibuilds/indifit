@@ -62,9 +62,13 @@ class StreakFreezeCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    freezes == 0
-                        ? 'No freeze tokens left! Your streak is unprotected.'
-                        : 'Your streak is protected for $freezes missed day${freezes > 1 ? 's' : ''}.',
+                    state.streakCount == 0
+                        ? (freezes == 0
+                            ? 'No freeze tokens! Log a workout to start your streak.'
+                            : 'Start a streak today to activate your freeze protection shield.')
+                        : (freezes == 0
+                            ? 'No freeze tokens left! Your streak is unprotected.'
+                            : 'Your streak is protected for $freezes missed day${freezes > 1 ? 's' : ''}.'),
                     style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12,

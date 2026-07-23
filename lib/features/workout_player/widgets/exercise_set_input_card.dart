@@ -197,9 +197,10 @@ class ExerciseSetInputCard extends StatelessWidget {
                 children: [6, 7, 8, 9, 10].map((rpe) {
                   final isSelected = selectedRpe == rpe;
                   return Padding(
-                    padding: const EdgeInsets.only(right: 6.0),
+                    padding: const EdgeInsets.only(right: 8.0),
                     child: ChoiceChip(
-                      label: Text('@$rpe', style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : AppColors.textSecondary)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      label: Text('@$rpe', style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Colors.white : AppColors.textSecondary)),
                       selected: isSelected,
                       selectedColor: AppColors.primary,
                       onSelected: (val) => onRpeChanged(val ? rpe : null),

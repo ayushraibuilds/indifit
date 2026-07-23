@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/di/user_profile_provider.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -92,6 +93,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   ),
                   const SizedBox(height: 8),
                   _buildWeightChartCard(),
+                  const SizedBox(height: 12),
+                  _buildBmiHealthCard(),
                   const SizedBox(height: 20),
 
                   // 3. Workout Volume Trend Card (Strength progression)
@@ -105,6 +108,64 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildBmiHealthCard() {
+    final double? weightKg = _measurements.isNotEmpty ? _measurements.first.weight : null;
+
+    if (weightKg == null || weightKg <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    const double heightCm = 170.0;
+    const double heightM = heightCm / 100.0;
+    final double bmi = weightKg / (heightM * heightM);
+
+    String category = 'Normal';
+    Color categoryColor = AppColors.success;
+    if (bmi < 18.5) {
+      category = 'Underweight';
+      categoryColor = AppColors.warning;
+    } else if (bmi >= 25.0 && bmi < 30.0) {
+      category = 'Overweight';
+      categoryColor = Colors.orangeAccent;
+    } else if (bmi >= 30.0) {
+      category = 'Obese';
+      categoryColor = AppColors.danger;
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Body Mass Index (BMI)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 4),
+                Text('Based on ${weightKg.toStringAsFixed(1)} kg & 170 cm baseline', style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: categoryColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: categoryColor.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                children: [
+                  Text(bmi.toStringAsFixed(1), style: TextStyle(fontWeight: FontWeight.bold, color: categoryColor, fontSize: 16)),
+                  Text(category, style: TextStyle(color: categoryColor, fontSize: 10, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -130,7 +191,26 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             ),
             const SizedBox(height: 16),
             
-            // Grid layout
+            if (_activityDays.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                alignment: Alignment.center,
+                child: const Column(
+                  children: [
+                    Icon(Icons.calendar_month_outlined, size: 36, color: AppColors.textSecondary),
+                    SizedBox(height: 8),
+                    Text('No Workout History Yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    SizedBox(height: 4),
+                    Text(
+                      'Log your first workout session to start filling your consistency heatmap!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                    ),
+                  ],
+                ),
+              )
+            else
+              // Grid layout
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(12, (colIndex) {
@@ -323,7 +403,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           children: _measurements.take(3).map((m) {
             final dateStr = '${m.recordedAt.day}/${m.recordedAt.month}/${m.recordedAt.year}';
             final List<String> details = [];
-            if (m.weight != null) details.add('Weight: ${m.weight}kg');
+            if (m.weight != null) details.add('Weight: ${m.weight!.toStringAsFixed(1)}kg');
             if (m.waist != null) details.add('Waist: ${m.waist}cm');
             if (m.chest != null) details.add('Chest: ${m.chest}cm');
             if (m.arms != null) details.add('Arms: ${m.arms}cm');
@@ -351,10 +431,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }
 
   void _showLogMeasurementModal() {
-    final weightController = TextEditingController();
-    final waistController = TextEditingController();
-    final chestController = TextEditingController();
-    final armsController = TextEditingController();
+    final latest = _measurements.isNotEmpty ? _measurements.first : null;
+    final weightController = TextEditingController(text: latest?.weight != null ? latest!.weight!.toStringAsFixed(1) : '');
+    final waistController = TextEditingController(text: latest?.waist != null ? latest!.waist!.toStringAsFixed(1) : '');
+    final chestController = TextEditingController(text: latest?.chest != null ? latest!.chest!.toStringAsFixed(1) : '');
+    final armsController = TextEditingController(text: latest?.arms != null ? latest!.arms!.toStringAsFixed(1) : '');
     final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
@@ -525,14 +606,25 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 'Total Lifted per Session',
                 style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Container(
-                height: 100,
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                 alignment: Alignment.center,
-                child: const Text(
-                  'Complete your first workout to track volume progression.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                  textAlign: TextAlign.center,
+                child: const Column(
+                  children: [
+                    Icon(Icons.show_chart_rounded, size: 36, color: AppColors.primary),
+                    SizedBox(height: 8),
+                    Text(
+                      'Track Your Volume Over Time',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Complete workout sessions to unlock your volume progression chart.',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
             ],
