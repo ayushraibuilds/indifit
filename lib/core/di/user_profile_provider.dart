@@ -11,6 +11,7 @@ class UserProfileState {
   final double carbsGoal;
   final double fatGoal;
   final double currentWeight;
+  final String? userName;
 
   const UserProfileState({
     required this.calorieGoal,
@@ -18,6 +19,7 @@ class UserProfileState {
     required this.carbsGoal,
     required this.fatGoal,
     required this.currentWeight,
+    this.userName,
   });
 
   UserProfileState copyWith({
@@ -26,6 +28,7 @@ class UserProfileState {
     double? carbsGoal,
     double? fatGoal,
     double? currentWeight,
+    String? userName,
   }) {
     return UserProfileState(
       calorieGoal: calorieGoal ?? this.calorieGoal,
@@ -33,6 +36,7 @@ class UserProfileState {
       carbsGoal: carbsGoal ?? this.carbsGoal,
       fatGoal: fatGoal ?? this.fatGoal,
       currentWeight: currentWeight ?? this.currentWeight,
+      userName: userName ?? this.userName,
     );
   }
 }
@@ -58,6 +62,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     double carbs = prefs.getDouble('carbs_goal') ?? 230.0;
     double fat = prefs.getDouble('fat_goal') ?? 65.0;
     double weight = prefs.getDouble('current_weight') ?? 74.5;
+    String? name = prefs.getString('user_name');
 
     if (_db != null) {
       try {
@@ -88,6 +93,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
       carbsGoal: carbs,
       fatGoal: fat,
       currentWeight: weight,
+      userName: name,
     );
   }
 
@@ -147,6 +153,12 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     }
 
     state = state.copyWith(currentWeight: weight);
+  }
+
+  Future<void> updateName(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_name', name);
+    state = state.copyWith(userName: name);
   }
 }
 

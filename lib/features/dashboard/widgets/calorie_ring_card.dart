@@ -38,19 +38,38 @@ class CalorieRingCard extends ConsumerWidget {
               radius: 60.0,
               lineWidth: 10.0,
               percent: calPercent,
-              center: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '$eatenCalories',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  Text(
-                    'of $calorieGoal kcal',
-                    style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
+              center: eatenCalories == 0
+                  ? const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.restaurant_menu_rounded, size: 22, color: AppColors.primary),
+                        SizedBox(height: 4),
+                        Text(
+                          'Log your\nfirst meal',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$eatenCalories',
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        Text(
+                          (calorieGoal - eatenCalories) >= 0
+                              ? '${calorieGoal - eatenCalories} left'
+                              : '${eatenCalories - calorieGoal} over',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: (calorieGoal - eatenCalories) >= 0 ? AppColors.textSecondary : AppColors.danger,
+                          ),
+                        ),
+                      ],
+                    ),
               circularStrokeCap: CircularStrokeCap.round,
               backgroundColor: AppColors.border,
               progressColor: AppColors.primary,
@@ -78,6 +97,7 @@ class CalorieRingCard extends ConsumerWidget {
 
   Widget _buildMacroBar(String label, double eaten, double goal, Color color) {
     double percent = goal > 0 ? (eaten / goal).clamp(0.0, 1.0) : 0.0;
+    int remaining = (goal - eaten).round();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +106,14 @@ class CalorieRingCard extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
-            Text('${eaten.round()}/${goal.round()}g', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            Text(
+              '${eaten.round()}/${goal.round()}g (${remaining >= 0 ? '${remaining}g left' : '${-remaining}g over'})',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: remaining < 0 ? AppColors.danger : AppColors.textPrimary,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 4),

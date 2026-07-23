@@ -283,6 +283,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildHeader(BuildContext context, DashboardState state) {
+    final userProfile = ref.watch(userProfileProvider);
+    final name = (userProfile.userName != null && userProfile.userName!.trim().isNotEmpty)
+        ? userProfile.userName!.trim()
+        : 'Champ';
+
     final now = DateTime.now();
     final hour = now.hour;
     String greeting = 'Good Morning';
@@ -297,7 +302,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             Text(greeting, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             const SizedBox(height: 2),
-            const Text('IndiFit Dashboard', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('Welcome, $name', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
         Row(

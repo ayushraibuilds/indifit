@@ -17,6 +17,7 @@ class ProgressScreen extends ConsumerStatefulWidget {
 class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   // Activity map representing workouts logged on specific days
   final List<DateTime> _activityDays = [];
+  final Map<DateTime, double> _volumeByDate = {};
   bool _loading = false;
   List<WorkoutSession> _sessions = [];
   List<BodyMeasurement> _measurements = [];
@@ -37,8 +38,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       final measurements = await repo.getBodyMeasurements();
       
       final List<DateTime> act = [];
+      final Map<DateTime, double> volMap = {};
       for (final s in list) {
         act.add(s.completedAt);
+        final key = DateTime(s.completedAt.year, s.completedAt.month, s.completedAt.day);
+        volMap[key] = (volMap[key] ?? 0.0) + s.totalVolume;
       }
 
       if (!mounted) return;
@@ -46,6 +50,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         _sessions = list;
         _activityDays.clear();
         _activityDays.addAll(act);
+        _volumeByDate.clear();
+        _volumeByDate.addAll(volMap);
         _measurements = measurements;
         _loading = false;
       });
@@ -59,62 +65,46 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Progress Tracking'),
+        title: const Text('Progress & Analytics'),
         backgroundColor: AppColors.background,
         elevation: 0,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 1. GitHub-style activity calendar heatmap (last 12 weeks)
                   const Text(
                     'GYM ACTIVITY HEATMAP',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 0.5),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   _buildGitHubHeatmap(),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
 
-                  // 2. Weight Trend Chart Card
+                  // 2. Body Weight Sparkline Chart Card
                   const Text(
-                    'WEIGHT TREND (KG)',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
+                    'BODY WEIGHT TREND (KG)',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 0.5),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   _buildWeightChartCard(),
-                  const SizedBox(height: 30),
-
-                  // Measurements History List
-                  if (_measurements.isNotEmpty) ...[
-                    const Text(
-                      'RECENT MEASUREMENTS',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildMeasurementsHistoryCard(),
-                    const SizedBox(height: 30),
-                  ],
+                  const SizedBox(height: 20),
 
                   // 3. Workout Volume Trend Card (Strength progression)
                   const Text(
                     'STRENGTH VOLUME PROGRESSION (KG)',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 0.5),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   _buildVolumeChartCard(),
                   const SizedBox(height: 20),
                 ],
               ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showLogMeasurementModal,
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 
@@ -149,21 +139,26 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   children: List.generate(7, (rowIndex) {
                     final int dayOffset = (colIndex * 7) + rowIndex;
                     final DateTime checkDate = startDate.add(Duration(days: dayOffset));
+                    final key = DateTime(checkDate.year, checkDate.month, checkDate.day);
+                    final volume = _volumeByDate[key] ?? 0.0;
                     
-                    // Verify if they logged a session on this specific date
-                    final hasLogged = _activityDays.any((d) =>
-                        d.year == checkDate.year &&
-                        d.month == checkDate.month &&
-                        d.day == checkDate.day);
+                    Color cellColor = AppColors.border.withOpacity(0.4);
+                    if (volume > 0) {
+                      if (volume < 500) {
+                        cellColor = AppColors.primary.withOpacity(0.35);
+                      } else if (volume < 1500) {
+                        cellColor = AppColors.primary.withOpacity(0.70);
+                      } else {
+                        cellColor = AppColors.primary;
+                      }
+                    }
 
                     return Container(
                       width: 16,
                       height: 16,
                       margin: const EdgeInsets.all(2.0),
                       decoration: BoxDecoration(
-                        color: hasLogged 
-                            ? AppColors.primary 
-                            : AppColors.border.withOpacity(0.4),
+                        color: cellColor,
                         borderRadius: BorderRadius.circular(3),
                       ),
                     );
@@ -178,6 +173,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 const Text('Less', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
                 const SizedBox(width: 4),
                 Container(width: 10, height: 10, decoration: BoxDecoration(color: AppColors.border.withOpacity(0.4), borderRadius: BorderRadius.circular(2))),
+                const SizedBox(width: 4),
+                Container(width: 10, height: 10, decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.35), borderRadius: BorderRadius.circular(2))),
+                const SizedBox(width: 4),
+                Container(width: 10, height: 10, decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.70), borderRadius: BorderRadius.circular(2))),
                 const SizedBox(width: 4),
                 Container(width: 10, height: 10, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
                 const SizedBox(width: 4),
@@ -542,6 +541,54 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       );
     }
 
+    if (_sessions.length == 1) {
+      final firstVol = _sessions.first.totalVolume.round();
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Total Lifted per Session',
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                  Text(
+                    '$firstVol kg total',
+                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Container(
+                height: 100,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.timeline_rounded, color: AppColors.primary, size: 32),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$firstVol kg lifted in your first session!',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Log more sessions to see your volume trend.',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final List<FlSpot> spots = [];
     final int count = _sessions.length < 5 ? _sessions.length : 5;
     for (int i = 0; i < count; i++) {
@@ -552,8 +599,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     if (spots.length >= 2 && spots.first.y > 0) {
       final pctChange = ((spots.last.y - spots.first.y) / spots.first.y * 100).round();
       volumeChangeLabel = pctChange >= 0 ? '+$pctChange% volume' : '$pctChange% volume';
-    } else if (spots.isNotEmpty) {
-      volumeChangeLabel = '${spots.last.y.toInt()} kg';
     }
 
     return Card(

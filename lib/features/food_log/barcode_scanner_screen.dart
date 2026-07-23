@@ -12,13 +12,28 @@ class BarcodeScannerScreen extends ConsumerStatefulWidget {
   ConsumerState<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
 }
 
-class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
+class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> with SingleTickerProviderStateMixin {
   final MobileScannerController _scannerController = MobileScannerController();
   final TextEditingController _manualController = TextEditingController();
+  late AnimationController _animController;
+  late Animation<double> _scanAnimation;
   bool _loading = false;
 
   @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _scanAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
   void dispose() {
+    _animController.dispose();
     _scannerController.dispose();
     _manualController.dispose();
     super.dispose();
@@ -104,7 +119,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
             },
           ),
           
-          // 2. Scan Reticle Overlay
+          // 2. Scan Reticle Overlay with animated scan line
           Center(
             child: Container(
               width: 250,
@@ -112,6 +127,36 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
               decoration: BoxDecoration(
                 border: Border.all(color: AppColors.primary, width: 3),
                 borderRadius: BorderRadius.circular(16),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(13),
+                child: AnimatedBuilder(
+                  animation: _scanAnimation,
+                  builder: (context, child) {
+                    return Stack(
+                      children: [
+                        Positioned(
+                          top: _scanAnimation.value * 235,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withOpacity(0.8),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ),

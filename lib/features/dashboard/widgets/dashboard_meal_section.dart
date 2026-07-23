@@ -475,70 +475,104 @@ class _LoggedItemRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(log.name, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
-                Text(
-                  '${log.servingLogged} logged • ${log.calories} kcal',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+    return Dismissible(
+      key: ValueKey('food_log_${log.id}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: AppColors.danger.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(Icons.delete_sweep_rounded, color: AppColors.danger, size: 22),
+      ),
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (dialogCtx) => AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: const Text('Delete Entry?'),
+            content: Text('Are you sure you want to remove "${log.name}" from your logged meal?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(dialogCtx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.danger,
+                  foregroundColor: Colors.white,
                 ),
-              ],
-            ),
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 18),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: AppColors.surface,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                builder: (context) => Padding(
-                  padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-                  child: EditFoodLogSheet(
-                    log: log,
-                    onSave: ({
-                      required int id,
-                      required String name,
-                      required int calories,
-                      required double proteinG,
-                      required double carbsG,
-                      required double fatG,
-                      required double servingLogged,
-                    }) async {
-                      final repo = ref.read(foodRepositoryProvider);
-                      await repo.updateFoodLog(
-                        id: id,
-                        name: name,
-                        calories: calories,
-                        proteinG: proteinG,
-                        carbsG: carbsG,
-                        fatG: fatG,
-                        servingLogged: servingLogged,
-                      );
-                    },
+        );
+      },
+      onDismissed: (_) async {
+        final repo = ref.read(foodRepositoryProvider);
+        await repo.deleteLogEntry(log.id);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(log.name, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                  Text(
+                    '${log.servingLogged} logged • ${log.calories} kcal',
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
                   ),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
-            onPressed: () async {
-              final repo = ref.read(foodRepositoryProvider);
-              await repo.deleteLogEntry(log.id);
-            },
-          ),
-        ],
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 18),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: AppColors.surface,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  builder: (context) => Padding(
+                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                    child: EditFoodLogSheet(
+                      log: log,
+                      onSave: ({
+                        required int id,
+                        required String name,
+                        required int calories,
+                        required double proteinG,
+                        required double carbsG,
+                        required double fatG,
+                        required double servingLogged,
+                      }) async {
+                        final repo = ref.read(foodRepositoryProvider);
+                        await repo.updateFoodLog(
+                          id: id,
+                          name: name,
+                          calories: calories,
+                          proteinG: proteinG,
+                          carbsG: carbsG,
+                          fatG: fatG,
+                          servingLogged: servingLogged,
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

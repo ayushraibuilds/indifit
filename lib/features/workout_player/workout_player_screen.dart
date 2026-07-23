@@ -447,6 +447,81 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
                     onRpeChanged: (val) => controller.setSelectedRpe(val),
                     onCompleteSet: _completeSet,
                   ),
+                  const SizedBox(height: 12),
+
+                  // Completed set chips & set navigation bar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (state.currentSetIndex > 0 || state.currentExerciseIndex > 0)
+                        TextButton.icon(
+                          onPressed: () {
+                            controller.goToPreviousSet();
+                            _syncInputsWithState();
+                          },
+                          icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                          label: const Text('Prev Set'),
+                          style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      
+                      Text(
+                        'Set ${state.currentSetIndex + 1} of ${currentEx.sets}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // Horizontal list of set chips for current exercise
+                  SizedBox(
+                    height: 36,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: currentEx.sets,
+                      itemBuilder: (context, idx) {
+                        final isSelected = idx == state.currentSetIndex;
+                        final loggedForEx = state.loggedSets.where((s) => s.exerciseName.value == currentEx.exerciseName).toList();
+                        final isCompleted = idx < loggedForEx.length;
+                        final loggedSet = isCompleted ? loggedForEx[idx] : null;
+
+                        String chipLabel = 'Set ${idx + 1}';
+                        if (isCompleted && loggedSet != null) {
+                          chipLabel = '${idx + 1}: ${loggedSet.weight.value.toStringAsFixed(1)}k×${loggedSet.reps.value}';
+                        }
+
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6.0),
+                          child: ChoiceChip(
+                            label: Text(chipLabel),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              if (selected) {
+                                controller.selectSetIndex(idx);
+                                _syncInputsWithState();
+                              }
+                            },
+                            avatar: isCompleted
+                                ? const Icon(Icons.check_circle_rounded, size: 14, color: AppColors.success)
+                                : null,
+                            selectedColor: AppColors.primaryGlow,
+                            labelStyle: TextStyle(
+                              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                              fontSize: 11,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: isSelected ? AppColors.primary : (isCompleted ? AppColors.success.withOpacity(0.5) : AppColors.border),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   OutlinedButton(
                     onPressed: () async {

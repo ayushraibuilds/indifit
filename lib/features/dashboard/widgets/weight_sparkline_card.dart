@@ -2,6 +2,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/colors.dart';
 
+import 'log_weight_bottom_sheet.dart';
+
 class WeightSparklineCard extends StatelessWidget {
   final double currentWeight;
   final List<double> weightHistory;
@@ -37,19 +39,17 @@ class WeightSparklineCard extends StatelessWidget {
                   ],
                 ),
                 
-                // Weight entry adjust buttons
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove, color: AppColors.textSecondary, size: 16),
-                      onPressed: () => onWeightAdjusted(currentWeight - 0.1),
-                    ),
-                    Text('${currentWeight.toStringAsFixed(1)} kg', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    IconButton(
-                      icon: const Icon(Icons.add, color: AppColors.primary, size: 16),
-                      onPressed: () => onWeightAdjusted(currentWeight + 0.1),
-                    ),
-                  ],
+                // Weight entry Log button
+                OutlinedButton.icon(
+                  onPressed: () => LogWeightBottomSheet.show(context, currentWeight, onWeightAdjusted),
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text('Log', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
               ],
             ),

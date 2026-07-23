@@ -31,14 +31,61 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String _dietPreference = 'veg'; // 'veg', 'non-veg', 'vegan'
 
   // Input controllers
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController(text: '25');
   final TextEditingController _heightController = TextEditingController(text: '170');
   final TextEditingController _weightController = TextEditingController(text: '70');
   final TextEditingController _targetWeightController = TextEditingController(text: '70');
 
+  String? _ageError;
+  String? _heightError;
+  String? _weightError;
+
+  @override
+  void initState() {
+    super.initState();
+    _ageController.addListener(_validateAge);
+    _heightController.addListener(_validateHeight);
+    _weightController.addListener(_validateWeight);
+  }
+
+  void _validateAge() {
+    final v = int.tryParse(_ageController.text);
+    setState(() {
+      if (v == null || v < 10 || v > 120) {
+        _ageError = 'Enter age between 10 and 120.';
+      } else {
+        _ageError = null;
+      }
+    });
+  }
+
+  void _validateHeight() {
+    final v = double.tryParse(_heightController.text);
+    setState(() {
+      if (v == null || v < 80 || v > 250) {
+        _heightError = 'Enter height between 80 and 250 cm.';
+      } else {
+        _heightError = null;
+      }
+    });
+  }
+
+  void _validateWeight() {
+    final v = double.tryParse(_weightController.text);
+    setState(() {
+      if (v == null || v < 25 || v > 350) {
+        _weightError = 'Enter weight between 25 and 350 kg.';
+      } else {
+        _weightError = null;
+      }
+    });
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
+    _nameController.dispose();
     _ageController.dispose();
     _heightController.dispose();
     _weightController.dispose();
@@ -47,30 +94,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _nextPage() {
-    if (_currentPage == 1) {
-      final ageVal = int.tryParse(_ageController.text);
-      if (ageVal == null || ageVal < 10 || ageVal > 120) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid age between 10 and 120.')),
-        );
-        return;
-      }
-    } else if (_currentPage == 2) {
-      final heightVal = double.tryParse(_heightController.text);
-      if (heightVal == null || heightVal < 80 || heightVal > 250) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid height in cm (80 - 250cm).')),
-        );
-        return;
-      }
-    } else if (_currentPage == 3) {
-      final weightVal = double.tryParse(_weightController.text);
-      if (weightVal == null || weightVal < 25 || weightVal > 350) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid weight in kg (25 - 350kg).')),
-        );
-        return;
-      }
+    if (_currentPage == 1 && _ageError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_ageError!)),
+      );
+      return;
+    } else if (_currentPage == 2 && _heightError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_heightError!)),
+      );
+      return;
+    } else if (_currentPage == 3 && _weightError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_weightError!)),
+      );
+      return;
     }
 
     if (_currentPage < _totalPages - 1) {
@@ -130,6 +168,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await prefs.setDouble('fat_goal', double.parse(dailyFat.toStringAsFixed(1)));
     
     // Store user parameters
+    if (_nameController.text.trim().isNotEmpty) {
+      await prefs.setString('user_name', _nameController.text.trim());
+      ref.read(userProfileProvider.notifier).updateName(_nameController.text.trim());
+    }
+    await prefs.setInt('user_age', _age);
     await prefs.setInt('user_age', _age);
     await prefs.setDouble('user_height', _height);
     await prefs.setDouble('current_weight', _weight);
@@ -287,10 +330,35 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildSexPage() {
     return _buildPageContainer(
-      title: "What's your sex?",
-      subtitle: "This helps us calculate your basal metabolic rate (BMR) accurately.",
+      title: "Welcome to IndiFit!",
+      subtitle: "First, tell us your name and sex so we can personalize your experience.",
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          TextField(
+            controller: _nameController,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              fontFamily: GoogleFonts.outfit().fontFamily,
+            ),
+            decoration: InputDecoration(
+              labelText: "Your Name (Optional)",
+              hintText: "e.g. Rahul, Priya",
+              prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary),
+              filled: true,
+              fillColor: AppColors.cardBackground,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.border)),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            "Select your biological sex:",
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondary, fontFamily: GoogleFonts.outfit().fontFamily),
+          ),
+          const SizedBox(height: 12),
           _buildSelectionCard(
             title: "Male",
             icon: Icons.male,
@@ -318,6 +386,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         label: "Age",
         suffix: "years",
         icon: Icons.calendar_today,
+        errorText: _ageError,
       ),
     );
   }
@@ -331,6 +400,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         label: "Height",
         suffix: "cm",
         icon: Icons.height,
+        errorText: _heightError,
       ),
     );
   }
@@ -344,6 +414,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         label: "Weight",
         suffix: "kg",
         icon: Icons.scale,
+        errorText: _weightError,
       ),
     );
   }
@@ -551,51 +622,78 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     required String label,
     required String suffix,
     required IconData icon,
+    String? errorText,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.textSecondary),
-          const SizedBox(width: 16),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFamily: GoogleFonts.outfit().fontFamily,
-              ),
-              decoration: InputDecoration(
-                labelText: label,
-                labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                filled: false,
-                contentPadding: EdgeInsets.zero,
-              ),
+    final hasError = errorText != null;
+    final isValid = !hasError && controller.text.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: hasError ? AppColors.danger : (isValid ? AppColors.success : AppColors.border),
+              width: hasError || isValid ? 1.5 : 1.0,
             ),
           ),
-          const SizedBox(width: 8),
-          Text(
-            suffix,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              fontFamily: GoogleFonts.outfit().fontFamily,
+          child: Row(
+            children: [
+              Icon(icon, color: hasError ? AppColors.danger : AppColors.textSecondary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: GoogleFonts.outfit().fontFamily,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: label,
+                    labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    filled: false,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (isValid)
+                const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18)
+              else if (hasError)
+                const Icon(Icons.error_outline_rounded, color: AppColors.danger, size: 18)
+              else
+                Text(
+                  suffix,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: GoogleFonts.outfit().fontFamily,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 12.0),
+            child: Text(
+              errorText,
+              style: const TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.w500),
             ),
           ),
         ],
-      ),
+      ],
     );
   }
 }

@@ -456,8 +456,21 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
   Widget _buildResultSection() {
     final isFallback = _estimatedMeal!['is_fallback'] ?? false;
-    final estimationLabel = isFallback ? 'Offline Estimate' : 'Live AI Estimate';
-    final labelColor = isFallback ? AppColors.warning : AppColors.success;
+    final matchedId = _estimatedMeal!['matched_food_id'];
+
+    String confidenceLabel = 'Moderate Confidence · AI Estimate';
+    Color labelColor = AppColors.primary;
+    IconData confidenceIcon = Icons.auto_awesome_rounded;
+
+    if (isFallback) {
+      confidenceLabel = 'Approximate · Offline Rule';
+      labelColor = Colors.amber;
+      confidenceIcon = Icons.offline_bolt_outlined;
+    } else if (matchedId != null) {
+      confidenceLabel = 'High Confidence · Verified Dish';
+      labelColor = AppColors.success;
+      confidenceIcon = Icons.verified_rounded;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -485,9 +498,16 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: labelColor.withOpacity(0.3)),
                       ),
-                      child: Text(
-                        estimationLabel,
-                        style: TextStyle(color: labelColor, fontSize: 10, fontWeight: FontWeight.bold),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(confidenceIcon, size: 12, color: labelColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            confidenceLabel,
+                            style: TextStyle(color: labelColor, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
                     )
                   ],

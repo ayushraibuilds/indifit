@@ -18,8 +18,8 @@ class RestTimerBottomSheet extends StatefulWidget {
     WakelockPlus.enable();
     await showModalBottomSheet(
       context: context,
-      isDismissible: false,
-      enableDrag: false,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -73,11 +73,41 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
         ? _secondsRemaining / widget.recommendedRestSeconds
         : 0.0;
 
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (dialogCtx) => AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: const Text('End Rest Period?'),
+            content: const Text('Are you sure you want to skip the rest timer early?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx, false),
+                child: const Text('Continue Rest'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(dialogCtx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Skip Rest'),
+              ),
+            ],
+          ),
+        );
+        if (confirm == true && context.mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           const Text(
             'REST PERIOD',
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
@@ -128,6 +158,7 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

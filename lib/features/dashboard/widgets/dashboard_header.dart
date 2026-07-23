@@ -4,14 +4,32 @@ import '../../../core/theme/colors.dart';
 
 class DashboardHeader extends StatelessWidget {
   final int streakCount;
+  final String? userName;
 
   const DashboardHeader({
     super.key,
     required this.streakCount,
+    this.userName,
   });
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
+  String _getSubtitle() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return "Let's fuel your day and crush goals!";
+    if (hour < 17) return 'Keep the momentum going!';
+    return 'Great job today! Stay consistent.';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final name = (userName != null && userName!.trim().isNotEmpty) ? userName!.trim() : 'Champ';
+
     return Row(
       children: [
         // Greeting Text
@@ -20,14 +38,14 @@ class DashboardHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Namaste, Champ',
+                '${_getGreeting()}, $name',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
-              const Text(
-                'Crush your goals today!',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              Text(
+                _getSubtitle(),
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
                 overflow: TextOverflow.ellipsis,
               ),
             ],

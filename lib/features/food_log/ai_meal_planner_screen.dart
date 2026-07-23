@@ -275,35 +275,37 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
 
     return Column(
       children: [
-        // Mode badge indicator
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: isFallback ? Colors.amber.withOpacity(0.12) : AppColors.success.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: isFallback ? Colors.amber : AppColors.success),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isFallback ? Icons.cloud_off_rounded : Icons.auto_awesome_rounded,
-                size: 14,
-                color: isFallback ? Colors.amber : AppColors.success,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                isFallback ? 'Offline Sample Plan' : 'AI-Generated Plan (Gemini 1.5 Flash)',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: isFallback ? Colors.amber : AppColors.success,
+        // Mode badge indicator - only shown when offline/fallback
+        if (isFallback) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.amber.withOpacity(0.4)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.cloud_off_rounded,
+                  size: 14,
+                  color: Colors.amber,
                 ),
-              ),
-            ],
+                SizedBox(width: 6),
+                Text(
+                  'Using local plan — no internet detected',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ],
 
         // 1. Horizontal Mon-Sun tabs
         SizedBox(
