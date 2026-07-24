@@ -32,6 +32,17 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     'Core',
   ];
 
+  String _selectedEquipment = 'All';
+
+  final List<String> _equipmentFilters = [
+    'All',
+    'Bodyweight',
+    'Barbell',
+    'Dumbbell',
+    'Cable',
+    'Machine',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -68,10 +79,13 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
         counts[m] = list.where((ex) => ex.muscleGroups.toLowerCase().contains(m.toLowerCase())).length;
       }
 
-      // If we have a muscle filter, apply it
+      // Filter by muscle and equipment
       List<Exercise> filtered = list;
       if (_selectedMuscle != 'All') {
-        filtered = list.where((ex) => ex.muscleGroups.toLowerCase().contains(_selectedMuscle.toLowerCase())).toList();
+        filtered = filtered.where((ex) => ex.muscleGroups.toLowerCase().contains(_selectedMuscle.toLowerCase())).toList();
+      }
+      if (_selectedEquipment != 'All') {
+        filtered = filtered.where((ex) => ex.equipment.toLowerCase().contains(_selectedEquipment.toLowerCase())).toList();
       }
 
       setState(() {
@@ -110,11 +124,11 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                     : null,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // Horizontal Muscle Filters
             SizedBox(
-              height: 36,
+              height: 32,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _muscleFilters.length,
@@ -125,8 +139,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                   final labelText = '$muscle · $count';
 
                   return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    key: ValueKey(muscle),
+                    padding: const EdgeInsets.only(right: 6.0),
+                    key: ValueKey('m_$muscle'),
                     child: ChoiceChip(
                       label: Text(labelText),
                       selected: isSelected,
@@ -141,11 +155,11 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                       selectedColor: AppColors.primaryGlow,
                       labelStyle: TextStyle(
                         color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
                           color: isSelected ? AppColors.primary : AppColors.border,
                         ),
@@ -155,7 +169,50 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                 },
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 6),
+
+            // Equipment Filters Row
+            SizedBox(
+              height: 32,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _equipmentFilters.length,
+                itemBuilder: (context, index) {
+                  final eq = _equipmentFilters[index];
+                  final isSelected = _selectedEquipment == eq;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6.0),
+                    key: ValueKey('eq_$eq'),
+                    child: ChoiceChip(
+                      label: Text(eq),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _selectedEquipment = eq;
+                          });
+                          _loadExercises();
+                        }
+                      },
+                      selectedColor: Colors.blue.withValues(alpha: 0.12),
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.blue : AppColors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: isSelected ? Colors.blue : AppColors.border,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
 
             // Exercises List
             Expanded(

@@ -133,6 +133,7 @@ class WorkoutRepository {
     required int durationSeconds,
     required int calories,
     required List<WorkoutSetsCompanion> sets,
+    DateTime? completedAt,
   }) async {
     final sessionUuid = const Uuid().v4();
     return await _db.transaction(() async {
@@ -143,6 +144,7 @@ class WorkoutRepository {
               durationSeconds: durationSeconds,
               estimatedCalories: calories,
               uuid: Value(sessionUuid),
+              completedAt: completedAt != null ? Value(completedAt) : const Value.absent(),
             ),
           );
 

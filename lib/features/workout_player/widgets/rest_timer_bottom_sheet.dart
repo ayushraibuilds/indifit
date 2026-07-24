@@ -128,7 +128,7 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
               ),
               Text(
                 '${_secondsRemaining}s',
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
             ],
           ),

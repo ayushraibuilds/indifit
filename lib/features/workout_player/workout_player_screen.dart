@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/colors.dart';
@@ -34,7 +35,7 @@ class WorkoutPlayerScreen extends ConsumerStatefulWidget {
   ConsumerState<WorkoutPlayerScreen> createState() => _WorkoutPlayerScreenState();
 }
 
-class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
+class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with WidgetsBindingObserver {
   late StateNotifierProvider<WorkoutPlayerController, WorkoutPlayerState> _controllerProvider;
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _repsController = TextEditingController();
@@ -45,6 +46,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controllerProvider = StateNotifierProvider<WorkoutPlayerController, WorkoutPlayerState>((ref) {
       return WorkoutPlayerController(
         ref,
@@ -60,6 +62,13 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
     ref.read(_controllerProvider.notifier).prefillInputs().then((_) {
       _syncInputsWithState();
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(_controllerProvider.notifier).syncElapsedOnResume();
+    }
   }
 
   void _syncInputsWithState() {
@@ -96,6 +105,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _weightController.dispose();
     _repsController.dispose();
     _durationController.dispose();
@@ -140,6 +150,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> {
       distanceKm: distance,
       inclinePercentage: incline,
     );
+
+    HapticFeedback.mediumImpact();
 
     final recommendedRest = _getRecommendedRestSeconds(currentEx.exerciseName);
     if (mounted) {

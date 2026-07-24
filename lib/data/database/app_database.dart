@@ -33,9 +33,12 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.memory() : super(NativeDatabase.memory());
 
-  /// Schema v11: enriched fiber values & added 40+ Indian vegetable and sabji items
+  /// Schema v12: idempotent exercise seed via upsert-by-name.
+  /// Earlier versions used a raw insertAll in the migration which silently
+  /// failed on existing rows (UNIQUE constraint swallowed by catch), leaving
+  /// the exercise library empty for installs upgrading from < 11.
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -82,6 +85,11 @@ class AppDatabase extends _$AppDatabase {
           if (from < 11) {
             await upsertSeededFoodsFromAsset();
             await seedExercisesFromAsset();
+          }
+          if (from < 12) {
+            // Idempotent re-seed of exercises so upgrades that previously
+            // swallowed a UNIQUE-constraint failure now populate the library.
+            await upsertSeededExercisesFromAsset();
           }
         },
 
@@ -162,24 +170,62 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> seedExercisesFromAsset() async {
+    await upsertSeededExercisesFromAsset();
+  }
+
+  /// Idempotent exercise seed: updates existing rows by name, inserts new ones.
+  /// Fixes the empty-exercise-library bug where a prior migration's raw
+  /// insertAll failed silently on UNIQUE constraints.
+  Future<void> upsertSeededExercisesFromAsset() async {
     try {
       final exercisesJson =
           await rootBundle.loadString('assets/data/exercises.json');
       final List<dynamic> exercisesList = jsonDecode(exercisesJson);
-      final exerciseCompanions = exercisesList.map((item) {
-        return ExercisesCompanion.insert(
-          name: item['name'],
-          muscleGroups: (item['muscle_groups'] as List).join(','),
-          equipment: item['equipment'],
-          difficulty: item['difficulty'],
-          formCues: (item['form_cues'] as List).join('\n'),
-          commonMistakes: (item['common_mistakes'] as List).join('\n'),
-          youtubeId: Value(item['youtube_id']),
-        );
-      }).toList();
-      await batch((b) => b.insertAll(exercises, exerciseCompanions));
+      if (exercisesList.isEmpty) return;
+
+      final existing = await select(exercises).get();
+      final byName = <String, Exercise>{
+        for (final item in existing) item.name: item,
+      };
+
+      final toInsert = <ExercisesCompanion>[];
+      await transaction(() async {
+        for (final raw in exercisesList) {
+          final name = raw['name'] as String;
+          final companionValues = ExercisesCompanion(
+            name: Value(name),
+            muscleGroups:
+                Value((raw['muscle_groups'] as List).join(',')),
+            equipment: Value(raw['equipment'] as String),
+            difficulty: Value(raw['difficulty'] as String),
+            formCues: Value((raw['form_cues'] as List).join('\n')),
+            commonMistakes:
+                Value((raw['common_mistakes'] as List).join('\n')),
+            youtubeId: Value(raw['youtube_id'] as String?),
+          );
+
+          final match = byName[name];
+          if (match != null) {
+            await (update(exercises)..where((t) => t.id.equals(match.id)))
+                .write(companionValues);
+          } else {
+            toInsert.add(ExercisesCompanion.insert(
+              name: name,
+              muscleGroups: (raw['muscle_groups'] as List).join(','),
+              equipment: raw['equipment'] as String,
+              difficulty: raw['difficulty'] as String,
+              formCues: (raw['form_cues'] as List).join('\n'),
+              commonMistakes: (raw['common_mistakes'] as List).join('\n'),
+              youtubeId: Value(raw['youtube_id'] as String?),
+            ));
+          }
+        }
+        if (toInsert.isNotEmpty) {
+          await batch((b) => b.insertAll(exercises, toInsert));
+        }
+      });
     } catch (_) {
-      // Non-fatal
+      // Non-fatal; user keeps prior exercise catalog.
     }
   }
 

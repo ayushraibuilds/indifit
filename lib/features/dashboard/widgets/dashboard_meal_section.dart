@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/colors.dart';
@@ -59,17 +60,34 @@ class _MealCard extends ConsumerWidget {
   void _showAddMealSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetCtx) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 20.0),
+        return SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: 20.0,
+            right: 20.0,
+            top: 12.0,
+            bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 24.0,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
               const Text(
                 'Log Food Item',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -99,6 +117,7 @@ class _MealCard extends ConsumerWidget {
                               foodItemId: item.foodItemId,
                             );
                           }
+                          HapticFeedback.selectionClick();
                           if (context.mounted) {
                             Navigator.pop(sheetCtx);
                             ScaffoldMessenger.of(context).showSnackBar(

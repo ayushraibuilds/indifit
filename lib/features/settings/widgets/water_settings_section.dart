@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/di/user_profile_provider.dart';
 import '../../../core/theme/colors.dart';
 import '../settings_controller.dart';
 
@@ -149,6 +150,33 @@ class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
                       if (parsed != null && parsed >= 50 && parsed <= 1000) {
                         controller.updateGlassSize(parsed);
                       }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                const Icon(Icons.lightbulb_outline_rounded, color: Colors.blue, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Builder(
+                    builder: (context) {
+                      final userProfile = ref.watch(userProfileProvider);
+                      final double weight = userProfile.currentWeight;
+                      final int recMl = (weight * 35).round();
+                      final int glassMl = int.tryParse(_glassSizeController.text) ?? 250;
+                      final int recGlasses = (recMl / (glassMl > 0 ? glassMl : 250)).round();
+                      return Text(
+                        'Recommended: ~$recMl ml (~$recGlasses glasses) based on ${weight.toStringAsFixed(1)} kg bodyweight (35ml/kg).',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      );
                     },
                   ),
                 ),

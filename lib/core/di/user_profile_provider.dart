@@ -11,6 +11,7 @@ class UserProfileState {
   final double carbsGoal;
   final double fatGoal;
   final double currentWeight;
+  final double? userHeight;
   final String? userName;
 
   const UserProfileState({
@@ -19,6 +20,7 @@ class UserProfileState {
     required this.carbsGoal,
     required this.fatGoal,
     required this.currentWeight,
+    this.userHeight,
     this.userName,
   });
 
@@ -28,6 +30,7 @@ class UserProfileState {
     double? carbsGoal,
     double? fatGoal,
     double? currentWeight,
+    double? userHeight,
     String? userName,
   }) {
     return UserProfileState(
@@ -36,6 +39,7 @@ class UserProfileState {
       carbsGoal: carbsGoal ?? this.carbsGoal,
       fatGoal: fatGoal ?? this.fatGoal,
       currentWeight: currentWeight ?? this.currentWeight,
+      userHeight: userHeight ?? this.userHeight,
       userName: userName ?? this.userName,
     );
   }
@@ -62,6 +66,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     double carbs = prefs.getDouble('carbs_goal') ?? 230.0;
     double fat = prefs.getDouble('fat_goal') ?? 65.0;
     double weight = prefs.getDouble('current_weight') ?? 74.5;
+    double? height = prefs.getDouble('user_height');
     String? name = prefs.getString('user_name');
 
     if (_db != null) {
@@ -74,6 +79,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
           carbs = p.carbsGoal;
           fat = p.fatGoal;
           weight = p.weight;
+          height ??= p.height;
         } else {
           // Migrate SharedPreferences defaults to initial Drift row
           await _db!.into(_db!.userProfiles).insert(UserProfilesCompanion.insert(
@@ -82,6 +88,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
             carbsGoal: Value(carbs),
             fatGoal: Value(fat),
             weight: Value(weight),
+            height: height != null ? Value(height) : const Value.absent(),
           ));
         }
       } catch (_) {}
@@ -93,6 +100,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
       carbsGoal: carbs,
       fatGoal: fat,
       currentWeight: weight,
+      userHeight: height,
       userName: name,
     );
   }
@@ -153,6 +161,27 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     }
 
     state = state.copyWith(currentWeight: weight);
+  }
+
+  Future<void> updateHeight(double height) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('user_height', height);
+
+    if (_db != null) {
+      try {
+        final profiles = await _db!.select(_db!.userProfiles).get();
+        if (profiles.isNotEmpty) {
+          await (_db!.update(_db!.userProfiles)..where((t) => t.id.equals(profiles.first.id))).write(
+            UserProfilesCompanion(
+              height: Value(height),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+
+    state = state.copyWith(userHeight: height);
   }
 
   Future<void> updateName(String name) async {

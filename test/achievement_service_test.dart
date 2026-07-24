@@ -6,9 +6,11 @@ void main() {
     test('evaluates achievements correctly when criteria are met', () {
       final achievements = AchievementService.evaluateAchievements(
         completedWorkoutsCount: 1,
-        currentStreakDays: 7,
-        totalVolumeKg: 1200.0,
-        totalLoggedMealsCount: 15,
+        currentStreakDays: 30,
+        totalVolumeKg: 10500.0,
+        totalLoggedMealsCount: 50,
+        prCount: 1,
+        loggedThali: true,
       );
 
       expect(achievements.every((a) => a.isUnlocked), isTrue);

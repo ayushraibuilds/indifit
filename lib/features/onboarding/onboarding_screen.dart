@@ -170,9 +170,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Store user parameters
     if (_nameController.text.trim().isNotEmpty) {
       await prefs.setString('user_name', _nameController.text.trim());
-      ref.read(userProfileProvider.notifier).updateName(_nameController.text.trim());
     }
-    await prefs.setInt('user_age', _age);
     await prefs.setInt('user_age', _age);
     await prefs.setDouble('user_height', _height);
     await prefs.setDouble('current_weight', _weight);
@@ -182,6 +180,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await prefs.setString('user_goal', _goal);
     await prefs.setString('user_diet_preference', _dietPreference);
     
+    // Refresh UserProfileNotifier with newly saved parameters
+    await ref.read(userProfileProvider.notifier).loadProfile();
+
     // Log canonical initial weight entry in BodyMeasurements Drift table
     await ref.read(workoutRepositoryProvider).logBodyMeasurement(weight: _weight);
     

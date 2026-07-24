@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/services/achievement_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/streak_calculator.dart';
 import '../../data/database/app_database.dart';
@@ -22,6 +23,8 @@ class DashboardState {
   final String? weeklyActionText;
   final int weeklyActionProgress;
   final int weeklyActionTarget;
+  final List<String> newlyUnlockedAchievementTitles;
+  final int? streakMilestone;
 
   DashboardState({
     DateTime? selectedDate,
@@ -37,6 +40,8 @@ class DashboardState {
     this.weeklyActionText,
     this.weeklyActionProgress = 0,
     this.weeklyActionTarget = 0,
+    this.newlyUnlockedAchievementTitles = const [],
+    this.streakMilestone,
   }) : selectedDate = selectedDate ?? DateTime.now();
 
   DashboardState copyWith({
@@ -53,6 +58,8 @@ class DashboardState {
     String? weeklyActionText,
     int? weeklyActionProgress,
     int? weeklyActionTarget,
+    List<String>? newlyUnlockedAchievementTitles,
+    int? streakMilestone,
   }) {
     return DashboardState(
       selectedDate: selectedDate ?? this.selectedDate,
@@ -68,6 +75,8 @@ class DashboardState {
       weeklyActionText: weeklyActionText ?? this.weeklyActionText,
       weeklyActionProgress: weeklyActionProgress ?? this.weeklyActionProgress,
       weeklyActionTarget: weeklyActionTarget ?? this.weeklyActionTarget,
+      newlyUnlockedAchievementTitles: newlyUnlockedAchievementTitles ?? this.newlyUnlockedAchievementTitles,
+      streakMilestone: streakMilestone,
     );
   }
 }
@@ -99,6 +108,41 @@ class DashboardController extends StateNotifier<DashboardState> {
     await loadWeightHistory();
     await computeStreak();
     await loadWeeklyActionProgress();
+    await _evaluateAchievements();
+  }
+
+  Future<void> _evaluateAchievements() async {
+    try {
+      final workoutRepo = _ref.read(workoutRepositoryProvider);
+      final foodRepo = _ref.read(foodRepositoryProvider);
+      final prefs = await SharedPreferences.getInstance();
+
+      final sessions = await workoutRepo.watchSessions().first;
+      final totalVolume = sessions.fold<double>(0.0, (sum, s) => sum + s.totalVolume);
+      final mealCount = await foodRepo.getTotalLoggedMealsCount();
+
+      final achievements = AchievementService.evaluateAchievements(
+        completedWorkoutsCount: sessions.length,
+        currentStreakDays: state.streakCount,
+        totalVolumeKg: totalVolume,
+        totalLoggedMealsCount: mealCount,
+      );
+
+      // Detect newly unlocked achievements
+      final storedIds = prefs.getStringList('unlocked_achievement_ids') ?? [];
+      final currentlyUnlocked = achievements.where((a) => a.isUnlocked).toList();
+      final newUnlocks = currentlyUnlocked.where((a) => !storedIds.contains(a.id)).toList();
+
+      if (newUnlocks.isNotEmpty) {
+        final updatedIds = currentlyUnlocked.map((a) => a.id).toList();
+        await prefs.setStringList('unlocked_achievement_ids', updatedIds);
+        state = state.copyWith(
+          newlyUnlockedAchievementTitles: newUnlocks.map((a) => a.title).toList(),
+        );
+      }
+    } catch (e) {
+      AppLogger.info('[AchievementEval] Error: $e');
+    }
   }
 
 
@@ -142,11 +186,27 @@ class DashboardController extends StateNotifier<DashboardState> {
     );
   }
 
-  Future<void> purchaseStreakFreeze() async {
+  Future<String> purchaseStreakFreeze() async {
     final prefs = await SharedPreferences.getInstance();
     final current = prefs.getInt('streak_freezes_count') ?? 1;
+    if (current >= 2) {
+      return 'Max freeze tokens (2/2) already active!';
+    }
+
+    final lastClaimMs = prefs.getInt('last_freeze_claimed_at') ?? 0;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final cooldownMs = 3 * 24 * 60 * 60 * 1000; // 3 days
+
+    if (lastClaimMs > 0 && (nowMs - lastClaimMs) < cooldownMs) {
+      final remainingHours = ((cooldownMs - (nowMs - lastClaimMs)) / (1000 * 60 * 60)).ceil();
+      final remainingDays = (remainingHours / 24).ceil();
+      return 'Cooldown active. Next freeze available in $remainingDays day${remainingDays > 1 ? 's' : ''}.';
+    }
+
     await prefs.setInt('streak_freezes_count', current + 1);
+    await prefs.setInt('last_freeze_claimed_at', nowMs);
     await computeStreak();
+    return 'Claimed 1 Streak Freeze token! ❄️';
   }
 
   Future<void> loadTodayWorkout() async {

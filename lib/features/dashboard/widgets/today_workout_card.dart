@@ -3,22 +3,46 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/colors.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/workout_repository.dart';
+import '../../workout_player/widgets/manual_log_sheet.dart';
 
 class TodayWorkoutCard extends ConsumerWidget {
   final String todayWorkoutName;
   final bool isRestDay;
   final int exerciseCount;
+  final DateTime selectedDate;
   final VoidCallback onStartWorkout;
   final ValueChanged<WorkoutSession> onRepeatWorkout;
+  final VoidCallback? onLogCompleted;
 
   const TodayWorkoutCard({
     super.key,
     required this.todayWorkoutName,
     required this.isRestDay,
     required this.exerciseCount,
+    required this.selectedDate,
     required this.onStartWorkout,
     required this.onRepeatWorkout,
+    this.onLogCompleted,
   });
+
+  void _showManualLogSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => ManualLogSheet(
+        selectedDate: selectedDate,
+        initialWorkoutName: isRestDay ? 'Extra Workout' : todayWorkoutName,
+      ),
+    ).then((saved) {
+      if (saved == true && onLogCompleted != null) {
+        onLogCompleted!();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,7 +60,7 @@ class TodayWorkoutCard extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isRestDay ? Colors.blue.withOpacity(0.1) : AppColors.primaryGlow,
+                        color: isRestDay ? Colors.blue.withValues(alpha: 0.1) : AppColors.primaryGlow,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -76,34 +100,37 @@ class TodayWorkoutCard extends ConsumerWidget {
                       ),
                   ],
                 ),
-                if (lastSession != null) ...[
-                  const SizedBox(height: 12),
-                  const Divider(color: AppColors.border),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Last: ${lastSession.name} (${(lastSession.durationSeconds / 60).round()}m)',
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                        ),
+                const SizedBox(height: 12),
+                const Divider(color: AppColors.border),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _showManualLogSheet(context),
+                      icon: const Icon(Icons.edit_note_rounded, size: 16),
+                      label: const Text('Log Completed Session', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
+                    ),
+                    if (lastSession != null)
                       TextButton.icon(
                         onPressed: () => onRepeatWorkout(lastSession),
                         icon: const Icon(Icons.history_rounded, size: 14),
                         label: const Text('Repeat Last', style: TextStyle(fontSize: 11)),
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          foregroundColor: AppColors.textSecondary,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ],
             ),
           ),

@@ -107,6 +107,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _startTodayWorkout(DashboardState state) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selectedDay = DateTime(state.selectedDate.year, state.selectedDate.month, state.selectedDate.day);
+
+    if (selectedDay.isAfter(today)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("You can't start a future workout. Switch to today or log a past session."),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+      return;
+    }
+
     if (state.isRestDay || state.todayExercises.isEmpty) {
       showDialog(
         context: context,
@@ -150,6 +164,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final controller = ref.read(dashboardControllerProvider.notifier);
     final foodRepo = ref.watch(foodRepositoryProvider);
 
+    // Achievement unlock toast
+    ref.listen<DashboardState>(dashboardControllerProvider, (prev, next) {
+      if (next.newlyUnlockedAchievementTitles.isNotEmpty &&
+          (prev == null || prev.newlyUnlockedAchievementTitles != next.newlyUnlockedAchievementTitles)) {
+        for (final title in next.newlyUnlockedAchievementTitles) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('🏆 Achievement Unlocked: $title'),
+              backgroundColor: Colors.amber.shade700,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+
+      // Streak milestone toast
+      final streakMilestones = [7, 14, 21, 30, 60, 100];
+      if (prev != null && next.streakCount != prev.streakCount) {
+        for (final milestone in streakMilestones) {
+          if (next.streakCount >= milestone && prev.streakCount < milestone) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('🔥 $milestone-day streak! Keep it up!'),
+                backgroundColor: Colors.deepOrangeAccent,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+            break;
+          }
+        }
+      }
+    });
+
     return Scaffold(
       body: SafeArea(
         child: StreamBuilder<List<FoodLog>>(
@@ -173,8 +220,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             return ConfettiOverlay(
               isPlaying: isCalorieGoalMet,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await controller.loadStateData();
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -239,15 +291,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       eatenFat: eatenFat,
                     ),
                     const SizedBox(height: 16),
-                    const TodaysActivityCard(),
-                    const SizedBox(height: 16),
                     DashboardMealSection(logs: logs),
                     const SizedBox(height: 16),
                     TodayWorkoutCard(
                       todayWorkoutName: state.todayWorkoutName,
                       isRestDay: state.isRestDay,
                       exerciseCount: state.todayExercises.length,
+                      selectedDate: state.selectedDate,
                       onStartWorkout: () => _startTodayWorkout(state),
+                      onLogCompleted: () => controller.loadStateData(),
                       onRepeatWorkout: (lastSession) async {
                         final exercises = await controller.getRepeatWorkoutExercises(lastSession);
                         if (context.mounted) {
@@ -271,11 +323,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       weightHistory: state.weightHistory,
                       onWeightAdjusted: (w) => controller.updateWeight(w),
                     ),
+                    const SizedBox(height: 16),
+                    const TodaysActivityCard(),
 
                   ],
                 ),
               ),
-            );
+            ),
+          );
           },
         ),
       ),

@@ -5,6 +5,7 @@ import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../onboarding/onboarding_wizard_screen.dart';
+import 'routine_editor_screen.dart';
 import 'workout_player_screen.dart';
 
 class RoutineDisplayScreen extends ConsumerStatefulWidget {
@@ -121,24 +122,76 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               style: TextStyle(color: AppColors.textSecondary, height: 1.4),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () async {
-                final success = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(builder: (context) => const OnboardingWizardScreen()),
-                );
-                if (success == true) {
-                  _loadActiveRoutine();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                minimumSize: const Size(200, 48),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final success = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(builder: (context) => const OnboardingWizardScreen()),
+                  );
+                  if (success == true) {
+                    _loadActiveRoutine();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                label: const Text('Generate Split with AI', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
-              child: const Text('Generate Split with AI'),
-            )
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final success = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(builder: (context) => const RoutineEditorScreen(initialTabIndex: 0)),
+                      );
+                      if (success == true) {
+                        _loadActiveRoutine();
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.primary),
+                      foregroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.dashboard_customize_rounded, size: 16),
+                    label: const Text('Templates', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final success = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(builder: (context) => const RoutineEditorScreen(initialTabIndex: 1)),
+                      );
+                      if (success == true) {
+                        _loadActiveRoutine();
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.border),
+                      foregroundColor: AppColors.textPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.edit_note_rounded, size: 16),
+                    label: const Text('Manual Build', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -290,7 +343,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : Colors.white70,
+                          color: isSelected ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
