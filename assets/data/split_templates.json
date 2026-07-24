@@ -1,0 +1,407 @@
+[
+  {
+    "id": "ppl_3day",
+    "name": "Push / Pull / Legs (3-Day)",
+    "description": "Classic 3-day split balancing chest/shoulders/triceps, back/biceps, and legs.",
+    "goal": "muscle_gain",
+    "equipment": "gym",
+    "days": [
+      {
+        "name": "Push (Chest, Shoulders, Triceps)",
+        "dayOfWeek": 1,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Flat Barbell Bench Press", "sets": 4, "repsRange": "8-12" },
+          { "name": "Incline Dumbbell Press", "sets": 3, "repsRange": "10-12" },
+          { "name": "Overhead Dumbbell Press", "sets": 3, "repsRange": "8-12" },
+          { "name": "Tricep Rope Pushdown", "sets": 3, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Pull (Back & Biceps)",
+        "dayOfWeek": 2,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Lat Pulldown", "sets": 4, "repsRange": "8-12" },
+          { "name": "Seated Cable Row", "sets": 3, "repsRange": "10-12" },
+          { "name": "Barbell Bicep Curl", "sets": 3, "repsRange": "10-12" },
+          { "name": "Face Pull", "sets": 3, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 3,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Legs & Core",
+        "dayOfWeek": 4,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Barbell Back Squat", "sets": 4, "repsRange": "8-10" },
+          { "name": "Romanian Deadlift", "sets": 3, "repsRange": "8-12" },
+          { "name": "Leg Press", "sets": 3, "repsRange": "10-12" },
+          { "name": "Standing Calf Raise", "sets": 4, "repsRange": "15-20" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 5,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 6,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 7,
+        "isRestDay": true,
+        "exercises": []
+      }
+    ]
+  },
+  {
+    "id": "bro_split_5day",
+    "name": "5-Day Bro Split",
+    "description": "High volume single-muscle group focus per day for maximum hypertrophy.",
+    "goal": "muscle_gain",
+    "equipment": "gym",
+    "days": [
+      {
+        "name": "Chest Day",
+        "dayOfWeek": 1,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Flat Barbell Bench Press", "sets": 4, "repsRange": "8-12" },
+          { "name": "Incline Dumbbell Press", "sets": 4, "repsRange": "10-12" },
+          { "name": "Chest Flyes", "sets": 3, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Back Day",
+        "dayOfWeek": 2,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Lat Pulldown", "sets": 4, "repsRange": "8-12" },
+          { "name": "Single-Arm Dumbbell Row", "sets": 4, "repsRange": "10-12" },
+          { "name": "Face Pull", "sets": 3, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Shoulders Day",
+        "dayOfWeek": 3,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Overhead Dumbbell Press", "sets": 4, "repsRange": "8-12" },
+          { "name": "Lateral Raise", "sets": 4, "repsRange": "12-15" },
+          { "name": "Reverse Flyes", "sets": 3, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Legs Day",
+        "dayOfWeek": 4,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Barbell Back Squat", "sets": 4, "repsRange": "8-10" },
+          { "name": "Leg Extension", "sets": 4, "repsRange": "12-15" },
+          { "name": "Lying Leg Curl", "sets": 4, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Arms Day",
+        "dayOfWeek": 5,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Barbell Bicep Curl", "sets": 4, "repsRange": "10-12" },
+          { "name": "Tricep Rope Pushdown", "sets": 4, "repsRange": "10-12" },
+          { "name": "Dumbbell Hammer Curl", "sets": 3, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 6,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 7,
+        "isRestDay": true,
+        "exercises": []
+      }
+    ]
+  },
+  {
+    "id": "upper_lower_4day",
+    "name": "Upper / Lower (4-Day)",
+    "description": "Balanced 4-day frequency training upper body twice and lower body twice.",
+    "goal": "strength",
+    "equipment": "gym",
+    "days": [
+      {
+        "name": "Upper A (Strength Focus)",
+        "dayOfWeek": 1,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Flat Barbell Bench Press", "sets": 4, "repsRange": "6-8" },
+          { "name": "Seated Cable Row", "sets": 4, "repsRange": "6-8" },
+          { "name": "Overhead Dumbbell Press", "sets": 3, "repsRange": "8-10" }
+        ]
+      },
+      {
+        "name": "Lower A (Squat Focus)",
+        "dayOfWeek": 2,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Barbell Back Squat", "sets": 4, "repsRange": "6-8" },
+          { "name": "Romanian Deadlift", "sets": 3, "repsRange": "8-10" },
+          { "name": "Standing Calf Raise", "sets": 4, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 3,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Upper B (Hypertrophy Focus)",
+        "dayOfWeek": 4,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Incline Dumbbell Press", "sets": 4, "repsRange": "10-12" },
+          { "name": "Lat Pulldown", "sets": 4, "repsRange": "10-12" },
+          { "name": "Lateral Raise", "sets": 4, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Lower B (Deadlift Focus)",
+        "dayOfWeek": 5,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Conventional Deadlift", "sets": 3, "repsRange": "5-8" },
+          { "name": "Leg Press", "sets": 4, "repsRange": "10-12" },
+          { "name": "Lying Leg Curl", "sets": 3, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 6,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 7,
+        "isRestDay": true,
+        "exercises": []
+      }
+    ]
+  },
+  {
+    "id": "full_body_3day",
+    "name": "Full Body (3-Day)",
+    "description": "Ideal for beginners or busy schedules. Trains all major muscles 3x a week.",
+    "goal": "general_fitness",
+    "equipment": "gym",
+    "days": [
+      {
+        "name": "Full Body A",
+        "dayOfWeek": 1,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Barbell Back Squat", "sets": 3, "repsRange": "8-10" },
+          { "name": "Flat Barbell Bench Press", "sets": 3, "repsRange": "8-10" },
+          { "name": "Seated Cable Row", "sets": 3, "repsRange": "10-12" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 2,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Full Body B",
+        "dayOfWeek": 3,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Conventional Deadlift", "sets": 3, "repsRange": "6-8" },
+          { "name": "Overhead Dumbbell Press", "sets": 3, "repsRange": "8-10" },
+          { "name": "Lat Pulldown", "sets": 3, "repsRange": "10-12" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 4,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Full Body C",
+        "dayOfWeek": 5,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Leg Press", "sets": 3, "repsRange": "10-12" },
+          { "name": "Incline Dumbbell Press", "sets": 3, "repsRange": "10-12" },
+          { "name": "Barbell Bicep Curl", "sets": 3, "repsRange": "10-12" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 6,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 7,
+        "isRestDay": true,
+        "exercises": []
+      }
+    ]
+  },
+  {
+    "id": "home_bodyweight_3day",
+    "name": "Home Bodyweight (3-Day No Equipment)",
+    "description": "Zero equipment needed! Effective calisthenics routine for home training.",
+    "goal": "home_fitness",
+    "equipment": "bodyweight",
+    "days": [
+      {
+        "name": "Upper Body & Core",
+        "dayOfWeek": 1,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Push-Ups", "sets": 4, "repsRange": "12-20" },
+          { "name": "Pike Push-Ups", "sets": 3, "repsRange": "8-12" },
+          { "name": "Plank", "sets": 3, "repsRange": "45-60s" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 2,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Lower Body & Legs",
+        "dayOfWeek": 3,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Bodyweight Squats", "sets": 4, "repsRange": "15-25" },
+          { "name": "Walking Lunges", "sets": 3, "repsRange": "12-15" },
+          { "name": "Glute Bridges", "sets": 3, "repsRange": "15-20" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 4,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Full Body Conditioning",
+        "dayOfWeek": 5,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Push-Ups", "sets": 3, "repsRange": "12-15" },
+          { "name": "Bodyweight Squats", "sets": 3, "repsRange": "15-20" },
+          { "name": "Mountain Climbers", "sets": 3, "repsRange": "30-45s" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 6,
+        "isRestDay": true,
+        "exercises": []
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 7,
+        "isRestDay": true,
+        "exercises": []
+      }
+    ]
+  },
+  {
+    "id": "ppl_6day",
+    "name": "Push / Pull / Legs (6-Day High Volume)",
+    "description": "6-day high frequency split for advanced lifters targeting maximum volume.",
+    "goal": "hypertrophy",
+    "equipment": "gym",
+    "days": [
+      {
+        "name": "Push A",
+        "dayOfWeek": 1,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Flat Barbell Bench Press", "sets": 4, "repsRange": "6-8" },
+          { "name": "Overhead Dumbbell Press", "sets": 3, "repsRange": "8-10" },
+          { "name": "Tricep Rope Pushdown", "sets": 3, "repsRange": "10-12" }
+        ]
+      },
+      {
+        "name": "Pull A",
+        "dayOfWeek": 2,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Lat Pulldown", "sets": 4, "repsRange": "8-10" },
+          { "name": "Seated Cable Row", "sets": 3, "repsRange": "10-12" },
+          { "name": "Barbell Bicep Curl", "sets": 3, "repsRange": "10-12" }
+        ]
+      },
+      {
+        "name": "Legs A",
+        "dayOfWeek": 3,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Barbell Back Squat", "sets": 4, "repsRange": "6-8" },
+          { "name": "Leg Press", "sets": 3, "repsRange": "10-12" },
+          { "name": "Standing Calf Raise", "sets": 4, "repsRange": "15-20" }
+        ]
+      },
+      {
+        "name": "Push B",
+        "dayOfWeek": 4,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Incline Dumbbell Press", "sets": 4, "repsRange": "10-12" },
+          { "name": "Lateral Raise", "sets": 4, "repsRange": "12-15" },
+          { "name": "Dips", "sets": 3, "repsRange": "10-12" }
+        ]
+      },
+      {
+        "name": "Pull B",
+        "dayOfWeek": 5,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Single-Arm Dumbbell Row", "sets": 4, "repsRange": "10-12" },
+          { "name": "Face Pull", "sets": 4, "repsRange": "12-15" },
+          { "name": "Dumbbell Hammer Curl", "sets": 3, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Legs B",
+        "dayOfWeek": 6,
+        "isRestDay": false,
+        "exercises": [
+          { "name": "Romanian Deadlift", "sets": 4, "repsRange": "8-10" },
+          { "name": "Leg Extension", "sets": 3, "repsRange": "12-15" },
+          { "name": "Lying Leg Curl", "sets": 3, "repsRange": "12-15" }
+        ]
+      },
+      {
+        "name": "Rest Day",
+        "dayOfWeek": 7,
+        "isRestDay": true,
+        "exercises": []
+      }
+    ]
+  }
+]

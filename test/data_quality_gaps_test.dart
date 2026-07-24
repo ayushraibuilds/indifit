@@ -20,9 +20,18 @@ void main() {
     await db.close();
   });
 
-  group('Data Quality Gap 1 & Schema v11 Tests', () {
-    test('AppDatabase initializes with schema version 11', () {
-      expect(db.schemaVersion, equals(11));
+  group('Data Quality Gap 1 & Schema v12 Tests', () {
+    test('AppDatabase initializes with schema version 12', () {
+      expect(db.schemaVersion, equals(12));
+    });
+
+    test('upsertSeededExercisesFromAsset executes safely without throwing on existing rows', () async {
+      await db.upsertSeededExercisesFromAsset();
+      // Calling again should upsert safely without UNIQUE constraint failure
+      await db.upsertSeededExercisesFromAsset();
+      final allExercises = await db.select(db.exercises).get();
+      // Should not duplicate rows or crash
+      expect(allExercises, isNotNull);
     });
   });
 

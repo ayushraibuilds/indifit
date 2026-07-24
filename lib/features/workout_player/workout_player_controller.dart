@@ -103,10 +103,25 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     prefillInputs();
   }
 
+  DateTime? _sessionStartedAt;
+  int _baseElapsedSeconds = 0;
+
   void _startTimer() {
+    _baseElapsedSeconds = state.elapsedSeconds;
+    _sessionStartedAt = DateTime.now();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      state = state.copyWith(elapsedSeconds: state.elapsedSeconds + 1);
+      if (_sessionStartedAt != null) {
+        final diff = DateTime.now().difference(_sessionStartedAt!).inSeconds;
+        state = state.copyWith(elapsedSeconds: _baseElapsedSeconds + diff);
+      }
     });
+  }
+
+  void syncElapsedOnResume() {
+    if (_sessionStartedAt != null) {
+      final diff = DateTime.now().difference(_sessionStartedAt!).inSeconds;
+      state = state.copyWith(elapsedSeconds: _baseElapsedSeconds + diff);
+    }
   }
 
   @override

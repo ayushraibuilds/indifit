@@ -79,20 +79,22 @@ class StreakFreezeCard extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             ElevatedButton(
-              onPressed: () async {
-                await controller.purchaseStreakFreeze();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Claimed 1 Streak Freeze token! ❄️'),
-                      backgroundColor: Colors.lightBlue,
-                    ),
-                  );
-                }
-              },
+              onPressed: freezes >= 2
+                  ? null
+                  : () async {
+                      final msg = await controller.purchaseStreakFreeze();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(msg),
+                            backgroundColor: msg.contains('Claimed') ? Colors.lightBlue : Colors.orangeAccent,
+                          ),
+                        );
+                      }
+                    },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.lightBlue.withValues(alpha: 0.15),
-                foregroundColor: Colors.lightBlue,
+                backgroundColor: freezes >= 2 ? Colors.grey.withValues(alpha: 0.12) : Colors.lightBlue.withValues(alpha: 0.15),
+                foregroundColor: freezes >= 2 ? AppColors.textMuted : Colors.lightBlue,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 minimumSize: Size.zero,
@@ -100,13 +102,14 @@ class StreakFreezeCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.add_rounded, size: 14),
+                  Icon(freezes >= 2 ? Icons.shield_rounded : Icons.add_rounded, size: 14),
+                  const SizedBox(width: 2),
                   Text(
-                    'Claim',
-                    style: TextStyle(
+                    freezes >= 2 ? 'Max 2/2' : 'Claim',
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 11,
                     ),

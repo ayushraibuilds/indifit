@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/skeleton_loader.dart';
@@ -227,6 +228,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                               mealType: widget.mealType,
                               foodItemId: foodItemId,
                             );
+                            HapticFeedback.selectionClick();
                             if (context.mounted) {
                               Navigator.pop(context); // Close bottom sheet
                               Navigator.pop(context); // Close search screen

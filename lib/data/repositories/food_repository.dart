@@ -156,6 +156,11 @@ class FoodRepository {
     return logs.map((l) => l.loggedAt).toList();
   }
 
+  Future<int> getTotalLoggedMealsCount() async {
+    final logs = await _db.select(_db.foodLogs).get();
+    return logs.length;
+  }
+
   // 8. Update an existing food log entry
   Future<bool> updateFoodLog({
     required int id,

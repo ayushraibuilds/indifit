@@ -8,6 +8,8 @@ import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 
+import 'achievements_screen.dart';
+
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
 
@@ -69,11 +71,28 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         title: const Text('Progress & Analytics'),
         backgroundColor: AppColors.background,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.emoji_events_rounded, color: Colors.amber),
+            tooltip: 'Achievements',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AchievementsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+          : RefreshIndicator(
+              onRefresh: () async {
+                await _loadProgressLogs();
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -108,18 +127,40 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 ],
               ),
             ),
+          ),
     );
   }
 
   Widget _buildBmiHealthCard() {
+    final userProfile = ref.watch(userProfileProvider);
     final double? weightKg = _measurements.isNotEmpty ? _measurements.first.weight : null;
+    final double? heightCm = userProfile.userHeight;
 
     if (weightKg == null || weightKg <= 0) {
       return const SizedBox.shrink();
     }
 
-    const double heightCm = 170.0;
-    const double heightM = heightCm / 100.0;
+    if (heightCm == null || heightCm <= 0) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: const [
+              Icon(Icons.straighten_rounded, color: AppColors.primary),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Set your height in onboarding/profile to calculate your BMI.',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final double heightM = heightCm / 100.0;
     final double bmi = weightKg / (heightM * heightM);
 
     String category = 'Normal';
@@ -146,7 +187,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               children: [
                 const Text('Body Mass Index (BMI)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 4),
-                Text('Based on ${weightKg.toStringAsFixed(1)} kg & 170 cm baseline', style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                Text('Based on ${weightKg.toStringAsFixed(1)} kg & ${heightCm.toStringAsFixed(0)} cm', style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
               ],
             ),
             Container(
