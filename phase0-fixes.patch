@@ -1,0 +1,257 @@
+diff --git a/backend/main.py b/backend/main.py
+index d2d2d4a..70ca670 100644
+--- a/backend/main.py
++++ b/backend/main.py
+@@ -25,9 +25,22 @@ app.add_middleware(
+ )
+ 
+ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+-INDIFIT_API_KEY = os.getenv("INDIFIT_API_KEY", "indifit_secret_key_v1")
+ AI_MODEL = os.getenv("AI_MODEL", "gemini-1.5-flash")
+ 
++# No fallback here on purpose: the old default ("indifit_secret_key_v1") was
++# shipped inside every APK, so anyone could decompile the app and hit this
++# backend directly. Failing closed at startup instead of silently falling
++# back to an empty/known key (verify_api_key below treats a falsy key as
++# "auth disabled", so a quiet default would have made things worse, not
++# better).
++INDIFIT_API_KEY = os.getenv("INDIFIT_API_KEY")
++if not INDIFIT_API_KEY:
++    raise RuntimeError(
++        "INDIFIT_API_KEY environment variable must be set (no default is "
++        "provided for security reasons). Set it in your deployment "
++        "environment, e.g. the Render dashboard."
++    )
++
+ # In-memory 24h TTL cache & per-IP rate limiter
+ RESPONSE_CACHE: Dict[str, dict] = {}
+ CACHE_TTL_SECONDS = 86400
+diff --git a/lib/core/di/providers.dart b/lib/core/di/providers.dart
+index f38048a..6bc02cb 100644
+--- a/lib/core/di/providers.dart
++++ b/lib/core/di/providers.dart
+@@ -14,13 +14,24 @@ final databaseProvider = Provider<AppDatabase>((ref) {
+ });
+ 
+ final dioProvider = Provider<Dio>((ref) {
++  // No fallback here on purpose: the old default ("indifit_secret_key_v1")
++  // shipped inside every release APK and could be pulled out by decompiling
++  // it, letting anyone call the backend directly. Build with
++  // --dart-define=INDIFIT_API_KEY=<key> to set the real value.
++  const apiKey = String.fromEnvironment('INDIFIT_API_KEY');
++  assert(
++    apiKey.isNotEmpty,
++    'INDIFIT_API_KEY was not provided at build time. Build with '
++    '--dart-define=INDIFIT_API_KEY=<key>, otherwise backend requests will '
++    'be rejected with 401.',
++  );
+   final dio = Dio(
+     BaseOptions(
+       connectTimeout: const Duration(seconds: 15),
+       receiveTimeout: const Duration(seconds: 15),
+       sendTimeout: const Duration(seconds: 15),
+       headers: {
+-        'x-indifit-key': const String.fromEnvironment('INDIFIT_API_KEY', defaultValue: 'indifit_secret_key_v1'),
++        'x-indifit-key': apiKey,
+       },
+     ),
+   );
+diff --git a/lib/core/router/app_router.dart b/lib/core/router/app_router.dart
+index b5c65bd..82cb49b 100644
+--- a/lib/core/router/app_router.dart
++++ b/lib/core/router/app_router.dart
+@@ -1,6 +1,7 @@
+ import 'package:flutter/material.dart';
+ import 'package:flutter_riverpod/flutter_riverpod.dart';
+ import 'package:go_router/go_router.dart';
++import 'package:shared_preferences/shared_preferences.dart';
+ 
+ import '../../features/dashboard/main_navigation_scaffold.dart';
+ import '../../features/food_log/ai_meal_logger_screen.dart';
+@@ -16,6 +17,19 @@ import '../../features/workout_player/routine_editor_screen.dart';
+ final appRouterProvider = Provider<GoRouter>((ref) {
+   return GoRouter(
+     initialLocation: '/',
++    redirect: (context, state) async {
++      final prefs = await SharedPreferences.getInstance();
++      final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
++      final goingToOnboarding = state.matchedLocation == '/onboarding';
++
++      if (!onboardingCompleted && !goingToOnboarding) {
++        return '/onboarding';
++      }
++      if (onboardingCompleted && goingToOnboarding) {
++        return '/';
++      }
++      return null;
++    },
+     routes: [
+       GoRoute(
+         path: '/',
+diff --git a/lib/data/database/app_database.dart b/lib/data/database/app_database.dart
+index d152f8a..d546958 100644
+--- a/lib/data/database/app_database.dart
++++ b/lib/data/database/app_database.dart
+@@ -33,12 +33,15 @@ class AppDatabase extends _$AppDatabase {
+   AppDatabase() : super(_openConnection());
+   AppDatabase.memory() : super(NativeDatabase.memory());
+ 
+-  /// Schema v12: idempotent exercise seed via upsert-by-name.
+-  /// Earlier versions used a raw insertAll in the migration which silently
+-  /// failed on existing rows (UNIQUE constraint swallowed by catch), leaving
+-  /// the exercise library empty for installs upgrading from < 11.
++  /// Schema v13: fixes a type-mismatch bug in upsertSeededExercisesFromAsset
++  /// that made exercise seeding fail (and silently roll back) on every single
++  /// run, including the v12 migration meant to fix the empty-library issue.
++  /// `muscle_groups` in assets/data/exercises.json is a comma-separated
++  /// String, but the seeding code cast it to List and called .join(','),
++  /// which threw immediately and was swallowed by the enclosing try/catch.
++  /// v12 installs never actually got exercises populated as a result.
+   @override
+-  int get schemaVersion => 12;
++  int get schemaVersion => 13;
+ 
+   @override
+   MigrationStrategy get migration => MigrationStrategy(
+@@ -91,6 +94,12 @@ class AppDatabase extends _$AppDatabase {
+             // swallowed a UNIQUE-constraint failure now populate the library.
+             await upsertSeededExercisesFromAsset();
+           }
++          if (from < 13) {
++            // v12's re-seed still failed silently due to the muscle_groups
++            // type-cast bug fixed above. Re-run now that it's actually fixed
++            // so installs sitting on an empty exercise table get populated.
++            await upsertSeededExercisesFromAsset();
++          }
+         },
+ 
+ 
+@@ -194,8 +203,7 @@ class AppDatabase extends _$AppDatabase {
+           final name = raw['name'] as String;
+           final companionValues = ExercisesCompanion(
+             name: Value(name),
+-            muscleGroups:
+-                Value((raw['muscle_groups'] as List).join(',')),
++            muscleGroups: Value(raw['muscle_groups'] as String),
+             equipment: Value(raw['equipment'] as String),
+             difficulty: Value(raw['difficulty'] as String),
+             formCues: Value((raw['form_cues'] as List).join('\n')),
+@@ -211,7 +219,7 @@ class AppDatabase extends _$AppDatabase {
+           } else {
+             toInsert.add(ExercisesCompanion.insert(
+               name: name,
+-              muscleGroups: (raw['muscle_groups'] as List).join(','),
++              muscleGroups: raw['muscle_groups'] as String,
+               equipment: raw['equipment'] as String,
+               difficulty: raw['difficulty'] as String,
+               formCues: (raw['form_cues'] as List).join('\n'),
+diff --git a/lib/main.dart b/lib/main.dart
+index 60eedf0..dac23f4 100644
+--- a/lib/main.dart
++++ b/lib/main.dart
+@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
+ import 'package:flutter_riverpod/flutter_riverpod.dart';
+ import 'package:shared_preferences/shared_preferences.dart';
+ 
++import 'core/di/providers.dart';
+ import 'core/di/theme_provider.dart';
+ import 'core/router/app_router.dart';
+ import 'core/services/auto_backup_service.dart';
+@@ -29,8 +30,16 @@ void main() async {
+     return true;
+   };
+ 
++  // Single ProviderContainer created up front so the AppDatabase instance
++  // used here in main() (before the widget tree/ProviderScope exists) is the
++  // exact same instance every `ref.watch(databaseProvider)` resolves to
++  // later. Previously this created a second, separate AppDatabase()
++  // connection to the same SQLite file, so writes made through one
++  // connection wouldn't notify stream watchers listening via the other.
++  final container = ProviderContainer();
++  final AppDatabase db = container.read(databaseProvider);
++
+   // Initialize local notification service & schedule reminders
+-  final db = AppDatabase();
+   await NotificationService.initialize();
+   await NotificationService.scheduleAllReminders(db);
+ 
+@@ -52,8 +61,9 @@ void main() async {
+ 
+   await CrashReportingService.initialize(() {
+     runApp(
+-      const ProviderScope(
+-        child: IndiFitApp(),
++      UncontrolledProviderScope(
++        container: container,
++        child: const IndiFitApp(),
+       ),
+     );
+   });
+diff --git a/test/data_quality_gaps_test.dart b/test/data_quality_gaps_test.dart
+index cd62680..512a8a2 100644
+--- a/test/data_quality_gaps_test.dart
++++ b/test/data_quality_gaps_test.dart
+@@ -20,18 +20,35 @@ void main() {
+     await db.close();
+   });
+ 
+-  group('Data Quality Gap 1 & Schema v12 Tests', () {
+-    test('AppDatabase initializes with schema version 12', () {
+-      expect(db.schemaVersion, equals(12));
++  group('Data Quality Gap 1 & Schema v13 Tests', () {
++    test('AppDatabase initializes with schema version 13', () {
++      expect(db.schemaVersion, equals(13));
+     });
+ 
+-    test('upsertSeededExercisesFromAsset executes safely without throwing on existing rows', () async {
+-      await db.upsertSeededExercisesFromAsset();
+-      // Calling again should upsert safely without UNIQUE constraint failure
++    test('upsertSeededExercisesFromAsset actually populates the exercise library', () async {
+       await db.upsertSeededExercisesFromAsset();
+       final allExercises = await db.select(db.exercises).get();
+-      // Should not duplicate rows or crash
+-      expect(allExercises, isNotNull);
++      // Guards against a regression of the muscle_groups type-cast bug: that
++      // bug threw inside the seed transaction, which was silently swallowed
++      // by the surrounding try/catch, leaving this list empty while still
++      // "succeeding" from the caller's point of view. assets/data/exercises
++      // .json currently has 140 entries, so require a real, non-trivial
++      // count rather than just isNotNull (which an empty list also satisfies).
++      expect(allExercises.length, greaterThanOrEqualTo(100));
++      // Spot-check a couple of fields to make sure they parsed as the right
++      // types instead of, say, ending up as the literal string "null".
++      final benchPress = allExercises.firstWhere((e) => e.name == 'Flat Barbell Bench Press');
++      expect(benchPress.muscleGroups, contains('Chest'));
++    });
++
++    test('upsertSeededExercisesFromAsset is idempotent (safe to call repeatedly)', () async {
++      await db.upsertSeededExercisesFromAsset();
++      final firstRun = await db.select(db.exercises).get();
++      // Calling again should upsert existing rows by name, not duplicate them
++      // or throw on a UNIQUE constraint.
++      await db.upsertSeededExercisesFromAsset();
++      final secondRun = await db.select(db.exercises).get();
++      expect(secondRun.length, equals(firstRun.length));
+     });
+   });
+ 
+diff --git a/test/phase7_backend_test.dart b/test/phase7_backend_test.dart
+index 8486918..093e158 100644
+--- a/test/phase7_backend_test.dart
++++ b/test/phase7_backend_test.dart
+@@ -10,8 +10,14 @@ void main() {
+       final container = ProviderContainer();
+       final dio = container.read(dioProvider);
+ 
++      // The key itself comes from --dart-define=INDIFIT_API_KEY=... at build
++      // time and is intentionally no longer hardcoded here (a hardcoded
++      // fallback shipped inside every release APK and could be extracted by
++      // decompiling it). This test only verifies the header is wired up to
++      // that build-time value, whatever it is, not a specific secret.
++      const expectedKey = String.fromEnvironment('INDIFIT_API_KEY');
+       expect(dio.options.headers.containsKey('x-indifit-key'), true);
+-      expect(dio.options.headers['x-indifit-key'], 'indifit_secret_key_v1');
++      expect(dio.options.headers['x-indifit-key'], expectedKey);
+     });
+   });
+ }

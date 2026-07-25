@@ -20,18 +20,35 @@ void main() {
     await db.close();
   });
 
-  group('Data Quality Gap 1 & Schema v12 Tests', () {
-    test('AppDatabase initializes with schema version 12', () {
-      expect(db.schemaVersion, equals(12));
+  group('Data Quality Gap 1 & Schema v13 Tests', () {
+    test('AppDatabase initializes with schema version 13', () {
+      expect(db.schemaVersion, equals(13));
     });
 
-    test('upsertSeededExercisesFromAsset executes safely without throwing on existing rows', () async {
-      await db.upsertSeededExercisesFromAsset();
-      // Calling again should upsert safely without UNIQUE constraint failure
+    test('upsertSeededExercisesFromAsset actually populates the exercise library', () async {
       await db.upsertSeededExercisesFromAsset();
       final allExercises = await db.select(db.exercises).get();
-      // Should not duplicate rows or crash
-      expect(allExercises, isNotNull);
+      // Guards against a regression of the muscle_groups type-cast bug: that
+      // bug threw inside the seed transaction, which was silently swallowed
+      // by the surrounding try/catch, leaving this list empty while still
+      // "succeeding" from the caller's point of view. assets/data/exercises
+      // .json currently has 140 entries, so require a real, non-trivial
+      // count rather than just isNotNull (which an empty list also satisfies).
+      expect(allExercises.length, greaterThanOrEqualTo(100));
+      // Spot-check a couple of fields to make sure they parsed as the right
+      // types instead of, say, ending up as the literal string "null".
+      final benchPress = allExercises.firstWhere((e) => e.name == 'Flat Barbell Bench Press');
+      expect(benchPress.muscleGroups, contains('Chest'));
+    });
+
+    test('upsertSeededExercisesFromAsset is idempotent (safe to call repeatedly)', () async {
+      await db.upsertSeededExercisesFromAsset();
+      final firstRun = await db.select(db.exercises).get();
+      // Calling again should upsert existing rows by name, not duplicate them
+      // or throw on a UNIQUE constraint.
+      await db.upsertSeededExercisesFromAsset();
+      final secondRun = await db.select(db.exercises).get();
+      expect(secondRun.length, equals(firstRun.length));
     });
   });
 

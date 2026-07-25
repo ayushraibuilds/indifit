@@ -33,12 +33,15 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.memory() : super(NativeDatabase.memory());
 
-  /// Schema v12: idempotent exercise seed via upsert-by-name.
-  /// Earlier versions used a raw insertAll in the migration which silently
-  /// failed on existing rows (UNIQUE constraint swallowed by catch), leaving
-  /// the exercise library empty for installs upgrading from < 11.
+  /// Schema v13: fixes a type-mismatch bug in upsertSeededExercisesFromAsset
+  /// that made exercise seeding fail (and silently roll back) on every single
+  /// run, including the v12 migration meant to fix the empty-library issue.
+  /// `muscle_groups` in assets/data/exercises.json is a comma-separated
+  /// String, but the seeding code cast it to List and called .join(','),
+  /// which threw immediately and was swallowed by the enclosing try/catch.
+  /// v12 installs never actually got exercises populated as a result.
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -89,6 +92,12 @@ class AppDatabase extends _$AppDatabase {
           if (from < 12) {
             // Idempotent re-seed of exercises so upgrades that previously
             // swallowed a UNIQUE-constraint failure now populate the library.
+            await upsertSeededExercisesFromAsset();
+          }
+          if (from < 13) {
+            // v12's re-seed still failed silently due to the muscle_groups
+            // type-cast bug fixed above. Re-run now that it's actually fixed
+            // so installs sitting on an empty exercise table get populated.
             await upsertSeededExercisesFromAsset();
           }
         },
@@ -194,8 +203,7 @@ class AppDatabase extends _$AppDatabase {
           final name = raw['name'] as String;
           final companionValues = ExercisesCompanion(
             name: Value(name),
-            muscleGroups:
-                Value((raw['muscle_groups'] as List).join(',')),
+            muscleGroups: Value(raw['muscle_groups'] as String),
             equipment: Value(raw['equipment'] as String),
             difficulty: Value(raw['difficulty'] as String),
             formCues: Value((raw['form_cues'] as List).join('\n')),
@@ -211,7 +219,7 @@ class AppDatabase extends _$AppDatabase {
           } else {
             toInsert.add(ExercisesCompanion.insert(
               name: name,
-              muscleGroups: (raw['muscle_groups'] as List).join(','),
+              muscleGroups: raw['muscle_groups'] as String,
               equipment: raw['equipment'] as String,
               difficulty: raw['difficulty'] as String,
               formCues: (raw['form_cues'] as List).join('\n'),

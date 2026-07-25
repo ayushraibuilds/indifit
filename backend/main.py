@@ -25,8 +25,21 @@ app.add_middleware(
 )
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-INDIFIT_API_KEY = os.getenv("INDIFIT_API_KEY", "indifit_secret_key_v1")
 AI_MODEL = os.getenv("AI_MODEL", "gemini-1.5-flash")
+
+# No fallback here on purpose: the old default ("indifit_secret_key_v1") was
+# shipped inside every APK, so anyone could decompile the app and hit this
+# backend directly. Failing closed at startup instead of silently falling
+# back to an empty/known key (verify_api_key below treats a falsy key as
+# "auth disabled", so a quiet default would have made things worse, not
+# better).
+INDIFIT_API_KEY = os.getenv("INDIFIT_API_KEY")
+if not INDIFIT_API_KEY:
+    raise RuntimeError(
+        "INDIFIT_API_KEY environment variable must be set (no default is "
+        "provided for security reasons). Set it in your deployment "
+        "environment, e.g. the Render dashboard."
+    )
 
 # In-memory 24h TTL cache & per-IP rate limiter
 RESPONSE_CACHE: Dict[str, dict] = {}

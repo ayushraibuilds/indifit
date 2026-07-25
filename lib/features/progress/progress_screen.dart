@@ -69,8 +69,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Progress & Analytics'),
-        backgroundColor: AppColors.background,
         elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         actions: [
           IconButton(
             icon: const Icon(Icons.emoji_events_rounded, color: Colors.amber),

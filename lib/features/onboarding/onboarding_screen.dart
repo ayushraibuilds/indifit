@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/providers.dart';
+import '../../core/router/app_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../data/repositories/workout_repository.dart';
-import '../dashboard/main_navigation_scaffold.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -189,10 +190,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Complete onboarding flag
     await prefs.setBool('onboarding_completed', true);
 
+    // Notify router that onboarding is now complete
+    ref.read(onboardingCompletedProvider.notifier).state = true;
+
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainNavigationScaffold()),
-      );
+      context.go('/');
     }
   }
 

@@ -14,13 +14,24 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 });
 
 final dioProvider = Provider<Dio>((ref) {
+  // No fallback here on purpose: the old default ("indifit_secret_key_v1")
+  // shipped inside every release APK and could be pulled out by decompiling
+  // it, letting anyone call the backend directly. Build with
+  // --dart-define=INDIFIT_API_KEY=<key> to set the real value.
+  const apiKey = String.fromEnvironment('INDIFIT_API_KEY');
+  assert(
+    apiKey.isNotEmpty,
+    'INDIFIT_API_KEY was not provided at build time. Build with '
+    '--dart-define=INDIFIT_API_KEY=<key>, otherwise backend requests will '
+    'be rejected with 401.',
+  );
   final dio = Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       sendTimeout: const Duration(seconds: 15),
       headers: {
-        'x-indifit-key': const String.fromEnvironment('INDIFIT_API_KEY', defaultValue: 'indifit_secret_key_v1'),
+        'x-indifit-key': apiKey,
       },
     ),
   );

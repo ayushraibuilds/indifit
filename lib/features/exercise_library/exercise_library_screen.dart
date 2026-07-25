@@ -103,8 +103,9 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exercise Library'),
-        backgroundColor: AppColors.background,
         elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),

@@ -59,8 +59,9 @@ class WorkoutSummaryScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Workout Summary'),
-        backgroundColor: AppColors.background,
         elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         automaticallyImplyLeading: false, // Don't allow backing out to player
       ),
       body: Padding(

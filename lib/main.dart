@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/di/providers.dart';
 import 'core/di/theme_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/services/auto_backup_service.dart';
@@ -29,8 +30,20 @@ void main() async {
     return true;
   };
 
+  // Check onboarding status before launching UI
+  final prefs = await SharedPreferences.getInstance();
+  final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+
+  // Single ProviderContainer created up front so the AppDatabase instance
+  // used here in main() (before the widget tree/ProviderScope exists) is the
+  // exact same instance every `ref.watch(databaseProvider)` resolves to
+  // later. Previously this created a second, separate AppDatabase()
+  // connection to the same SQLite file, so writes made through one
+  // connection wouldn't notify stream watchers listening via the other.
+  final container = ProviderContainer();
+  final AppDatabase db = container.read(databaseProvider);
+
   // Initialize local notification service & schedule reminders
-  final db = AppDatabase();
   await NotificationService.initialize();
   await NotificationService.scheduleAllReminders(db);
 
@@ -52,8 +65,9 @@ void main() async {
 
   await CrashReportingService.initialize(() {
     runApp(
-      const ProviderScope(
-        child: IndiFitApp(),
+      UncontrolledProviderScope(
+        container: container,
+        child: const IndiFitApp(),
       ),
     );
   });
