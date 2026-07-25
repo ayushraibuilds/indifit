@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/repositories/health_service.dart';
 
 class HealthSyncHubScreen extends ConsumerStatefulWidget {
@@ -38,7 +39,9 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
       try {
         final dt = DateTime.parse(lastSyncIso);
         formattedSync = 'Synced ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-      } catch (_) {}
+      } catch (e) {
+        AppLogger.warning('Failed to parse lastSyncIso: $e');
+      }
     }
 
     if (mounted) {

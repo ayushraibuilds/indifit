@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../../data/database/app_database.dart';
 
@@ -53,7 +54,8 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
           _loadingTemplates = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      AppLogger.warning('Failed to load split_templates.json: $e');
       if (mounted) {
         setState(() => _loadingTemplates = false);
       }

@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 
 import '../../core/di/providers.dart';
+import '../../core/services/achievement_service.dart';
+import '../../core/services/crash_reporting_service.dart';
 import '../../core/theme/colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/widgets/confetti_overlay.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
@@ -105,7 +108,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         );
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.warning('Check active workout draft failed: $e');
+      CrashReportingService.recordCrash(e, st, reason: 'dashboard active draft check error');
+    }
   }
 
   void _startTodayWorkout(DashboardState state) {

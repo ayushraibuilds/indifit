@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/di/providers.dart';
+import '../../core/services/crash_reporting_service.dart';
 import '../../core/theme/colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/repositories/food_repository.dart';
 
 class RegionalFoodPacksScreen extends ConsumerStatefulWidget {
@@ -104,7 +107,9 @@ class _RegionalFoodPacksScreenState extends ConsumerState<RegionalFoodPacksScree
         }
       }
       _loadedPacks[packId] = value;
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warning('Regional food pack update failed: $e');
+      CrashReportingService.recordCrash(e, st, reason: 'regional_food_pack toggle error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

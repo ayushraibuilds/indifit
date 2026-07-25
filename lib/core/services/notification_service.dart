@@ -5,6 +5,8 @@ import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:drift/drift.dart';
 import '../../data/database/app_database.dart';
+import '../utils/app_logger.dart';
+import 'crash_reporting_service.dart';
 
 /// Non-annoying, engagement-optimized local notification service.
 ///
@@ -166,7 +168,10 @@ class NotificationService {
         hasAnyFoodToday = foodLogs.isNotEmpty;
         hasLunchToday = foodLogs.any((l) => l.mealType.toLowerCase() == 'lunch');
         hasDinnerToday = foodLogs.any((l) => l.mealType.toLowerCase() == 'dinner');
-      } catch (_) {}
+      } catch (e, st) {
+        AppLogger.warning('syncDailyNotifications db check failed: $e');
+        CrashReportingService.recordCrash(e, st, reason: 'notification_service sync error');
+      }
     }
 
     if (workoutEnabled && !hasWorkoutToday) {
@@ -467,7 +472,9 @@ class NotificationService {
     try {
       tz.setLocalLocation(tz.getLocation(timeZoneName));
       return;
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.warning('Direct timezone lookup failed for $timeZoneName: $e');
+    }
 
     // Fallback based on UTC offset mapping
     final offsetHours = now.timeZoneOffset.inHours;
@@ -494,7 +501,9 @@ class NotificationService {
 
     try {
       tz.setLocalLocation(tz.getLocation(fallbackLocation));
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warning('Fallback timezone lookup failed for $fallbackLocation: $e');
+      CrashReportingService.recordCrash(e, st, reason: 'timezone configuration fallback error');
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
   }

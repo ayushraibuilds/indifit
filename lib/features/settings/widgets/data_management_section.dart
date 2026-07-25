@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/colors.dart';
+import '../../../core/utils/app_logger.dart';
 import '../../../core/utils/encryption_helper.dart';
+import '../../../data/database/app_database.dart';
 import '../../onboarding/onboarding_screen.dart';
 import '../health_sync_hub_screen.dart';
 import '../regional_food_packs_screen.dart';
@@ -148,7 +150,9 @@ class DataManagementSection extends ConsumerWidget {
               try {
                 final date = DateTime.parse(exportedAtStr);
                 formattedDate = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-              } catch (_) {}
+              } catch (e) {
+                AppLogger.warning('Backup export date parse warning: $e');
+              }
 
               final foodItemsCount = (data['food_items'] as List?)?.length ?? 0;
               final foodLogsCount = (data['food_logs'] as List?)?.length ?? 0;

@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/di/user_profile_provider.dart';
 import '../../core/services/achievement_service.dart';
+import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/streak_calculator.dart';
 import '../../data/database/app_database.dart';
@@ -231,7 +233,10 @@ class DashboardController extends StateNotifier<DashboardState> {
           );
         }
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.warning('_loadTodayWorkout failed: $e');
+      CrashReportingService.recordCrash(e, st, reason: 'dashboard_controller _loadTodayWorkout error');
+    }
   }
 
   Future<void> calculateWeeklyAdherence() async {

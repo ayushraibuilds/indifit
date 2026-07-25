@@ -8,6 +8,7 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../data/repositories/workout_repository.dart';
+import 'widgets/onboarding_step_widgets.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -381,46 +382,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildPageContainer({
-    required String title,
-    required String subtitle,
-    required Widget child,
-  }) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              fontFamily: GoogleFonts.outfit().fontFamily,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.textSecondary,
-              fontFamily: GoogleFonts.outfit().fontFamily,
-            ),
-          ),
-          const SizedBox(height: 36),
-          child,
-        ],
-      ),
-    );
-  }
-
   Widget _buildSexPage() {
-    return _buildPageContainer(
+    return OnboardingPageContainer(
       title: "Welcome to IndiFit!",
-      subtitle: "First, tell us your name and sex so we can personalize your experience.",
+      subtitle: "Your intelligent fitness & Indian nutrition companion.",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -448,14 +413,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondary, fontFamily: GoogleFonts.outfit().fontFamily),
           ),
           const SizedBox(height: 12),
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Male",
             icon: Icons.male,
             selected: _sex == 'male',
             onTap: () => setState(() => _sex = 'male'),
           ),
           const SizedBox(height: 16),
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Female",
             icon: Icons.female,
             selected: _sex == 'female',
@@ -467,10 +432,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildAgePage() {
-    return _buildPageContainer(
+    return OnboardingPageContainer(
       title: "How old are you?",
       subtitle: "Your age helps us compute changes in calorie metabolism.",
-      child: _buildNumberInputField(
+      child: OnboardingNumberInputField(
         controller: _ageController,
         label: "Age",
         suffix: "years",
@@ -481,10 +446,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildHeightPage() {
-    return _buildPageContainer(
+    return OnboardingPageContainer(
       title: "How tall are you?",
       subtitle: "Height is vital for calculating structural metabolic needs.",
-      child: _buildNumberInputField(
+      child: OnboardingNumberInputField(
         controller: _heightController,
         label: "Height",
         suffix: "cm",
@@ -495,10 +460,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildWeightPage() {
-    return _buildPageContainer(
+    return OnboardingPageContainer(
       title: "What's your current weight?",
       subtitle: "Used to determine daily macro limits and starting points.",
-      child: _buildNumberInputField(
+      child: OnboardingNumberInputField(
         controller: _weightController,
         label: "Weight",
         suffix: "kg",
@@ -509,12 +474,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildActivityPage() {
-    return _buildPageContainer(
+    return OnboardingPageContainer(
       title: "What is your activity level?",
       subtitle: "Estimates your TDEE multiplier based on gym/lifestyle workouts.",
       child: Column(
         children: [
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Sedentary",
             subtitle: "Little or no exercise (desk job)",
             icon: Icons.chair,
@@ -522,7 +487,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onTap: () => setState(() => _activityLevel = 'sedentary'),
           ),
           const SizedBox(height: 12),
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Lightly Active",
             subtitle: "Light workouts 1-3 days/week",
             icon: Icons.directions_walk,
@@ -530,7 +495,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onTap: () => setState(() => _activityLevel = 'light'),
           ),
           const SizedBox(height: 12),
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Moderately Active",
             subtitle: "Moderate gym training 3-5 days/week",
             icon: Icons.fitness_center,
@@ -538,7 +503,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onTap: () => setState(() => _activityLevel = 'moderate'),
           ),
           const SizedBox(height: 12),
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Very Active",
             subtitle: "Heavy exercise/sports 6-7 days/week",
             icon: Icons.bolt,
@@ -551,12 +516,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildGoalPage() {
-    return _buildPageContainer(
+    return OnboardingPageContainer(
       title: "What is your main goal?",
       subtitle: "We will tailor your caloric balance to hit this goal.",
       child: Column(
         children: [
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Lose Weight",
             subtitle: "Burn fat with a healthy calorie deficit",
             icon: Icons.trending_down,
@@ -564,7 +529,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onTap: () => setState(() => _goal = 'lose'),
           ),
           const SizedBox(height: 16),
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Maintain Weight",
             subtitle: "Stay active, stay fit, and lock in current weight",
             icon: Icons.compare_arrows,
@@ -572,7 +537,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onTap: () => setState(() => _goal = 'maintain'),
           ),
           const SizedBox(height: 16),
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Gain Muscle",
             subtitle: "Build lean bulk with a caloric surplus",
             icon: Icons.trending_up,
@@ -585,10 +550,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildTargetWeightPage() {
-    return _buildPageContainer(
+    return OnboardingPageContainer(
       title: "What is your target weight?",
       subtitle: "The goal weight you are striving to reach.",
-      child: _buildNumberInputField(
+      child: OnboardingNumberInputField(
         controller: _targetWeightController,
         label: "Target Weight",
         suffix: "kg",
@@ -598,12 +563,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildDietPage() {
-    return _buildPageContainer(
+    return OnboardingPageContainer(
       title: "Dietary preference?",
       subtitle: "Tailors AI meal options and search recommendations.",
       child: Column(
         children: [
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Vegetarian",
             subtitle: "Pure veg, dairy products allowed",
             icon: Icons.eco,
@@ -611,7 +576,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onTap: () => setState(() => _dietPreference = 'veg'),
           ),
           const SizedBox(height: 12),
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Non-Vegetarian",
             subtitle: "Chicken, fish, eggs, meat included",
             icon: Icons.restaurant,
@@ -619,7 +584,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onTap: () => setState(() => _dietPreference = 'non-veg'),
           ),
           const SizedBox(height: 12),
-          _buildSelectionCard(
+          OnboardingSelectionCard(
             title: "Vegan",
             subtitle: "100% plant-based, no animal products",
             icon: Icons.spa,
@@ -628,161 +593,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildSelectionCard({
-    required String title,
-    String? subtitle,
-    required IconData icon,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withOpacity(0.04) : AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-            width: selected ? 2.0 : 1.0,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: selected ? AppColors.primary.withOpacity(0.12) : const Color(0x1F223250),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: selected ? AppColors.primary : AppColors.textSecondary,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        fontFamily: GoogleFonts.outfit().fontFamily,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (selected)
-              const Icon(
-                Icons.check_circle,
-                color: AppColors.primary,
-                size: 24,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNumberInputField({
-    required TextEditingController controller,
-    required String label,
-    required String suffix,
-    required IconData icon,
-    String? errorText,
-  }) {
-    final hasError = errorText != null;
-    final isValid = !hasError && controller.text.isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: hasError ? AppColors.danger : (isValid ? AppColors.success : AppColors.border),
-              width: hasError || isValid ? 1.5 : 1.0,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: hasError ? AppColors.danger : AppColors.textSecondary),
-              const SizedBox(width: 16),
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: GoogleFonts.outfit().fontFamily,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: label,
-                    labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    filled: false,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (isValid)
-                const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18)
-              else if (hasError)
-                const Icon(Icons.error_outline_rounded, color: AppColors.danger, size: 18)
-              else
-                Text(
-                  suffix,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: GoogleFonts.outfit().fontFamily,
-                  ),
-                ),
-            ],
-          ),
-        ),
-        if (hasError) ...[
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.only(left: 12.0),
-            child: Text(
-              errorText,
-              style: const TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ],
     );
   }
 }

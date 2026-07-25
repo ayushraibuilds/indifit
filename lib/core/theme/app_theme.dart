@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'colors.dart';
+import '../utils/app_logger.dart';
 
 class AppTheme {
   static ThemeData get darkTheme {
@@ -103,7 +104,8 @@ class AppTheme {
 
     try {
       return GoogleFonts.outfitTextTheme(baseTextTheme);
-    } catch (_) {
+    } catch (e) {
+      AppLogger.warning('GoogleFonts.outfitTextTheme failed: $e');
       return baseTextTheme;
     }
   }
