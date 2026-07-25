@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
@@ -93,10 +94,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               icon: const Icon(Icons.edit_note_rounded, color: AppColors.textPrimary),
               tooltip: 'Edit Split',
               onPressed: () async {
-                final success = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RoutineEditorScreen(initialTabIndex: 1)),
-                );
+                final success = await context.push<bool>('/routine-editor');
                 if (success == true) {
                   _loadActiveRoutine();
                 }
@@ -106,10 +104,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               icon: const Icon(Icons.psychology_rounded, color: AppColors.primary),
               tooltip: 'Re-generate Split with AI',
               onPressed: () async {
-                final success = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RoutineWizardScreen()),
-                );
+                final success = await context.push<bool>('/routine-wizard');
                 if (success == true) {
                   _loadActiveRoutine();
                 }
@@ -164,10 +159,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
-                  final success = await Navigator.push<bool>(
-                    context,
-                    MaterialPageRoute(builder: (context) => const RoutineWizardScreen()),
-                  );
+                  final success = await context.push<bool>('/routine-wizard');
                   if (success == true) {
                     _loadActiveRoutine();
                   }
@@ -188,10 +180,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final success = await Navigator.push<bool>(
-                        context,
-                        MaterialPageRoute(builder: (context) => const RoutineEditorScreen(initialTabIndex: 0)),
-                      );
+                      final success = await context.push<bool>('/routine-editor');
                       if (success == true) {
                         _loadActiveRoutine();
                       }
@@ -210,10 +199,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final success = await Navigator.push<bool>(
-                        context,
-                        MaterialPageRoute(builder: (context) => const RoutineEditorScreen(initialTabIndex: 1)),
-                      );
+                      final success = await context.push<bool>('/routine-editor');
                       if (success == true) {
                         _loadActiveRoutine();
                       }
@@ -295,15 +281,10 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 20.0),
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => WorkoutPlayerScreen(
-                              routineName: day.name,
-                              exercises: exercises,
-                            ),
-                          ),
-                        );
+                        context.push('/workout-player', extra: {
+                          'routineName': day.name,
+                          'exercises': exercises,
+                        });
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,

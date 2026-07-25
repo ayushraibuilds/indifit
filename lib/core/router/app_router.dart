@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../data/database/app_database.dart';
 import '../../features/dashboard/main_navigation_scaffold.dart';
 import '../../features/food_log/ai_meal_logger_screen.dart';
 import '../../features/food_log/ai_meal_planner_screen.dart';
@@ -14,6 +15,8 @@ import '../../features/settings/health_sync_hub_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/workout_player/routine_display_screen.dart';
 import '../../features/workout_player/routine_editor_screen.dart';
+import '../../features/workout_player/workout_player_screen.dart';
+import '../../features/workout_player/workout_summary_screen.dart';
 
 /// Tracks whether the user has completed onboarding. Initialized from
 /// SharedPreferences in main.dart and updated when onboarding finishes.
@@ -87,6 +90,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/weekly-report',
         builder: (context, state) => const WeeklyReportScreen(),
+      ),
+      GoRoute(
+        path: '/workout-player',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return WorkoutPlayerScreen(
+            routineName: extra['routineName'] ?? 'Workout',
+            exercises: (extra['exercises'] as List?)?.cast<RoutineExercise>() ?? [],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/workout-summary',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return WorkoutSummaryScreen(
+            routineName: extra['routineName'] ?? 'Workout',
+            elapsedSeconds: extra['elapsedSeconds'] ?? 0,
+            loggedSets: (extra['loggedSets'] as List?)?.cast<WorkoutSetsCompanion>() ?? [],
+          );
+        },
       ),
     ],
   );
