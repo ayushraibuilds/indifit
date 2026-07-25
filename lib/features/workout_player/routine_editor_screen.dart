@@ -19,20 +19,8 @@ class RoutineEditorScreen extends ConsumerStatefulWidget {
 class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _routineNameController = TextEditingController(text: 'My Custom Split');
-  
-  // Manual Builder state: list of custom days
-  final List<_BuilderDayData> _builderDays = [
-    _BuilderDayData(name: 'Push Day', dayOfWeek: 1, isRestDay: false, exercises: [
-      RoutineExerciseInput(name: 'Push-Ups', sets: 3, repsRange: '10-15'),
-    ]),
-    _BuilderDayData(name: 'Pull Day', dayOfWeek: 2, isRestDay: false, exercises: [
-      RoutineExerciseInput(name: 'Lat Pulldown', sets: 3, repsRange: '8-12'),
-    ]),
-    _BuilderDayData(name: 'Legs Day', dayOfWeek: 3, isRestDay: false, exercises: [
-      RoutineExerciseInput(name: 'Bodyweight Squats', sets: 3, repsRange: '12-15'),
-    ]),
-    _BuilderDayData(name: 'Rest Day', dayOfWeek: 4, isRestDay: true, exercises: []),
-  ];
+  int? _activeRoutineId;
+  final List<_BuilderDayData> _builderDays = [];
 
   List<dynamic> _templates = [];
   bool _loadingTemplates = true;
@@ -42,6 +30,43 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
     super.initState();
     _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTabIndex);
     _loadTemplates();
+    _loadActiveRoutine();
+  }
+
+  Future<void> _loadActiveRoutine() async {
+    try {
+      final repo = ref.read(workoutRepositoryProvider);
+      final savedRoutines = await repo.getSavedRoutines();
+      if (savedRoutines.isNotEmpty) {
+        final active = savedRoutines.last;
+        _activeRoutineId = active.id;
+        _routineNameController.text = active.name;
+        final details = await repo.getRoutineDetails(active.id);
+        if (details.isNotEmpty && mounted) {
+          final List<_BuilderDayData> loadedDays = [];
+          for (final item in details) {
+            final RoutineDay day = item['day'];
+            final List<RoutineExercise> exercises = item['exercises'] as List<RoutineExercise>;
+            loadedDays.add(_BuilderDayData(
+              name: day.name,
+              dayOfWeek: day.dayOfWeek,
+              isRestDay: day.isRestDay,
+              exercises: exercises.map((e) => RoutineExerciseInput(
+                name: e.exerciseName,
+                sets: e.sets,
+                repsRange: e.repsRange,
+              )).toList(),
+            ));
+          }
+          setState(() {
+            _builderDays.clear();
+            _builderDays.addAll(loadedDays);
+          });
+        }
+      }
+    } catch (e) {
+      AppLogger.warning('Failed to load active routine for editor: $e');
+    }
   }
 
   Future<void> _loadTemplates() async {
@@ -137,6 +162,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
     )).toList();
 
     await repo.saveRoutine(
+      routineId: _activeRoutineId,
       name: name,
       goal: 'custom',
       notes: 'Custom manual routine builder',

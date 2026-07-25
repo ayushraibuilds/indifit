@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/colors.dart';
 import '../../core/widgets/confetti_overlay.dart';
@@ -419,7 +420,12 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                             Expanded(
                               child: Text(
                                 currentEx.exerciseName,
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: GoogleFonts.outfit().fontFamily,
+                                  letterSpacing: -0.3,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),

@@ -42,37 +42,37 @@ class WorkoutPlayerHeader extends StatelessWidget {
                     routineName,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                      fontSize: 24,
                       fontFamily: GoogleFonts.outfit().fontFamily,
-                      letterSpacing: -0.3,
+                      letterSpacing: -0.5,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Exercise ${currentExerciseIndex + 1} of ${exercises.length}',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.14),
+                color: AppColors.primary.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.timer_outlined, color: AppColors.primary, size: 18),
+                  const Icon(Icons.timer_outlined, color: AppColors.primary, size: 22),
                   const SizedBox(width: 6),
                   Text(
                     _formatDuration(elapsedSeconds),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
-                      fontSize: 15,
+                      fontSize: 18,
                       fontFamily: GoogleFonts.outfit().fontFamily,
                       letterSpacing: 0.5,
                     ),

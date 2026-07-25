@@ -57,22 +57,39 @@ class WorkoutRepository {
     required String goal,
     String? notes,
     required List<RoutineDayWithExercises> days,
+    int? routineId,
   }) async {
     return await _db.transaction(() async {
-      // 1. Insert routine header
-      final routineId = await _db.into(_db.workoutRoutines).insert(
-            WorkoutRoutinesCompanion.insert(
-              name: name,
-              goal: goal,
-              notes: Value(notes),
-            ),
-          );
+      int targetRoutineId;
+      if (routineId != null) {
+        targetRoutineId = routineId;
+        await (_db.update(_db.workoutRoutines)..where((tbl) => tbl.id.equals(routineId))).write(
+          WorkoutRoutinesCompanion(
+            name: Value(name),
+            goal: Value(goal),
+            notes: Value(notes),
+          ),
+        );
+        final existingDays = await (_db.select(_db.routineDays)..where((tbl) => tbl.routineId.equals(routineId))).get();
+        for (final day in existingDays) {
+          await (_db.delete(_db.routineExercises)..where((tbl) => tbl.dayId.equals(day.id))).go();
+        }
+        await (_db.delete(_db.routineDays)..where((tbl) => tbl.routineId.equals(routineId))).go();
+      } else {
+        targetRoutineId = await _db.into(_db.workoutRoutines).insert(
+              WorkoutRoutinesCompanion.insert(
+                name: name,
+                goal: goal,
+                notes: Value(notes),
+              ),
+            );
+      }
 
-      // 2. Insert days and exercises
+      // Insert days and exercises
       for (final dayData in days) {
         final dayId = await _db.into(_db.routineDays).insert(
               RoutineDaysCompanion.insert(
-                routineId: routineId,
+                routineId: targetRoutineId,
                 dayOfWeek: dayData.dayOfWeek,
                 name: dayData.dayName,
                 isRestDay: Value(dayData.isRestDay),
@@ -95,7 +112,7 @@ class WorkoutRepository {
         }
       }
 
-      return routineId;
+      return targetRoutineId;
     });
   }
 
