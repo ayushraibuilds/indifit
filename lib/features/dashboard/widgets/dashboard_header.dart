@@ -56,18 +56,18 @@ class DashboardHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.orange.withOpacity(0.12),
+            color: AppColors.streakOrange.withOpacity(0.12),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.orange.withOpacity(0.25)),
+            border: Border.all(color: AppColors.streakOrange.withOpacity(0.25)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 14),
+              const Icon(Icons.local_fire_department_rounded, color: AppColors.streakOrange, size: 14),
               const SizedBox(width: 2),
               Text(
                 '${streakCount}d',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 11),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.streakOrange, fontSize: 11),
               ),
             ],
           ),

@@ -196,16 +196,16 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                           _loadExercises();
                         }
                       },
-                      selectedColor: Colors.blue.withValues(alpha: 0.12),
+                      selectedColor: AppColors.infoBlue.withOpacity(0.12),
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.blue : AppColors.textSecondary,
+                        color: isSelected ? AppColors.infoBlue : AppColors.textSecondary,
                         fontSize: 11,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
-                          color: isSelected ? Colors.blue : AppColors.border,
+                          color: isSelected ? AppColors.infoBlue : AppColors.border,
                         ),
                       ),
                     ),

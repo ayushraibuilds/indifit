@@ -79,7 +79,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         actions: [
           IconButton(
-            icon: const Icon(Icons.emoji_events_rounded, color: Colors.amber),
+            icon: const Icon(Icons.emoji_events_rounded, color: AppColors.achievementGold),
             tooltip: 'Achievements',
             onPressed: () {
               Navigator.push(

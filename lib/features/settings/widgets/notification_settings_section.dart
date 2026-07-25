@@ -49,7 +49,7 @@ class NotificationSettingsSection extends ConsumerWidget {
         const SizedBox(height: 16),
         SettingsReminderToggle(
           icon: Icons.fitness_center_rounded,
-          iconColor: Colors.orange,
+          iconColor: AppColors.streakOrange,
           title: 'Workout Reminder',
           subtitle: 'Daily at 7:30 AM — Start your training',
           value: state.remindWorkout,
@@ -58,7 +58,7 @@ class NotificationSettingsSection extends ConsumerWidget {
         const SizedBox(height: 12),
         SettingsReminderToggle(
           icon: Icons.restaurant_rounded,
-          iconColor: Colors.green,
+          iconColor: AppColors.success,
           title: 'Meal Logging',
           subtitle: 'Post-lunch (1:30 PM) & post-dinner (8:30 PM)',
           value: state.remindMeals,
@@ -67,7 +67,7 @@ class NotificationSettingsSection extends ConsumerWidget {
         const SizedBox(height: 12),
         SettingsReminderToggle(
           icon: Icons.water_drop_rounded,
-          iconColor: Colors.blue,
+          iconColor: AppColors.infoBlue,
           title: 'Water Intake',
           subtitle: 'Twice daily (11 AM & 4 PM) — gentle hydration nudge',
           value: state.remindWater,

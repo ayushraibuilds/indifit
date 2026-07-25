@@ -143,9 +143,9 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
                         children: [
                           const Row(
                             children: [
-                              Icon(Icons.lightbulb_rounded, color: Colors.amber, size: 22),
+                              Icon(Icons.lightbulb_rounded, color: AppColors.achievementGold, size: 22),
                               SizedBox(width: 8),
-                              Text('AI COACHING TIP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.amber)),
+                              Text('AI COACHING TIP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.achievementGold)),
                             ],
                           ),
                           const SizedBox(height: 8),

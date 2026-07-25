@@ -114,7 +114,7 @@ class TodaysActivityCard extends ConsumerWidget {
                           const SizedBox(height: 2),
                           Text(
                             '${activeCals.toStringAsFixed(0)} kcal',
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orangeAccent),
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.streakOrange),
                           ),
                         ],
                       ),

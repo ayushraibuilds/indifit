@@ -129,23 +129,48 @@ class AchievementsScreen extends StatelessWidget {
                   return Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: item.isUnlocked ? AppColors.surface : AppColors.cardBackground,
-                      borderRadius: BorderRadius.circular(14),
+                      color: item.isUnlocked ? item.color.withOpacity(0.08) : AppColors.cardBackground,
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: item.isUnlocked ? item.color.withOpacity(0.4) : AppColors.border,
+                        color: item.isUnlocked ? item.color : AppColors.border,
+                        width: item.isUnlocked ? 1.5 : 1.0,
                       ),
+                      boxShadow: item.isUnlocked
+                          ? [
+                              BoxShadow(
+                                color: item.color.withOpacity(0.2),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: item.isUnlocked ? item.color.withOpacity(0.15) : AppColors.border,
-                          child: Icon(
-                            item.icon,
-                            color: item.isUnlocked ? item.color : AppColors.textMuted,
-                            size: 24,
-                          ),
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircleAvatar(
+                              radius: 26,
+                              backgroundColor: item.isUnlocked ? item.color.withOpacity(0.2) : AppColors.border.withOpacity(0.4),
+                              child: Icon(
+                                item.icon,
+                                color: item.isUnlocked ? item.color : AppColors.textMuted,
+                                size: 26,
+                              ),
+                            ),
+                            if (item.isUnlocked)
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(color: AppColors.surface, shape: BoxShape.circle),
+                                  child: Icon(Icons.check_circle_rounded, color: item.color, size: 14),
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 10),
                         Text(
@@ -166,16 +191,23 @@ class AchievementsScreen extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: item.progressPercentage,
-                            backgroundColor: AppColors.border,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              item.isUnlocked ? item.color : AppColors.textMuted,
-                            ),
-                            minHeight: 4,
-                          ),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween<double>(begin: 0.0, end: item.progressPercentage),
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, animVal, _) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: animVal,
+                                backgroundColor: AppColors.border,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  item.isUnlocked ? item.color : AppColors.textMuted,
+                                ),
+                                minHeight: 4,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

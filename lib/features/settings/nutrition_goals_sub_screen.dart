@@ -246,7 +246,7 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
               decoration: InputDecoration(
                 labelText: 'Protein Target (grams)',
                 suffixText: 'g',
-                prefixIcon: const Icon(Icons.fitness_center_rounded, color: Colors.blueAccent),
+                prefixIcon: const Icon(Icons.fitness_center_rounded, color: AppColors.infoBlue),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),

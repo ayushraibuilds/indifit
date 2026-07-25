@@ -31,6 +31,8 @@ class AdherenceCard extends StatelessWidget {
               radius: 36.0,
               lineWidth: 6.0,
               percent: (adherenceScore / 100.0).clamp(0.0, 1.0),
+              animation: true,
+              animationDuration: 600,
               center: Text(
                 '${adherenceScore.round()}%',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),

@@ -51,30 +51,22 @@ class SettingsScreen extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: SegmentedButton<ThemeMode>(
-                              segments: const [
-                                ButtonSegment(
-                                  value: ThemeMode.system,
-                                  icon: Icon(Icons.brightness_auto_rounded, size: 16),
-                                  label: Text('System'),
-                                ),
-                                ButtonSegment(
-                                  value: ThemeMode.light,
-                                  icon: Icon(Icons.light_mode_rounded, size: 16),
-                                  label: Text('Light'),
-                                ),
-                                ButtonSegment(
-                                  value: ThemeMode.dark,
-                                  icon: Icon(Icons.dark_mode_rounded, size: 16),
-                                  label: Text('Dark'),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.dark_mode_rounded, color: AppColors.primary, size: 18),
+                                SizedBox(width: 10),
+                                Text(
+                                  'IndiFit Dark Mode (Optimized Default)',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
                                 ),
                               ],
-                              selected: {themeMode},
-                              onSelectionChanged: (Set<ThemeMode> newSelection) {
-                                ref.read(themeModeProvider.notifier).setThemeMode(newSelection.first);
-                              },
                             ),
                           ),
                         ],
@@ -96,7 +88,7 @@ class SettingsScreen extends ConsumerWidget {
                         _buildSettingTile(
                           context,
                           icon: Icons.notifications_none_rounded,
-                          iconColor: Colors.amber,
+                          iconColor: AppColors.achievementGold,
                           title: 'Notifications & Reminders',
                           subtitle: 'Meal reminders, workout alarms & summaries',
                           onTap: () => Navigator.push(
@@ -108,7 +100,7 @@ class SettingsScreen extends ConsumerWidget {
                         _buildSettingTile(
                           context,
                           icon: Icons.water_drop_outlined,
-                          iconColor: Colors.lightBlue,
+                          iconColor: AppColors.infoBlue,
                           title: 'Hydration & Water Goal',
                           subtitle: 'Daily target, glass volume & intake history',
                           onTap: () => Navigator.push(
@@ -120,7 +112,7 @@ class SettingsScreen extends ConsumerWidget {
                         _buildSettingTile(
                           context,
                           icon: Icons.restaurant_menu_rounded,
-                          iconColor: Colors.orange,
+                          iconColor: AppColors.streakOrange,
                           title: 'Regional Food Packs',
                           subtitle: 'Bengali, Gujarati, Punjabi & South Indian items',
                           onTap: () => Navigator.push(

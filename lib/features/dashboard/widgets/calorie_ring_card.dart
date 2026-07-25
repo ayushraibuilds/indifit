@@ -65,11 +65,11 @@ class CalorieRingCard extends ConsumerWidget {
                             Text(
                               '$eatenCalories',
                               style: TextStyle(
-                                fontSize: 28,
+                                fontSize: 36,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                                 fontFamily: GoogleFonts.outfit().fontFamily,
-                                letterSpacing: -0.5,
+                                letterSpacing: -1.0,
                               ),
                             ),
                             Text(
