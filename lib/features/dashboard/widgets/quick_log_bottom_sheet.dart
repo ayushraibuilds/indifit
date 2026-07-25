@@ -4,7 +4,8 @@ import '../../../core/theme/colors.dart';
 import '../../food_log/food_search_screen.dart';
 
 class QuickLogBottomSheet extends StatelessWidget {
-  const QuickLogBottomSheet({super.key});
+  final DateTime? selectedDate;
+  const QuickLogBottomSheet({super.key, this.selectedDate});
 
   Widget _mealQuickActionButton(BuildContext context, String label, String type, IconData icon) {
     return Column(
@@ -16,7 +17,7 @@ class QuickLogBottomSheet extends StatelessWidget {
             Navigator.pop(context);
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => FoodSearchScreen(mealType: type)),
+              MaterialPageRoute(builder: (context) => FoodSearchScreen(mealType: type, selectedDate: selectedDate)),
             );
           },
         ),

@@ -15,6 +15,10 @@ class UserProfileState {
   final double currentWeight;
   final double? userHeight;
   final String? userName;
+  final String userSex;
+  final int userAge;
+  final String userActivityLevel;
+  final String userGoal;
 
   const UserProfileState({
     required this.calorieGoal,
@@ -24,6 +28,10 @@ class UserProfileState {
     required this.currentWeight,
     this.userHeight,
     this.userName,
+    this.userSex = 'male',
+    this.userAge = 25,
+    this.userActivityLevel = 'moderate',
+    this.userGoal = 'maintain',
   });
 
   UserProfileState copyWith({
@@ -34,6 +42,10 @@ class UserProfileState {
     double? currentWeight,
     double? userHeight,
     String? userName,
+    String? userSex,
+    int? userAge,
+    String? userActivityLevel,
+    String? userGoal,
   }) {
     return UserProfileState(
       calorieGoal: calorieGoal ?? this.calorieGoal,
@@ -43,6 +55,10 @@ class UserProfileState {
       currentWeight: currentWeight ?? this.currentWeight,
       userHeight: userHeight ?? this.userHeight,
       userName: userName ?? this.userName,
+      userSex: userSex ?? this.userSex,
+      userAge: userAge ?? this.userAge,
+      userActivityLevel: userActivityLevel ?? this.userActivityLevel,
+      userGoal: userGoal ?? this.userGoal,
     );
   }
 }
@@ -70,6 +86,10 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     double weight = prefs.getDouble('current_weight') ?? 74.5;
     double? height = prefs.getDouble('user_height');
     String? name = prefs.getString('user_name');
+    String sex = prefs.getString('user_sex') ?? 'male';
+    int age = prefs.getInt('user_age') ?? 25;
+    String activity = prefs.getString('user_activity_level') ?? 'moderate';
+    String goal = prefs.getString('user_goal') ?? 'maintain';
 
     if (_db != null) {
       try {
@@ -107,6 +127,10 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
       currentWeight: weight,
       userHeight: height,
       userName: name,
+      userSex: sex,
+      userAge: age,
+      userActivityLevel: activity,
+      userGoal: goal,
     );
   }
 

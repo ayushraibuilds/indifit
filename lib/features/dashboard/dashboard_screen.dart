@@ -427,7 +427,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-                builder: (context) => const QuickLogBottomSheet(),
+                builder: (context) => QuickLogBottomSheet(selectedDate: state.selectedDate),
               );
             },
             style: ElevatedButton.styleFrom(

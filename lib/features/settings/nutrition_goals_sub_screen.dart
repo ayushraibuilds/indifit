@@ -54,14 +54,28 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
     final weight = profile.currentWeight > 0 ? profile.currentWeight : 74.5;
     final height = (profile.userHeight != null && profile.userHeight! > 0) ? profile.userHeight! : 170.0;
     
+    final gender = profile.userSex == 'female' ? Gender.female : Gender.male;
+    final age = profile.userAge > 0 ? profile.userAge : 25;
+    final actLevel = switch (profile.userActivityLevel) {
+      'sedentary' => ActivityLevel.sedentary,
+      'light' => ActivityLevel.lightlyActive,
+      'active' => ActivityLevel.veryActive,
+      _ => ActivityLevel.moderatelyActive,
+    };
+    final fitnessGoal = switch (profile.userGoal) {
+      'lose' => FitnessGoal.weightLoss,
+      'gain' => FitnessGoal.muscleGain,
+      _ => FitnessGoal.maintain,
+    };
+
     final bmr = TdeeCalculator.calculateBmr(
-      gender: Gender.male,
+      gender: gender,
       weightKg: weight,
       heightCm: height,
-      ageYears: 25,
+      ageYears: age,
     );
-    final tdee = TdeeCalculator.calculateTdee(bmr: bmr, activityLevel: ActivityLevel.moderatelyActive);
-    final macros = TdeeCalculator.calculateMacros(tdee: tdee, goal: FitnessGoal.weightLoss, weightKg: weight);
+    final tdee = TdeeCalculator.calculateTdee(bmr: bmr, activityLevel: actLevel);
+    final macros = TdeeCalculator.calculateMacros(tdee: tdee, goal: fitnessGoal, weightKg: weight);
 
     setState(() {
       _recCalories = macros.calories;
