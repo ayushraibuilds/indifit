@@ -24,4 +24,12 @@ class AppColors {
   static const Color textPrimary = Color(0xFFF1F5F9);
   static const Color textSecondary = Color(0xFF94A3B8);
   static const Color textMuted = Color(0xFF64748B);
+
+  // Feature Specific Tokens
+  static const Color streakOrange = Color(0xFFFF7A00);
+  static const Color infoBlue = Color(0xFF3B82F6);
+  static const Color fiberTeal = Color(0xFF14B8A6);
+  static const Color achievementGold = Color(0xFFFFD700);
+  static const Color achievementSilver = Color(0xFFC0C0C0);
+  static const Color achievementBronze = Color(0xFFCD7F32);
 }

@@ -6,6 +6,7 @@ import '../../core/theme/colors.dart';
 import 'data_management_sub_screen.dart';
 import 'health_sync_hub_screen.dart';
 import 'notification_settings_screen.dart';
+import 'nutrition_goals_sub_screen.dart';
 import 'regional_food_packs_screen.dart';
 import 'settings_controller.dart';
 import 'water_settings_sub_screen.dart';
@@ -125,6 +126,18 @@ class SettingsScreen extends ConsumerWidget {
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const RegionalFoodPacksScreen()),
+                          ),
+                        ),
+                        const Divider(height: 1, color: AppColors.border),
+                        _buildSettingTile(
+                          context,
+                          icon: Icons.restaurant_menu_rounded,
+                          iconColor: AppColors.primary,
+                          title: 'Nutrition & Macro Goals',
+                          subtitle: 'View calculated recommendations & customize targets',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const NutritionGoalsSubScreen()),
                           ),
                         ),
                         const Divider(height: 1, color: AppColors.border),

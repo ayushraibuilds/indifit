@@ -7,6 +7,7 @@ import '../../features/dashboard/main_navigation_scaffold.dart';
 import '../../features/food_log/ai_meal_logger_screen.dart';
 import '../../features/food_log/ai_meal_planner_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
+import '../../features/onboarding/routine_wizard_screen.dart';
 import '../../features/progress/achievements_screen.dart';
 import '../../features/reports/weekly_report_screen.dart';
 import '../../features/settings/health_sync_hub_screen.dart';
@@ -24,9 +25,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) async {
       final prefs = await SharedPreferences.getInstance();
       final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
-      final goingToOnboarding = state.matchedLocation == '/onboarding';
+      final location = state.matchedLocation;
+      final goingToOnboarding = location == '/onboarding';
+      final goingToWizard = location == '/routine-wizard';
 
-      if (!onboardingCompleted && !goingToOnboarding) {
+      if (!onboardingCompleted && !goingToOnboarding && !goingToWizard) {
         return '/onboarding';
       }
       if (onboardingCompleted && goingToOnboarding) {
@@ -42,6 +45,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/routine-wizard',
+        builder: (context, state) {
+          final goal = state.uri.queryParameters['goal'];
+          return RoutineWizardScreen(initialGoal: goal);
+        },
       ),
       GoRoute(
         path: '/workout',

@@ -27,6 +27,10 @@ class DashboardDateBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final isToday = !target.isBefore(today);
 
     return Card(
       margin: EdgeInsets.zero,
@@ -50,9 +54,9 @@ class DashboardDateBar extends StatelessWidget {
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,
-                  initialDate: selectedDate,
+                  initialDate: selectedDate.isAfter(now) ? now : selectedDate,
                   firstDate: DateTime(2020),
-                  lastDate: DateTime(2030),
+                  lastDate: now,
                 );
                 if (picked != null) {
                   onDateChanged(picked);
@@ -75,11 +79,17 @@ class DashboardDateBar extends StatelessWidget {
 
             // Next day button
             IconButton(
-              icon: const Icon(Icons.chevron_right_rounded, size: 22),
-              tooltip: 'Next day',
-              onPressed: () {
-                onDateChanged(selectedDate.add(const Duration(days: 1)));
-              },
+              icon: Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: isToday ? AppColors.textMuted.withOpacity(0.3) : null,
+              ),
+              tooltip: isToday ? 'Cannot select future date' : 'Next day',
+              onPressed: isToday
+                  ? null
+                  : () {
+                      onDateChanged(selectedDate.add(const Duration(days: 1)));
+                    },
             ),
           ],
         ),

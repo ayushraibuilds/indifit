@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/app_config.dart';
 import '../../core/di/providers.dart';
+import '../../core/services/crash_reporting_service.dart';
+import '../../core/utils/app_logger.dart';
 
 final weeklyReportServiceProvider = Provider<WeeklyReportService>((ref) {
   final dio = ref.watch(dioProvider);
@@ -71,7 +73,10 @@ class WeeklyReportService {
           fallbackReason: d['fallback_reason'],
         );
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.warning('Weekly report AI parsing failed, using fallback: $e');
+      CrashReportingService.recordCrash(e, st, reason: 'WeeklyReportService AI response parse failure');
+    }
 
     return WeeklyReportResult(
       headline: 'Outstanding Consistency This Week!',

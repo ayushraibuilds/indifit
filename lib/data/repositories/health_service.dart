@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/crash_reporting_service.dart';
+import '../../core/utils/app_logger.dart';
 
 final healthServiceProvider = Provider<HealthService>((ref) {
   return HealthService();
@@ -153,7 +155,9 @@ class HealthService {
         }
       }
       return activities;
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warning('fetchTodayWorkoutActivities failed: $e');
+      CrashReportingService.recordCrash(e, st, reason: 'fetchTodayWorkoutActivities error');
       return [];
     }
   }
@@ -175,7 +179,9 @@ class HealthService {
         totalEnergyBurned: caloriesBurned,
         totalEnergyBurnedUnit: HealthDataUnit.KILOCALORIE,
       );
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warning('writeWorkoutSession failed: $e');
+      CrashReportingService.recordCrash(e, st, reason: 'writeWorkoutSession error');
       return false;
     }
   }
@@ -191,7 +197,9 @@ class HealthService {
         endTime: time,
         unit: HealthDataUnit.KILOGRAM,
       );
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warning('writeBodyWeight failed: $e');
+      CrashReportingService.recordCrash(e, st, reason: 'writeBodyWeight error');
       return false;
     }
   }

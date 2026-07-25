@@ -48,3 +48,7 @@ app.*.map.json
 **/android/key.properties
 *.keystore
 *.jks
+
+# Build artifacts & APKs
+test_builds/
+*.apk

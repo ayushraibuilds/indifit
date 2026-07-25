@@ -33,6 +33,8 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  bool _celebratingMilestone = false;
+
   @override
   void initState() {
     super.initState();
@@ -164,30 +166,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final controller = ref.read(dashboardControllerProvider.notifier);
     final foodRepo = ref.watch(foodRepositoryProvider);
 
-    // Achievement unlock toast
+    // Achievement unlock toast & celebration
     ref.listen<DashboardState>(dashboardControllerProvider, (prev, next) {
       if (next.newlyUnlockedAchievementTitles.isNotEmpty &&
           (prev == null || prev.newlyUnlockedAchievementTitles != next.newlyUnlockedAchievementTitles)) {
+        setState(() => _celebratingMilestone = true);
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) setState(() => _celebratingMilestone = false);
+        });
         for (final title in next.newlyUnlockedAchievementTitles) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('🏆 Achievement Unlocked: $title'),
-              backgroundColor: Colors.amber.shade700,
+              backgroundColor: AppColors.achievementGold,
               duration: const Duration(seconds: 3),
             ),
           );
         }
       }
 
-      // Streak milestone toast
+      // Streak milestone toast & celebration
       final streakMilestones = [7, 14, 21, 30, 60, 100];
       if (prev != null && next.streakCount != prev.streakCount) {
         for (final milestone in streakMilestones) {
           if (next.streakCount >= milestone && prev.streakCount < milestone) {
+            setState(() => _celebratingMilestone = true);
+            Future.delayed(const Duration(seconds: 3), () {
+              if (mounted) setState(() => _celebratingMilestone = false);
+            });
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('🔥 $milestone-day streak! Keep it up!'),
-                backgroundColor: Colors.deepOrangeAccent,
+                backgroundColor: AppColors.streakOrange,
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -219,7 +229,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             final isCalorieGoalMet = eatenCalories >= state.calorieGoal && state.calorieGoal > 0;
 
             return ConfettiOverlay(
-              isPlaying: isCalorieGoalMet,
+              isPlaying: isCalorieGoalMet || _celebratingMilestone,
               child: RefreshIndicator(
                 onRefresh: () async {
                   await controller.loadStateData();
@@ -377,6 +387,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
             const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary),
+              tooltip: 'Settings',
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+              },
+            ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
               color: AppColors.surface,

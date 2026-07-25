@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/database/app_database.dart';
+import '../services/crash_reporting_service.dart';
+import '../utils/app_logger.dart';
 import 'providers.dart';
 
 class UserProfileState {
@@ -91,7 +93,10 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
             height: height != null ? Value(height) : const Value.absent(),
           ));
         }
-      } catch (_) {}
+      } catch (e, st) {
+        AppLogger.warning('loadProfile database access failed: $e');
+        CrashReportingService.recordCrash(e, st, reason: 'loadProfile db error');
+      }
     }
 
     state = UserProfileState(
@@ -131,7 +136,10 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
             ),
           );
         }
-      } catch (_) {}
+      } catch (e, st) {
+        AppLogger.warning('updateGoals database write failed: $e');
+        CrashReportingService.recordCrash(e, st, reason: 'updateGoals db error');
+      }
     }
 
     state = state.copyWith(
@@ -157,7 +165,10 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
             ),
           );
         }
-      } catch (_) {}
+      } catch (e, st) {
+        AppLogger.warning('updateWeight database write failed: $e');
+        CrashReportingService.recordCrash(e, st, reason: 'updateWeight db error');
+      }
     }
 
     state = state.copyWith(currentWeight: weight);
@@ -178,7 +189,10 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
             ),
           );
         }
-      } catch (_) {}
+      } catch (e, st) {
+        AppLogger.warning('updateHeight database write failed: $e');
+        CrashReportingService.recordCrash(e, st, reason: 'updateHeight db error');
+      }
     }
 
     state = state.copyWith(userHeight: height);

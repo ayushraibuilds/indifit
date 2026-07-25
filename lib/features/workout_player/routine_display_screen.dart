@@ -4,8 +4,9 @@ import '../../core/theme/colors.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
-import '../onboarding/onboarding_wizard_screen.dart';
+import '../onboarding/routine_wizard_screen.dart';
 import 'routine_editor_screen.dart';
+import 'widgets/manual_log_sheet.dart';
 import 'workout_player_screen.dart';
 
 class RoutineDisplayScreen extends ConsumerStatefulWidget {
@@ -20,6 +21,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   List<Map<String, dynamic>> _routineDays = [];
   int _selectedDayOfWeek = DateTime.now().weekday; // 1 = Mon, 7 = Sun
   bool _loading = false;
+  Set<int> _completedDayOfWeeks = {};
 
   @override
   void initState() {
@@ -33,21 +35,31 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
     try {
       final repo = ref.read(workoutRepositoryProvider);
       final routines = await repo.getSavedRoutines();
+      final sessions = await repo.watchSessions().first;
+
+      final now = DateTime.now();
+      final monday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+      final sunday = monday.add(const Duration(days: 6, hours: 23, minutes: 59));
+      final completed = sessions
+          .where((s) => s.completedAt.isAfter(monday.subtract(const Duration(seconds: 1))) && s.completedAt.isBefore(sunday))
+          .map((s) => s.completedAt.weekday)
+          .toSet();
 
       if (routines.isNotEmpty) {
-        // Grab the latest saved routine
         final active = routines.last;
         final details = await repo.getRoutineDetails(active.id);
         
         setState(() {
           _activeRoutine = active;
           _routineDays = details;
+          _completedDayOfWeeks = completed;
           _loading = false;
         });
       } else {
         setState(() {
           _activeRoutine = null;
           _routineDays = [];
+          _completedDayOfWeeks = completed;
           _loading = false;
         });
       }
@@ -64,20 +76,46 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         actions: [
-          if (_activeRoutine != null)
+          if (_activeRoutine != null) ...[
             IconButton(
-              icon: const Icon(Icons.psychology_rounded, color: AppColors.primary),
-              tooltip: 'Re-generate Split',
+              icon: const Icon(Icons.history_rounded, color: AppColors.textPrimary),
+              tooltip: 'Log Past Workout',
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => ManualLogSheet(selectedDate: DateTime.now()),
+                ).then((_) => _loadActiveRoutine());
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit_note_rounded, color: AppColors.textPrimary),
+              tooltip: 'Edit Split',
               onPressed: () async {
                 final success = await Navigator.push<bool>(
                   context,
-                  MaterialPageRoute(builder: (context) => const OnboardingWizardScreen()),
+                  MaterialPageRoute(builder: (context) => const RoutineEditorScreen(initialTabIndex: 1)),
                 );
                 if (success == true) {
                   _loadActiveRoutine();
                 }
               },
-            )
+            ),
+            IconButton(
+              icon: const Icon(Icons.psychology_rounded, color: AppColors.primary),
+              tooltip: 'Re-generate Split with AI',
+              onPressed: () async {
+                final success = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RoutineWizardScreen()),
+                );
+                if (success == true) {
+                  _loadActiveRoutine();
+                }
+              },
+            ),
+          ],
         ],
       ),
       body: _loading
@@ -128,7 +166,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                 onPressed: () async {
                   final success = await Navigator.push<bool>(
                     context,
-                    MaterialPageRoute(builder: (context) => const OnboardingWizardScreen()),
+                    MaterialPageRoute(builder: (context) => const RoutineWizardScreen()),
                   );
                   if (success == true) {
                     _loadActiveRoutine();
@@ -348,11 +386,15 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                       ),
                       const SizedBox(height: 4),
                       Icon(
-                        isRest ? Icons.spa_rounded : Icons.fitness_center_rounded,
-                        size: 12,
+                        _completedDayOfWeeks.contains(dayNum)
+                            ? Icons.check_circle_rounded
+                            : (isRest ? Icons.spa_rounded : Icons.fitness_center_rounded),
+                        size: 14,
                         color: isSelected 
                             ? Colors.white 
-                            : (isRest ? Colors.blue.withOpacity(0.8) : AppColors.primary),
+                            : (_completedDayOfWeeks.contains(dayNum)
+                                ? AppColors.success
+                                : (isRest ? Colors.blue.withOpacity(0.8) : AppColors.primary)),
                       ),
                     ],
                   ),

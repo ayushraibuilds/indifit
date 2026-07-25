@@ -25,7 +25,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _age = 25;
   double _height = 170.0;
   double _weight = 70.0;
-  String _sex = 'male'; // 'male', 'female'
+  String? _sex; // Nullable for explicit selection requirement (Item 3.3)
   String _activityLevel = 'moderate'; // 'sedentary', 'light', 'moderate', 'active'
   String _goal = 'maintain'; // 'lose', 'maintain', 'gain'
   double _targetWeight = 70.0;
@@ -48,6 +48,53 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _ageController.addListener(_validateAge);
     _heightController.addListener(_validateHeight);
     _weightController.addListener(_validateWeight);
+    _loadDraft();
+  }
+
+  Future<void> _loadDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    final draftPage = prefs.getInt('onboarding_draft_page');
+    if (draftPage != null) {
+      setState(() {
+        _currentPage = draftPage.clamp(0, _totalPages - 1);
+        _sex = prefs.getString('onboarding_draft_sex');
+        _activityLevel = prefs.getString('onboarding_draft_activity') ?? 'moderate';
+        _goal = prefs.getString('onboarding_draft_goal') ?? 'maintain';
+        _dietPreference = prefs.getString('onboarding_draft_diet') ?? 'veg';
+      });
+      if (prefs.containsKey('onboarding_draft_name')) {
+        _nameController.text = prefs.getString('onboarding_draft_name')!;
+      }
+      if (prefs.containsKey('onboarding_draft_age')) {
+        _ageController.text = prefs.getString('onboarding_draft_age')!;
+      }
+      if (prefs.containsKey('onboarding_draft_height')) {
+        _heightController.text = prefs.getString('onboarding_draft_height')!;
+      }
+      if (prefs.containsKey('onboarding_draft_weight')) {
+        _weightController.text = prefs.getString('onboarding_draft_weight')!;
+      }
+      if (prefs.containsKey('onboarding_draft_target_weight')) {
+        _targetWeightController.text = prefs.getString('onboarding_draft_target_weight')!;
+      }
+      if (_currentPage > 0 && _pageController.hasClients) {
+        _pageController.jumpToPage(_currentPage);
+      }
+    }
+  }
+
+  Future<void> _saveDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('onboarding_draft_page', _currentPage);
+    if (_sex != null) await prefs.setString('onboarding_draft_sex', _sex!);
+    await prefs.setString('onboarding_draft_name', _nameController.text);
+    await prefs.setString('onboarding_draft_age', _ageController.text);
+    await prefs.setString('onboarding_draft_height', _heightController.text);
+    await prefs.setString('onboarding_draft_weight', _weightController.text);
+    await prefs.setString('onboarding_draft_activity', _activityLevel);
+    await prefs.setString('onboarding_draft_goal', _goal);
+    await prefs.setString('onboarding_draft_target_weight', _targetWeightController.text);
+    await prefs.setString('onboarding_draft_diet', _dietPreference);
   }
 
   void _validateAge() {
@@ -95,7 +142,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _nextPage() {
-    if (_currentPage == 1 && _ageError != null) {
+    if (_currentPage == 0 && _sex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select your biological sex to proceed.')),
+      );
+      return;
+    } else if (_currentPage == 1 && _ageError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_ageError!)),
       );
@@ -111,6 +163,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       );
       return;
     }
+
+    // Smart pre-fill for target weight when leaving weight page
+    if (_currentPage == 3) {
+      final currentW = double.tryParse(_weightController.text) ?? 70.0;
+      if (_targetWeightController.text == '70' || _targetWeightController.text.isEmpty) {
+        final recTarget = switch (_goal) {
+          'lose' => (currentW * 0.9).roundToDouble(),
+          'gain' => (currentW * 1.05).roundToDouble(),
+          _ => currentW,
+        };
+        _targetWeightController.text = recTarget.toStringAsFixed(1);
+      }
+    }
+
+    _saveDraft();
 
     if (_currentPage < _totalPages - 1) {
       _pageController.nextPage(
@@ -161,7 +228,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     double dailyCarbs = macros.carbsG;
     double dailyFat = macros.fatG;
 
-    // 5. Store targets in SharedPreferences
+    // Store targets in SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('calorie_goal', dailyCalories.round());
     await prefs.setDouble('protein_goal', double.parse(dailyProtein.toStringAsFixed(1)));
@@ -176,7 +243,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await prefs.setDouble('user_height', _height);
     await prefs.setDouble('current_weight', _weight);
     await prefs.setDouble('user_target_weight', _targetWeight);
-    await prefs.setString('user_sex', _sex);
+    if (_sex != null) await prefs.setString('user_sex', _sex!);
     await prefs.setString('user_activity_level', _activityLevel);
     await prefs.setString('user_goal', _goal);
     await prefs.setString('user_diet_preference', _dietPreference);
@@ -193,8 +260,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Notify router that onboarding is now complete
     ref.read(onboardingCompletedProvider.notifier).state = true;
 
+    // Clear onboarding draft keys
+    await prefs.remove('onboarding_draft_page');
+    await prefs.remove('onboarding_draft_sex');
+    await prefs.remove('onboarding_draft_name');
+    await prefs.remove('onboarding_draft_age');
+    await prefs.remove('onboarding_draft_height');
+    await prefs.remove('onboarding_draft_weight');
+    await prefs.remove('onboarding_draft_activity');
+    await prefs.remove('onboarding_draft_goal');
+    await prefs.remove('onboarding_draft_target_weight');
+    await prefs.remove('onboarding_draft_diet');
+
+    // Chain to RoutineWizardScreen with mapped training goal
+    final trainingGoal = switch (_goal) {
+      'lose' => 'weight_loss',
+      'gain' => 'hypertrophy',
+      _ => 'hypertrophy',
+    };
+
     if (mounted) {
-      context.go('/');
+      context.go('/routine-wizard?goal=$trainingGoal');
     }
   }
 

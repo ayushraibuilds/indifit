@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/colors.dart';
 import '../../../data/database/app_database.dart';
@@ -39,31 +40,42 @@ class WorkoutPlayerHeader extends StatelessWidget {
                 children: [
                   Text(
                     routineName,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      fontFamily: GoogleFonts.outfit().fontFamily,
+                      letterSpacing: -0.3,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Exercise ${currentExerciseIndex + 1} of ${exercises.length}',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                color: AppColors.primary.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.timer_outlined, color: AppColors.primary, size: 16),
+                  const Icon(Icons.timer_outlined, color: AppColors.primary, size: 18),
                   const SizedBox(width: 6),
                   Text(
                     _formatDuration(elapsedSeconds),
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      fontSize: 15,
+                      fontFamily: GoogleFonts.outfit().fontFamily,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ],
               ),

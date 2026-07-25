@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
@@ -14,8 +15,9 @@ import 'meal_templates_screen.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
   final String mealType; // "breakfast", "lunch", "dinner", "snack"
+  final DateTime? selectedDate;
 
-  const FoodSearchScreen({super.key, required this.mealType});
+  const FoodSearchScreen({super.key, required this.mealType, this.selectedDate});
 
   @override
   ConsumerState<FoodSearchScreen> createState() => _FoodSearchScreenState();
@@ -227,6 +229,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                               servingUnit: unit,
                               mealType: widget.mealType,
                               foodItemId: foodItemId,
+                              loggedAt: widget.selectedDate ?? DateTime.now(),
                             );
                             HapticFeedback.selectionClick();
                             if (context.mounted) {
@@ -265,9 +268,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final logDate = widget.selectedDate ?? DateTime.now();
+    final dateStr = DateFormat('EEE, MMM d').format(logDate);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add to ${widget.mealType.toUpperCase()}'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Add to ${widget.mealType.toUpperCase()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Logging for $dateStr', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          ],
+        ),
         backgroundColor: AppColors.background,
         elevation: 0,
         actions: [

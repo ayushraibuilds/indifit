@@ -9,6 +9,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 
 import 'achievements_screen.dart';
+import 'widgets/progress_bmi_health_card.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -24,6 +25,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   bool _loading = false;
   List<WorkoutSession> _sessions = [];
   List<BodyMeasurement> _measurements = [];
+  double? _targetWeight;
 
   @override
   void initState() {
@@ -39,6 +41,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       final repo = ref.read(workoutRepositoryProvider);
       final list = await repo.watchSessions().first;
       final measurements = await repo.getBodyMeasurements();
+      final prefs = await SharedPreferences.getInstance();
+      final targetW = prefs.getDouble('user_target_weight');
       
       final List<DateTime> act = [];
       final Map<DateTime, double> volMap = {};
@@ -56,6 +60,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         _volumeByDate.clear();
         _volumeByDate.addAll(volMap);
         _measurements = measurements;
+        _targetWeight = targetW;
         _loading = false;
       });
     } catch (e) {
@@ -114,7 +119,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   const SizedBox(height: 8),
                   _buildWeightChartCard(),
                   const SizedBox(height: 12),
-                  _buildBmiHealthCard(),
+                  ProgressBmiHealthCard(weightKg: _measurements.isNotEmpty ? _measurements.first.weight : null),
                   const SizedBox(height: 20),
 
                   // 3. Workout Volume Trend Card (Strength progression)
@@ -132,84 +137,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildBmiHealthCard() {
-    final userProfile = ref.watch(userProfileProvider);
-    final double? weightKg = _measurements.isNotEmpty ? _measurements.first.weight : null;
-    final double? heightCm = userProfile.userHeight;
 
-    if (weightKg == null || weightKg <= 0) {
-      return const SizedBox.shrink();
-    }
-
-    if (heightCm == null || heightCm <= 0) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: const [
-              Icon(Icons.straighten_rounded, color: AppColors.primary),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Set your height in onboarding/profile to calculate your BMI.',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final double heightM = heightCm / 100.0;
-    final double bmi = weightKg / (heightM * heightM);
-
-    String category = 'Normal';
-    Color categoryColor = AppColors.success;
-    if (bmi < 18.5) {
-      category = 'Underweight';
-      categoryColor = AppColors.warning;
-    } else if (bmi >= 25.0 && bmi < 30.0) {
-      category = 'Overweight';
-      categoryColor = Colors.orangeAccent;
-    } else if (bmi >= 30.0) {
-      category = 'Obese';
-      categoryColor = AppColors.danger;
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Body Mass Index (BMI)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 4),
-                Text('Based on ${weightKg.toStringAsFixed(1)} kg & ${heightCm.toStringAsFixed(0)} cm', style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: categoryColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: categoryColor.withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                children: [
-                  Text(bmi.toStringAsFixed(1), style: TextStyle(fontWeight: FontWeight.bold, color: categoryColor, fontSize: 16)),
-                  Text(category, style: TextStyle(color: categoryColor, fontSize: 10, fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildGitHubHeatmap() {
     // We will render a 12-week grid (12 columns by 7 rows)
@@ -392,7 +320,31 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            if (_targetWeight != null && _targetWeight! > 0 && _measurements.isNotEmpty && _measurements.first.weight != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Goal Weight: ${_targetWeight!.toStringAsFixed(1)} kg',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary),
+                    ),
+                    Text(
+                      '${(_measurements.first.weight! - _targetWeight!).abs().toStringAsFixed(1)} kg to go',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
             SizedBox(
               height: 160,
               child: LineChart(

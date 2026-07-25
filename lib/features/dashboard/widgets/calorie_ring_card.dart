@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/theme/colors.dart';
@@ -35,61 +36,74 @@ class CalorieRingCard extends ConsumerWidget {
         padding: const EdgeInsets.all(20.0),
         child: Row(
           children: [
-            // Circular Ring
-            CircularPercentIndicator(
-              radius: 60.0,
-              lineWidth: 10.0,
-              percent: calPercent,
-              center: eatenCalories == 0
-                  ? const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.restaurant_menu_rounded, size: 22, color: AppColors.primary),
-                        SizedBox(height: 4),
-                        Text(
-                          'Log your\nfirst meal',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+            // Circular Ring with Smooth Animation
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: calPercent),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutCubic,
+              builder: (context, animatedValue, _) {
+                return CircularPercentIndicator(
+                  radius: 68.0,
+                  lineWidth: 12.0,
+                  percent: animatedValue,
+                  center: eatenCalories == 0
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.restaurant_menu_rounded, size: 24, color: AppColors.primary),
+                            SizedBox(height: 4),
+                            Text(
+                              'Log your\nfirst meal',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '$eatenCalories',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontFamily: GoogleFonts.outfit().fontFamily,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            Text(
+                              (calorieGoal - eatenCalories) >= 0
+                                  ? '${calorieGoal - eatenCalories} left'
+                                  : '${eatenCalories - calorieGoal} over',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: (calorieGoal - eatenCalories) >= 0 ? AppColors.textSecondary : AppColors.danger,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '$eatenCalories',
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        Text(
-                          (calorieGoal - eatenCalories) >= 0
-                              ? '${calorieGoal - eatenCalories} left'
-                              : '${eatenCalories - calorieGoal} over',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: (calorieGoal - eatenCalories) >= 0 ? AppColors.textSecondary : AppColors.danger,
-                          ),
-                        ),
-                      ],
-                    ),
-              circularStrokeCap: CircularStrokeCap.round,
-              backgroundColor: AppColors.border,
-              progressColor: AppColors.primary,
+                  circularStrokeCap: CircularStrokeCap.round,
+                  backgroundColor: AppColors.border,
+                  progressColor: AppColors.primary,
+                );
+              },
             ),
-            const SizedBox(width: 24),
+            const SizedBox(width: 20),
 
             // Horizontal Macro Bars
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildMacroBar('Protein', eatenProtein, proteinGoal, AppColors.success),
+                  _buildMacroBar('Protein', Icons.egg_alt_rounded, eatenProtein, proteinGoal, AppColors.success),
                   const SizedBox(height: 10),
-                  _buildMacroBar('Carbs', eatenCarbs, carbsGoal, AppColors.warning),
+                  _buildMacroBar('Carbs', Icons.grain_rounded, eatenCarbs, carbsGoal, AppColors.warning),
                   const SizedBox(height: 10),
-                  _buildMacroBar('Fat', eatenFat, fatGoal, AppColors.danger),
+                  _buildMacroBar('Fat', Icons.opacity_rounded, eatenFat, fatGoal, AppColors.danger),
                   const SizedBox(height: 10),
-                  _buildMacroBar('Fiber', eatenFiber, 30.0, Colors.teal),
+                  _buildMacroBar('Fiber', Icons.eco_rounded, eatenFiber, 30.0, AppColors.fiberTeal),
                 ],
               ),
             ),
@@ -99,8 +113,8 @@ class CalorieRingCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildMacroBar(String label, double eaten, double goal, Color color) {
-    double percent = goal > 0 ? (eaten / goal).clamp(0.0, 1.0) : 0.0;
+  Widget _buildMacroBar(String label, IconData icon, double eaten, double goal, Color color) {
+    double targetPercent = goal > 0 ? (eaten / goal).clamp(0.0, 1.0) : 0.0;
     int remaining = (goal - eaten).round();
 
     return Column(
@@ -109,9 +123,15 @@ class CalorieRingCard extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+            Row(
+              children: [
+                Icon(icon, size: 13, color: color),
+                const SizedBox(width: 4),
+                Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+              ],
+            ),
             Text(
-              '${eaten.round()}/${goal.round()}g (${remaining >= 0 ? '${remaining}g left' : '${-remaining}g over'})',
+              '${eaten.round()}/${goal.round()}g',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
@@ -121,14 +141,21 @@ class CalorieRingCard extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: percent,
-            backgroundColor: AppColors.border,
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-            minHeight: 6.0,
-          ),
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0.0, end: targetPercent),
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeOutCubic,
+          builder: (context, val, _) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: val,
+                backgroundColor: AppColors.border,
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                minHeight: 6.0,
+              ),
+            );
+          },
         ),
       ],
     );

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/theme/colors.dart';
 import '../../core/config/app_config.dart';
@@ -12,8 +13,9 @@ import '../../data/repositories/food_repository.dart';
 
 class AiMealLoggerScreen extends ConsumerStatefulWidget {
   final String mealType; // "breakfast", "lunch", "dinner", "snack"
+  final DateTime? selectedDate;
 
-  const AiMealLoggerScreen({super.key, required this.mealType});
+  const AiMealLoggerScreen({super.key, required this.mealType, this.selectedDate});
 
   @override
   ConsumerState<AiMealLoggerScreen> createState() => _AiMealLoggerScreenState();
@@ -222,6 +224,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       servingUnit: _estimatedMeal!['serving_unit'] ?? 'serving',
       mealType: widget.mealType,
       foodItemId: null,
+      loggedAt: widget.selectedDate ?? DateTime.now(),
     );
 
     if (mounted) {
@@ -234,9 +237,19 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final logDate = widget.selectedDate ?? DateTime.now();
+    final dateStr = DateFormat('EEE, MMM d').format(logDate);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Meal Estimator'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('AI Meal Estimator', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Logging for $dateStr', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          ],
+        ),
         backgroundColor: AppColors.background,
         elevation: 0,
       ),

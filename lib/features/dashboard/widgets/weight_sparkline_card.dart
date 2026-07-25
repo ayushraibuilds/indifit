@@ -55,14 +55,34 @@ class WeightSparklineCard extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             
-            if (weightHistory.length < 2)
+            if (weightHistory.isEmpty)
               Container(
                 height: 80,
                 alignment: Alignment.center,
                 child: const Text(
-                  'Log at least 2 weight entries to see your trend chart.',
+                  'Log your body weight to track your progress trend over time.',
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   textAlign: TextAlign.center,
+                ),
+              )
+            else if (weightHistory.length == 1)
+              Container(
+                height: 80,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '1 weigh-in logged (${currentWeight.toStringAsFixed(1)} kg)',
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Add a second weigh-in on another day to see your trend line.',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               )
             else

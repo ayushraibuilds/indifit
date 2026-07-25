@@ -73,9 +73,18 @@ class _LogWeightBottomSheetState extends State<LogWeightBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Log Body Weight',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Log Body Weight',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Updates today\'s entry • Log on multiple days to view trend',
+                    style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                  ),
+                ],
               ),
               IconButton(
                 icon: const Icon(Icons.close, color: AppColors.textSecondary),

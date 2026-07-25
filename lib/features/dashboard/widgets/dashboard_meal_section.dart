@@ -150,7 +150,7 @@ class _MealCard extends ConsumerWidget {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => FoodSearchScreen(mealType: type)),
+                    MaterialPageRoute(builder: (context) => FoodSearchScreen(mealType: type, selectedDate: selectedDate)),
                   );
                 },
               ),
@@ -191,7 +191,7 @@ class _MealCard extends ConsumerWidget {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AiMealLoggerScreen(mealType: type)),
+                    MaterialPageRoute(builder: (context) => AiMealLoggerScreen(mealType: type, selectedDate: selectedDate)),
                   );
                 },
               ),
@@ -623,44 +623,83 @@ class _LoggedItemRow extends ConsumerWidget {
                 ],
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 18),
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: AppColors.surface,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  builder: (context) => Padding(
-                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-                    child: EditFoodLogSheet(
-                      log: log,
-                      onSave: ({
-                        required int id,
-                        required String name,
-                        required int calories,
-                        required double proteinG,
-                        required double carbsG,
-                        required double fatG,
-                        required double servingLogged,
-                      }) async {
-                        final repo = ref.read(foodRepositoryProvider);
-                        await repo.updateFoodLog(
-                          id: id,
-                          name: name,
-                          calories: calories,
-                          proteinG: proteinG,
-                          carbsG: carbsG,
-                          fatG: fatG,
-                          servingLogged: servingLogged,
-                        );
-                      },
-                    ),
-                  ),
-                );
-              },
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 18),
+                  tooltip: 'Edit entry',
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: AppColors.surface,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
+                      builder: (context) => Padding(
+                        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                        child: EditFoodLogSheet(
+                          log: log,
+                          onSave: ({
+                            required int id,
+                            required String name,
+                            required int calories,
+                            required double proteinG,
+                            required double carbsG,
+                            required double fatG,
+                            required double servingLogged,
+                          }) async {
+                            final repo = ref.read(foodRepositoryProvider);
+                            await repo.updateFoodLog(
+                              id: id,
+                              name: name,
+                              calories: calories,
+                              proteinG: proteinG,
+                              carbsG: carbsG,
+                              fatG: fatG,
+                              servingLogged: servingLogged,
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
+                  tooltip: 'Delete entry',
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogCtx) => AlertDialog(
+                        backgroundColor: AppColors.surface,
+                        title: const Text('Delete Entry?'),
+                        content: Text('Are you sure you want to remove "${log.name}" from your logged meal?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogCtx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(dialogCtx, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.danger,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      HapticFeedback.mediumImpact();
+                      final repo = ref.read(foodRepositoryProvider);
+                      await repo.deleteLogEntry(log.id);
+                    }
+                  },
+                ),
+              ],
             ),
           ],
         ),

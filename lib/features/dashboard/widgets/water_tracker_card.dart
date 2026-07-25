@@ -79,14 +79,21 @@ class WaterTrackerCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: waterRatio,
-                minHeight: 6,
-                backgroundColor: AppColors.surface,
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
-              ),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: waterRatio),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutCubic,
+              builder: (context, animRatio, _) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: animRatio,
+                    minHeight: 6,
+                    backgroundColor: AppColors.surface,
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.infoBlue),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 10),
             Row(
@@ -113,18 +120,18 @@ class WaterTrackerCard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.blue.withValues(alpha: 0.12),
+          color: AppColors.infoBlue.withOpacity(0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.blue.withValues(alpha: 0.25)),
+          border: Border.all(color: AppColors.infoBlue.withOpacity(0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.add_rounded, size: 12, color: Colors.blueAccent),
+            const Icon(Icons.add_rounded, size: 12, color: AppColors.infoBlue),
             const SizedBox(width: 2),
             Text(
               label,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.infoBlue),
             ),
           ],
         ),

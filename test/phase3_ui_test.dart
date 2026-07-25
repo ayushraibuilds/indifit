@@ -39,5 +39,17 @@ void main() {
       expect(notifier.state, ThemeMode.dark);
       expect(prefs.getString(ThemeModeNotifier.prefKey), 'dark');
     });
+
+    test('Map diet goal to training goal returns expected routine wizard goal', () {
+      String mapDietGoalToTrainingGoal(String dietGoal) => switch (dietGoal) {
+        'lose' => 'weight_loss',
+        'gain' => 'hypertrophy',
+        _ => 'hypertrophy',
+      };
+
+      expect(mapDietGoalToTrainingGoal('lose'), 'weight_loss');
+      expect(mapDietGoalToTrainingGoal('gain'), 'hypertrophy');
+      expect(mapDietGoalToTrainingGoal('maintain'), 'hypertrophy');
+    });
   });
 }

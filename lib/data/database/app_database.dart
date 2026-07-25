@@ -6,6 +6,8 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/services/crash_reporting_service.dart';
+import '../../core/utils/app_logger.dart';
 import 'tables/food_tables.dart';
 import 'tables/user_tables.dart';
 import 'tables/workout_tables.dart';
@@ -116,8 +118,9 @@ class AppDatabase extends _$AppDatabase {
       final companions = await _loadFoodCompanionsFromAsset();
       if (companions.isEmpty) return;
       await batch((b) => b.insertAll(foodItems, companions));
-    } catch (_) {
-      // Seed failures are non-fatal; app still runs with empty catalog.
+    } catch (e, st) {
+      AppLogger.warning('seedFoodsFromAsset failed: $e');
+      CrashReportingService.recordCrash(e, st, reason: 'seedFoodsFromAsset failed');
     }
   }
 
@@ -173,8 +176,9 @@ class AppDatabase extends _$AppDatabase {
           await batch((b) => b.insertAll(foodItems, toInsert));
         }
       });
-    } catch (_) {
-      // Non-fatal; user keeps prior catalog.
+    } catch (e, st) {
+      AppLogger.warning('upsertSeededFoodsFromAsset failed: $e');
+      CrashReportingService.recordCrash(e, st, reason: 'upsertSeededFoodsFromAsset failed');
     }
   }
 
@@ -232,8 +236,9 @@ class AppDatabase extends _$AppDatabase {
           await batch((b) => b.insertAll(exercises, toInsert));
         }
       });
-    } catch (_) {
-      // Non-fatal; user keeps prior exercise catalog.
+    } catch (e, st) {
+      AppLogger.warning('upsertSeededExercisesFromAsset failed: $e');
+      CrashReportingService.recordCrash(e, st, reason: 'upsertSeededExercisesFromAsset failed');
     }
   }
 

@@ -49,8 +49,10 @@ class FoodRepository {
     required String mealType,
     int? foodItemId,
     String? mealGroupId,
+    DateTime? loggedAt,
   }) async {
     String resolvedGroupId = mealGroupId ?? '';
+    final entryTime = loggedAt ?? DateTime.now();
     
     if (resolvedGroupId.isEmpty) {
       // Check the latest logged entry of this type to see if we can group them
@@ -60,17 +62,16 @@ class FoodRepository {
         ..limit(1);
       final lastEntries = await lastQuery.get();
       
-      final now = DateTime.now();
       if (lastEntries.isNotEmpty) {
         final lastEntry = lastEntries.first;
-        final diff = now.difference(lastEntry.loggedAt).inMinutes.abs();
+        final diff = entryTime.difference(lastEntry.loggedAt).inMinutes.abs();
         if (diff < 15 && lastEntry.mealGroupId != null && lastEntry.mealGroupId!.isNotEmpty) {
           resolvedGroupId = lastEntry.mealGroupId!;
         }
       }
       
       if (resolvedGroupId.isEmpty) {
-        resolvedGroupId = '${mealType}_${now.millisecondsSinceEpoch}_${now.microsecond}';
+        resolvedGroupId = '${mealType}_${entryTime.millisecondsSinceEpoch}_${entryTime.microsecond}';
       }
     }
 
@@ -85,6 +86,7 @@ class FoodRepository {
       servingUnit: servingUnit,
       mealType: mealType,
       mealGroupId: Value(resolvedGroupId),
+      loggedAt: Value(entryTime),
       uuid: Value(const Uuid().v4()),
     );
     return await _db.into(_db.foodLogs).insert(companion);
