@@ -74,6 +74,13 @@ class DashboardHeader extends StatelessWidget {
         ),
         const SizedBox(width: 4),
 
+        // Direct Settings Button
+        IconButton(
+          icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary, size: 20),
+          tooltip: 'Settings & Goals',
+          onPressed: () => context.push('/settings'),
+        ),
+
         // Actions Menu
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),

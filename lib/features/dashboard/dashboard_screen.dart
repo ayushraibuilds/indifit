@@ -381,14 +381,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.12),
+                color: AppColors.streakOrange.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.streakOrange.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 16),
+                  const Icon(Icons.local_fire_department_rounded, color: AppColors.streakOrange, size: 16),
                   const SizedBox(width: 4),
-                  Text('${state.streakCount}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 12)),
+                  Text('${state.streakCount}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.streakOrange, fontSize: 12)),
                 ],
               ),
             ),

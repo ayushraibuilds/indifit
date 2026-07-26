@@ -24,20 +24,16 @@ void main() {
       expect(dark.useMaterial3, true);
     });
 
-    test('ThemeModeNotifier updates state and persists preference', () async {
+    test('ThemeModeNotifier enforces ThemeMode.dark', () async {
       final notifier = ThemeModeNotifier();
 
-      expect(notifier.state, ThemeMode.system);
+      expect(notifier.state, ThemeMode.dark);
 
       await notifier.setThemeMode(ThemeMode.light);
-      expect(notifier.state, ThemeMode.light);
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString(ThemeModeNotifier.prefKey), 'light');
+      expect(notifier.state, ThemeMode.dark);
 
       await notifier.setThemeMode(ThemeMode.dark);
       expect(notifier.state, ThemeMode.dark);
-      expect(prefs.getString(ThemeModeNotifier.prefKey), 'dark');
     });
 
     test('Map diet goal to training goal returns expected routine wizard goal', () {

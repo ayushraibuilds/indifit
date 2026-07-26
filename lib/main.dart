@@ -95,9 +95,9 @@ class IndiFitApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'IndiFit',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
     );
   }

@@ -35,6 +35,22 @@ class RoutineExerciseInput {
   });
 }
 
+class WeightLogStatus {
+  final bool canLog;
+  final bool isEditingToday;
+  final int daysUntilUnlock;
+  final DateTime? nextUnlockDate;
+  final double? todayWeight;
+
+  WeightLogStatus({
+    required this.canLog,
+    required this.isEditingToday,
+    required this.daysUntilUnlock,
+    this.nextUnlockDate,
+    this.todayWeight,
+  });
+}
+
 class WorkoutRepository {
   final AppDatabase _db;
 
@@ -225,13 +241,58 @@ class WorkoutRepository {
     return bestSet;
   }
 
-  // 9. Log body measurements
+  // 9. Log body measurements with 7-day rate-limiting
+  Future<WeightLogStatus> getWeightLogStatus() async {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+
+    final allLogs = await (_db.select(_db.bodyMeasurements)
+          ..orderBy([(tbl) => OrderingTerm(expression: tbl.recordedAt, mode: OrderingMode.desc)]))
+        .get();
+
+    if (allLogs.isEmpty) {
+      return WeightLogStatus(canLog: true, isEditingToday: false, daysUntilUnlock: 0);
+    }
+
+    final latest = allLogs.first;
+    final latestDate = DateTime(latest.recordedAt.year, latest.recordedAt.month, latest.recordedAt.day);
+
+    if ((latest.recordedAt.isAfter(todayStart) || latest.recordedAt.isAtSameMomentAs(todayStart)) && latest.recordedAt.isBefore(todayEnd)) {
+      return WeightLogStatus(
+        canLog: true,
+        isEditingToday: true,
+        daysUntilUnlock: 0,
+        todayWeight: latest.weight,
+      );
+    }
+
+    final daysPassed = todayStart.difference(latestDate).inDays;
+    if (daysPassed < 7) {
+      final daysLeft = 7 - daysPassed;
+      final nextUnlock = latestDate.add(const Duration(days: 7));
+      return WeightLogStatus(
+        canLog: false,
+        isEditingToday: false,
+        daysUntilUnlock: daysLeft,
+        nextUnlockDate: nextUnlock,
+      );
+    }
+
+    return WeightLogStatus(canLog: true, isEditingToday: false, daysUntilUnlock: 0);
+  }
+
   Future<int> logBodyMeasurement({
     double? weight,
     double? waist,
     double? chest,
     double? arms,
   }) async {
+    final status = await getWeightLogStatus();
+    if (!status.canLog) {
+      throw StateError('Weight logging is rate-limited to once every 7 days. Next log unlocks in ${status.daysUntilUnlock} days.');
+    }
+
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
     final todayEnd = todayStart.add(const Duration(days: 1));
@@ -258,6 +319,7 @@ class WorkoutRepository {
               waist: Value(waist),
               chest: Value(chest),
               arms: Value(arms),
+              recordedAt: Value(now),
             ),
           );
     }

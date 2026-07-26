@@ -416,7 +416,7 @@ class _MealCard extends ConsumerWidget {
     Color accentColor = AppColors.primary;
     IconData mealIcon = Icons.restaurant_rounded;
     if (type == 'breakfast') {
-      accentColor = Colors.amber;
+      accentColor = AppColors.achievementGold;
       mealIcon = Icons.wb_sunny_outlined;
     } else if (type == 'lunch') {
       accentColor = Colors.green;

@@ -60,12 +60,12 @@ class TodayWorkoutCard extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isRestDay ? Colors.blue.withValues(alpha: 0.1) : AppColors.primaryGlow,
-                        shape: BoxShape.circle,
+                        color: isRestDay ? AppColors.infoBlue.withOpacity(0.1) : AppColors.primaryGlow,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        isRestDay ? Icons.spa_rounded : Icons.fitness_center_rounded,
-                        color: isRestDay ? Colors.blue : AppColors.primary,
+                        isRestDay ? Icons.bedtime_rounded : Icons.fitness_center_rounded,
+                        color: isRestDay ? AppColors.infoBlue : AppColors.primary,
                         size: 24,
                       ),
                     ),
