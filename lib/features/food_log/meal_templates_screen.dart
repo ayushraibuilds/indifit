@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/food_repository.dart';
 
-final mealTemplatesProvider = FutureProvider.autoDispose<List<MealTemplateWithItems>>((ref) async {
-  final repo = ref.watch(foodRepositoryProvider);
-  return await repo.getMealTemplates();
-});
+final mealTemplatesProvider =
+    FutureProvider.autoDispose<List<MealTemplateWithItems>>((ref) async {
+      final repo = ref.watch(foodRepositoryProvider);
+      return await repo.getMealTemplates();
+    });
 
 class MealTemplatesScreen extends ConsumerStatefulWidget {
   final String? initialMealType;
@@ -23,7 +24,8 @@ class MealTemplatesScreen extends ConsumerStatefulWidget {
   String? get resolvedMealType => initialMealType ?? mealType;
 
   @override
-  ConsumerState<MealTemplatesScreen> createState() => _MealTemplatesScreenState();
+  ConsumerState<MealTemplatesScreen> createState() =>
+      _MealTemplatesScreenState();
 }
 
 class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
@@ -32,9 +34,9 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
   Future<void> _handleLogTemplate(MealTemplateWithItems template) async {
     setState(() => _isLogging = true);
     final repo = ref.read(foodRepositoryProvider);
-    final mealType = widget.resolvedMealType ?? template.template.defaultMealType;
+    final mealType =
+        widget.resolvedMealType ?? template.template.defaultMealType;
     final date = widget.targetDate ?? DateTime.now();
-
 
     try {
       await repo.logMealTemplate(
@@ -87,7 +89,10 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
       context: context,
       builder: (dlgCtx) => StatefulBuilder(
         builder: (context, setDlgState) => AlertDialog(
-          title: const Text('Create Meal Template', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          title: const Text(
+            'Create Meal Template',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -101,13 +106,16 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: mealType,
+                  initialValue: mealType,
                   decoration: const InputDecoration(
                     labelText: 'Default Meal Category',
                     border: OutlineInputBorder(),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'breakfast', child: Text('Breakfast')),
+                    DropdownMenuItem(
+                      value: 'breakfast',
+                      child: Text('Breakfast'),
+                    ),
                     DropdownMenuItem(value: 'lunch', child: Text('Lunch')),
                     DropdownMenuItem(value: 'dinner', child: Text('Dinner')),
                     DropdownMenuItem(value: 'snack', child: Text('Snack')),
@@ -117,27 +125,57 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                const Text('First Item Quick Entry:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                const Text(
+                  'First Item Quick Entry:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: nameItemCtrl,
-                  decoration: const InputDecoration(labelText: 'Item Name', isDense: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Item Name',
+                    isDense: true,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Expanded(child: TextField(controller: calCtrl, decoration: const InputDecoration(labelText: 'Calories', isDense: true), keyboardType: TextInputType.number)),
+                    Expanded(
+                      child: TextField(
+                        controller: calCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Calories',
+                          isDense: true,
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: TextField(controller: pCtrl, decoration: const InputDecoration(labelText: 'Protein (g)', isDense: true), keyboardType: TextInputType.number)),
+                    Expanded(
+                      child: TextField(
+                        controller: pCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Protein (g)',
+                          isDense: true,
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dlgCtx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(dlgCtx),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) return;
                 final repo = ref.read(foodRepositoryProvider);
@@ -192,17 +230,27 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.bookmark_outline_rounded, size: 64, color: AppColors.textMuted),
+                    const Icon(
+                      Icons.bookmark_outline_rounded,
+                      size: 64,
+                      color: AppColors.textMuted,
+                    ),
                     const SizedBox(height: 16),
                     const Text(
                       'No Saved Meal Templates',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
                       'Save your usual breakfast, lunch, or thali combinations for 1-tap logging.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
@@ -212,7 +260,9 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ],
@@ -224,7 +274,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
           return ListView.separated(
             padding: const EdgeInsets.all(16.0),
             itemCount: templates.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final item = templates[index];
               return Card(
@@ -241,18 +291,30 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                             children: [
                               Text(
                                 item.template.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '${item.template.defaultMealType.toUpperCase()} • ${item.totalCalories} kcal',
-                                style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 20),
-                            onPressed: () => _handleDeleteTemplate(item.template.id),
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: AppColors.danger,
+                              size: 20,
+                            ),
+                            onPressed: () =>
+                                _handleDeleteTemplate(item.template.id),
                           ),
                         ],
                       ),
@@ -260,22 +322,36 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                       Wrap(
                         spacing: 6,
                         runSpacing: 4,
-                        children: item.items.map((it) => Chip(
-                          label: Text('${it.name} (${it.calories} kcal)', style: const TextStyle(fontSize: 10)),
-                          padding: EdgeInsets.zero,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        )).toList(),
+                        children: item.items
+                            .map(
+                              (it) => Chip(
+                                label: Text(
+                                  '${it.name} (${it.calories} kcal)',
+                                  style: const TextStyle(fontSize: 10),
+                                ),
+                                padding: EdgeInsets.zero,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            )
+                            .toList(),
                       ),
                       const SizedBox(height: 12),
                       ElevatedButton.icon(
-                        onPressed: _isLogging ? null : () => _handleLogTemplate(item),
+                        onPressed: _isLogging
+                            ? null
+                            : () => _handleLogTemplate(item),
                         icon: const Icon(Icons.add_task_rounded, size: 18),
-                        label: Text('Log ${item.template.name} (${item.totalCalories} kcal)'),
+                        label: Text(
+                          'Log ${item.template.name} (${item.totalCalories} kcal)',
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           minimumSize: const Size.fromHeight(42),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ],
@@ -285,7 +361,9 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
     );

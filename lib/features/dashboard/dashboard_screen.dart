@@ -1,10 +1,10 @@
 import 'dart:convert';
+
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' show Value;
 
 import '../../core/di/providers.dart';
-import '../../core/services/achievement_service.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
@@ -20,13 +20,11 @@ import 'dashboard_controller.dart';
 import 'widgets/calorie_ring_card.dart';
 import 'widgets/dashboard_date_bar.dart';
 import 'widgets/dashboard_meal_section.dart';
-import 'widgets/quick_log_bottom_sheet.dart';
 import 'widgets/streak_freeze_card.dart';
 import 'widgets/today_workout_card.dart';
 import 'widgets/todays_activity_card.dart';
 import 'widgets/water_tracker_card.dart';
 import 'widgets/weight_sparkline_card.dart';
-
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -67,25 +65,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   Navigator.pop(dialogCtx);
                   await repo.deleteActiveDraft();
                 },
-                child: const Text('Discard', style: TextStyle(color: AppColors.danger)),
+                child: const Text(
+                  'Discard',
+                  style: TextStyle(color: AppColors.danger),
+                ),
               ),
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(dialogCtx);
-                  final List<dynamic> rawSets = jsonDecode(draft.loggedSetsJson);
-                  final List<WorkoutSetsCompanion> loggedCompanions = rawSets.map((s) {
-                    final map = s as Map<String, dynamic>;
-                    return WorkoutSetsCompanion.insert(
-                      sessionId: map['sessionId'] ?? 0,
-                      exerciseName: map['exerciseName'] ?? '',
-                      weight: (map['weight'] as num).toDouble(),
-                      reps: map['reps'] ?? 0,
-                      setNumber: map['setNumber'] ?? 1,
-                      isPr: Value(map['isPr'] ?? false),
-                    );
-                  }).toList();
+                  final List<dynamic> rawSets = jsonDecode(
+                    draft.loggedSetsJson,
+                  );
+                  final List<WorkoutSetsCompanion> loggedCompanions = rawSets
+                      .map((s) {
+                        final map = s as Map<String, dynamic>;
+                        return WorkoutSetsCompanion.insert(
+                          sessionId: map['sessionId'] ?? 0,
+                          exerciseName: map['exerciseName'] ?? '',
+                          weight: (map['weight'] as num).toDouble(),
+                          reps: map['reps'] ?? 0,
+                          setNumber: map['setNumber'] ?? 1,
+                          isPr: Value(map['isPr'] ?? false),
+                        );
+                      })
+                      .toList();
 
-                  final exercises = await repo.getExercisesForRoutineName(draft.routineName);
+                  final exercises = await repo.getExercisesForRoutineName(
+                    draft.routineName,
+                  );
                   if (mounted) {
                     Navigator.push(
                       context,
@@ -99,30 +106,44 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           initialLoggedSets: loggedCompanions,
                         ),
                       ),
-                    ).then((_) => ref.read(dashboardControllerProvider.notifier).loadStateData());
+                    ).then(
+                      (_) => ref
+                          .read(dashboardControllerProvider.notifier)
+                          .loadStateData(),
+                    );
                   }
                 },
                 child: const Text('Resume'),
-              )
+              ),
             ],
           ),
         );
       }
     } catch (e, st) {
       AppLogger.warning('Check active workout draft failed: $e');
-      CrashReportingService.recordCrash(e, st, reason: 'dashboard active draft check error');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'dashboard active draft check error',
+      );
     }
   }
 
   void _startTodayWorkout(DashboardState state) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final selectedDay = DateTime(state.selectedDate.year, state.selectedDate.month, state.selectedDate.day);
+    final selectedDay = DateTime(
+      state.selectedDate.year,
+      state.selectedDate.month,
+      state.selectedDate.day,
+    );
 
     if (selectedDay.isAfter(today)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("You can't start a future workout. Switch to today or log a past session."),
+          content: Text(
+            "You can't start a future workout. Switch to today or log a past session.",
+          ),
           backgroundColor: Colors.orangeAccent,
         ),
       );
@@ -134,7 +155,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Rest Day scheduled'),
-          content: const Text('Today is scheduled as a rest day. Would you like to view your training split to start a different workout?'),
+          content: const Text(
+            'Today is scheduled as a rest day. Would you like to view your training split to start a different workout?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -145,7 +168,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const RoutineDisplayScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const RoutineDisplayScreen(),
+                  ),
                 );
               },
               child: const Text('View Split'),
@@ -175,7 +200,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Achievement unlock toast & celebration
     ref.listen<DashboardState>(dashboardControllerProvider, (prev, next) {
       if (next.newlyUnlockedAchievementTitles.isNotEmpty &&
-          (prev == null || prev.newlyUnlockedAchievementTitles != next.newlyUnlockedAchievementTitles)) {
+          (prev == null ||
+              prev.newlyUnlockedAchievementTitles !=
+                  next.newlyUnlockedAchievementTitles)) {
         setState(() => _celebratingMilestone = true);
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) setState(() => _celebratingMilestone = false);
@@ -232,7 +259,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               eatenFat += log.fatG;
             }
 
-            final isCalorieGoalMet = eatenCalories >= state.calorieGoal && state.calorieGoal > 0;
+            final isCalorieGoalMet =
+                eatenCalories >= state.calorieGoal && state.calorieGoal > 0;
 
             return ConfettiOverlay(
               isPlaying: isCalorieGoalMet || _celebratingMilestone,
@@ -243,110 +271,120 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(context, state),
-                    const SizedBox(height: 12),
-                    DashboardDateBar(
-                      selectedDate: state.selectedDate,
-                      onDateChanged: (newDate) => controller.setSelectedDate(newDate),
-                    ),
-                    if (state.weeklyActionText != null) ...[
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'WEEKLY FOCUS ACTION',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
-                                      letterSpacing: 0.5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(context, state),
+                      const SizedBox(height: 12),
+                      DashboardDateBar(
+                        selectedDate: state.selectedDate,
+                        onDateChanged: (newDate) =>
+                            controller.setSelectedDate(newDate),
+                      ),
+                      if (state.weeklyActionText != null) ...[
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      'WEEKLY FOCUS ACTION',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                        letterSpacing: 0.5,
+                                      ),
                                     ),
+                                    Text(
+                                      '${state.weeklyActionProgress}/${state.weeklyActionTarget}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  state.weeklyActionText!,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                  Text(
-                                    '${state.weeklyActionProgress}/${state.weeklyActionTarget}',
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                state.weeklyActionText!,
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 8),
-                              LinearProgressIndicator(
-                                value: state.weeklyActionTarget > 0
-                                    ? (state.weeklyActionProgress / state.weeklyActionTarget).clamp(0.0, 1.0)
-                                    : 0.0,
-                                backgroundColor: AppColors.border,
-                                color: AppColors.primary,
-                                minHeight: 6,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ],
+                                ),
+                                const SizedBox(height: 8),
+                                LinearProgressIndicator(
+                                  value: state.weeklyActionTarget > 0
+                                      ? (state.weeklyActionProgress /
+                                                state.weeklyActionTarget)
+                                            .clamp(0.0, 1.0)
+                                      : 0.0,
+                                  backgroundColor: AppColors.border,
+                                  color: AppColors.primary,
+                                  minHeight: 6,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                      ],
+                      const StreakFreezeCard(),
+                      const SizedBox(height: 16),
+                      CalorieRingCard(
+                        eatenCalories: eatenCalories,
+                        eatenProtein: eatenProtein,
+                        eatenCarbs: eatenCarbs,
+                        eatenFat: eatenFat,
                       ),
                       const SizedBox(height: 16),
-                    ],
-                    const StreakFreezeCard(),
-                    const SizedBox(height: 16),
-                    CalorieRingCard(
-                      eatenCalories: eatenCalories,
-                      eatenProtein: eatenProtein,
-                      eatenCarbs: eatenCarbs,
-                      eatenFat: eatenFat,
-                    ),
-                    const SizedBox(height: 16),
-                    DashboardMealSection(logs: logs),
-                    const SizedBox(height: 16),
-                    TodayWorkoutCard(
-                      todayWorkoutName: state.todayWorkoutName,
-                      isRestDay: state.isRestDay,
-                      exerciseCount: state.todayExercises.length,
-                      selectedDate: state.selectedDate,
-                      onStartWorkout: () => _startTodayWorkout(state),
-                      onLogCompleted: () => controller.loadStateData(),
-                      onRepeatWorkout: (lastSession) async {
-                        final exercises = await controller.getRepeatWorkoutExercises(lastSession);
-                        if (context.mounted) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => WorkoutPlayerScreen(
-                                routineName: lastSession.name,
-                                exercises: exercises,
+                      DashboardMealSection(logs: logs),
+                      const SizedBox(height: 16),
+                      TodayWorkoutCard(
+                        todayWorkoutName: state.todayWorkoutName,
+                        isRestDay: state.isRestDay,
+                        exerciseCount: state.todayExercises.length,
+                        selectedDate: state.selectedDate,
+                        onStartWorkout: () => _startTodayWorkout(state),
+                        onLogCompleted: () => controller.loadStateData(),
+                        onRepeatWorkout: (lastSession) async {
+                          final exercises = await controller
+                              .getRepeatWorkoutExercises(lastSession);
+                          if (context.mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => WorkoutPlayerScreen(
+                                  routineName: lastSession.name,
+                                  exercises: exercises,
+                                ),
                               ),
-                            ),
-                          ).then((_) => controller.loadStateData());
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    const WaterTrackerCard(),
-                    const SizedBox(height: 16),
-                    WeightSparklineCard(
-                      currentWeight: state.currentWeight,
-                      weightHistory: state.weightHistory,
-                      onWeightAdjusted: (w) => controller.updateWeight(w),
-                    ),
-                    const SizedBox(height: 16),
-                    const TodaysActivityCard(),
-
-                  ],
+                            ).then((_) => controller.loadStateData());
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      const WaterTrackerCard(),
+                      const SizedBox(height: 16),
+                      WeightSparklineCard(
+                        currentWeight: state.currentWeight,
+                        weightHistory: state.weightHistory,
+                        onWeightAdjusted: (w) => controller.updateWeight(w),
+                      ),
+                      const SizedBox(height: 16),
+                      const TodaysActivityCard(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
+            );
           },
         ),
       ),
@@ -355,7 +393,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildHeader(BuildContext context, DashboardState state) {
     final userProfile = ref.watch(userProfileProvider);
-    final name = (userProfile.userName != null && userProfile.userName!.trim().isNotEmpty)
+    final name =
+        (userProfile.userName != null &&
+            userProfile.userName!.trim().isNotEmpty)
         ? userProfile.userName!.trim()
         : 'Champ';
 
@@ -371,9 +411,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(greeting, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            Text(
+              greeting,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text('Welcome, $name', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              'Welcome, $name',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         Row(
@@ -383,88 +432,96 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               decoration: BoxDecoration(
                 color: AppColors.streakOrange.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.streakOrange.withOpacity(0.3)),
+                border: Border.all(
+                  color: AppColors.streakOrange.withOpacity(0.3),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.local_fire_department_rounded, color: AppColors.streakOrange, size: 16),
+                  const Icon(
+                    Icons.local_fire_department_rounded,
+                    color: AppColors.streakOrange,
+                    size: 16,
+                  ),
                   const SizedBox(width: 4),
-                  Text('${state.streakCount}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.streakOrange, fontSize: 12)),
+                  Text(
+                    '${state.streakCount}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.streakOrange,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
             IconButton(
-              icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary),
+              icon: const Icon(
+                Icons.settings_outlined,
+                color: AppColors.textSecondary,
+              ),
               tooltip: 'Settings',
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
               },
             ),
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
+              icon: const Icon(
+                Icons.more_vert_rounded,
+                color: AppColors.textSecondary,
+              ),
               color: AppColors.surface,
               onSelected: (val) {
                 if (val == 'settings') {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    ),
+                  );
                 } else if (val == 'ai_planner') {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const AiMealPlannerScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AiMealPlannerScreen(),
+                    ),
+                  );
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(value: 'ai_planner', child: Row(children: [Icon(Icons.auto_awesome_rounded, size: 18, color: AppColors.primary), SizedBox(width: 8), Text('AI Diet Planner')])),
-                const PopupMenuItem(value: 'settings', child: Row(children: [Icon(Icons.settings_rounded, size: 18), SizedBox(width: 8), Text('Settings')])),
+                const PopupMenuItem(
+                  value: 'ai_planner',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 18,
+                        color: AppColors.primary,
+                      ),
+                      SizedBox(width: 8),
+                      Text('AI Diet Planner'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'settings',
+                  child: Row(
+                    children: [
+                      Icon(Icons.settings_rounded, size: 18),
+                      SizedBox(width: 8),
+                      Text('Settings'),
+                    ],
+                  ),
+                ),
               ],
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickActionsRow(DashboardState state) {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: AppColors.surface,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                builder: (context) => QuickLogBottomSheet(selectedDate: state.selectedDate),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
-            icon: const Icon(Icons.add_circle_outline, size: 18),
-            label: const Text('Log Meal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () => _startTodayWorkout(state),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryGlow,
-              foregroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                side: const BorderSide(color: AppColors.primary, width: 1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            icon: const Icon(Icons.play_arrow_rounded, size: 18),
-            label: const Text('Start Workout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          ),
         ),
       ],
     );

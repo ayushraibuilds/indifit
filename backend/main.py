@@ -1,10 +1,22 @@
 import os
 import json
 import base64
+import secrets
 import time
 import hashlib
 from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Header, Depends, status, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
@@ -45,12 +57,23 @@ if not INDIFIT_API_KEY:
 RESPONSE_CACHE: Dict[str, dict] = {}
 CACHE_TTL_SECONDS = 86400
 
+# This limiter is process-local and volatile. It is appropriate for the current
+# single-process deployment, but it is not a global quota across workers or
+# horizontally scaled instances.
 IP_REQUEST_LOGS: Dict[str, List[float]] = {}
 RATE_LIMIT_WINDOW = 3600  # 1 hour
 MAX_REQUESTS_PER_WINDOW = 30
 
 async def verify_api_key(x_indifit_key: Optional[str] = Header(None)):
-    if INDIFIT_API_KEY and x_indifit_key != INDIFIT_API_KEY:
+    if not INDIFIT_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Server authentication is not configured",
+        )
+    if x_indifit_key is None or not secrets.compare_digest(
+        x_indifit_key,
+        INDIFIT_API_KEY,
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing x-indifit-key authentication header",
@@ -71,6 +94,14 @@ async def enforce_rate_limit(request: Request):
     
     timestamps.append(now)
     IP_REQUEST_LOGS[client_ip] = timestamps
+
+ai_router = APIRouter(
+    prefix="/api/ai",
+    dependencies=[
+        Depends(verify_api_key),
+        Depends(enforce_rate_limit),
+    ],
+)
 
 @app.get("/health")
 async def health_check():
@@ -172,7 +203,7 @@ def home():
     return {"status": "online", "message": "IndiFit AI Backend Running"}
 
 
-@app.post("/api/ai/routine")
+@ai_router.post("/routine")
 async def generate_routine(req: RoutineRequest):
     prompt = f"""
     Act as a professional fitness coach. Generate a structured weekly training program matching these parameters:
@@ -205,11 +236,13 @@ async def generate_routine(req: RoutineRequest):
         data = json.loads(result)
         data["is_fallback"] = False
         return data
+    except HTTPException:
+        raise
     except Exception as e:
         return _mock_routine(req, notes=f"Fallback Mock: {str(e)}", reason=str(e))
 
 
-@app.post("/api/ai/meal-estimate-text")
+@ai_router.post("/meal-estimate-text")
 async def estimate_meal_text(req: TextMealRequest):
     prompt = f"""
     Act as a professional clinical dietitian. Estimate the nutritional parameters (calories and macronutrients) for this food intake:
@@ -236,11 +269,13 @@ async def estimate_meal_text(req: TextMealRequest):
         data = json.loads(result)
         data["is_fallback"] = False
         return data
+    except HTTPException:
+        raise
     except Exception as e:
         return _mock_meal_estimate(req.text, name=f"Estimated: {req.text[:20]}", reason=str(e))
 
 
-@app.post("/api/ai/meal-estimate-photo")
+@ai_router.post("/meal-estimate-photo")
 async def estimate_meal_photo(image: UploadFile = File(...)):
     prompt = """
     Act as a professional clinical dietitian. Inspect this food photo and estimate the nutritional parameters (calories and macronutrients).
@@ -260,11 +295,17 @@ async def estimate_meal_photo(image: UploadFile = File(...)):
     try:
         mime_type = image.content_type or "image/jpeg"
         if mime_type not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
-            raise HTTPException(status_code=400, detail="Invalid image MIME type. Allowed: JPEG, PNG, WebP.")
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail="Invalid image MIME type. Allowed: JPEG, PNG, WebP.",
+            )
 
         image_bytes = await image.read()
         if len(image_bytes) > 5 * 1024 * 1024:
-            raise HTTPException(status_code=413, detail="File size exceeds maximum upload limit of 5 MB.")
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File size exceeds maximum upload limit of 5 MB.",
+            )
         
         if not GEMINI_API_KEY:
             return _mock_meal_estimate("Photo Upload", reason="Missing GEMINI_API_KEY env variable")
@@ -273,11 +314,13 @@ async def estimate_meal_photo(image: UploadFile = File(...)):
         data = json.loads(result)
         data["is_fallback"] = False
         return data
+    except HTTPException:
+        raise
     except Exception as e:
         return _mock_meal_estimate("Photo Estimate Fallback", reason=str(e))
 
 
-@app.post("/api/ai/meal-plan")
+@ai_router.post("/meal-plan")
 async def generate_meal_plan(req: MealPlanRequest):
     prompt = f"""
     Act as an expert Indian clinical dietitian. Generate a structured 7-day weekly meal plan tailored for:
@@ -304,6 +347,8 @@ async def generate_meal_plan(req: MealPlanRequest):
         data = json.loads(result)
         data["is_fallback"] = False
         return data
+    except HTTPException:
+        raise
     except Exception as e:
         return _mock_meal_plan(req, reason=str(e))
 
@@ -532,7 +577,7 @@ def _mock_weekly_report(req: WeeklyReportRequest, reason: str = ""):
         "fallback_reason": reason
     }
 
-@app.post("/api/ai/weekly-report")
+@ai_router.post("/weekly-report")
 async def generate_weekly_report(req: WeeklyReportRequest):
     if not GEMINI_API_KEY:
         return _mock_weekly_report(req, "Gemini API key not configured")
@@ -571,6 +616,10 @@ async def generate_weekly_report(req: WeeklyReportRequest):
         parsed = json.loads(raw_json)
         parsed['is_fallback'] = False
         return parsed
+    except HTTPException:
+        raise
     except Exception as e:
         return _mock_weekly_report(req, str(e))
 
+
+app.include_router(ai_router)

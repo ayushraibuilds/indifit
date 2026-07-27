@@ -64,11 +64,11 @@ class StreakFreezeCard extends ConsumerWidget {
                   Text(
                     state.streakCount == 0
                         ? (freezes == 0
-                            ? 'No freeze tokens! Log a workout to start your streak.'
-                            : 'Start a streak today to activate your freeze protection shield.')
+                              ? 'No freeze tokens! Log a workout to start your streak.'
+                              : 'Start a streak today to activate your freeze protection shield.')
                         : (freezes == 0
-                            ? 'No freeze tokens left! Your streak is unprotected.'
-                            : 'Your streak is protected for $freezes missed day${freezes > 1 ? 's' : ''}.'),
+                              ? 'No freeze tokens left! Your streak is unprotected.'
+                              : 'Your streak is protected for $freezes missed day${freezes > 1 ? 's' : ''}.'),
                     style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12,
@@ -87,16 +87,25 @@ class StreakFreezeCard extends ConsumerWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(msg),
-                            backgroundColor: msg.contains('Claimed') ? Colors.lightBlue : Colors.orangeAccent,
+                            backgroundColor: msg.contains('Claimed')
+                                ? Colors.lightBlue
+                                : Colors.orangeAccent,
                           ),
                         );
                       }
                     },
               style: ElevatedButton.styleFrom(
-                backgroundColor: freezes >= 2 ? Colors.grey.withValues(alpha: 0.12) : Colors.lightBlue.withValues(alpha: 0.15),
-                foregroundColor: freezes >= 2 ? AppColors.textMuted : Colors.lightBlue,
+                backgroundColor: freezes >= 2
+                    ? Colors.grey.withValues(alpha: 0.12)
+                    : Colors.lightBlue.withValues(alpha: 0.15),
+                foregroundColor: freezes >= 2
+                    ? AppColors.textMuted
+                    : Colors.lightBlue,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 minimumSize: Size.zero,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -105,7 +114,10 @@ class StreakFreezeCard extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(freezes >= 2 ? Icons.shield_rounded : Icons.add_rounded, size: 14),
+                  Icon(
+                    freezes >= 2 ? Icons.shield_rounded : Icons.add_rounded,
+                    size: 14,
+                  ),
                   const SizedBox(width: 2),
                   Text(
                     freezes >= 2 ? 'Max 2/2' : 'Claim',

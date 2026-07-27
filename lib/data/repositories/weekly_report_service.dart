@@ -34,11 +34,14 @@ class WeeklyReportService {
   final Dio _dio;
 
   WeeklyReportService([Dio? dio])
-      : _dio = dio ??
-            Dio(BaseOptions(
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
               connectTimeout: const Duration(seconds: 3),
               receiveTimeout: const Duration(seconds: 5),
-            ));
+            ),
+          );
 
   Future<WeeklyReportResult> generateReport({
     required int totalCaloriesLogged,
@@ -65,24 +68,36 @@ class WeeklyReportService {
         final d = response.data;
         return WeeklyReportResult(
           headline: d['headline'] ?? 'Great Week!',
-          adherenceScore: (d['adherence_score'] as num?)?.toDouble() ?? adherenceScore,
-          summary: d['summary'] ?? 'Consistent nutrition and workout effort across the week.',
-          coachingTip: d['coaching_tip'] ?? 'Keep staying hydrated and aim for progressive overload.',
-          topPrs: (d['top_prs'] as List?)?.map((e) => e.toString()).toList() ?? [],
+          adherenceScore:
+              (d['adherence_score'] as num?)?.toDouble() ?? adherenceScore,
+          summary:
+              d['summary'] ??
+              'Consistent nutrition and workout effort across the week.',
+          coachingTip:
+              d['coaching_tip'] ??
+              'Keep staying hydrated and aim for progressive overload.',
+          topPrs:
+              (d['top_prs'] as List?)?.map((e) => e.toString()).toList() ?? [],
           isFallback: d['is_fallback'] ?? false,
           fallbackReason: d['fallback_reason'],
         );
       }
     } catch (e, st) {
       AppLogger.warning('Weekly report AI parsing failed, using fallback: $e');
-      CrashReportingService.recordCrash(e, st, reason: 'WeeklyReportService AI response parse failure');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'WeeklyReportService AI response parse failure',
+      );
     }
 
     return WeeklyReportResult(
       headline: 'Outstanding Consistency This Week!',
       adherenceScore: adherenceScore,
-      summary: 'You completed $workoutSessionsCount workouts and logged $totalCaloriesLogged kcal total across the week.',
-      coachingTip: 'Prioritize adequate sleep and keep hitting your daily protein target.',
+      summary:
+          'You completed $workoutSessionsCount workouts and logged $totalCaloriesLogged kcal total across the week.',
+      coachingTip:
+          'Prioritize adequate sleep and keep hitting your daily protein target.',
       topPrs: ['Consistent Log Streak', 'Workout Target Completed'],
       isFallback: true,
       fallbackReason: 'Offline Local Generator',

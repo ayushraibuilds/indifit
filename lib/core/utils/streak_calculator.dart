@@ -1,6 +1,9 @@
 class StreakCalculator {
   /// Calculates current active day streak supporting streak freeze protection tokens.
-  static int calculateStreak(Set<String> activeDays, {int streakFreezeCount = 0}) {
+  static int calculateStreak(
+    Set<String> activeDays, {
+    int streakFreezeCount = 0,
+  }) {
     if (activeDays.isEmpty) return 0;
 
     final now = DateTime.now();

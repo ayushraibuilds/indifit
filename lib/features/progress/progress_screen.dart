@@ -1,13 +1,11 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/di/user_profile_provider.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
-
 import 'achievements_screen.dart';
 import 'widgets/progress_bmi_health_card.dart';
 
@@ -36,19 +34,23 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   Future<void> _loadProgressLogs() async {
     if (!mounted) return;
     setState(() => _loading = true);
-    
+
     try {
       final repo = ref.read(workoutRepositoryProvider);
       final list = await repo.watchSessions().first;
       final measurements = await repo.getBodyMeasurements();
       final prefs = await SharedPreferences.getInstance();
       final targetW = prefs.getDouble('user_target_weight');
-      
+
       final List<DateTime> act = [];
       final Map<DateTime, double> volMap = {};
       for (final s in list) {
         act.add(s.completedAt);
-        final key = DateTime(s.completedAt.year, s.completedAt.month, s.completedAt.day);
+        final key = DateTime(
+          s.completedAt.year,
+          s.completedAt.month,
+          s.completedAt.day,
+        );
         volMap[key] = (volMap[key] ?? 0.0) + s.totalVolume;
       }
 
@@ -79,12 +81,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         actions: [
           IconButton(
-            icon: const Icon(Icons.emoji_events_rounded, color: AppColors.achievementGold),
+            icon: const Icon(
+              Icons.emoji_events_rounded,
+              color: AppColors.achievementGold,
+            ),
             tooltip: 'Achievements',
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AchievementsScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const AchievementsScreen(),
+                ),
               );
             },
           ),
@@ -99,50 +106,69 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1. GitHub-style activity calendar heatmap (last 12 weeks)
-                  const Text(
-                    'GYM ACTIVITY HEATMAP',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 0.5),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildGitHubHeatmap(),
-                  const SizedBox(height: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. GitHub-style activity calendar heatmap (last 12 weeks)
+                    const Text(
+                      'GYM ACTIVITY HEATMAP',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textMuted,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildGitHubHeatmap(),
+                    const SizedBox(height: 20),
 
-                  // 2. Body Weight Sparkline Chart Card
-                  const Text(
-                    'BODY WEIGHT TREND (KG)',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 0.5),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildWeightChartCard(),
-                  const SizedBox(height: 12),
-                  ProgressBmiHealthCard(weightKg: _measurements.isNotEmpty ? _measurements.first.weight : null),
-                  const SizedBox(height: 20),
+                    // 2. Body Weight Sparkline Chart Card
+                    const Text(
+                      'BODY WEIGHT TREND (KG)',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textMuted,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildWeightChartCard(),
+                    const SizedBox(height: 12),
+                    ProgressBmiHealthCard(
+                      weightKg: _measurements.isNotEmpty
+                          ? _measurements.first.weight
+                          : null,
+                    ),
+                    const SizedBox(height: 20),
 
-                  // 3. Workout Volume Trend Card (Strength progression)
-                  const Text(
-                    'STRENGTH VOLUME PROGRESSION (KG)',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 0.5),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildVolumeChartCard(),
-                  const SizedBox(height: 20),
-                ],
+                    // 3. Workout Volume Trend Card (Strength progression)
+                    const Text(
+                      'STRENGTH VOLUME PROGRESSION (KG)',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textMuted,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildVolumeChartCard(),
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
             ),
-          ),
     );
   }
-
-
 
   Widget _buildGitHubHeatmap() {
     // We will render a 12-week grid (12 columns by 7 rows)
     final DateTime now = DateTime.now();
-    final DateTime startDate = now.subtract(const Duration(days: 84)); // 12 weeks ago
+    final DateTime startDate = now.subtract(
+      const Duration(days: 84),
+    ); // 12 weeks ago
 
     return Card(
       child: Padding(
@@ -152,87 +178,156 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Consistencies Heatmap', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const Text(
+                  'Consistencies Heatmap',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
                 Text(
                   '${_activityDays.length} sessions completed',
-                  style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            
+
             if (_activityDays.isEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24,
+                  horizontal: 16,
+                ),
                 alignment: Alignment.center,
                 child: const Column(
                   children: [
-                    Icon(Icons.calendar_month_outlined, size: 36, color: AppColors.textSecondary),
+                    Icon(
+                      Icons.calendar_month_outlined,
+                      size: 36,
+                      color: AppColors.textSecondary,
+                    ),
                     SizedBox(height: 8),
-                    Text('No Workout History Yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    Text(
+                      'No Workout History Yet',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                     SizedBox(height: 4),
                     Text(
                       'Log your first workout session to start filling your consistency heatmap!',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
               )
             else
               // Grid layout
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(12, (colIndex) {
-                // Column of 7 days representing a week
-                return Column(
-                  children: List.generate(7, (rowIndex) {
-                    final int dayOffset = (colIndex * 7) + rowIndex;
-                    final DateTime checkDate = startDate.add(Duration(days: dayOffset));
-                    final key = DateTime(checkDate.year, checkDate.month, checkDate.day);
-                    final volume = _volumeByDate[key] ?? 0.0;
-                    
-                    Color cellColor = AppColors.border.withOpacity(0.4);
-                    if (volume > 0) {
-                      if (volume < 500) {
-                        cellColor = AppColors.primary.withOpacity(0.35);
-                      } else if (volume < 1500) {
-                        cellColor = AppColors.primary.withOpacity(0.70);
-                      } else {
-                        cellColor = AppColors.primary;
-                      }
-                    }
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(12, (colIndex) {
+                  // Column of 7 days representing a week
+                  return Column(
+                    children: List.generate(7, (rowIndex) {
+                      final int dayOffset = (colIndex * 7) + rowIndex;
+                      final DateTime checkDate = startDate.add(
+                        Duration(days: dayOffset),
+                      );
+                      final key = DateTime(
+                        checkDate.year,
+                        checkDate.month,
+                        checkDate.day,
+                      );
+                      final volume = _volumeByDate[key] ?? 0.0;
 
-                    return Container(
-                      width: 16,
-                      height: 16,
-                      margin: const EdgeInsets.all(2.0),
-                      decoration: BoxDecoration(
-                        color: cellColor,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    );
-                  }),
-                );
-              }),
-            ),
+                      Color cellColor = AppColors.border.withOpacity(0.4);
+                      if (volume > 0) {
+                        if (volume < 500) {
+                          cellColor = AppColors.primary.withOpacity(0.35);
+                        } else if (volume < 1500) {
+                          cellColor = AppColors.primary.withOpacity(0.70);
+                        } else {
+                          cellColor = AppColors.primary;
+                        }
+                      }
+
+                      return Container(
+                        width: 16,
+                        height: 16,
+                        margin: const EdgeInsets.all(2.0),
+                        decoration: BoxDecoration(
+                          color: cellColor,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      );
+                    }),
+                  );
+                }),
+              ),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('Less', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                const Text(
+                  'Less',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
                 const SizedBox(width: 4),
-                Container(width: 10, height: 10, decoration: BoxDecoration(color: AppColors.border.withOpacity(0.4), borderRadius: BorderRadius.circular(2))),
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: AppColors.border.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
                 const SizedBox(width: 4),
-                Container(width: 10, height: 10, decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.35), borderRadius: BorderRadius.circular(2))),
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.35),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
                 const SizedBox(width: 4),
-                Container(width: 10, height: 10, decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.70), borderRadius: BorderRadius.circular(2))),
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.70),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
                 const SizedBox(width: 4),
-                Container(width: 10, height: 10, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
                 const SizedBox(width: 4),
-                const Text('More', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                const Text(
+                  'More',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),
@@ -258,7 +353,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 Text(
                   'Use the "+" button below to log your body weight and view trends.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -279,7 +377,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         spots.add(FlSpot((i - start).toDouble(), w));
       }
     }
-    
+
     // Calculate overall difference between last and first of the shown set
     if (spots.length >= 2) {
       overallDiff = spots.last.y - spots.first.y;
@@ -307,23 +405,37 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _measurements.isEmpty ? 'Last 6 measurements' : 'Last ${spots.length} measurements',
-                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.textSecondary),
+                  _measurements.isEmpty
+                      ? 'Last 6 measurements'
+                      : 'Last ${spots.length} measurements',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 Text(
                   '$diffSign${overallDiff.toStringAsFixed(1)} kg overall',
                   style: TextStyle(
-                    color: overallDiff <= 0 ? AppColors.success : AppColors.danger,
+                    color: overallDiff <= 0
+                        ? AppColors.success
+                        : AppColors.danger,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
                 ),
               ],
             ),
-            if (_targetWeight != null && _targetWeight! > 0 && _measurements.isNotEmpty && _measurements.first.weight != null) ...[
+            if (_targetWeight != null &&
+                _targetWeight! > 0 &&
+                _measurements.isNotEmpty &&
+                _measurements.first.weight != null) ...[
               const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
@@ -334,11 +446,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   children: [
                     Text(
                       'Goal Weight: ${_targetWeight!.toStringAsFixed(1)} kg',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: AppColors.primary,
+                      ),
                     ),
                     Text(
                       '${(_measurements.first.weight! - _targetWeight!).abs().toStringAsFixed(1)} kg to go',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -351,9 +471,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 LineChartData(
                   gridData: const FlGridData(show: false),
                   titlesData: const FlTitlesData(
-                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -389,205 +515,6 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildMeasurementsHistoryCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: _measurements.take(3).map((m) {
-            final dateStr = '${m.recordedAt.day}/${m.recordedAt.month}/${m.recordedAt.year}';
-            final List<String> details = [];
-            if (m.weight != null) details.add('Weight: ${m.weight!.toStringAsFixed(1)}kg');
-            if (m.waist != null) details.add('Waist: ${m.waist}cm');
-            if (m.chest != null) details.add('Chest: ${m.chest}cm');
-            if (m.arms != null) details.add('Arms: ${m.arms}cm');
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(dateStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  Expanded(
-                    child: Text(
-                      details.join(' • '),
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  void _showLogMeasurementModal() {
-    final latest = _measurements.isNotEmpty ? _measurements.first : null;
-    final weightController = TextEditingController(text: latest?.weight != null ? latest!.weight!.toStringAsFixed(1) : '');
-    final waistController = TextEditingController(text: latest?.waist != null ? latest!.waist!.toStringAsFixed(1) : '');
-    final chestController = TextEditingController(text: latest?.chest != null ? latest!.chest!.toStringAsFixed(1) : '');
-    final armsController = TextEditingController(text: latest?.arms != null ? latest!.arms!.toStringAsFixed(1) : '');
-    final formKey = GlobalKey<FormState>();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Log Body Measurements', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                const SizedBox(height: 8),
-                const Text('Track your physical changes over time.', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: weightController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Weight (kg)'),
-                        validator: (val) {
-                          if (val != null && val.isNotEmpty && double.tryParse(val) == null) {
-                            return 'Invalid';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: waistController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Waist (cm)'),
-                        validator: (val) {
-                          if (val != null && val.isNotEmpty && double.tryParse(val) == null) {
-                            return 'Invalid';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: chestController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Chest (cm)'),
-                        validator: (val) {
-                          if (val != null && val.isNotEmpty && double.tryParse(val) == null) {
-                            return 'Invalid';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: armsController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Arms (cm)'),
-                        validator: (val) {
-                          if (val != null && val.isNotEmpty && double.tryParse(val) == null) {
-                            return 'Invalid';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.border),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          if (!formKey.currentState!.validate()) return;
-                          
-                          final double? w = double.tryParse(weightController.text);
-                          final double? wa = double.tryParse(waistController.text);
-                          final double? ch = double.tryParse(chestController.text);
-                          final double? ar = double.tryParse(armsController.text);
-
-                          if (w == null && wa == null && ch == null && ar == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please enter at least one measurement.')),
-                            );
-                            return;
-                          }
-
-                          final repo = ref.read(workoutRepositoryProvider);
-                          await repo.logBodyMeasurement(
-                            weight: w,
-                            waist: wa,
-                            chest: ch,
-                            arms: ar,
-                          );
-
-                          // Update SharedPreferences weight so dashboard matches
-                          if (w != null) {
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.setDouble('current_weight', w);
-                          }
-
-                          await _loadProgressLogs();
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Log'),
-                      ),
-                    )
-                  ],
-                )
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildVolumeChartCard() {
     if (_sessions.isEmpty) {
       return Card(
@@ -598,24 +525,41 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             children: [
               const Text(
                 'Total Lifted per Session',
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.textSecondary),
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 16,
+                ),
                 alignment: Alignment.center,
                 child: const Column(
                   children: [
-                    Icon(Icons.show_chart_rounded, size: 36, color: AppColors.primary),
+                    Icon(
+                      Icons.show_chart_rounded,
+                      size: 36,
+                      color: AppColors.primary,
+                    ),
                     SizedBox(height: 8),
                     Text(
                       'Track Your Volume Over Time',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     SizedBox(height: 4),
                     Text(
                       'Complete workout sessions to unlock your volume progression chart.',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -640,11 +584,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 children: [
                   const Text(
                     'Total Lifted per Session',
-                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   Text(
                     '$firstVol kg total',
-                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -655,16 +607,26 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.timeline_rounded, color: AppColors.primary, size: 32),
+                    const Icon(
+                      Icons.timeline_rounded,
+                      color: AppColors.primary,
+                      size: 32,
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       '$firstVol kg lifted in your first session!',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     const Text(
                       'Log more sessions to see your volume trend.',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -683,8 +645,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
     String volumeChangeLabel = '';
     if (spots.length >= 2 && spots.first.y > 0) {
-      final pctChange = ((spots.last.y - spots.first.y) / spots.first.y * 100).round();
-      volumeChangeLabel = pctChange >= 0 ? '+$pctChange% volume' : '$pctChange% volume';
+      final pctChange = ((spots.last.y - spots.first.y) / spots.first.y * 100)
+          .round();
+      volumeChangeLabel = pctChange >= 0
+          ? '+$pctChange% volume'
+          : '$pctChange% volume';
     }
 
     return Card(
@@ -698,12 +663,20 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               children: [
                 const Text(
                   'Total Lifted per Session',
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 if (volumeChangeLabel.isNotEmpty)
                   Text(
                     volumeChangeLabel,
-                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
               ],
             ),

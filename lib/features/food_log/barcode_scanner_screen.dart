@@ -9,10 +9,12 @@ class BarcodeScannerScreen extends ConsumerStatefulWidget {
   const BarcodeScannerScreen({super.key});
 
   @override
-  ConsumerState<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
+  ConsumerState<BarcodeScannerScreen> createState() =>
+      _BarcodeScannerScreenState();
 }
 
-class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> with SingleTickerProviderStateMixin {
+class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
+    with SingleTickerProviderStateMixin {
   final MobileScannerController _scannerController = MobileScannerController();
   final TextEditingController _manualController = TextEditingController();
   late AnimationController _animController;
@@ -41,7 +43,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> wit
 
   Future<void> _onBarcodeScanned(String code) async {
     if (_loading) return;
-    
+
     setState(() => _loading = true);
     _scannerController.stop(); // Stop camera scan while processing
 
@@ -50,7 +52,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> wit
 
     if (mounted) {
       setState(() => _loading = false);
-      
+
       if (result != null) {
         // Return found result back to search screen
         Navigator.pop(context, result);
@@ -61,14 +63,19 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> wit
           builder: (context) => AlertDialog(
             backgroundColor: AppColors.surface,
             title: const Text('Product Not Found'),
-            content: Text('Could not find product with barcode "$code" in Open Food Facts.'),
+            content: Text(
+              'Could not find product with barcode "$code" in Open Food Facts.',
+            ),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(context); // Close dialog
                   _scannerController.start(); // Restart scanner
                 },
-                child: const Text('Try Again', style: TextStyle(color: AppColors.primary)),
+                child: const Text(
+                  'Try Again',
+                  style: TextStyle(color: AppColors.primary),
+                ),
               ),
               TextButton(
                 onPressed: () async {
@@ -76,16 +83,23 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> wit
                   final created = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CustomFoodEditorScreen(initialBarcode: code),
+                      builder: (context) =>
+                          CustomFoodEditorScreen(initialBarcode: code),
                     ),
                   );
                   if (created == true && mounted) {
-                    Navigator.pop(context, true); // Return true to indicate custom item created
+                    Navigator.pop(
+                      context,
+                      true,
+                    ); // Return true to indicate custom item created
                   } else {
                     _scannerController.start();
                   }
                 },
-                child: const Text('Create Custom Food', style: TextStyle(color: AppColors.success)),
+                child: const Text(
+                  'Create Custom Food',
+                  style: TextStyle(color: AppColors.success),
+                ),
               ),
             ],
           ),
@@ -118,7 +132,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> wit
               }
             },
           ),
-          
+
           // 2. Scan Reticle Overlay with animated scan line
           Center(
             child: Container(
@@ -160,7 +174,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> wit
               ),
             ),
           ),
-          
+
           // 3. Manual code fallback layout (Crucial for Simulator testing)
           Positioned(
             bottom: 0,
@@ -174,7 +188,10 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> wit
                 children: [
                   const Text(
                     'Simulator Testing: Enter barcode manually',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -184,8 +201,12 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> wit
                           controller: _manualController,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                            hintText: 'e.g. 8901030357771', // Standard Indian Barcode
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            hintText:
+                                'e.g. 8901030357771', // Standard Indian Barcode
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                           ),
                         ),
                       ),
@@ -199,17 +220,19 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> wit
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                         child: const Text('Lookup'),
-                      )
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
           ),
-          
+
           // 4. Full screen loading modal
           if (_loading)
             Container(
@@ -220,11 +243,17 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> wit
                   children: [
                     CircularProgressIndicator(color: AppColors.primary),
                     SizedBox(height: 16),
-                    Text('Searching Open Food Facts...', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    Text(
+                      'Searching Open Food Facts...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
-            )
+            ),
         ],
       ),
     );

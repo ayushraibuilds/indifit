@@ -22,7 +22,9 @@ class NaturalMealParser {
       final part = rawPart.trim();
       if (part.isEmpty) continue;
 
-      final match = RegExp(r'^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?\s+(.+)$').firstMatch(part);
+      final match = RegExp(
+        r'^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?\s+(.+)$',
+      ).firstMatch(part);
       if (match != null) {
         final qty = double.tryParse(match.group(1)!) ?? 1.0;
         final possibleUnit = match.group(2) ?? '';
@@ -32,18 +34,12 @@ class NaturalMealParser {
         if (unit == 'g' || unit == 'grams') unit = 'g';
         if (unit == 'ml' || unit == 'milliliters') unit = 'ml';
 
-        items.add(ParsedMealItem(
-          foodName: name,
-          quantity: qty,
-          unit: unit,
-        ));
+        items.add(ParsedMealItem(foodName: name, quantity: qty, unit: unit));
       } else {
         // Fallback: entire string as food name with quantity 1.0
-        items.add(ParsedMealItem(
-          foodName: part,
-          quantity: 1.0,
-          unit: 'serving',
-        ));
+        items.add(
+          ParsedMealItem(foodName: part, quantity: 1.0, unit: 'serving'),
+        );
       }
     }
 

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:indifit/core/di/user_profile_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() {
@@ -27,10 +27,7 @@ void main() {
 
     test('updates goals and persists changes to SharedPreferences', () async {
       final notifier = UserProfileNotifier();
-      await notifier.updateGoals(
-        calorieGoal: 2400,
-        proteinGoal: 150.0,
-      );
+      await notifier.updateGoals(calorieGoal: 2400, proteinGoal: 150.0);
 
       expect(notifier.state.calorieGoal, 2400);
       expect(notifier.state.proteinGoal, 150.0);

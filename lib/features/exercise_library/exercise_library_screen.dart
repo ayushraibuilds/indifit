@@ -10,7 +10,8 @@ class ExerciseLibraryScreen extends ConsumerStatefulWidget {
   const ExerciseLibraryScreen({super.key});
 
   @override
-  ConsumerState<ExerciseLibraryScreen> createState() => _ExerciseLibraryScreenState();
+  ConsumerState<ExerciseLibraryScreen> createState() =>
+      _ExerciseLibraryScreenState();
 }
 
 class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
@@ -68,24 +69,40 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
     try {
       final repo = ref.read(workoutRepositoryProvider);
-      
+
       // Fuzzy search based on query
       final list = await repo.searchExercises(_searchController.text);
-      
+
       // Calculate counts for each muscle filter badge
       final Map<String, int> counts = {'All': list.length};
       for (final m in _muscleFilters) {
         if (m == 'All') continue;
-        counts[m] = list.where((ex) => ex.muscleGroups.toLowerCase().contains(m.toLowerCase())).length;
+        counts[m] = list
+            .where(
+              (ex) => ex.muscleGroups.toLowerCase().contains(m.toLowerCase()),
+            )
+            .length;
       }
 
       // Filter by muscle and equipment
       List<Exercise> filtered = list;
       if (_selectedMuscle != 'All') {
-        filtered = filtered.where((ex) => ex.muscleGroups.toLowerCase().contains(_selectedMuscle.toLowerCase())).toList();
+        filtered = filtered
+            .where(
+              (ex) => ex.muscleGroups.toLowerCase().contains(
+                _selectedMuscle.toLowerCase(),
+              ),
+            )
+            .toList();
       }
       if (_selectedEquipment != 'All') {
-        filtered = filtered.where((ex) => ex.equipment.toLowerCase().contains(_selectedEquipment.toLowerCase())).toList();
+        filtered = filtered
+            .where(
+              (ex) => ex.equipment.toLowerCase().contains(
+                _selectedEquipment.toLowerCase(),
+              ),
+            )
+            .toList();
       }
 
       setState(() {
@@ -116,10 +133,16 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search bench press, squat, curl...',
-                prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textMuted),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: AppColors.textMuted,
+                ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: AppColors.textSecondary),
+                        icon: const Icon(
+                          Icons.clear,
+                          color: AppColors.textSecondary,
+                        ),
                         onPressed: () => _searchController.clear(),
                       )
                     : null,
@@ -155,14 +178,20 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                       },
                       selectedColor: AppColors.primaryGlow,
                       labelStyle: TextStyle(
-                        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
                         fontSize: 11,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
-                          color: isSelected ? AppColors.primary : AppColors.border,
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.border,
                         ),
                       ),
                     ),
@@ -198,14 +227,20 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                       },
                       selectedColor: AppColors.infoBlue.withOpacity(0.12),
                       labelStyle: TextStyle(
-                        color: isSelected ? AppColors.infoBlue : AppColors.textSecondary,
+                        color: isSelected
+                            ? AppColors.infoBlue
+                            : AppColors.textSecondary,
                         fontSize: 11,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
-                          color: isSelected ? AppColors.infoBlue : AppColors.border,
+                          color: isSelected
+                              ? AppColors.infoBlue
+                              : AppColors.border,
                         ),
                       ),
                     ),
@@ -220,34 +255,44 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
               child: _loading
                   ? const SkeletonList(count: 6)
                   : _exercises.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          itemCount: _exercises.length,
-                          itemBuilder: (context, index) {
-                            final ex = _exercises[index];
-                            final muscles = ex.muscleGroups.split(',');
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 8.0),
-                              child: ListTile(
-                                title: Text(ex.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text(
-                                  '${ex.equipment} • ${muscles.join(', ')}',
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                                trailing: const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 20),
-                                onTap: () {
-                                  showModalBottomSheet(
-                                    context: context,
-                                    isScrollControlled: true,
-                                    backgroundColor: Colors.transparent,
-                                    builder: (context) => ExerciseDetailsSheet(exercise: ex),
-                                  );
-                                },
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      itemCount: _exercises.length,
+                      itemBuilder: (context, index) {
+                        final ex = _exercises[index];
+                        final muscles = ex.muscleGroups.split(',');
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8.0),
+                          child: ListTile(
+                            title: Text(
+                              ex.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
                               ),
-                            );
-                          },
-                        ),
-            )
+                            ),
+                            subtitle: Text(
+                              '${ex.equipment} • ${muscles.join(', ')}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: const Icon(
+                              Icons.info_outline_rounded,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) =>
+                                    ExerciseDetailsSheet(exercise: ex),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
           ],
         ),
       ),
@@ -266,12 +311,20 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.search_off_rounded, size: 48, color: AppColors.textMuted),
+            const Icon(
+              Icons.search_off_rounded,
+              size: 48,
+              color: AppColors.textMuted,
+            ),
             const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.4,
+              ),
             ),
             if (query.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -282,7 +335,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                 icon: const Icon(Icons.clear_rounded, size: 16),
                 label: const Text('Clear Search'),
               ),
-            ]
+            ],
           ],
         ),
       ),

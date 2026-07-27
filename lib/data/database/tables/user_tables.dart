@@ -6,9 +6,11 @@ class UserProfiles extends Table {
   RealColumn get height => real().withDefault(const Constant(170.0))();
   RealColumn get weight => real().withDefault(const Constant(70.0))();
   TextColumn get sex => text().withDefault(const Constant('male'))();
-  TextColumn get activityLevel => text().withDefault(const Constant('moderate'))();
+  TextColumn get activityLevel =>
+      text().withDefault(const Constant('moderate'))();
   TextColumn get goal => text().withDefault(const Constant('maintain'))();
-  TextColumn get dietPreference => text().withDefault(const Constant('balanced'))();
+  TextColumn get dietPreference =>
+      text().withDefault(const Constant('balanced'))();
   IntColumn get calorieGoal => integer().withDefault(const Constant(2000))();
   RealColumn get proteinGoal => real().withDefault(const Constant(140.0))();
   RealColumn get carbsGoal => real().withDefault(const Constant(220.0))();

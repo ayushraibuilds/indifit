@@ -67,13 +67,15 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
   final AppDatabase? _db;
 
   UserProfileNotifier([this._db])
-      : super(const UserProfileState(
+    : super(
+        const UserProfileState(
           calorieGoal: 2000,
           proteinGoal: 120.0,
           carbsGoal: 230.0,
           fatGoal: 65.0,
           currentWeight: 74.5,
-        )) {
+        ),
+      ) {
     loadProfile();
   }
 
@@ -91,9 +93,10 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     String activity = prefs.getString('user_activity_level') ?? 'moderate';
     String goal = prefs.getString('user_goal') ?? 'maintain';
 
-    if (_db != null) {
+    final db = _db;
+    if (db != null) {
       try {
-        final profiles = await _db!.select(_db!.userProfiles).get();
+        final profiles = await db.select(db.userProfiles).get();
         if (profiles.isNotEmpty) {
           final p = profiles.first;
           cals = p.calorieGoal;
@@ -104,18 +107,26 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
           height ??= p.height;
         } else {
           // Migrate SharedPreferences defaults to initial Drift row
-          await _db!.into(_db!.userProfiles).insert(UserProfilesCompanion.insert(
-            calorieGoal: Value(cals),
-            proteinGoal: Value(protein),
-            carbsGoal: Value(carbs),
-            fatGoal: Value(fat),
-            weight: Value(weight),
-            height: height != null ? Value(height) : const Value.absent(),
-          ));
+          await db
+              .into(db.userProfiles)
+              .insert(
+                UserProfilesCompanion.insert(
+                  calorieGoal: Value(cals),
+                  proteinGoal: Value(protein),
+                  carbsGoal: Value(carbs),
+                  fatGoal: Value(fat),
+                  weight: Value(weight),
+                  height: height != null ? Value(height) : const Value.absent(),
+                ),
+              );
         }
       } catch (e, st) {
         AppLogger.warning('loadProfile database access failed: $e');
-        CrashReportingService.recordCrash(e, st, reason: 'loadProfile db error');
+        CrashReportingService.recordCrash(
+          e,
+          st,
+          reason: 'loadProfile db error',
+        );
       }
     }
 
@@ -146,15 +157,24 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     if (carbsGoal != null) await prefs.setDouble('carbs_goal', carbsGoal);
     if (fatGoal != null) await prefs.setDouble('fat_goal', fatGoal);
 
-    if (_db != null) {
+    final db = _db;
+    if (db != null) {
       try {
-        final profiles = await _db!.select(_db!.userProfiles).get();
+        final profiles = await db.select(db.userProfiles).get();
         if (profiles.isNotEmpty) {
-          await (_db!.update(_db!.userProfiles)..where((t) => t.id.equals(profiles.first.id))).write(
+          await (db.update(
+            db.userProfiles,
+          )..where((t) => t.id.equals(profiles.first.id))).write(
             UserProfilesCompanion(
-              calorieGoal: calorieGoal != null ? Value(calorieGoal) : const Value.absent(),
-              proteinGoal: proteinGoal != null ? Value(proteinGoal) : const Value.absent(),
-              carbsGoal: carbsGoal != null ? Value(carbsGoal) : const Value.absent(),
+              calorieGoal: calorieGoal != null
+                  ? Value(calorieGoal)
+                  : const Value.absent(),
+              proteinGoal: proteinGoal != null
+                  ? Value(proteinGoal)
+                  : const Value.absent(),
+              carbsGoal: carbsGoal != null
+                  ? Value(carbsGoal)
+                  : const Value.absent(),
               fatGoal: fatGoal != null ? Value(fatGoal) : const Value.absent(),
               updatedAt: Value(DateTime.now()),
             ),
@@ -162,7 +182,11 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
         }
       } catch (e, st) {
         AppLogger.warning('updateGoals database write failed: $e');
-        CrashReportingService.recordCrash(e, st, reason: 'updateGoals db error');
+        CrashReportingService.recordCrash(
+          e,
+          st,
+          reason: 'updateGoals db error',
+        );
       }
     }
 
@@ -178,11 +202,14 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('current_weight', weight);
 
-    if (_db != null) {
+    final db = _db;
+    if (db != null) {
       try {
-        final profiles = await _db!.select(_db!.userProfiles).get();
+        final profiles = await db.select(db.userProfiles).get();
         if (profiles.isNotEmpty) {
-          await (_db!.update(_db!.userProfiles)..where((t) => t.id.equals(profiles.first.id))).write(
+          await (db.update(
+            db.userProfiles,
+          )..where((t) => t.id.equals(profiles.first.id))).write(
             UserProfilesCompanion(
               weight: Value(weight),
               updatedAt: Value(DateTime.now()),
@@ -191,7 +218,11 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
         }
       } catch (e, st) {
         AppLogger.warning('updateWeight database write failed: $e');
-        CrashReportingService.recordCrash(e, st, reason: 'updateWeight db error');
+        CrashReportingService.recordCrash(
+          e,
+          st,
+          reason: 'updateWeight db error',
+        );
       }
     }
 
@@ -202,11 +233,14 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('user_height', height);
 
-    if (_db != null) {
+    final db = _db;
+    if (db != null) {
       try {
-        final profiles = await _db!.select(_db!.userProfiles).get();
+        final profiles = await db.select(db.userProfiles).get();
         if (profiles.isNotEmpty) {
-          await (_db!.update(_db!.userProfiles)..where((t) => t.id.equals(profiles.first.id))).write(
+          await (db.update(
+            db.userProfiles,
+          )..where((t) => t.id.equals(profiles.first.id))).write(
             UserProfilesCompanion(
               height: Value(height),
               updatedAt: Value(DateTime.now()),
@@ -215,7 +249,11 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
         }
       } catch (e, st) {
         AppLogger.warning('updateHeight database write failed: $e');
-        CrashReportingService.recordCrash(e, st, reason: 'updateHeight db error');
+        CrashReportingService.recordCrash(
+          e,
+          st,
+          reason: 'updateHeight db error',
+        );
       }
     }
 
@@ -231,6 +269,6 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
 
 final userProfileProvider =
     StateNotifierProvider<UserProfileNotifier, UserProfileState>((ref) {
-  final db = ref.watch(databaseProvider);
-  return UserProfileNotifier(db);
-});
+      final db = ref.watch(databaseProvider);
+      return UserProfileNotifier(db);
+    });

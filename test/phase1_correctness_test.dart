@@ -21,18 +21,22 @@ void main() {
       final db = AppDatabase.memory();
 
       // Seed food log and workout session
-      await db.into(db.foodLogs).insert(FoodLogsCompanion.insert(
-        name: 'Oats Upma',
-        calories: 350,
-        proteinG: 12.0,
-        carbsG: 50.0,
-        fatG: 10.0,
-        servingLogged: 1.0,
-        servingUnit: 'bowl',
-        mealType: 'breakfast',
-        uuid: const Value('test-food-uuid-123'),
-        mealGroupId: const Value('group-1'),
-      ));
+      await db
+          .into(db.foodLogs)
+          .insert(
+            FoodLogsCompanion.insert(
+              name: 'Oats Upma',
+              calories: 350,
+              proteinG: 12.0,
+              carbsG: 50.0,
+              fatG: 10.0,
+              servingLogged: 1.0,
+              servingUnit: 'bowl',
+              mealType: 'breakfast',
+              uuid: const Value('test-food-uuid-123'),
+              mealGroupId: const Value('group-1'),
+            ),
+          );
 
       final backupService = AutoBackupService(db);
       await backupService.runAutoBackup();
@@ -45,31 +49,34 @@ void main() {
       await db.close();
     });
 
-    test('FoodRepository.logFoodEntry logs against specified loggedAt date', () async {
-      final db = AppDatabase.memory();
-      final repo = FoodRepository(db);
+    test(
+      'FoodRepository.logFoodEntry logs against specified loggedAt date',
+      () async {
+        final db = AppDatabase.memory();
+        final repo = FoodRepository(db);
 
-      final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      await repo.logFoodEntry(
-        name: 'Poha',
-        calories: 250,
-        proteinG: 6.0,
-        carbsG: 45.0,
-        fatG: 5.0,
-        servingLogged: 1.0,
-        servingUnit: 'plate',
-        mealType: 'breakfast',
-        loggedAt: yesterday,
-      );
+        final yesterday = DateTime.now().subtract(const Duration(days: 1));
+        await repo.logFoodEntry(
+          name: 'Poha',
+          calories: 250,
+          proteinG: 6.0,
+          carbsG: 45.0,
+          fatG: 5.0,
+          servingLogged: 1.0,
+          servingUnit: 'plate',
+          mealType: 'breakfast',
+          loggedAt: yesterday,
+        );
 
-      final logs = await db.select(db.foodLogs).get();
-      expect(logs.length, 1);
-      expect(logs.first.name, 'Poha');
-      expect(logs.first.loggedAt.year, yesterday.year);
-      expect(logs.first.loggedAt.day, yesterday.day);
+        final logs = await db.select(db.foodLogs).get();
+        expect(logs.length, 1);
+        expect(logs.first.name, 'Poha');
+        expect(logs.first.loggedAt.year, yesterday.year);
+        expect(logs.first.loggedAt.day, yesterday.day);
 
-      await db.close();
-    });
+        await db.close();
+      },
+    );
 
     test('UserProfileNotifier updates custom nutrition goals', () async {
       final db = AppDatabase.memory();

@@ -59,7 +59,10 @@ void main() {
       ];
 
       final csv = CsvExporter.exportWorkoutSessionsToCsv(sessions, sets);
-      expect(csv, contains('Session ID,Routine Name,Completed Date,Exercise Name'));
+      expect(
+        csv,
+        contains('Session ID,Routine Name,Completed Date,Exercise Name'),
+      );
       expect(csv, contains('Push Day A'));
       expect(csv, contains('Bench Press'));
       expect(csv, contains('80.0'));

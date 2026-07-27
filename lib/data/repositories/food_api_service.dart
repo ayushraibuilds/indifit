@@ -33,16 +33,20 @@ class FoodApiService {
   final Dio _dio;
 
   FoodApiService([Dio? dio])
-      : _dio = dio ??
-            Dio(BaseOptions(
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
               connectTimeout: const Duration(seconds: 3),
               receiveTimeout: const Duration(seconds: 5),
-            ));
+            ),
+          );
 
   // 1. Fetch product by barcode (Open Food Facts v2 API)
   Future<FoodApiResult?> fetchByBarcode(String barcode) async {
     try {
-      final url = 'https://world.openfoodfacts.org/api/v2/product/$barcode.json';
+      final url =
+          'https://world.openfoodfacts.org/api/v2/product/$barcode.json';
       final response = await _dio.get(url);
 
       if (response.statusCode == 200 && response.data != null) {
@@ -52,12 +56,17 @@ class FoodApiService {
           final nutriments = p['nutriments'] ?? {};
 
           final name = p['product_name'] ?? 'Unknown Product';
-          
+
           // Get values per 100g
-          final double kcal = (nutriments['energy-kcal_100g'] ?? 
-                               nutriments['energy-kcal'] ?? 0.0).toDouble();
-          final double protein = (nutriments['proteins_100g'] ?? 0.0).toDouble();
-          final double carbs = (nutriments['carbohydrates_100g'] ?? 0.0).toDouble();
+          final double kcal =
+              (nutriments['energy-kcal_100g'] ??
+                      nutriments['energy-kcal'] ??
+                      0.0)
+                  .toDouble();
+          final double protein = (nutriments['proteins_100g'] ?? 0.0)
+              .toDouble();
+          final double carbs = (nutriments['carbohydrates_100g'] ?? 0.0)
+              .toDouble();
           final double fat = (nutriments['fat_100g'] ?? 0.0).toDouble();
 
           // Serving size info
@@ -89,13 +98,16 @@ class FoodApiService {
 
     try {
       final url = 'https://world.openfoodfacts.org/cgi/search.pl';
-      final response = await _dio.get(url, queryParameters: {
-        'search_terms': query,
-        'search_simple': 1,
-        'action': 'process',
-        'json': 1,
-        'page_size': 10,
-      });
+      final response = await _dio.get(
+        url,
+        queryParameters: {
+          'search_terms': query,
+          'search_simple': 1,
+          'action': 'process',
+          'json': 1,
+          'page_size': 10,
+        },
+      );
 
       if (response.statusCode == 200 && response.data != null) {
         final products = response.data['products'] as List?;
@@ -104,10 +116,13 @@ class FoodApiService {
         return products.map((p) {
           final nutriments = p['nutriments'] ?? {};
           final name = p['product_name'] ?? 'Unknown Product';
-          
-          final double kcal = (nutriments['energy-kcal_100g'] ?? 0.0).toDouble();
-          final double protein = (nutriments['proteins_100g'] ?? 0.0).toDouble();
-          final double carbs = (nutriments['carbohydrates_100g'] ?? 0.0).toDouble();
+
+          final double kcal = (nutriments['energy-kcal_100g'] ?? 0.0)
+              .toDouble();
+          final double protein = (nutriments['proteins_100g'] ?? 0.0)
+              .toDouble();
+          final double carbs = (nutriments['carbohydrates_100g'] ?? 0.0)
+              .toDouble();
           final double fat = (nutriments['fat_100g'] ?? 0.0).toDouble();
 
           final servingQtyText = p['serving_quantity']?.toString() ?? '100';

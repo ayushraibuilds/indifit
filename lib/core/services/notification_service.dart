@@ -1,9 +1,10 @@
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:drift/drift.dart';
+
 import '../../data/database/app_database.dart';
 import '../utils/app_logger.dart';
 import 'crash_reporting_service.dart';
@@ -56,7 +57,9 @@ class NotificationService {
     tz_data.initializeTimeZones();
     _configureLocalTimeZone();
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -88,17 +91,15 @@ class NotificationService {
   static Future<bool> requestPermissions() async {
     final androidGranted = await _plugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.requestNotificationsPermission();
 
     final iosGranted = await _plugin
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
+          IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
 
     return (androidGranted ?? false) || (iosGranted ?? false);
   }
@@ -113,7 +114,10 @@ class NotificationService {
       priority: Priority.high,
     );
     const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     await _plugin.show(
       999,
@@ -156,38 +160,73 @@ class NotificationService {
         final startOfDay = DateTime(now.year, now.month, now.day);
         final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-        final sessions = await (db.select(db.workoutSessions)
-              ..where((tbl) => tbl.completedAt.isBetweenValues(startOfDay, endOfDay)))
-            .get();
+        final sessions =
+            await (db.select(db.workoutSessions)..where(
+                  (tbl) =>
+                      tbl.completedAt.isBetweenValues(startOfDay, endOfDay),
+                ))
+                .get();
         hasWorkoutToday = sessions.isNotEmpty;
 
-        final foodLogs = await (db.select(db.foodLogs)
-              ..where((tbl) => tbl.loggedAt.isBetweenValues(startOfDay, endOfDay)))
-            .get();
+        final foodLogs =
+            await (db.select(db.foodLogs)..where(
+                  (tbl) => tbl.loggedAt.isBetweenValues(startOfDay, endOfDay),
+                ))
+                .get();
 
         hasAnyFoodToday = foodLogs.isNotEmpty;
-        hasLunchToday = foodLogs.any((l) => l.mealType.toLowerCase() == 'lunch');
-        hasDinnerToday = foodLogs.any((l) => l.mealType.toLowerCase() == 'dinner');
+        hasLunchToday = foodLogs.any(
+          (l) => l.mealType.toLowerCase() == 'lunch',
+        );
+        hasDinnerToday = foodLogs.any(
+          (l) => l.mealType.toLowerCase() == 'dinner',
+        );
       } catch (e, st) {
         AppLogger.warning('syncDailyNotifications db check failed: $e');
-        CrashReportingService.recordCrash(e, st, reason: 'notification_service sync error');
+        CrashReportingService.recordCrash(
+          e,
+          st,
+          reason: 'notification_service sync error',
+        );
       }
     }
 
     if (workoutEnabled && !hasWorkoutToday) {
-      await _scheduleWorkoutReminder(quietHoursEnabled, quietHoursStart, quietHoursEnd);
+      await _scheduleWorkoutReminder(
+        quietHoursEnabled,
+        quietHoursStart,
+        quietHoursEnd,
+      );
     }
     if (mealsEnabled) {
-      await _scheduleMealReminders(hasLunchToday, hasDinnerToday, quietHoursEnabled, quietHoursStart, quietHoursEnd);
+      await _scheduleMealReminders(
+        hasLunchToday,
+        hasDinnerToday,
+        quietHoursEnabled,
+        quietHoursStart,
+        quietHoursEnd,
+      );
     }
     if (waterEnabled) {
-      await _scheduleWaterReminders(quietHoursEnabled, quietHoursStart, quietHoursEnd);
+      await _scheduleWaterReminders(
+        quietHoursEnabled,
+        quietHoursStart,
+        quietHoursEnd,
+      );
     }
     if (eveningEnabled && (!hasAnyFoodToday || !hasWorkoutToday)) {
-      await _scheduleEveningNudge(quietHoursEnabled, quietHoursStart, quietHoursEnd);
+      await _scheduleEveningNudge(
+        quietHoursEnabled,
+        quietHoursStart,
+        quietHoursEnd,
+      );
     }
     if (weeklyEnabled) {
-      await _scheduleWeeklyReport(quietHoursEnabled, quietHoursStart, quietHoursEnd);
+      await _scheduleWeeklyReport(
+        quietHoursEnabled,
+        quietHoursStart,
+        quietHoursEnd,
+      );
     }
 
     debugPrint('All notification reminders rescheduled cleanly.');
@@ -198,7 +237,11 @@ class NotificationService {
   // ────────────────────────────────────────
 
   /// 🏋️ Daily workout reminder at 7:30 AM
-  static Future<void> _scheduleWorkoutReminder(bool quietHoursEnabled, int quietStart, int quietEnd) async {
+  static Future<void> _scheduleWorkoutReminder(
+    bool quietHoursEnabled,
+    int quietStart,
+    int quietEnd,
+  ) async {
     await _scheduleDailyNotification(
       id: _idWorkout,
       channelId: _workoutChannelId,
@@ -215,7 +258,13 @@ class NotificationService {
   }
 
   /// 🍱 Meal logging reminders — only post-lunch and post-dinner
-  static Future<void> _scheduleMealReminders(bool hasLunchToday, bool hasDinnerToday, bool quietHoursEnabled, int quietStart, int quietEnd) async {
+  static Future<void> _scheduleMealReminders(
+    bool hasLunchToday,
+    bool hasDinnerToday,
+    bool quietHoursEnabled,
+    int quietStart,
+    int quietEnd,
+  ) async {
     if (!hasLunchToday) {
       await _scheduleDailyNotification(
         id: _idMealLunch,
@@ -224,7 +273,8 @@ class NotificationService {
         hour: 13,
         minute: 30,
         title: '🍱 Log your lunch',
-        body: 'Ate something good? Snap a photo or search for it to track macros.',
+        body:
+            'Ate something good? Snap a photo or search for it to track macros.',
         payload: 'meal_lunch',
         quietHoursEnabled: quietHoursEnabled,
         quietHoursStart: quietStart,
@@ -240,7 +290,8 @@ class NotificationService {
         hour: 20,
         minute: 30,
         title: '🍽️ Log your dinner',
-        body: 'Almost done for the day — log dinner to complete your macro tracker.',
+        body:
+            'Almost done for the day — log dinner to complete your macro tracker.',
         payload: 'meal_dinner',
         quietHoursEnabled: quietHoursEnabled,
         quietHoursStart: quietStart,
@@ -250,7 +301,11 @@ class NotificationService {
   }
 
   /// 💧 Water intake — gentle twice-daily nudges
-  static Future<void> _scheduleWaterReminders(bool quietHoursEnabled, int quietStart, int quietEnd) async {
+  static Future<void> _scheduleWaterReminders(
+    bool quietHoursEnabled,
+    int quietStart,
+    int quietEnd,
+  ) async {
     await _scheduleDailyNotification(
       id: _idWaterMorning,
       channelId: _waterChannelId,
@@ -272,7 +327,8 @@ class NotificationService {
       hour: 16,
       minute: 0,
       title: '💧 Afternoon hydration',
-      body: 'Staying hydrated boosts workout performance. Log your water intake.',
+      body:
+          'Staying hydrated boosts workout performance. Log your water intake.',
       payload: 'water',
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietStart,
@@ -281,7 +337,11 @@ class NotificationService {
   }
 
   /// 🌙 Evening nudge at 9:15 PM
-  static Future<void> _scheduleEveningNudge(bool quietHoursEnabled, int quietStart, int quietEnd) async {
+  static Future<void> _scheduleEveningNudge(
+    bool quietHoursEnabled,
+    int quietStart,
+    int quietEnd,
+  ) async {
     await _scheduleDailyNotification(
       id: _idEveningNudge,
       channelId: _nudgeChannelId,
@@ -289,7 +349,8 @@ class NotificationService {
       hour: 21,
       minute: 15,
       title: '🌙 Log your day',
-      body: 'Take 30 seconds to log anything you missed — meals, water, or workouts. Keep your streak alive!',
+      body:
+          'Take 30 seconds to log anything you missed — meals, water, or workouts. Keep your streak alive!',
       payload: 'evening_nudge',
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietStart,
@@ -298,7 +359,11 @@ class NotificationService {
   }
 
   /// 📊 Weekly AI report — Sunday at 10:00 AM
-  static Future<void> _scheduleWeeklyReport(bool quietHoursEnabled, int quietStart, int quietEnd) async {
+  static Future<void> _scheduleWeeklyReport(
+    bool quietHoursEnabled,
+    int quietStart,
+    int quietEnd,
+  ) async {
     await _scheduleWeeklyNotification(
       id: _idWeeklyReport,
       channelId: _weeklyChannelId,
@@ -307,7 +372,8 @@ class NotificationService {
       hour: 10,
       minute: 0,
       title: '📊 Your Weekly AI Fitness Report',
-      body: 'Your personalized weekly summary is ready. See calories, macros, workout volume trends, and AI coaching tips.',
+      body:
+          'Your personalized weekly summary is ready. See calories, macros, workout volume trends, and AI coaching tips.',
       payload: 'weekly_report',
       quietHoursEnabled: quietHoursEnabled,
       quietHoursStart: quietStart,
@@ -356,7 +422,8 @@ class NotificationService {
         iOS: const DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // Repeats daily
       payload: payload,
     );
@@ -401,8 +468,10 @@ class NotificationService {
         iOS: const DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime, // Repeats weekly
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents:
+          DateTimeComponents.dayOfWeekAndTime, // Repeats weekly
       payload: payload,
     );
   }
@@ -419,13 +488,33 @@ class NotificationService {
     int quietHoursEnd = 7,
   }) {
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
 
-    if (quietHoursEnabled && isInQuietHours(scheduled.hour, scheduled.minute, quietHoursStart, quietHoursEnd)) {
-      scheduled = tz.TZDateTime(tz.local, scheduled.year, scheduled.month, scheduled.day, quietHoursEnd, 0);
+    if (quietHoursEnabled &&
+        isInQuietHours(
+          scheduled.hour,
+          scheduled.minute,
+          quietHoursStart,
+          quietHoursEnd,
+        )) {
+      scheduled = tz.TZDateTime(
+        tz.local,
+        scheduled.year,
+        scheduled.month,
+        scheduled.day,
+        quietHoursEnd,
+        0,
+      );
       if (scheduled.isBefore(now)) {
         scheduled = scheduled.add(const Duration(days: 1));
       }
@@ -462,7 +551,6 @@ class NotificationService {
     }
     return scheduled;
   }
-
 
   static void _configureLocalTimeZone() {
     final now = DateTime.now();
@@ -502,8 +590,14 @@ class NotificationService {
     try {
       tz.setLocalLocation(tz.getLocation(fallbackLocation));
     } catch (e, st) {
-      AppLogger.warning('Fallback timezone lookup failed for $fallbackLocation: $e');
-      CrashReportingService.recordCrash(e, st, reason: 'timezone configuration fallback error');
+      AppLogger.warning(
+        'Fallback timezone lookup failed for $fallbackLocation: $e',
+      );
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'timezone configuration fallback error',
+      );
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
   }

@@ -9,7 +9,8 @@ class AiMealPlannerScreen extends ConsumerStatefulWidget {
   const AiMealPlannerScreen({super.key});
 
   @override
-  ConsumerState<AiMealPlannerScreen> createState() => _AiMealPlannerScreenState();
+  ConsumerState<AiMealPlannerScreen> createState() =>
+      _AiMealPlannerScreenState();
 }
 
 class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
@@ -21,7 +22,15 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
 
   // Selected weekday tab in split view
   int _selectedDayIndex = 0;
-  final List<String> _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  final List<String> _weekdays = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun',
+  ];
 
   @override
   void initState() {
@@ -40,7 +49,9 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
   Future<void> _generatePlan() async {
     setState(() => _loading = true);
 
-    final result = await ref.read(mealPlanServiceProvider).generateMealPlan(
+    final result = await ref
+        .read(mealPlanServiceProvider)
+        .generateMealPlan(
           calorieGoal: _calorieGoal,
           dietPreference: _dietPreference,
         );
@@ -102,10 +113,12 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text('Close'),
-              )
+              ),
             ],
           ),
         );
@@ -118,10 +131,17 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         children: [
-          const Icon(Icons.check_box_outline_blank_rounded, color: AppColors.textMuted, size: 20),
+          const Icon(
+            Icons.check_box_outline_blank_rounded,
+            color: AppColors.textMuted,
+            size: 20,
+          ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(item, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+            child: Text(
+              item,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
           ),
         ],
       ),
@@ -144,12 +164,19 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: const Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 16),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 16,
+                ),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'AI recommendations are estimates. Verify ingredients for food allergies and consult a health professional.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 10.5),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 10.5,
+                    ),
                   ),
                 ),
               ],
@@ -160,7 +187,9 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                 ? _buildLoadingState()
                 : Padding(
                     padding: const EdgeInsets.all(20.0),
-                    child: _planGenerated ? _buildPlanLayout() : _buildSetupLayout(),
+                    child: _planGenerated
+                        ? _buildPlanLayout()
+                        : _buildSetupLayout(),
                   ),
           ),
         ],
@@ -189,24 +218,55 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
             padding: const EdgeInsets.all(20.0),
             child: Column(
               children: [
-                const Text('Daily Calorie Budget Target', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                const Text(
+                  'Daily Calorie Budget Target',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 10),
-                Text('$_calorieGoal kcal', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                Text(
+                  '$_calorieGoal kcal',
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, size: 28, color: AppColors.textSecondary),
-                      onPressed: () => setState(() => _calorieGoal = (_calorieGoal - 100).clamp(1200, 4000)),
+                      icon: const Icon(
+                        Icons.remove_circle_outline,
+                        size: 28,
+                        color: AppColors.textSecondary,
+                      ),
+                      onPressed: () => setState(
+                        () => _calorieGoal = (_calorieGoal - 100).clamp(
+                          1200,
+                          4000,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 24),
                     IconButton(
-                      icon: const Icon(Icons.add_circle_outline, size: 28, color: AppColors.primary),
-                      onPressed: () => setState(() => _calorieGoal = (_calorieGoal + 100).clamp(1200, 4000)),
+                      icon: const Icon(
+                        Icons.add_circle_outline,
+                        size: 28,
+                        color: AppColors.primary,
+                      ),
+                      onPressed: () => setState(
+                        () => _calorieGoal = (_calorieGoal + 100).clamp(
+                          1200,
+                          4000,
+                        ),
+                      ),
                     ),
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -214,7 +274,15 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
         const SizedBox(height: 20),
 
         // Preference Selection
-        const Text('DIET PREFERENCE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0)),
+        const Text(
+          'DIET PREFERENCE',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+            letterSpacing: 1.0,
+          ),
+        ),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -233,10 +301,15 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             minimumSize: const Size.fromHeight(50),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-          child: const Text('Generate 7-Day Indian Diet Plan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        )
+          child: const Text(
+            'Generate 7-Day Indian Diet Plan',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ),
       ],
     );
   }
@@ -251,7 +324,9 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: active ? AppColors.primaryGlow : AppColors.cardBackground,
-            border: Border.all(color: active ? AppColors.primary : AppColors.border),
+            border: Border.all(
+              color: active ? AppColors.primary : AppColors.border,
+            ),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -269,7 +344,10 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
 
   Widget _buildPlanLayout() {
     final days = _currentPlanResult?.days ?? [];
-    final safeIndex = _selectedDayIndex.clamp(0, days.isEmpty ? 0 : days.length - 1);
+    final safeIndex = _selectedDayIndex.clamp(
+      0,
+      days.isEmpty ? 0 : days.length - 1,
+    );
     final dayPlan = days.isNotEmpty ? days[safeIndex] : <String, dynamic>{};
     final isFallback = _currentPlanResult?.isFallback ?? true;
 
@@ -287,11 +365,7 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.cloud_off_rounded,
-                  size: 14,
-                  color: Colors.amber,
-                ),
+                Icon(Icons.cloud_off_rounded, size: 14, color: Colors.amber),
                 SizedBox(width: 6),
                 Text(
                   'Using local plan — no internet detected',
@@ -329,12 +403,18 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                   },
                   selectedColor: AppColors.primaryGlow,
                   labelStyle: TextStyle(
-                    color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: isSelected ? AppColors.primary : AppColors.border),
+                    side: BorderSide(
+                      color: isSelected ? AppColors.primary : AppColors.border,
+                    ),
                   ),
                 ),
               );
@@ -347,13 +427,29 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
         Expanded(
           child: ListView(
             children: [
-              _buildMealSectionCard('Breakfast', dayPlan['breakfast']?.toString() ?? 'N/A', Icons.breakfast_dining_rounded),
+              _buildMealSectionCard(
+                'Breakfast',
+                dayPlan['breakfast']?.toString() ?? 'N/A',
+                Icons.breakfast_dining_rounded,
+              ),
               const SizedBox(height: 10),
-              _buildMealSectionCard('Lunch', dayPlan['lunch']?.toString() ?? 'N/A', Icons.lunch_dining_rounded),
+              _buildMealSectionCard(
+                'Lunch',
+                dayPlan['lunch']?.toString() ?? 'N/A',
+                Icons.lunch_dining_rounded,
+              ),
               const SizedBox(height: 10),
-              _buildMealSectionCard('Dinner', dayPlan['dinner']?.toString() ?? 'N/A', Icons.dinner_dining_rounded),
+              _buildMealSectionCard(
+                'Dinner',
+                dayPlan['dinner']?.toString() ?? 'N/A',
+                Icons.dinner_dining_rounded,
+              ),
               const SizedBox(height: 10),
-              _buildMealSectionCard('Snacks', dayPlan['snacks']?.toString() ?? 'N/A', Icons.cookie_rounded),
+              _buildMealSectionCard(
+                'Snacks',
+                dayPlan['snacks']?.toString() ?? 'N/A',
+                Icons.cookie_rounded,
+              ),
             ],
           ),
         ),
@@ -369,10 +465,15 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                   side: const BorderSide(color: AppColors.primary),
                   foregroundColor: AppColors.primary,
                   minimumSize: const Size(0, 48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 icon: const Icon(Icons.shopping_cart_rounded, size: 18),
-                label: const Text('Shopping List', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text(
+                  'Shopping List',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -391,9 +492,9 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
                 ),
                 child: const Text('Reset Planner'),
               ),
-            )
+            ),
           ],
-        )
+        ),
       ],
     );
   }
@@ -401,7 +502,9 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
   Future<void> _logPlannedMeal(String title, String description) async {
     if (description == 'N/A' || description.trim().isEmpty) return;
 
-    final mealType = title.toLowerCase() == 'snacks' ? 'snack' : title.toLowerCase();
+    final mealType = title.toLowerCase() == 'snacks'
+        ? 'snack'
+        : title.toLowerCase();
 
     // Default macro fallbacks in case regex fails to parse
     int calories = 300;
@@ -410,25 +513,37 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
     double fat = 10.0;
 
     // Try to parse calories (e.g., "550 kcal")
-    final calMatch = RegExp(r'(\d+)\s*kcal', caseSensitive: false).firstMatch(description);
+    final calMatch = RegExp(
+      r'(\d+)\s*kcal',
+      caseSensitive: false,
+    ).firstMatch(description);
     if (calMatch != null) {
       calories = int.tryParse(calMatch.group(1)!) ?? calories;
     }
 
     // Try to parse protein (e.g., "P: 28g" or "protein: 28g")
-    final proteinMatch = RegExp(r'(?:p|protein):\s*(\d+(?:\.\d+)?)\s*g', caseSensitive: false).firstMatch(description);
+    final proteinMatch = RegExp(
+      r'(?:p|protein):\s*(\d+(?:\.\d+)?)\s*g',
+      caseSensitive: false,
+    ).firstMatch(description);
     if (proteinMatch != null) {
       protein = double.tryParse(proteinMatch.group(1)!) ?? protein;
     }
 
     // Try to parse carbs (e.g., "C: 45g" or "carbs: 45g")
-    final carbsMatch = RegExp(r'(?:c|carbs):\s*(\d+(?:\.\d+)?)\s*g', caseSensitive: false).firstMatch(description);
+    final carbsMatch = RegExp(
+      r'(?:c|carbs):\s*(\d+(?:\.\d+)?)\s*g',
+      caseSensitive: false,
+    ).firstMatch(description);
     if (carbsMatch != null) {
       carbs = double.tryParse(carbsMatch.group(1)!) ?? carbs;
     }
 
     // Try to parse fat (e.g., "F: 12g" or "fat: 12g")
-    final fatMatch = RegExp(r'(?:f|fat):\s*(\d+(?:\.\d+)?)\s*g', caseSensitive: false).firstMatch(description);
+    final fatMatch = RegExp(
+      r'(?:f|fat):\s*(\d+(?:\.\d+)?)\s*g',
+      caseSensitive: false,
+    ).firstMatch(description);
     if (fatMatch != null) {
       fat = double.tryParse(fatMatch.group(1)!) ?? fat;
     }
@@ -436,7 +551,7 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
     // Clean up the name by removing macro text suffix
     String name = description.split(RegExp(r'\s*-\s*|\s*\|')).first.trim();
     if (name.length > 60) {
-      name = name.substring(0, 57) + '...';
+      name = '${name.substring(0, 57)}...';
     }
 
     final repo = ref.read(foodRepositoryProvider);
@@ -454,7 +569,9 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Logged planned meal "$name" to ${mealType.toUpperCase()}!'),
+          content: Text(
+            'Logged planned meal "$name" to ${mealType.toUpperCase()}!',
+          ),
           backgroundColor: AppColors.success,
         ),
       );
@@ -475,18 +592,32 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     desc,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.3),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
                   ),
                 ],
               ),
             ),
             if (canLog)
               IconButton(
-                icon: const Icon(Icons.add_task_rounded, color: AppColors.primary, size: 20),
+                icon: const Icon(
+                  Icons.add_task_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
                 tooltip: 'Log This Meal',
                 onPressed: () => _logPlannedMeal(title, desc),
               ),
@@ -503,7 +634,10 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
         children: [
           CircularProgressIndicator(color: AppColors.primary),
           SizedBox(height: 24),
-          Text('AI is creating your meal plans...', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            'AI is creating your meal plans...',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           SizedBox(height: 8),
           Text(
             'Balancing portion sizes and local Indian macro splits using Gemini...',

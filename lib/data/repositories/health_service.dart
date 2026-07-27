@@ -60,9 +60,15 @@ class HealthService {
   Future<bool> requestPermissions() async {
     try {
       await _health.configure();
-      bool? hasPermissions = await _health.hasPermissions(_types, permissions: _permissions);
+      bool? hasPermissions = await _health.hasPermissions(
+        _types,
+        permissions: _permissions,
+      );
       if (hasPermissions != true) {
-        bool authorized = await _health.requestAuthorization(_types, permissions: _permissions);
+        bool authorized = await _health.requestAuthorization(
+          _types,
+          permissions: _permissions,
+        );
         return authorized;
       }
       return true;
@@ -78,11 +84,15 @@ class HealthService {
       final now = DateTime.now();
       final midnight = DateTime(now.year, now.month, now.day);
 
-      bool? hasPermissions = await _health.hasPermissions(_types, permissions: _permissions);
+      bool? hasPermissions = await _health.hasPermissions(
+        _types,
+        permissions: _permissions,
+      );
       if (hasPermissions != true) {
         return const HealthDataSummary(
           isConnected: false,
-          statusMessage: 'Permissions not granted. Tap Connect to enable health sync.',
+          statusMessage:
+              'Permissions not granted. Tap Connect to enable health sync.',
         );
       }
 
@@ -91,7 +101,10 @@ class HealthService {
       List<HealthDataPoint> healthData = await _health.getHealthDataFromTypes(
         startTime: midnight,
         endTime: now,
-        types: [HealthDataType.ACTIVE_ENERGY_BURNED, HealthDataType.SLEEP_SESSION],
+        types: [
+          HealthDataType.ACTIVE_ENERGY_BURNED,
+          HealthDataType.SLEEP_SESSION,
+        ],
       );
 
       double activeCals = 0.0;
@@ -104,7 +117,10 @@ class HealthService {
             activeCals += val.numericValue.toDouble();
           }
         } else if (point.type == HealthDataType.SLEEP_SESSION) {
-          sleepMinutes += point.dateTo.difference(point.dateFrom).inMinutes.toDouble();
+          sleepMinutes += point.dateTo
+              .difference(point.dateFrom)
+              .inMinutes
+              .toDouble();
         }
       }
 
@@ -146,7 +162,9 @@ class HealthService {
             final duration = p.dateTo.difference(p.dateFrom).inMinutes;
             final cals = val.totalEnergyBurned ?? 0;
             activities.add({
-              'title': typeStr.contains('running') ? 'Outdoor Run' : 'Outdoor Walk',
+              'title': typeStr.contains('running')
+                  ? 'Outdoor Run'
+                  : 'Outdoor Walk',
               'durationMinutes': duration,
               'calories': cals,
               'date': p.dateFrom,
@@ -157,7 +175,11 @@ class HealthService {
       return activities;
     } catch (e, st) {
       AppLogger.warning('fetchTodayWorkoutActivities failed: $e');
-      CrashReportingService.recordCrash(e, st, reason: 'fetchTodayWorkoutActivities error');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'fetchTodayWorkoutActivities error',
+      );
       return [];
     }
   }
@@ -181,7 +203,11 @@ class HealthService {
       );
     } catch (e, st) {
       AppLogger.warning('writeWorkoutSession failed: $e');
-      CrashReportingService.recordCrash(e, st, reason: 'writeWorkoutSession error');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'writeWorkoutSession error',
+      );
       return false;
     }
   }
@@ -204,4 +230,3 @@ class HealthService {
     }
   }
 }
-

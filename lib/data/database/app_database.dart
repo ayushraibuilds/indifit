@@ -1,36 +1,39 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/services.dart' show rootBundle;
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
 import 'tables/food_tables.dart';
+import 'tables/settings_tables.dart';
 import 'tables/user_tables.dart';
 import 'tables/workout_tables.dart';
-import 'tables/settings_tables.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [
-  FoodItems,
-  FoodLogs,
-  Exercises,
-  WorkoutSessions,
-  WorkoutSets,
-  BodyMeasurements,
-  WorkoutRoutines,
-  RoutineDays,
-  RoutineExercises,
-  WorkoutDrafts,
-  UserProfiles,
-  MealTemplates,
-  MealTemplateItems,
-  UserSettings,
-])
+@DriftDatabase(
+  tables: [
+    FoodItems,
+    FoodLogs,
+    Exercises,
+    WorkoutSessions,
+    WorkoutSets,
+    BodyMeasurements,
+    WorkoutRoutines,
+    RoutineDays,
+    RoutineExercises,
+    WorkoutDrafts,
+    UserProfiles,
+    MealTemplates,
+    MealTemplateItems,
+    UserSettings,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.memory() : super(NativeDatabase.memory());
@@ -47,70 +50,69 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            await m.addColumn(foodLogs, foodLogs.mealGroupId);
-          }
-          if (from < 3) {
-            await m.addColumn(workoutSets, workoutSets.rpe);
-            await m.addColumn(workoutSets, workoutSets.isWarmUp);
-            await m.addColumn(workoutSets, workoutSets.setNotes);
-            await m.createTable(workoutDrafts);
-          }
-          if (from < 4) {
-            await m.addColumn(foodLogs, foodLogs.uuid);
-            await m.addColumn(workoutSessions, workoutSessions.uuid);
-            await m.addColumn(workoutSets, workoutSets.uuid);
-          }
-          if (from < 5) {
-            await m.createTable(userProfiles);
-          }
-          if (from < 6) {
-            await m.createTable(mealTemplates);
-            await m.createTable(mealTemplateItems);
-            await m.addColumn(workoutSets, workoutSets.setType);
-          }
-          if (from < 7) {
-            // Upsert improved offline food catalog without wiping custom foods
-            // or breaking existing food_logs foreign keys for matched names.
-            await upsertSeededFoodsFromAsset();
-          }
-          if (from < 8) {
-            await m.addColumn(foodItems, foodItems.brand);
-            await m.addColumn(foodItems, foodItems.regionPack);
-          }
-          if (from < 9) {
-            await m.addColumn(workoutSets, workoutSets.durationSeconds);
-            await m.addColumn(workoutSets, workoutSets.distanceKm);
-            await m.addColumn(workoutSets, workoutSets.inclinePercentage);
-          }
-          if (from < 10) {
-            await m.createTable(userSettings);
-          }
-          if (from < 11) {
-            await upsertSeededFoodsFromAsset();
-            await seedExercisesFromAsset();
-          }
-          if (from < 12) {
-            // Idempotent re-seed of exercises so upgrades that previously
-            // swallowed a UNIQUE-constraint failure now populate the library.
-            await upsertSeededExercisesFromAsset();
-          }
-          if (from < 13) {
-            // v12's re-seed still failed silently due to the muscle_groups
-            // type-cast bug fixed above. Re-run now that it's actually fixed
-            // so installs sitting on an empty exercise table get populated.
-            await upsertSeededExercisesFromAsset();
-          }
-        },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.addColumn(foodLogs, foodLogs.mealGroupId);
+      }
+      if (from < 3) {
+        await m.addColumn(workoutSets, workoutSets.rpe);
+        await m.addColumn(workoutSets, workoutSets.isWarmUp);
+        await m.addColumn(workoutSets, workoutSets.setNotes);
+        await m.createTable(workoutDrafts);
+      }
+      if (from < 4) {
+        await m.addColumn(foodLogs, foodLogs.uuid);
+        await m.addColumn(workoutSessions, workoutSessions.uuid);
+        await m.addColumn(workoutSets, workoutSets.uuid);
+      }
+      if (from < 5) {
+        await m.createTable(userProfiles);
+      }
+      if (from < 6) {
+        await m.createTable(mealTemplates);
+        await m.createTable(mealTemplateItems);
+        await m.addColumn(workoutSets, workoutSets.setType);
+      }
+      if (from < 7) {
+        // Upsert improved offline food catalog without wiping custom foods
+        // or breaking existing food_logs foreign keys for matched names.
+        await upsertSeededFoodsFromAsset();
+      }
+      if (from < 8) {
+        await m.addColumn(foodItems, foodItems.brand);
+        await m.addColumn(foodItems, foodItems.regionPack);
+      }
+      if (from < 9) {
+        await m.addColumn(workoutSets, workoutSets.durationSeconds);
+        await m.addColumn(workoutSets, workoutSets.distanceKm);
+        await m.addColumn(workoutSets, workoutSets.inclinePercentage);
+      }
+      if (from < 10) {
+        await m.createTable(userSettings);
+      }
+      if (from < 11) {
+        await upsertSeededFoodsFromAsset();
+        await seedExercisesFromAsset();
+      }
+      if (from < 12) {
+        // Idempotent re-seed of exercises so upgrades that previously
+        // swallowed a UNIQUE-constraint failure now populate the library.
+        await upsertSeededExercisesFromAsset();
+      }
+      if (from < 13) {
+        // v12's re-seed still failed silently due to the muscle_groups
+        // type-cast bug fixed above. Re-run now that it's actually fixed
+        // so installs sitting on an empty exercise table get populated.
+        await upsertSeededExercisesFromAsset();
+      }
+    },
 
-
-        onCreate: (m) async {
-          await m.createAll();
-          await seedFoodsFromAsset();
-          await seedExercisesFromAsset();
-        },
-      );
+    onCreate: (m) async {
+      await m.createAll();
+      await seedFoodsFromAsset();
+      await seedExercisesFromAsset();
+    },
+  );
 
   /// Full seed used on first install.
   Future<void> seedFoodsFromAsset() async {
@@ -120,7 +122,11 @@ class AppDatabase extends _$AppDatabase {
       await batch((b) => b.insertAll(foodItems, companions));
     } catch (e, st) {
       AppLogger.warning('seedFoodsFromAsset failed: $e');
-      CrashReportingService.recordCrash(e, st, reason: 'seedFoodsFromAsset failed');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'seedFoodsFromAsset failed',
+      );
     }
   }
 
@@ -155,21 +161,24 @@ class AppDatabase extends _$AppDatabase {
 
           final match = byName[name];
           if (match != null) {
-            await (update(foodItems)..where((t) => t.id.equals(match.id)))
-                .write(companionValues);
+            await (update(
+              foodItems,
+            )..where((t) => t.id.equals(match.id))).write(companionValues);
           } else {
-            toInsert.add(FoodItemsCompanion.insert(
-              name: name,
-              nameHindi: Value(raw['name_hindi'] as String?),
-              calories: raw['calories'] as int,
-              proteinG: (raw['protein_g'] as num).toDouble(),
-              carbsG: (raw['carbs_g'] as num).toDouble(),
-              fatG: (raw['fat_g'] as num).toDouble(),
-              fiberG: Value((raw['fiber_g'] as num?)?.toDouble() ?? 0.0),
-              servingSize: (raw['serving_size'] as num).toDouble(),
-              servingUnit: raw['serving_unit'] as String,
-              category: raw['category'] as String,
-            ));
+            toInsert.add(
+              FoodItemsCompanion.insert(
+                name: name,
+                nameHindi: Value(raw['name_hindi'] as String?),
+                calories: raw['calories'] as int,
+                proteinG: (raw['protein_g'] as num).toDouble(),
+                carbsG: (raw['carbs_g'] as num).toDouble(),
+                fatG: (raw['fat_g'] as num).toDouble(),
+                fiberG: Value((raw['fiber_g'] as num?)?.toDouble() ?? 0.0),
+                servingSize: (raw['serving_size'] as num).toDouble(),
+                servingUnit: raw['serving_unit'] as String,
+                category: raw['category'] as String,
+              ),
+            );
           }
         }
         if (toInsert.isNotEmpty) {
@@ -178,7 +187,11 @@ class AppDatabase extends _$AppDatabase {
       });
     } catch (e, st) {
       AppLogger.warning('upsertSeededFoodsFromAsset failed: $e');
-      CrashReportingService.recordCrash(e, st, reason: 'upsertSeededFoodsFromAsset failed');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'upsertSeededFoodsFromAsset failed',
+      );
     }
   }
 
@@ -191,8 +204,9 @@ class AppDatabase extends _$AppDatabase {
   /// insertAll failed silently on UNIQUE constraints.
   Future<void> upsertSeededExercisesFromAsset() async {
     try {
-      final exercisesJson =
-          await rootBundle.loadString('assets/data/exercises.json');
+      final exercisesJson = await rootBundle.loadString(
+        'assets/data/exercises.json',
+      );
       final List<dynamic> exercisesList = jsonDecode(exercisesJson);
       if (exercisesList.isEmpty) return;
 
@@ -211,25 +225,27 @@ class AppDatabase extends _$AppDatabase {
             equipment: Value(raw['equipment'] as String),
             difficulty: Value(raw['difficulty'] as String),
             formCues: Value((raw['form_cues'] as List).join('\n')),
-            commonMistakes:
-                Value((raw['common_mistakes'] as List).join('\n')),
+            commonMistakes: Value((raw['common_mistakes'] as List).join('\n')),
             youtubeId: Value(raw['youtube_id'] as String?),
           );
 
           final match = byName[name];
           if (match != null) {
-            await (update(exercises)..where((t) => t.id.equals(match.id)))
-                .write(companionValues);
+            await (update(
+              exercises,
+            )..where((t) => t.id.equals(match.id))).write(companionValues);
           } else {
-            toInsert.add(ExercisesCompanion.insert(
-              name: name,
-              muscleGroups: raw['muscle_groups'] as String,
-              equipment: raw['equipment'] as String,
-              difficulty: raw['difficulty'] as String,
-              formCues: (raw['form_cues'] as List).join('\n'),
-              commonMistakes: (raw['common_mistakes'] as List).join('\n'),
-              youtubeId: Value(raw['youtube_id'] as String?),
-            ));
+            toInsert.add(
+              ExercisesCompanion.insert(
+                name: name,
+                muscleGroups: raw['muscle_groups'] as String,
+                equipment: raw['equipment'] as String,
+                difficulty: raw['difficulty'] as String,
+                formCues: (raw['form_cues'] as List).join('\n'),
+                commonMistakes: (raw['common_mistakes'] as List).join('\n'),
+                youtubeId: Value(raw['youtube_id'] as String?),
+              ),
+            );
           }
         }
         if (toInsert.isNotEmpty) {
@@ -238,13 +254,18 @@ class AppDatabase extends _$AppDatabase {
       });
     } catch (e, st) {
       AppLogger.warning('upsertSeededExercisesFromAsset failed: $e');
-      CrashReportingService.recordCrash(e, st, reason: 'upsertSeededExercisesFromAsset failed');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'upsertSeededExercisesFromAsset failed',
+      );
     }
   }
 
   Future<List<dynamic>> _loadFoodJsonList() async {
-    final foodsJson =
-        await rootBundle.loadString('assets/data/indian_foods.json');
+    final foodsJson = await rootBundle.loadString(
+      'assets/data/indian_foods.json',
+    );
     final decoded = jsonDecode(foodsJson);
     if (decoded is List) return decoded;
     return const [];

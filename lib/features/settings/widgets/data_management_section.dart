@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/utils/encryption_helper.dart';
-import '../../../data/database/app_database.dart';
 import '../../onboarding/onboarding_screen.dart';
 import '../health_sync_hub_screen.dart';
 import '../regional_food_packs_screen.dart';
@@ -54,10 +53,15 @@ class DataManagementSection extends ConsumerWidget {
             onPressed: () async {
               final password = passwordController.text;
               Navigator.pop(dialogCtx);
-              final error = await ref.read(settingsControllerProvider.notifier).performExport(password);
+              final error = await ref
+                  .read(settingsControllerProvider.notifier)
+                  .performExport(password);
               if (error != null && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(error), backgroundColor: AppColors.danger),
+                  SnackBar(
+                    content: Text(error),
+                    backgroundColor: AppColors.danger,
+                  ),
                 );
               }
             },
@@ -149,17 +153,22 @@ class DataManagementSection extends ConsumerWidget {
               String formattedDate = exportedAtStr;
               try {
                 final date = DateTime.parse(exportedAtStr);
-                formattedDate = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+                formattedDate =
+                    '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
               } catch (e) {
                 AppLogger.warning('Backup export date parse warning: $e');
               }
 
               final foodItemsCount = (data['food_items'] as List?)?.length ?? 0;
               final foodLogsCount = (data['food_logs'] as List?)?.length ?? 0;
-              final workoutSessionsCount = (data['workout_sessions'] as List?)?.length ?? 0;
-              final workoutSetsCount = (data['workout_sets'] as List?)?.length ?? 0;
-              final measurementsCount = (data['body_measurements'] as List?)?.length ?? 0;
-              final routinesCount = (data['workout_routines'] as List?)?.length ?? 0;
+              final workoutSessionsCount =
+                  (data['workout_sessions'] as List?)?.length ?? 0;
+              final workoutSetsCount =
+                  (data['workout_sets'] as List?)?.length ?? 0;
+              final measurementsCount =
+                  (data['body_measurements'] as List?)?.length ?? 0;
+              final routinesCount =
+                  (data['workout_routines'] as List?)?.length ?? 0;
 
               if (context.mounted) {
                 final confirm = await showDialog<bool>(
@@ -173,17 +182,45 @@ class DataManagementSection extends ConsumerWidget {
                       children: [
                         const Text(
                           'WARNING: Restoring will completely overwrite your current local database with this backup.',
-                          style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold, height: 1.4),
+                          style: TextStyle(
+                            color: AppColors.danger,
+                            fontWeight: FontWeight.bold,
+                            height: 1.4,
+                          ),
                         ),
                         const SizedBox(height: 12),
-                        Text('Backup Date: $formattedDate', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Backup Date: $formattedDate',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 8),
-                        Text('• $foodItemsCount Food Items', style: const TextStyle(fontSize: 12)),
-                        Text('• $foodLogsCount Food Logs', style: const TextStyle(fontSize: 12)),
-                        Text('• $workoutSessionsCount Workout Sessions', style: const TextStyle(fontSize: 12)),
-                        Text('• $workoutSetsCount Workout Sets', style: const TextStyle(fontSize: 12)),
-                        Text('• $routinesCount Routines', style: const TextStyle(fontSize: 12)),
-                        Text('• $measurementsCount Body Measurements', style: const TextStyle(fontSize: 12)),
+                        Text(
+                          '• $foodItemsCount Food Items',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        Text(
+                          '• $foodLogsCount Food Logs',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        Text(
+                          '• $workoutSessionsCount Workout Sessions',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        Text(
+                          '• $workoutSetsCount Workout Sets',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        Text(
+                          '• $routinesCount Routines',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        Text(
+                          '• $measurementsCount Body Measurements',
+                          style: const TextStyle(fontSize: 12),
+                        ),
                       ],
                     ),
                     actions: [
@@ -192,7 +229,9 @@ class DataManagementSection extends ConsumerWidget {
                         child: const Text('Cancel'),
                       ),
                       ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.danger,
+                        ),
                         onPressed: () => Navigator.pop(ctx, true),
                         child: const Text('Overwrite & Restore'),
                       ),
@@ -202,10 +241,14 @@ class DataManagementSection extends ConsumerWidget {
 
                 if (confirm == true && context.mounted) {
                   Navigator.pop(dialogCtx);
-                  await ref.read(settingsControllerProvider.notifier).performRestore(data);
+                  await ref
+                      .read(settingsControllerProvider.notifier)
+                      .performRestore(data);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Database restored successfully!')),
+                      const SnackBar(
+                        content: Text('Database restored successfully!'),
+                      ),
                     );
                   }
                 }
@@ -245,9 +288,9 @@ class DataManagementSection extends ConsumerWidget {
     if (confirm == true && context.mounted) {
       await ref.read(settingsControllerProvider.notifier).deleteAllData();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All local data wiped.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('All local data wiped.')));
       }
     }
   }
@@ -305,7 +348,11 @@ class DataManagementSection extends ConsumerWidget {
                 color: Colors.teal.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.storage_rounded, color: Colors.teal, size: 20),
+              child: const Icon(
+                Icons.storage_rounded,
+                color: Colors.teal,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -319,7 +366,10 @@ class DataManagementSection extends ConsumerWidget {
                   SizedBox(height: 2),
                   Text(
                     'Manage local backups, exports, and offline settings',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -344,7 +394,8 @@ class DataManagementSection extends ConsumerWidget {
           icon: Icons.bug_report_rounded,
           iconColor: Colors.amber,
           title: 'Anonymous Crash Reporting',
-          subtitle: 'Send sanitized telemetry to help fix crashes. Zero food/body data is ever included.',
+          subtitle:
+              'Send sanitized telemetry to help fix crashes. Zero food/body data is ever included.',
           value: state.crashReportingEnabled,
           onChanged: (val) => controller.toggleCrashReporting(val),
         ),
@@ -355,7 +406,9 @@ class DataManagementSection extends ConsumerWidget {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const HealthSyncHubScreen()),
+              MaterialPageRoute(
+                builder: (context) => const HealthSyncHubScreen(),
+              ),
             );
           },
           icon: const Icon(Icons.favorite_rounded, color: Colors.redAccent),
@@ -378,7 +431,9 @@ class DataManagementSection extends ConsumerWidget {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const RegionalFoodPacksScreen()),
+              MaterialPageRoute(
+                builder: (context) => const RegionalFoodPacksScreen(),
+              ),
             );
           },
           icon: const Icon(Icons.restaurant_menu_rounded, color: Colors.teal),
@@ -409,7 +464,11 @@ class DataManagementSection extends ConsumerWidget {
             await controller.exportCsvData();
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Food & Workout data copied as CSV to clipboard!')),
+                const SnackBar(
+                  content: Text(
+                    'Food & Workout data copied as CSV to clipboard!',
+                  ),
+                ),
               );
             }
           },
@@ -442,7 +501,9 @@ class DataManagementSection extends ConsumerWidget {
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.orangeAccent.withValues(alpha: 0.2)),
+              side: BorderSide(
+                color: Colors.orangeAccent.withValues(alpha: 0.2),
+              ),
             ),
             elevation: 0,
           ),
@@ -452,7 +513,10 @@ class DataManagementSection extends ConsumerWidget {
         // Delete All Data Button
         ElevatedButton.icon(
           onPressed: () => _confirmDeleteAllData(context, ref),
-          icon: const Icon(Icons.delete_forever_rounded, color: AppColors.danger),
+          icon: const Icon(
+            Icons.delete_forever_rounded,
+            color: AppColors.danger,
+          ),
           label: const Text('Wipe All Local Data'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.danger.withValues(alpha: 0.12),

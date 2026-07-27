@@ -12,13 +12,10 @@ class EditFoodLogSheet extends StatefulWidget {
     required double carbsG,
     required double fatG,
     required double servingLogged,
-  }) onSave;
+  })
+  onSave;
 
-  const EditFoodLogSheet({
-    super.key,
-    required this.log,
-    required this.onSave,
-  });
+  const EditFoodLogSheet({super.key, required this.log, required this.onSave});
 
   @override
   State<EditFoodLogSheet> createState() => _EditFoodLogSheetState();
@@ -36,11 +33,21 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.log.name);
-    _caloriesController = TextEditingController(text: widget.log.calories.toString());
-    _proteinController = TextEditingController(text: widget.log.proteinG.toStringAsFixed(1));
-    _carbsController = TextEditingController(text: widget.log.carbsG.toStringAsFixed(1));
-    _fatController = TextEditingController(text: widget.log.fatG.toStringAsFixed(1));
-    _servingController = TextEditingController(text: widget.log.servingLogged.toStringAsFixed(1));
+    _caloriesController = TextEditingController(
+      text: widget.log.calories.toString(),
+    );
+    _proteinController = TextEditingController(
+      text: widget.log.proteinG.toStringAsFixed(1),
+    );
+    _carbsController = TextEditingController(
+      text: widget.log.carbsG.toStringAsFixed(1),
+    );
+    _fatController = TextEditingController(
+      text: widget.log.fatG.toStringAsFixed(1),
+    );
+    _servingController = TextEditingController(
+      text: widget.log.servingLogged.toStringAsFixed(1),
+    );
   }
 
   @override
@@ -60,7 +67,8 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
     final p = double.tryParse(_proteinController.text) ?? widget.log.proteinG;
     final c = double.tryParse(_carbsController.text) ?? widget.log.carbsG;
     final f = double.tryParse(_fatController.text) ?? widget.log.fatG;
-    final s = double.tryParse(_servingController.text) ?? widget.log.servingLogged;
+    final s =
+        double.tryParse(_servingController.text) ?? widget.log.servingLogged;
 
     if (name.isEmpty) return;
 
@@ -92,8 +100,14 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Edit Logged Meal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              const Text(
+                'Edit Logged Meal',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -108,15 +122,21 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
                 child: TextField(
                   controller: _caloriesController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Calories (kcal)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Calories (kcal)',
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: TextField(
                   controller: _servingController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: 'Servings (${widget.log.servingUnit})'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Servings (${widget.log.servingUnit})',
+                  ),
                 ),
               ),
             ],
@@ -127,7 +147,9 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
               Expanded(
                 child: TextField(
                   controller: _proteinController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(labelText: 'Protein (g)'),
                 ),
               ),
@@ -135,7 +157,9 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
               Expanded(
                 child: TextField(
                   controller: _carbsController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(labelText: 'Carbs (g)'),
                 ),
               ),
@@ -143,7 +167,9 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
               Expanded(
                 child: TextField(
                   controller: _fatController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(labelText: 'Fat (g)'),
                 ),
               ),
@@ -156,9 +182,14 @@ class _EditFoodLogSheetState extends State<EditFoodLogSheet> {
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.black,
               minimumSize: const Size.fromHeight(48),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Save Changes',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),

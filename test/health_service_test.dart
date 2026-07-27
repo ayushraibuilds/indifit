@@ -25,21 +25,27 @@ void main() {
       expect(summary.isConnected, true);
     });
 
-    test('HealthService writeWorkoutSession handles uninitialized health gracefully', () async {
-      final service = HealthService();
-      final success = await service.writeWorkoutSession(
-        title: 'Chest & Triceps',
-        durationMinutes: 45,
-        caloriesBurned: 320,
-        startTime: DateTime.now(),
-      );
-      expect(success, false);
-    });
+    test(
+      'HealthService writeWorkoutSession handles uninitialized health gracefully',
+      () async {
+        final service = HealthService();
+        final success = await service.writeWorkoutSession(
+          title: 'Chest & Triceps',
+          durationMinutes: 45,
+          caloriesBurned: 320,
+          startTime: DateTime.now(),
+        );
+        expect(success, false);
+      },
+    );
 
-    test('HealthService writeBodyWeight handles uninitialized health gracefully', () async {
-      final service = HealthService();
-      final success = await service.writeBodyWeight(75.5);
-      expect(success, false);
-    });
+    test(
+      'HealthService writeBodyWeight handles uninitialized health gracefully',
+      () async {
+        final service = HealthService();
+        final success = await service.writeBodyWeight(75.5);
+        expect(success, false);
+      },
+    );
   });
 }

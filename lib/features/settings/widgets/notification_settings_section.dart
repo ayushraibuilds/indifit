@@ -25,7 +25,11 @@ class NotificationSettingsSection extends ConsumerWidget {
                 color: AppColors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.notifications_active_rounded, color: AppColors.primary, size: 20),
+              child: const Icon(
+                Icons.notifications_active_rounded,
+                color: AppColors.primary,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -39,7 +43,10 @@ class NotificationSettingsSection extends ConsumerWidget {
                   SizedBox(height: 2),
                   Text(
                     'Gentle reminders to keep you on track. We keep it minimal — no spam.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -53,7 +60,10 @@ class NotificationSettingsSection extends ConsumerWidget {
           title: 'Workout Reminder',
           subtitle: 'Daily at 7:30 AM — Start your training',
           value: state.remindWorkout,
-          onChanged: (val) => controller.toggleReminder(NotificationService.prefRemindWorkout, val),
+          onChanged: (val) => controller.toggleReminder(
+            NotificationService.prefRemindWorkout,
+            val,
+          ),
         ),
         const SizedBox(height: 12),
         SettingsReminderToggle(
@@ -62,7 +72,10 @@ class NotificationSettingsSection extends ConsumerWidget {
           title: 'Meal Logging',
           subtitle: 'Post-lunch (1:30 PM) & post-dinner (8:30 PM)',
           value: state.remindMeals,
-          onChanged: (val) => controller.toggleReminder(NotificationService.prefRemindMeals, val),
+          onChanged: (val) => controller.toggleReminder(
+            NotificationService.prefRemindMeals,
+            val,
+          ),
         ),
         const SizedBox(height: 12),
         SettingsReminderToggle(
@@ -71,7 +84,10 @@ class NotificationSettingsSection extends ConsumerWidget {
           title: 'Water Intake',
           subtitle: 'Twice daily (11 AM & 4 PM) — gentle hydration nudge',
           value: state.remindWater,
-          onChanged: (val) => controller.toggleReminder(NotificationService.prefRemindWater, val),
+          onChanged: (val) => controller.toggleReminder(
+            NotificationService.prefRemindWater,
+            val,
+          ),
         ),
         const SizedBox(height: 12),
         SettingsReminderToggle(
@@ -80,7 +96,10 @@ class NotificationSettingsSection extends ConsumerWidget {
           title: 'Evening Log Nudge',
           subtitle: '9:15 PM — "Did you log today?" Keep your streak alive',
           value: state.remindEvening,
-          onChanged: (val) => controller.toggleReminder(NotificationService.prefRemindEvening, val),
+          onChanged: (val) => controller.toggleReminder(
+            NotificationService.prefRemindEvening,
+            val,
+          ),
         ),
         const SizedBox(height: 12),
         SettingsReminderToggle(
@@ -89,7 +108,10 @@ class NotificationSettingsSection extends ConsumerWidget {
           title: 'Weekly AI Report',
           subtitle: 'Sunday 10 AM — Personalized weekly fitness summary',
           value: state.remindWeekly,
-          onChanged: (val) => controller.toggleReminder(NotificationService.prefRemindWeekly, val),
+          onChanged: (val) => controller.toggleReminder(
+            NotificationService.prefRemindWeekly,
+            val,
+          ),
         ),
         const SizedBox(height: 16),
         Card(
@@ -103,18 +125,26 @@ class NotificationSettingsSection extends ConsumerWidget {
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.do_not_disturb_on_rounded, color: Colors.indigo, size: 20),
+                        Icon(
+                          Icons.do_not_disturb_on_rounded,
+                          color: Colors.indigo,
+                          size: 20,
+                        ),
                         SizedBox(width: 8),
                         Text(
                           'Quiet Hours',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
                     Switch(
                       value: state.quietHoursEnabled,
-                      activeColor: AppColors.primary,
-                      onChanged: (val) => controller.updateQuietHours(enabled: val),
+                      activeThumbColor: AppColors.primary,
+                      onChanged: (val) =>
+                          controller.updateQuietHours(enabled: val),
                     ),
                   ],
                 ),
@@ -122,34 +152,57 @@ class NotificationSettingsSection extends ConsumerWidget {
                   const SizedBox(height: 8),
                   const Text(
                     'No notification alerts will sound during these hours:',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<int>(
-                          value: state.quietHoursStart,
+                          initialValue: state.quietHoursStart,
                           decoration: const InputDecoration(
                             labelText: 'Start Time',
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                           ),
-                          items: List.generate(24, (h) => DropdownMenuItem(value: h, child: Text(_formatHour(h)))),
-                          onChanged: (val) => controller.updateQuietHours(start: val),
+                          items: List.generate(
+                            24,
+                            (h) => DropdownMenuItem(
+                              value: h,
+                              child: Text(_formatHour(h)),
+                            ),
+                          ),
+                          onChanged: (val) =>
+                              controller.updateQuietHours(start: val),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<int>(
-                          value: state.quietHoursEnd,
+                          initialValue: state.quietHoursEnd,
                           decoration: const InputDecoration(
                             labelText: 'End Time',
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                           ),
-                          items: List.generate(24, (h) => DropdownMenuItem(value: h, child: Text(_formatHour(h)))),
-                          onChanged: (val) => controller.updateQuietHours(end: val),
+                          items: List.generate(
+                            24,
+                            (h) => DropdownMenuItem(
+                              value: h,
+                              child: Text(_formatHour(h)),
+                            ),
+                          ),
+                          onChanged: (val) =>
+                              controller.updateQuietHours(end: val),
                         ),
                       ),
                     ],
@@ -170,4 +223,3 @@ class NotificationSettingsSection extends ConsumerWidget {
     return '${h - 12}:00 PM';
   }
 }
-

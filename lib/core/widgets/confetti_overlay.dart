@@ -37,7 +37,8 @@ class ConfettiOverlay extends StatefulWidget {
   State<ConfettiOverlay> createState() => _ConfettiOverlayState();
 }
 
-class _ConfettiOverlayState extends State<ConfettiOverlay> with SingleTickerProviderStateMixin {
+class _ConfettiOverlayState extends State<ConfettiOverlay>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final List<ConfettiParticle> _particles = [];
   final Random _random = Random();
@@ -58,13 +59,12 @@ class _ConfettiOverlayState extends State<ConfettiOverlay> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..addListener(() {
-        _updateParticles();
-        setState(() {});
-      });
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 3))
+          ..addListener(() {
+            _updateParticles();
+            setState(() {});
+          });
 
     if (widget.isPlaying) {
       _triggerBurst();
@@ -146,7 +146,11 @@ class _ConfettiPainter extends CustomPainter {
       canvas.translate(px, py);
       canvas.rotate(p.rotation);
       canvas.drawRect(
-        Rect.fromCenter(center: Offset.zero, width: p.size, height: p.size * 0.6),
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: p.size,
+          height: p.size * 0.6,
+        ),
         paint,
       );
       canvas.restore();

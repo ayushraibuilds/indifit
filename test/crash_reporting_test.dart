@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:indifit/core/services/crash_reporting_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +19,10 @@ void main() {
       expect(CrashReportingService.isEnabled, isFalse);
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getBool(CrashReportingService.prefCrashReportingEnabled), isFalse);
+      expect(
+        prefs.getBool(CrashReportingService.prefCrashReportingEnabled),
+        isFalse,
+      );
     });
 
     test('CrashReportingService captures exception without throwing error', () {

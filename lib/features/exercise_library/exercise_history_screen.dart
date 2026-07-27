@@ -1,7 +1,8 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -12,12 +13,16 @@ class ExerciseHistoryScreen extends ConsumerStatefulWidget {
   const ExerciseHistoryScreen({super.key, required this.exerciseName});
 
   @override
-  ConsumerState<ExerciseHistoryScreen> createState() => _ExerciseHistoryScreenState();
+  ConsumerState<ExerciseHistoryScreen> createState() =>
+      _ExerciseHistoryScreenState();
 }
 
-class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> with SingleTickerProviderStateMixin {
+class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final TextEditingController _targetWeightController = TextEditingController(text: '60');
+  final TextEditingController _targetWeightController = TextEditingController(
+    text: '60',
+  );
   double _barWeight = 20.0;
   Map<double, int> _calculatedPlates = {};
   double _unmatchedWeight = 0.0;
@@ -98,7 +103,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
         future: repo.getExerciseHistory(widget.exerciseName),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
           }
 
           final history = snapshot.data ?? [];
@@ -123,7 +130,11 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.fitness_center_rounded, size: 64, color: AppColors.textMuted.withOpacity(0.3)),
+              Icon(
+                Icons.fitness_center_rounded,
+                size: 64,
+                color: AppColors.textMuted.withOpacity(0.3),
+              ),
               const SizedBox(height: 16),
               const Text(
                 'No sets logged yet',
@@ -143,11 +154,13 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
 
     // Prepare 1RM points
     final List<FlSpot> spots = [];
-    final List<Map<String, dynamic>> sortedHistory = List.from(history.reversed);
-    
+    final List<Map<String, dynamic>> sortedHistory = List.from(
+      history.reversed,
+    );
+
     for (int i = 0; i < sortedHistory.length; i++) {
       final sets = sortedHistory[i]['sets'] as List<WorkoutSet>;
-      
+
       double best1Rm = 0.0;
       for (final s in sets) {
         final oneRm = s.weight * (1 + s.reps / 30.0);
@@ -165,12 +178,22 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
           if (spots.length >= 2) ...[
             const Text(
               'ESTIMATED 1RM TREND',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+                letterSpacing: 0.5,
+              ),
             ),
             const SizedBox(height: 16),
             Card(
               child: Padding(
-                padding: const EdgeInsets.only(top: 24, bottom: 12, right: 24, left: 12),
+                padding: const EdgeInsets.only(
+                  top: 24,
+                  bottom: 12,
+                  right: 24,
+                  left: 12,
+                ),
                 child: SizedBox(
                   height: 180,
                   child: LineChart(
@@ -178,11 +201,18 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
-                        getDrawingHorizontalLine: (value) => const FlLine(color: AppColors.border, strokeWidth: 1),
+                        getDrawingHorizontalLine: (value) => const FlLine(
+                          color: AppColors.border,
+                          strokeWidth: 1,
+                        ),
                       ),
                       titlesData: FlTitlesData(
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
@@ -190,10 +220,15 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
                             getTitlesWidget: (value, meta) {
                               final index = value.toInt();
                               if (index >= 0 && index < sortedHistory.length) {
-                                final date = sortedHistory[index]['session'].completedAt as DateTime;
+                                final date =
+                                    sortedHistory[index]['session'].completedAt
+                                        as DateTime;
                                 return Text(
                                   DateFormat('dd/MM').format(date),
-                                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 9),
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 9,
+                                  ),
                                 );
                               }
                               return const SizedBox.shrink();
@@ -213,7 +248,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
                             show: true,
                             color: AppColors.primary.withOpacity(0.1),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -225,7 +260,12 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
 
           const Text(
             'TRAINING SESSIONS',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.5,
+            ),
           ),
           const SizedBox(height: 12),
 
@@ -249,56 +289,83 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            DateFormat('MMMM dd, yyyy').format(session.completedAt),
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            DateFormat(
+                              'MMMM dd, yyyy',
+                            ).format(session.completedAt),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                           Text(
                             'Volume: ${session.totalVolume.round()}kg',
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
-                          )
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
                         session.name,
-                        style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const Divider(color: AppColors.border, height: 24),
                       Wrap(
                         spacing: 12,
                         runSpacing: 8,
-                        children: sets.map((s) => Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: AppColors.surface,
-                                shape: BoxShape.circle,
+                        children: sets
+                            .map(
+                              (s) => Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.surface,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      '${s.setNumber}',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '${s.weight}kg x ${s.reps}',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  if (s.isPr) ...[
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.emoji_events_rounded,
+                                      color: Colors.orangeAccent,
+                                      size: 14,
+                                    ),
+                                  ],
+                                ],
                               ),
-                              child: Text(
-                                '${s.setNumber}',
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${s.weight}kg x ${s.reps}',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                            ),
-                            if (s.isPr) ...[
-                              const SizedBox(width: 4),
-                              const Icon(Icons.emoji_events_rounded, color: Colors.orangeAccent, size: 14),
-                            ]
-                          ],
-                        )).toList(),
-                      )
+                            )
+                            .toList(),
+                      ),
                     ],
                   ),
                 ),
               );
             },
-          )
+          ),
         ],
       ),
     );
@@ -312,7 +379,12 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
         children: [
           const Text(
             'PLATE LOADING CALCULATOR',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.5,
+            ),
           ),
           const SizedBox(height: 16),
           Card(
@@ -326,7 +398,13 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Target Weight (kg)', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                            const Text(
+                              'Target Weight (kg)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                             const SizedBox(height: 6),
                             TextField(
                               controller: _targetWeightController,
@@ -344,18 +422,36 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Barbell Weight (kg)', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                            const Text(
+                              'Barbell Weight (kg)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                             const SizedBox(height: 6),
                             DropdownButtonFormField<double>(
-                              value: _barWeight,
+                              initialValue: _barWeight,
                               dropdownColor: AppColors.surface,
                               decoration: const InputDecoration(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                               ),
                               items: const [
-                                DropdownMenuItem(value: 20.0, child: Text('20 kg (Std)')),
-                                DropdownMenuItem(value: 15.0, child: Text('15 kg')),
-                                DropdownMenuItem(value: 10.0, child: Text('10 kg')),
+                                DropdownMenuItem(
+                                  value: 20.0,
+                                  child: Text('20 kg (Std)'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 15.0,
+                                  child: Text('15 kg'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 10.0,
+                                  child: Text('10 kg'),
+                                ),
                               ],
                               onChanged: (val) {
                                 if (val != null) {
@@ -365,10 +461,10 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
                                   _calculatePlatesNeeded();
                                 }
                               },
-                            )
+                            ),
                           ],
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ],
@@ -379,7 +475,12 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
 
           const Text(
             'LOADING PER SIDE',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 0.5),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.5,
+            ),
           ),
           const SizedBox(height: 12),
 
@@ -391,7 +492,10 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
                   child: Text(
                     'Target weight is equal to or less than the barbell weight.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
@@ -411,82 +515,124 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> w
                         // Loaded plates list
                         if (_calculatedPlates.isEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.background,
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Text('Empty Bar', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                            child: const Text(
+                              'Empty Bar',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
                           )
                         else
                           ..._calculatedPlates.entries.map((entry) {
                             final double plateWeight = entry.key;
                             final int count = entry.value;
                             return Row(
-                              children: List.generate(count, (_) => Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 2),
-                                width: plateWeight >= 20 ? 14 : 8,
-                                height: plateWeight >= 20 ? 56 : 38,
-                                decoration: BoxDecoration(
-                                  color: _getPlateColor(plateWeight),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                alignment: Alignment.center,
-                                child: RotatedBox(
-                                  quarterTurns: 1,
-                                  child: Text(
-                                    plateWeight % 1 == 0 ? '${plateWeight.toInt()}' : '$plateWeight',
-                                    style: TextStyle(
-                                      color: plateWeight >= 20 || plateWeight <= 2.5 ? Colors.white : Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 9,
+                              children: List.generate(
+                                count,
+                                (_) => Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                  ),
+                                  width: plateWeight >= 20 ? 14 : 8,
+                                  height: plateWeight >= 20 ? 56 : 38,
+                                  decoration: BoxDecoration(
+                                    color: _getPlateColor(plateWeight),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: RotatedBox(
+                                    quarterTurns: 1,
+                                    child: Text(
+                                      plateWeight % 1 == 0
+                                          ? '${plateWeight.toInt()}'
+                                          : '$plateWeight',
+                                      style: TextStyle(
+                                        color:
+                                            plateWeight >= 20 ||
+                                                plateWeight <= 2.5
+                                            ? Colors.white
+                                            : Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 9,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              )),
+                              ),
                             );
-                          }).toList(),
+                          }),
                         // Barbell sleeve end
                         Container(width: 12, height: 12, color: Colors.grey),
                       ],
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Detail breakdown list
-                    ..._calculatedPlates.entries.map((entry) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 14,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  color: _getPlateColor(entry.key),
-                                  shape: BoxShape.circle,
+                    ..._calculatedPlates.entries.map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 14,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: _getPlateColor(entry.key),
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${entry.key} kg Plate',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'x ${entry.value} per side',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
                               ),
-                              const SizedBox(width: 8),
-                              Text('${entry.key} kg Plate', style: const TextStyle(fontWeight: FontWeight.w500)),
-                            ],
-                          ),
-                          Text('x ${entry.value} per side', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
-                    )).toList(),
-                    
+                    ),
+
                     if (_unmatchedWeight > 0.0) ...[
                       const Divider(color: AppColors.border, height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Unmatched remainder', style: TextStyle(color: Colors.orangeAccent)),
-                          Text('${_unmatchedWeight.toStringAsFixed(2)} kg per side', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orangeAccent)),
+                          const Text(
+                            'Unmatched remainder',
+                            style: TextStyle(color: Colors.orangeAccent),
+                          ),
+                          Text(
+                            '${_unmatchedWeight.toStringAsFixed(2)} kg per side',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orangeAccent,
+                            ),
+                          ),
                         ],
                       ),
-                    ]
+                    ],
                   ],
                 ),
               ),

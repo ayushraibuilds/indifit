@@ -14,7 +14,9 @@ class WaterTrackerCard extends ConsumerWidget {
     final int waterGoal = waterState.waterGoal;
     final int glassSize = waterState.glassSize;
 
-    final double waterRatio = waterGoal > 0 ? (waterLogged / waterGoal).clamp(0.0, 1.0) : 0.0;
+    final double waterRatio = waterGoal > 0
+        ? (waterLogged / waterGoal).clamp(0.0, 1.0)
+        : 0.0;
     final int waterMl = waterLogged * glassSize;
 
     return Card(
@@ -30,7 +32,11 @@ class WaterTrackerCard extends ConsumerWidget {
                     color: AppColors.infoBlue.withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.water_drop_rounded, color: AppColors.infoBlue, size: 20),
+                  child: const Icon(
+                    Icons.water_drop_rounded,
+                    color: AppColors.infoBlue,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -49,7 +55,10 @@ class WaterTrackerCard extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(
                         '$waterLogged / $waterGoal Glasses ($waterMl ml)',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -57,7 +66,11 @@ class WaterTrackerCard extends ConsumerWidget {
 
                 // Decrement button
                 IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, color: AppColors.textSecondary, size: 20),
+                  icon: const Icon(
+                    Icons.remove_circle_outline,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
                   onPressed: waterLogged > 0
                       ? () {
                           HapticFeedback.lightImpact();
@@ -69,7 +82,11 @@ class WaterTrackerCard extends ConsumerWidget {
 
                 // Quick Increment (+1 glass)
                 IconButton(
-                  icon: const Icon(Icons.add_circle, color: AppColors.infoBlue, size: 24),
+                  icon: const Icon(
+                    Icons.add_circle,
+                    color: AppColors.infoBlue,
+                    size: 24,
+                  ),
                   onPressed: () {
                     HapticFeedback.lightImpact();
                     ref.read(waterProvider.notifier).logWater(1);
@@ -90,7 +107,9 @@ class WaterTrackerCard extends ConsumerWidget {
                     value: animRatio,
                     minHeight: 6,
                     backgroundColor: AppColors.surface,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.infoBlue),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.infoBlue,
+                    ),
                   ),
                 );
               },
@@ -131,7 +150,11 @@ class WaterTrackerCard extends ConsumerWidget {
             const SizedBox(width: 2),
             Text(
               label,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.infoBlue),
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: AppColors.infoBlue,
+              ),
             ),
           ],
         ),

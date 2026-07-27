@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/drift.dart' hide isNull;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 

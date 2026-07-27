@@ -9,10 +9,7 @@ import '../../../core/theme/colors.dart';
 class RestTimerBottomSheet extends StatefulWidget {
   final int recommendedRestSeconds;
 
-  const RestTimerBottomSheet({
-    super.key,
-    required this.recommendedRestSeconds,
-  });
+  const RestTimerBottomSheet({super.key, required this.recommendedRestSeconds});
 
   static Future<void> show(BuildContext context, int restSeconds) async {
     WakelockPlus.enable();
@@ -24,7 +21,8 @@ class RestTimerBottomSheet extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => RestTimerBottomSheet(recommendedRestSeconds: restSeconds),
+      builder: (context) =>
+          RestTimerBottomSheet(recommendedRestSeconds: restSeconds),
     );
     WakelockPlus.disable();
   }
@@ -82,7 +80,9 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
           builder: (dialogCtx) => AlertDialog(
             backgroundColor: AppColors.surface,
             title: const Text('End Rest Period?'),
-            content: const Text('Are you sure you want to skip the rest timer early?'),
+            content: const Text(
+              'Are you sure you want to skip the rest timer early?',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogCtx, false),
@@ -108,57 +108,68 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-          const Text(
-            'REST PERIOD',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
-          ),
-          const SizedBox(height: 16),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 120,
-                height: 120,
-                child: CircularProgressIndicator(
-                  value: progress,
-                  strokeWidth: 8,
-                  backgroundColor: AppColors.border,
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                ),
+            const Text(
+              'REST PERIOD',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+                letterSpacing: 1.0,
               ),
-              Text(
-                '${_secondsRemaining}s',
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => setState(() => _secondsRemaining += 30),
-                icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('+30s'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.cardBackground,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(120, 44),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: AppColors.border),
+            ),
+            const SizedBox(height: 16),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 8,
+                    backgroundColor: AppColors.border,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
                   ),
                 ),
-                child: const Text('Skip Rest'),
-              ),
-            ],
-          ),
-        ],
+                Text(
+                  '${_secondsRemaining}s',
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => setState(() => _secondsRemaining += 30),
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text('+30s'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.cardBackground,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(120, 44),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                  ),
+                  child: const Text('Skip Rest'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

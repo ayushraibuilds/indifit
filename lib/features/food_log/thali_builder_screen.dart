@@ -5,7 +5,6 @@ import 'package:uuid/uuid.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
-import 'food_search_screen.dart';
 
 class ThaliBuilderScreen extends ConsumerStatefulWidget {
   final String mealType;
@@ -22,10 +21,20 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   List<FoodItem> _searchResults = [];
   bool _searching = false;
 
-  int get totalCalories => _items.fold(0, (sum, item) => sum + (item.food.calories * item.multiplier).round());
-  double get totalProtein => _items.fold(0.0, (sum, item) => sum + (item.food.proteinG * item.multiplier));
-  double get totalCarbs => _items.fold(0.0, (sum, item) => sum + (item.food.carbsG * item.multiplier));
-  double get totalFat => _items.fold(0.0, (sum, item) => sum + (item.food.fatG * item.multiplier));
+  int get totalCalories => _items.fold(
+    0,
+    (sum, item) => sum + (item.food.calories * item.multiplier).round(),
+  );
+  double get totalProtein => _items.fold(
+    0.0,
+    (sum, item) => sum + (item.food.proteinG * item.multiplier),
+  );
+  double get totalCarbs => _items.fold(
+    0.0,
+    (sum, item) => sum + (item.food.carbsG * item.multiplier),
+  );
+  double get totalFat =>
+      _items.fold(0.0, (sum, item) => sum + (item.food.fatG * item.multiplier));
 
   @override
   void dispose() {
@@ -54,7 +63,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
 
   void _addItem(FoodItem food) {
     setState(() {
-      final existingIndex = _items.indexWhere((item) => item.food.id == food.id && food.id != -1);
+      final existingIndex = _items.indexWhere(
+        (item) => item.food.id == food.id && food.id != -1,
+      );
       if (existingIndex != -1) {
         _items[existingIndex].multiplier += 1.0;
       } else {
@@ -105,7 +116,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Logged ${widget.mealType.toUpperCase()} Thali (${totalCalories} kcal)'),
+          content: Text(
+            'Logged ${widget.mealType.toUpperCase()} Thali ($totalCalories kcal)',
+          ),
           backgroundColor: AppColors.success,
         ),
       );
@@ -151,19 +164,23 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
 
     final repo = ref.read(foodRepositoryProvider);
     // Convert ThaliItems into FoodLog lookalikes for saveMealTemplate parameter structure
-    final List<FoodLog> logs = _items.map((item) => FoodLog(
-      id: 0,
-      name: item.food.name,
-      calories: (item.food.calories * item.multiplier).round(),
-      proteinG: item.food.proteinG * item.multiplier,
-      carbsG: item.food.carbsG * item.multiplier,
-      fatG: item.food.fatG * item.multiplier,
-      servingLogged: item.food.servingSize * item.multiplier,
-      servingUnit: item.food.servingUnit,
-      mealType: widget.mealType,
-      loggedAt: DateTime.now(),
-      isSynced: false,
-    )).toList();
+    final List<FoodLog> logs = _items
+        .map(
+          (item) => FoodLog(
+            id: 0,
+            name: item.food.name,
+            calories: (item.food.calories * item.multiplier).round(),
+            proteinG: item.food.proteinG * item.multiplier,
+            carbsG: item.food.carbsG * item.multiplier,
+            fatG: item.food.fatG * item.multiplier,
+            servingLogged: item.food.servingSize * item.multiplier,
+            servingUnit: item.food.servingUnit,
+            mealType: widget.mealType,
+            loggedAt: DateTime.now(),
+            isSynced: false,
+          ),
+        )
+        .toList();
 
     await repo.saveMealTemplate(
       name: name,
@@ -192,11 +209,14 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         actions: [
           if (_items.isNotEmpty) ...[
             IconButton(
-              icon: const Icon(Icons.bookmark_add_outlined, color: AppColors.warning),
+              icon: const Icon(
+                Icons.bookmark_add_outlined,
+                color: AppColors.warning,
+              ),
               tooltip: 'Save as Template',
               onPressed: _saveAsTemplate,
             ),
-          ]
+          ],
         ],
       ),
       body: Column(
@@ -240,9 +260,17 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: Text('Log Complete Thali (${totalCalories} kcal)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: Text(
+                  'Log Complete Thali ($totalCalories kcal)',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
               ),
             ),
         ],
@@ -264,19 +292,45 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Running Totals', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textSecondary)),
-              Text('$totalCalories kcal', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.primary)),
+              const Text(
+                'Running Totals',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              Text(
+                '$totalCalories kcal',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: AppColors.primary,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildMacroItem('Protein', '${totalProtein.toStringAsFixed(1)}g', AppColors.success),
-              _buildMacroItem('Carbs', '${totalCarbs.toStringAsFixed(1)}g', AppColors.warning),
-              _buildMacroItem('Fat', '${totalFat.toStringAsFixed(1)}g', AppColors.danger),
+              _buildMacroItem(
+                'Protein',
+                '${totalProtein.toStringAsFixed(1)}g',
+                AppColors.success,
+              ),
+              _buildMacroItem(
+                'Carbs',
+                '${totalCarbs.toStringAsFixed(1)}g',
+                AppColors.warning,
+              ),
+              _buildMacroItem(
+                'Fat',
+                '${totalFat.toStringAsFixed(1)}g',
+                AppColors.danger,
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -285,9 +339,19 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   Widget _buildMacroItem(String label, String value, Color color) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
         const SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
       ],
     );
   }
@@ -299,9 +363,20 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.restaurant_rounded, size: 64, color: AppColors.textMuted),
+            Icon(
+              Icons.restaurant_rounded,
+              size: 64,
+              color: AppColors.textMuted,
+            ),
             SizedBox(height: 16),
-            Text('Your Thali is empty', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary)),
+            Text(
+              'Your Thali is empty',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: AppColors.textPrimary,
+              ),
+            ),
             SizedBox(height: 8),
             Text(
               'Search and add traditional items below to construct your plate.',
@@ -319,7 +394,10 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 8.0),
       child: ListTile(
-        title: Text(item.food.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          item.food.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         subtitle: Text(
           '$computedCals kcal • ${(item.food.servingSize * item.multiplier).toStringAsFixed(1)} ${item.food.servingUnit}',
           style: const TextStyle(fontSize: 12),
@@ -328,7 +406,11 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.remove_circle_outline, color: AppColors.textSecondary, size: 20),
+              icon: const Icon(
+                Icons.remove_circle_outline,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
               onPressed: () => _updateMultiplier(index, item.multiplier - 0.5),
             ),
             Text(
@@ -336,7 +418,11 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             IconButton(
-              icon: const Icon(Icons.add_circle_outline, color: AppColors.primary, size: 20),
+              icon: const Icon(
+                Icons.add_circle_outline,
+                color: AppColors.primary,
+                size: 20,
+              ),
               onPressed: () => _updateMultiplier(index, item.multiplier + 0.5),
             ),
           ],
@@ -376,7 +462,12 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             Container(
               constraints: const BoxConstraints(maxHeight: 200),
               child: _searching
-                  ? const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator()))
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
                   : ListView.builder(
                       shrinkWrap: true,
                       itemCount: _searchResults.length,
@@ -384,8 +475,13 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                         final food = _searchResults[index];
                         return ListTile(
                           title: Text(food.name),
-                          subtitle: Text('${food.calories} kcal per ${food.servingSize} ${food.servingUnit}'),
-                          trailing: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),
+                          subtitle: Text(
+                            '${food.calories} kcal per ${food.servingSize} ${food.servingUnit}',
+                          ),
+                          trailing: const Icon(
+                            Icons.add_circle_outline_rounded,
+                            color: AppColors.primary,
+                          ),
                           onTap: () => _addItem(food),
                         );
                       },

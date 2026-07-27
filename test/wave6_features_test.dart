@@ -1,8 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/services/crash_reporting_service.dart';
 import 'package:indifit/core/widgets/confetti_overlay.dart';
-import 'package:flutter/material.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -11,7 +10,6 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
-
 
   group('Wave 6 — CrashReportingService Security & Privacy Tests', () {
     test('CrashReportingService respects toggle state', () async {
@@ -35,7 +33,9 @@ void main() {
   });
 
   group('Wave 6 — ConfettiOverlay Widget Tests', () {
-    testWidgets('ConfettiOverlay renders child widget correctly', (tester) async {
+    testWidgets('ConfettiOverlay renders child widget correctly', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -50,7 +50,9 @@ void main() {
       expect(find.text('Dashboard Content'), findsOneWidget);
     });
 
-    testWidgets('ConfettiOverlay responds when isPlaying becomes true', (tester) async {
+    testWidgets('ConfettiOverlay responds when isPlaying becomes true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(

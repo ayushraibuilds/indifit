@@ -8,8 +8,8 @@ import '../../core/utils/app_logger.dart';
 import '../../core/utils/streak_calculator.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
-import '../../data/repositories/workout_repository.dart';
 import '../../data/repositories/health_service.dart';
+import '../../data/repositories/workout_repository.dart';
 
 class DashboardState {
   final DateTime selectedDate;
@@ -77,12 +77,12 @@ class DashboardState {
       weeklyActionText: weeklyActionText ?? this.weeklyActionText,
       weeklyActionProgress: weeklyActionProgress ?? this.weeklyActionProgress,
       weeklyActionTarget: weeklyActionTarget ?? this.weeklyActionTarget,
-      newlyUnlockedAchievementTitles: newlyUnlockedAchievementTitles ?? this.newlyUnlockedAchievementTitles,
+      newlyUnlockedAchievementTitles:
+          newlyUnlockedAchievementTitles ?? this.newlyUnlockedAchievementTitles,
       streakMilestone: streakMilestone,
     );
   }
 }
-
 
 class DashboardController extends StateNotifier<DashboardState> {
   final Ref _ref;
@@ -100,10 +100,7 @@ class DashboardController extends StateNotifier<DashboardState> {
     final weight = prefs.getDouble('current_weight') ?? 74.5;
     final calGoal = prefs.getInt('calorie_goal') ?? 2000;
 
-    state = state.copyWith(
-      currentWeight: weight,
-      calorieGoal: calGoal,
-    );
+    state = state.copyWith(currentWeight: weight, calorieGoal: calGoal);
 
     await loadTodayWorkout();
     await calculateWeeklyAdherence();
@@ -120,7 +117,10 @@ class DashboardController extends StateNotifier<DashboardState> {
       final prefs = await SharedPreferences.getInstance();
 
       final sessions = await workoutRepo.watchSessions().first;
-      final totalVolume = sessions.fold<double>(0.0, (sum, s) => sum + s.totalVolume);
+      final totalVolume = sessions.fold<double>(
+        0.0,
+        (sum, s) => sum + s.totalVolume,
+      );
       final mealCount = await foodRepo.getTotalLoggedMealsCount();
 
       final achievements = AchievementService.evaluateAchievements(
@@ -132,14 +132,20 @@ class DashboardController extends StateNotifier<DashboardState> {
 
       // Detect newly unlocked achievements
       final storedIds = prefs.getStringList('unlocked_achievement_ids') ?? [];
-      final currentlyUnlocked = achievements.where((a) => a.isUnlocked).toList();
-      final newUnlocks = currentlyUnlocked.where((a) => !storedIds.contains(a.id)).toList();
+      final currentlyUnlocked = achievements
+          .where((a) => a.isUnlocked)
+          .toList();
+      final newUnlocks = currentlyUnlocked
+          .where((a) => !storedIds.contains(a.id))
+          .toList();
 
       if (newUnlocks.isNotEmpty) {
         final updatedIds = currentlyUnlocked.map((a) => a.id).toList();
         await prefs.setStringList('unlocked_achievement_ids', updatedIds);
         state = state.copyWith(
-          newlyUnlockedAchievementTitles: newUnlocks.map((a) => a.title).toList(),
+          newlyUnlockedAchievementTitles: newUnlocks
+              .map((a) => a.title)
+              .toList(),
         );
       }
     } catch (e) {
@@ -147,12 +153,14 @@ class DashboardController extends StateNotifier<DashboardState> {
     }
   }
 
-
   Future<void> loadWeightHistory() async {
     final repo = _ref.read(workoutRepositoryProvider);
     final measurements = await repo.getBodyMeasurements();
     final recent = measurements.take(6).toList().reversed.toList();
-    final weights = recent.where((m) => m.weight != null).map((m) => m.weight!).toList();
+    final weights = recent
+        .where((m) => m.weight != null)
+        .map((m) => m.weight!)
+        .toList();
 
     state = state.copyWith(
       weightHistory: weights,
@@ -175,17 +183,21 @@ class DashboardController extends StateNotifier<DashboardState> {
 
     final Set<String> activeDays = {};
     for (final d in foodDates) {
-      activeDays.add('${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}');
+      activeDays.add(
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+      );
     }
     for (final d in workoutDates) {
-      activeDays.add('${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}');
+      activeDays.add(
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+      );
     }
 
-    final streak = StreakCalculator.calculateStreak(activeDays, streakFreezeCount: freezes);
-    state = state.copyWith(
-      streakCount: streak,
-      streakFreezesCount: freezes,
+    final streak = StreakCalculator.calculateStreak(
+      activeDays,
+      streakFreezeCount: freezes,
     );
+    state = state.copyWith(streakCount: streak, streakFreezesCount: freezes);
   }
 
   Future<String> purchaseStreakFreeze() async {
@@ -200,7 +212,8 @@ class DashboardController extends StateNotifier<DashboardState> {
     final cooldownMs = 3 * 24 * 60 * 60 * 1000; // 3 days
 
     if (lastClaimMs > 0 && (nowMs - lastClaimMs) < cooldownMs) {
-      final remainingHours = ((cooldownMs - (nowMs - lastClaimMs)) / (1000 * 60 * 60)).ceil();
+      final remainingHours =
+          ((cooldownMs - (nowMs - lastClaimMs)) / (1000 * 60 * 60)).ceil();
       final remainingDays = (remainingHours / 24).ceil();
       return 'Cooldown active. Next freeze available in $remainingDays day${remainingDays > 1 ? 's' : ''}.';
     }
@@ -225,7 +238,8 @@ class DashboardController extends StateNotifier<DashboardState> {
         );
         if (dayData.isNotEmpty) {
           final RoutineDay day = dayData['day'];
-          final List<RoutineExercise> exercises = dayData['exercises'] as List<RoutineExercise>;
+          final List<RoutineExercise> exercises =
+              dayData['exercises'] as List<RoutineExercise>;
           state = state.copyWith(
             todayWorkoutName: day.name,
             isRestDay: day.isRestDay,
@@ -235,7 +249,11 @@ class DashboardController extends StateNotifier<DashboardState> {
       }
     } catch (e, st) {
       AppLogger.warning('_loadTodayWorkout failed: $e');
-      CrashReportingService.recordCrash(e, st, reason: 'dashboard_controller _loadTodayWorkout error');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'dashboard_controller _loadTodayWorkout error',
+      );
     }
   }
 
@@ -266,12 +284,18 @@ class DashboardController extends StateNotifier<DashboardState> {
       }
 
       final sessions = await workoutRepo.watchSessions().first;
-      final weekSessions = sessions.where((s) => s.completedAt.isAfter(now.subtract(const Duration(days: 7)))).toList();
+      final weekSessions = sessions
+          .where(
+            (s) => s.completedAt.isAfter(now.subtract(const Duration(days: 7))),
+          )
+          .toList();
 
       int targetWorkoutDays = 3;
       final savedRoutines = await workoutRepo.getSavedRoutines();
       if (savedRoutines.isNotEmpty) {
-        final details = await workoutRepo.getRoutineDetails(savedRoutines.last.id);
+        final details = await workoutRepo.getRoutineDetails(
+          savedRoutines.last.id,
+        );
         final Map<int, bool> restDayMap = {};
         for (final d in details) {
           final day = d['day'] as RoutineDay;
@@ -291,12 +315,26 @@ class DashboardController extends StateNotifier<DashboardState> {
         }
       }
 
-      final double nutritionScore = activeLoggedDays == 0 ? 0.0 : (daysHit / activeLoggedDays.toDouble()) * 100.0;
-      final double workoutScore = ((weekSessions.length / targetWorkoutDays.toDouble()).clamp(0.0, 1.0)) * 100.0;
+      final double nutritionScore = activeLoggedDays == 0
+          ? 0.0
+          : (daysHit / activeLoggedDays.toDouble()) * 100.0;
+      final double workoutScore =
+          ((weekSessions.length / targetWorkoutDays.toDouble()).clamp(
+            0.0,
+            1.0,
+          )) *
+          100.0;
 
-      state = state.copyWith(adherenceScore: (nutritionScore * 0.7 + workoutScore * 0.3));
+      state = state.copyWith(
+        adherenceScore: (nutritionScore * 0.7 + workoutScore * 0.3),
+      );
     } catch (e, stackTrace) {
-      AppLogger.error('Failed to calculate weekly adherence', e, stackTrace, 'DashboardController');
+      AppLogger.error(
+        'Failed to calculate weekly adherence',
+        e,
+        stackTrace,
+        'DashboardController',
+      );
     }
   }
 
@@ -308,7 +346,11 @@ class DashboardController extends StateNotifier<DashboardState> {
       final target = prefs.getInt('weekly_action_target') ?? 5;
 
       if (type == null || text == null) {
-        state = state.copyWith(weeklyActionText: null, weeklyActionProgress: 0, weeklyActionTarget: 0);
+        state = state.copyWith(
+          weeklyActionText: null,
+          weeklyActionProgress: 0,
+          weeklyActionTarget: 0,
+        );
         return;
       }
 
@@ -330,7 +372,10 @@ class DashboardController extends StateNotifier<DashboardState> {
         for (int i = 0; i < 7; i++) {
           final day = now.subtract(Duration(days: i));
           final logs = await foodRepo.watchLogsForDay(day).first;
-          final dayProtein = logs.fold<double>(0.0, (sum, item) => sum + item.proteinG);
+          final dayProtein = logs.fold<double>(
+            0.0,
+            (sum, item) => sum + item.proteinG,
+          );
           if (dayProtein >= proteinGoal) {
             progress++;
           }
@@ -338,12 +383,17 @@ class DashboardController extends StateNotifier<DashboardState> {
       } else if (type == 'workouts_count') {
         final workoutRepo = _ref.read(workoutRepositoryProvider);
         final sessions = await workoutRepo.watchSessions().first;
-        final pastWeekSessions = sessions.where((s) => s.completedAt.isAfter(now.subtract(const Duration(days: 7)))).toList();
+        final pastWeekSessions = sessions
+            .where(
+              (s) =>
+                  s.completedAt.isAfter(now.subtract(const Duration(days: 7))),
+            )
+            .toList();
         progress = pastWeekSessions.length;
       } else if (type == 'water_intake') {
         final waterGoal = prefs.getInt('water_goal') ?? 8;
-        final waterGlasses = prefs.getInt('water_glasses') ?? 0;
-        if (waterGlasses >= waterGoal) {
+        final waterLogged = prefs.getInt('water_logged') ?? 0;
+        if (waterLogged >= waterGoal) {
           progress = 1;
         }
       }
@@ -354,10 +404,14 @@ class DashboardController extends StateNotifier<DashboardState> {
         weeklyActionTarget: target,
       );
     } catch (e, stackTrace) {
-      AppLogger.error('Failed to load weekly action progress', e, stackTrace, 'DashboardController');
+      AppLogger.error(
+        'Failed to load weekly action progress',
+        e,
+        stackTrace,
+        'DashboardController',
+      );
     }
   }
-
 
   Future<void> repeatLastMeal(String type, List<FoodLog> lastMeal) async {
     final repo = _ref.read(foodRepositoryProvider);
@@ -378,9 +432,15 @@ class DashboardController extends StateNotifier<DashboardState> {
   }
 
   Future<void> updateWeight(double w) async {
+    // 1. Write to database FIRST. If this fails (e.g. rate limit error or DB exception),
+    // stop execution immediately without updating SharedPreferences or UserProfileState.
+    await _ref.read(workoutRepositoryProvider).logBodyMeasurement(weight: w);
+
+    // 2. Only after database write succeeds, update SharedPreferences and userProfileProvider.
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('current_weight', w);
-    await _ref.read(workoutRepositoryProvider).logBodyMeasurement(weight: w);
+    await _ref.read(userProfileProvider.notifier).updateWeight(w);
+
     try {
       await _ref.read(healthServiceProvider).writeBodyWeight(w);
     } catch (e) {
@@ -388,7 +448,10 @@ class DashboardController extends StateNotifier<DashboardState> {
     }
     await loadWeightHistory();
   }
-  Future<List<RoutineExercise>> getRepeatWorkoutExercises(WorkoutSession lastSession) async {
+
+  Future<List<RoutineExercise>> getRepeatWorkoutExercises(
+    WorkoutSession lastSession,
+  ) async {
     final repo = _ref.read(workoutRepositoryProvider);
     final sets = await repo.getSetsForSession(lastSession.id);
 
@@ -400,20 +463,23 @@ class DashboardController extends StateNotifier<DashboardState> {
     final List<RoutineExercise> exercises = [];
     int index = 0;
     exerciseSets.forEach((name, count) {
-      exercises.add(RoutineExercise(
-        id: index++,
-        dayId: -1,
-        exerciseName: name,
-        sets: count,
-        repsRange: '10',
-        orderIndex: index,
-      ));
+      exercises.add(
+        RoutineExercise(
+          id: index++,
+          dayId: -1,
+          exerciseName: name,
+          sets: count,
+          repsRange: '10',
+          orderIndex: index,
+        ),
+      );
     });
 
     return exercises;
   }
 }
 
-final dashboardControllerProvider = StateNotifierProvider<DashboardController, DashboardState>((ref) {
-  return DashboardController(ref);
-});
+final dashboardControllerProvider =
+    StateNotifierProvider<DashboardController, DashboardState>((ref) {
+      return DashboardController(ref);
+    });

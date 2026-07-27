@@ -1,9 +1,8 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:indifit/features/settings/settings_controller.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/features/dashboard/dashboard_controller.dart';
+import 'package:indifit/features/settings/settings_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,16 +39,19 @@ void main() {
       expect(container.read(settingsControllerProvider).offlineOnly, true);
     });
 
-    test('DashboardController loads state and updates date selection', () async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    test(
+      'DashboardController loads state and updates date selection',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final controller = container.read(dashboardControllerProvider.notifier);
-      final newDate = DateTime(2026, 7, 21);
-      controller.setSelectedDate(newDate);
+        final controller = container.read(dashboardControllerProvider.notifier);
+        final newDate = DateTime(2026, 7, 21);
+        controller.setSelectedDate(newDate);
 
-      final state = container.read(dashboardControllerProvider);
-      expect(state.selectedDate, newDate);
-    });
+        final state = container.read(dashboardControllerProvider);
+        expect(state.selectedDate, newDate);
+      },
+    );
   });
 }

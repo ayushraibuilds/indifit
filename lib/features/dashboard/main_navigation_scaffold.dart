@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../../core/theme/colors.dart';
 import '../exercise_library/exercise_library_screen.dart';
-import '../workout_player/routine_display_screen.dart';
 import '../progress/progress_screen.dart';
+import '../workout_player/routine_display_screen.dart';
 import 'dashboard_screen.dart';
 
 class MainNavigationScaffold extends StatefulWidget {
@@ -25,10 +26,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
@@ -47,17 +45,26 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
           ),
           NavigationDestination(
             icon: Icon(Icons.fitness_center_outlined),
-            selectedIcon: Icon(Icons.fitness_center_rounded, color: AppColors.primary),
+            selectedIcon: Icon(
+              Icons.fitness_center_rounded,
+              color: AppColors.primary,
+            ),
             label: 'Workouts',
           ),
           NavigationDestination(
             icon: Icon(Icons.library_books_outlined),
-            selectedIcon: Icon(Icons.library_books_rounded, color: AppColors.primary),
+            selectedIcon: Icon(
+              Icons.library_books_rounded,
+              color: AppColors.primary,
+            ),
             label: 'Exercises',
           ),
           NavigationDestination(
             icon: Icon(Icons.auto_graph_outlined),
-            selectedIcon: Icon(Icons.auto_graph_rounded, color: AppColors.primary),
+            selectedIcon: Icon(
+              Icons.auto_graph_rounded,
+              color: AppColors.primary,
+            ),
             label: 'Progress',
           ),
         ],

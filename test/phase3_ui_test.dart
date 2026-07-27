@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/theme_provider.dart';
 import 'package:indifit/core/theme/app_theme.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -36,16 +36,19 @@ void main() {
       expect(notifier.state, ThemeMode.dark);
     });
 
-    test('Map diet goal to training goal returns expected routine wizard goal', () {
-      String mapDietGoalToTrainingGoal(String dietGoal) => switch (dietGoal) {
-        'lose' => 'weight_loss',
-        'gain' => 'hypertrophy',
-        _ => 'hypertrophy',
-      };
+    test(
+      'Map diet goal to training goal returns expected routine wizard goal',
+      () {
+        String mapDietGoalToTrainingGoal(String dietGoal) => switch (dietGoal) {
+          'lose' => 'weight_loss',
+          'gain' => 'hypertrophy',
+          _ => 'hypertrophy',
+        };
 
-      expect(mapDietGoalToTrainingGoal('lose'), 'weight_loss');
-      expect(mapDietGoalToTrainingGoal('gain'), 'hypertrophy');
-      expect(mapDietGoalToTrainingGoal('maintain'), 'hypertrophy');
-    });
+        expect(mapDietGoalToTrainingGoal('lose'), 'weight_loss');
+        expect(mapDietGoalToTrainingGoal('gain'), 'hypertrophy');
+        expect(mapDietGoalToTrainingGoal('maintain'), 'hypertrophy');
+      },
+    );
   });
 }

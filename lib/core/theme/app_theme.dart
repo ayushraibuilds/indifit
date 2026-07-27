@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'colors.dart';
+
 import '../utils/app_logger.dart';
+import 'colors.dart';
 
 class AppTheme {
   static ThemeData get darkTheme {
@@ -9,17 +10,17 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
-      
+
       // Color Scheme
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         surface: AppColors.surface,
         error: AppColors.danger,
       ),
-      
+
       // Text Theme
       textTheme: _getTextTheme(),
-      
+
       // Card Theme
       cardTheme: CardThemeData(
         color: AppColors.cardBackground,
@@ -30,12 +31,15 @@ class AppTheme {
         margin: EdgeInsets.zero,
         elevation: 0,
       ),
-      
+
       // Input Decoration
       inputDecorationTheme: InputDecorationTheme(
         fillColor: const Color(0x0F060A12),
         filled: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16.0,
+          vertical: 14.0,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.0),
           borderSide: const BorderSide(color: AppColors.border),
@@ -76,7 +80,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         fillColor: const Color(0xFFF1F5F9),
         filled: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16.0,
+          vertical: 14.0,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.0),
           borderSide: const BorderSide(color: Color(0xFFCBD5E1)),

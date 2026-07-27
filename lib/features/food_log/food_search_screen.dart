@@ -12,12 +12,15 @@ import 'barcode_scanner_screen.dart';
 import 'custom_food_editor_screen.dart';
 import 'meal_templates_screen.dart';
 
-
 class FoodSearchScreen extends ConsumerStatefulWidget {
   final String mealType; // "breakfast", "lunch", "dinner", "snack"
   final DateTime? selectedDate;
 
-  const FoodSearchScreen({super.key, required this.mealType, this.selectedDate});
+  const FoodSearchScreen({
+    super.key,
+    required this.mealType,
+    this.selectedDate,
+  });
 
   @override
   ConsumerState<FoodSearchScreen> createState() => _FoodSearchScreenState();
@@ -29,7 +32,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   List<FoodApiResult> _onlineResults = [];
   List<FoodItem> _recentResults = [];
   bool _searching = false;
-  bool _loadingRecent = true;
   Timer? _debounceTimer;
   bool _isOnlineSearchOffline = false;
 
@@ -47,15 +49,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       if (mounted) {
         setState(() {
           _recentResults = recent;
-          _loadingRecent = false;
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _loadingRecent = false;
-        });
-      }
+      // Ignored
     }
   }
 
@@ -101,7 +98,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         online = await apiService.searchOnline(text);
       } catch (e) {
         isOnlineSearchOffline = true;
-        debugPrint("Online search failed (device offline): $e");
+        debugPrint('Online search failed (device offline): $e');
       }
 
       if (mounted) {
@@ -122,7 +119,16 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     }
   }
 
-  void _showLogDialog(String name, int calories, double protein, double carbs, double fat, double baseServing, String unit, int? foodItemId) {
+  void _showLogDialog(
+    String name,
+    int calories,
+    double protein,
+    double carbs,
+    double fat,
+    double baseServing,
+    String unit,
+    int? foodItemId,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -151,56 +157,86 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  Text(name, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Text(
                     'Log to ${widget.mealType.toUpperCase()}',
-                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13),
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Serving adjustment row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Serving Amount', style: TextStyle(fontWeight: FontWeight.w500)),
+                      const Text(
+                        'Serving Amount',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.remove_circle_outline, color: AppColors.textSecondary),
-                            onPressed: multiplier > 0.25 
+                            icon: const Icon(
+                              Icons.remove_circle_outline,
+                              color: AppColors.textSecondary,
+                            ),
+                            onPressed: multiplier > 0.25
                                 ? () => setModalState(() => multiplier -= 0.25)
                                 : null,
                           ),
                           Text(
                             '${currentServing.toStringAsFixed(1)} $unit',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
-                            onPressed: () => setModalState(() => multiplier += 0.25),
+                            icon: const Icon(
+                              Icons.add_circle_outline,
+                              color: AppColors.primary,
+                            ),
+                            onPressed: () =>
+                                setModalState(() => multiplier += 0.25),
                           ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                   const Divider(color: AppColors.border, height: 24),
-                  
+
                   // Macros Preview Grid
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildMacroPreview('Calories', '${calcCalories.round()} kcal', AppColors.primary),
-                      _buildMacroPreview('Protein', '${calcProtein.toStringAsFixed(1)}g', AppColors.success),
-                      _buildMacroPreview('Carbs', '${calcCarbs.toStringAsFixed(1)}g', AppColors.warning),
-                      _buildMacroPreview('Fat', '${calcFat.toStringAsFixed(1)}g', AppColors.danger),
+                      _buildMacroPreview(
+                        'Calories',
+                        '${calcCalories.round()} kcal',
+                        AppColors.primary,
+                      ),
+                      _buildMacroPreview(
+                        'Protein',
+                        '${calcProtein.toStringAsFixed(1)}g',
+                        AppColors.success,
+                      ),
+                      _buildMacroPreview(
+                        'Carbs',
+                        '${calcCarbs.toStringAsFixed(1)}g',
+                        AppColors.warning,
+                      ),
+                      _buildMacroPreview(
+                        'Fat',
+                        '${calcFat.toStringAsFixed(1)}g',
+                        AppColors.danger,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Action buttons
                   Row(
                     children: [
@@ -209,9 +245,14 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: AppColors.border),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -240,13 +281,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           child: const Text('Add Meal'),
                         ),
-                      )
+                      ),
                     ],
-                  )
+                  ),
                 ],
               ),
             );
@@ -259,9 +302,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Widget _buildMacroPreview(String label, String value, Color color) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
         const SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
       ],
     );
   }
@@ -277,35 +330,49 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Add to ${widget.mealType.toUpperCase()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('Logging for $dateStr', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+            Text(
+              'Add to ${widget.mealType.toUpperCase()}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              'Logging for $dateStr',
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
           ],
         ),
         backgroundColor: AppColors.background,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark_border_rounded, color: AppColors.primary),
+            icon: const Icon(
+              Icons.bookmark_border_rounded,
+              color: AppColors.primary,
+            ),
             tooltip: 'My Meal Templates',
             onPressed: () async {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => MealTemplatesScreen(initialMealType: widget.mealType),
+                  builder: (context) =>
+                      MealTemplatesScreen(initialMealType: widget.mealType),
                 ),
               );
               if (result == true && mounted) Navigator.pop(context);
             },
           ),
           IconButton(
-            icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary),
+            icon: const Icon(
+              Icons.qr_code_scanner_rounded,
+              color: AppColors.primary,
+            ),
             tooltip: 'Scan Barcode',
             onPressed: () {
-
               _showBarcodePermissionRationale(context, () async {
                 final result = await Navigator.push<FoodApiResult?>(
                   context,
-                  MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const BarcodeScannerScreen(),
+                  ),
                 );
 
                 if (result != null && mounted) {
@@ -317,7 +384,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     result.fat,
                     result.servingSize,
                     result.servingUnit,
-                    null
+                    null,
                   );
                 }
               });
@@ -329,13 +396,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             onPressed: () async {
               final result = await Navigator.push<bool?>(
                 context,
-                MaterialPageRoute(builder: (context) => const CustomFoodEditorScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const CustomFoodEditorScreen(),
+                ),
               );
               if (result == true) {
                 _performSearch(_searchController.text);
               }
             },
-          )
+          ),
         ],
       ),
       body: Padding(
@@ -347,86 +416,126 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search whole wheat chapati, dal, idli...',
-                prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textMuted),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: AppColors.textMuted,
+                ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: AppColors.textSecondary),
+                        icon: const Icon(
+                          Icons.clear,
+                          color: AppColors.textSecondary,
+                        ),
                         onPressed: () => _searchController.clear(),
                       )
                     : null,
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Search loading indicator or results list
             Expanded(
               child: _searching
                   ? const SkeletonList(count: 6)
                   : _searchController.text.isEmpty
-                      ? (_recentResults.isNotEmpty
-                          ? ListView(
-                              children: [
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 8.0),
-                                  child: Text(
-                                    'RECENTLY LOGGED FOODS',
-                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary, letterSpacing: 1.0),
+                  ? (_recentResults.isNotEmpty
+                        ? ListView(
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8.0),
+                                child: Text(
+                                  'RECENTLY LOGGED FOODS',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                    letterSpacing: 1.0,
                                   ),
                                 ),
-                                ..._recentResults.map((food) => _buildLocalItemRow(food)),
-                              ],
-                            )
-                          : _buildEmptyState())
-                      : ListView(
-                          children: [
-                            if (_isOnlineSearchOffline)
-                              Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.warning.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                              ),
+                              ..._recentResults.map(
+                                (food) => _buildLocalItemRow(food),
+                              ),
+                            ],
+                          )
+                        : _buildEmptyState())
+                  : ListView(
+                      children: [
+                        if (_isOnlineSearchOffline)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.warning.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.warning.withOpacity(0.3),
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.cloud_off_rounded,
+                                  color: AppColors.warning,
+                                  size: 16,
                                 ),
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.cloud_off_rounded, color: AppColors.warning, size: 16),
-                                    SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Offline mode. Showing local results only.',
-                                        style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.w600),
-                                      ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Offline mode. Showing local results only.',
+                                    style: TextStyle(
+                                      color: AppColors.warning,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                  ],
+                                  ),
                                 ),
+                              ],
+                            ),
+                          ),
+                        if (_localResults.isNotEmpty) ...[
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              'LOCAL INDIAN DATABASE',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                                letterSpacing: 1.0,
                               ),
-                            if (_localResults.isNotEmpty) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8.0),
-                                child: Text(
-                                  'LOCAL INDIAN DATABASE',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary, letterSpacing: 1.0),
-                                ),
+                            ),
+                          ),
+                          ..._localResults.map(
+                            (food) => _buildLocalItemRow(food),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        if (_onlineResults.isNotEmpty) ...[
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              'GLOBAL SEARCH RESULTS',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textSecondary,
+                                letterSpacing: 1.0,
                               ),
-                              ..._localResults.map((food) => _buildLocalItemRow(food)),
-                              const SizedBox(height: 16),
-                            ],
-                            if (_onlineResults.isNotEmpty) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8.0),
-                                child: Text(
-                                  'GLOBAL SEARCH RESULTS',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
-                                ),
-                              ),
-                              ..._onlineResults.map((food) => _buildOnlineItemRow(food)),
-                            ],
-                            if (_localResults.isEmpty && _onlineResults.isEmpty)
-                              _buildNoResultsState(),
-                          ],
-                        ),
-            )
+                            ),
+                          ),
+                          ..._onlineResults.map(
+                            (food) => _buildOnlineItemRow(food),
+                          ),
+                        ],
+                        if (_localResults.isEmpty && _onlineResults.isEmpty)
+                          _buildNoResultsState(),
+                      ],
+                    ),
+            ),
           ],
         ),
       ),
@@ -439,7 +548,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       child: ListTile(
         title: Row(
           children: [
-            Expanded(child: Text(food.name, style: const TextStyle(fontWeight: FontWeight.bold))),
+            Expanded(
+              child: Text(
+                food.name,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
             if (food.isCustom)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -450,7 +564,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 ),
                 child: const Text(
                   'Custom',
-                  style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
           ],
@@ -478,7 +596,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 8.0),
       child: ListTile(
-        title: Text(food.name, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        title: Text(
+          food.name,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
         subtitle: Text(
           '${food.calories} kcal • P: ${food.protein}g | C: ${food.carbs}g | F: ${food.fat}g',
           style: const TextStyle(fontSize: 12),
@@ -503,12 +627,16 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.restaurant_menu_rounded, size: 48, color: AppColors.textMuted),
+          Icon(
+            Icons.restaurant_menu_rounded,
+            size: 48,
+            color: AppColors.textMuted,
+          ),
           SizedBox(height: 12),
           Text(
             'Type to search meals...',
             style: TextStyle(color: AppColors.textSecondary),
-          )
+          ),
         ],
       ),
     );
@@ -520,7 +648,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       child: Center(
         child: Column(
           children: [
-            const Icon(Icons.search_off_rounded, size: 40, color: AppColors.textMuted),
+            const Icon(
+              Icons.search_off_rounded,
+              size: 40,
+              color: AppColors.textMuted,
+            ),
             const SizedBox(height: 12),
             const Text(
               'No items found. Try typing another term.',
@@ -531,7 +663,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               onPressed: () async {
                 final result = await Navigator.push<bool?>(
                   context,
-                  MaterialPageRoute(builder: (context) => const CustomFoodEditorScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const CustomFoodEditorScreen(),
+                  ),
                 );
                 if (result == true) {
                   _performSearch(_searchController.text);
@@ -544,14 +678,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 foregroundColor: AppColors.primary,
                 elevation: 0,
               ),
-            )
+            ),
           ],
         ),
       ),
     );
   }
 
-  void _showBarcodePermissionRationale(BuildContext context, VoidCallback onConfirm) {
+  void _showBarcodePermissionRationale(
+    BuildContext context,
+    VoidCallback onConfirm,
+  ) {
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -568,7 +705,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textMuted),
+              ),
             ),
             ElevatedButton(
               onPressed: () {

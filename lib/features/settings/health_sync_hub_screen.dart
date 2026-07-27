@@ -9,7 +9,8 @@ class HealthSyncHubScreen extends ConsumerStatefulWidget {
   const HealthSyncHubScreen({super.key});
 
   @override
-  ConsumerState<HealthSyncHubScreen> createState() => _HealthSyncHubScreenState();
+  ConsumerState<HealthSyncHubScreen> createState() =>
+      _HealthSyncHubScreenState();
 }
 
 class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
@@ -38,7 +39,8 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
     if (lastSyncIso != null) {
       try {
         final dt = DateTime.parse(lastSyncIso);
-        formattedSync = 'Synced ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+        formattedSync =
+            'Synced ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
       } catch (e) {
         AppLogger.warning('Failed to parse lastSyncIso: $e');
       }
@@ -73,7 +75,9 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Health permissions were denied or unavailable on this device.'),
+            content: Text(
+              'Health permissions were denied or unavailable on this device.',
+            ),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -113,7 +117,11 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
             const SizedBox(height: 12),
             const Text(
               'Connect Apple Health or Google Health Connect to import your steps, active calories, and sleep metrics directly into IndiFit.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -131,24 +139,34 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                           children: [
                             const Text(
                               'Connection Status',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Row(
                               children: [
                                 Text(
-                                  _data.isConnected ? 'Connected' : 'Not Connected',
+                                  _data.isConnected
+                                      ? 'Connected'
+                                      : 'Not Connected',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: _data.isConnected ? AppColors.success : AppColors.textSecondary,
+                                    color: _data.isConnected
+                                        ? AppColors.success
+                                        : AppColors.textSecondary,
                                   ),
                                 ),
                                 if (_lastSyncTimeStr != null) ...[
                                   const SizedBox(width: 8),
                                   Text(
                                     '• ${_lastSyncTimeStr!}',
-                                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.textMuted,
+                                    ),
                                   ),
                                 ],
                               ],
@@ -156,8 +174,12 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                           ],
                         ),
                         Icon(
-                          _data.isConnected ? Icons.sync_rounded : Icons.sync_disabled_rounded,
-                          color: _data.isConnected ? AppColors.success : AppColors.textMuted,
+                          _data.isConnected
+                              ? Icons.sync_rounded
+                              : Icons.sync_disabled_rounded,
+                          color: _data.isConnected
+                              ? AppColors.success
+                              : AppColors.textMuted,
                           size: 32,
                         ),
                       ],
@@ -168,7 +190,9 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                     if (_loading)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 16.0),
-                        child: CircularProgressIndicator(color: AppColors.primary),
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
                       )
                     else
                       Row(
@@ -178,19 +202,25 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                             Icons.directions_run_rounded,
                             '${_data.steps}',
                             'Steps',
-                            _data.isConnected ? AppColors.primary : AppColors.textMuted,
+                            _data.isConnected
+                                ? AppColors.primary
+                                : AppColors.textMuted,
                           ),
                           _buildStatWidget(
                             Icons.local_fire_department_rounded,
                             '${_data.activeCalories.toInt()} kcal',
                             'Active Cals',
-                            _data.isConnected ? Colors.orangeAccent : AppColors.textMuted,
+                            _data.isConnected
+                                ? Colors.orangeAccent
+                                : AppColors.textMuted,
                           ),
                           _buildStatWidget(
                             Icons.bedtime_rounded,
                             '${_data.sleepHours.toStringAsFixed(1)}h',
                             'Sleep',
-                            _data.isConnected ? Colors.purpleAccent : AppColors.textMuted,
+                            _data.isConnected
+                                ? Colors.purpleAccent
+                                : AppColors.textMuted,
                           ),
                         ],
                       ),
@@ -203,11 +233,23 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
             // Auto Sync Toggle
             Card(
               child: SwitchListTile(
-                secondary: const Icon(Icons.sync_lock_rounded, color: AppColors.primary),
-                title: const Text('Auto-sync on app open', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                subtitle: const Text('Automatically fetch step and active cals data whenever IndiFit is launched', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                secondary: const Icon(
+                  Icons.sync_lock_rounded,
+                  color: AppColors.primary,
+                ),
+                title: const Text(
+                  'Auto-sync on app open',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                subtitle: const Text(
+                  'Automatically fetch step and active cals data whenever IndiFit is launched',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
                 value: _autoSyncOnOpen,
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 onChanged: _toggleAutoSync,
               ),
             ),
@@ -222,26 +264,50 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.nordic_walking_rounded, color: Colors.green, size: 20),
+                          Icon(
+                            Icons.nordic_walking_rounded,
+                            color: Colors.green,
+                            size: 20,
+                          ),
                           SizedBox(width: 8),
-                          Text('Imported Outdoor Activities', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          Text(
+                            'Imported Outdoor Activities',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      ..._outdoorActivities.map((act) => ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        leading: const CircleAvatar(
-                          backgroundColor: AppColors.border,
-                          child: Icon(Icons.directions_run_rounded, size: 16, color: AppColors.primary),
+                      ..._outdoorActivities.map(
+                        (act) => ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          leading: const CircleAvatar(
+                            backgroundColor: AppColors.border,
+                            child: Icon(
+                              Icons.directions_run_rounded,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          title: Text(
+                            act['title'],
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            '${act['durationMinutes']} mins • ${act['calories']} kcal',
+                          ),
+                          trailing: Text(
+                            '${(act['date'] as DateTime).month}/${(act['date'] as DateTime).day}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                         ),
-                        title: Text(act['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('${act['durationMinutes']} mins • ${act['calories']} kcal'),
-                        trailing: Text(
-                          '${(act['date'] as DateTime).month}/${(act['date'] as DateTime).day}',
-                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                        ),
-                      )),
+                      ),
                     ],
                   ),
                 ),
@@ -262,7 +328,11 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.shield_outlined, color: AppColors.success, size: 22),
+                    Icon(
+                      Icons.shield_outlined,
+                      color: AppColors.success,
+                      size: 22,
+                    ),
                     SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -270,12 +340,20 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                         children: [
                           Text(
                             'Local Privacy & Security',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Colors.white,
+                            ),
                           ),
                           SizedBox(height: 6),
                           Text(
                             'When health syncing is enabled, all biometric metrics are processed entirely on-device and stored securely. Your sensitive health details never leave this phone.',
-                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
                           ),
                         ],
                       ),
@@ -289,13 +367,23 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
             // Connect / Sync Action Button
             ElevatedButton.icon(
               onPressed: _loading ? null : _handleConnect,
-              icon: Icon(_data.isConnected ? Icons.sync_rounded : Icons.health_and_safety_rounded),
-              label: Text(_data.isConnected ? 'Re-Sync Health Data' : 'Connect Health Service'),
+              icon: Icon(
+                _data.isConnected
+                    ? Icons.sync_rounded
+                    : Icons.health_and_safety_rounded,
+              ),
+              label: Text(
+                _data.isConnected
+                    ? 'Re-Sync Health Data'
+                    : 'Connect Health Service',
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
@@ -304,16 +392,26 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
     );
   }
 
-  Widget _buildStatWidget(IconData icon, String value, String label, Color iconCol) {
+  Widget _buildStatWidget(
+    IconData icon,
+    String value,
+    String label,
+    Color iconCol,
+  ) {
     return Column(
       children: [
         Icon(icon, color: iconCol, size: 28),
         const SizedBox(height: 8),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
       ],
     );
   }
 }
-

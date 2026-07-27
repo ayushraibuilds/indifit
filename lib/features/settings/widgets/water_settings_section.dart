@@ -9,7 +9,8 @@ class WaterSettingsSection extends ConsumerStatefulWidget {
   const WaterSettingsSection({super.key});
 
   @override
-  ConsumerState<WaterSettingsSection> createState() => _WaterSettingsSectionState();
+  ConsumerState<WaterSettingsSection> createState() =>
+      _WaterSettingsSectionState();
 }
 
 class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
@@ -20,8 +21,12 @@ class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
   void initState() {
     super.initState();
     final state = ref.read(settingsControllerProvider);
-    _waterGoalController = TextEditingController(text: state.waterGoal.toString());
-    _glassSizeController = TextEditingController(text: state.glassSize.toString());
+    _waterGoalController = TextEditingController(
+      text: state.waterGoal.toString(),
+    );
+    _glassSizeController = TextEditingController(
+      text: state.glassSize.toString(),
+    );
   }
 
   @override
@@ -46,7 +51,11 @@ class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
                 color: AppColors.infoBlue.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.local_drink_rounded, color: AppColors.infoBlue, size: 20),
+              child: const Icon(
+                Icons.local_drink_rounded,
+                color: AppColors.infoBlue,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -60,7 +69,10 @@ class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
                   SizedBox(height: 2),
                   Text(
                     'Customize daily water targets and serving volume',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -80,12 +92,18 @@ class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
                     children: [
                       Text(
                         'Daily Water Goal',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       SizedBox(height: 4),
                       Text(
                         'Number of glasses per day (1 - 40 glasses)',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -125,12 +143,18 @@ class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
                     children: [
                       Text(
                         'Serving (Glass) Size',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       SizedBox(height: 4),
                       Text(
                         'Custom volume size per glass of water logged (ml)',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -163,7 +187,11 @@ class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                const Icon(Icons.lightbulb_outline_rounded, color: Colors.blue, size: 20),
+                const Icon(
+                  Icons.lightbulb_outline_rounded,
+                  color: Colors.blue,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Builder(
@@ -171,11 +199,16 @@ class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
                       final userProfile = ref.watch(userProfileProvider);
                       final double weight = userProfile.currentWeight;
                       final int recMl = (weight * 35).round();
-                      final int glassMl = int.tryParse(_glassSizeController.text) ?? 250;
-                      final int recGlasses = (recMl / (glassMl > 0 ? glassMl : 250)).round();
+                      final int glassMl =
+                          int.tryParse(_glassSizeController.text) ?? 250;
+                      final int recGlasses =
+                          (recMl / (glassMl > 0 ? glassMl : 250)).round();
                       return Text(
                         'Recommended: ~$recMl ml (~$recGlasses glasses) based on ${weight.toStringAsFixed(1)} kg bodyweight (35ml/kg).',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       );
                     },
                   ),

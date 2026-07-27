@@ -31,8 +31,14 @@ void main() {
 
     test('calculates TDEE with activity multipliers correctly', () {
       final bmr = 1700.0;
-      final tdeeSedentary = TdeeCalculator.calculateTdee(bmr: bmr, activityLevel: ActivityLevel.sedentary);
-      final tdeeModerate = TdeeCalculator.calculateTdee(bmr: bmr, activityLevel: ActivityLevel.moderatelyActive);
+      final tdeeSedentary = TdeeCalculator.calculateTdee(
+        bmr: bmr,
+        activityLevel: ActivityLevel.sedentary,
+      );
+      final tdeeModerate = TdeeCalculator.calculateTdee(
+        bmr: bmr,
+        activityLevel: ActivityLevel.moderatelyActive,
+      );
 
       expect(tdeeSedentary, equals(2040.0)); // 1700 * 1.2
       expect(tdeeModerate, equals(2635.0)); // 1700 * 1.55

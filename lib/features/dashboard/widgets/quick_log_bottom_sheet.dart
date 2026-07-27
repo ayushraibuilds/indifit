@@ -7,7 +7,12 @@ class QuickLogBottomSheet extends StatelessWidget {
   final DateTime? selectedDate;
   const QuickLogBottomSheet({super.key, this.selectedDate});
 
-  Widget _mealQuickActionButton(BuildContext context, String label, String type, IconData icon) {
+  Widget _mealQuickActionButton(
+    BuildContext context,
+    String label,
+    String type,
+    IconData icon,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -17,11 +22,19 @@ class QuickLogBottomSheet extends StatelessWidget {
             Navigator.pop(context);
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => FoodSearchScreen(mealType: type, selectedDate: selectedDate)),
+              MaterialPageRoute(
+                builder: (context) => FoodSearchScreen(
+                  mealType: type,
+                  selectedDate: selectedDate,
+                ),
+              ),
             );
           },
         ),
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
       ],
     );
   }
@@ -34,15 +47,38 @@ class QuickLogBottomSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Select Meal Type', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text(
+            'Select Meal Type',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _mealQuickActionButton(context, 'Breakfast', 'breakfast', Icons.breakfast_dining_rounded),
-              _mealQuickActionButton(context, 'Lunch', 'lunch', Icons.lunch_dining_rounded),
-              _mealQuickActionButton(context, 'Dinner', 'dinner', Icons.dinner_dining_rounded),
-              _mealQuickActionButton(context, 'Snacks', 'snack', Icons.cookie_rounded),
+              _mealQuickActionButton(
+                context,
+                'Breakfast',
+                'breakfast',
+                Icons.breakfast_dining_rounded,
+              ),
+              _mealQuickActionButton(
+                context,
+                'Lunch',
+                'lunch',
+                Icons.lunch_dining_rounded,
+              ),
+              _mealQuickActionButton(
+                context,
+                'Dinner',
+                'dinner',
+                Icons.dinner_dining_rounded,
+              ),
+              _mealQuickActionButton(
+                context,
+                'Snacks',
+                'snack',
+                Icons.cookie_rounded,
+              ),
             ],
           ),
         ],

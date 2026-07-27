@@ -11,7 +11,8 @@ class RoutineWizardScreen extends ConsumerStatefulWidget {
   const RoutineWizardScreen({super.key, this.initialGoal});
 
   @override
-  ConsumerState<RoutineWizardScreen> createState() => _RoutineWizardScreenState();
+  ConsumerState<RoutineWizardScreen> createState() =>
+      _RoutineWizardScreenState();
 }
 
 class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
@@ -63,7 +64,9 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
         equipment: _selectedEquipment,
         daysPerWeek: _daysPerWeek,
         experience: _selectedExperience,
-        injuries: _injuryController.text.isNotEmpty ? _injuryController.text : 'none',
+        injuries: _injuryController.text.isNotEmpty
+            ? _injuryController.text
+            : 'none',
       );
 
       setState(() {
@@ -127,7 +130,10 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
         actions: [
           TextButton(
             onPressed: () => context.go('/'),
-            child: const Text('Skip', style: TextStyle(color: AppColors.textMuted)),
+            child: const Text(
+              'Skip',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
           ),
         ],
       ),
@@ -214,13 +220,34 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('What is your primary fitness goal?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'What is your primary fitness goal?',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          const Text('We will optimize volume & rep ranges for this objective.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          const Text(
+            'We will optimize volume & rep ranges for this objective.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 20),
-          _buildSelectCard('hypertrophy', 'Build Muscle (Hypertrophy)', 'Focus on 8-12 rep ranges and volume build-up', Icons.fitness_center_rounded),
-          _buildSelectCard('strength', 'Gain Strength', 'Focus on lower reps (3-6) and compound lifts', Icons.sports_gymnastics_rounded),
-          _buildSelectCard('weight_loss', 'Fat Loss & Conditioning', 'Higher density, moderate weights & cardio integration', Icons.local_fire_department_rounded),
+          _buildSelectCard(
+            'hypertrophy',
+            'Build Muscle (Hypertrophy)',
+            'Focus on 8-12 rep ranges and volume build-up',
+            Icons.fitness_center_rounded,
+          ),
+          _buildSelectCard(
+            'strength',
+            'Gain Strength',
+            'Focus on lower reps (3-6) and compound lifts',
+            Icons.sports_gymnastics_rounded,
+          ),
+          _buildSelectCard(
+            'weight_loss',
+            'Fat Loss & Conditioning',
+            'Higher density, moderate weights & cardio integration',
+            Icons.local_fire_department_rounded,
+          ),
         ],
       ),
     );
@@ -231,13 +258,37 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('What equipment do you have access to?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'What equipment do you have access to?',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          const Text('We will only select exercises matching your equipment.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          const Text(
+            'We will only select exercises matching your equipment.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 20),
-          _buildSelectCard('gym', 'Full Gym', 'Barbells, dumbbells, cables, machines', Icons.business_rounded, optionType: 'equip'),
-          _buildSelectCard('dumbbells', 'Dumbbells Only', 'Home or minimalist setup with dumbbells & bench', Icons.fitness_center_outlined, optionType: 'equip'),
-          _buildSelectCard('bodyweight', 'Bodyweight / Calisthenics', 'Pull-up bar, floor, bodyweight exercises', Icons.accessibility_new_rounded, optionType: 'equip'),
+          _buildSelectCard(
+            'gym',
+            'Full Gym',
+            'Barbells, dumbbells, cables, machines',
+            Icons.business_rounded,
+            optionType: 'equip',
+          ),
+          _buildSelectCard(
+            'dumbbells',
+            'Dumbbells Only',
+            'Home or minimalist setup with dumbbells & bench',
+            Icons.fitness_center_outlined,
+            optionType: 'equip',
+          ),
+          _buildSelectCard(
+            'bodyweight',
+            'Bodyweight / Calisthenics',
+            'Pull-up bar, floor, bodyweight exercises',
+            Icons.accessibility_new_rounded,
+            optionType: 'equip',
+          ),
         ],
       ),
     );
@@ -248,9 +299,15 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('How many days per week can you train?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'How many days per week can you train?',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          const Text('Consistency beats perfection. Choose a realistic commitment.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          const Text(
+            'Consistency beats perfection. Choose a realistic commitment.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -265,7 +322,9 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.primary : AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: isSelected ? AppColors.primary : AppColors.border),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : AppColors.border,
+                    ),
                   ),
                   child: Text(
                     '$days',
@@ -282,8 +341,11 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           const SizedBox(height: 24),
           Center(
             child: Text(
-              '${_daysPerWeek} days per week split',
-              style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary),
+              '$_daysPerWeek days per week split',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
             ),
           ),
         ],
@@ -296,13 +358,37 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('What is your weightlifting experience level?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'What is your weightlifting experience level?',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          const Text('Controls exercise complexity & recovery demands.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          const Text(
+            'Controls exercise complexity & recovery demands.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 20),
-          _buildSelectCard('beginner', 'Beginner (< 1 year)', 'Simple compound movements, lower overall volume', Icons.eco_rounded, optionType: 'exp'),
-          _buildSelectCard('intermediate', 'Intermediate (1-3 years)', 'Standard splits, higher intensity techniques', Icons.trending_up_rounded, optionType: 'exp'),
-          _buildSelectCard('advanced', 'Advanced (3+ years)', 'High frequency, specialized exercises & volume', Icons.military_tech_rounded, optionType: 'exp'),
+          _buildSelectCard(
+            'beginner',
+            'Beginner (< 1 year)',
+            'Simple compound movements, lower overall volume',
+            Icons.eco_rounded,
+            optionType: 'exp',
+          ),
+          _buildSelectCard(
+            'intermediate',
+            'Intermediate (1-3 years)',
+            'Standard splits, higher intensity techniques',
+            Icons.trending_up_rounded,
+            optionType: 'exp',
+          ),
+          _buildSelectCard(
+            'advanced',
+            'Advanced (3+ years)',
+            'High frequency, specialized exercises & volume',
+            Icons.military_tech_rounded,
+            optionType: 'exp',
+          ),
         ],
       ),
     );
@@ -313,16 +399,25 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Any injuries or physical limitations?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'Any injuries or physical limitations?',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          const Text('The AI will filter out exercises that stress these areas.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          const Text(
+            'The AI will filter out exercises that stress these areas.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 20),
           TextField(
             controller: _injuryController,
             maxLines: 3,
             decoration: InputDecoration(
-              hintText: 'e.g. Lower back pain, shoulder impingement, weak knees (or leave blank if none)',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              hintText:
+                  'e.g. Lower back pain, shoulder impingement, weak knees (or leave blank if none)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ],
@@ -343,8 +438,20 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_generatedRoutine!.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text(_generatedRoutine!.notes, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  Text(
+                    _generatedRoutine!.name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    _generatedRoutine!.notes,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -364,13 +471,39 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ExpansionTile(
-                  title: Text(day.dayName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  subtitle: Text(day.isRestDay ? 'Rest Day' : '${day.exercises.length} exercises', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  title: Text(
+                    day.dayName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  subtitle: Text(
+                    day.isRestDay
+                        ? 'Rest Day'
+                        : '${day.exercises.length} exercises',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                   children: day.exercises.map((e) {
                     return ListTile(
                       dense: true,
-                      title: Text(e.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-                      trailing: Text('${e.sets} sets × ${e.repsRange} reps', style: const TextStyle(fontSize: 11, color: AppColors.primary)),
+                      title: Text(
+                        e.name,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      trailing: Text(
+                        '${e.sets} sets × ${e.repsRange} reps',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.primary,
+                        ),
+                      ),
                     );
                   }).toList(),
                 ),
@@ -382,8 +515,15 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
     );
   }
 
-  Widget _buildSelectCard(String val, String title, String desc, IconData icon, {String optionType = 'goal'}) {
-    final bool isSelected = (optionType == 'goal' && _selectedGoal == val) ||
+  Widget _buildSelectCard(
+    String val,
+    String title,
+    String desc,
+    IconData icon, {
+    String optionType = 'goal',
+  }) {
+    final bool isSelected =
+        (optionType == 'goal' && _selectedGoal == val) ||
         (optionType == 'equip' && _selectedEquipment == val) ||
         (optionType == 'exp' && _selectedExperience == val);
 
@@ -401,7 +541,9 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary.withOpacity(0.08) : AppColors.surface,
+            color: isSelected
+                ? AppColors.primary.withOpacity(0.08)
+                : AppColors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isSelected ? AppColors.primary : AppColors.border,
@@ -410,15 +552,33 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           ),
           child: Row(
             children: [
-              Icon(icon, color: isSelected ? AppColors.primary : AppColors.textMuted),
+              Icon(
+                icon,
+                color: isSelected ? AppColors.primary : AppColors.textMuted,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isSelected ? AppColors.primary : AppColors.textPrimary)),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textPrimary,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(desc, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                    Text(
+                      desc,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -439,10 +599,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       child: Row(
         children: [
           if (_currentStep > 0 && _currentStep < 5) ...[
-            OutlinedButton(
-              onPressed: _prevStep,
-              child: const Text('Back'),
-            ),
+            OutlinedButton(onPressed: _prevStep, child: const Text('Back')),
             const SizedBox(width: 12),
           ],
           Expanded(
@@ -460,14 +617,16 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: Text(
                 _currentStep == 4
                     ? 'Generate Routine'
                     : _currentStep == 5
-                        ? 'Activate Routine'
-                        : 'Continue',
+                    ? 'Activate Routine'
+                    : 'Continue',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),

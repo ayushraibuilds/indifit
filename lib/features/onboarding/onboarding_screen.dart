@@ -27,17 +27,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   double _height = 170.0;
   double _weight = 70.0;
   String? _sex; // Nullable for explicit selection requirement (Item 3.3)
-  String _activityLevel = 'moderate'; // 'sedentary', 'light', 'moderate', 'active'
+  String _activityLevel =
+      'moderate'; // 'sedentary', 'light', 'moderate', 'active'
   String _goal = 'maintain'; // 'lose', 'maintain', 'gain'
   double _targetWeight = 70.0;
   String _dietPreference = 'veg'; // 'veg', 'non-veg', 'vegan'
 
   // Input controllers
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController(text: '25');
-  final TextEditingController _heightController = TextEditingController(text: '170');
-  final TextEditingController _weightController = TextEditingController(text: '70');
-  final TextEditingController _targetWeightController = TextEditingController(text: '70');
+  final TextEditingController _ageController = TextEditingController(
+    text: '25',
+  );
+  final TextEditingController _heightController = TextEditingController(
+    text: '170',
+  );
+  final TextEditingController _weightController = TextEditingController(
+    text: '70',
+  );
+  final TextEditingController _targetWeightController = TextEditingController(
+    text: '70',
+  );
 
   String? _ageError;
   String? _heightError;
@@ -59,7 +68,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       setState(() {
         _currentPage = draftPage.clamp(0, _totalPages - 1);
         _sex = prefs.getString('onboarding_draft_sex');
-        _activityLevel = prefs.getString('onboarding_draft_activity') ?? 'moderate';
+        _activityLevel =
+            prefs.getString('onboarding_draft_activity') ?? 'moderate';
         _goal = prefs.getString('onboarding_draft_goal') ?? 'maintain';
         _dietPreference = prefs.getString('onboarding_draft_diet') ?? 'veg';
       });
@@ -76,7 +86,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _weightController.text = prefs.getString('onboarding_draft_weight')!;
       }
       if (prefs.containsKey('onboarding_draft_target_weight')) {
-        _targetWeightController.text = prefs.getString('onboarding_draft_target_weight')!;
+        _targetWeightController.text = prefs.getString(
+          'onboarding_draft_target_weight',
+        )!;
       }
       if (_currentPage > 0 && _pageController.hasClients) {
         _pageController.jumpToPage(_currentPage);
@@ -94,7 +106,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await prefs.setString('onboarding_draft_weight', _weightController.text);
     await prefs.setString('onboarding_draft_activity', _activityLevel);
     await prefs.setString('onboarding_draft_goal', _goal);
-    await prefs.setString('onboarding_draft_target_weight', _targetWeightController.text);
+    await prefs.setString(
+      'onboarding_draft_target_weight',
+      _targetWeightController.text,
+    );
     await prefs.setString('onboarding_draft_diet', _dietPreference);
   }
 
@@ -145,30 +160,33 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _nextPage() {
     if (_currentPage == 0 && _sex == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select your biological sex to proceed.')),
+        const SnackBar(
+          content: Text('Please select your biological sex to proceed.'),
+        ),
       );
       return;
     } else if (_currentPage == 1 && _ageError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_ageError!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_ageError!)));
       return;
     } else if (_currentPage == 2 && _heightError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_heightError!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_heightError!)));
       return;
     } else if (_currentPage == 3 && _weightError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_weightError!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_weightError!)));
       return;
     }
 
     // Smart pre-fill for target weight when leaving weight page
     if (_currentPage == 3) {
       final currentW = double.tryParse(_weightController.text) ?? 70.0;
-      if (_targetWeightController.text == '70' || _targetWeightController.text.isEmpty) {
+      if (_targetWeightController.text == '70' ||
+          _targetWeightController.text.isEmpty) {
         final recTarget = switch (_goal) {
           'lose' => (currentW * 0.9).roundToDouble(),
           'gain' => (currentW * 1.05).roundToDouble(),
@@ -220,9 +238,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _ => FitnessGoal.maintain,
     };
 
-    final bmr = TdeeCalculator.calculateBmr(weightKg: _weight, heightCm: _height, ageYears: _age, gender: gender);
-    final tdee = TdeeCalculator.calculateTdee(bmr: bmr, activityLevel: actLevel);
-    final macros = TdeeCalculator.calculateMacros(tdee: tdee, goal: fitnessGoal, weightKg: _weight);
+    final bmr = TdeeCalculator.calculateBmr(
+      weightKg: _weight,
+      heightCm: _height,
+      ageYears: _age,
+      gender: gender,
+    );
+    final tdee = TdeeCalculator.calculateTdee(
+      bmr: bmr,
+      activityLevel: actLevel,
+    );
+    final macros = TdeeCalculator.calculateMacros(
+      tdee: tdee,
+      goal: fitnessGoal,
+      weightKg: _weight,
+    );
 
     double dailyCalories = macros.calories.toDouble();
     double dailyProtein = macros.proteinG;
@@ -232,10 +262,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Store targets in SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('calorie_goal', dailyCalories.round());
-    await prefs.setDouble('protein_goal', double.parse(dailyProtein.toStringAsFixed(1)));
-    await prefs.setDouble('carbs_goal', double.parse(dailyCarbs.toStringAsFixed(1)));
-    await prefs.setDouble('fat_goal', double.parse(dailyFat.toStringAsFixed(1)));
-    
+    await prefs.setDouble(
+      'protein_goal',
+      double.parse(dailyProtein.toStringAsFixed(1)),
+    );
+    await prefs.setDouble(
+      'carbs_goal',
+      double.parse(dailyCarbs.toStringAsFixed(1)),
+    );
+    await prefs.setDouble(
+      'fat_goal',
+      double.parse(dailyFat.toStringAsFixed(1)),
+    );
+
     // Store user parameters
     if (_nameController.text.trim().isNotEmpty) {
       await prefs.setString('user_name', _nameController.text.trim());
@@ -248,13 +287,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await prefs.setString('user_activity_level', _activityLevel);
     await prefs.setString('user_goal', _goal);
     await prefs.setString('user_diet_preference', _dietPreference);
-    
+
     // Refresh UserProfileNotifier with newly saved parameters
     await ref.read(userProfileProvider.notifier).loadProfile();
 
     // Log canonical initial weight entry in BodyMeasurements Drift table
-    await ref.read(workoutRepositoryProvider).logBodyMeasurement(weight: _weight);
-    
+    await ref
+        .read(workoutRepositoryProvider)
+        .logBodyMeasurement(weight: _weight);
+
     // Complete onboarding flag
     await prefs.setBool('onboarding_completed', true);
 
@@ -299,7 +340,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: [
                   if (_currentPage > 0)
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
+                      icon: const Icon(
+                        Icons.arrow_back_ios,
+                        color: AppColors.textPrimary,
+                        size: 20,
+                      ),
                       onPressed: _prevPage,
                     )
                   else
@@ -310,7 +355,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       child: LinearProgressIndicator(
                         value: (_currentPage + 1) / _totalPages,
                         backgroundColor: AppColors.cardBackground,
-                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.primary,
+                        ),
                         minHeight: 6,
                       ),
                     ),
@@ -351,7 +398,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
             // Bottom Navigation Button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 20.0,
+              ),
               child: SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -365,7 +415,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                   onPressed: _nextPage,
                   child: Text(
-                    _currentPage == _totalPages - 1 ? 'Calculate My Plan' : 'Next Step',
+                    _currentPage == _totalPages - 1
+                        ? 'Calculate My Plan'
+                        : 'Next Step',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -384,8 +436,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildSexPage() {
     return OnboardingPageContainer(
-      title: "Welcome to IndiFit!",
-      subtitle: "Your intelligent fitness & Indian nutrition companion.",
+      title: 'Welcome to IndiFit!',
+      subtitle: 'Your intelligent fitness & Indian nutrition companion.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -398,30 +450,44 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               fontFamily: GoogleFonts.outfit().fontFamily,
             ),
             decoration: InputDecoration(
-              labelText: "Your Name (Optional)",
-              hintText: "e.g. Rahul, Priya",
-              prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary),
+              labelText: 'Your Name (Optional)',
+              hintText: 'e.g. Rahul, Priya',
+              prefixIcon: const Icon(
+                Icons.person_outline_rounded,
+                color: AppColors.primary,
+              ),
               filled: true,
               fillColor: AppColors.cardBackground,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.border)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.border)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
             ),
           ),
           const SizedBox(height: 24),
           Text(
-            "Select your biological sex:",
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondary, fontFamily: GoogleFonts.outfit().fontFamily),
+            'Select your biological sex:',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+              fontFamily: GoogleFonts.outfit().fontFamily,
+            ),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
-            title: "Male",
+            title: 'Male',
             icon: Icons.male,
             selected: _sex == 'male',
             onTap: () => setState(() => _sex = 'male'),
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
-            title: "Female",
+            title: 'Female',
             icon: Icons.female,
             selected: _sex == 'female',
             onTap: () => setState(() => _sex = 'female'),
@@ -433,12 +499,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildAgePage() {
     return OnboardingPageContainer(
-      title: "How old are you?",
-      subtitle: "Your age helps us compute changes in calorie metabolism.",
+      title: 'How old are you?',
+      subtitle: 'Your age helps us compute changes in calorie metabolism.',
       child: OnboardingNumberInputField(
         controller: _ageController,
-        label: "Age",
-        suffix: "years",
+        label: 'Age',
+        suffix: 'years',
         icon: Icons.calendar_today,
         errorText: _ageError,
       ),
@@ -447,12 +513,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildHeightPage() {
     return OnboardingPageContainer(
-      title: "How tall are you?",
-      subtitle: "Height is vital for calculating structural metabolic needs.",
+      title: 'How tall are you?',
+      subtitle: 'Height is vital for calculating structural metabolic needs.',
       child: OnboardingNumberInputField(
         controller: _heightController,
-        label: "Height",
-        suffix: "cm",
+        label: 'Height',
+        suffix: 'cm',
         icon: Icons.height,
         errorText: _heightError,
       ),
@@ -462,11 +528,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildWeightPage() {
     return OnboardingPageContainer(
       title: "What's your current weight?",
-      subtitle: "Used to determine daily macro limits and starting points.",
+      subtitle: 'Used to determine daily macro limits and starting points.',
       child: OnboardingNumberInputField(
         controller: _weightController,
-        label: "Weight",
-        suffix: "kg",
+        label: 'Weight',
+        suffix: 'kg',
         icon: Icons.scale,
         errorText: _weightError,
       ),
@@ -475,37 +541,38 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildActivityPage() {
     return OnboardingPageContainer(
-      title: "What is your activity level?",
-      subtitle: "Estimates your TDEE multiplier based on gym/lifestyle workouts.",
+      title: 'What is your activity level?',
+      subtitle:
+          'Estimates your TDEE multiplier based on gym/lifestyle workouts.',
       child: Column(
         children: [
           OnboardingSelectionCard(
-            title: "Sedentary",
-            subtitle: "Little or no exercise (desk job)",
+            title: 'Sedentary',
+            subtitle: 'Little or no exercise (desk job)',
             icon: Icons.chair,
             selected: _activityLevel == 'sedentary',
             onTap: () => setState(() => _activityLevel = 'sedentary'),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
-            title: "Lightly Active",
-            subtitle: "Light workouts 1-3 days/week",
+            title: 'Lightly Active',
+            subtitle: 'Light workouts 1-3 days/week',
             icon: Icons.directions_walk,
             selected: _activityLevel == 'light',
             onTap: () => setState(() => _activityLevel = 'light'),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
-            title: "Moderately Active",
-            subtitle: "Moderate gym training 3-5 days/week",
+            title: 'Moderately Active',
+            subtitle: 'Moderate gym training 3-5 days/week',
             icon: Icons.fitness_center,
             selected: _activityLevel == 'moderate',
             onTap: () => setState(() => _activityLevel = 'moderate'),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
-            title: "Very Active",
-            subtitle: "Heavy exercise/sports 6-7 days/week",
+            title: 'Very Active',
+            subtitle: 'Heavy exercise/sports 6-7 days/week',
             icon: Icons.bolt,
             selected: _activityLevel == 'active',
             onTap: () => setState(() => _activityLevel = 'active'),
@@ -517,29 +584,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildGoalPage() {
     return OnboardingPageContainer(
-      title: "What is your main goal?",
-      subtitle: "We will tailor your caloric balance to hit this goal.",
+      title: 'What is your main goal?',
+      subtitle: 'We will tailor your caloric balance to hit this goal.',
       child: Column(
         children: [
           OnboardingSelectionCard(
-            title: "Lose Weight",
-            subtitle: "Burn fat with a healthy calorie deficit",
+            title: 'Lose Weight',
+            subtitle: 'Burn fat with a healthy calorie deficit',
             icon: Icons.trending_down,
             selected: _goal == 'lose',
             onTap: () => setState(() => _goal = 'lose'),
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
-            title: "Maintain Weight",
-            subtitle: "Stay active, stay fit, and lock in current weight",
+            title: 'Maintain Weight',
+            subtitle: 'Stay active, stay fit, and lock in current weight',
             icon: Icons.compare_arrows,
             selected: _goal == 'maintain',
             onTap: () => setState(() => _goal = 'maintain'),
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
-            title: "Gain Muscle",
-            subtitle: "Build lean bulk with a caloric surplus",
+            title: 'Gain Muscle',
+            subtitle: 'Build lean bulk with a caloric surplus',
             icon: Icons.trending_up,
             selected: _goal == 'gain',
             onTap: () => setState(() => _goal = 'gain'),
@@ -551,12 +618,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildTargetWeightPage() {
     return OnboardingPageContainer(
-      title: "What is your target weight?",
-      subtitle: "The goal weight you are striving to reach.",
+      title: 'What is your target weight?',
+      subtitle: 'The goal weight you are striving to reach.',
       child: OnboardingNumberInputField(
         controller: _targetWeightController,
-        label: "Target Weight",
-        suffix: "kg",
+        label: 'Target Weight',
+        suffix: 'kg',
         icon: Icons.track_changes,
       ),
     );
@@ -564,29 +631,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildDietPage() {
     return OnboardingPageContainer(
-      title: "Dietary preference?",
-      subtitle: "Tailors AI meal options and search recommendations.",
+      title: 'Dietary preference?',
+      subtitle: 'Tailors AI meal options and search recommendations.',
       child: Column(
         children: [
           OnboardingSelectionCard(
-            title: "Vegetarian",
-            subtitle: "Pure veg, dairy products allowed",
+            title: 'Vegetarian',
+            subtitle: 'Pure veg, dairy products allowed',
             icon: Icons.eco,
             selected: _dietPreference == 'veg',
             onTap: () => setState(() => _dietPreference = 'veg'),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
-            title: "Non-Vegetarian",
-            subtitle: "Chicken, fish, eggs, meat included",
+            title: 'Non-Vegetarian',
+            subtitle: 'Chicken, fish, eggs, meat included',
             icon: Icons.restaurant,
             selected: _dietPreference == 'non-veg',
             onTap: () => setState(() => _dietPreference = 'non-veg'),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
-            title: "Vegan",
-            subtitle: "100% plant-based, no animal products",
+            title: 'Vegan',
+            subtitle: '100% plant-based, no animal products',
             icon: Icons.spa,
             selected: _dietPreference == 'vegan',
             onTap: () => setState(() => _dietPreference = 'vegan'),

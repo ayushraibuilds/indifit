@@ -51,7 +51,11 @@ class WorkoutPlayerHeader extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     'Exercise ${currentExerciseIndex + 1} of ${exercises.length}',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -61,11 +65,17 @@ class WorkoutPlayerHeader extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.4),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.timer_outlined, color: AppColors.primary, size: 22),
+                  const Icon(
+                    Icons.timer_outlined,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     _formatDuration(elapsedSeconds),
@@ -95,8 +105,12 @@ class WorkoutPlayerHeader extends StatelessWidget {
                     exercises[idx].exerciseName,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.textSecondary,
                     ),
                   ),
                   selected: isSelected,

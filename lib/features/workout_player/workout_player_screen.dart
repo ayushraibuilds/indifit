@@ -13,7 +13,6 @@ import 'widgets/prior_session_card.dart';
 import 'widgets/rest_timer_bottom_sheet.dart';
 import 'widgets/workout_player_header.dart';
 import 'workout_player_controller.dart';
-import 'workout_summary_screen.dart';
 
 class WorkoutPlayerScreen extends ConsumerStatefulWidget {
   final String routineName;
@@ -34,11 +33,14 @@ class WorkoutPlayerScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<WorkoutPlayerScreen> createState() => _WorkoutPlayerScreenState();
+  ConsumerState<WorkoutPlayerScreen> createState() =>
+      _WorkoutPlayerScreenState();
 }
 
-class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with WidgetsBindingObserver {
-  late StateNotifierProvider<WorkoutPlayerController, WorkoutPlayerState> _controllerProvider;
+class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
+    with WidgetsBindingObserver {
+  late StateNotifierProvider<WorkoutPlayerController, WorkoutPlayerState>
+  _controllerProvider;
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _repsController = TextEditingController();
   final TextEditingController _durationController = TextEditingController();
@@ -49,17 +51,20 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _controllerProvider = StateNotifierProvider<WorkoutPlayerController, WorkoutPlayerState>((ref) {
-      return WorkoutPlayerController(
-        ref,
-        routineName: widget.routineName,
-        initialExercises: widget.exercises,
-        initialExerciseIndex: widget.initialExerciseIndex,
-        initialSetIndex: widget.initialSetIndex,
-        initialElapsedSeconds: widget.initialElapsedSeconds,
-        initialLoggedSets: widget.initialLoggedSets,
-      );
-    });
+    _controllerProvider =
+        StateNotifierProvider<WorkoutPlayerController, WorkoutPlayerState>((
+          ref,
+        ) {
+          return WorkoutPlayerController(
+            ref,
+            routineName: widget.routineName,
+            initialExercises: widget.exercises,
+            initialExerciseIndex: widget.initialExerciseIndex,
+            initialSetIndex: widget.initialSetIndex,
+            initialElapsedSeconds: widget.initialElapsedSeconds,
+            initialLoggedSets: widget.initialLoggedSets,
+          );
+        });
 
     ref.read(_controllerProvider.notifier).prefillInputs().then((_) {
       _syncInputsWithState();
@@ -82,7 +87,10 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
     int reps = 10;
 
     if (state.priorSets.isNotEmpty) {
-      final setIndex = state.currentSetIndex.clamp(0, state.priorSets.length - 1);
+      final setIndex = state.currentSetIndex.clamp(
+        0,
+        state.priorSets.length - 1,
+      );
       final lastSet = state.priorSets[setIndex];
       weight = lastSet.weight;
       reps = lastSet.reps;
@@ -125,7 +133,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
     final int reps = int.tryParse(_repsController.text) ?? 0;
 
     final nameLower = currentEx.exerciseName.toLowerCase();
-    final isCardio = nameLower.contains('run') ||
+    final isCardio =
+        nameLower.contains('run') ||
         nameLower.contains('treadmill') ||
         nameLower.contains('cardio') ||
         nameLower.contains('cycle') ||
@@ -167,26 +176,35 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
     }
 
     final totalSetsRequired = currentEx.sets;
-    if (state.currentSetIndex < totalSetsRequired - 1 || state.currentExerciseIndex < state.activeExercises.length - 1) {
+    if (state.currentSetIndex < totalSetsRequired - 1 ||
+        state.currentExerciseIndex < state.activeExercises.length - 1) {
       await controller.advanceSetOrExercise();
       _syncInputsWithState();
     } else {
       await controller.finishWorkout();
       if (mounted) {
-        context.pushReplacement('/workout-summary', extra: {
-          'routineName': widget.routineName,
-          'elapsedSeconds': state.elapsedSeconds,
-          'loggedSets': state.loggedSets,
-        });
+        context.pushReplacement(
+          '/workout-summary',
+          extra: {
+            'routineName': widget.routineName,
+            'elapsedSeconds': state.elapsedSeconds,
+            'loggedSets': state.loggedSets,
+          },
+        );
       }
     }
   }
 
   int _getRecommendedRestSeconds(String exerciseName) {
     final name = exerciseName.toLowerCase();
-    if (name.contains('squat') || name.contains('deadlift') || name.contains('bench press')) {
+    if (name.contains('squat') ||
+        name.contains('deadlift') ||
+        name.contains('bench press')) {
       return 120;
-    } else if (name.contains('curl') || name.contains('tricep') || name.contains('lateral') || name.contains('raise')) {
+    } else if (name.contains('curl') ||
+        name.contains('tricep') ||
+        name.contains('lateral') ||
+        name.contains('raise')) {
       return 60;
     }
     return 90;
@@ -219,17 +237,26 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                       Expanded(
                         child: Text(
                           '$exerciseName History',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Icon(Icons.insights_rounded, color: AppColors.primary),
+                      const Icon(
+                        Icons.insights_rounded,
+                        color: AppColors.primary,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     'Track your estimated 1RM (Epley formula) and PR progression below.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                   const Divider(color: AppColors.border, height: 24),
                   Expanded(
@@ -247,56 +274,90 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                               final session = item['session'] as WorkoutSession;
                               final sets = item['sets'] as List<WorkoutSet>;
 
-                              final dateStr = '${session.completedAt.year}-${session.completedAt.month.toString().padLeft(2, '0')}-${session.completedAt.day.toString().padLeft(2, '0')}';
+                              final dateStr =
+                                  '${session.completedAt.year}-${session.completedAt.month.toString().padLeft(2, '0')}-${session.completedAt.day.toString().padLeft(2, '0')}';
 
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 child: Padding(
                                   padding: const EdgeInsets.all(12.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Session on $dateStr: ${session.name}',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textSecondary),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                          color: AppColors.textSecondary,
+                                        ),
                                       ),
                                       const SizedBox(height: 8),
                                       ...sets.map((s) {
-                                        final oneRm = s.weight * (1 + s.reps / 30.0);
+                                        final oneRm =
+                                            s.weight * (1 + s.reps / 30.0);
                                         return Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 4.0,
+                                          ),
                                           child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               Row(
                                                 children: [
                                                   if (s.isPr)
                                                     const Padding(
-                                                      padding: EdgeInsets.only(right: 6.0),
-                                                      child: Icon(Icons.emoji_events_rounded, color: AppColors.warning, size: 16),
+                                                      padding: EdgeInsets.only(
+                                                        right: 6.0,
+                                                      ),
+                                                      child: Icon(
+                                                        Icons
+                                                            .emoji_events_rounded,
+                                                        color:
+                                                            AppColors.warning,
+                                                        size: 16,
+                                                      ),
                                                     ),
                                                   Text(
                                                     'Set ${s.setNumber}: ${s.weight.toStringAsFixed(1)} kg × ${s.reps} reps',
-                                                    style: TextStyle(fontWeight: s.isPr ? FontWeight.bold : FontWeight.normal, fontSize: 12),
+                                                    style: TextStyle(
+                                                      fontWeight: s.isPr
+                                                          ? FontWeight.bold
+                                                          : FontWeight.normal,
+                                                      fontSize: 12,
+                                                    ),
                                                   ),
                                                   if (s.durationSeconds != null)
                                                     Padding(
-                                                      padding: const EdgeInsets.only(left: 8.0),
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            left: 8.0,
+                                                          ),
                                                       child: Text(
                                                         '(${s.durationSeconds}s${s.distanceKm != null ? ", ${s.distanceKm}km" : ""})',
-                                                        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                                                        style: const TextStyle(
+                                                          fontSize: 10,
+                                                          color: AppColors
+                                                              .textSecondary,
+                                                        ),
                                                       ),
                                                     ),
                                                 ],
                                               ),
                                               Text(
                                                 '1RM: ${oneRm.toStringAsFixed(1)} kg',
-                                                style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                                                style: const TextStyle(
+                                                  color: AppColors.primary,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ],
                                           ),
                                         );
-                                      }).toList(),
+                                      }),
                                     ],
                                   ),
                                 ),
@@ -331,7 +392,10 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
               height: MediaQuery.of(context).size.height * 0.75,
               child: Column(
                 children: [
-                  const Text('Substitute Exercise', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const Text(
+                    'Substitute Exercise',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
                   const SizedBox(height: 12),
                   TextField(
                     decoration: InputDecoration(
@@ -339,14 +403,19 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                       prefixIcon: const Icon(Icons.search),
                       filled: true,
                       fillColor: AppColors.cardBackground,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                     onChanged: (val) => setModalState(() => searchQuery = val),
                   ),
                   const SizedBox(height: 16),
                   Expanded(
                     child: FutureBuilder<List<String>>(
-                      future: repo.searchExercises(searchQuery).then((list) => list.map((e) => e.name).toList()),
+                      future: repo
+                          .searchExercises(searchQuery)
+                          .then((list) => list.map((e) => e.name).toList()),
                       builder: (context, snapshot) {
                         final list = snapshot.data ?? [];
                         return ListView.builder(
@@ -355,7 +424,10 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                             final name = list[idx];
                             return ListTile(
                               title: Text(name),
-                              trailing: const Icon(Icons.swap_horiz_rounded, color: AppColors.primary),
+                              trailing: const Icon(
+                                Icons.swap_horiz_rounded,
+                                color: AppColors.primary,
+                              ),
                               onTap: () => Navigator.pop(context, name),
                             );
                           },
@@ -372,7 +444,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
     );
 
     if (selectedExerciseName != null && mounted) {
-      await ref.read(_controllerProvider.notifier).substituteExercise(selectedExerciseName);
+      await ref
+          .read(_controllerProvider.notifier)
+          .substituteExercise(selectedExerciseName);
       _syncInputsWithState();
     }
   }
@@ -430,9 +504,15 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.history_rounded, color: AppColors.primary, size: 20),
+                              icon: const Icon(
+                                Icons.history_rounded,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
                               tooltip: 'Exercise History & 1RM',
-                              onPressed: () => _showExerciseHistorySheet(currentEx.exerciseName),
+                              onPressed: () => _showExerciseHistorySheet(
+                                currentEx.exerciseName,
+                              ),
                             ),
                           ],
                         ),
@@ -463,7 +543,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                     selectedSetType: state.selectedSetType,
                     selectedRpe: state.selectedRpe,
                     onWarmUpChanged: (val) => controller.toggleWarmUp(val),
-                    onSetTypeChanged: (val) => controller.setSelectedSetType(val),
+                    onSetTypeChanged: (val) =>
+                        controller.setSelectedSetType(val),
                     onRpeChanged: (val) => controller.setSelectedRpe(val),
                     onCompleteSet: _completeSet,
                   ),
@@ -473,7 +554,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (state.currentSetIndex > 0 || state.currentExerciseIndex > 0)
+                      if (state.currentSetIndex > 0 ||
+                          state.currentExerciseIndex > 0)
                         TextButton.icon(
                           onPressed: () {
                             controller.goToPreviousSet();
@@ -481,19 +563,25 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                           },
                           icon: const Icon(Icons.arrow_back_rounded, size: 16),
                           label: const Text('Prev Set'),
-                          style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.textSecondary,
+                          ),
                         )
                       else
                         const SizedBox.shrink(),
-                      
+
                       Text(
                         'Set ${state.currentSetIndex + 1} of ${currentEx.sets}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // Horizontal list of set chips for current exercise
                   SizedBox(
                     height: 36,
@@ -502,13 +590,20 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                       itemCount: currentEx.sets,
                       itemBuilder: (context, idx) {
                         final isSelected = idx == state.currentSetIndex;
-                        final loggedForEx = state.loggedSets.where((s) => s.exerciseName.value == currentEx.exerciseName).toList();
+                        final loggedForEx = state.loggedSets
+                            .where(
+                              (s) =>
+                                  s.exerciseName.value ==
+                                  currentEx.exerciseName,
+                            )
+                            .toList();
                         final isCompleted = idx < loggedForEx.length;
                         final loggedSet = isCompleted ? loggedForEx[idx] : null;
 
                         String chipLabel = 'Set ${idx + 1}';
                         if (isCompleted && loggedSet != null) {
-                          chipLabel = '${idx + 1}: ${loggedSet.weight.value.toStringAsFixed(1)}k×${loggedSet.reps.value}';
+                          chipLabel =
+                              '${idx + 1}: ${loggedSet.weight.value.toStringAsFixed(1)}k×${loggedSet.reps.value}';
                         }
 
                         return Padding(
@@ -523,18 +618,30 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                               }
                             },
                             avatar: isCompleted
-                                ? const Icon(Icons.check_circle_rounded, size: 14, color: AppColors.success)
+                                ? const Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 14,
+                                    color: AppColors.success,
+                                  )
                                 : null,
                             selectedColor: AppColors.primaryGlow,
                             labelStyle: TextStyle(
-                              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary,
                               fontSize: 11,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                               side: BorderSide(
-                                color: isSelected ? AppColors.primary : (isCompleted ? AppColors.success.withOpacity(0.5) : AppColors.border),
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : (isCompleted
+                                          ? AppColors.success.withOpacity(0.5)
+                                          : AppColors.border),
                               ),
                             ),
                           ),
@@ -554,9 +661,14 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                       side: const BorderSide(color: AppColors.danger),
                       foregroundColor: AppColors.danger,
                       minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: const Text('Finish Workout Early', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Finish Workout Early',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),
@@ -576,9 +688,19 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen> with 
                           children: [
                             const Text('👑', style: TextStyle(fontSize: 48)),
                             const SizedBox(height: 8),
-                            const Text('NEW PERSONAL RECORD!', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 16)),
+                            const Text(
+                              'NEW PERSONAL RECORD!',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                                fontSize: 16,
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            Text('${state.prExerciseName}: ${state.prWeight.toStringAsFixed(1)} kg x ${state.prReps} reps', style: const TextStyle(fontSize: 13)),
+                            Text(
+                              '${state.prExerciseName}: ${state.prWeight.toStringAsFixed(1)} kg x ${state.prReps} reps',
+                              style: const TextStyle(fontSize: 13),
+                            ),
                           ],
                         ),
                       ),

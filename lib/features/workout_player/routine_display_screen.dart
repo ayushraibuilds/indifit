@@ -5,16 +5,14 @@ import '../../core/theme/colors.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
-import '../onboarding/routine_wizard_screen.dart';
-import 'routine_editor_screen.dart';
 import 'widgets/manual_log_sheet.dart';
-import 'workout_player_screen.dart';
 
 class RoutineDisplayScreen extends ConsumerStatefulWidget {
   const RoutineDisplayScreen({super.key});
 
   @override
-  ConsumerState<RoutineDisplayScreen> createState() => _RoutineDisplayScreenState();
+  ConsumerState<RoutineDisplayScreen> createState() =>
+      _RoutineDisplayScreenState();
 }
 
 class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
@@ -39,17 +37,29 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
       final sessions = await repo.watchSessions().first;
 
       final now = DateTime.now();
-      final monday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
-      final sunday = monday.add(const Duration(days: 6, hours: 23, minutes: 59));
+      final monday = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: now.weekday - 1));
+      final sunday = monday.add(
+        const Duration(days: 6, hours: 23, minutes: 59),
+      );
       final completed = sessions
-          .where((s) => s.completedAt.isAfter(monday.subtract(const Duration(seconds: 1))) && s.completedAt.isBefore(sunday))
+          .where(
+            (s) =>
+                s.completedAt.isAfter(
+                  monday.subtract(const Duration(seconds: 1)),
+                ) &&
+                s.completedAt.isBefore(sunday),
+          )
           .map((s) => s.completedAt.weekday)
           .toSet();
 
       if (routines.isNotEmpty) {
         final active = routines.last;
         final details = await repo.getRoutineDetails(active.id);
-        
+
         setState(() {
           _activeRoutine = active;
           _routineDays = details;
@@ -79,19 +89,26 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         actions: [
           if (_activeRoutine != null) ...[
             IconButton(
-              icon: const Icon(Icons.history_rounded, color: AppColors.textPrimary),
+              icon: const Icon(
+                Icons.history_rounded,
+                color: AppColors.textPrimary,
+              ),
               tooltip: 'Log Past Workout',
               onPressed: () {
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
-                  builder: (context) => ManualLogSheet(selectedDate: DateTime.now()),
+                  builder: (context) =>
+                      ManualLogSheet(selectedDate: DateTime.now()),
                 ).then((_) => _loadActiveRoutine());
               },
             ),
             IconButton(
-              icon: const Icon(Icons.edit_note_rounded, color: AppColors.textPrimary),
+              icon: const Icon(
+                Icons.edit_note_rounded,
+                color: AppColors.textPrimary,
+              ),
               tooltip: 'Edit Split',
               onPressed: () async {
                 final success = await context.push<bool>('/routine-editor');
@@ -101,7 +118,10 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               },
             ),
             IconButton(
-              icon: const Icon(Icons.psychology_rounded, color: AppColors.primary),
+              icon: const Icon(
+                Icons.psychology_rounded,
+                color: AppColors.primary,
+              ),
               tooltip: 'Re-generate Split with AI',
               onPressed: () async {
                 final success = await context.push<bool>('/routine-wizard');
@@ -119,8 +139,8 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               child: SkeletonList(count: 4),
             )
           : _activeRoutine == null
-              ? _buildEmptyState()
-              : _buildRoutineLayout(),
+          ? _buildEmptyState()
+          : _buildRoutineLayout(),
     );
   }
 
@@ -167,11 +187,16 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-                label: const Text('Generate Split with AI', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text(
+                  'Generate Split with AI',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -180,7 +205,9 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final success = await context.push<bool>('/routine-editor');
+                      final success = await context.push<bool>(
+                        '/routine-editor',
+                      );
                       if (success == true) {
                         _loadActiveRoutine();
                       }
@@ -188,18 +215,31 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.primary),
                       foregroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    icon: const Icon(Icons.dashboard_customize_rounded, size: 16),
-                    label: const Text('Templates', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    icon: const Icon(
+                      Icons.dashboard_customize_rounded,
+                      size: 16,
+                    ),
+                    label: const Text(
+                      'Templates',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final success = await context.push<bool>('/routine-editor');
+                      final success = await context.push<bool>(
+                        '/routine-editor',
+                      );
                       if (success == true) {
                         _loadActiveRoutine();
                       }
@@ -207,11 +247,19 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.border),
                       foregroundColor: AppColors.textPrimary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     icon: const Icon(Icons.edit_note_rounded, size: 16),
-                    label: const Text('Manual Build', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    label: const Text(
+                      'Manual Build',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -227,13 +275,20 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
     final dayData = _routineDays.firstWhere(
       (d) => (d['day'] as RoutineDay).dayOfWeek == _selectedDayOfWeek,
       orElse: () => {
-        'day': RoutineDay(id: 0, routineId: 0, dayOfWeek: _selectedDayOfWeek, name: 'Rest Day', isRestDay: true),
-        'exercises': <RoutineExercise>[]
+        'day': RoutineDay(
+          id: 0,
+          routineId: 0,
+          dayOfWeek: _selectedDayOfWeek,
+          name: 'Rest Day',
+          isRestDay: true,
+        ),
+        'exercises': <RoutineExercise>[],
       },
     );
 
     final RoutineDay day = dayData['day'];
-    final List<RoutineExercise> exercises = dayData['exercises'] as List<RoutineExercise>;
+    final List<RoutineExercise> exercises =
+        dayData['exercises'] as List<RoutineExercise>;
 
     return Column(
       children: [
@@ -253,24 +308,35 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                   children: [
                     Text(
                       day.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                     if (day.isRestDay)
                       const Text(
                         '🧘 REST',
-                        style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 13),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       )
                     else
                       Text(
                         '${exercises.length} Exercises',
-                        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                
+
                 Expanded(
-                  child: day.isRestDay 
+                  child: day.isRestDay
                       ? _buildRestDayState()
                       : _buildExercisesList(exercises),
                 ),
@@ -281,25 +347,36 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 20.0),
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        context.push('/workout-player', extra: {
-                          'routineName': day.name,
-                          'exercises': exercises,
-                        });
+                        context.push(
+                          '/workout-player',
+                          extra: {
+                            'routineName': day.name,
+                            'exercises': exercises,
+                          },
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         minimumSize: const Size.fromHeight(50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       icon: const Icon(Icons.play_arrow_rounded, size: 28),
-                      label: const Text('Start Workout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      label: const Text(
+                        'Start Workout',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
-                  )
+                  ),
               ],
             ),
           ),
-        )
+        ),
       ],
     );
   }
@@ -320,7 +397,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
             final dayNum = index + 1;
             final isSelected = _selectedDayOfWeek == dayNum;
             final date = monday.add(Duration(days: index));
-            
+
             // Check if this day is a rest day
             final daySplit = _routineDays.firstWhere(
               (d) => (d['day'] as RoutineDay).dayOfWeek == dayNum,
@@ -338,7 +415,9 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                   width: 58,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : AppColors.cardBackground,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected ? Colors.transparent : AppColors.border,
@@ -353,7 +432,9 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -362,20 +443,26 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : AppColors.textPrimary,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Icon(
                         _completedDayOfWeeks.contains(dayNum)
                             ? Icons.check_circle_rounded
-                            : (isRest ? Icons.spa_rounded : Icons.fitness_center_rounded),
+                            : (isRest
+                                  ? Icons.spa_rounded
+                                  : Icons.fitness_center_rounded),
                         size: 14,
-                        color: isSelected 
-                            ? Colors.white 
+                        color: isSelected
+                            ? Colors.white
                             : (_completedDayOfWeeks.contains(dayNum)
-                                ? AppColors.success
-                                : (isRest ? Colors.blue.withOpacity(0.8) : AppColors.primary)),
+                                  ? AppColors.success
+                                  : (isRest
+                                        ? Colors.blue.withOpacity(0.8)
+                                        : AppColors.primary)),
                       ),
                     ],
                   ),
@@ -399,11 +486,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               color: Colors.blue.withOpacity(0.08),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.spa_rounded,
-              size: 48,
-              color: Colors.blue,
-            ),
+            child: const Icon(Icons.spa_rounded, size: 48, color: Colors.blue),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -415,7 +498,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
             'Your muscles grow during rest periods. Hydrate and eat well!',
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-          )
+          ),
         ],
       ),
     );
@@ -434,8 +517,14 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               foregroundColor: AppColors.primary,
               child: Text('${index + 1}'),
             ),
-            title: Text(ex.exerciseName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text('Target: ${ex.sets} Sets of ${ex.repsRange} Reps', style: const TextStyle(fontSize: 12)),
+            title: Text(
+              ex.exerciseName,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            subtitle: Text(
+              'Target: ${ex.sets} Sets of ${ex.repsRange} Reps',
+              style: const TextStyle(fontSize: 12),
+            ),
           ),
         );
       },

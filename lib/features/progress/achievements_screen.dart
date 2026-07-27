@@ -48,22 +48,33 @@ class AchievementsScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.emoji_events_rounded, color: Colors.amber, size: 36),
+                  const Icon(
+                    Icons.emoji_events_rounded,
+                    color: Colors.amber,
+                    size: 36,
+                  ),
                   const SizedBox(width: 14),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '$unlockedCount / ${achievements.length} Unlocked',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       const Text(
                         'Keep training and logging to earn badges!',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
@@ -75,7 +86,10 @@ class AchievementsScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.primary.withOpacity(0.12), AppColors.surface],
+                    colors: [
+                      AppColors.primary.withOpacity(0.12),
+                      AppColors.surface,
+                    ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -90,18 +104,29 @@ class AchievementsScreen extends StatelessWidget {
                         color: AppColors.primary.withOpacity(0.15),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.workspace_premium_rounded, size: 36, color: AppColors.primary),
+                      child: const Icon(
+                        Icons.workspace_premium_rounded,
+                        size: 36,
+                        color: AppColors.primary,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     const Text(
                       'No Badges Unlocked Yet',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     const Text(
                       'Start logging workouts, meals, and maintaining your streak to earn your first achievement badge!',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
                     ),
                   ],
                 ),
@@ -111,7 +136,12 @@ class AchievementsScreen extends StatelessWidget {
 
             const Text(
               'ALL BADGES',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 0.5),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textMuted,
+                letterSpacing: 0.5,
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -129,7 +159,9 @@ class AchievementsScreen extends StatelessWidget {
                   return Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: item.isUnlocked ? item.color.withOpacity(0.08) : AppColors.cardBackground,
+                      color: item.isUnlocked
+                          ? item.color.withOpacity(0.08)
+                          : AppColors.cardBackground,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: item.isUnlocked ? item.color : AppColors.border,
@@ -153,10 +185,14 @@ class AchievementsScreen extends StatelessWidget {
                           children: [
                             CircleAvatar(
                               radius: 26,
-                              backgroundColor: item.isUnlocked ? item.color.withOpacity(0.2) : AppColors.border.withOpacity(0.4),
+                              backgroundColor: item.isUnlocked
+                                  ? item.color.withOpacity(0.2)
+                                  : AppColors.border.withOpacity(0.4),
                               child: Icon(
                                 item.icon,
-                                color: item.isUnlocked ? item.color : AppColors.textMuted,
+                                color: item.isUnlocked
+                                    ? item.color
+                                    : AppColors.textMuted,
                                 size: 26,
                               ),
                             ),
@@ -166,8 +202,15 @@ class AchievementsScreen extends StatelessWidget {
                                 bottom: 0,
                                 child: Container(
                                   padding: const EdgeInsets.all(2),
-                                  decoration: const BoxDecoration(color: AppColors.surface, shape: BoxShape.circle),
-                                  child: Icon(Icons.check_circle_rounded, color: item.color, size: 14),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.surface,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.check_circle_rounded,
+                                    color: item.color,
+                                    size: 14,
+                                  ),
                                 ),
                               ),
                           ],
@@ -178,21 +221,29 @@ class AchievementsScreen extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
-                            color: item.isUnlocked ? Colors.white : AppColors.textMuted,
+                            color: item.isUnlocked
+                                ? Colors.white
+                                : AppColors.textMuted,
                           ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           item.description,
-                          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                          ),
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
                         TweenAnimationBuilder<double>(
-                          tween: Tween<double>(begin: 0.0, end: item.progressPercentage),
+                          tween: Tween<double>(
+                            begin: 0.0,
+                            end: item.progressPercentage,
+                          ),
                           duration: const Duration(milliseconds: 600),
                           curve: Curves.easeOutCubic,
                           builder: (context, animVal, _) {
@@ -202,7 +253,9 @@ class AchievementsScreen extends StatelessWidget {
                                 value: animVal,
                                 backgroundColor: AppColors.border,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  item.isUnlocked ? item.color : AppColors.textMuted,
+                                  item.isUnlocked
+                                      ? item.color
+                                      : AppColors.textMuted,
                                 ),
                                 minHeight: 4,
                               ),

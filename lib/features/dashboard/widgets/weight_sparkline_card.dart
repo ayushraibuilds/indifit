@@ -7,7 +7,7 @@ import 'log_weight_bottom_sheet.dart';
 class WeightSparklineCard extends StatelessWidget {
   final double currentWeight;
   final List<double> weightHistory;
-  final ValueChanged<double> onWeightAdjusted;
+  final Future<void> Function(double) onWeightAdjusted;
 
   const WeightSparklineCard({
     super.key,
@@ -30,38 +30,59 @@ class WeightSparklineCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Weight Progress', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    const Text(
+                      'Weight Progress',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       'Current weight: ${currentWeight.toStringAsFixed(1)} kg',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
-                
+
                 // Weight entry Log button
                 OutlinedButton.icon(
-                  onPressed: () => LogWeightBottomSheet.show(context, currentWeight, onWeightAdjusted),
+                  onPressed: () => LogWeightBottomSheet.show(
+                    context,
+                    currentWeight,
+                    onWeightAdjusted,
+                  ),
                   icon: const Icon(Icons.add_rounded, size: 16),
                   label: const Text('Log', style: TextStyle(fontSize: 12)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            
+
             if (weightHistory.isEmpty)
               Container(
                 height: 80,
                 alignment: Alignment.center,
                 child: const Text(
                   'Log your body weight to track your progress trend over time.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               )
@@ -74,12 +95,18 @@ class WeightSparklineCard extends StatelessWidget {
                   children: [
                     Text(
                       '1 weigh-in logged (${currentWeight.toStringAsFixed(1)} kg)',
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     const Text(
                       'Add a second weigh-in on another day to see your trend line.',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -90,8 +117,10 @@ class WeightSparklineCard extends StatelessWidget {
                 height: 100,
                 child: Builder(
                   builder: (context) {
-                    final minW = weightHistory.reduce((a, b) => a < b ? a : b) - 1.0;
-                    final maxW = weightHistory.reduce((a, b) => a > b ? a : b) + 1.0;
+                    final minW =
+                        weightHistory.reduce((a, b) => a < b ? a : b) - 1.0;
+                    final maxW =
+                        weightHistory.reduce((a, b) => a > b ? a : b) + 1.0;
                     final spots = List.generate(
                       weightHistory.length,
                       (i) => FlSpot(i.toDouble(), weightHistory[i]),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/di/providers.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
@@ -11,10 +10,12 @@ class RegionalFoodPacksScreen extends ConsumerStatefulWidget {
   const RegionalFoodPacksScreen({super.key});
 
   @override
-  ConsumerState<RegionalFoodPacksScreen> createState() => _RegionalFoodPacksScreenState();
+  ConsumerState<RegionalFoodPacksScreen> createState() =>
+      _RegionalFoodPacksScreenState();
 }
 
-class _RegionalFoodPacksScreenState extends ConsumerState<RegionalFoodPacksScreen> {
+class _RegionalFoodPacksScreenState
+    extends ConsumerState<RegionalFoodPacksScreen> {
   final Map<String, bool> _loadedPacks = {
     'south_indian': false,
     'gujarati': false,
@@ -32,11 +33,16 @@ class _RegionalFoodPacksScreenState extends ConsumerState<RegionalFoodPacksScree
   };
 
   final Map<String, String> _packDescriptions = {
-    'south_indian': 'Includes Dosa, Idli Sambar, Medu Vada, Coconut Chutney, Tomato Rasam.',
-    'gujarati': 'Includes Khaman Dhokla, Methi Thepla, Gujarati Kadhi, Undhiyu, Shrikhand.',
-    'bengali': 'Includes Machher Jhol, Luchi, Begun Bhaja, Chholar Dal, Mishti Doi.',
-    'punjabi': 'Includes Sarson Saag, Makki Roti, Chole Bhature, Dal Makhani, Lassi.',
-    'maharashtrian': 'Includes Kanda Poha, Misal Pav, Puran Poli, Vada Pav, Pithla Bhakri.',
+    'south_indian':
+        'Includes Dosa, Idli Sambar, Medu Vada, Coconut Chutney, Tomato Rasam.',
+    'gujarati':
+        'Includes Khaman Dhokla, Methi Thepla, Gujarati Kadhi, Undhiyu, Shrikhand.',
+    'bengali':
+        'Includes Machher Jhol, Luchi, Begun Bhaja, Chholar Dal, Mishti Doi.',
+    'punjabi':
+        'Includes Sarson Saag, Makki Roti, Chole Bhature, Dal Makhani, Lassi.',
+    'maharashtrian':
+        'Includes Kanda Poha, Misal Pav, Puran Poli, Vada Pav, Pithla Bhakri.',
   };
 
   final Map<String, String> _packAssets = {
@@ -89,7 +95,9 @@ class _RegionalFoodPacksScreenState extends ConsumerState<RegionalFoodPacksScree
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Loaded ${_packNames[packId]} into local database!'),
+              content: Text(
+                'Loaded ${_packNames[packId]} into local database!',
+              ),
               backgroundColor: AppColors.success,
             ),
           );
@@ -100,7 +108,9 @@ class _RegionalFoodPacksScreenState extends ConsumerState<RegionalFoodPacksScree
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Removed ${_packNames[packId]} from local database.'),
+              content: Text(
+                'Removed ${_packNames[packId]} from local database.',
+              ),
               backgroundColor: AppColors.warning,
             ),
           );
@@ -109,7 +119,11 @@ class _RegionalFoodPacksScreenState extends ConsumerState<RegionalFoodPacksScree
       _loadedPacks[packId] = value;
     } catch (e, st) {
       AppLogger.warning('Regional food pack update failed: $e');
-      CrashReportingService.recordCrash(e, st, reason: 'regional_food_pack toggle error');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'regional_food_pack toggle error',
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -146,30 +160,50 @@ class _RegionalFoodPacksScreenState extends ConsumerState<RegionalFoodPacksScree
                     final isLoaded = _loadedPacks[packId] ?? false;
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12.0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8.0,
+                          horizontal: 4.0,
+                        ),
                         child: SwitchListTile(
-                          activeColor: AppColors.primary,
+                          activeThumbColor: AppColors.primary,
                           title: Row(
                             children: [
-                              Icon(_packIcons[packId], color: isLoaded ? AppColors.primary : AppColors.textMuted),
+                              Icon(
+                                _packIcons[packId],
+                                color: isLoaded
+                                    ? AppColors.primary
+                                    : AppColors.textMuted,
+                              ),
                               const SizedBox(width: 12),
                               Text(
                                 _packNames[packId]!,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
                           subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 6.0, left: 32.0),
+                            padding: const EdgeInsets.only(
+                              top: 6.0,
+                              left: 32.0,
+                            ),
                             child: Text(
                               _packDescriptions[packId]!,
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ),
                           value: isLoaded,
-                          onChanged: _syncing ? null : (val) => _togglePack(packId, val),
+                          onChanged: _syncing
+                              ? null
+                              : (val) => _togglePack(packId, val),
                         ),
                       ),
                     );
@@ -181,13 +215,19 @@ class _RegionalFoodPacksScreenState extends ConsumerState<RegionalFoodPacksScree
               child: const Center(
                 child: Card(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 16.0,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         CircularProgressIndicator(),
                         SizedBox(width: 16),
-                        Text('Syncing local catalog...', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Syncing local catalog...',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ],
                     ),
                   ),

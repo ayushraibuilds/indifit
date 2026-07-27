@@ -1,14 +1,12 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' show Value;
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
 import 'package:indifit/features/dashboard/dashboard_controller.dart';
 import 'package:indifit/features/workout_player/workout_player_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -66,7 +64,7 @@ void main() {
       final recents = await repo.getRecentFoods(10);
       expect(recents.length, 2);
       expect(recents.first.name, 'Apple'); // Apple is logged twice
-      expect(recents[1].name, 'Banana');  // Banana is logged once
+      expect(recents[1].name, 'Banana'); // Banana is logged once
     });
   });
 
@@ -81,35 +79,38 @@ void main() {
         orderIndex: 1,
       );
 
-      final controllerProvider = StateNotifierProvider<WorkoutPlayerController, WorkoutPlayerState>((ref) {
-        return WorkoutPlayerController(
-          ref,
-          routineName: 'Test Routine',
-          initialExercises: [mockExercise],
-        );
-      });
+      final controllerProvider =
+          StateNotifierProvider<WorkoutPlayerController, WorkoutPlayerState>((
+            ref,
+          ) {
+            return WorkoutPlayerController(
+              ref,
+              routineName: 'Test Routine',
+              initialExercises: [mockExercise],
+            );
+          });
 
       final container = ProviderContainer(
         overrides: [
           databaseProvider.overrideWithValue(db),
           workoutRepositoryProvider.overrideWithValue(WorkoutRepository(db)),
-        ]
+        ],
       );
       addTearDown(container.dispose);
 
       final controller = container.read(controllerProvider.notifier);
       await controller.prefillInputs();
 
-      expect(controller.debugState.selectedSetType, 'working');
-      expect(controller.debugState.isWarmUp, isFalse);
+      expect(container.read(controllerProvider).selectedSetType, 'working');
+      expect(container.read(controllerProvider).isWarmUp, isFalse);
 
       controller.setSelectedSetType('warmup');
-      expect(controller.debugState.selectedSetType, 'warmup');
-      expect(controller.debugState.isWarmUp, isTrue);
+      expect(container.read(controllerProvider).selectedSetType, 'warmup');
+      expect(container.read(controllerProvider).isWarmUp, isTrue);
 
       controller.setSelectedSetType('dropset');
-      expect(controller.debugState.selectedSetType, 'dropset');
-      expect(controller.debugState.isWarmUp, isFalse);
+      expect(container.read(controllerProvider).selectedSetType, 'dropset');
+      expect(container.read(controllerProvider).isWarmUp, isFalse);
 
       await Future.delayed(const Duration(milliseconds: 50));
     });
@@ -140,8 +141,4 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 50));
     });
   });
-}
-
-extension on WorkoutPlayerController {
-  WorkoutPlayerState get debugState => state;
 }

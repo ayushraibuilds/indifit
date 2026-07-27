@@ -28,17 +28,27 @@ class PriorSessionCard extends StatelessWidget {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.history_rounded, color: AppColors.primary, size: 18),
+                    Icon(
+                      Icons.history_rounded,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
                     SizedBox(width: 8),
                     Text(
                       'Prior Session Performance',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
                 if (bestPrSet != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.amber.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
@@ -48,7 +58,11 @@ class PriorSessionCard extends StatelessWidget {
                         const Text('👑 ', style: TextStyle(fontSize: 10)),
                         Text(
                           'PR: ${bestPrSet!.weight.toStringAsFixed(1)}kg x ${bestPrSet!.reps}',
-                          style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 11),
+                          style: const TextStyle(
+                            color: Colors.amber,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
                         ),
                       ],
                     ),
@@ -67,7 +81,10 @@ class PriorSessionCard extends StatelessWidget {
                 runSpacing: 8,
                 children: priorSets.map((s) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.cardBackground,
                       borderRadius: BorderRadius.circular(8),
@@ -75,7 +92,10 @@ class PriorSessionCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Set ${s.setNumber}: ${s.weight.toStringAsFixed(1)} kg × ${s.reps}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -89,12 +109,20 @@ class PriorSessionCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 14),
+                  const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: AppColors.primary,
+                    size: 14,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'AI Recommendation: ${suggestedWeight.toStringAsFixed(1)} kg for progressive overload',
-                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 11),
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

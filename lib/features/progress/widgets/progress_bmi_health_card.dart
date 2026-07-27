@@ -28,7 +28,10 @@ class ProgressBmiHealthCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   'Set your height in onboarding/profile to calculate your BMI.',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
@@ -67,31 +70,48 @@ class ProgressBmiHealthCard extends ConsumerWidget {
                 color: categoryColor.withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.monitor_weight_outlined, color: categoryColor, size: 24),
+              child: Icon(
+                Icons.monitor_weight_outlined,
+                color: categoryColor,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('BMI & Weight Category', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const Text(
+                    'BMI & Weight Category',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       Text(
                         'BMI: ${bmi.toStringAsFixed(1)}',
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: categoryColor.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           category,
-                          style: TextStyle(color: categoryColor, fontWeight: FontWeight.bold, fontSize: 11),
+                          style: TextStyle(
+                            color: categoryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                     ],

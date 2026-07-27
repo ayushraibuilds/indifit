@@ -1,24 +1,29 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
-import '../../data/repositories/workout_repository.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/workout_repository.dart';
 
 class RoutineEditorScreen extends ConsumerStatefulWidget {
   final int initialTabIndex;
   const RoutineEditorScreen({super.key, this.initialTabIndex = 0});
 
   @override
-  ConsumerState<RoutineEditorScreen> createState() => _RoutineEditorScreenState();
+  ConsumerState<RoutineEditorScreen> createState() =>
+      _RoutineEditorScreenState();
 }
 
-class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with SingleTickerProviderStateMixin {
+class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final TextEditingController _routineNameController = TextEditingController(text: 'My Custom Split');
+  final TextEditingController _routineNameController = TextEditingController(
+    text: 'My Custom Split',
+  );
   int? _activeRoutineId;
   final List<_BuilderDayData> _builderDays = [];
 
@@ -28,7 +33,11 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTabIndex);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTabIndex,
+    );
     _loadTemplates();
     _loadActiveRoutine();
   }
@@ -46,17 +55,24 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
           final List<_BuilderDayData> loadedDays = [];
           for (final item in details) {
             final RoutineDay day = item['day'];
-            final List<RoutineExercise> exercises = item['exercises'] as List<RoutineExercise>;
-            loadedDays.add(_BuilderDayData(
-              name: day.name,
-              dayOfWeek: day.dayOfWeek,
-              isRestDay: day.isRestDay,
-              exercises: exercises.map((e) => RoutineExerciseInput(
-                name: e.exerciseName,
-                sets: e.sets,
-                repsRange: e.repsRange,
-              )).toList(),
-            ));
+            final List<RoutineExercise> exercises =
+                item['exercises'] as List<RoutineExercise>;
+            loadedDays.add(
+              _BuilderDayData(
+                name: day.name,
+                dayOfWeek: day.dayOfWeek,
+                isRestDay: day.isRestDay,
+                exercises: exercises
+                    .map(
+                      (e) => RoutineExerciseInput(
+                        name: e.exerciseName,
+                        sets: e.sets,
+                        repsRange: e.repsRange,
+                      ),
+                    )
+                    .toList(),
+              ),
+            );
           }
           setState(() {
             _builderDays.clear();
@@ -71,7 +87,9 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
 
   Future<void> _loadTemplates() async {
     try {
-      final jsonStr = await rootBundle.loadString('assets/data/split_templates.json');
+      final jsonStr = await rootBundle.loadString(
+        'assets/data/split_templates.json',
+      );
       final List<dynamic> list = jsonDecode(jsonStr);
       if (mounted) {
         setState(() {
@@ -108,18 +126,24 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
       final bool isRest = d['isRestDay'] ?? false;
       final List<dynamic> exList = d['exercises'] ?? [];
 
-      final exercises = exList.map((ex) => RoutineExerciseInput(
-        name: ex['name'] as String,
-        sets: (ex['sets'] as num).toInt(),
-        repsRange: ex['repsRange'] as String,
-      )).toList();
+      final exercises = exList
+          .map(
+            (ex) => RoutineExerciseInput(
+              name: ex['name'] as String,
+              sets: (ex['sets'] as num).toInt(),
+              repsRange: ex['repsRange'] as String,
+            ),
+          )
+          .toList();
 
-      daysData.add(RoutineDayWithExercises(
-        dayName: dayName,
-        dayOfWeek: dayOfWeek,
-        isRestDay: isRest,
-        exercises: exercises,
-      ));
+      daysData.add(
+        RoutineDayWithExercises(
+          dayName: dayName,
+          dayOfWeek: dayOfWeek,
+          isRestDay: isRest,
+          exercises: exercises,
+        ),
+      );
     }
 
     await repo.saveRoutine(
@@ -131,7 +155,10 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Saved routine: $name!'), backgroundColor: AppColors.success),
+        SnackBar(
+          content: Text('Saved routine: $name!'),
+          backgroundColor: AppColors.success,
+        ),
       );
       Navigator.pop(context, true);
     }
@@ -154,12 +181,16 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
     }
 
     final repo = ref.read(workoutRepositoryProvider);
-    final daysData = _builderDays.map((d) => RoutineDayWithExercises(
-      dayName: d.name,
-      dayOfWeek: d.dayOfWeek,
-      isRestDay: d.isRestDay,
-      exercises: d.exercises,
-    )).toList();
+    final daysData = _builderDays
+        .map(
+          (d) => RoutineDayWithExercises(
+            dayName: d.name,
+            dayOfWeek: d.dayOfWeek,
+            isRestDay: d.isRestDay,
+            exercises: d.exercises,
+          ),
+        )
+        .toList();
 
     await repo.saveRoutine(
       routineId: _activeRoutineId,
@@ -171,7 +202,10 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Custom split saved!'), backgroundColor: AppColors.success),
+        const SnackBar(
+          content: Text('Custom split saved!'),
+          backgroundColor: AppColors.success,
+        ),
       );
       Navigator.pop(context, true);
     }
@@ -193,7 +227,11 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
         String query = '';
         return StatefulBuilder(
           builder: (ctx, setModalState) {
-            final filtered = exercises.where((e) => e.name.toLowerCase().contains(query.toLowerCase())).toList();
+            final filtered = exercises
+                .where(
+                  (e) => e.name.toLowerCase().contains(query.toLowerCase()),
+                )
+                .toList();
             return Container(
               height: MediaQuery.of(ctx).size.height * 0.7,
               padding: const EdgeInsets.all(16.0),
@@ -203,7 +241,10 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
                     width: 36,
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                   TextField(
                     decoration: const InputDecoration(
@@ -219,13 +260,32 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
                       itemBuilder: (ctx, i) {
                         final ex = filtered[i];
                         return ListTile(
-                          title: Text(ex.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          subtitle: Text('${ex.muscleGroups} • ${ex.equipment}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                          trailing: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+                          title: Text(
+                            ex.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${ex.muscleGroups} • ${ex.equipment}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          trailing: const Icon(
+                            Icons.add_circle_outline,
+                            color: AppColors.primary,
+                          ),
                           onTap: () {
                             setState(() {
                               _builderDays[dayIndex].exercises.add(
-                                RoutineExerciseInput(name: ex.name, sets: 3, repsRange: '8-12'),
+                                RoutineExerciseInput(
+                                  name: ex.name,
+                                  sets: 3,
+                                  repsRange: '8-12',
+                                ),
                               );
                             });
                             Navigator.pop(ctx);
@@ -247,7 +307,10 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Routine Split Builder', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Routine Split Builder',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: AppColors.surface,
         elevation: 0,
         bottom: TabBar(
@@ -256,17 +319,17 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
           labelColor: AppColors.primary,
           unselectedLabelColor: AppColors.textSecondary,
           tabs: const [
-            Tab(icon: Icon(Icons.dashboard_customize_rounded), text: 'Templates'),
+            Tab(
+              icon: Icon(Icons.dashboard_customize_rounded),
+              text: 'Templates',
+            ),
             Tab(icon: Icon(Icons.edit_note_rounded), text: 'Manual Builder'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildTemplatesTab(),
-          _buildManualBuilderTab(),
-        ],
+        children: [_buildTemplatesTab(), _buildManualBuilderTab()],
       ),
     );
   }
@@ -289,7 +352,9 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
         final String desc = tpl['description'] ?? '';
         final String eq = tpl['equipment'] ?? 'gym';
         final List<dynamic> days = tpl['days'] ?? [];
-        final int activeDays = days.where((d) => !(d['isRestDay'] as bool? ?? false)).length;
+        final int activeDays = days
+            .where((d) => !(d['isRestDay'] as bool? ?? false))
+            .length;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 16.0),
@@ -304,30 +369,56 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
                     Expanded(
                       child: Text(
                         name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: eq == 'bodyweight' ? Colors.blue.withValues(alpha: 0.12) : AppColors.primary.withValues(alpha: 0.12),
+                        color: eq == 'bodyweight'
+                            ? Colors.blue.withValues(alpha: 0.12)
+                            : AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        eq == 'bodyweight' ? 'Home / No Eq' : '$activeDays Days / Wk',
+                        eq == 'bodyweight'
+                            ? 'Home / No Eq'
+                            : '$activeDays Days / Wk',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: eq == 'bodyweight' ? Colors.blue : AppColors.primary,
+                          color: eq == 'bodyweight'
+                              ? Colors.blue
+                              : AppColors.primary,
                         ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(desc, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text(
+                  desc,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
                 const SizedBox(height: 12),
-                const Text('DAY PREVIEW', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 0.5)),
+                const Text(
+                  'DAY PREVIEW',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textMuted,
+                    letterSpacing: 0.5,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
@@ -335,9 +426,14 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
                   children: days.map<Widget>((d) {
                     final bool isRest = d['isRestDay'] ?? false;
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: isRest ? AppColors.surface : AppColors.background,
+                        color: isRest
+                            ? AppColors.surface
+                            : AppColors.background,
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: AppColors.border),
                       ),
@@ -345,8 +441,12 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
                         d['name'],
                         style: TextStyle(
                           fontSize: 10,
-                          color: isRest ? AppColors.textMuted : AppColors.textPrimary,
-                          fontWeight: isRest ? FontWeight.normal : FontWeight.bold,
+                          color: isRest
+                              ? AppColors.textMuted
+                              : AppColors.textPrimary,
+                          fontWeight: isRest
+                              ? FontWeight.normal
+                              : FontWeight.bold,
                         ),
                       ),
                     );
@@ -361,10 +461,21 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-                    label: const Text('Use This Split', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    icon: const Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 18,
+                    ),
+                    label: const Text(
+                      'Use This Split',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -394,7 +505,14 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('SPLIT DAYS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textMuted)),
+                  const Text(
+                    'SPLIT DAYS',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
                   TextButton.icon(
                     onPressed: () {
                       setState(() {
@@ -444,11 +562,18 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
                           const SizedBox(width: 8),
                           FilterChip(
                             selected: day.isRestDay,
-                            label: Text(day.isRestDay ? 'Rest Day' : 'Training Day'),
-                            onSelected: (val) => setState(() => day.isRestDay = val),
+                            label: Text(
+                              day.isRestDay ? 'Rest Day' : 'Training Day',
+                            ),
+                            onSelected: (val) =>
+                                setState(() => day.isRestDay = val),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 18),
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: AppColors.danger,
+                              size: 18,
+                            ),
                             onPressed: () {
                               setState(() {
                                 _builderDays.removeAt(dIndex);
@@ -468,22 +593,34 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
                               children: [
                                 Expanded(
                                   flex: 3,
-                                  child: Text(ex.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  child: Text(
+                                    ex.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
                                 ),
                                 SizedBox(
                                   width: 48,
                                   child: TextField(
-                                    controller: TextEditingController(text: '${ex.sets}'),
+                                    controller: TextEditingController(
+                                      text: '${ex.sets}',
+                                    ),
                                     keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(labelText: 'Sets', isDense: true),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Sets',
+                                      isDense: true,
+                                    ),
                                     onChanged: (v) {
                                       final parsed = int.tryParse(v);
                                       if (parsed != null && parsed > 0) {
-                                        day.exercises[eIndex] = RoutineExerciseInput(
-                                          name: ex.name,
-                                          sets: parsed,
-                                          repsRange: ex.repsRange,
-                                        );
+                                        day.exercises[eIndex] =
+                                            RoutineExerciseInput(
+                                              name: ex.name,
+                                              sets: parsed,
+                                              repsRange: ex.repsRange,
+                                            );
                                       }
                                     },
                                   ),
@@ -492,19 +629,29 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
                                 SizedBox(
                                   width: 64,
                                   child: TextField(
-                                    controller: TextEditingController(text: ex.repsRange),
-                                    decoration: const InputDecoration(labelText: 'Reps', isDense: true),
+                                    controller: TextEditingController(
+                                      text: ex.repsRange,
+                                    ),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Reps',
+                                      isDense: true,
+                                    ),
                                     onChanged: (v) {
-                                      day.exercises[eIndex] = RoutineExerciseInput(
-                                        name: ex.name,
-                                        sets: ex.sets,
-                                        repsRange: v,
-                                      );
+                                      day.exercises[eIndex] =
+                                          RoutineExerciseInput(
+                                            name: ex.name,
+                                            sets: ex.sets,
+                                            repsRange: v,
+                                          );
                                     },
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                                  icon: const Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: AppColors.textMuted,
+                                  ),
                                   onPressed: () {
                                     setState(() {
                                       day.exercises.removeAt(eIndex);
@@ -519,7 +666,10 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
                         TextButton.icon(
                           onPressed: () => _addExerciseToDay(dIndex),
                           icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Add Exercise', style: TextStyle(fontSize: 12)),
+                          label: const Text(
+                            'Add Exercise',
+                            style: TextStyle(fontSize: 12),
+                          ),
                         ),
                       ],
                     ],
@@ -539,10 +689,15 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen> with 
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               icon: const Icon(Icons.save_rounded, size: 18),
-              label: const Text('Save Split Routine', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              label: const Text(
+                'Save Split Routine',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
             ),
           ),
         ),

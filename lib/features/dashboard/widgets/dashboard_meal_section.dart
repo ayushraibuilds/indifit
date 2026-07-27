@@ -29,16 +29,41 @@ class DashboardMealSection extends ConsumerWidget {
       children: [
         const Text(
           'MEALS TODAY',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+            letterSpacing: 1.0,
+          ),
         ),
         const SizedBox(height: 12),
-        _MealCard(title: 'Breakfast', type: 'breakfast', allLogs: logs, selectedDate: selectedDate ?? DateTime.now()),
+        _MealCard(
+          title: 'Breakfast',
+          type: 'breakfast',
+          allLogs: logs,
+          selectedDate: selectedDate ?? DateTime.now(),
+        ),
         const SizedBox(height: 8),
-        _MealCard(title: 'Lunch', type: 'lunch', allLogs: logs, selectedDate: selectedDate ?? DateTime.now()),
+        _MealCard(
+          title: 'Lunch',
+          type: 'lunch',
+          allLogs: logs,
+          selectedDate: selectedDate ?? DateTime.now(),
+        ),
         const SizedBox(height: 8),
-        _MealCard(title: 'Dinner', type: 'dinner', allLogs: logs, selectedDate: selectedDate ?? DateTime.now()),
+        _MealCard(
+          title: 'Dinner',
+          type: 'dinner',
+          allLogs: logs,
+          selectedDate: selectedDate ?? DateTime.now(),
+        ),
         const SizedBox(height: 8),
-        _MealCard(title: 'Snacks', type: 'snack', allLogs: logs, selectedDate: selectedDate ?? DateTime.now()),
+        _MealCard(
+          title: 'Snacks',
+          type: 'snack',
+          allLogs: logs,
+          selectedDate: selectedDate ?? DateTime.now(),
+        ),
       ],
     );
   }
@@ -94,7 +119,9 @@ class _MealCard extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               FutureBuilder<List<FoodLog>>(
-                future: ref.read(foodRepositoryProvider).getLastLoggedMeal(type),
+                future: ref
+                    .read(foodRepositoryProvider)
+                    .getLastLoggedMeal(type),
                 builder: (context, snapshot) {
                   final recent = snapshot.data ?? [];
                   if (recent.isEmpty) return const SizedBox.shrink();
@@ -128,8 +155,13 @@ class _MealCard extends ConsumerWidget {
                             );
                           }
                         },
-                        icon: const Icon(Icons.history_toggle_off_rounded, size: 16),
-                        label: Text('Repeat ${recent.length} recent item${recent.length > 1 ? 's' : ''}'),
+                        icon: const Icon(
+                          Icons.history_toggle_off_rounded,
+                          size: 16,
+                        ),
+                        label: Text(
+                          'Repeat ${recent.length} recent item${recent.length > 1 ? 's' : ''}',
+                        ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.primary,
                           side: const BorderSide(color: AppColors.primary),
@@ -143,21 +175,40 @@ class _MealCard extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               ListTile(
-                leading: const Icon(Icons.search_rounded, color: AppColors.primary),
-                title: const Text('Search Food Database', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Search common Indian items & scan barcodes'),
+                leading: const Icon(
+                  Icons.search_rounded,
+                  color: AppColors.primary,
+                ),
+                title: const Text(
+                  'Search Food Database',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Search common Indian items & scan barcodes',
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => FoodSearchScreen(mealType: type, selectedDate: selectedDate)),
+                    MaterialPageRoute(
+                      builder: (context) => FoodSearchScreen(
+                        mealType: type,
+                        selectedDate: selectedDate,
+                      ),
+                    ),
                   );
                 },
               ),
               const Divider(color: AppColors.border),
               ListTile(
-                leading: const Icon(Icons.bookmark_outline_rounded, color: AppColors.warning),
-                title: const Text('Meal Templates', style: TextStyle(fontWeight: FontWeight.w600)),
+                leading: const Icon(
+                  Icons.bookmark_outline_rounded,
+                  color: AppColors.warning,
+                ),
+                title: const Text(
+                  'Meal Templates',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: const Text('One-tap log your usual multi-item meals'),
                 onTap: () {
                   Navigator.pop(context);
@@ -171,27 +222,50 @@ class _MealCard extends ConsumerWidget {
               ),
               const Divider(color: AppColors.border),
               ListTile(
-                leading: const Icon(Icons.restaurant_menu_rounded, color: AppColors.success),
-                title: const Text('Thali Builder (Multi-item)', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Compose a custom plate with running macros'),
+                leading: const Icon(
+                  Icons.restaurant_menu_rounded,
+                  color: AppColors.success,
+                ),
+                title: const Text(
+                  'Thali Builder (Multi-item)',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Compose a custom plate with running macros',
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => ThaliBuilderScreen(mealType: type)),
+                    MaterialPageRoute(
+                      builder: (context) => ThaliBuilderScreen(mealType: type),
+                    ),
                   );
                 },
               ),
               const Divider(color: AppColors.border),
               ListTile(
-                leading: const Icon(Icons.psychology_rounded, color: AppColors.success),
-                title: const Text('AI Meal Estimator', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Estimate calories & macros from photos or text'),
+                leading: const Icon(
+                  Icons.psychology_rounded,
+                  color: AppColors.success,
+                ),
+                title: const Text(
+                  'AI Meal Estimator',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Estimate calories & macros from photos or text',
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AiMealLoggerScreen(mealType: type, selectedDate: selectedDate)),
+                    MaterialPageRoute(
+                      builder: (context) => AiMealLoggerScreen(
+                        mealType: type,
+                        selectedDate: selectedDate,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -202,10 +276,12 @@ class _MealCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _saveAsTemplate(BuildContext context, WidgetRef ref, List<FoodLog> mealLogs) async {
-    final controller = TextEditingController(
-      text: 'My $title',
-    );
+  Future<void> _saveAsTemplate(
+    BuildContext context,
+    WidgetRef ref,
+    List<FoodLog> mealLogs,
+  ) async {
+    final controller = TextEditingController(text: 'My $title');
     final name = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -239,11 +315,9 @@ class _MealCard extends ConsumerWidget {
     if (name == null || name.isEmpty) return;
 
     try {
-      await ref.read(foodRepositoryProvider).saveMealTemplate(
-            name: name,
-            defaultMealType: type,
-            items: mealLogs,
-          );
+      await ref
+          .read(foodRepositoryProvider)
+          .saveMealTemplate(name: name, defaultMealType: type, items: mealLogs);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -262,7 +336,11 @@ class _MealCard extends ConsumerWidget {
     }
   }
 
-  Future<void> _copyMeal(BuildContext context, WidgetRef ref, List<FoodLog> mealLogs) async {
+  Future<void> _copyMeal(
+    BuildContext context,
+    WidgetRef ref,
+    List<FoodLog> mealLogs,
+  ) async {
     // Prefer group id when all items share one; otherwise save+log via synthetic group.
     final groupIds = mealLogs
         .map((l) => l.mealGroupId)
@@ -295,17 +373,26 @@ class _MealCard extends ConsumerWidget {
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.today_rounded, color: AppColors.primary),
+                leading: const Icon(
+                  Icons.today_rounded,
+                  color: AppColors.primary,
+                ),
                 title: const Text('Today'),
                 onTap: () => Navigator.pop(ctx, today),
               ),
               ListTile(
-                leading: const Icon(Icons.next_plan_rounded, color: AppColors.success),
+                leading: const Icon(
+                  Icons.next_plan_rounded,
+                  color: AppColors.success,
+                ),
                 title: const Text('Tomorrow'),
                 onTap: () => Navigator.pop(ctx, tomorrow),
               ),
               ListTile(
-                leading: const Icon(Icons.calendar_month_rounded, color: AppColors.textSecondary),
+                leading: const Icon(
+                  Icons.calendar_month_rounded,
+                  color: AppColors.textSecondary,
+                ),
                 title: const Text('Pick custom date…'),
                 onTap: () async {
                   final picked = await showDatePicker(
@@ -360,8 +447,15 @@ class _MealCard extends ConsumerWidget {
               ...options.entries.map(
                 (e) => ListTile(
                   title: Text(e.value),
-                  trailing: e.key == type && targetDate.day == DateTime.now().day
-                      ? const Text('(same)', style: TextStyle(fontSize: 12, color: AppColors.textMuted))
+                  trailing:
+                      e.key == type && targetDate.day == DateTime.now().day
+                      ? const Text(
+                          '(same)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        )
                       : null,
                   onTap: () => Navigator.pop(ctx, e.key),
                 ),
@@ -390,7 +484,11 @@ class _MealCard extends ConsumerWidget {
         defaultMealType: targetType,
         items: mealLogs,
       );
-      await repo.logFromMealTemplate(templateId: tempId, mealType: targetType, loggedAt: targetDate);
+      await repo.logFromMealTemplate(
+        templateId: tempId,
+        mealType: targetType,
+        loggedAt: targetDate,
+      );
       await repo.deleteMealTemplate(tempId);
     }
 
@@ -398,8 +496,8 @@ class _MealCard extends ConsumerWidget {
     final dateStr = targetDate.day == DateTime.now().day
         ? 'Today'
         : targetDate.day == DateTime.now().add(const Duration(days: 1)).day
-            ? 'Tomorrow'
-            : '${targetDate.day}/${targetDate.month}';
+        ? 'Tomorrow'
+        : '${targetDate.day}/${targetDate.month}';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Copied $title → $targetType ($dateStr)'),
@@ -442,26 +540,44 @@ class _MealCard extends ConsumerWidget {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            Text('$totalCals kcal', style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 14)),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            Text(
+              '$totalCals kcal',
+              style: TextStyle(
+                color: accentColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
         subtitle: Text(
-          mealLogs.isEmpty ? 'Tap plus to log item' : '${mealLogs.length} items logged',
+          mealLogs.isEmpty
+              ? 'Tap plus to log item'
+              : '${mealLogs.length} items logged',
           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
         trailing: IconButton(
           icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
           onPressed: () => _showAddMealSheet(context, ref),
         ),
-        childrenPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        childrenPadding: const EdgeInsets.symmetric(
+          horizontal: 16.0,
+          vertical: 8.0,
+        ),
         children: [
           if (mealLogs.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: Column(
                 children: [
-                  const Text('No food logged yet.', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                  const Text(
+                    'No food logged yet.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -473,39 +589,64 @@ class _MealCard extends ConsumerWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => MealTemplatesScreen(mealType: type),
+                              builder: (_) =>
+                                  MealTemplatesScreen(mealType: type),
                             ),
                           );
                         },
-                        icon: const Icon(Icons.bookmark_outline_rounded, size: 14),
-                        label: const Text('Templates', style: TextStyle(fontSize: 12)),
+                        icon: const Icon(
+                          Icons.bookmark_outline_rounded,
+                          size: 14,
+                        ),
+                        label: const Text(
+                          'Templates',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.warning,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
                       FutureBuilder<List<FoodLog>>(
-                        future: ref.read(foodRepositoryProvider).getLastLoggedMeal(type),
+                        future: ref
+                            .read(foodRepositoryProvider)
+                            .getLastLoggedMeal(type),
                         builder: (context, snapshot) {
                           if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                             final lastMeal = snapshot.data!;
-                            final cals = lastMeal.fold(0, (sum, item) => sum + item.calories);
+                            final cals = lastMeal.fold(
+                              0,
+                              (sum, item) => sum + item.calories,
+                            );
                             return TextButton.icon(
                               onPressed: () async {
-                                await ref.read(dashboardControllerProvider.notifier).repeatLastMeal(type, lastMeal);
+                                await ref
+                                    .read(dashboardControllerProvider.notifier)
+                                    .repeatLastMeal(type, lastMeal);
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Repeated last $type!')),
+                                    SnackBar(
+                                      content: Text('Repeated last $type!'),
+                                    ),
                                   );
                                 }
                               },
                               icon: const Icon(Icons.history_rounded, size: 14),
-                              label: Text('Repeat Last ($cals kcal)', style: const TextStyle(fontSize: 12)),
+                              label: Text(
+                                'Repeat Last ($cals kcal)',
+                                style: const TextStyle(fontSize: 12),
+                              ),
                               style: TextButton.styleFrom(
                                 foregroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
@@ -528,7 +669,10 @@ class _MealCard extends ConsumerWidget {
                   child: OutlinedButton.icon(
                     onPressed: () => _saveAsTemplate(context, ref, mealLogs),
                     icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-                    label: const Text('Save as template', style: TextStyle(fontSize: 12)),
+                    label: const Text(
+                      'Save as template',
+                      style: TextStyle(fontSize: 12),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.border),
@@ -541,7 +685,10 @@ class _MealCard extends ConsumerWidget {
                   child: OutlinedButton.icon(
                     onPressed: () => _copyMeal(context, ref, mealLogs),
                     icon: const Icon(Icons.copy_all_outlined, size: 16),
-                    label: const Text('Copy meal', style: TextStyle(fontSize: 12)),
+                    label: const Text(
+                      'Copy meal',
+                      style: TextStyle(fontSize: 12),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
                       side: const BorderSide(color: AppColors.border),
@@ -576,7 +723,11 @@ class _LoggedItemRow extends ConsumerWidget {
           color: AppColors.danger.withOpacity(0.15),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Icon(Icons.delete_sweep_rounded, color: AppColors.danger, size: 22),
+        child: const Icon(
+          Icons.delete_sweep_rounded,
+          color: AppColors.danger,
+          size: 22,
+        ),
       ),
       confirmDismiss: (direction) async {
         return await showDialog<bool>(
@@ -584,7 +735,9 @@ class _LoggedItemRow extends ConsumerWidget {
           builder: (dialogCtx) => AlertDialog(
             backgroundColor: AppColors.surface,
             title: const Text('Delete Entry?'),
-            content: Text('Are you sure you want to remove "${log.name}" from your logged meal?'),
+            content: Text(
+              'Are you sure you want to remove "${log.name}" from your logged meal?',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogCtx, false),
@@ -615,10 +768,19 @@ class _LoggedItemRow extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(log.name, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                  Text(
+                    log.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                  ),
                   Text(
                     '${log.servingLogged} logged • ${log.calories} kcal',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
@@ -627,7 +789,11 @@ class _LoggedItemRow extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 18),
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
                   tooltip: 'Edit entry',
                   onPressed: () {
                     showModalBottomSheet(
@@ -635,39 +801,48 @@ class _LoggedItemRow extends ConsumerWidget {
                       isScrollControlled: true,
                       backgroundColor: AppColors.surface,
                       shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
                       ),
                       builder: (context) => Padding(
-                        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                        padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).viewInsets.bottom,
+                        ),
                         child: EditFoodLogSheet(
                           log: log,
-                          onSave: ({
-                            required int id,
-                            required String name,
-                            required int calories,
-                            required double proteinG,
-                            required double carbsG,
-                            required double fatG,
-                            required double servingLogged,
-                          }) async {
-                            final repo = ref.read(foodRepositoryProvider);
-                            await repo.updateFoodLog(
-                              id: id,
-                              name: name,
-                              calories: calories,
-                              proteinG: proteinG,
-                              carbsG: carbsG,
-                              fatG: fatG,
-                              servingLogged: servingLogged,
-                            );
-                          },
+                          onSave:
+                              ({
+                                required int id,
+                                required String name,
+                                required int calories,
+                                required double proteinG,
+                                required double carbsG,
+                                required double fatG,
+                                required double servingLogged,
+                              }) async {
+                                final repo = ref.read(foodRepositoryProvider);
+                                await repo.updateFoodLog(
+                                  id: id,
+                                  name: name,
+                                  calories: calories,
+                                  proteinG: proteinG,
+                                  carbsG: carbsG,
+                                  fatG: fatG,
+                                  servingLogged: servingLogged,
+                                );
+                              },
                         ),
                       ),
                     );
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.danger,
+                    size: 18,
+                  ),
                   tooltip: 'Delete entry',
                   onPressed: () async {
                     final confirm = await showDialog<bool>(
@@ -675,7 +850,9 @@ class _LoggedItemRow extends ConsumerWidget {
                       builder: (dialogCtx) => AlertDialog(
                         backgroundColor: AppColors.surface,
                         title: const Text('Delete Entry?'),
-                        content: Text('Are you sure you want to remove "${log.name}" from your logged meal?'),
+                        content: Text(
+                          'Are you sure you want to remove "${log.name}" from your logged meal?',
+                        ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(dialogCtx, false),

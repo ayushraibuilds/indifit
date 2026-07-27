@@ -30,7 +30,11 @@ class TodaysActivityCard extends ConsumerWidget {
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.favorite_rounded, color: Colors.redAccent, size: 18),
+                        Icon(
+                          Icons.favorite_rounded,
+                          color: Colors.redAccent,
+                          size: 18,
+                        ),
                         SizedBox(width: 8),
                         Text(
                           "TODAY'S HEALTH ACTIVITY",
@@ -48,29 +52,44 @@ class TodaysActivityCard extends ConsumerWidget {
                         await healthService.requestPermissions();
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: data.isConnected ? AppColors.success.withValues(alpha: 0.12) : AppColors.primary.withValues(alpha: 0.12),
+                          color: data.isConnected
+                              ? AppColors.success.withValues(alpha: 0.12)
+                              : AppColors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: data.isConnected ? AppColors.success.withValues(alpha: 0.3) : AppColors.primary.withValues(alpha: 0.3),
+                            color: data.isConnected
+                                ? AppColors.success.withValues(alpha: 0.3)
+                                : AppColors.primary.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              data.isConnected ? Icons.check_circle_rounded : Icons.link_rounded,
+                              data.isConnected
+                                  ? Icons.check_circle_rounded
+                                  : Icons.link_rounded,
                               size: 12,
-                              color: data.isConnected ? AppColors.success : AppColors.primary,
+                              color: data.isConnected
+                                  ? AppColors.success
+                                  : AppColors.primary,
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              data.isConnected ? 'Health Sync Active' : 'Connect Health',
+                              data.isConnected
+                                  ? 'Health Sync Active'
+                                  : 'Connect Health',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: data.isConnected ? AppColors.success : AppColors.primary,
+                                color: data.isConnected
+                                    ? AppColors.success
+                                    : AppColors.primary,
                               ),
                             ),
                           ],
@@ -86,11 +105,20 @@ class TodaysActivityCard extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Steps', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          const Text(
+                            'Steps',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Text(
                             '$steps',
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           ClipRRect(
@@ -99,7 +127,9 @@ class TodaysActivityCard extends ConsumerWidget {
                               value: stepProgress,
                               minHeight: 4,
                               backgroundColor: AppColors.surface,
-                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppColors.primary,
+                              ),
                             ),
                           ),
                         ],
@@ -110,11 +140,21 @@ class TodaysActivityCard extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Active Energy', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          const Text(
+                            'Active Energy',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Text(
                             '${activeCals.toStringAsFixed(0)} kcal',
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.streakOrange),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.streakOrange,
+                            ),
                           ),
                         ],
                       ),
@@ -124,11 +164,21 @@ class TodaysActivityCard extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Sleep', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          const Text(
+                            'Sleep',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Text(
                             '${sleepHours.toStringAsFixed(1)} hrs',
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigoAccent),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.indigoAccent,
+                            ),
                           ),
                         ],
                       ),

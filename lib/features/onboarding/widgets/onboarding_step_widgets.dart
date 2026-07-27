@@ -75,7 +75,9 @@ class OnboardingSelectionCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withOpacity(0.04) : AppColors.cardBackground,
+          color: selected
+              ? AppColors.primary.withOpacity(0.04)
+              : AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.border,
@@ -87,7 +89,9 @@ class OnboardingSelectionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: selected ? AppColors.primary.withOpacity(0.12) : const Color(0x1F223250),
+                color: selected
+                    ? AppColors.primary.withOpacity(0.12)
+                    : const Color(0x1F223250),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -167,18 +171,25 @@ class OnboardingNumberInputField extends StatelessWidget {
             color: AppColors.cardBackground,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: hasError ? AppColors.danger : (isValid ? AppColors.success : AppColors.border),
+              color: hasError
+                  ? AppColors.danger
+                  : (isValid ? AppColors.success : AppColors.border),
               width: hasError || isValid ? 1.5 : 1.0,
             ),
           ),
           child: Row(
             children: [
-              Icon(icon, color: hasError ? AppColors.danger : AppColors.textSecondary),
+              Icon(
+                icon,
+                color: hasError ? AppColors.danger : AppColors.textSecondary,
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: TextField(
                   controller: controller,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 18,
@@ -187,7 +198,10 @@ class OnboardingNumberInputField extends StatelessWidget {
                   ),
                   decoration: InputDecoration(
                     labelText: label,
-                    labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                    labelStyle: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
@@ -198,9 +212,17 @@ class OnboardingNumberInputField extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               if (isValid)
-                const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18)
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.success,
+                  size: 18,
+                )
               else if (hasError)
-                const Icon(Icons.error_outline_rounded, color: AppColors.danger, size: 18)
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: AppColors.danger,
+                  size: 18,
+                )
               else
                 Text(
                   suffix,
@@ -220,7 +242,11 @@ class OnboardingNumberInputField extends StatelessWidget {
             padding: const EdgeInsets.only(left: 12.0),
             child: Text(
               errorText!,
-              style: const TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                color: AppColors.danger,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

@@ -14,13 +14,13 @@ void main() {
   });
 
   group('Phase 8 Critical UI Widget Tests', () {
-    testWidgets('DashboardHeader renders streak and title', (WidgetTester tester) async {
+    testWidgets('DashboardHeader renders streak and title', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
-            home: Scaffold(
-              body: DashboardHeader(streakCount: 5),
-            ),
+            home: Scaffold(body: DashboardHeader(streakCount: 5)),
           ),
         ),
       );
@@ -29,12 +29,12 @@ void main() {
       expect(find.byType(DashboardHeader), findsOneWidget);
     });
 
-    testWidgets('AdherenceCard renders weekly adherence percentage', (WidgetTester tester) async {
+    testWidgets('AdherenceCard renders weekly adherence percentage', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AdherenceCard(adherenceScore: 85.0),
-          ),
+          home: Scaffold(body: AdherenceCard(adherenceScore: 85.0)),
         ),
       );
 
@@ -42,7 +42,9 @@ void main() {
       expect(find.text('85%'), findsOneWidget);
     });
 
-    testWidgets('SettingsReminderToggle responds to switch toggle', (WidgetTester tester) async {
+    testWidgets('SettingsReminderToggle responds to switch toggle', (
+      WidgetTester tester,
+    ) async {
       bool toggleValue = false;
 
       await tester.pumpWidget(

@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vibration/vibration.dart';
-import 'package:drift/drift.dart' show Value;
 
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -92,13 +93,15 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     int initialSetIndex = 0,
     int initialElapsedSeconds = 0,
     List<WorkoutSetsCompanion>? initialLoggedSets,
-  }) : super(WorkoutPlayerState(
-          activeExercises: initialExercises,
-          currentExerciseIndex: initialExerciseIndex,
-          currentSetIndex: initialSetIndex,
-          elapsedSeconds: initialElapsedSeconds,
-          loggedSets: initialLoggedSets ?? [],
-        )) {
+  }) : super(
+         WorkoutPlayerState(
+           activeExercises: initialExercises,
+           currentExerciseIndex: initialExerciseIndex,
+           currentSetIndex: initialSetIndex,
+           elapsedSeconds: initialElapsedSeconds,
+           loggedSets: initialLoggedSets ?? [],
+         ),
+       ) {
     _startTimer();
     prefillInputs();
   }
@@ -136,7 +139,9 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     final currentEx = state.activeExercises[state.currentExerciseIndex];
     final repo = _ref.read(workoutRepositoryProvider);
 
-    final latestSets = await repo.getLatestSetsForExercise(currentEx.exerciseName);
+    final latestSets = await repo.getLatestSetsForExercise(
+      currentEx.exerciseName,
+    );
     final prSet = await repo.getPersonalRecord(currentEx.exerciseName);
 
     double suggested = 20.0;
@@ -318,14 +323,18 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
 
   Future<void> saveDraft() async {
     final repo = _ref.read(workoutRepositoryProvider);
-    final rawSets = state.loggedSets.map((s) => {
-      'sessionId': s.sessionId.value,
-      'exerciseName': s.exerciseName.value,
-      'weight': s.weight.value,
-      'reps': s.reps.value,
-      'setNumber': s.setNumber.value,
-      'isPr': s.isPr.value,
-    }).toList();
+    final rawSets = state.loggedSets
+        .map(
+          (s) => {
+            'sessionId': s.sessionId.value,
+            'exerciseName': s.exerciseName.value,
+            'weight': s.weight.value,
+            'reps': s.reps.value,
+            'setNumber': s.setNumber.value,
+            'isPr': s.isPr.value,
+          },
+        )
+        .toList();
     final jsonStr = jsonEncode(rawSets);
 
     await repo.saveWorkoutDraft(

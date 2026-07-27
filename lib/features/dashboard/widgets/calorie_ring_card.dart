@@ -29,7 +29,8 @@ class CalorieRingCard extends ConsumerWidget {
     final carbsGoal = userProfile.carbsGoal;
     final fatGoal = userProfile.fatGoal;
 
-    final double calPercent = (calorieGoal > 0 ? (eatenCalories / calorieGoal) : 0.0).clamp(0.0, 1.0);
+    final double calPercent =
+        (calorieGoal > 0 ? (eatenCalories / calorieGoal) : 0.0).clamp(0.0, 1.0);
 
     return Card(
       child: Padding(
@@ -50,12 +51,20 @@ class CalorieRingCard extends ConsumerWidget {
                       ? const Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.restaurant_menu_rounded, size: 24, color: AppColors.primary),
+                            Icon(
+                              Icons.restaurant_menu_rounded,
+                              size: 24,
+                              color: AppColors.primary,
+                            ),
                             SizedBox(height: 4),
                             Text(
                               'Log your\nfirst meal',
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ],
                         )
@@ -79,7 +88,9 @@ class CalorieRingCard extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
-                                color: (calorieGoal - eatenCalories) >= 0 ? AppColors.textSecondary : AppColors.danger,
+                                color: (calorieGoal - eatenCalories) >= 0
+                                    ? AppColors.textSecondary
+                                    : AppColors.danger,
                               ),
                             ),
                           ],
@@ -97,13 +108,37 @@ class CalorieRingCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildMacroBar('Protein', Icons.egg_alt_rounded, eatenProtein, proteinGoal, AppColors.success),
+                  _buildMacroBar(
+                    'Protein',
+                    Icons.egg_alt_rounded,
+                    eatenProtein,
+                    proteinGoal,
+                    AppColors.success,
+                  ),
                   const SizedBox(height: 10),
-                  _buildMacroBar('Carbs', Icons.grain_rounded, eatenCarbs, carbsGoal, AppColors.warning),
+                  _buildMacroBar(
+                    'Carbs',
+                    Icons.grain_rounded,
+                    eatenCarbs,
+                    carbsGoal,
+                    AppColors.warning,
+                  ),
                   const SizedBox(height: 10),
-                  _buildMacroBar('Fat', Icons.opacity_rounded, eatenFat, fatGoal, AppColors.danger),
+                  _buildMacroBar(
+                    'Fat',
+                    Icons.opacity_rounded,
+                    eatenFat,
+                    fatGoal,
+                    AppColors.danger,
+                  ),
                   const SizedBox(height: 10),
-                  _buildMacroBar('Fiber', Icons.eco_rounded, eatenFiber, 30.0, AppColors.fiberTeal),
+                  _buildMacroBar(
+                    'Fiber',
+                    Icons.eco_rounded,
+                    eatenFiber,
+                    30.0,
+                    AppColors.fiberTeal,
+                  ),
                 ],
               ),
             ),
@@ -113,7 +148,13 @@ class CalorieRingCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildMacroBar(String label, IconData icon, double eaten, double goal, Color color) {
+  Widget _buildMacroBar(
+    String label,
+    IconData icon,
+    double eaten,
+    double goal,
+    Color color,
+  ) {
     double targetPercent = goal > 0 ? (eaten / goal).clamp(0.0, 1.0) : 0.0;
     int remaining = (goal - eaten).round();
 
@@ -127,7 +168,14 @@ class CalorieRingCard extends ConsumerWidget {
               children: [
                 Icon(icon, size: 13, color: color),
                 const SizedBox(width: 4),
-                Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
             Text(

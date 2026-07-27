@@ -91,7 +91,10 @@ class TdeeCalculator {
     // Carbs: Remaining calories (4 kcal/g)
     final proteinCal = proteinG * 4.0;
     final fatCal = fatG * 9.0;
-    final remainingCal = (targetCalories - proteinCal - fatCal).clamp(0.0, 2000.0);
+    final remainingCal = (targetCalories - proteinCal - fatCal).clamp(
+      0.0,
+      2000.0,
+    );
     final carbsG = remainingCal / 4.0;
 
     return MacroTargets(

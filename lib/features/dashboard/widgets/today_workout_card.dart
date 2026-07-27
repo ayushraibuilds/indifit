@@ -60,12 +60,18 @@ class TodayWorkoutCard extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isRestDay ? AppColors.infoBlue.withOpacity(0.1) : AppColors.primaryGlow,
+                        color: isRestDay
+                            ? AppColors.infoBlue.withOpacity(0.1)
+                            : AppColors.primaryGlow,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        isRestDay ? Icons.bedtime_rounded : Icons.fitness_center_rounded,
-                        color: isRestDay ? AppColors.infoBlue : AppColors.primary,
+                        isRestDay
+                            ? Icons.bedtime_rounded
+                            : Icons.fitness_center_rounded,
+                        color: isRestDay
+                            ? AppColors.infoBlue
+                            : AppColors.primary,
                         size: 24,
                       ),
                     ),
@@ -84,18 +90,33 @@ class TodayWorkoutCard extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(todayWorkoutName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          Text(
+                            todayWorkoutName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Text(
-                            isRestDay ? 'Time to recover and heal' : '$exerciseCount Exercises scheduled',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            isRestDay
+                                ? 'Time to recover and heal'
+                                : '$exerciseCount Exercises scheduled',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     if (!isRestDay)
                       IconButton(
-                        icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.primary, size: 32),
+                        icon: const Icon(
+                          Icons.play_circle_fill_rounded,
+                          color: AppColors.primary,
+                          size: 32,
+                        ),
                         onPressed: onStartWorkout,
                       ),
                   ],
@@ -109,10 +130,19 @@ class TodayWorkoutCard extends ConsumerWidget {
                     TextButton.icon(
                       onPressed: () => _showManualLogSheet(context),
                       icon: const Icon(Icons.edit_note_rounded, size: 16),
-                      label: const Text('Log Completed Session', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      label: const Text(
+                        'Log Completed Session',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       style: TextButton.styleFrom(
                         foregroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -121,10 +151,16 @@ class TodayWorkoutCard extends ConsumerWidget {
                       TextButton.icon(
                         onPressed: () => onRepeatWorkout(lastSession),
                         icon: const Icon(Icons.history_rounded, size: 14),
-                        label: const Text('Repeat Last', style: TextStyle(fontSize: 11)),
+                        label: const Text(
+                          'Repeat Last',
+                          style: TextStyle(fontSize: 11),
+                        ),
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.textSecondary,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),

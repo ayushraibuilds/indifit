@@ -30,13 +30,13 @@ final dioProvider = Provider<Dio>((ref) {
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       sendTimeout: const Duration(seconds: 15),
-      headers: {
-        'x-indifit-key': apiKey,
-      },
+      headers: {'x-indifit-key': apiKey},
     ),
   );
   if (kDebugMode) {
-    dio.interceptors.add(LogInterceptor(responseBody: false, requestBody: false));
+    dio.interceptors.add(
+      LogInterceptor(responseBody: false, requestBody: false),
+    );
   }
   return dio;
 });
@@ -73,7 +73,15 @@ class WaterState {
 class WaterNotifier extends StateNotifier<WaterState> {
   Timer? _timer;
 
-  WaterNotifier() : super(WaterState(waterLogged: 0, waterGoal: 8, lastLoggedDate: '', glassSize: 250)) {
+  WaterNotifier()
+    : super(
+        WaterState(
+          waterLogged: 0,
+          waterGoal: 8,
+          lastLoggedDate: '',
+          glassSize: 250,
+        ),
+      ) {
     loadState();
     // Periodic check every 15 seconds to support midnight resets if app is left open
     _timer = Timer.periodic(const Duration(seconds: 15), (_) {
@@ -98,17 +106,17 @@ class WaterNotifier extends StateNotifier<WaterState> {
     final prefs = await SharedPreferences.getInstance();
     final todayStr = DateTime.now().toIso8601String().split('T').first;
     final savedDate = prefs.getString('water_last_logged_date') ?? todayStr;
-    
+
     int logged = prefs.getInt('water_logged') ?? 0;
     int goal = prefs.getInt('water_goal') ?? 8;
     int size = prefs.getInt('water_glass_size') ?? 250;
-    
+
     if (savedDate != todayStr) {
       logged = 0;
       await prefs.setInt('water_logged', 0);
       await prefs.setString('water_last_logged_date', todayStr);
     }
-    
+
     state = WaterState(
       waterLogged: logged,
       waterGoal: goal,
@@ -121,19 +129,16 @@ class WaterNotifier extends StateNotifier<WaterState> {
     final prefs = await SharedPreferences.getInstance();
     final todayStr = DateTime.now().toIso8601String().split('T').first;
     int currentLogged = state.waterLogged;
-    
+
     if (state.lastLoggedDate != todayStr) {
       currentLogged = 0;
       await prefs.setString('water_last_logged_date', todayStr);
     }
-    
+
     final newLogged = (currentLogged + amount).clamp(0, 100);
     await prefs.setInt('water_logged', newLogged);
-    
-    state = state.copyWith(
-      waterLogged: newLogged,
-      lastLoggedDate: todayStr,
-    );
+
+    state = state.copyWith(waterLogged: newLogged, lastLoggedDate: todayStr);
   }
 
   Future<void> updateGoal(int newGoal) async {

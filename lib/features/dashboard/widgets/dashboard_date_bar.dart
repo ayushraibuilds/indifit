@@ -15,7 +15,11 @@ class DashboardDateBar extends StatelessWidget {
   String get _formattedLabel {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final target = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final target = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
     final diff = target.difference(today).inDays;
 
     final dateStr = DateFormat('EEE, MMM d').format(selectedDate);
@@ -29,7 +33,11 @@ class DashboardDateBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final target = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final target = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
     final isToday = !target.isBefore(today);
 
     return Card(
@@ -63,14 +71,24 @@ class DashboardDateBar extends StatelessWidget {
                 }
               },
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
+                    const Icon(
+                      Icons.calendar_today_rounded,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       _formattedLabel,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),

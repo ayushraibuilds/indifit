@@ -4,7 +4,9 @@ import 'package:indifit/core/utils/natural_meal_parser.dart';
 void main() {
   group('NaturalMealParser Tests', () {
     test('parses multi-item meal text string accurately', () {
-      final items = NaturalMealParser.parse('2 rotis and 100g paneer and 1 bowl dal');
+      final items = NaturalMealParser.parse(
+        '2 rotis and 100g paneer and 1 bowl dal',
+      );
       expect(items.length, equals(3));
 
       expect(items[0].foodName, equals('rotis'));

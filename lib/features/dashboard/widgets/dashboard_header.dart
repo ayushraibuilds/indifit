@@ -6,11 +6,7 @@ class DashboardHeader extends StatelessWidget {
   final int streakCount;
   final String? userName;
 
-  const DashboardHeader({
-    super.key,
-    required this.streakCount,
-    this.userName,
-  });
+  const DashboardHeader({super.key, required this.streakCount, this.userName});
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -28,7 +24,9 @@ class DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = (userName != null && userName!.trim().isNotEmpty) ? userName!.trim() : 'Champ';
+    final name = (userName != null && userName!.trim().isNotEmpty)
+        ? userName!.trim()
+        : 'Champ';
 
     return Row(
       children: [
@@ -39,13 +37,19 @@ class DashboardHeader extends StatelessWidget {
             children: [
               Text(
                 '${_getGreeting()}, $name',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               Text(
                 _getSubtitle(),
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ],
@@ -63,11 +67,19 @@ class DashboardHeader extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.local_fire_department_rounded, color: AppColors.streakOrange, size: 14),
+              const Icon(
+                Icons.local_fire_department_rounded,
+                color: AppColors.streakOrange,
+                size: 14,
+              ),
               const SizedBox(width: 2),
               Text(
                 '${streakCount}d',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.streakOrange, fontSize: 11),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.streakOrange,
+                  fontSize: 11,
+                ),
               ),
             ],
           ),
@@ -76,14 +88,21 @@ class DashboardHeader extends StatelessWidget {
 
         // Direct Settings Button
         IconButton(
-          icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary, size: 20),
+          icon: const Icon(
+            Icons.settings_outlined,
+            color: AppColors.textSecondary,
+            size: 20,
+          ),
           tooltip: 'Settings & Goals',
           onPressed: () => context.push('/settings'),
         ),
 
         // Actions Menu
         PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert_rounded, color: AppColors.textSecondary),
+          icon: const Icon(
+            Icons.more_vert_rounded,
+            color: AppColors.textSecondary,
+          ),
           onSelected: (val) {
             if (val == 'planner') {
               context.push('/meal-planner');
@@ -106,7 +125,11 @@ class DashboardHeader extends StatelessWidget {
               value: 'settings',
               child: Row(
                 children: [
-                  Icon(Icons.settings, size: 18, color: AppColors.textSecondary),
+                  Icon(
+                    Icons.settings,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
                   SizedBox(width: 8),
                   Text('Settings'),
                 ],

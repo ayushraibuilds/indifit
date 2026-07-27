@@ -1,6 +1,7 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' show Value;
+
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
@@ -10,10 +11,12 @@ class CustomFoodEditorScreen extends ConsumerStatefulWidget {
   const CustomFoodEditorScreen({super.key, this.initialBarcode});
 
   @override
-  ConsumerState<CustomFoodEditorScreen> createState() => _CustomFoodEditorScreenState();
+  ConsumerState<CustomFoodEditorScreen> createState() =>
+      _CustomFoodEditorScreenState();
 }
 
-class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen> {
+class _CustomFoodEditorScreenState
+    extends ConsumerState<CustomFoodEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _nameHindiController = TextEditingController();
@@ -74,14 +77,21 @@ class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen>
       await repo.insertCustomFood(companion);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"${_nameController.text}" saved to custom foods.')),
+          SnackBar(
+            content: Text('"${_nameController.text}" saved to custom foods.'),
+          ),
         );
-        Navigator.pop(context, true); // Return true to indicate item was created
+        Navigator.pop(
+          context,
+          true,
+        ); // Return true to indicate item was created
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save custom food. Please try again.')),
+          const SnackBar(
+            content: Text('Failed to save custom food. Please try again.'),
+          ),
         );
       }
     }
@@ -108,7 +118,8 @@ class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen>
                   labelText: 'Food Name (English) *',
                   hintText: 'e.g., Homemade Paneer Bhurji',
                 ),
-                validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                validator: (val) =>
+                    val == null || val.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -132,11 +143,16 @@ class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen>
                   Expanded(
                     child: TextFormField(
                       controller: _servingSizeController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: const InputDecoration(
                         labelText: 'Serving Size *',
                       ),
-                      validator: (val) => val == null || double.tryParse(val) == null ? 'Invalid' : null,
+                      validator: (val) =>
+                          val == null || double.tryParse(val) == null
+                          ? 'Invalid'
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -146,7 +162,8 @@ class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen>
                       decoration: const InputDecoration(
                         labelText: 'Serving Unit (e.g. g, ml, pc) *',
                       ),
-                      validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                      validator: (val) =>
+                          val == null || val.trim().isEmpty ? 'Required' : null,
                     ),
                   ),
                 ],
@@ -158,7 +175,8 @@ class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen>
                 decoration: const InputDecoration(
                   labelText: 'Calories (kcal) *',
                 ),
-                validator: (val) => val == null || int.tryParse(val) == null ? 'Invalid' : null,
+                validator: (val) =>
+                    val == null || int.tryParse(val) == null ? 'Invalid' : null,
               ),
               const SizedBox(height: 16),
               Row(
@@ -166,33 +184,46 @@ class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen>
                   Expanded(
                     child: TextFormField(
                       controller: _proteinController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: const InputDecoration(
                         labelText: 'Protein (g) *',
                       ),
-                      validator: (val) => val == null || double.tryParse(val) == null ? 'Invalid' : null,
+                      validator: (val) =>
+                          val == null || double.tryParse(val) == null
+                          ? 'Invalid'
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextFormField(
                       controller: _carbsController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: const InputDecoration(
                         labelText: 'Carbs (g) *',
                       ),
-                      validator: (val) => val == null || double.tryParse(val) == null ? 'Invalid' : null,
+                      validator: (val) =>
+                          val == null || double.tryParse(val) == null
+                          ? 'Invalid'
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextFormField(
                       controller: _fatController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Fat (g) *',
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
-                      validator: (val) => val == null || double.tryParse(val) == null ? 'Invalid' : null,
+                      decoration: const InputDecoration(labelText: 'Fat (g) *'),
+                      validator: (val) =>
+                          val == null || double.tryParse(val) == null
+                          ? 'Invalid'
+                          : null,
                     ),
                   ),
                 ],
@@ -204,9 +235,14 @@ class _CustomFoodEditorScreenState extends ConsumerState<CustomFoodEditorScreen>
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('Save Custom Food', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Save Custom Food',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),

@@ -17,18 +17,15 @@ class SkeletonBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: AppColors.border.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(borderRadius),
-      ),
-    )
-        .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .shimmer(
-          duration: 1200.ms,
-          color: AppColors.border.withOpacity(0.8),
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: AppColors.border.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
         )
+        .animate(onPlay: (controller) => controller.repeat(reverse: true))
+        .shimmer(duration: 1200.ms, color: AppColors.border.withOpacity(0.8))
         .fadeIn(duration: 600.ms);
   }
 }
@@ -36,10 +33,7 @@ class SkeletonBox extends StatelessWidget {
 class SkeletonCard extends StatelessWidget {
   final double height;
 
-  const SkeletonCard({
-    super.key,
-    this.height = 72.0,
-  });
+  const SkeletonCard({super.key, this.height = 72.0});
 
   @override
   Widget build(BuildContext context) {
@@ -72,10 +66,7 @@ class SkeletonCard extends StatelessWidget {
 class SkeletonList extends StatelessWidget {
   final int count;
 
-  const SkeletonList({
-    super.key,
-    this.count = 5,
-  });
+  const SkeletonList({super.key, this.count = 5});
 
   @override
   Widget build(BuildContext context) {

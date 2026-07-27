@@ -5,10 +5,7 @@ import '../../../core/theme/colors.dart';
 class AdherenceCard extends StatelessWidget {
   final double adherenceScore;
 
-  const AdherenceCard({
-    super.key,
-    required this.adherenceScore,
-  });
+  const AdherenceCard({super.key, required this.adherenceScore});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +32,10 @@ class AdherenceCard extends StatelessWidget {
               animationDuration: 600,
               center: Text(
                 '${adherenceScore.round()}%',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
               progressColor: scoreColor,
               backgroundColor: AppColors.border,
@@ -53,12 +53,19 @@ class AdherenceCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     feedback,
-                    style: TextStyle(color: scoreColor, fontSize: 12, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: scoreColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   const Text(
                     'Calorie accuracy (70%) & workouts completed (30%) in past 7 days.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),

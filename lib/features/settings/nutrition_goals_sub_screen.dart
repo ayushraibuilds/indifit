@@ -10,10 +10,12 @@ class NutritionGoalsSubScreen extends ConsumerStatefulWidget {
   const NutritionGoalsSubScreen({super.key});
 
   @override
-  ConsumerState<NutritionGoalsSubScreen> createState() => _NutritionGoalsSubScreenState();
+  ConsumerState<NutritionGoalsSubScreen> createState() =>
+      _NutritionGoalsSubScreenState();
 }
 
-class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScreen> {
+class _NutritionGoalsSubScreenState
+    extends ConsumerState<NutritionGoalsSubScreen> {
   late TextEditingController _caloriesController;
   late TextEditingController _proteinController;
   late TextEditingController _carbsController;
@@ -52,8 +54,10 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
 
   void _calculateRecommendation(UserProfileState profile) {
     final weight = profile.currentWeight > 0 ? profile.currentWeight : 74.5;
-    final height = (profile.userHeight != null && profile.userHeight! > 0) ? profile.userHeight! : 170.0;
-    
+    final height = (profile.userHeight != null && profile.userHeight! > 0)
+        ? profile.userHeight!
+        : 170.0;
+
     final gender = profile.userSex == 'female' ? Gender.female : Gender.male;
     final age = profile.userAge > 0 ? profile.userAge : 25;
     final actLevel = switch (profile.userActivityLevel) {
@@ -74,8 +78,15 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
       heightCm: height,
       ageYears: age,
     );
-    final tdee = TdeeCalculator.calculateTdee(bmr: bmr, activityLevel: actLevel);
-    final macros = TdeeCalculator.calculateMacros(tdee: tdee, goal: fitnessGoal, weightKg: weight);
+    final tdee = TdeeCalculator.calculateTdee(
+      bmr: bmr,
+      activityLevel: actLevel,
+    );
+    final macros = TdeeCalculator.calculateMacros(
+      tdee: tdee,
+      goal: fitnessGoal,
+      weightKg: weight,
+    );
 
     setState(() {
       _recCalories = macros.calories;
@@ -102,18 +113,25 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
 
     if (cal == null || cal < 500 || cal > 10000) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid calorie goal (500 - 10,000 kcal).'), backgroundColor: AppColors.danger),
+        const SnackBar(
+          content: Text(
+            'Please enter a valid calorie goal (500 - 10,000 kcal).',
+          ),
+          backgroundColor: AppColors.danger,
+        ),
       );
       return;
     }
 
     HapticFeedback.mediumImpact();
-    await ref.read(userProfileProvider.notifier).updateGoals(
-      calorieGoal: cal,
-      proteinGoal: pro,
-      carbsGoal: carb,
-      fatGoal: fat,
-    );
+    await ref
+        .read(userProfileProvider.notifier)
+        .updateGoals(
+          calorieGoal: cal,
+          proteinGoal: pro,
+          carbsGoal: carb,
+          fatGoal: fat,
+        );
 
     // Refresh dashboard state so calorie ring & macro bars update live
     ref.read(dashboardControllerProvider.notifier).loadStateData();
@@ -129,8 +147,9 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(userProfileProvider);
-    final currentCal = int.tryParse(_caloriesController.text) ?? profile.calorieGoal;
-    
+    final currentCal =
+        int.tryParse(_caloriesController.text) ?? profile.calorieGoal;
+
     // Check if custom target is >20% off recommendation
     double diffPercent = 0.0;
     if (_recCalories != null && _recCalories! > 0) {
@@ -164,27 +183,54 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 20),
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
                         SizedBox(width: 8),
                         Text(
                           'Calculated Recommendation',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Based on your profile (${profile.currentWeight.toStringAsFixed(1)} kg, ${(profile.userHeight ?? 170).round()} cm):',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _recChip('Calories', '${_recCalories ?? 2000} kcal', AppColors.primary),
-                        _recChip('Protein', '${(_recProtein ?? 120).round()}g', AppColors.infoBlue),
-                        _recChip('Carbs', '${(_recCarbs ?? 230).round()}g', AppColors.warning),
-                        _recChip('Fat', '${(_recFat ?? 65).round()}g', AppColors.danger),
+                        _recChip(
+                          'Calories',
+                          '${_recCalories ?? 2000} kcal',
+                          AppColors.primary,
+                        ),
+                        _recChip(
+                          'Protein',
+                          '${(_recProtein ?? 120).round()}g',
+                          AppColors.infoBlue,
+                        ),
+                        _recChip(
+                          'Carbs',
+                          '${(_recCarbs ?? 230).round()}g',
+                          AppColors.warning,
+                        ),
+                        _recChip(
+                          'Fat',
+                          '${(_recFat ?? 65).round()}g',
+                          AppColors.danger,
+                        ),
                       ],
                     ),
                   ],
@@ -195,7 +241,12 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
             const SizedBox(height: 24),
             const Text(
               'CUSTOM TARGETS',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 1.0),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textMuted,
+                letterSpacing: 1.0,
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -211,12 +262,19 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 20),
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      color: AppColors.warning,
+                      size: 20,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Note: Your custom calorie target ($currentCal kcal) is ${diffPercent.abs().round()}% ${diffPercent > 0 ? 'higher' : 'lower'} than the calculated recommendation.',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -232,8 +290,13 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
               decoration: InputDecoration(
                 labelText: 'Daily Calorie Target (kcal)',
                 suffixText: 'kcal',
-                prefixIcon: const Icon(Icons.local_fire_department_rounded, color: AppColors.primary),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: AppColors.primary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -242,12 +305,19 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
             // Protein Target Input
             TextField(
               controller: _proteinController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 labelText: 'Protein Target (grams)',
                 suffixText: 'g',
-                prefixIcon: const Icon(Icons.fitness_center_rounded, color: AppColors.infoBlue),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(
+                  Icons.fitness_center_rounded,
+                  color: AppColors.infoBlue,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -255,12 +325,19 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
             // Carbs Target Input
             TextField(
               controller: _carbsController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 labelText: 'Carbohydrates Target (grams)',
                 suffixText: 'g',
-                prefixIcon: const Icon(Icons.grain_rounded, color: AppColors.warning),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(
+                  Icons.grain_rounded,
+                  color: AppColors.warning,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -268,12 +345,19 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
             // Fat Target Input
             TextField(
               controller: _fatController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 labelText: 'Fats Target (grams)',
                 suffixText: 'g',
-                prefixIcon: const Icon(Icons.opacity_rounded, color: AppColors.danger),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(
+                  Icons.opacity_rounded,
+                  color: AppColors.danger,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 28),
@@ -285,11 +369,16 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
               child: ElevatedButton.icon(
                 onPressed: _saveGoals,
                 icon: const Icon(Icons.check_circle_rounded),
-                label: const Text('Save Nutrition Goals', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                label: const Text(
+                  'Save Nutrition Goals',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ),
@@ -302,9 +391,19 @@ class _NutritionGoalsSubScreenState extends ConsumerState<NutritionGoalsSubScree
   Widget _recChip(String label, String val, Color color) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+        ),
         const SizedBox(height: 2),
-        Text(val, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          val,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
       ],
     );
   }

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,7 +26,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     redirect: (context, state) async {
       final prefs = await SharedPreferences.getInstance();
-      final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+      final onboardingCompleted =
+          prefs.getBool('onboarding_completed') ?? false;
       final location = state.matchedLocation;
       final goingToOnboarding = location == '/onboarding';
       final goingToWizard = location == '/routine-wizard';
@@ -97,7 +97,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
           return WorkoutPlayerScreen(
             routineName: extra['routineName'] ?? 'Workout',
-            exercises: (extra['exercises'] as List?)?.cast<RoutineExercise>() ?? [],
+            exercises:
+                (extra['exercises'] as List?)?.cast<RoutineExercise>() ?? [],
           );
         },
       ),
@@ -108,7 +109,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return WorkoutSummaryScreen(
             routineName: extra['routineName'] ?? 'Workout',
             elapsedSeconds: extra['elapsedSeconds'] ?? 0,
-            loggedSets: (extra['loggedSets'] as List?)?.cast<WorkoutSetsCompanion>() ?? [],
+            loggedSets:
+                (extra['loggedSets'] as List?)?.cast<WorkoutSetsCompanion>() ??
+                [],
           );
         },
       ),

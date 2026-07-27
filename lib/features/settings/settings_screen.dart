@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/di/theme_provider.dart';
 import '../../core/theme/colors.dart';
 import 'data_management_sub_screen.dart';
 import 'health_sync_hub_screen.dart';
@@ -17,7 +16,6 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(settingsControllerProvider);
-    final themeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -42,29 +40,49 @@ class SettingsScreen extends ConsumerWidget {
                         children: [
                           const Row(
                             children: [
-                              Icon(Icons.palette_outlined, color: AppColors.primary, size: 20),
+                              Icon(
+                                Icons.palette_outlined,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
                               SizedBox(width: 10),
                               Text(
                                 'Appearance Theme',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 12),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                              border: Border.all(
+                                color: AppColors.primary.withOpacity(0.2),
+                              ),
                             ),
                             child: const Row(
                               children: [
-                                Icon(Icons.dark_mode_rounded, color: AppColors.primary, size: 18),
+                                Icon(
+                                  Icons.dark_mode_rounded,
+                                  color: AppColors.primary,
+                                  size: 18,
+                                ),
                                 SizedBox(width: 10),
                                 Text(
                                   'IndiFit Dark Mode (Optimized Default)',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
                                 ),
                               ],
                             ),
@@ -78,7 +96,12 @@ class SettingsScreen extends ConsumerWidget {
                   // 2. Settings Group List
                   const Text(
                     'PREFERENCES & DATA',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 0.5),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textMuted,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                   const SizedBox(height: 8),
 
@@ -90,10 +113,14 @@ class SettingsScreen extends ConsumerWidget {
                           icon: Icons.notifications_none_rounded,
                           iconColor: AppColors.achievementGold,
                           title: 'Notifications & Reminders',
-                          subtitle: 'Meal reminders, workout alarms & summaries',
+                          subtitle:
+                              'Meal reminders, workout alarms & summaries',
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const NotificationSettingsScreen(),
+                            ),
                           ),
                         ),
                         const Divider(height: 1, color: AppColors.border),
@@ -102,10 +129,13 @@ class SettingsScreen extends ConsumerWidget {
                           icon: Icons.water_drop_outlined,
                           iconColor: AppColors.infoBlue,
                           title: 'Hydration & Water Goal',
-                          subtitle: 'Daily target, glass volume & intake history',
+                          subtitle:
+                              'Daily target, glass volume & intake history',
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const WaterSettingsSubScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const WaterSettingsSubScreen(),
+                            ),
                           ),
                         ),
                         const Divider(height: 1, color: AppColors.border),
@@ -114,10 +144,13 @@ class SettingsScreen extends ConsumerWidget {
                           icon: Icons.restaurant_menu_rounded,
                           iconColor: AppColors.streakOrange,
                           title: 'Regional Food Packs',
-                          subtitle: 'Bengali, Gujarati, Punjabi & South Indian items',
+                          subtitle:
+                              'Bengali, Gujarati, Punjabi & South Indian items',
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const RegionalFoodPacksScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const RegionalFoodPacksScreen(),
+                            ),
                           ),
                         ),
                         const Divider(height: 1, color: AppColors.border),
@@ -126,10 +159,13 @@ class SettingsScreen extends ConsumerWidget {
                           icon: Icons.restaurant_menu_rounded,
                           iconColor: AppColors.primary,
                           title: 'Nutrition & Macro Goals',
-                          subtitle: 'View calculated recommendations & customize targets',
+                          subtitle:
+                              'View calculated recommendations & customize targets',
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const NutritionGoalsSubScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const NutritionGoalsSubScreen(),
+                            ),
                           ),
                         ),
                         const Divider(height: 1, color: AppColors.border),
@@ -141,7 +177,9 @@ class SettingsScreen extends ConsumerWidget {
                           subtitle: 'Connect Health Connect / Apple Health',
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const HealthSyncHubScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const HealthSyncHubScreen(),
+                            ),
                           ),
                         ),
                         const Divider(height: 1, color: AppColors.border),
@@ -153,7 +191,9 @@ class SettingsScreen extends ConsumerWidget {
                           subtitle: 'CSV export, SQLite backups & offline mode',
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const DataManagementSubScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const DataManagementSubScreen(),
+                            ),
                           ),
                         ),
                       ],
@@ -185,9 +225,19 @@ class SettingsScreen extends ConsumerWidget {
         ),
         child: Icon(icon, color: iconColor, size: 20),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-      subtitle: Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-      trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        color: AppColors.textMuted,
+        size: 20,
+      ),
       onTap: onTap,
     );
   }
@@ -209,7 +259,11 @@ class _MedicalDisclaimerCard extends StatelessWidget {
                 color: Colors.red.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.health_and_safety_rounded, color: Colors.red, size: 20),
+              child: const Icon(
+                Icons.health_and_safety_rounded,
+                color: Colors.red,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -223,7 +277,10 @@ class _MedicalDisclaimerCard extends StatelessWidget {
                   SizedBox(height: 2),
                   Text(
                     'IndiFit is for informational purposes only.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),

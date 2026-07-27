@@ -74,31 +74,49 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                   children: [
                     // Celebration Emoji Header
                     const Center(
-                      child: Text(
-                        '🏆',
-                        style: TextStyle(fontSize: 64),
-                      ),
+                      child: Text('🏆', style: TextStyle(fontSize: 64)),
                     ),
                     const SizedBox(height: 16),
                     const Text(
                       'Workout Crushed!',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       routineName,
-                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 30),
 
                     // Metrics Grid (Volume, Duration, Calories)
                     Row(
                       children: [
-                        _buildMetricCard(context, 'Total Volume', '${totalVolume.round()} kg', Icons.fitness_center_rounded),
+                        _buildMetricCard(
+                          context,
+                          'Total Volume',
+                          '${totalVolume.round()} kg',
+                          Icons.fitness_center_rounded,
+                        ),
                         const SizedBox(width: 12),
-                        _buildMetricCard(context, 'Duration', durationText, Icons.timer_outlined),
+                        _buildMetricCard(
+                          context,
+                          'Duration',
+                          durationText,
+                          Icons.timer_outlined,
+                        ),
                         const SizedBox(width: 12),
-                        _buildMetricCard(context, 'Active Burn', '$calories kcal', Icons.local_fire_department_rounded),
+                        _buildMetricCard(
+                          context,
+                          'Active Burn',
+                          '$calories kcal',
+                          Icons.local_fire_department_rounded,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 30),
@@ -108,7 +126,12 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'EXERCISES COMPLETED',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textSecondary,
+                          letterSpacing: 1.0,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -124,26 +147,40 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(exName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text(
+                                exName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
                               const SizedBox(height: 8),
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 4,
                                 children: sets.map((s) {
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: AppColors.cardBackground,
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: AppColors.border),
+                                      border: Border.all(
+                                        color: AppColors.border,
+                                      ),
                                     ),
                                     child: Text(
                                       'Set ${s.setNumber.value}: ${s.weight.value}kg x ${s.reps.value}',
-                                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textSecondary,
+                                      ),
                                     ),
                                   );
                                 }).toList(),
-                              )
+                              ),
                             ],
                           ),
                         ),
@@ -157,7 +194,8 @@ class WorkoutSummaryScreen extends ConsumerWidget {
             // Share Summary Button
             OutlinedButton.icon(
               onPressed: () {
-                final text = 'Crushed my workout today! 🏋️\n'
+                final text =
+                    'Crushed my workout today! 🏋️\n'
                     'Routine: $routineName\n'
                     'Volume Lifted: ${totalVolume.round()} kg\n'
                     'Duration: $durationText\n'
@@ -169,10 +207,15 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                 side: const BorderSide(color: AppColors.primary),
                 foregroundColor: AppColors.primary,
                 minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               icon: const Icon(Icons.share_rounded, size: 18),
-              label: const Text('Share Workout Report', style: TextStyle(fontWeight: FontWeight.bold)),
+              label: const Text(
+                'Share Workout Report',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -189,24 +232,36 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                 );
 
                 if (context.mounted) {
-                  Navigator.pop(context); // Exit summary and return to split view
+                  Navigator.pop(
+                    context,
+                  ); // Exit summary and return to split view
                 }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Save Workout & Exit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            )
+              child: const Text(
+                'Save Workout & Exit',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMetricCard(BuildContext context, String label, String value, IconData icon) {
+  Widget _buildMetricCard(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     return Expanded(
       child: Card(
         child: Padding(
@@ -215,9 +270,21 @@ class WorkoutSummaryScreen extends ConsumerWidget {
             children: [
               Icon(icon, color: AppColors.primary, size: 24),
               const SizedBox(height: 8),
-              Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                ),
+              ),
             ],
           ),
         ),

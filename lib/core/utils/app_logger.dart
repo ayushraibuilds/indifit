@@ -9,7 +9,8 @@ abstract class AppException implements Exception {
   AppException(this.message, {this.code, this.cause});
 
   @override
-  String toString() => '$runtimeType: $message${code != null ? ' (Code: $code)' : ''}';
+  String toString() =>
+      '$runtimeType: $message${code != null ? ' (Code: $code)' : ''}';
 }
 
 class NetworkException extends AppException {
@@ -37,18 +38,31 @@ class AppLogger {
     }
   }
 
-  static void error(String message, [dynamic error, StackTrace? stackTrace, String? tag]) {
+  static void error(
+    String message, [
+    dynamic error,
+    StackTrace? stackTrace,
+    String? tag,
+  ]) {
     if (kDebugMode) {
       debugPrint('[ERROR]${tag != null ? ' [$tag]' : ''}: $message');
       if (error != null) debugPrint('Error details: $error');
     }
   }
 
-  static void recordCrash(dynamic exception, StackTrace? stackTrace, {String context = 'Global'}) {
+  static void recordCrash(
+    dynamic exception,
+    StackTrace? stackTrace, {
+    String context = 'Global',
+  }) {
     debugPrint('[CRASH-REPORT] [$context]: $exception');
     if (stackTrace != null) {
       debugPrint('Stacktrace:\n$stackTrace');
     }
-    CrashReportingService.captureException(exception, stackTrace, context: context);
+    CrashReportingService.captureException(
+      exception,
+      stackTrace,
+      context: context,
+    );
   }
 }

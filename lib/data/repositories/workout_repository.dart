@@ -62,8 +62,11 @@ class WorkoutRepository {
       return (await _db.select(_db.exercises).get());
     }
     final clean = query.toLowerCase().trim();
-    return (await (_db.select(_db.exercises)
-          ..where((tbl) => tbl.name.lower().contains(clean) | tbl.muscleGroups.lower().contains(clean)))
+    return (await (_db.select(_db.exercises)..where(
+          (tbl) =>
+              tbl.name.lower().contains(clean) |
+              tbl.muscleGroups.lower().contains(clean),
+        ))
         .get());
   }
 
@@ -79,20 +82,30 @@ class WorkoutRepository {
       int targetRoutineId;
       if (routineId != null) {
         targetRoutineId = routineId;
-        await (_db.update(_db.workoutRoutines)..where((tbl) => tbl.id.equals(routineId))).write(
+        await (_db.update(
+          _db.workoutRoutines,
+        )..where((tbl) => tbl.id.equals(routineId))).write(
           WorkoutRoutinesCompanion(
             name: Value(name),
             goal: Value(goal),
             notes: Value(notes),
           ),
         );
-        final existingDays = await (_db.select(_db.routineDays)..where((tbl) => tbl.routineId.equals(routineId))).get();
+        final existingDays = await (_db.select(
+          _db.routineDays,
+        )..where((tbl) => tbl.routineId.equals(routineId))).get();
         for (final day in existingDays) {
-          await (_db.delete(_db.routineExercises)..where((tbl) => tbl.dayId.equals(day.id))).go();
+          await (_db.delete(
+            _db.routineExercises,
+          )..where((tbl) => tbl.dayId.equals(day.id))).go();
         }
-        await (_db.delete(_db.routineDays)..where((tbl) => tbl.routineId.equals(routineId))).go();
+        await (_db.delete(
+          _db.routineDays,
+        )..where((tbl) => tbl.routineId.equals(routineId))).go();
       } else {
-        targetRoutineId = await _db.into(_db.workoutRoutines).insert(
+        targetRoutineId = await _db
+            .into(_db.workoutRoutines)
+            .insert(
               WorkoutRoutinesCompanion.insert(
                 name: name,
                 goal: goal,
@@ -103,7 +116,9 @@ class WorkoutRepository {
 
       // Insert days and exercises
       for (final dayData in days) {
-        final dayId = await _db.into(_db.routineDays).insert(
+        final dayId = await _db
+            .into(_db.routineDays)
+            .insert(
               RoutineDaysCompanion.insert(
                 routineId: targetRoutineId,
                 dayOfWeek: dayData.dayOfWeek,
@@ -115,7 +130,9 @@ class WorkoutRepository {
         if (!dayData.isRestDay) {
           for (int i = 0; i < dayData.exercises.length; i++) {
             final exInput = dayData.exercises[i];
-            await _db.into(_db.routineExercises).insert(
+            await _db
+                .into(_db.routineExercises)
+                .insert(
                   RoutineExercisesCompanion.insert(
                     dayId: dayId,
                     exerciseName: exInput.name,
@@ -139,23 +156,28 @@ class WorkoutRepository {
 
   // 4. Retrieve single routine structure (days and exercises)
   Future<List<Map<String, dynamic>>> getRoutineDetails(int routineId) async {
-    final days = await (_db.select(_db.routineDays)..where((tbl) => tbl.routineId.equals(routineId))).get();
-    
+    final days = await (_db.select(
+      _db.routineDays,
+    )..where((tbl) => tbl.routineId.equals(routineId))).get();
+
     final List<Map<String, dynamic>> results = [];
     for (final day in days) {
-      final exercises = await (_db.select(_db.routineExercises)..where((tbl) => tbl.dayId.equals(day.id))).get();
-      results.add({
-        'day': day,
-        'exercises': exercises,
-      });
+      final exercises = await (_db.select(
+        _db.routineExercises,
+      )..where((tbl) => tbl.dayId.equals(day.id))).get();
+      results.add({'day': day, 'exercises': exercises});
     }
     return results;
   }
 
   // 5. Watch completed workout sessions
   Stream<List<WorkoutSession>> watchSessions() {
-    return (_db.select(_db.workoutSessions)
-          ..orderBy([(tbl) => OrderingTerm(expression: tbl.completedAt, mode: OrderingMode.desc)]))
+    return (_db.select(_db.workoutSessions)..orderBy([
+          (tbl) => OrderingTerm(
+            expression: tbl.completedAt,
+            mode: OrderingMode.desc,
+          ),
+        ]))
         .watch();
   }
 
@@ -170,14 +192,18 @@ class WorkoutRepository {
   }) async {
     final sessionUuid = const Uuid().v4();
     return await _db.transaction(() async {
-      final sessionId = await _db.into(_db.workoutSessions).insert(
+      final sessionId = await _db
+          .into(_db.workoutSessions)
+          .insert(
             WorkoutSessionsCompanion.insert(
               name: name,
               totalVolume: volume,
               durationSeconds: durationSeconds,
               estimatedCalories: calories,
               uuid: Value(sessionUuid),
-              completedAt: completedAt != null ? Value(completedAt) : const Value.absent(),
+              completedAt: completedAt != null
+                  ? Value(completedAt)
+                  : const Value.absent(),
             ),
           );
 
@@ -197,14 +223,20 @@ class WorkoutRepository {
 
   // 7. Fetch the sets from the most recent session for a given exercise (for autofill)
   Future<List<WorkoutSet>> getLatestSetsForExercise(String exerciseName) async {
-    final query = _db.select(_db.workoutSets).join([
-      innerJoin(
-        _db.workoutSessions,
-        _db.workoutSessions.id.equalsExp(_db.workoutSets.sessionId),
-      ),
-    ])
-      ..where(_db.workoutSets.exerciseName.equals(exerciseName))
-      ..orderBy([OrderingTerm(expression: _db.workoutSessions.completedAt, mode: OrderingMode.desc)]);
+    final query =
+        _db.select(_db.workoutSets).join([
+            innerJoin(
+              _db.workoutSessions,
+              _db.workoutSessions.id.equalsExp(_db.workoutSets.sessionId),
+            ),
+          ])
+          ..where(_db.workoutSets.exerciseName.equals(exerciseName))
+          ..orderBy([
+            OrderingTerm(
+              expression: _db.workoutSessions.completedAt,
+              mode: OrderingMode.desc,
+            ),
+          ]);
 
     final rows = await query.get();
     if (rows.isEmpty) return [];
@@ -214,22 +246,26 @@ class WorkoutRepository {
 
     // Fetch all sets for this exercise from that session
     return await (_db.select(_db.workoutSets)
-          ..where((tbl) => tbl.sessionId.equals(latestSessionId) & tbl.exerciseName.equals(exerciseName))
+          ..where(
+            (tbl) =>
+                tbl.sessionId.equals(latestSessionId) &
+                tbl.exerciseName.equals(exerciseName),
+          )
           ..orderBy([(tbl) => OrderingTerm(expression: tbl.setNumber)]))
         .get();
   }
 
   // 8. Calculate personal record (PR) from past sets based on estimated 1RM
   Future<WorkoutSet?> getPersonalRecord(String exerciseName) async {
-    final sets = await (_db.select(_db.workoutSets)
-          ..where((tbl) => tbl.exerciseName.equals(exerciseName)))
-        .get();
-    
+    final sets = await (_db.select(
+      _db.workoutSets,
+    )..where((tbl) => tbl.exerciseName.equals(exerciseName))).get();
+
     if (sets.isEmpty) return null;
-    
+
     WorkoutSet? bestSet;
     double max1Rm = 0.0;
-    
+
     for (final s in sets) {
       // Epley formula for 1RM calculation
       final oneRm = s.weight * (1 + s.reps / 30.0);
@@ -247,18 +283,33 @@ class WorkoutRepository {
     final todayStart = DateTime(now.year, now.month, now.day);
     final todayEnd = todayStart.add(const Duration(days: 1));
 
-    final allLogs = await (_db.select(_db.bodyMeasurements)
-          ..orderBy([(tbl) => OrderingTerm(expression: tbl.recordedAt, mode: OrderingMode.desc)]))
-        .get();
+    final allLogs =
+        await (_db.select(_db.bodyMeasurements)..orderBy([
+              (tbl) => OrderingTerm(
+                expression: tbl.recordedAt,
+                mode: OrderingMode.desc,
+              ),
+            ]))
+            .get();
 
     if (allLogs.isEmpty) {
-      return WeightLogStatus(canLog: true, isEditingToday: false, daysUntilUnlock: 0);
+      return WeightLogStatus(
+        canLog: true,
+        isEditingToday: false,
+        daysUntilUnlock: 0,
+      );
     }
 
     final latest = allLogs.first;
-    final latestDate = DateTime(latest.recordedAt.year, latest.recordedAt.month, latest.recordedAt.day);
+    final latestDate = DateTime(
+      latest.recordedAt.year,
+      latest.recordedAt.month,
+      latest.recordedAt.day,
+    );
 
-    if ((latest.recordedAt.isAfter(todayStart) || latest.recordedAt.isAtSameMomentAs(todayStart)) && latest.recordedAt.isBefore(todayEnd)) {
+    if ((latest.recordedAt.isAfter(todayStart) ||
+            latest.recordedAt.isAtSameMomentAs(todayStart)) &&
+        latest.recordedAt.isBefore(todayEnd)) {
       return WeightLogStatus(
         canLog: true,
         isEditingToday: true,
@@ -279,7 +330,11 @@ class WorkoutRepository {
       );
     }
 
-    return WeightLogStatus(canLog: true, isEditingToday: false, daysUntilUnlock: 0);
+    return WeightLogStatus(
+      canLog: true,
+      isEditingToday: false,
+      daysUntilUnlock: 0,
+    );
   }
 
   Future<int> logBodyMeasurement({
@@ -290,20 +345,28 @@ class WorkoutRepository {
   }) async {
     final status = await getWeightLogStatus();
     if (!status.canLog) {
-      throw StateError('Weight logging is rate-limited to once every 7 days. Next log unlocks in ${status.daysUntilUnlock} days.');
+      throw StateError(
+        'Weight logging is rate-limited to once every 7 days. Next log unlocks in ${status.daysUntilUnlock} days.',
+      );
     }
 
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
     final todayEnd = todayStart.add(const Duration(days: 1));
 
-    final existing = await (_db.select(_db.bodyMeasurements)
-          ..where((tbl) => tbl.recordedAt.isBiggerOrEqualValue(todayStart) & tbl.recordedAt.isSmallerThanValue(todayEnd)))
-        .get();
+    final existing =
+        await (_db.select(_db.bodyMeasurements)..where(
+              (tbl) =>
+                  tbl.recordedAt.isBiggerOrEqualValue(todayStart) &
+                  tbl.recordedAt.isSmallerThanValue(todayEnd),
+            ))
+            .get();
 
     if (existing.isNotEmpty) {
       final id = existing.first.id;
-      await (_db.update(_db.bodyMeasurements)..where((tbl) => tbl.id.equals(id))).write(
+      await (_db.update(
+        _db.bodyMeasurements,
+      )..where((tbl) => tbl.id.equals(id))).write(
         BodyMeasurementsCompanion(
           weight: Value(weight),
           waist: Value(waist),
@@ -313,7 +376,9 @@ class WorkoutRepository {
       );
       return id;
     } else {
-      return await _db.into(_db.bodyMeasurements).insert(
+      return await _db
+          .into(_db.bodyMeasurements)
+          .insert(
             BodyMeasurementsCompanion.insert(
               weight: Value(weight),
               waist: Value(waist),
@@ -327,15 +392,20 @@ class WorkoutRepository {
 
   // 10. Fetch body measurements sorted by date descending
   Future<List<BodyMeasurement>> getBodyMeasurements() async {
-    return await (_db.select(_db.bodyMeasurements)
-          ..orderBy([(tbl) => OrderingTerm(expression: tbl.recordedAt, mode: OrderingMode.desc)]))
+    return await (_db.select(_db.bodyMeasurements)..orderBy([
+          (tbl) =>
+              OrderingTerm(expression: tbl.recordedAt, mode: OrderingMode.desc),
+        ]))
         .get();
   }
 
   // 11. Fetch latest completed workout session
   Future<WorkoutSession?> getLastCompletedSession() async {
     final query = _db.select(_db.workoutSessions)
-      ..orderBy([(tbl) => OrderingTerm(expression: tbl.completedAt, mode: OrderingMode.desc)])
+      ..orderBy([
+        (tbl) =>
+            OrderingTerm(expression: tbl.completedAt, mode: OrderingMode.desc),
+      ])
       ..limit(1);
     final rows = await query.get();
     return rows.isEmpty ? null : rows.first;
@@ -344,47 +414,59 @@ class WorkoutRepository {
   // 12. Fetch all sets for a given sessionId
   Future<List<WorkoutSet>> getSetsForSession(int sessionId) async {
     return await (_db.select(_db.workoutSets)
-      ..where((tbl) => tbl.sessionId.equals(sessionId))
-      ..orderBy([(tbl) => OrderingTerm(expression: tbl.setNumber)]))
-      .get();
+          ..where((tbl) => tbl.sessionId.equals(sessionId))
+          ..orderBy([(tbl) => OrderingTerm(expression: tbl.setNumber)]))
+        .get();
   }
 
-
-
   // 14. Fetch complete exercise history (sets grouped by session)
-  Future<List<Map<String, dynamic>>> getExerciseHistory(String exerciseName) async {
-    final query = _db.select(_db.workoutSets).join([
-      innerJoin(
-        _db.workoutSessions,
-        _db.workoutSessions.id.equalsExp(_db.workoutSets.sessionId),
-      ),
-    ])
-      ..where(_db.workoutSets.exerciseName.equals(exerciseName))
-      ..orderBy([OrderingTerm(expression: _db.workoutSessions.completedAt, mode: OrderingMode.desc)]);
+  Future<List<Map<String, dynamic>>> getExerciseHistory(
+    String exerciseName,
+  ) async {
+    final query =
+        _db.select(_db.workoutSets).join([
+            innerJoin(
+              _db.workoutSessions,
+              _db.workoutSessions.id.equalsExp(_db.workoutSets.sessionId),
+            ),
+          ])
+          ..where(_db.workoutSets.exerciseName.equals(exerciseName))
+          ..orderBy([
+            OrderingTerm(
+              expression: _db.workoutSessions.completedAt,
+              mode: OrderingMode.desc,
+            ),
+          ]);
 
     final rows = await query.get();
-    
+
     final Map<int, Map<String, dynamic>> grouped = {};
     for (final row in rows) {
       final set = row.readTable(_db.workoutSets);
       final session = row.readTable(_db.workoutSessions);
-      
-      grouped.putIfAbsent(session.id, () => {
-        'session': session,
-        'sets': <WorkoutSet>[],
-      });
+
+      grouped.putIfAbsent(
+        session.id,
+        () => {'session': session, 'sets': <WorkoutSet>[]},
+      );
       (grouped[session.id]!['sets'] as List<WorkoutSet>).add(set);
     }
-    
+
     return grouped.values.toList();
   }
 
   // 15. Active Draft Persistence
   Future<WorkoutDraft?> getActiveDraft() async {
-    final rows = await (_db.select(_db.workoutDrafts)
-      ..orderBy([(tbl) => OrderingTerm(expression: tbl.updatedAt, mode: OrderingMode.desc)])
-      ..limit(1))
-      .get();
+    final rows =
+        await (_db.select(_db.workoutDrafts)
+              ..orderBy([
+                (tbl) => OrderingTerm(
+                  expression: tbl.updatedAt,
+                  mode: OrderingMode.desc,
+                ),
+              ])
+              ..limit(1))
+            .get();
     return rows.isEmpty ? null : rows.first;
   }
 
@@ -425,4 +507,3 @@ class WorkoutRepository {
     return sessions.map((s) => s.completedAt).toList();
   }
 }
-

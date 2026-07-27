@@ -22,7 +22,8 @@ class Achievement {
     required this.isUnlocked,
   });
 
-  double get progressPercentage => (currentProgress / maxProgress).clamp(0.0, 1.0);
+  double get progressPercentage =>
+      (currentProgress / maxProgress).clamp(0.0, 1.0);
 }
 
 class AchievementService {

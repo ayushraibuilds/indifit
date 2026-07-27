@@ -25,7 +25,10 @@ void main() {
 
     test('throws FormatException on wrong password', () {
       const originalText = 'sensitive health data';
-      final encrypted = EncryptionHelper.encrypt(originalText, 'correctPassword');
+      final encrypted = EncryptionHelper.encrypt(
+        originalText,
+        'correctPassword',
+      );
 
       expect(
         () => EncryptionHelper.decrypt(encrypted, 'wrongPassword'),
@@ -34,7 +37,8 @@ void main() {
     });
 
     test('throws FormatException on corrupt header signature', () {
-      const corruptBase64 = 'SU5ESUZJVF9DT1JSVVBUPjphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==';
+      const corruptBase64 =
+          'SU5ESUZJVF9DT1JSVVBUPjphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==';
 
       expect(
         () => EncryptionHelper.decrypt(corruptBase64, 'somePassword'),

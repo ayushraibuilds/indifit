@@ -1,8 +1,10 @@
 import 'dart:convert' show jsonDecode;
-import 'package:flutter/services.dart' show rootBundle;
+
 import 'package:drift/drift.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../core/di/providers.dart';
 import '../../core/utils/app_logger.dart';
 import '../database/app_database.dart';
@@ -22,13 +24,14 @@ class FoodRepository {
     if (query.trim().isEmpty) return [];
 
     final cleanQuery = query.toLowerCase().trim();
-    
+
     // Search by name or hindi name containing the query with null protection
-    return (await (_db.select(_db.foodItems)
-          ..where((tbl) => 
-            tbl.name.lower().contains(cleanQuery) | 
-            (tbl.nameHindi.isNotNull() & tbl.nameHindi.lower().contains(cleanQuery))
-          ))
+    return (await (_db.select(_db.foodItems)..where(
+          (tbl) =>
+              tbl.name.lower().contains(cleanQuery) |
+              (tbl.nameHindi.isNotNull() &
+                  tbl.nameHindi.lower().contains(cleanQuery)),
+        ))
         .get());
   }
 
@@ -53,25 +56,31 @@ class FoodRepository {
   }) async {
     String resolvedGroupId = mealGroupId ?? '';
     final entryTime = loggedAt ?? DateTime.now();
-    
+
     if (resolvedGroupId.isEmpty) {
       // Check the latest logged entry of this type to see if we can group them
       final lastQuery = _db.select(_db.foodLogs)
         ..where((tbl) => tbl.mealType.equals(mealType))
-        ..orderBy([(tbl) => OrderingTerm(expression: tbl.loggedAt, mode: OrderingMode.desc)])
+        ..orderBy([
+          (tbl) =>
+              OrderingTerm(expression: tbl.loggedAt, mode: OrderingMode.desc),
+        ])
         ..limit(1);
       final lastEntries = await lastQuery.get();
-      
+
       if (lastEntries.isNotEmpty) {
         final lastEntry = lastEntries.first;
         final diff = entryTime.difference(lastEntry.loggedAt).inMinutes.abs();
-        if (diff < 15 && lastEntry.mealGroupId != null && lastEntry.mealGroupId!.isNotEmpty) {
+        if (diff < 15 &&
+            lastEntry.mealGroupId != null &&
+            lastEntry.mealGroupId!.isNotEmpty) {
           resolvedGroupId = lastEntry.mealGroupId!;
         }
       }
-      
+
       if (resolvedGroupId.isEmpty) {
-        resolvedGroupId = '${mealType}_${entryTime.millisecondsSinceEpoch}_${entryTime.microsecond}';
+        resolvedGroupId =
+            '${mealType}_${entryTime.millisecondsSinceEpoch}_${entryTime.microsecond}';
       }
     }
 
@@ -99,57 +108,82 @@ class FoodRepository {
 
     return (_db.select(_db.foodLogs)
           ..where((tbl) => tbl.loggedAt.isBetweenValues(startOfDay, endOfDay))
-          ..orderBy([(tbl) => OrderingTerm(expression: tbl.loggedAt, mode: OrderingMode.desc)]))
+          ..orderBy([
+            (tbl) =>
+                OrderingTerm(expression: tbl.loggedAt, mode: OrderingMode.desc),
+          ]))
         .watch();
   }
 
   // 5. Delete logged entry
   Future<int> deleteLogEntry(int id) async {
-    return await (_db.delete(_db.foodLogs)..where((tbl) => tbl.id.equals(id))).go();
+    return await (_db.delete(
+      _db.foodLogs,
+    )..where((tbl) => tbl.id.equals(id))).go();
   }
 
   // 6. Get unsynced logs
   Future<List<FoodLog>> getUnsyncedLogs() async {
-    return await (_db.select(_db.foodLogs)..where((tbl) => tbl.isSynced.equals(false))).get();
+    return await (_db.select(
+      _db.foodLogs,
+    )..where((tbl) => tbl.isSynced.equals(false))).get();
   }
 
   // 7. Get all items logged for the last occurrence of a meal type
   Future<List<FoodLog>> getLastLoggedMeal(String mealType) async {
     final query = _db.select(_db.foodLogs)
       ..where((tbl) => tbl.mealType.equals(mealType))
-      ..orderBy([(tbl) => OrderingTerm(expression: tbl.loggedAt, mode: OrderingMode.desc)])
+      ..orderBy([
+        (tbl) =>
+            OrderingTerm(expression: tbl.loggedAt, mode: OrderingMode.desc),
+      ])
       ..limit(1);
-    
+
     final lastEntries = await query.get();
     if (lastEntries.isEmpty) return [];
 
     final lastEntry = lastEntries.first;
     final groupId = lastEntry.mealGroupId;
-    
+
     if (groupId != null && groupId.isNotEmpty) {
-      return await (_db.select(_db.foodLogs)
-        ..where((tbl) => tbl.mealGroupId.equals(groupId)))
-        .get();
+      return await (_db.select(
+        _db.foodLogs,
+      )..where((tbl) => tbl.mealGroupId.equals(groupId))).get();
     } else {
       // Fallback: group by date boundary if no group ID is defined
       final lastLoggedDate = lastEntry.loggedAt;
-      final startOfDay = DateTime(lastLoggedDate.year, lastLoggedDate.month, lastLoggedDate.day);
-      final endOfDay = DateTime(lastLoggedDate.year, lastLoggedDate.month, lastLoggedDate.day, 23, 59, 59);
+      final startOfDay = DateTime(
+        lastLoggedDate.year,
+        lastLoggedDate.month,
+        lastLoggedDate.day,
+      );
+      final endOfDay = DateTime(
+        lastLoggedDate.year,
+        lastLoggedDate.month,
+        lastLoggedDate.day,
+        23,
+        59,
+        59,
+      );
 
-      return await (_db.select(_db.foodLogs)
-        ..where((tbl) => 
-          tbl.mealType.equals(mealType) & 
-          tbl.loggedAt.isBetweenValues(startOfDay, endOfDay)
-        ))
-        .get();
+      return await (_db.select(_db.foodLogs)..where(
+            (tbl) =>
+                tbl.mealType.equals(mealType) &
+                tbl.loggedAt.isBetweenValues(startOfDay, endOfDay),
+          ))
+          .get();
     }
   }
 
   Future<double> getFiberForLog(FoodLog log) async {
     if (log.foodItemId == null) return 0.0;
-    final item = await (_db.select(_db.foodItems)..where((tbl) => tbl.id.equals(log.foodItemId!))).getSingleOrNull();
+    final item = await (_db.select(
+      _db.foodItems,
+    )..where((tbl) => tbl.id.equals(log.foodItemId!))).getSingleOrNull();
     if (item == null || item.fiberG == null) return 0.0;
-    final double scale = item.servingSize > 0 ? (log.servingLogged / item.servingSize) : 1.0;
+    final double scale = item.servingSize > 0
+        ? (log.servingLogged / item.servingSize)
+        : 1.0;
     return item.fiberG! * scale;
   }
 
@@ -173,16 +207,17 @@ class FoodRepository {
     required double fatG,
     required double servingLogged,
   }) async {
-    final count = await (_db.update(_db.foodLogs)..where((t) => t.id.equals(id))).write(
-      FoodLogsCompanion(
-        name: Value(name),
-        calories: Value(calories),
-        proteinG: Value(proteinG),
-        carbsG: Value(carbsG),
-        fatG: Value(fatG),
-        servingLogged: Value(servingLogged),
-      ),
-    );
+    final count =
+        await (_db.update(_db.foodLogs)..where((t) => t.id.equals(id))).write(
+          FoodLogsCompanion(
+            name: Value(name),
+            calories: Value(calories),
+            proteinG: Value(proteinG),
+            carbsG: Value(carbsG),
+            fatG: Value(fatG),
+            servingLogged: Value(servingLogged),
+          ),
+        );
     return count > 0;
   }
 
@@ -192,24 +227,30 @@ class FoodRepository {
     required DateTime targetDate,
     required String targetMealType,
   }) async {
-    final logs = await (_db.select(_db.foodLogs)..where((t) => t.mealGroupId.equals(groupId))).get();
+    final logs = await (_db.select(
+      _db.foodLogs,
+    )..where((t) => t.mealGroupId.equals(groupId))).get();
     if (logs.isEmpty) return;
 
     final newGroupId = const Uuid().v4();
-    final companions = logs.map((l) => FoodLogsCompanion.insert(
-      foodItemId: Value(l.foodItemId),
-      name: l.name,
-      calories: l.calories,
-      proteinG: l.proteinG,
-      carbsG: l.carbsG,
-      fatG: l.fatG,
-      servingLogged: l.servingLogged,
-      servingUnit: l.servingUnit,
-      mealType: targetMealType,
-      loggedAt: Value(targetDate),
-      mealGroupId: Value(newGroupId),
-      uuid: Value(const Uuid().v4()),
-    )).toList();
+    final companions = logs
+        .map(
+          (l) => FoodLogsCompanion.insert(
+            foodItemId: Value(l.foodItemId),
+            name: l.name,
+            calories: l.calories,
+            proteinG: l.proteinG,
+            carbsG: l.carbsG,
+            fatG: l.fatG,
+            servingLogged: l.servingLogged,
+            servingUnit: l.servingUnit,
+            mealType: targetMealType,
+            loggedAt: Value(targetDate),
+            mealGroupId: Value(newGroupId),
+            uuid: Value(const Uuid().v4()),
+          ),
+        )
+        .toList();
 
     await _db.batch((b) => b.insertAll(_db.foodLogs, companions));
   }
@@ -232,7 +273,9 @@ class FoodRepository {
     }
 
     return _db.transaction(() async {
-      final templateId = await _db.into(_db.mealTemplates).insert(
+      final templateId = await _db
+          .into(_db.mealTemplates)
+          .insert(
             MealTemplatesCompanion.insert(
               name: name.trim(),
               defaultMealType: Value(defaultMealType),
@@ -267,46 +310,42 @@ class FoodRepository {
   }) async {
     final startOfDay = DateTime(day.year, day.month, day.day);
     final endOfDay = DateTime(day.year, day.month, day.day, 23, 59, 59);
-    final logs = await (_db.select(_db.foodLogs)
-          ..where(
-            (t) =>
-                t.mealType.equals(mealType) &
-                t.loggedAt.isBetweenValues(startOfDay, endOfDay),
-          ))
-        .get();
-    return saveMealTemplate(
-      name: name,
-      defaultMealType: mealType,
-      items: logs,
-    );
+    final logs =
+        await (_db.select(_db.foodLogs)..where(
+              (t) =>
+                  t.mealType.equals(mealType) &
+                  t.loggedAt.isBetweenValues(startOfDay, endOfDay),
+            ))
+            .get();
+    return saveMealTemplate(name: name, defaultMealType: mealType, items: logs);
   }
 
   Future<List<MealTemplate>> getAllMealTemplates() async {
-    return (_db.select(_db.mealTemplates)
-          ..orderBy([
-            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
-          ]))
+    return (_db.select(_db.mealTemplates)..orderBy([
+          (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+        ]))
         .get();
   }
 
   Stream<List<MealTemplate>> watchMealTemplates() {
-    return (_db.select(_db.mealTemplates)
-          ..orderBy([
-            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
-          ]))
+    return (_db.select(_db.mealTemplates)..orderBy([
+          (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+        ]))
         .watch();
   }
 
   Future<List<MealTemplateItem>> getMealTemplateItems(int templateId) async {
-    return (_db.select(_db.mealTemplateItems)
-          ..where((t) => t.templateId.equals(templateId)))
-        .get();
+    return (_db.select(
+      _db.mealTemplateItems,
+    )..where((t) => t.templateId.equals(templateId))).get();
   }
 
-  Future<MealTemplateWithItems?> getMealTemplateWithItems(int templateId) async {
-    final template = await (_db.select(_db.mealTemplates)
-          ..where((t) => t.id.equals(templateId)))
-        .getSingleOrNull();
+  Future<MealTemplateWithItems?> getMealTemplateWithItems(
+    int templateId,
+  ) async {
+    final template = await (_db.select(
+      _db.mealTemplates,
+    )..where((t) => t.id.equals(templateId))).getSingleOrNull();
     if (template == null) return null;
     final items = await getMealTemplateItems(templateId);
     return MealTemplateWithItems(template: template, items: items);
@@ -347,28 +386,32 @@ class FoodRepository {
 
   Future<int> deleteMealTemplate(int templateId) async {
     return _db.transaction(() async {
-      await (_db.delete(_db.mealTemplateItems)
-            ..where((t) => t.templateId.equals(templateId)))
-          .go();
-      return (_db.delete(_db.mealTemplates)
-            ..where((t) => t.id.equals(templateId)))
-          .go();
+      await (_db.delete(
+        _db.mealTemplateItems,
+      )..where((t) => t.templateId.equals(templateId))).go();
+      return (_db.delete(
+        _db.mealTemplates,
+      )..where((t) => t.id.equals(templateId))).go();
     });
   }
 
   Future<int> renameMealTemplate(int templateId, String newName) async {
     if (newName.trim().isEmpty) return 0;
-    return (_db.update(_db.mealTemplates)..where((t) => t.id.equals(templateId)))
+    return (_db.update(_db.mealTemplates)
+          ..where((t) => t.id.equals(templateId)))
         .write(MealTemplatesCompanion(name: Value(newName.trim())));
   }
 
   Future<List<FoodItem>> getRecentFoods(int limit) async {
-    final query = 'SELECT name, food_item_id, calories, protein_g, carbs_g, fat_g, serving_unit, COUNT(*) as log_count '
+    final query =
+        'SELECT name, food_item_id, calories, protein_g, carbs_g, fat_g, serving_unit, COUNT(*) as log_count '
         'FROM food_logs '
         'GROUP BY name '
         'ORDER BY log_count DESC, max(logged_at) DESC '
         'LIMIT ?';
-    final rows = await _db.customSelect(query, variables: [Variable.withInt(limit)]).get();
+    final rows = await _db
+        .customSelect(query, variables: [Variable.withInt(limit)])
+        .get();
 
     return rows.map((row) {
       final name = row.read<String>('name');
@@ -407,7 +450,9 @@ class FoodRepository {
 
       await _db.transaction(() async {
         // First delete any existing items from this regional pack to avoid duplicates
-        await (_db.delete(_db.foodItems)..where((t) => t.regionPack.equals(packId))).go();
+        await (_db.delete(
+          _db.foodItems,
+        )..where((t) => t.regionPack.equals(packId))).go();
 
         final toInsert = list.map((raw) {
           return FoodItemsCompanion.insert(
@@ -428,14 +473,21 @@ class FoodRepository {
         await _db.batch((b) => b.insertAll(_db.foodItems, toInsert));
       });
     } catch (e, stackTrace) {
-      AppLogger.error('Failed to import regional food pack: $packId', e, stackTrace, 'FoodRepository');
+      AppLogger.error(
+        'Failed to import regional food pack: $packId',
+        e,
+        stackTrace,
+        'FoodRepository',
+      );
       rethrow;
     }
   }
 
   /// Remove a regional pack (delete from DB)
   Future<void> removeRegionalPack(String packId) async {
-    await (_db.delete(_db.foodItems)..where((t) => t.regionPack.equals(packId))).go();
+    await (_db.delete(
+      _db.foodItems,
+    )..where((t) => t.regionPack.equals(packId))).go();
   }
 
   /// Check if a regional pack is loaded (has items in DB)
@@ -457,9 +509,9 @@ class FoodRepository {
     final List<MealTemplateWithItems> result = [];
 
     for (final template in templates) {
-      final items = await (_db.select(_db.mealTemplateItems)
-            ..where((t) => t.templateId.equals(template.id)))
-          .get();
+      final items = await (_db.select(
+        _db.mealTemplateItems,
+      )..where((t) => t.templateId.equals(template.id))).get();
       result.add(MealTemplateWithItems(template: template, items: items));
     }
     return result;
@@ -472,7 +524,9 @@ class FoodRepository {
     required List<MealTemplateItemInput> items,
   }) async {
     return await _db.transaction(() async {
-      final templateId = await _db.into(_db.mealTemplates).insert(
+      final templateId = await _db
+          .into(_db.mealTemplates)
+          .insert(
             MealTemplatesCompanion.insert(
               name: name,
               defaultMealType: Value(defaultMealType),
@@ -480,7 +534,9 @@ class FoodRepository {
           );
 
       for (final item in items) {
-        await _db.into(_db.mealTemplateItems).insert(
+        await _db
+            .into(_db.mealTemplateItems)
+            .insert(
               MealTemplateItemsCompanion.insert(
                 templateId: templateId,
                 name: item.name,
@@ -497,16 +553,15 @@ class FoodRepository {
     });
   }
 
-
   /// Batch log all items from a template into food logs
   Future<List<int>> logMealTemplate({
     required int templateId,
     required String targetMealType,
     DateTime? targetDate,
   }) async {
-    final templateItems = await (_db.select(_db.mealTemplateItems)
-          ..where((t) => t.templateId.equals(templateId)))
-        .get();
+    final templateItems = await (_db.select(
+      _db.mealTemplateItems,
+    )..where((t) => t.templateId.equals(templateId))).get();
 
     if (templateItems.isEmpty) return [];
 
@@ -525,6 +580,7 @@ class FoodRepository {
         servingUnit: item.servingUnit,
         mealType: targetMealType,
         mealGroupId: mealGroupId,
+        loggedAt: logDate,
       );
       logIds.add(id);
     }
@@ -556,18 +612,13 @@ class MealTemplateWithItems {
   final MealTemplate template;
   final List<MealTemplateItem> items;
 
-  const MealTemplateWithItems({
-    required this.template,
-    required this.items,
-  });
+  const MealTemplateWithItems({required this.template, required this.items});
 
   int get totalCalories => items.fold(0, (sum, i) => sum + i.calories);
 
-  double get totalProteinG =>
-      items.fold(0.0, (sum, i) => sum + i.proteinG);
+  double get totalProteinG => items.fold(0.0, (sum, i) => sum + i.proteinG);
 
   double get totalCarbsG => items.fold(0.0, (sum, i) => sum + i.carbsG);
 
   double get totalFatG => items.fold(0.0, (sum, i) => sum + i.fatG);
 }
-
