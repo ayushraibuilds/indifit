@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/di/theme_provider.dart';
 import '../../core/theme/colors.dart';
 import '../profile/profile_screen.dart';
 import 'data_management_sub_screen.dart';
@@ -17,6 +18,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(settingsControllerProvider);
+    final currentThemeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -32,7 +34,7 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Theme Picker Card (Item 13)
+                  // 1. Theme Picker Card
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -57,35 +59,34 @@ class SettingsScreen extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.2),
-                              ),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(
-                                  Icons.dark_mode_rounded,
-                                  color: AppColors.primary,
-                                  size: 18,
+                          SizedBox(
+                            width: double.infinity,
+                            child: SegmentedButton<ThemeMode>(
+                              segments: const [
+                                ButtonSegment<ThemeMode>(
+                                  value: ThemeMode.system,
+                                  label: Text('System'),
+                                  icon: Icon(Icons.settings_suggest_rounded, size: 16),
                                 ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'IndiFit Dark Mode (Optimized Default)',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  ),
+                                ButtonSegment<ThemeMode>(
+                                  value: ThemeMode.light,
+                                  label: Text('Light'),
+                                  icon: Icon(Icons.light_mode_rounded, size: 16),
+                                ),
+                                ButtonSegment<ThemeMode>(
+                                  value: ThemeMode.dark,
+                                  label: Text('Dark'),
+                                  icon: Icon(Icons.dark_mode_rounded, size: 16),
                                 ),
                               ],
+                              selected: {currentThemeMode},
+                              onSelectionChanged: (Set<ThemeMode> newSelection) {
+                                if (newSelection.isNotEmpty) {
+                                  ref
+                                      .read(themeModeProvider.notifier)
+                                      .setThemeMode(newSelection.first);
+                                }
+                              },
                             ),
                           ),
                         ],

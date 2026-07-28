@@ -1,12 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
+import '../database/app_database.dart';
 
 final healthServiceProvider = Provider<HealthService>((ref) {
   return HealthService();
 });
+
+enum HealthCategory {
+  steps,
+  activeEnergy,
+  sleep,
+  workoutImport,
+  workoutExport,
+  weightExport,
+}
 
 class HealthDataSummary {
   final int steps;
@@ -15,6 +26,8 @@ class HealthDataSummary {
   final bool isConnected;
   final bool isError;
   final String? statusMessage;
+  final Map<HealthCategory, bool> categoryStates;
+  final int skippedDuplicatesCount;
 
   const HealthDataSummary({
     this.steps = 0,
@@ -23,6 +36,8 @@ class HealthDataSummary {
     this.isConnected = false,
     this.isError = false,
     this.statusMessage,
+    this.categoryStates = const {},
+    this.skippedDuplicatesCount = 0,
   });
 }
 
@@ -31,37 +46,35 @@ class HealthService {
 
   HealthService([Health? health]) : _health = health ?? Health();
 
-  static const List<HealthDataType> _readTypes = [
-    HealthDataType.STEPS,
-    HealthDataType.ACTIVE_ENERGY_BURNED,
-    HealthDataType.SLEEP_SESSION,
-    HealthDataType.WORKOUT,
-  ];
+  static const Map<HealthCategory, String> categoryPrefKeys = {
+    HealthCategory.steps: 'health_category_steps',
+    HealthCategory.activeEnergy: 'health_category_active_energy',
+    HealthCategory.sleep: 'health_category_sleep',
+    HealthCategory.workoutImport: 'health_category_workout_import',
+    HealthCategory.workoutExport: 'health_category_workout_export',
+    HealthCategory.weightExport: 'health_category_weight_export',
+  };
 
-  static const List<HealthDataAccess> _readPermissions = [
-    HealthDataAccess.READ,
-    HealthDataAccess.READ,
-    HealthDataAccess.READ,
-    HealthDataAccess.READ,
-  ];
+  static List<HealthDataType> _getTypesForCategory(HealthCategory category) {
+    return switch (category) {
+      HealthCategory.steps => [HealthDataType.STEPS],
+      HealthCategory.activeEnergy => [HealthDataType.ACTIVE_ENERGY_BURNED],
+      HealthCategory.sleep => [HealthDataType.SLEEP_SESSION],
+      HealthCategory.workoutImport => [HealthDataType.WORKOUT],
+      HealthCategory.workoutExport => [HealthDataType.WORKOUT],
+      HealthCategory.weightExport => [HealthDataType.WEIGHT],
+    };
+  }
 
-  static const List<HealthDataType> _workoutReadTypes = [
-    HealthDataType.WORKOUT,
-  ];
-
-  static const List<HealthDataAccess> _workoutReadPermissions = [
-    HealthDataAccess.READ,
-  ];
-
-  static const List<HealthDataType> _weightWriteTypes = [HealthDataType.WEIGHT];
-
-  static const List<HealthDataType> _workoutWriteTypes = [
-    HealthDataType.WORKOUT,
-  ];
-
-  static const List<HealthDataAccess> _writePermissions = [
-    HealthDataAccess.WRITE,
-  ];
+  static List<HealthDataAccess> _getPermissionsForCategory(
+    HealthCategory category,
+  ) {
+    return switch (category) {
+      HealthCategory.workoutExport ||
+      HealthCategory.weightExport => [HealthDataAccess.WRITE],
+      _ => [HealthDataAccess.READ],
+    };
+  }
 
   Future<String?> getLastSyncTime() async {
     final prefs = await SharedPreferences.getInstance();
@@ -74,9 +87,50 @@ class HealthService {
     await prefs.setString('health_last_sync_time', t.toIso8601String());
   }
 
-  /// Request permissions from the native Health OS SDK
+  Future<bool> getCategoryState(HealthCategory category) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = categoryPrefKeys[category]!;
+    return prefs.getBool(key) ?? true;
+  }
+
+  Future<void> setCategoryState(HealthCategory category, bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = categoryPrefKeys[category]!;
+    await prefs.setBool(key, enabled);
+  }
+
+  Future<Map<HealthCategory, bool>> getAllCategoryStates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final result = <HealthCategory, bool>{};
+    for (final cat in HealthCategory.values) {
+      final key = categoryPrefKeys[cat]!;
+      result[cat] = prefs.getBool(key) ?? true;
+    }
+    return result;
+  }
+
+  /// Request category-specific native SDK permissions
+  Future<bool> requestCategoryPermissions(HealthCategory category) async {
+    final types = _getTypesForCategory(category);
+    final perms = _getPermissionsForCategory(category);
+    return _ensurePermissions(types, perms);
+  }
+
+  /// Request all enabled category permissions
   Future<bool> requestPermissions() async {
-    return _ensurePermissions(_readTypes, _readPermissions);
+    final states = await getAllCategoryStates();
+    final types = <HealthDataType>[];
+    final perms = <HealthDataAccess>[];
+
+    for (final cat in HealthCategory.values) {
+      if (states[cat] == true) {
+        types.addAll(_getTypesForCategory(cat));
+        perms.addAll(_getPermissionsForCategory(cat));
+      }
+    }
+
+    if (types.isEmpty) return true;
+    return _ensurePermissions(types, perms);
   }
 
   Future<bool> _ensurePermissions(
@@ -103,54 +157,72 @@ class HealthService {
         st,
         reason: 'health permission request error',
       );
-      rethrow;
+      return false;
     }
   }
 
-  /// Fetch today's step count, active calories burned, and sleep hours
+  /// Fetch today's health metrics respecting active category toggles
   Future<HealthDataSummary> fetchTodayHealthData() async {
     try {
       await _health.configure();
       final now = DateTime.now();
       final midnight = DateTime(now.year, now.month, now.day);
+      final categoryStates = await getAllCategoryStates();
 
-      bool? hasPermissions = await _health.hasPermissions(
-        _readTypes,
-        permissions: _readPermissions,
-      );
-      if (hasPermissions != true) {
-        return const HealthDataSummary(
-          isConnected: false,
-          statusMessage:
-              'Permissions not granted. Tap Connect to enable health sync.',
-        );
-      }
-
-      int steps = await _health.getTotalStepsInInterval(midnight, now) ?? 0;
-
-      List<HealthDataPoint> healthData = await _health.getHealthDataFromTypes(
-        startTime: midnight,
-        endTime: now,
-        types: [
-          HealthDataType.ACTIVE_ENERGY_BURNED,
-          HealthDataType.SLEEP_SESSION,
-        ],
-      );
-
+      int steps = 0;
       double activeCals = 0.0;
       double sleepMinutes = 0.0;
 
-      for (var point in healthData) {
-        if (point.type == HealthDataType.ACTIVE_ENERGY_BURNED) {
-          final val = point.value;
-          if (val is NumericHealthValue) {
-            activeCals += val.numericValue.toDouble();
+      // 1. Steps
+      if (categoryStates[HealthCategory.steps] == true) {
+        final stepAuthorized = await _ensurePermissions(
+          [HealthDataType.STEPS],
+          [HealthDataAccess.READ],
+        );
+        if (stepAuthorized) {
+          steps = await _health.getTotalStepsInInterval(midnight, now) ?? 0;
+        }
+      }
+
+      // 2. Active Energy Burned
+      if (categoryStates[HealthCategory.activeEnergy] == true) {
+        final energyAuthorized = await _ensurePermissions(
+          [HealthDataType.ACTIVE_ENERGY_BURNED],
+          [HealthDataAccess.READ],
+        );
+        if (energyAuthorized) {
+          final data = await _health.getHealthDataFromTypes(
+            startTime: midnight,
+            endTime: now,
+            types: [HealthDataType.ACTIVE_ENERGY_BURNED],
+          );
+          for (final point in data) {
+            final val = point.value;
+            if (val is NumericHealthValue) {
+              activeCals += val.numericValue.toDouble();
+            }
           }
-        } else if (point.type == HealthDataType.SLEEP_SESSION) {
-          sleepMinutes += point.dateTo
-              .difference(point.dateFrom)
-              .inMinutes
-              .toDouble();
+        }
+      }
+
+      // 3. Sleep Session
+      if (categoryStates[HealthCategory.sleep] == true) {
+        final sleepAuthorized = await _ensurePermissions(
+          [HealthDataType.SLEEP_SESSION],
+          [HealthDataAccess.READ],
+        );
+        if (sleepAuthorized) {
+          final data = await _health.getHealthDataFromTypes(
+            startTime: midnight,
+            endTime: now,
+            types: [HealthDataType.SLEEP_SESSION],
+          );
+          for (final point in data) {
+            sleepMinutes += point.dateTo
+                .difference(point.dateFrom)
+                .inMinutes
+                .toDouble();
+          }
         }
       }
 
@@ -161,6 +233,7 @@ class HealthService {
         activeCalories: activeCals,
         sleepHours: sleepMinutes / 60.0,
         isConnected: true,
+        categoryStates: categoryStates,
       );
     } catch (e) {
       return HealthDataSummary(
@@ -171,14 +244,18 @@ class HealthService {
     }
   }
 
-  /// Fetch outdoor walking/running workout activities
-  Future<List<Map<String, dynamic>>> importOutdoorActivities() async {
+  /// Import outdoor activities with provenance tracking and duplicate prevention
+  Future<List<Map<String, dynamic>>> importOutdoorActivities([AppDatabase? db]) async {
     try {
+      final categoryStates = await getAllCategoryStates();
+      if (categoryStates[HealthCategory.workoutImport] != true) return [];
+
       final authorized = await _ensurePermissions(
-        _workoutReadTypes,
-        _workoutReadPermissions,
+        [HealthDataType.WORKOUT],
+        [HealthDataAccess.READ],
       );
       if (!authorized) return [];
+
       final now = DateTime.now();
       final startTime = now.subtract(const Duration(days: 7));
 
@@ -189,6 +266,7 @@ class HealthService {
       );
 
       final List<Map<String, dynamic>> activities = [];
+
       for (final p in data) {
         final val = p.value;
         if (val is WorkoutHealthValue) {
@@ -196,6 +274,20 @@ class HealthService {
           if (typeStr.contains('walking') || typeStr.contains('running')) {
             final duration = p.dateTo.difference(p.dateFrom).inMinutes;
             final cals = val.totalEnergyBurned ?? 0;
+            final fingerprint =
+                '${p.dateFrom.toIso8601String()}_${typeStr}_${cals}_$duration';
+
+            // Idempotency check: Skip if fingerprint exists in HealthProvenances or source is indifit_app
+            if (db != null) {
+              final existing = await (db.select(db.healthProvenances)
+                    ..where((tbl) => tbl.fingerprint.equals(fingerprint)))
+                  .getSingleOrNull();
+
+              if (existing != null || p.sourceName == 'indifit_app') {
+                continue;
+              }
+            }
+
             activities.add({
               'title': typeStr.contains('running')
                   ? 'Outdoor Run'
@@ -203,23 +295,26 @@ class HealthService {
               'durationMinutes': duration,
               'calories': cals,
               'date': p.dateFrom,
+              'fingerprint': fingerprint,
+              'sourceName': p.sourceName,
             });
           }
         }
       }
+
       return activities;
     } catch (e, st) {
-      AppLogger.warning('fetchTodayWorkoutActivities failed: $e');
+      AppLogger.warning('importOutdoorActivities failed: $e');
       CrashReportingService.recordCrash(
         e,
         st,
-        reason: 'fetchTodayWorkoutActivities error',
+        reason: 'importOutdoorActivities error',
       );
       return [];
     }
   }
 
-  /// Write logged workout session to HealthKit / Health Connect
+  /// Write logged workout session to HealthKit / Health Connect with origin tag
   Future<bool> writeWorkoutSession({
     required String title,
     required int durationMinutes,
@@ -227,15 +322,19 @@ class HealthService {
     required DateTime startTime,
   }) async {
     try {
+      final categoryStates = await getAllCategoryStates();
+      if (categoryStates[HealthCategory.workoutExport] != true) return false;
+
       final authorized = await _ensurePermissions(
-        _workoutWriteTypes,
-        _writePermissions,
+        [HealthDataType.WORKOUT],
+        [HealthDataAccess.WRITE],
       );
       if (!authorized) return false;
+
       final endTime = startTime.add(Duration(minutes: durationMinutes));
       return await _health.writeWorkoutData(
         activityType: HealthWorkoutActivityType.STRENGTH_TRAINING,
-        title: title,
+        title: '$title (IndiFit)',
         start: startTime,
         end: endTime,
         totalEnergyBurned: caloriesBurned,
@@ -255,11 +354,15 @@ class HealthService {
   /// Write body weight log measurement to HealthKit / Health Connect
   Future<bool> writeBodyWeight(double weightKg, [DateTime? timestamp]) async {
     try {
+      final categoryStates = await getAllCategoryStates();
+      if (categoryStates[HealthCategory.weightExport] != true) return false;
+
       final authorized = await _ensurePermissions(
-        _weightWriteTypes,
-        _writePermissions,
+        [HealthDataType.WEIGHT],
+        [HealthDataAccess.WRITE],
       );
       if (!authorized) return false;
+
       final time = timestamp ?? DateTime.now();
       return await _health.writeHealthData(
         value: weightKg,

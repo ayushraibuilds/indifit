@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/config/app_config.dart';
 import 'core/di/providers.dart';
+import 'core/di/theme_provider.dart';
 import 'core/privacy/privacy_policy.dart';
 import 'core/router/app_router.dart';
 import 'core/services/auto_backup_service.dart';
@@ -50,11 +51,14 @@ void main() async {
   // later. Previously this created a second, separate AppDatabase()
   // connection to the same SQLite file, so writes made through one
   // connection wouldn't notify stream watchers listening via the other.
-  final privacyPrefs = await SharedPreferences.getInstance();
+  final prefs = await SharedPreferences.getInstance();
   final container = ProviderContainer(
     overrides: [
       privacyPolicyProvider.overrideWith(
-        (ref) => PrivacyPolicyNotifier(privacyPrefs),
+        (ref) => PrivacyPolicyNotifier(prefs),
+      ),
+      themeModeProvider.overrideWith(
+        (ref) => ThemeModeNotifier(prefs),
       ),
     ],
   );
@@ -81,12 +85,39 @@ void main() async {
   });
 }
 
-class IndiFitApp extends ConsumerWidget {
+class IndiFitApp extends ConsumerStatefulWidget {
   const IndiFitApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<IndiFitApp> createState() => _IndiFitAppState();
+}
+
+class _IndiFitAppState extends ConsumerState<IndiFitApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final db = ref.read(databaseProvider);
+      NotificationService.checkAndUpdateTimezoneAndReschedule(db);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     NotificationService.onNotificationNavigate = (payload) {
       if (payload == 'workout') {
@@ -102,9 +133,9 @@ class IndiFitApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'IndiFit',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
+      themeMode: themeMode,
       routerConfig: router,
     );
   }

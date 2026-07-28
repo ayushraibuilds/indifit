@@ -1,11 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/backup/backup_file_adapter.dart';
+import '../../../core/services/auto_backup_service.dart';
 import '../../../core/theme/colors.dart';
-import '../../../core/utils/app_logger.dart';
-import '../../../core/utils/encryption_helper.dart';
 import '../../onboarding/onboarding_screen.dart';
 import '../health_sync_hub_screen.dart';
 import '../regional_food_packs_screen.dart';
@@ -87,7 +86,7 @@ class DataManagementSection extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Paste the backup text block below:',
+                'Paste the contents of your .indifit-backup file or JSON payload:',
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 8),
@@ -95,7 +94,7 @@ class DataManagementSection extends ConsumerWidget {
                 controller: backupController,
                 maxLines: 4,
                 decoration: const InputDecoration(
-                  hintText: 'Paste JSON or encrypted text string...',
+                  hintText: 'Paste .indifit-backup envelope or JSON payload...',
                 ),
               ),
               const SizedBox(height: 16),
@@ -118,24 +117,26 @@ class DataManagementSection extends ConsumerWidget {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () async {
-              final backup = backupController.text.trim();
+              final rawContent = backupController.text.trim();
               final password = passwordController.text;
-              if (backup.isEmpty) return;
+              if (rawContent.isEmpty) return;
 
-              Map<String, dynamic> data;
+              BackupInspectionResult result;
               try {
-                final decrypted = EncryptionHelper.decrypt(backup, password);
-                data = jsonDecode(decrypted) as Map<String, dynamic>;
+                result = await BackupFileAdapter.inspectBackupContent(
+                  rawContent,
+                  password: password.isEmpty ? null : password,
+                );
               } catch (e) {
                 if (context.mounted) {
                   await showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      title: const Text('Decryption Failed'),
+                      title: const Text('Backup Inspection Failed'),
                       backgroundColor: AppColors.surface,
-                      content: const Text(
-                        'Unable to decrypt backup. Please check your password and verify that the backup string is not corrupted.',
-                        style: TextStyle(height: 1.4),
+                      content: Text(
+                        'Unable to inspect backup: $e',
+                        style: const TextStyle(height: 1.4),
                       ),
                       actions: [
                         TextButton(
@@ -149,39 +150,18 @@ class DataManagementSection extends ConsumerWidget {
                 return;
               }
 
-              final exportedAtStr = data['exported_at'] ?? 'Unknown';
-              String formattedDate = exportedAtStr;
-              try {
-                final date = DateTime.parse(exportedAtStr);
-                formattedDate =
-                    '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-              } catch (e) {
-                AppLogger.warning('Backup export date parse warning: $e');
-              }
-
-              final foodItemsCount = (data['food_items'] as List?)?.length ?? 0;
-              final foodLogsCount = (data['food_logs'] as List?)?.length ?? 0;
-              final workoutSessionsCount =
-                  (data['workout_sessions'] as List?)?.length ?? 0;
-              final workoutSetsCount =
-                  (data['workout_sets'] as List?)?.length ?? 0;
-              final measurementsCount =
-                  (data['body_measurements'] as List?)?.length ?? 0;
-              final routinesCount =
-                  (data['workout_routines'] as List?)?.length ?? 0;
-
               if (context.mounted) {
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: const Text('Confirm Restore Overwrite'),
+                    title: const Text('Restore Inspection Preview'),
                     backgroundColor: AppColors.surface,
                     content: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'WARNING: Restoring will completely overwrite your current local database with this backup.',
+                          'WARNING: Overwriting will permanently replace your local database.',
                           style: TextStyle(
                             color: AppColors.danger,
                             fontWeight: FontWeight.bold,
@@ -190,36 +170,28 @@ class DataManagementSection extends ConsumerWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Backup Date: $formattedDate',
-                          style: const TextStyle(
-                            fontSize: 12,
+                          'Profile: ${result.profileName}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text('Export Date: ${result.timestamp}'),
+                        Text('Schema Version: v${result.schemaVersion}'),
+                        Text(
+                          'Encrypted: ${result.isEncrypted ? "Yes (SHA256 Verified)" : "No"}',
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'RECORD COUNTS:',
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '• $foodItemsCount Food Items',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        Text(
-                          '• $foodLogsCount Food Logs',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        Text(
-                          '• $workoutSessionsCount Workout Sessions',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        Text(
-                          '• $workoutSetsCount Workout Sets',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        Text(
-                          '• $routinesCount Routines',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        Text(
-                          '• $measurementsCount Body Measurements',
-                          style: const TextStyle(fontSize: 12),
+                        ...result.tableCounts.entries.map(
+                          (e) => Text(
+                            '• ${e.key}: ${e.value} items',
+                            style: const TextStyle(fontSize: 12),
+                          ),
                         ),
                       ],
                     ),
@@ -244,7 +216,7 @@ class DataManagementSection extends ConsumerWidget {
                   try {
                     await ref
                         .read(settingsControllerProvider.notifier)
-                        .performRestore(data);
+                        .performRestore(result.backupData.toJson());
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -272,6 +244,76 @@ class DataManagementSection extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  void _restoreFromAutoBackup(BuildContext context, WidgetRef ref) async {
+    final rawSnapshot = await AutoBackupService.getLatestSnapshotContent();
+    if (rawSnapshot == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No recent automatic backup snapshot found.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final inspection = await BackupFileAdapter.inspectBackupContent(rawSnapshot);
+      if (!context.mounted) return;
+
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Restore Auto-Backup Snapshot'),
+          backgroundColor: AppColors.surface,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Restore from your most recent automatic background snapshot?',
+                style: TextStyle(height: 1.4),
+              ),
+              const SizedBox(height: 12),
+              Text('Profile: ${inspection.profileName}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text('Snapshot Date: ${inspection.timestamp}'),
+              const SizedBox(height: 8),
+              ...inspection.tableCounts.entries.map(
+                (e) => Text('• ${e.key}: ${e.value} items', style: const TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Restore Snapshot'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm == true && context.mounted) {
+        await ref
+            .read(settingsControllerProvider.notifier)
+            .performRestore(inspection.backupData.toJson());
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Auto-backup restored successfully!')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Auto-backup restore failed: $e'), backgroundColor: AppColors.danger),
+        );
+      }
+    }
   }
 
   void _confirmDeleteAllData(BuildContext context, WidgetRef ref) async {
@@ -468,6 +510,24 @@ class DataManagementSection extends ConsumerWidget {
         BackupRestoreCard(
           onExport: () => _showExportDialog(context, ref),
           onRestore: () => _showRestoreDialog(context, ref),
+        ),
+        const SizedBox(height: 8),
+
+        // Restore Auto-Backup Snapshot button
+        ElevatedButton.icon(
+          onPressed: () => _restoreFromAutoBackup(context, ref),
+          icon: const Icon(Icons.history_rounded, color: Colors.indigoAccent),
+          label: const Text('Restore Recent Auto-Backup Snapshot'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.indigoAccent.withValues(alpha: 0.12),
+            foregroundColor: Colors.indigoAccent,
+            minimumSize: const Size.fromHeight(48),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.indigoAccent.withValues(alpha: 0.2)),
+            ),
+            elevation: 0,
+          ),
         ),
         const SizedBox(height: 8),
 

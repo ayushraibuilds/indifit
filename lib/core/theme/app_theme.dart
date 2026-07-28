@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../utils/app_logger.dart';
+import 'app_colors_extension.dart';
 import 'colors.dart';
 
 class AppTheme {
@@ -10,16 +11,20 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
+      extensions: const [
+        AppColorsExtension.dark,
+      ],
 
       // Color Scheme
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         surface: AppColors.surface,
+        onSurface: Color(0xFFF1F5F9),
         error: AppColors.danger,
       ),
 
       // Text Theme
-      textTheme: _getTextTheme(),
+      textTheme: _getTextTheme(Brightness.dark),
 
       // Card Theme
       cardTheme: CardThemeData(
@@ -61,6 +66,9 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+      extensions: const [
+        AppColorsExtension.light,
+      ],
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         surface: Colors.white,

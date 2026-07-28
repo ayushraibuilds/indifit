@@ -552,6 +552,34 @@ class NotificationService {
     return scheduled;
   }
 
+  static const String prefLastScheduledTimezoneId = 'last_scheduled_timezone_id';
+  static const String prefLastUtcOffsetMinutes = 'last_utc_offset_minutes';
+
+  /// Detects if device timezone or UTC offset changed (e.g. travel or DST change),
+  /// updates persisted timezone metadata, and reschedules notifications.
+  static Future<bool> checkAndUpdateTimezoneAndReschedule([AppDatabase? db]) async {
+    _configureLocalTimeZone();
+    final prefs = await SharedPreferences.getInstance();
+
+    final currentTzId = tz.local.name;
+    final currentOffsetMinutes = DateTime.now().timeZoneOffset.inMinutes;
+
+    final lastTzId = prefs.getString(prefLastScheduledTimezoneId);
+    final lastOffsetMinutes = prefs.getInt(prefLastUtcOffsetMinutes);
+
+    if (lastTzId != currentTzId || lastOffsetMinutes != currentOffsetMinutes) {
+      AppLogger.info(
+        'Timezone or UTC offset change detected ($lastTzId -> $currentTzId, offset: $currentOffsetMinutes). Rescheduling reminders...',
+        'NotificationService',
+      );
+      await prefs.setString(prefLastScheduledTimezoneId, currentTzId);
+      await prefs.setInt(prefLastUtcOffsetMinutes, currentOffsetMinutes);
+      await scheduleAllReminders(db);
+      return true;
+    }
+    return false;
+  }
+
   static void _configureLocalTimeZone() {
     final now = DateTime.now();
     final timeZoneName = now.timeZoneName;

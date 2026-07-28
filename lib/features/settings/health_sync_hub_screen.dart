@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/di/health_provider.dart';
+import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/repositories/health_service.dart';
@@ -19,6 +21,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
   String? _lastSyncTimeStr;
   bool _autoSyncOnOpen = true;
   List<Map<String, dynamic>> _outdoorActivities = [];
+  Map<HealthCategory, bool> _categoryStates = {};
 
   @override
   void initState() {
@@ -35,7 +38,9 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
   Future<void> _loadSupportingData() async {
     final service = ref.read(healthServiceProvider);
     final lastSyncIso = await service.getLastSyncTime();
-    final activities = await service.importOutdoorActivities();
+    final db = ref.read(databaseProvider);
+    final activities = await service.importOutdoorActivities(db);
+    final catStates = await service.getAllCategoryStates();
     final prefs = await SharedPreferences.getInstance();
     final autoSync = prefs.getBool('auto_sync_health_on_open') ?? true;
 
@@ -55,6 +60,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
         _lastSyncTimeStr = formattedSync;
         _autoSyncOnOpen = autoSync;
         _outdoorActivities = activities;
+        _categoryStates = catStates;
         _loading = false;
       });
     }
@@ -66,6 +72,18 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
     setState(() {
       _autoSyncOnOpen = val;
     });
+  }
+
+  Future<void> _toggleCategory(HealthCategory category, bool val) async {
+    final service = ref.read(healthServiceProvider);
+    await service.setCategoryState(category, val);
+    if (val) {
+      await service.requestCategoryPermissions(category);
+    }
+    setState(() {
+      _categoryStates[category] = val;
+    });
+    await _fetchData();
   }
 
   Future<void> _handleConnect() async {
@@ -102,7 +120,8 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Health Sync Hub'),
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         elevation: 0,
         actions: [
           IconButton(
@@ -116,7 +135,6 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Intro
             const Text(
               'HEALTH CONNECTIONS',
               style: TextStyle(
@@ -196,9 +214,8 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                         ),
                       ],
                     ),
-                    const Divider(color: AppColors.border, height: 32),
+                    const Divider(height: 32),
 
-                    // Stats Display
                     if (isLoading)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 16.0),
@@ -238,6 +255,66 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                       ),
                   ],
                 ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Granular Category Permission Toggles
+            const Text(
+              'GRANULAR PERMISSION CATEGORIES',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Steps Import (Read)'),
+                    subtitle: const Text('Import daily step count from native Health app'),
+                    value: _categoryStates[HealthCategory.steps] ?? true,
+                    onChanged: (val) => _toggleCategory(HealthCategory.steps, val),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text('Active Energy Burned (Read)'),
+                    subtitle: const Text('Import daily active calories burned'),
+                    value: _categoryStates[HealthCategory.activeEnergy] ?? true,
+                    onChanged: (val) => _toggleCategory(HealthCategory.activeEnergy, val),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text('Sleep Duration (Read)'),
+                    subtitle: const Text('Import sleep sessions without sharing workouts'),
+                    value: _categoryStates[HealthCategory.sleep] ?? true,
+                    onChanged: (val) => _toggleCategory(HealthCategory.sleep, val),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text('Workout Import (Read)'),
+                    subtitle: const Text('Import outdoor walks & runs from Health'),
+                    value: _categoryStates[HealthCategory.workoutImport] ?? true,
+                    onChanged: (val) => _toggleCategory(HealthCategory.workoutImport, val),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text('Workout Export (Write)'),
+                    subtitle: const Text('Export completed IndiFit workouts to Health'),
+                    value: _categoryStates[HealthCategory.workoutExport] ?? true,
+                    onChanged: (val) => _toggleCategory(HealthCategory.workoutExport, val),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text('Body Weight Export (Write)'),
+                    subtitle: const Text('Sync logged weight measurements to Health'),
+                    value: _categoryStates[HealthCategory.weightExport] ?? true,
+                    onChanged: (val) => _toggleCategory(HealthCategory.weightExport, val),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -297,7 +374,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                           dense: true,
                           contentPadding: EdgeInsets.zero,
                           leading: const CircleAvatar(
-                            backgroundColor: AppColors.border,
+                            backgroundColor: AppColors.primaryGlow,
                             child: Icon(
                               Icons.directions_run_rounded,
                               size: 16,
@@ -309,7 +386,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
-                            '${act['durationMinutes']} mins • ${act['calories']} kcal',
+                            '${act['durationMinutes']} mins • ${act['calories']} kcal (Source: ${act['sourceName'] ?? 'Health'})',
                           ),
                           trailing: Text(
                             '${(act['date'] as DateTime).month}/${(act['date'] as DateTime).day}',
@@ -326,54 +403,6 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
               ),
             ],
 
-            const SizedBox(height: 24),
-
-            // Privacy Benefits
-            Card(
-              color: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppColors.border),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.shield_outlined,
-                      color: AppColors.success,
-                      size: 22,
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Local Privacy & Security',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            'When health syncing is enabled, all biometric metrics are processed entirely on-device and stored securely. Your sensitive health details never leave this phone.',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 24),
 
             // Connect / Sync Action Button

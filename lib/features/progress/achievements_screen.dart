@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/achievement_service.dart';
+import '../../core/theme/app_colors_extension.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/progress_statistics_repository.dart';
 import '../dashboard/dashboard_controller.dart';
@@ -70,7 +71,8 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Achievements & Badges'),
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         elevation: 0,
       ),
       body: _buildBody(),
@@ -143,9 +145,9 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.appColors.border),
             ),
             child: Row(
               children: [
@@ -160,10 +162,10 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                   children: [
                     Text(
                       '$unlockedCount / ${_achievements.length} Unlocked',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -325,7 +327,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                           color: item.isUnlocked
-                              ? Colors.white
+                              ? Theme.of(context).colorScheme.onSurface
                               : AppColors.textMuted,
                         ),
                         textAlign: TextAlign.center,

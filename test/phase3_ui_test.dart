@@ -24,16 +24,19 @@ void main() {
       expect(dark.useMaterial3, true);
     });
 
-    test('ThemeModeNotifier enforces ThemeMode.dark', () async {
+    test('ThemeModeNotifier supports dynamic ThemeMode selection', () async {
       final notifier = ThemeModeNotifier();
 
-      expect(notifier.state, ThemeMode.dark);
+      expect(notifier.state, ThemeMode.system);
 
       await notifier.setThemeMode(ThemeMode.light);
-      expect(notifier.state, ThemeMode.dark);
+      expect(notifier.state, ThemeMode.light);
 
       await notifier.setThemeMode(ThemeMode.dark);
       expect(notifier.state, ThemeMode.dark);
+
+      await notifier.setThemeMode(ThemeMode.system);
+      expect(notifier.state, ThemeMode.system);
     });
 
     test(

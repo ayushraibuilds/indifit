@@ -134,7 +134,8 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Weekly AI Report'),
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         elevation: 0,
       ),
       body: _buildBody(),

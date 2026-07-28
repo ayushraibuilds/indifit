@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
@@ -1327,4 +1329,110 @@ class _PreferenceSnapshot {
   final dynamic value;
 
   const _PreferenceSnapshot({required this.existed, required this.value});
+}
+
+class BackupEnvelope {
+  final String formatIdentifier;
+  final int version;
+  final int schemaVersion;
+  final String timestamp;
+  final bool isEncrypted;
+  final String checksum;
+  final String profileName;
+  final Map<String, int> tableCounts;
+  final String payload;
+
+  BackupEnvelope({
+    this.formatIdentifier = 'INDIFIT_BACKUP_ENVELOPE',
+    required this.version,
+    required this.schemaVersion,
+    required this.timestamp,
+    required this.isEncrypted,
+    required this.checksum,
+    required this.profileName,
+    required this.tableCounts,
+    required this.payload,
+  });
+
+  static BackupEnvelope create({
+    required BackupData data,
+    required String payloadText,
+    required bool isEncrypted,
+  }) {
+    final checksum = sha256.convert(utf8.encode(payloadText)).toString();
+    final counts = <String, int>{
+      'food_logs': data.foodLogs.length,
+      'workout_sessions': data.workoutSessions.length,
+      'workout_sets': data.workoutSets.length,
+      'body_measurements': data.bodyMeasurements.length,
+      'daily_hydrations': data.dailyHydrations.length,
+      'achievement_unlocks': data.achievementUnlocks.length,
+    };
+
+    return BackupEnvelope(
+      formatIdentifier: 'INDIFIT_BACKUP_ENVELOPE',
+      version: data.version,
+      schemaVersion: data.schemaVersion,
+      timestamp: data.timestamp,
+      isEncrypted: isEncrypted,
+      checksum: checksum,
+      profileName: data.userProfile?.name ?? 'User Profile',
+      tableCounts: counts,
+      payload: payloadText,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'format_identifier': formatIdentifier,
+      'version': version,
+      'schema_version': schemaVersion,
+      'timestamp': timestamp,
+      'is_encrypted': isEncrypted,
+      'checksum': checksum,
+      'profile_name': profileName,
+      'table_counts': tableCounts,
+      'payload': payload,
+    };
+  }
+
+  static BackupEnvelope fromJson(Map<String, dynamic> json) {
+    final format = json['format_identifier'] as String?;
+    if (format != 'INDIFIT_BACKUP_ENVELOPE') {
+      throw const FormatException('Invalid backup envelope header identifier.');
+    }
+
+    final rawPayload = json['payload'] as String?;
+    if (rawPayload == null || rawPayload.isEmpty) {
+      throw const FormatException('Empty payload string in backup envelope.');
+    }
+
+    final expectedChecksum = json['checksum'] as String?;
+    if (expectedChecksum != null) {
+      final actualChecksum =
+          sha256.convert(utf8.encode(rawPayload)).toString();
+      if (actualChecksum != expectedChecksum) {
+        throw const FormatException(
+          'Backup file checksum mismatch: File is corrupt or truncated.',
+        );
+      }
+    }
+
+    final rawCounts = json['table_counts'] as Map<String, dynamic>? ?? {};
+    final counts = rawCounts.map(
+      (k, v) => MapEntry(k, (v as num).toInt()),
+    );
+
+    return BackupEnvelope(
+      formatIdentifier: format ?? 'INDIFIT_BACKUP_ENVELOPE',
+      version: (json['version'] as num?)?.toInt() ?? 5,
+      schemaVersion: (json['schema_version'] as num?)?.toInt() ?? 13,
+      timestamp: json['timestamp'] as String? ?? DateTime.now().toIso8601String(),
+      isEncrypted: json['is_encrypted'] as bool? ?? false,
+      checksum: expectedChecksum ?? '',
+      profileName: json['profile_name'] as String? ?? 'User Profile',
+      tableCounts: counts,
+      payload: rawPayload,
+    );
+  }
 }

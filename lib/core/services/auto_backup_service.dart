@@ -54,4 +54,18 @@ class AutoBackupService {
       );
     }
   }
+
+  static Future<String?> getLatestSnapshotContent() async {
+    try {
+      final docDir = await getApplicationDocumentsDirectory();
+      final backupDir = Directory('${docDir.path}/backups');
+      final f1 = File('${backupDir.path}/indifit_auto_backup_1.json');
+      if (await f1.exists()) {
+        return await f1.readAsString();
+      }
+    } catch (e) {
+      AppLogger.warning('Failed to read auto backup snapshot: $e');
+    }
+    return null;
+  }
 }

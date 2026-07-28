@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -7,13 +6,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/backup/backup_file_adapter.dart';
 import '../../core/backup/backup_schema.dart';
 import '../../core/di/providers.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/utils/csv_exporter.dart';
-import '../../core/utils/encryption_helper.dart';
 
 class SettingsState {
   final bool remindWorkout;
@@ -173,29 +172,30 @@ class SettingsController extends StateNotifier<SettingsState> {
 
   Future<String?> performExport(String password) async {
     state = state.copyWith(loading: true);
+    File? tempFile;
     try {
       final db = _ref.read(databaseProvider);
       final prefs = await SharedPreferences.getInstance();
       final backupData = await BackupData.createFromDatabase(db, prefs);
 
-      final jsonStr = jsonEncode(backupData.toJson());
-      final finalData = EncryptionHelper.encrypt(jsonStr, password);
+      final envelopeJson = BackupFileAdapter.exportToEnvelopeJson(
+        data: backupData,
+        password: password,
+      );
 
       final tempDir = await getTemporaryDirectory();
       final dateStr = DateTime.now().toIso8601String().split('T').first;
-      final file = File('${tempDir.path}/indifit_backup_$dateStr.json');
-      await file.writeAsString(finalData);
+      tempFile = File('${tempDir.path}/indifit_backup_$dateStr.indifit-backup');
+      await tempFile.writeAsString(envelopeJson);
 
-      final xFile = XFile(file.path);
-      await Share.shareXFiles([xFile], subject: 'IndiFit Health Backup');
+      final xFile = XFile(tempFile.path);
+      await Share.shareXFiles([xFile], subject: 'IndiFit Health Backup (.indifit-backup)');
 
-      if (await file.exists()) {
-        await file.delete();
-      }
       return null;
     } catch (e) {
       return 'Failed to export backup: $e';
     } finally {
+      await BackupFileAdapter.cleanupTempFile(tempFile);
       state = state.copyWith(loading: false);
     }
   }
