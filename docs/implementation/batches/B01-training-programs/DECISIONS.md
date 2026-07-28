@@ -1,0 +1,37 @@
+# B01 Decisions
+
+Status: Proposed for implementation. The canonical roadmap and `CHARTER.md`
+are binding; this file records the minimum B01 decisions that implement them.
+
+## Decision register
+
+| ID | Decision | Rationale | Owner / gate |
+|---|---|---|---|
+| B01-D01 | Add the B01 relational model in Drift schema v15 and export it in Backup v6. | Programs, calendars, ancestry, profiles, and preferences are durable relational user data and must work offline and round-trip through backup. | **SOL-GATE REQUIRED** |
+| B01-D02 | Keep `WorkoutRoutines`, `RoutineDays`, and `RoutineExercises` through B01 as legacy compatibility data. Migrate each v14 routine into a one-block Program/ProgramVersion while retaining the source rows. | This is deterministic, preserves existing screens and old backups, and permits rollback of the new UI without deleting user data. A compatibility adapter, not a destructive replacement, is the safe incremental path. | **SOL-GATE REQUIRED** |
+| B01-D03 | A Program is the durable identity; a ProgramVersion is a separately stored immutable release. Only a draft version is editable. Activating a version is a transaction that retires the prior active version and creates dated occurrences. | Meets the charter’s immutability rule and gives completed sessions stable ancestry. | **SOL-GATE REQUIRED** |
+| B01-D04 | Scheduled occurrences are date instances, not a view over `RoutineDays.dayOfWeek`. Store `local_date` (`YYYY-MM-DD`) and an IANA `timezone_id`, plus the original planning ordinal. | Calendar correctness needs a civil date that does not move when a device timezone changes; UTC alone is insufficient. | **SOL-GATE REQUIRED** |
+| B01-D05 | Rescheduling changes only an occurrence’s effective date/timezone and appends an occurrence event. It never renumbers program ordinals, moves other occurrences, or rewrites a completed execution. | Binding charter rule; preserves planning order and auditability. | **SOL-GATE REQUIRED** |
+| B01-D06 | B01 uses `planned`, `rescheduled`, `in_progress`, `completed`, `partially_completed`, `skipped`, and `cancelled`. A status row remains the current state; `OccurrenceEvents` is the authoritative transition/audit history. | A state column is query-efficient; events retain reschedule and skip rationale without inventing event sourcing for all domains. | **SOL-GATE REQUIRED** |
+| B01-D07 | Skipping requires an explicit choice: **do not advance** (default) or **advance program order**. “Advance” marks only this occurrence terminal; it does not shift dates or auto-complete later work. | The canonical roadmap lists this as unresolved. Explicit choice avoids silently discarding training. Default is conservative but needs product-owner confirmation. | Product owner; **SOL-GATE REQUIRED** |
+| B01-D08 | Repeating creates a new planned occurrence with `repeated_from_occurrence_id`; it never reopens a completed or skipped occurrence. Repeating a skipped occurrence defaults to the next available local date and requires date confirmation. | Immutable history and clear calendar behavior. | **SOL-GATE REQUIRED** |
+| B01-D09 | Start from a planned occurrence creates a frozen execution snapshot in the existing single active `WorkoutDraft`; completion creates the existing `WorkoutSessions`/`WorkoutSets` records with nullable occurrence ancestry. Do not introduce the roadmap’s full `ActivitySession`/performed-set redesign in B01. | Delivers scheduling ancestry without prematurely implementing Batch 2 modalities. | **SOL-GATE REQUIRED** |
+| B01-D10 | Travel mode is a durable date-range context in Drift. MVP preserves program order and dates and applies a selected equipment-profile override; it does not generate a substitute week or automatically reduce volume. | It is the smallest reversible implementation compatible with future substitution/adaptive work. The actual unavailable-exercise action is user-directed. | Product owner for behavior; **SOL-GATE REQUIRED** |
+| B01-D11 | Equipment profiles and profile items live in Drift. One default/active profile is selected by a singleton `TrainingPlanSettings` row; travel context can temporarily override it. `UserProfiles.equipmentAccess` remains a legacy import/export compatibility value. | Avoids relational settings in SharedPreferences and gives a single authority for default/active selection. | **SOL-GATE REQUIRED** |
+| B01-D12 | A B01 prescription must reference `Exercises.id` when there is an exact, deterministic match. It also stores `exercise_name_snapshot`; unresolved/custom names remain valid with null `exercise_id`. No fuzzy matching. | Meets required stable identity while preserving all legacy data and history queries. | **SOL-GATE REQUIRED** |
+| B01-D13 | Add nullable `exercise_id` to `WorkoutSets` and nullable `scheduled_occurrence_id` plus frozen snapshot metadata to `WorkoutSessions`; do not rewrite historic name data or backfill historic session ancestry. | Existing history stays valid; new execution receives reliable provenance. | **SOL-GATE REQUIRED** |
+| B01-D14 | Fix draft JSON serialization before occurrence-based starts. Version the JSON envelope and parse both legacy bare arrays and B01 envelopes; preserve unknown keys on read/write where feasible. | Existing data-loss defect is isolated and B01 otherwise makes it more visible. | **SOL-GATE REQUIRED** |
+| B01-D15 | B01 personal exercise data is exactly one per-exercise preference record with optional general note, setup label/value pairs, and ordered personal cues. Keep seeded `formCues` and set-level `setNotes` separate. | Avoids overlapping note systems while supporting setup and execution reminders. | Terra implementation after contract |
+| B01-D16 | Do not add a standalone reminder table or notification scheduling in B01. Existing global workout-reminder preferences remain unchanged; per-exercise reminders are not needed for the stated MVP. | Exercise-specific reminders are ambiguous and platform scheduling needs a separate product/notification contract. | Product owner if desired |
+| B01-D17 | Only `CalendarUiState` (visible range/view and selected local date) is Riverpod memory; it is not backed up. All user intent that affects plans, profiles, travel, or history is Drift-owned. | Keeps UI ephemeral and every portable user record durable. | Terra implementation |
+
+## Product-owner decisions still required
+
+1. Confirm the default skip action: **do not advance** is proposed; the user must be able to choose “advance” explicitly.
+2. Confirm travel MVP: **preserve order/dates and use a profile override** is proposed. In particular, decide whether B01 should merely flag unavailable exercises or require manual replacement before start.
+3. Confirm whether “personal reminders” means only the existing global workout reminder (then B01 has no new reminder entity) or separately scheduled per-exercise prompts (which needs a notification-policy batch).
+4. Confirm whether rescheduling into another program block/week is permitted with a warning (proposed) or prohibited. This plan permits it because date movement must not alter program order.
+
+## Explicit deferrals
+
+No recovery-driven progression, automatic load/repetition adaptation, supersets/advanced techniques, full cardio/mobility execution redesign, substitution recommendation engine, muscle-volume analytics, drag-and-drop calendar interactions, or per-exercise notification scheduling belongs in B01.
