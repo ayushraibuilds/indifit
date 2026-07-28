@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/di/providers.dart';
+import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/natural_meal_parser.dart';
 import '../../data/repositories/food_repository.dart';
@@ -66,7 +67,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   Future<void> _pickImage(ImageSource source) async {
     final bool isCamera = source == ImageSource.camera;
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
@@ -131,6 +132,20 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   Future<void> _submitTextEstimate() async {
     if (_textController.text.trim().isEmpty) return;
 
+    final policy = ref.read(privacyPolicyProvider);
+    if (!policy.isAiAllowed) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'AI cloud estimation is disabled in strict offline privacy mode. Disable offline mode in Settings to use cloud AI features.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _loading = true;
       _estimatedMeal = null;
@@ -162,6 +177,20 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
   Future<void> _submitPhotoEstimate() async {
     if (_selectedImage == null) return;
+
+    final policy = ref.read(privacyPolicyProvider);
+    if (!policy.isImageUploadAllowed) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Photo analysis upload is disabled in strict offline privacy mode. Disable offline mode in Settings to use photo AI features.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() {
       _loading = true;
@@ -291,7 +320,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         children: [
           Container(
             width: double.infinity,
-            color: Colors.orange.withOpacity(0.08),
+            color: Colors.orange.withValues(alpha: 0.08),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: const Row(
               children: [
@@ -627,9 +656,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: labelColor.withOpacity(0.12),
+                        color: labelColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: labelColor.withOpacity(0.3)),
+                        border: Border.all(
+                          color: labelColor.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

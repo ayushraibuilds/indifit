@@ -12,19 +12,21 @@ class RestTimerBottomSheet extends StatefulWidget {
   const RestTimerBottomSheet({super.key, required this.recommendedRestSeconds});
 
   static Future<void> show(BuildContext context, int restSeconds) async {
-    WakelockPlus.enable();
-    await showModalBottomSheet(
-      context: context,
-      isDismissible: true,
-      enableDrag: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) =>
-          RestTimerBottomSheet(recommendedRestSeconds: restSeconds),
-    );
-    WakelockPlus.disable();
+    await WakelockPlus.enable();
+    if (context.mounted) {
+      await showModalBottomSheet(
+        context: context,
+        isDismissible: true,
+        enableDrag: true,
+        backgroundColor: AppColors.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) =>
+            RestTimerBottomSheet(recommendedRestSeconds: restSeconds),
+      );
+    }
+    await WakelockPlus.disable();
   }
 
   @override

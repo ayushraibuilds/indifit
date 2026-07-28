@@ -542,7 +542,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.primary.withOpacity(0.08)
+                ? AppColors.primary.withValues(alpha: 0.08)
                 : AppColors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(

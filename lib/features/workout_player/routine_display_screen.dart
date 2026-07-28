@@ -113,7 +113,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               onPressed: () async {
                 final success = await context.push<bool>('/routine-editor');
                 if (success == true) {
-                  _loadActiveRoutine();
+                  await _loadActiveRoutine();
                 }
               },
             ),
@@ -126,7 +126,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               onPressed: () async {
                 final success = await context.push<bool>('/routine-wizard');
                 if (success == true) {
-                  _loadActiveRoutine();
+                  await _loadActiveRoutine();
                 }
               },
             ),
@@ -181,7 +181,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                 onPressed: () async {
                   final success = await context.push<bool>('/routine-wizard');
                   if (success == true) {
-                    _loadActiveRoutine();
+                    await _loadActiveRoutine();
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -209,7 +209,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                         '/routine-editor',
                       );
                       if (success == true) {
-                        _loadActiveRoutine();
+                        await _loadActiveRoutine();
                       }
                     },
                     style: OutlinedButton.styleFrom(
@@ -241,7 +241,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                         '/routine-editor',
                       );
                       if (success == true) {
-                        _loadActiveRoutine();
+                        await _loadActiveRoutine();
                       }
                     },
                     style: OutlinedButton.styleFrom(
@@ -461,7 +461,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                             : (_completedDayOfWeeks.contains(dayNum)
                                   ? AppColors.success
                                   : (isRest
-                                        ? Colors.blue.withOpacity(0.8)
+                                        ? Colors.blue.withValues(alpha: 0.8)
                                         : AppColors.primary)),
                       ),
                     ],
@@ -483,7 +483,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.08),
+              color: Colors.blue.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.spa_rounded, size: 48, color: Colors.blue),

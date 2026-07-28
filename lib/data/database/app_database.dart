@@ -112,6 +112,9 @@ class AppDatabase extends _$AppDatabase {
       await seedFoodsFromAsset();
       await seedExercisesFromAsset();
     },
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON;');
+    },
   );
 
   /// Full seed used on first install.

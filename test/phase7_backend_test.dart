@@ -1,38 +1,68 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/config/app_config.dart';
 import 'package:indifit/core/di/providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Phase 7 Backend Security & Provider Unit Tests', () {
+  group('Task T2: Backend Security & Release Credential Configuration Tests', () {
     test(
-      'dioProvider throws AssertionError when INDIFIT_API_KEY is omitted at build time',
+      'AppConfig.validateBootstrapConfig enforces release credential validation when key is omitted',
       () {
-        const apiKey = String.fromEnvironment('INDIFIT_API_KEY');
         final container = ProviderContainer();
         addTearDown(container.dispose);
 
-        if (apiKey.isEmpty) {
+        if (!AppConfig.hasValidApiKey) {
           expect(
-            () => container.read(dioProvider),
+            () => AppConfig.validateBootstrapConfig(forceReleaseCheck: true),
             throwsA(
-              isA<AssertionError>().having(
+              isA<StateError>().having(
                 (e) => e.message,
                 'message',
-                contains('INDIFIT_API_KEY was not provided'),
+                contains('Release bootstrap failure'),
               ),
             ),
             reason:
-                'dioProvider must assert that INDIFIT_API_KEY is non-empty at build time',
+                'AppConfig.validateBootstrapConfig must throw StateError when key is missing in release mode',
           );
         } else {
           final dio = container.read(dioProvider);
-          expect(dio.options.headers['x-indifit-key'], equals(apiKey));
+          expect(
+            dio.options.headers['x-indifit-key'],
+            equals(AppConfig.apiKey),
+          );
           expect(
             dio.options.connectTimeout,
             equals(const Duration(seconds: 15)),
           );
+        }
+      },
+    );
+
+    test(
+      'Configuration errors do not leak secrets or credentials in exception text',
+      () {
+        if (!AppConfig.hasValidApiKey) {
+          try {
+            AppConfig.validateBootstrapConfig(forceReleaseCheck: true);
+            fail('Should have thrown StateError');
+          } catch (e) {
+            final msg = e.toString();
+            expect(msg.contains('backend-secret'), isFalse);
+            expect(msg.contains('x-indifit-key='), isFalse);
+          }
+        }
+      },
+    );
+
+    test(
+      'AppConfig.hasValidApiKey reflects presence of compile-time INDIFIT_API_KEY',
+      () {
+        if (AppConfig.rawApiKey.trim().isEmpty) {
+          expect(AppConfig.hasValidApiKey, isFalse);
+        } else {
+          expect(AppConfig.hasValidApiKey, isTrue);
         }
       },
     );

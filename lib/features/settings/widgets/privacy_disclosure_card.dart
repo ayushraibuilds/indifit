@@ -52,8 +52,9 @@ class _PrivacyDisclosureCardState extends State<PrivacyDisclosureCard> {
           ),
           const SizedBox(height: 8),
           const Text(
-            '• Local Data Only: All food logs, custom routines, weight measurements, and settings remain stored strictly inside an offline SQLite database on your device.\n\n'
-            '• Zero Cloud Tracking: IndiFit does not collect personal identifiers or transmit data off your device.',
+            '• Local Primary Storage: All food logs, custom routines, weight measurements, and settings remain stored inside an offline SQLite database on your device.\n\n'
+            '• Cloud AI Features: When enabled, AI meal estimation, photo analysis, routine generation, and Open Food Facts lookups send text or photo queries to secure servers.\n\n'
+            '• Strict Offline Mode: Turning on Offline Mode blocks app-initiated remote requests, photo uploads, external food lookups, video links, and remote diagnostic reporting.',
             style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 11,
@@ -94,7 +95,7 @@ class _PrivacyDisclosureCardState extends State<PrivacyDisclosureCard> {
                   setState(() => _telemetryEnabled = val);
                   widget.onTelemetryChanged?.call(val);
                 },
-                activeColor: AppColors.primary,
+                activeTrackColor: AppColors.primary,
               ),
             ],
           ),

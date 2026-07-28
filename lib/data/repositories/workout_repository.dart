@@ -390,6 +390,57 @@ class WorkoutRepository {
     }
   }
 
+  Future<int> logWeightAndSyncProfile({required double weight}) async {
+    final status = await getWeightLogStatus();
+    if (!status.canLog) {
+      throw StateError(
+        'Weight logging is rate-limited to once every 7 days. Next log unlocks in ${status.daysUntilUnlock} days.',
+      );
+    }
+
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+
+    return await _db.transaction(() async {
+      final existing =
+          await (_db.select(_db.bodyMeasurements)..where(
+                (tbl) =>
+                    tbl.recordedAt.isBiggerOrEqualValue(todayStart) &
+                    tbl.recordedAt.isSmallerThanValue(todayEnd),
+              ))
+              .get();
+
+      int measurementId;
+      if (existing.isNotEmpty) {
+        measurementId = existing.first.id;
+        await (_db.update(_db.bodyMeasurements)
+              ..where((tbl) => tbl.id.equals(measurementId)))
+            .write(BodyMeasurementsCompanion(weight: Value(weight)));
+      } else {
+        measurementId = await _db
+            .into(_db.bodyMeasurements)
+            .insert(
+              BodyMeasurementsCompanion.insert(
+                weight: Value(weight),
+                recordedAt: Value(now),
+              ),
+            );
+      }
+
+      final profiles = await _db.select(_db.userProfiles).get();
+      if (profiles.isNotEmpty) {
+        await (_db.update(
+          _db.userProfiles,
+        )..where((t) => t.id.equals(profiles.first.id))).write(
+          UserProfilesCompanion(weight: Value(weight), updatedAt: Value(now)),
+        );
+      }
+
+      return measurementId;
+    });
+  }
+
   // 10. Fetch body measurements sorted by date descending
   Future<List<BodyMeasurement>> getBodyMeasurements() async {
     return await (_db.select(_db.bodyMeasurements)..orderBy([

@@ -128,7 +128,7 @@ class DataManagementSection extends ConsumerWidget {
                 data = jsonDecode(decrypted) as Map<String, dynamic>;
               } catch (e) {
                 if (context.mounted) {
-                  showDialog(
+                  await showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
                       title: const Text('Decryption Failed'),
@@ -241,15 +241,28 @@ class DataManagementSection extends ConsumerWidget {
 
                 if (confirm == true && context.mounted) {
                   Navigator.pop(dialogCtx);
-                  await ref
-                      .read(settingsControllerProvider.notifier)
-                      .performRestore(data);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Database restored successfully!'),
-                      ),
-                    );
+                  try {
+                    await ref
+                        .read(settingsControllerProvider.notifier)
+                        .performRestore(data);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Database restored successfully!'),
+                        ),
+                      );
+                    }
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Restore failed. Your existing data was not changed.',
+                          ),
+                          backgroundColor: AppColors.danger,
+                        ),
+                      );
+                    }
                   }
                 }
               }
@@ -324,7 +337,7 @@ class DataManagementSection extends ConsumerWidget {
       await prefs.setBool('onboarding_completed', false);
 
       if (context.mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
+        await Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const OnboardingScreen()),
           (route) => false,
         );

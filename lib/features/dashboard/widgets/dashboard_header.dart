@@ -60,9 +60,11 @@ class DashboardHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.streakOrange.withOpacity(0.12),
+            color: AppColors.streakOrange.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.streakOrange.withOpacity(0.25)),
+            border: Border.all(
+              color: AppColors.streakOrange.withValues(alpha: 0.25),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

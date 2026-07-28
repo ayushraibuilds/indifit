@@ -272,7 +272,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                               foodItemId: foodItemId,
                               loggedAt: widget.selectedDate ?? DateTime.now(),
                             );
-                            HapticFeedback.selectionClick();
+                            await HapticFeedback.selectionClick();
                             if (context.mounted) {
                               Navigator.pop(context); // Close bottom sheet
                               Navigator.pop(context); // Close search screen
@@ -357,7 +357,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                       MealTemplatesScreen(initialMealType: widget.mealType),
                 ),
               );
-              if (result == true && mounted) Navigator.pop(context);
+              if (result == true && context.mounted) Navigator.pop(context);
             },
           ),
           IconButton(
@@ -401,7 +401,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 ),
               );
               if (result == true) {
-                _performSearch(_searchController.text);
+                await _performSearch(_searchController.text);
               }
             },
           ),
@@ -469,10 +469,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.warning.withOpacity(0.12),
+                              color: AppColors.warning.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: AppColors.warning.withOpacity(0.3),
+                                color: AppColors.warning.withValues(alpha: 0.3),
                               ),
                             ),
                             child: const Row(
@@ -558,9 +558,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.12),
+                  color: AppColors.success.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                  border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: const Text(
                   'Custom',
@@ -668,13 +670,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   ),
                 );
                 if (result == true) {
-                  _performSearch(_searchController.text);
+                  await _performSearch(_searchController.text);
                 }
               },
               icon: const Icon(Icons.add),
               label: const Text('Create Custom Food'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 foregroundColor: AppColors.primary,
                 elevation: 0,
               ),

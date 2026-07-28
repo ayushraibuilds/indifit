@@ -13,6 +13,7 @@ class HealthDataSummary {
   final double activeCalories;
   final double sleepHours;
   final bool isConnected;
+  final bool isError;
   final String? statusMessage;
 
   const HealthDataSummary({
@@ -20,6 +21,7 @@ class HealthDataSummary {
     this.activeCalories = 0.0,
     this.sleepHours = 0.0,
     this.isConnected = false,
+    this.isError = false,
     this.statusMessage,
   });
 }
@@ -29,20 +31,36 @@ class HealthService {
 
   HealthService([Health? health]) : _health = health ?? Health();
 
-  static const List<HealthDataType> _types = [
+  static const List<HealthDataType> _readTypes = [
     HealthDataType.STEPS,
     HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.SLEEP_SESSION,
-    HealthDataType.WEIGHT,
     HealthDataType.WORKOUT,
   ];
 
-  static const List<HealthDataAccess> _permissions = [
+  static const List<HealthDataAccess> _readPermissions = [
     HealthDataAccess.READ,
     HealthDataAccess.READ,
     HealthDataAccess.READ,
-    HealthDataAccess.READ_WRITE,
     HealthDataAccess.READ,
+  ];
+
+  static const List<HealthDataType> _workoutReadTypes = [
+    HealthDataType.WORKOUT,
+  ];
+
+  static const List<HealthDataAccess> _workoutReadPermissions = [
+    HealthDataAccess.READ,
+  ];
+
+  static const List<HealthDataType> _weightWriteTypes = [HealthDataType.WEIGHT];
+
+  static const List<HealthDataType> _workoutWriteTypes = [
+    HealthDataType.WORKOUT,
+  ];
+
+  static const List<HealthDataAccess> _writePermissions = [
+    HealthDataAccess.WRITE,
   ];
 
   Future<String?> getLastSyncTime() async {
@@ -58,22 +76,34 @@ class HealthService {
 
   /// Request permissions from the native Health OS SDK
   Future<bool> requestPermissions() async {
+    return _ensurePermissions(_readTypes, _readPermissions);
+  }
+
+  Future<bool> _ensurePermissions(
+    List<HealthDataType> types,
+    List<HealthDataAccess> permissions,
+  ) async {
     try {
       await _health.configure();
       bool? hasPermissions = await _health.hasPermissions(
-        _types,
-        permissions: _permissions,
+        types,
+        permissions: permissions,
       );
       if (hasPermissions != true) {
-        bool authorized = await _health.requestAuthorization(
-          _types,
-          permissions: _permissions,
+        return await _health.requestAuthorization(
+          types,
+          permissions: permissions,
         );
-        return authorized;
       }
       return true;
-    } catch (e) {
-      return false;
+    } catch (e, st) {
+      AppLogger.warning('Health permission request failed: $e');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'health permission request error',
+      );
+      rethrow;
     }
   }
 
@@ -85,8 +115,8 @@ class HealthService {
       final midnight = DateTime(now.year, now.month, now.day);
 
       bool? hasPermissions = await _health.hasPermissions(
-        _types,
-        permissions: _permissions,
+        _readTypes,
+        permissions: _readPermissions,
       );
       if (hasPermissions != true) {
         return const HealthDataSummary(
@@ -135,6 +165,7 @@ class HealthService {
     } catch (e) {
       return HealthDataSummary(
         isConnected: false,
+        isError: true,
         statusMessage: 'Health sync unavailable: $e',
       );
     }
@@ -143,7 +174,11 @@ class HealthService {
   /// Fetch outdoor walking/running workout activities
   Future<List<Map<String, dynamic>>> importOutdoorActivities() async {
     try {
-      await _health.configure();
+      final authorized = await _ensurePermissions(
+        _workoutReadTypes,
+        _workoutReadPermissions,
+      );
+      if (!authorized) return [];
       final now = DateTime.now();
       final startTime = now.subtract(const Duration(days: 7));
 
@@ -192,6 +227,11 @@ class HealthService {
     required DateTime startTime,
   }) async {
     try {
+      final authorized = await _ensurePermissions(
+        _workoutWriteTypes,
+        _writePermissions,
+      );
+      if (!authorized) return false;
       final endTime = startTime.add(Duration(minutes: durationMinutes));
       return await _health.writeWorkoutData(
         activityType: HealthWorkoutActivityType.STRENGTH_TRAINING,
@@ -215,6 +255,11 @@ class HealthService {
   /// Write body weight log measurement to HealthKit / Health Connect
   Future<bool> writeBodyWeight(double weightKg, [DateTime? timestamp]) async {
     try {
+      final authorized = await _ensurePermissions(
+        _weightWriteTypes,
+        _writePermissions,
+      );
+      if (!authorized) return false;
       final time = timestamp ?? DateTime.now();
       return await _health.writeHealthData(
         value: weightKg,

@@ -225,7 +225,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                           _loadExercises();
                         }
                       },
-                      selectedColor: AppColors.infoBlue.withOpacity(0.12),
+                      selectedColor: AppColors.infoBlue.withValues(alpha: 0.12),
                       labelStyle: TextStyle(
                         color: isSelected
                             ? AppColors.infoBlue

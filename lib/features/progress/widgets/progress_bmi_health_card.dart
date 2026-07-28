@@ -67,7 +67,7 @@ class ProgressBmiHealthCard extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: categoryColor.withOpacity(0.12),
+                color: categoryColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -102,7 +102,7 @@ class ProgressBmiHealthCard extends ConsumerWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: categoryColor.withOpacity(0.15),
+                          color: categoryColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(

@@ -247,12 +247,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       );
                       final volume = _volumeByDate[key] ?? 0.0;
 
-                      Color cellColor = AppColors.border.withOpacity(0.4);
+                      Color cellColor = AppColors.border.withValues(alpha: 0.4);
                       if (volume > 0) {
                         if (volume < 500) {
-                          cellColor = AppColors.primary.withOpacity(0.35);
+                          cellColor = AppColors.primary.withValues(alpha: 0.35);
                         } else if (volume < 1500) {
-                          cellColor = AppColors.primary.withOpacity(0.70);
+                          cellColor = AppColors.primary.withValues(alpha: 0.70);
                         } else {
                           cellColor = AppColors.primary;
                         }
@@ -287,7 +287,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.border.withOpacity(0.4),
+                    color: AppColors.border.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -296,7 +296,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.35),
+                    color: AppColors.primary.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -305,7 +305,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.70),
+                    color: AppColors.primary.withValues(alpha: 0.70),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -437,9 +437,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.08),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -502,7 +504,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       dotData: const FlDotData(show: true),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: AppColors.primary.withOpacity(0.06),
+                        color: AppColors.primary.withValues(alpha: 0.06),
                       ),
                     ),
                   ],
@@ -697,7 +699,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       dotData: const FlDotData(show: true),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: AppColors.success.withOpacity(0.06),
+                        color: AppColors.success.withValues(alpha: 0.06),
                       ),
                     ),
                   ],

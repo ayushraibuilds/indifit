@@ -432,14 +432,17 @@ class DashboardController extends StateNotifier<DashboardState> {
   }
 
   Future<void> updateWeight(double w) async {
-    // 1. Write to database FIRST. If this fails (e.g. rate limit error or DB exception),
-    // stop execution immediately without updating SharedPreferences or UserProfileState.
-    await _ref.read(workoutRepositoryProvider).logBodyMeasurement(weight: w);
+    // 1. Write to database in a single atomic transaction for body measurements + profile.
+    // If this fails, stop execution immediately without updating SharedPreferences or state.
+    await _ref
+        .read(workoutRepositoryProvider)
+        .logWeightAndSyncProfile(weight: w);
 
-    // 2. Only after database write succeeds, update SharedPreferences and userProfileProvider.
+    // 2. Only after database write succeeds, update SharedPreferences and in-memory profile state.
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('current_weight', w);
-    await _ref.read(userProfileProvider.notifier).updateWeight(w);
+    await prefs.setDouble('user_weight', w);
+    _ref.read(userProfileProvider.notifier).syncWeightFromPersistence(w);
 
     try {
       await _ref.read(healthServiceProvider).writeBodyWeight(w);

@@ -162,7 +162,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
       inclinePercentage: incline,
     );
 
-    HapticFeedback.mediumImpact();
+    await HapticFeedback.mediumImpact();
 
     final recommendedRest = _getRecommendedRestSeconds(currentEx.exerciseName);
     if (mounted) {
@@ -640,7 +640,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                                 color: isSelected
                                     ? AppColors.primary
                                     : (isCompleted
-                                          ? AppColors.success.withOpacity(0.5)
+                                          ? AppColors.success.withValues(
+                                              alpha: 0.5,
+                                            )
                                           : AppColors.border),
                               ),
                             ),

@@ -6,10 +6,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('CrashReportingService Privacy & Toggle Tests', () {
-    setUp(() {
+    setUp(() async {
       SharedPreferences.setMockInitialValues({
         CrashReportingService.prefCrashReportingEnabled: true,
       });
+      await CrashReportingService.initialize(() {});
     });
 
     test('CrashReportingService respects user preference toggle', () async {

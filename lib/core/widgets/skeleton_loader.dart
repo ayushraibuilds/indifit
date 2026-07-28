@@ -20,12 +20,15 @@ class SkeletonBox extends StatelessWidget {
           width: width,
           height: height,
           decoration: BoxDecoration(
-            color: AppColors.border.withOpacity(0.4),
+            color: AppColors.border.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(borderRadius),
           ),
         )
         .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .shimmer(duration: 1200.ms, color: AppColors.border.withOpacity(0.8))
+        .shimmer(
+          duration: 1200.ms,
+          color: AppColors.border.withValues(alpha: 0.8),
+        )
         .fadeIn(duration: 600.ms);
   }
 }

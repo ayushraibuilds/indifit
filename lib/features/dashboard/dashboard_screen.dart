@@ -49,7 +49,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final repo = ref.read(workoutRepositoryProvider);
       final draft = await repo.getActiveDraft();
       if (draft != null && mounted) {
-        showDialog(
+        await showDialog(
           context: context,
           barrierDismissible: false,
           builder: (dialogCtx) => AlertDialog(
@@ -94,7 +94,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     draft.routineName,
                   );
                   if (mounted) {
-                    Navigator.push(
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => WorkoutPlayerScreen(
@@ -106,11 +106,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           initialLoggedSets: loggedCompanions,
                         ),
                       ),
-                    ).then(
-                      (_) => ref
-                          .read(dashboardControllerProvider.notifier)
-                          .loadStateData(),
                     );
+                    await ref
+                        .read(dashboardControllerProvider.notifier)
+                        .loadStateData();
                   }
                 },
                 child: const Text('Resume'),
@@ -358,7 +357,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           final exercises = await controller
                               .getRepeatWorkoutExercises(lastSession);
                           if (context.mounted) {
-                            Navigator.push(
+                            await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => WorkoutPlayerScreen(
@@ -366,7 +365,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   exercises: exercises,
                                 ),
                               ),
-                            ).then((_) => controller.loadStateData());
+                            );
+                            await controller.loadStateData();
                           }
                         },
                       ),
@@ -430,10 +430,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.streakOrange.withOpacity(0.12),
+                color: AppColors.streakOrange.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: AppColors.streakOrange.withOpacity(0.3),
+                  color: AppColors.streakOrange.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(

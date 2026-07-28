@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
+import '../../core/privacy/privacy_policy.dart';
 
 final foodApiServiceProvider = Provider<FoodApiService>((ref) {
   final dio = ref.watch(dioProvider);
-  return FoodApiService(dio);
+  final policy = ref.watch(privacyPolicyProvider);
+  return FoodApiService(dio, policy);
 });
 
 class FoodApiResult {
@@ -31,8 +33,9 @@ class FoodApiResult {
 
 class FoodApiService {
   final Dio _dio;
+  final PrivacyPolicy? _policy;
 
-  FoodApiService([Dio? dio])
+  FoodApiService([Dio? dio, PrivacyPolicy? policy])
     : _dio =
           dio ??
           Dio(
@@ -40,10 +43,14 @@ class FoodApiService {
               connectTimeout: const Duration(seconds: 3),
               receiveTimeout: const Duration(seconds: 5),
             ),
-          );
+          ),
+      _policy = policy;
 
   // 1. Fetch product by barcode (Open Food Facts v2 API)
   Future<FoodApiResult?> fetchByBarcode(String barcode) async {
+    if (_policy != null && !_policy.isOpenFoodFactsAllowed) {
+      return null;
+    }
     try {
       final url =
           'https://world.openfoodfacts.org/api/v2/product/$barcode.json';
@@ -95,6 +102,7 @@ class FoodApiService {
   // 2. Search products online (Open Food Facts Search API)
   Future<List<FoodApiResult>> searchOnline(String query) async {
     if (query.trim().isEmpty) return [];
+    if (_policy != null && !_policy.isOpenFoodFactsAllowed) return [];
 
     try {
       final url = 'https://world.openfoodfacts.org/cgi/search.pl';

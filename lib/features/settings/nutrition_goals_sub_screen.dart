@@ -123,7 +123,7 @@ class _NutritionGoalsSubScreenState
       return;
     }
 
-    HapticFeedback.mediumImpact();
+    await HapticFeedback.mediumImpact();
     await ref
         .read(userProfileProvider.notifier)
         .updateGoals(
@@ -134,7 +134,7 @@ class _NutritionGoalsSubScreenState
         );
 
     // Refresh dashboard state so calorie ring & macro bars update live
-    ref.read(dashboardControllerProvider.notifier).loadStateData();
+    await ref.read(dashboardControllerProvider.notifier).loadStateData();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -170,11 +170,13 @@ class _NutritionGoalsSubScreenState
           children: [
             // 1. Recommendation Card
             Card(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+                side: BorderSide(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -256,9 +258,11 @@ class _NutritionGoalsSubScreenState
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.12),
+                  color: AppColors.warning.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+                  border: Border.all(
+                    color: AppColors.warning.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   children: [

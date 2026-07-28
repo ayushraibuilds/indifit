@@ -60,7 +60,13 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
     _checkStatus();
   }
 
+  bool _statusError = false;
+
   Future<void> _checkStatus() async {
+    setState(() {
+      _loadingStatus = true;
+      _statusError = false;
+    });
     try {
       final repo = ref.read(workoutRepositoryProvider);
       final status = await repo.getWeightLogStatus();
@@ -68,6 +74,7 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
         setState(() {
           _status = status;
           _loadingStatus = false;
+          _statusError = false;
           if (status.isEditingToday && status.todayWeight != null) {
             _selectedWeight = status.todayWeight!;
             _controller.text = status.todayWeight!.toStringAsFixed(1);
@@ -75,7 +82,12 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _loadingStatus = false);
+      if (mounted) {
+        setState(() {
+          _loadingStatus = false;
+          _statusError = true;
+        });
+      }
     }
   }
 
@@ -86,7 +98,10 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
   }
 
   bool get _isSaveDisabled =>
-      _loadingStatus || _isSaving || (_status != null && !_status!.canLog);
+      _loadingStatus ||
+      _isSaving ||
+      _statusError ||
+      (_status != null && !_status!.canLog);
 
   void _adjust(double delta) {
     if (_isSaveDisabled) return;
@@ -193,9 +208,11 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.12),
+                color: AppColors.warning.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                border: Border.all(
+                  color: AppColors.warning.withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 children: [
@@ -225,9 +242,11 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.danger.withOpacity(0.12),
+                color: AppColors.danger.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.danger.withOpacity(0.3)),
+                border: Border.all(
+                  color: AppColors.danger.withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 children: [

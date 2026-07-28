@@ -21,12 +21,12 @@ class BackupRestoreCard extends StatelessWidget {
           icon: const Icon(Icons.download_rounded),
           label: const Text('Export Local Backup (Encrypted)'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary.withOpacity(0.12),
+            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
             foregroundColor: AppColors.primary,
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+              side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
             ),
             elevation: 0,
           ),
@@ -39,12 +39,12 @@ class BackupRestoreCard extends StatelessWidget {
           icon: const Icon(Icons.upload_rounded, color: Colors.blueAccent),
           label: const Text('Restore Database from Backup'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blueAccent.withOpacity(0.12),
+            backgroundColor: Colors.blueAccent.withValues(alpha: 0.12),
             foregroundColor: Colors.blueAccent,
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.blueAccent.withOpacity(0.2)),
+              side: BorderSide(color: Colors.blueAccent.withValues(alpha: 0.2)),
             ),
             elevation: 0,
           ),

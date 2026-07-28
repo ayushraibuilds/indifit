@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/app_config.dart';
 import '../../core/di/providers.dart';
 
+import '../../core/privacy/privacy_policy.dart';
+
 final mealPlanServiceProvider = Provider<MealPlanService>((ref) {
   final dio = ref.watch(dioProvider);
-  return MealPlanService(dio);
+  final policy = ref.watch(privacyPolicyProvider);
+  return MealPlanService(dio, policy);
 });
 
 class GeneratedMealPlanResult {
@@ -24,8 +27,9 @@ class GeneratedMealPlanResult {
 
 class MealPlanService {
   final Dio _dio;
+  final PrivacyPolicy? _policy;
 
-  MealPlanService([Dio? dio])
+  MealPlanService([Dio? dio, PrivacyPolicy? policy])
     : _dio =
           dio ??
           Dio(
@@ -33,12 +37,16 @@ class MealPlanService {
               connectTimeout: const Duration(seconds: 3),
               receiveTimeout: const Duration(seconds: 5),
             ),
-          );
+          ),
+      _policy = policy;
 
   Future<GeneratedMealPlanResult> generateMealPlan({
     required int calorieGoal,
     required String dietPreference,
   }) async {
+    if (_policy != null && !_policy.isAiAllowed) {
+      return _generateOfflineFallback(calorieGoal, dietPreference);
+    }
     try {
       final response = await _dio.post(
         '${AppConfig.backendUrl}/api/ai/meal-plan',

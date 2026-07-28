@@ -216,7 +216,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
     final exercises = await repo.searchExercises('');
     if (!mounted) return;
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surface,

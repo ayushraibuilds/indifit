@@ -112,7 +112,7 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
           ),
         ),
       );
-      ref.read(dashboardControllerProvider.notifier).loadStateData();
+      await ref.read(dashboardControllerProvider.notifier).loadStateData();
     }
   }
 
@@ -242,8 +242,10 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
                             index,
                           ) {
                             final option = kWeeklyActionOptions[index];
+                            // ignore: deprecated_member_use
                             return RadioListTile<int>(
                               value: index,
+                              // ignore: deprecated_member_use
                               groupValue: _selectedActionIndex,
                               activeColor: AppColors.primary,
                               contentPadding: EdgeInsets.zero,
@@ -254,6 +256,7 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
+                              // ignore: deprecated_member_use
                               onChanged: (val) {
                                 if (val != null) {
                                   setState(() {

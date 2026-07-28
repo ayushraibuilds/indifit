@@ -29,7 +29,7 @@ class WaterTrackerCard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.infoBlue.withOpacity(0.12),
+                    color: AppColors.infoBlue.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -139,9 +139,9 @@ class WaterTrackerCard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.infoBlue.withOpacity(0.12),
+          color: AppColors.infoBlue.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.infoBlue.withOpacity(0.25)),
+          border: Border.all(color: AppColors.infoBlue.withValues(alpha: 0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

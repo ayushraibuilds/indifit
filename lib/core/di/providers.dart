@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
+import '../config/app_config.dart';
+import '../privacy/privacy_policy.dart';
 
 export 'user_profile_provider.dart';
 
@@ -14,17 +16,10 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 });
 
 final dioProvider = Provider<Dio>((ref) {
-  // No fallback here on purpose: the old default ("indifit_secret_key_v1")
-  // shipped inside every release APK and could be pulled out by decompiling
-  // it, letting anyone call the backend directly. Build with
-  // --dart-define=INDIFIT_API_KEY=<key> to set the real value.
-  const apiKey = String.fromEnvironment('INDIFIT_API_KEY');
-  assert(
-    apiKey.isNotEmpty,
-    'INDIFIT_API_KEY was not provided at build time. Build with '
-    '--dart-define=INDIFIT_API_KEY=<key>, otherwise backend requests will '
-    'be rejected with 401.',
-  );
+  // AppConfig.apiKey validates the build key and throws a deterministic StateError
+  // in BOTH debug and release modes if missing, ensuring release builds never
+  // silently ship with an unconfigured empty key.
+  final apiKey = AppConfig.apiKey;
   final dio = Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 15),
@@ -33,6 +28,7 @@ final dioProvider = Provider<Dio>((ref) {
       headers: {'x-indifit-key': apiKey},
     ),
   );
+  dio.interceptors.add(PrivacyNetworkInterceptor(ref));
   if (kDebugMode) {
     dio.interceptors.add(
       LogInterceptor(responseBody: false, requestBody: false),
@@ -40,6 +36,28 @@ final dioProvider = Provider<Dio>((ref) {
   }
   return dio;
 });
+
+class PrivacyNetworkInterceptor extends Interceptor {
+  final Ref _ref;
+  PrivacyNetworkInterceptor(this._ref);
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final policy = _ref.read(privacyPolicyProvider);
+    if (policy.isOfflineOnly) {
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          error:
+              'Outbound network call blocked by strict offline privacy policy.',
+          type: DioExceptionType.cancel,
+        ),
+      );
+      return;
+    }
+    handler.next(options);
+  }
+}
 
 // Shared state for hydration goals & progress
 class WaterState {
@@ -117,6 +135,7 @@ class WaterNotifier extends StateNotifier<WaterState> {
       await prefs.setString('water_last_logged_date', todayStr);
     }
 
+    if (!mounted) return;
     state = WaterState(
       waterLogged: logged,
       waterGoal: goal,

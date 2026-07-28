@@ -160,7 +160,7 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
         children: [
           Container(
             width: double.infinity,
-            color: Colors.orange.withOpacity(0.08),
+            color: Colors.orange.withValues(alpha: 0.08),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: const Row(
               children: [
@@ -358,9 +358,9 @@ class _AiMealPlannerScreenState extends ConsumerState<AiMealPlannerScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.12),
+              color: Colors.amber.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.amber.withOpacity(0.4)),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,

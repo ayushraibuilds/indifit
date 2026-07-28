@@ -87,21 +87,23 @@ class AchievementsScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.primary.withOpacity(0.12),
+                      AppColors.primary.withValues(alpha: 0.12),
                       AppColors.surface,
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Column(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.15),
+                        color: AppColors.primary.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -160,7 +162,7 @@ class AchievementsScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: item.isUnlocked
-                          ? item.color.withOpacity(0.08)
+                          ? item.color.withValues(alpha: 0.08)
                           : AppColors.cardBackground,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
@@ -170,7 +172,7 @@ class AchievementsScreen extends StatelessWidget {
                       boxShadow: item.isUnlocked
                           ? [
                               BoxShadow(
-                                color: item.color.withOpacity(0.2),
+                                color: item.color.withValues(alpha: 0.2),
                                 blurRadius: 8,
                                 spreadRadius: 1,
                               ),
@@ -186,8 +188,8 @@ class AchievementsScreen extends StatelessWidget {
                             CircleAvatar(
                               radius: 26,
                               backgroundColor: item.isUnlocked
-                                  ? item.color.withOpacity(0.2)
-                                  : AppColors.border.withOpacity(0.4),
+                                  ? item.color.withValues(alpha: 0.2)
+                                  : AppColors.border.withValues(alpha: 0.4),
                               child: Icon(
                                 item.icon,
                                 color: item.isUnlocked

@@ -48,7 +48,7 @@ class _WaterSettingsSectionState extends ConsumerState<WaterSettingsSection> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.infoBlue.withOpacity(0.12),
+                color: AppColors.infoBlue.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(

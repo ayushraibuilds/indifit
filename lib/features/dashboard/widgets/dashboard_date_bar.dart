@@ -100,7 +100,9 @@ class DashboardDateBar extends StatelessWidget {
               icon: Icon(
                 Icons.chevron_right_rounded,
                 size: 22,
-                color: isToday ? AppColors.textMuted.withOpacity(0.3) : null,
+                color: isToday
+                    ? AppColors.textMuted.withValues(alpha: 0.3)
+                    : null,
               ),
               tooltip: isToday ? 'Cannot select future date' : 'Next day',
               onPressed: isToday

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/di/health_provider.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/repositories/health_service.dart';
@@ -15,7 +16,6 @@ class HealthSyncHubScreen extends ConsumerStatefulWidget {
 
 class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
   bool _loading = false;
-  HealthDataSummary _data = const HealthDataSummary();
   String? _lastSyncTimeStr;
   bool _autoSyncOnOpen = true;
   List<Map<String, dynamic>> _outdoorActivities = [];
@@ -28,8 +28,12 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
 
   Future<void> _fetchData() async {
     setState(() => _loading = true);
+    await ref.read(healthStateProvider.notifier).refresh();
+    await _loadSupportingData();
+  }
+
+  Future<void> _loadSupportingData() async {
     final service = ref.read(healthServiceProvider);
-    final summary = await service.fetchTodayHealthData();
     final lastSyncIso = await service.getLastSyncTime();
     final activities = await service.importOutdoorActivities();
     final prefs = await SharedPreferences.getInstance();
@@ -48,7 +52,6 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
 
     if (mounted) {
       setState(() {
-        _data = summary;
         _lastSyncTimeStr = formattedSync;
         _autoSyncOnOpen = autoSync;
         _outdoorActivities = activities;
@@ -67,26 +70,35 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
 
   Future<void> _handleConnect() async {
     setState(() => _loading = true);
-    final granted = await ref.read(healthServiceProvider).requestPermissions();
-    if (granted) {
-      await _fetchData();
-    } else {
-      if (mounted) {
-        setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Health permissions were denied or unavailable on this device.',
-            ),
-            backgroundColor: AppColors.danger,
+    await ref.read(healthStateProvider.notifier).connectAndRefresh();
+    final healthState = ref.read(healthStateProvider);
+    if (healthState.status == HealthStatus.denied ||
+        healthState.status == HealthStatus.error) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            healthState.errorMessage ??
+                'Health permissions were denied or unavailable on this device.',
           ),
-        );
-      }
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
     }
+    await _loadSupportingData();
   }
 
   @override
   Widget build(BuildContext context) {
+    final healthState = ref.watch(healthStateProvider);
+    final data = healthState.summary;
+    final isLoading =
+        _loading ||
+        healthState.status == HealthStatus.loading ||
+        healthState.status == HealthStatus.refreshing;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Health Sync Hub'),
@@ -95,7 +107,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: _loading ? null : _fetchData,
+            onPressed: isLoading ? null : _fetchData,
           ),
         ],
       ),
@@ -148,13 +160,13 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                             Row(
                               children: [
                                 Text(
-                                  _data.isConnected
+                                  data.isConnected
                                       ? 'Connected'
                                       : 'Not Connected',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: _data.isConnected
+                                    color: data.isConnected
                                         ? AppColors.success
                                         : AppColors.textSecondary,
                                   ),
@@ -174,10 +186,10 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                           ],
                         ),
                         Icon(
-                          _data.isConnected
+                          data.isConnected
                               ? Icons.sync_rounded
                               : Icons.sync_disabled_rounded,
-                          color: _data.isConnected
+                          color: data.isConnected
                               ? AppColors.success
                               : AppColors.textMuted,
                           size: 32,
@@ -187,7 +199,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                     const Divider(color: AppColors.border, height: 32),
 
                     // Stats Display
-                    if (_loading)
+                    if (isLoading)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 16.0),
                         child: CircularProgressIndicator(
@@ -200,25 +212,25 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                         children: [
                           _buildStatWidget(
                             Icons.directions_run_rounded,
-                            '${_data.steps}',
+                            '${data.steps}',
                             'Steps',
-                            _data.isConnected
+                            data.isConnected
                                 ? AppColors.primary
                                 : AppColors.textMuted,
                           ),
                           _buildStatWidget(
                             Icons.local_fire_department_rounded,
-                            '${_data.activeCalories.toInt()} kcal',
+                            '${data.activeCalories.toInt()} kcal',
                             'Active Cals',
-                            _data.isConnected
+                            data.isConnected
                                 ? Colors.orangeAccent
                                 : AppColors.textMuted,
                           ),
                           _buildStatWidget(
                             Icons.bedtime_rounded,
-                            '${_data.sleepHours.toStringAsFixed(1)}h',
+                            '${data.sleepHours.toStringAsFixed(1)}h',
                             'Sleep',
-                            _data.isConnected
+                            data.isConnected
                                 ? Colors.purpleAccent
                                 : AppColors.textMuted,
                           ),
@@ -366,14 +378,14 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
 
             // Connect / Sync Action Button
             ElevatedButton.icon(
-              onPressed: _loading ? null : _handleConnect,
+              onPressed: isLoading ? null : _handleConnect,
               icon: Icon(
-                _data.isConnected
+                data.isConnected
                     ? Icons.sync_rounded
                     : Icons.health_and_safety_rounded,
               ),
               label: Text(
-                _data.isConnected
+                data.isConnected
                     ? 'Re-Sync Health Data'
                     : 'Connect Health Service',
               ),

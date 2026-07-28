@@ -133,7 +133,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
               Icon(
                 Icons.fitness_center_rounded,
                 size: 64,
-                color: AppColors.textMuted.withOpacity(0.3),
+                color: AppColors.textMuted.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -246,7 +246,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                           dotData: const FlDotData(show: true),
                           belowBarData: BarAreaData(
                             show: true,
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                           ),
                         ),
                       ],

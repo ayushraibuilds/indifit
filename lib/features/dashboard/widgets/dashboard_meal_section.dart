@@ -144,7 +144,7 @@ class _MealCard extends ConsumerWidget {
                               foodItemId: item.foodItemId,
                             );
                           }
-                          HapticFeedback.selectionClick();
+                          await HapticFeedback.selectionClick();
                           if (context.mounted) {
                             Navigator.pop(sheetCtx);
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -720,7 +720,7 @@ class _LoggedItemRow extends ConsumerWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: AppColors.danger.withOpacity(0.15),
+          color: AppColors.danger.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
         ),
         child: const Icon(
@@ -870,7 +870,7 @@ class _LoggedItemRow extends ConsumerWidget {
                       ),
                     );
                     if (confirm == true) {
-                      HapticFeedback.mediumImpact();
+                      await HapticFeedback.mediumImpact();
                       final repo = ref.read(foodRepositoryProvider);
                       await repo.deleteLogEntry(log.id);
                     }

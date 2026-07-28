@@ -46,7 +46,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
     final allExercises = await repo.searchExercises('');
     if (!mounted) return;
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surface,

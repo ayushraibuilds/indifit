@@ -2,11 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/app_config.dart';
 import '../../core/di/providers.dart';
+import '../../core/privacy/privacy_policy.dart';
 import 'workout_repository.dart';
 
 final aiRoutineServiceProvider = Provider<AiRoutineService>((ref) {
   final dio = ref.watch(dioProvider);
-  return AiRoutineService(dio);
+  final policy = ref.watch(privacyPolicyProvider);
+  return AiRoutineService(dio, policy);
 });
 
 class GeneratedRoutineResult {
@@ -25,8 +27,9 @@ class GeneratedRoutineResult {
 
 class AiRoutineService {
   final Dio _dio;
+  final PrivacyPolicy? _policy;
 
-  AiRoutineService([Dio? dio])
+  AiRoutineService([Dio? dio, PrivacyPolicy? policy])
     : _dio =
           dio ??
           Dio(
@@ -34,7 +37,8 @@ class AiRoutineService {
               connectTimeout: const Duration(seconds: 10),
               receiveTimeout: const Duration(seconds: 35),
             ),
-          );
+          ),
+      _policy = policy;
 
   // 1. Generate routine (attempts online FastAPI API -> falls back to offline local rule generator)
   Future<GeneratedRoutineResult> generateRoutine({
@@ -44,6 +48,15 @@ class AiRoutineService {
     required String experience,
     required String injuries,
   }) async {
+    if (_policy != null && !_policy.isAiAllowed) {
+      return _generateOfflineFallback(
+        goal,
+        equipment,
+        daysPerWeek,
+        experience,
+        injuries,
+      );
+    }
     try {
       // API call to local Python backend running FastAPI AI endpoint
       final response = await _dio.post(

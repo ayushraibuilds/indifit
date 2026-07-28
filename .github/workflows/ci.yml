@@ -37,7 +37,7 @@ jobs:
         run: flutter analyze
 
       - name: Verify Generated Code
-        run: dart run build_runner build --delete-conflicting-outputs && git diff --exit-code
+        run: dart run build_runner build --delete-conflicting-outputs && dart format lib/data/database/app_database.g.dart && git diff --exit-code
 
       - name: Run Unit Tests
         run: flutter test --coverage
@@ -51,7 +51,7 @@ jobs:
           keytool -genkey -v -keystore android/app/dummy.keystore -alias dummy_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass dummy_store_password -keypass dummy_key_password -dname "CN=IndiFit, OU=Dev, O=IndiFit, L=Local, S=Local, C=IN"
 
       - name: Build Release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define=INDIFIT_API_KEY=ci_build_test_key
 
   backend_ci:
     name: Backend CI Checks

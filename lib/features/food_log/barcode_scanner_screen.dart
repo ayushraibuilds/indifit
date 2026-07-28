@@ -45,7 +45,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
     if (_loading) return;
 
     setState(() => _loading = true);
-    _scannerController.stop(); // Stop camera scan while processing
+    await _scannerController.stop(); // Stop camera scan while processing
 
     final apiService = ref.read(foodApiServiceProvider);
     final result = await apiService.fetchByBarcode(code);
@@ -58,9 +58,9 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
         Navigator.pop(context, result);
       } else {
         // Show not found dialog
-        showDialog(
+        await showDialog(
           context: context,
-          builder: (context) => AlertDialog(
+          builder: (dialogCtx) => AlertDialog(
             backgroundColor: AppColors.surface,
             title: const Text('Product Not Found'),
             content: Text(
@@ -68,9 +68,9 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
             ),
             actions: [
               TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  _scannerController.start(); // Restart scanner
+                onPressed: () async {
+                  Navigator.pop(dialogCtx); // Close dialog
+                  await _scannerController.start(); // Restart scanner
                 },
                 child: const Text(
                   'Try Again',
@@ -79,7 +79,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
               ),
               TextButton(
                 onPressed: () async {
-                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(dialogCtx); // Close dialog
                   final created = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
@@ -93,7 +93,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                       true,
                     ); // Return true to indicate custom item created
                   } else {
-                    _scannerController.start();
+                    await _scannerController.start();
                   }
                 },
                 child: const Text(
@@ -159,7 +159,9 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                               color: AppColors.primary,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.8),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.8,
+                                  ),
                                   blurRadius: 8,
                                   spreadRadius: 2,
                                 ),

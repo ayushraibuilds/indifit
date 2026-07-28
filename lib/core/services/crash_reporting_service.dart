@@ -8,7 +8,7 @@ import '../utils/app_logger.dart';
 class CrashReportingService {
   static const String prefCrashReportingEnabled =
       'pref_crash_reporting_enabled';
-  static bool _isEnabled = true;
+  static bool _isEnabled = false; // Default telemetry to OFF (opt-in)
 
   /// Default Sentry DSN (can be overridden via environment variable SENTRY_DSN)
   static const String _defaultDsn = String.fromEnvironment(
@@ -19,7 +19,12 @@ class CrashReportingService {
   /// Initializes Sentry crash reporting with zero-payload privacy guards.
   static Future<void> initialize(FutureOr<void> Function() appRunner) async {
     final prefs = await SharedPreferences.getInstance();
-    _isEnabled = prefs.getBool(prefCrashReportingEnabled) ?? true;
+    final isOffline = prefs.getBool('offline_only') ?? false;
+    final userTelemetryOptIn =
+        prefs.getBool(prefCrashReportingEnabled) ?? false;
+
+    // Telemetry is allowed ONLY if not offline-only AND user explicitly opted in
+    _isEnabled = !isOffline && userTelemetryOptIn;
 
     await SentryFlutter.init((options) {
       options.dsn = _defaultDsn;
@@ -98,6 +103,7 @@ class CrashReportingService {
       stackTrace: stackTrace,
       withScope: (scope) {
         scope.setTag('crash_context', context);
+        // ignore: deprecated_member_use
         scope.setExtra(
           'sanitized_environment',
           kReleaseMode ? 'production' : 'debug',
@@ -118,9 +124,11 @@ class CrashReportingService {
 
   /// Enables or disables crash reporting preference
   static Future<void> setEnabled(bool enabled) async {
-    _isEnabled = enabled;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(prefCrashReportingEnabled, enabled);
+    final isOffline = prefs.getBool('offline_only') ?? false;
+    final effectiveEnabled = enabled && !isOffline;
+    _isEnabled = effectiveEnabled;
+    await prefs.setBool(prefCrashReportingEnabled, effectiveEnabled);
   }
 
   /// Returns current crash reporting enabled state

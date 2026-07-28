@@ -1,10 +1,12 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'core/config/app_config.dart';
 import 'core/di/providers.dart';
+import 'core/privacy/privacy_policy.dart';
 import 'core/router/app_router.dart';
 import 'core/services/auto_backup_service.dart';
 import 'core/services/crash_reporting_service.dart';
@@ -12,10 +14,10 @@ import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_logger.dart';
 import 'data/database/app_database.dart';
-import 'data/repositories/health_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  AppConfig.validateBootstrapConfig();
 
   // Log uncaught Flutter framework errors
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -48,7 +50,14 @@ void main() async {
   // later. Previously this created a second, separate AppDatabase()
   // connection to the same SQLite file, so writes made through one
   // connection wouldn't notify stream watchers listening via the other.
-  final container = ProviderContainer();
+  final privacyPrefs = await SharedPreferences.getInstance();
+  final container = ProviderContainer(
+    overrides: [
+      privacyPolicyProvider.overrideWith(
+        (ref) => PrivacyPolicyNotifier(privacyPrefs),
+      ),
+    ],
+  );
   final AppDatabase db = container.read(databaseProvider);
 
   // Initialize local notification service & schedule reminders
@@ -56,20 +65,11 @@ void main() async {
   await NotificationService.scheduleAllReminders(db);
 
   // Trigger auto-backup check in background
-  AutoBackupService.performBackup(db).catchError((e) {
-    AppLogger.warning('Auto-backup startup check failed: $e');
-  });
-
-  // Trigger Health Service auto-sync on open if enabled
-  SharedPreferences.getInstance().then((prefs) {
-    final autoSync = prefs.getBool('auto_sync_health_on_open') ?? true;
-    if (autoSync) {
-      HealthService().fetchTodayHealthData().catchError((e) {
-        AppLogger.warning('Health auto-sync startup check failed: $e');
-        return const HealthDataSummary();
-      });
-    }
-  });
+  unawaited(
+    AutoBackupService.performBackup(db).catchError((e) {
+      AppLogger.warning('Auto-backup startup check failed: $e');
+    }),
+  );
 
   await CrashReportingService.initialize(() {
     runApp(

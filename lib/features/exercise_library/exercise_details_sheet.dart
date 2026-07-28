@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import 'exercise_history_screen.dart';
 
-class ExerciseDetailsSheet extends StatelessWidget {
+class ExerciseDetailsSheet extends ConsumerWidget {
   final Exercise exercise;
 
   const ExerciseDetailsSheet({super.key, required this.exercise});
@@ -21,7 +23,8 @@ class ExerciseDetailsSheet extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOffline = ref.watch(privacyPolicyProvider).isOfflineOnly;
     final List<String> muscles = exercise.muscleGroups.split(',');
     final List<String> cues = exercise.formCues.split('\n');
     final List<String> mistakes = exercise.commonMistakes.split('\n');
@@ -68,7 +71,7 @@ class ExerciseDetailsSheet extends StatelessWidget {
                     color: AppColors.primaryGlow,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Text(
@@ -168,20 +171,22 @@ class ExerciseDetailsSheet extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               GestureDetector(
-                onTap: _launchYouTube,
+                onTap: isOffline ? null : _launchYouTube,
                 child: Container(
                   height: 160,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: Colors.black,
                     borderRadius: BorderRadius.circular(16),
-                    image: DecorationImage(
-                      image: NetworkImage(
-                        'https://img.youtube.com/vi/${exercise.youtubeId}/0.jpg',
-                      ),
-                      fit: BoxFit.cover,
-                      opacity: 0.65,
-                    ),
+                    image: isOffline
+                        ? null
+                        : DecorationImage(
+                            image: NetworkImage(
+                              'https://img.youtube.com/vi/${exercise.youtubeId}/0.jpg',
+                            ),
+                            fit: BoxFit.cover,
+                            opacity: 0.65,
+                          ),
                   ),
                   child: const Center(
                     child: Icon(

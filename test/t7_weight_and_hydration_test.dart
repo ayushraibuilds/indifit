@@ -51,6 +51,11 @@ class _MockFailingWorkoutRepository extends WorkoutRepository {
   }
 
   @override
+  Future<int> logWeightAndSyncProfile({required double weight}) async {
+    throw Exception('Simulated Database Write Failure');
+  }
+
+  @override
   Future<WeightLogStatus> getWeightLogStatus() async =>
       WeightLogStatus(canLog: true, isEditingToday: false, daysUntilUnlock: 0);
 }
@@ -552,6 +557,37 @@ void main() {
           waterState.waterLogged,
           equals(5),
           reason: 'Existing water_logged data must remain readable',
+        );
+      },
+    );
+
+    test(
+      '12. Failed profile update mid-transaction rolls back body measurement creation',
+      () async {
+        await db
+            .into(db.userProfiles)
+            .insert(UserProfilesCompanion.insert(weight: const Value(74.0)));
+        await db.customStatement('''
+          CREATE TRIGGER fail_weight_profile_update
+          BEFORE UPDATE OF weight ON user_profiles
+          BEGIN
+            SELECT RAISE(ABORT, 'simulated profile update failure');
+          END;
+        ''');
+
+        final workoutRepo = WorkoutRepository(db);
+        await expectLater(
+          workoutRepo.logWeightAndSyncProfile(weight: 99.0),
+          throwsA(isA<Exception>()),
+        );
+
+        final measurements = await db.select(db.bodyMeasurements).get();
+        final profiles = await db.select(db.userProfiles).get();
+        expect(measurements, isEmpty);
+        expect(
+          profiles.single.weight,
+          equals(74.0),
+          reason: 'Profile must remain unchanged when the transaction fails.',
         );
       },
     );

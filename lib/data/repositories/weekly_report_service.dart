@@ -2,12 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/app_config.dart';
 import '../../core/di/providers.dart';
+import '../../core/privacy/privacy_policy.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
 
 final weeklyReportServiceProvider = Provider<WeeklyReportService>((ref) {
   final dio = ref.watch(dioProvider);
-  return WeeklyReportService(dio);
+  final policy = ref.watch(privacyPolicyProvider);
+  return WeeklyReportService(dio, policy);
 });
 
 class WeeklyReportResult {
@@ -32,8 +34,9 @@ class WeeklyReportResult {
 
 class WeeklyReportService {
   final Dio _dio;
+  final PrivacyPolicy? _policy;
 
-  WeeklyReportService([Dio? dio])
+  WeeklyReportService([Dio? dio, PrivacyPolicy? policy])
     : _dio =
           dio ??
           Dio(
@@ -41,7 +44,8 @@ class WeeklyReportService {
               connectTimeout: const Duration(seconds: 3),
               receiveTimeout: const Duration(seconds: 5),
             ),
-          );
+          ),
+      _policy = policy;
 
   Future<WeeklyReportResult> generateReport({
     required int totalCaloriesLogged,
@@ -51,6 +55,14 @@ class WeeklyReportService {
     required int prsCount,
     required double adherenceScore,
   }) async {
+    if (_policy != null && !_policy.isAiAllowed) {
+      return _generateOfflineFallback(
+        totalCaloriesLogged: totalCaloriesLogged,
+        workoutSessionsCount: workoutSessionsCount,
+        adherenceScore: adherenceScore,
+        reason: 'Strict Offline Privacy Mode',
+      );
+    }
     try {
       final response = await _dio.post(
         '${AppConfig.backendUrl}/api/ai/weekly-report',
@@ -91,6 +103,19 @@ class WeeklyReportService {
       );
     }
 
+    return _generateOfflineFallback(
+      totalCaloriesLogged: totalCaloriesLogged,
+      workoutSessionsCount: workoutSessionsCount,
+      adherenceScore: adherenceScore,
+    );
+  }
+
+  WeeklyReportResult _generateOfflineFallback({
+    required int totalCaloriesLogged,
+    required int workoutSessionsCount,
+    required double adherenceScore,
+    String reason = 'Offline Local Generator',
+  }) {
     return WeeklyReportResult(
       headline: 'Outstanding Consistency This Week!',
       adherenceScore: adherenceScore,
@@ -100,7 +125,7 @@ class WeeklyReportService {
           'Prioritize adequate sleep and keep hitting your daily protein target.',
       topPrs: ['Consistent Log Streak', 'Workout Target Completed'],
       isFallback: true,
-      fallbackReason: 'Offline Local Generator',
+      fallbackReason: reason,
     );
   }
 }

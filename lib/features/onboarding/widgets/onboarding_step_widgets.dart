@@ -76,7 +76,7 @@ class OnboardingSelectionCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primary.withOpacity(0.04)
+              ? AppColors.primary.withValues(alpha: 0.04)
               : AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -90,7 +90,7 @@ class OnboardingSelectionCard extends StatelessWidget {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: selected
-                    ? AppColors.primary.withOpacity(0.12)
+                    ? AppColors.primary.withValues(alpha: 0.12)
                     : const Color(0x1F223250),
                 shape: BoxShape.circle,
               ),

@@ -130,6 +130,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
       }
     }
 
+    if (!mounted) return;
     state = UserProfileState(
       calorieGoal: cals,
       proteinGoal: protein,
@@ -199,33 +200,31 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
   }
 
   Future<void> updateWeight(double weight) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('current_weight', weight);
-
     final db = _db;
     if (db != null) {
-      try {
-        final profiles = await db.select(db.userProfiles).get();
-        if (profiles.isNotEmpty) {
-          await (db.update(
-            db.userProfiles,
-          )..where((t) => t.id.equals(profiles.first.id))).write(
-            UserProfilesCompanion(
-              weight: Value(weight),
-              updatedAt: Value(DateTime.now()),
-            ),
-          );
-        }
-      } catch (e, st) {
-        AppLogger.warning('updateWeight database write failed: $e');
-        CrashReportingService.recordCrash(
-          e,
-          st,
-          reason: 'updateWeight db error',
+      final profiles = await db.select(db.userProfiles).get();
+      if (profiles.isNotEmpty) {
+        await (db.update(
+          db.userProfiles,
+        )..where((t) => t.id.equals(profiles.first.id))).write(
+          UserProfilesCompanion(
+            weight: Value(weight),
+            updatedAt: Value(DateTime.now()),
+          ),
         );
       }
     }
 
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('current_weight', weight);
+    await prefs.setDouble('user_weight', weight);
+
+    state = state.copyWith(currentWeight: weight);
+  }
+
+  /// Updates profile state after the dashboard persists a weight change.
+  void syncWeightFromPersistence(double weight) {
+    if (!mounted) return;
     state = state.copyWith(currentWeight: weight);
   }
 
