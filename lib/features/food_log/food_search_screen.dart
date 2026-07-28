@@ -34,6 +34,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   bool _searching = false;
   Timer? _debounceTimer;
   bool _isOnlineSearchOffline = false;
+  String? _onlineFailureMessage;
 
   @override
   void initState() {
@@ -78,6 +79,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _onlineResults = [];
         _searching = false;
         _isOnlineSearchOffline = false;
+        _onlineFailureMessage = null;
       });
       return;
     }
@@ -93,12 +95,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
       List<FoodApiResult> online = [];
       bool isOnlineSearchOffline = false;
+      String? onlineFailureMessage;
 
       try {
         online = await apiService.searchOnline(text);
       } catch (e) {
         isOnlineSearchOffline = true;
-        debugPrint('Online search failed (device offline): $e');
+        onlineFailureMessage = e is StateError
+            ? e.message.toString()
+            : 'Online results are unavailable right now.';
       }
 
       if (mounted) {
@@ -106,6 +111,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           _localResults = local;
           _onlineResults = online;
           _isOnlineSearchOffline = isOnlineSearchOffline;
+          _onlineFailureMessage = onlineFailureMessage;
           _searching = false;
         });
       }
@@ -114,6 +120,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         setState(() {
           _searching = false;
           _isOnlineSearchOffline = true;
+          _onlineFailureMessage = 'Food search is unavailable right now.';
         });
       }
     }
@@ -475,23 +482,29 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                 color: AppColors.warning.withValues(alpha: 0.3),
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.cloud_off_rounded,
                                   color: AppColors.warning,
                                   size: 16,
                                 ),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Offline mode. Showing local results only.',
-                                    style: TextStyle(
+                                    _onlineFailureMessage ??
+                                        'Offline mode. Showing local results only.',
+                                    style: const TextStyle(
                                       color: AppColors.warning,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      _performSearch(_searchController.text),
+                                  child: const Text('Retry'),
                                 ),
                               ],
                             ),

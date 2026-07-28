@@ -20,11 +20,11 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('dexterous.com/flutter/local_notifications'),
-        (MethodCall methodCall) async {
-          return true;
-        },
-      );
+            const MethodChannel('dexterous.com/flutter/local_notifications'),
+            (MethodCall methodCall) async {
+              return true;
+            },
+          );
       db = AppDatabase.memory();
       healthService = HealthService();
     });
@@ -33,110 +33,166 @@ void main() {
       await db.close();
     });
 
-    test('1. HealthService supports granular category states and provenance-based duplicate skipping', () async {
-      // 1. Verify category states defaults to true
-      final categoryStates = await healthService.getAllCategoryStates();
-      expect(categoryStates[HealthCategory.steps], isTrue);
-      expect(categoryStates[HealthCategory.sleep], isTrue);
+    test(
+      '1. HealthService supports granular category states and provenance-based duplicate skipping',
+      () async {
+        // 1. Verify category states defaults to true
+        final categoryStates = await healthService.getAllCategoryStates();
+        expect(categoryStates[HealthCategory.steps], isTrue);
+        expect(categoryStates[HealthCategory.sleep], isTrue);
 
-      // 2. Toggle sleep category to false
-      await healthService.setCategoryState(HealthCategory.sleep, false);
-      final updatedStates = await healthService.getAllCategoryStates();
-      expect(updatedStates[HealthCategory.sleep], isFalse);
-      expect(updatedStates[HealthCategory.steps], isTrue);
+        // 2. Toggle sleep category to false
+        await healthService.setCategoryState(HealthCategory.sleep, false);
+        final updatedStates = await healthService.getAllCategoryStates();
+        expect(updatedStates[HealthCategory.sleep], isFalse);
+        expect(updatedStates[HealthCategory.steps], isTrue);
 
-      // 3. Insert existing HealthProvenance into DB
-      final fingerprint = '2026-07-28T10:00:00.000_running_250_30';
-      await db.into(db.healthProvenances).insert(
-        HealthProvenancesCompanion.insert(
-          provider: 'apple_health',
-          sourceName: 'Apple Watch',
-          importedAt: Value(DateTime.now()),
-          fingerprint: fingerprint,
-        ),
-      );
+        // 3. Insert existing HealthProvenance into DB
+        final fingerprint = '2026-07-28T10:00:00.000_running_250_30';
+        await db
+            .into(db.healthProvenances)
+            .insert(
+              HealthProvenancesCompanion.insert(
+                provider: 'apple_health',
+                sourceName: 'Apple Watch',
+                importedAt: Value(DateTime.now()),
+                fingerprint: fingerprint,
+              ),
+            );
 
-      final provs = await db.select(db.healthProvenances).get();
-      expect(provs.length, equals(1));
-      expect(provs.first.fingerprint, equals(fingerprint));
-    });
+        final provs = await db.select(db.healthProvenances).get();
+        expect(provs.length, equals(1));
+        expect(provs.first.fingerprint, equals(fingerprint));
+      },
+    );
 
-    test('2. BackupEnvelope creates valid checksum and detects corrupt or tampered payloads', () async {
-      final prefs = await SharedPreferences.getInstance();
-      final backupData = await BackupData.createFromDatabase(db, prefs);
+    test(
+      '1b. Persisting the same external activity twice creates one local session',
+      () async {
+        final firstSessionId = await healthService.persistOutdoorActivity(
+          db: db,
+          provider: 'googleHealthConnect',
+          externalId: 'googleHealthConnect:external-run-42',
+          sourceName: 'Pixel Watch',
+          fingerprint: 'googleHealthConnect:run-42',
+          title: 'Outdoor Run (Health)',
+          durationMinutes: 30,
+          calories: 250,
+          completedAt: DateTime(2026, 7, 28, 7),
+        );
+        final duplicateSessionId = await healthService.persistOutdoorActivity(
+          db: db,
+          provider: 'googleHealthConnect',
+          externalId: 'googleHealthConnect:external-run-42',
+          sourceName: 'Pixel Watch',
+          fingerprint: 'googleHealthConnect:run-42',
+          title: 'Outdoor Run (Health)',
+          durationMinutes: 30,
+          calories: 250,
+          completedAt: DateTime(2026, 7, 28, 7),
+        );
 
-      final envelopeJson = BackupFileAdapter.exportToEnvelopeJson(
-        data: backupData,
-        password: null,
-      );
+        expect(firstSessionId, isNotNull);
+        expect(duplicateSessionId, isNull);
+        expect(await db.select(db.workoutSessions).get(), hasLength(1));
+        expect(await db.select(db.healthProvenances).get(), hasLength(1));
+      },
+    );
 
-      expect(envelopeJson, contains('INDIFIT_BACKUP_ENVELOPE'));
+    test(
+      '2. BackupEnvelope creates valid checksum and detects corrupt or tampered payloads',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        final backupData = await BackupData.createFromDatabase(db, prefs);
 
-      final inspection = await BackupFileAdapter.inspectBackupContent(envelopeJson);
-      expect(inspection.isEncrypted, isFalse);
-      expect(inspection.schemaVersion, equals(db.schemaVersion));
+        final envelopeJson = BackupFileAdapter.exportToEnvelopeJson(
+          data: backupData,
+          password: null,
+        );
 
-      // Test checksum tampering detection
-      final envMap = jsonDecode(envelopeJson) as Map<String, dynamic>;
-      envMap['payload'] = jsonEncode({'tampered': 'data'});
+        expect(envelopeJson, contains('INDIFIT_BACKUP_ENVELOPE'));
 
-      expect(
-        () => BackupEnvelope.fromJson(envMap),
-        throwsA(isA<FormatException>()),
-      );
-    });
+        final inspection = await BackupFileAdapter.inspectBackupContent(
+          envelopeJson,
+        );
+        expect(inspection.isEncrypted, isFalse);
+        expect(inspection.schemaVersion, equals(db.schemaVersion));
 
-    test('3. BackupEnvelope encrypted payload requires password and decrypts cleanly', () async {
-      final prefs = await SharedPreferences.getInstance();
-      final backupData = await BackupData.createFromDatabase(db, prefs);
+        // Test checksum tampering detection
+        final envMap = jsonDecode(envelopeJson) as Map<String, dynamic>;
+        envMap['payload'] = jsonEncode({'tampered': 'data'});
 
-      const password = 'SecretPassword123!';
-      final encryptedEnvelopeJson = BackupFileAdapter.exportToEnvelopeJson(
-        data: backupData,
-        password: password,
-      );
+        expect(
+          () => BackupEnvelope.fromJson(envMap),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
 
-      // Attempting inspection without password should throw FormatException
-      expect(
-        () => BackupFileAdapter.inspectBackupContent(encryptedEnvelopeJson),
-        throwsA(isA<FormatException>()),
-      );
+    test(
+      '3. BackupEnvelope encrypted payload requires password and decrypts cleanly',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        final backupData = await BackupData.createFromDatabase(db, prefs);
 
-      // Attempting inspection with wrong password should throw FormatException
-      expect(
-        () => BackupFileAdapter.inspectBackupContent(
+        const password = 'SecretPassword123!';
+        final encryptedEnvelopeJson = BackupFileAdapter.exportToEnvelopeJson(
+          data: backupData,
+          password: password,
+        );
+
+        // Attempting inspection without password should throw FormatException
+        expect(
+          () => BackupFileAdapter.inspectBackupContent(encryptedEnvelopeJson),
+          throwsA(isA<FormatException>()),
+        );
+
+        // Attempting inspection with wrong password should throw FormatException
+        expect(
+          () => BackupFileAdapter.inspectBackupContent(
+            encryptedEnvelopeJson,
+            password: 'WrongPassword',
+          ),
+          throwsA(isA<FormatException>()),
+        );
+
+        // Valid password inspects cleanly
+        final result = await BackupFileAdapter.inspectBackupContent(
           encryptedEnvelopeJson,
-          password: 'WrongPassword',
-        ),
-        throwsA(isA<FormatException>()),
-      );
+          password: password,
+        );
+        expect(result.isEncrypted, isTrue);
+        expect(result.backupData.version, equals(BackupData.currentVersion));
+      },
+    );
 
-      // Valid password inspects cleanly
-      final result = await BackupFileAdapter.inspectBackupContent(
-        encryptedEnvelopeJson,
-        password: password,
-      );
-      expect(result.isEncrypted, isTrue);
-      expect(result.backupData.version, equals(BackupData.currentVersion));
-    });
+    test(
+      '4. NotificationService detects timezone/offset change and triggers reschedule',
+      () async {
+        await NotificationService.initialize();
 
-    test('4. NotificationService detects timezone/offset change and triggers reschedule', () async {
-      await NotificationService.initialize();
+        final prefs = await SharedPreferences.getInstance();
+        // Set previous timezone ID to a different string
+        await prefs.setString(
+          NotificationService.prefLastScheduledTimezoneId,
+          'America/Los_Angeles',
+        );
 
-      final prefs = await SharedPreferences.getInstance();
-      // Set previous timezone ID to a different string
-      await prefs.setString(NotificationService.prefLastScheduledTimezoneId, 'America/Los_Angeles');
+        final rescheduled =
+            await NotificationService.checkAndUpdateTimezoneAndReschedule(db);
+        expect(rescheduled, isTrue);
 
-      final rescheduled = await NotificationService.checkAndUpdateTimezoneAndReschedule(db);
-      expect(rescheduled, isTrue);
+        final updatedTzId = prefs.getString(
+          NotificationService.prefLastScheduledTimezoneId,
+        );
+        expect(updatedTzId, isNotNull);
+        expect(updatedTzId, isNot(equals('America/Los_Angeles')));
 
-      final updatedTzId = prefs.getString(NotificationService.prefLastScheduledTimezoneId);
-      expect(updatedTzId, isNotNull);
-      expect(updatedTzId, isNot(equals('America/Los_Angeles')));
-
-      // Subsequent call without timezone change should return false
-      final rescheduledAgain = await NotificationService.checkAndUpdateTimezoneAndReschedule(db);
-      expect(rescheduledAgain, isFalse);
-    });
+        // Subsequent call without timezone change should return false
+        final rescheduledAgain =
+            await NotificationService.checkAndUpdateTimezoneAndReschedule(db);
+        expect(rescheduledAgain, isFalse);
+      },
+    );
   });
 }

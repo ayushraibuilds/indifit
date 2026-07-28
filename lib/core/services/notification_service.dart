@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -55,7 +56,7 @@ class NotificationService {
   /// Initialize the notification plugin, timezone data, and Android channels.
   static Future<void> initialize() async {
     tz_data.initializeTimeZones();
-    _configureLocalTimeZone();
+    await _configureLocalTimeZone();
 
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
@@ -552,13 +553,16 @@ class NotificationService {
     return scheduled;
   }
 
-  static const String prefLastScheduledTimezoneId = 'last_scheduled_timezone_id';
+  static const String prefLastScheduledTimezoneId =
+      'last_scheduled_timezone_id';
   static const String prefLastUtcOffsetMinutes = 'last_utc_offset_minutes';
 
   /// Detects if device timezone or UTC offset changed (e.g. travel or DST change),
   /// updates persisted timezone metadata, and reschedules notifications.
-  static Future<bool> checkAndUpdateTimezoneAndReschedule([AppDatabase? db]) async {
-    _configureLocalTimeZone();
+  static Future<bool> checkAndUpdateTimezoneAndReschedule([
+    AppDatabase? db,
+  ]) async {
+    await _configureLocalTimeZone();
     final prefs = await SharedPreferences.getInstance();
 
     final currentTzId = tz.local.name;
@@ -580,7 +584,18 @@ class NotificationService {
     return false;
   }
 
-  static void _configureLocalTimeZone() {
+  static Future<void> _configureLocalTimeZone() async {
+    // Platform APIs return an IANA identifier (for example Europe/London),
+    // unlike DateTime.timeZoneName which is commonly an ambiguous abbreviation
+    // such as IST or PST. This is essential for travel and DST correctness.
+    try {
+      final nativeTimeZoneId = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(nativeTimeZoneId));
+      return;
+    } catch (e) {
+      AppLogger.warning('Native timezone lookup failed: $e');
+    }
+
     final now = DateTime.now();
     final timeZoneName = now.timeZoneName;
 

@@ -48,7 +48,13 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
     await _scannerController.stop(); // Stop camera scan while processing
 
     final apiService = ref.read(foodApiServiceProvider);
-    final result = await apiService.fetchByBarcode(code);
+    FoodApiResult? result;
+    Object? lookupError;
+    try {
+      result = await apiService.fetchByBarcode(code);
+    } catch (e) {
+      lookupError = e;
+    }
 
     if (mounted) {
       setState(() => _loading = false);
@@ -56,6 +62,28 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
       if (result != null) {
         // Return found result back to search screen
         Navigator.pop(context, result);
+      } else if (lookupError != null) {
+        await showDialog(
+          context: context,
+          builder: (dialogCtx) => AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: const Text('Barcode Lookup Unavailable'),
+            content: Text(
+              lookupError is StateError
+                  ? lookupError.message.toString()
+                  : 'We could not reach the food database. Your scan was not lost; try again when you are connected.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(dialogCtx);
+                  await _scannerController.start();
+                },
+                child: const Text('Try Again'),
+              ),
+            ],
+          ),
+        );
       } else {
         // Show not found dialog
         await showDialog(

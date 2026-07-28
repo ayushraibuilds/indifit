@@ -74,174 +74,220 @@ class DataManagementSection extends ConsumerWidget {
   void _showRestoreDialog(BuildContext context, WidgetRef ref) {
     final backupController = TextEditingController();
     final passwordController = TextEditingController();
+    String? selectedFileContent;
+    String? selectedFileName;
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Restore Database Backup'),
-        backgroundColor: AppColors.surface,
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Paste the contents of your .indifit-backup file or JSON payload:',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: backupController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  hintText: 'Paste .indifit-backup envelope or JSON payload...',
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Restore Database Backup'),
+          backgroundColor: AppColors.surface,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Choose an IndiFit backup file. Pasting a legacy backup remains available below.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Decryption Password (if encrypted)',
-                  hintText: 'Leave blank if unencrypted',
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    try {
+                      final selected = await BackupFileAdapter.pickBackupFile();
+                      if (selected != null && context.mounted) {
+                        setDialogState(() {
+                          selectedFileName = selected.name;
+                          selectedFileContent = selected.content;
+                        });
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Could not open backup file: $e'),
+                            backgroundColor: AppColors.danger,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.folder_open_rounded),
+                  label: const Text('Choose Backup File'),
                 ),
+                if (selectedFileName != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Selected: $selectedFileName',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: backupController,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    hintText: 'Optional: paste a legacy JSON backup...',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Decryption Password (if encrypted)',
+                    hintText: 'Leave blank if unencrypted',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
               ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () async {
-              final rawContent = backupController.text.trim();
-              final password = passwordController.text;
-              if (rawContent.isEmpty) return;
+              onPressed: () async {
+                final rawContent =
+                    selectedFileContent ?? backupController.text.trim();
+                final password = passwordController.text;
+                if (rawContent.isEmpty) return;
 
-              BackupInspectionResult result;
-              try {
-                result = await BackupFileAdapter.inspectBackupContent(
-                  rawContent,
-                  password: password.isEmpty ? null : password,
-                );
-              } catch (e) {
+                BackupInspectionResult result;
+                try {
+                  result = await BackupFileAdapter.inspectBackupContent(
+                    rawContent,
+                    password: password.isEmpty ? null : password,
+                  );
+                } catch (e) {
+                  if (context.mounted) {
+                    await showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Backup Inspection Failed'),
+                        backgroundColor: AppColors.surface,
+                        content: Text(
+                          'Unable to inspect backup: $e',
+                          style: const TextStyle(height: 1.4),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return;
+                }
+
                 if (context.mounted) {
-                  await showDialog(
+                  final confirm = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      title: const Text('Backup Inspection Failed'),
+                      title: const Text('Restore Inspection Preview'),
                       backgroundColor: AppColors.surface,
-                      content: Text(
-                        'Unable to inspect backup: $e',
-                        style: const TextStyle(height: 1.4),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'WARNING: Overwriting will permanently replace your local database.',
+                            style: TextStyle(
+                              color: AppColors.danger,
+                              fontWeight: FontWeight.bold,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Profile: ${result.profileName}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text('Export Date: ${result.timestamp}'),
+                          Text('Schema Version: v${result.schemaVersion}'),
+                          Text(
+                            'Encrypted: ${result.isEncrypted ? "Yes (SHA256 Verified)" : "No"}',
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'RECORD COUNTS:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          ...result.tableCounts.entries.map(
+                            (e) => Text(
+                              '• ${e.key}: ${e.value} items',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
                       ),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text('OK'),
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.danger,
+                          ),
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Overwrite & Restore'),
                         ),
                       ],
                     ),
                   );
-                }
-                return;
-              }
 
-              if (context.mounted) {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Restore Inspection Preview'),
-                    backgroundColor: AppColors.surface,
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'WARNING: Overwriting will permanently replace your local database.',
-                          style: TextStyle(
-                            color: AppColors.danger,
-                            fontWeight: FontWeight.bold,
-                            height: 1.4,
+                  if (confirm == true && context.mounted) {
+                    Navigator.pop(dialogCtx);
+                    try {
+                      await ref
+                          .read(settingsControllerProvider.notifier)
+                          .performRestore(result.backupData.toJson());
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Database restored successfully!'),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Profile: ${result.profileName}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text('Export Date: ${result.timestamp}'),
-                        Text('Schema Version: v${result.schemaVersion}'),
-                        Text(
-                          'Encrypted: ${result.isEncrypted ? "Yes (SHA256 Verified)" : "No"}',
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'RECORD COUNTS:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
+                        );
+                      }
+                    } catch (_) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Restore failed. Your existing data was not changed.',
+                            ),
+                            backgroundColor: AppColors.danger,
                           ),
-                        ),
-                        ...result.tableCounts.entries.map(
-                          (e) => Text(
-                            '• ${e.key}: ${e.value} items',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.danger,
-                        ),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Overwrite & Restore'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirm == true && context.mounted) {
-                  Navigator.pop(dialogCtx);
-                  try {
-                    await ref
-                        .read(settingsControllerProvider.notifier)
-                        .performRestore(result.backupData.toJson());
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Database restored successfully!'),
-                        ),
-                      );
-                    }
-                  } catch (_) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Restore failed. Your existing data was not changed.',
-                          ),
-                          backgroundColor: AppColors.danger,
-                        ),
-                      );
+                        );
+                      }
                     }
                   }
                 }
-              }
-            },
-            child: const Text('Inspect Backup'),
-          ),
-        ],
+              },
+              child: const Text('Inspect Backup'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -261,7 +307,9 @@ class DataManagementSection extends ConsumerWidget {
     }
 
     try {
-      final inspection = await BackupFileAdapter.inspectBackupContent(rawSnapshot);
+      final inspection = await BackupFileAdapter.inspectBackupContent(
+        rawSnapshot,
+      );
       if (!context.mounted) return;
 
       final confirm = await showDialog<bool>(
@@ -278,18 +326,29 @@ class DataManagementSection extends ConsumerWidget {
                 style: TextStyle(height: 1.4),
               ),
               const SizedBox(height: 12),
-              Text('Profile: ${inspection.profileName}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                'Profile: ${inspection.profileName}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
               Text('Snapshot Date: ${inspection.timestamp}'),
               const SizedBox(height: 8),
               ...inspection.tableCounts.entries.map(
-                (e) => Text('• ${e.key}: ${e.value} items', style: const TextStyle(fontSize: 12)),
+                (e) => Text(
+                  '• ${e.key}: ${e.value} items',
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text('Restore Snapshot'),
             ),
@@ -310,7 +369,10 @@ class DataManagementSection extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Auto-backup restore failed: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Auto-backup restore failed: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     }
@@ -524,7 +586,9 @@ class DataManagementSection extends ConsumerWidget {
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.indigoAccent.withValues(alpha: 0.2)),
+              side: BorderSide(
+                color: Colors.indigoAccent.withValues(alpha: 0.2),
+              ),
             ),
             elevation: 0,
           ),

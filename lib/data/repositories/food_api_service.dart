@@ -49,7 +49,9 @@ class FoodApiService {
   // 1. Fetch product by barcode (Open Food Facts v2 API)
   Future<FoodApiResult?> fetchByBarcode(String barcode) async {
     if (_policy != null && !_policy.isOpenFoodFactsAllowed) {
-      return null;
+      throw StateError(
+        'Online food lookup is blocked while Strict Offline Mode is enabled.',
+      );
     }
     try {
       final url =
@@ -94,15 +96,19 @@ class FoodApiService {
         }
       }
       return null;
-    } catch (e) {
-      return null;
+    } on DioException {
+      rethrow;
     }
   }
 
   // 2. Search products online (Open Food Facts Search API)
   Future<List<FoodApiResult>> searchOnline(String query) async {
     if (query.trim().isEmpty) return [];
-    if (_policy != null && !_policy.isOpenFoodFactsAllowed) return [];
+    if (_policy != null && !_policy.isOpenFoodFactsAllowed) {
+      throw StateError(
+        'Online food lookup is blocked while Strict Offline Mode is enabled.',
+      );
+    }
 
     try {
       final url = 'https://world.openfoodfacts.org/cgi/search.pl';
@@ -149,8 +155,8 @@ class FoodApiService {
         }).toList();
       }
       return [];
-    } catch (e) {
-      return [];
+    } on DioException {
+      rethrow;
     }
   }
 }

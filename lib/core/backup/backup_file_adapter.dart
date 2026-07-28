@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
+
 import '../utils/app_logger.dart';
 import '../utils/encryption_helper.dart';
 import 'backup_schema.dart';
@@ -25,8 +27,59 @@ class BackupInspectionResult {
   });
 }
 
+class PickedBackupFile {
+  final String name;
+  final String content;
+
+  const PickedBackupFile({required this.name, required this.content});
+}
+
 class BackupFileAdapter {
   static const int maxFileSizeBytes = 50 * 1024 * 1024; // 50MB max limit
+
+  /// Lets the platform document picker supply a backup without ever exposing
+  /// arbitrary filesystem paths to widgets. A user cancellation is represented
+  /// by null; malformed files throw a [FormatException] before inspection.
+  static Future<PickedBackupFile?> pickBackupFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['indifit-backup', 'json'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return null;
+
+    final selected = result.files.single;
+    final lowerName = selected.name.toLowerCase();
+    if (!lowerName.endsWith('.indifit-backup') &&
+        !lowerName.endsWith('.json')) {
+      throw const FormatException(
+        'Choose an IndiFit .indifit-backup or .json backup file.',
+      );
+    }
+
+    final bytes =
+        selected.bytes ??
+        (selected.path == null
+            ? null
+            : await File(selected.path!).readAsBytes());
+    if (bytes == null) {
+      throw const FormatException(
+        'The selected backup file could not be read.',
+      );
+    }
+    if (bytes.length > maxFileSizeBytes) {
+      throw const FormatException('File exceeds maximum size limit of 50MB.');
+    }
+
+    try {
+      return PickedBackupFile(
+        name: selected.name,
+        content: utf8.decode(bytes, allowMalformed: false),
+      );
+    } on FormatException {
+      throw const FormatException('Backup files must be UTF-8 text.');
+    }
+  }
 
   /// Reads and inspects a `.indifit-backup` or `.json` file content platform-safely.
   /// Throws [FormatException] if validation fails.
@@ -71,10 +124,7 @@ class BackupFileAdapter {
         );
       }
       try {
-        jsonPayload = EncryptionHelper.decrypt(
-          envelope.payload,
-          password,
-        );
+        jsonPayload = EncryptionHelper.decrypt(envelope.payload, password);
       } catch (e) {
         throw FormatException(
           'Incorrect encryption password or corrupted payload: $e',

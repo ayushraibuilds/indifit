@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:dio/dio.dart';
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -89,9 +91,10 @@ class WaterState {
 }
 
 class WaterNotifier extends StateNotifier<WaterState> {
+  final AppDatabase? _db;
   Timer? _timer;
 
-  WaterNotifier()
+  WaterNotifier([this._db])
     : super(
         WaterState(
           waterLogged: 0,
@@ -123,17 +126,37 @@ class WaterNotifier extends StateNotifier<WaterState> {
   Future<void> loadState() async {
     final prefs = await SharedPreferences.getInstance();
     final todayStr = DateTime.now().toIso8601String().split('T').first;
-    final savedDate = prefs.getString('water_last_logged_date') ?? todayStr;
-
-    int logged = prefs.getInt('water_logged') ?? 0;
     int goal = prefs.getInt('water_goal') ?? 8;
     int size = prefs.getInt('water_glass_size') ?? 250;
+    int logged = 0;
 
-    if (savedDate != todayStr) {
-      logged = 0;
-      await prefs.setInt('water_logged', 0);
-      await prefs.setString('water_last_logged_date', todayStr);
+    var hydratedFromDatabase = false;
+    if (_db != null) {
+      try {
+        final record = await (_db.select(
+          _db.dailyHydrations,
+        )..where((tbl) => tbl.dateString.equals(todayStr))).getSingleOrNull();
+        hydratedFromDatabase = true;
+        if (record != null) {
+          // The UI is glass-based, while the durable history is millilitre-based.
+          // Round only for presentation; the database retains the precise total.
+          logged = (record.totalMl / size).round();
+          goal = (record.goalMl / size).round();
+        }
+      } catch (_) {
+        // Keep the tracker usable when the database is still opening. The
+        // preference mirror is only a temporary compatibility fallback.
+      }
     }
+    if (!hydratedFromDatabase) {
+      final savedDate = prefs.getString('water_last_logged_date') ?? todayStr;
+      if (savedDate == todayStr) {
+        logged = prefs.getInt('water_logged') ?? 0;
+      }
+    }
+
+    await prefs.setInt('water_logged', logged);
+    await prefs.setString('water_last_logged_date', todayStr);
 
     if (!mounted) return;
     state = WaterState(
@@ -156,6 +179,23 @@ class WaterNotifier extends StateNotifier<WaterState> {
 
     final newLogged = (currentLogged + amount).clamp(0, 100);
     await prefs.setInt('water_logged', newLogged);
+    await prefs.setString('water_last_logged_date', todayStr);
+
+    if (_db != null) {
+      final totalMl = newLogged * state.glassSize;
+      final goalMl = state.waterGoal * state.glassSize;
+      await _db
+          .into(_db.dailyHydrations)
+          .insert(
+            DailyHydrationsCompanion.insert(
+              dateString: todayStr,
+              totalMl: totalMl,
+              goalMl: goalMl,
+              updatedAt: Value(DateTime.now()),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+    }
 
     state = state.copyWith(waterLogged: newLogged, lastLoggedDate: todayStr);
   }
@@ -163,16 +203,45 @@ class WaterNotifier extends StateNotifier<WaterState> {
   Future<void> updateGoal(int newGoal) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('water_goal', newGoal);
+    if (_db != null) {
+      final todayStr = DateTime.now().toIso8601String().split('T').first;
+      final totalMl = state.waterLogged * state.glassSize;
+      await _db
+          .into(_db.dailyHydrations)
+          .insert(
+            DailyHydrationsCompanion.insert(
+              dateString: todayStr,
+              totalMl: totalMl,
+              goalMl: newGoal * state.glassSize,
+              updatedAt: Value(DateTime.now()),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+    }
     state = state.copyWith(waterGoal: newGoal);
   }
 
   Future<void> updateGlassSize(int newSize) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('water_glass_size', newSize);
+    if (_db != null) {
+      final todayStr = DateTime.now().toIso8601String().split('T').first;
+      await _db
+          .into(_db.dailyHydrations)
+          .insert(
+            DailyHydrationsCompanion.insert(
+              dateString: todayStr,
+              totalMl: state.waterLogged * newSize,
+              goalMl: state.waterGoal * newSize,
+              updatedAt: Value(DateTime.now()),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+    }
     state = state.copyWith(glassSize: newSize);
   }
 }
 
 final waterProvider = StateNotifierProvider<WaterNotifier, WaterState>((ref) {
-  return WaterNotifier();
+  return WaterNotifier(ref.watch(databaseProvider));
 });

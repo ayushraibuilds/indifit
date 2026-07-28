@@ -22,6 +22,7 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
   bool _autoSyncOnOpen = true;
   List<Map<String, dynamic>> _outdoorActivities = [];
   Map<HealthCategory, bool> _categoryStates = {};
+  String? _supportingDataError;
 
   @override
   void initState() {
@@ -36,33 +37,44 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
   }
 
   Future<void> _loadSupportingData() async {
-    final service = ref.read(healthServiceProvider);
-    final lastSyncIso = await service.getLastSyncTime();
-    final db = ref.read(databaseProvider);
-    final activities = await service.importOutdoorActivities(db);
-    final catStates = await service.getAllCategoryStates();
-    final prefs = await SharedPreferences.getInstance();
-    final autoSync = prefs.getBool('auto_sync_health_on_open') ?? true;
+    try {
+      final service = ref.read(healthServiceProvider);
+      final lastSyncIso = await service.getLastSyncTime();
+      final db = ref.read(databaseProvider);
+      final activities = await service.importOutdoorActivities(db);
+      final catStates = await service.getAllCategoryStates();
+      final prefs = await SharedPreferences.getInstance();
+      final autoSync = prefs.getBool('auto_sync_health_on_open') ?? true;
 
-    String? formattedSync;
-    if (lastSyncIso != null) {
-      try {
-        final dt = DateTime.parse(lastSyncIso);
-        formattedSync =
-            'Synced ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-      } catch (e) {
-        AppLogger.warning('Failed to parse lastSyncIso: $e');
+      String? formattedSync;
+      if (lastSyncIso != null) {
+        try {
+          final dt = DateTime.parse(lastSyncIso);
+          formattedSync =
+              'Synced ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+        } catch (e) {
+          AppLogger.warning('Failed to parse lastSyncIso: $e');
+        }
       }
-    }
 
-    if (mounted) {
-      setState(() {
-        _lastSyncTimeStr = formattedSync;
-        _autoSyncOnOpen = autoSync;
-        _outdoorActivities = activities;
-        _categoryStates = catStates;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _lastSyncTimeStr = formattedSync;
+          _autoSyncOnOpen = autoSync;
+          _outdoorActivities = activities;
+          _categoryStates = catStates;
+          _supportingDataError = null;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      AppLogger.warning('Health supporting data load failed: $e');
+      if (mounted) {
+        setState(() {
+          _supportingDataError = 'Unable to import outdoor activities.';
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -275,44 +287,62 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                 children: [
                   SwitchListTile(
                     title: const Text('Steps Import (Read)'),
-                    subtitle: const Text('Import daily step count from native Health app'),
+                    subtitle: const Text(
+                      'Import daily step count from native Health app',
+                    ),
                     value: _categoryStates[HealthCategory.steps] ?? true,
-                    onChanged: (val) => _toggleCategory(HealthCategory.steps, val),
+                    onChanged: (val) =>
+                        _toggleCategory(HealthCategory.steps, val),
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
                     title: const Text('Active Energy Burned (Read)'),
                     subtitle: const Text('Import daily active calories burned'),
                     value: _categoryStates[HealthCategory.activeEnergy] ?? true,
-                    onChanged: (val) => _toggleCategory(HealthCategory.activeEnergy, val),
+                    onChanged: (val) =>
+                        _toggleCategory(HealthCategory.activeEnergy, val),
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
                     title: const Text('Sleep Duration (Read)'),
-                    subtitle: const Text('Import sleep sessions without sharing workouts'),
+                    subtitle: const Text(
+                      'Import sleep sessions without sharing workouts',
+                    ),
                     value: _categoryStates[HealthCategory.sleep] ?? true,
-                    onChanged: (val) => _toggleCategory(HealthCategory.sleep, val),
+                    onChanged: (val) =>
+                        _toggleCategory(HealthCategory.sleep, val),
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
                     title: const Text('Workout Import (Read)'),
-                    subtitle: const Text('Import outdoor walks & runs from Health'),
-                    value: _categoryStates[HealthCategory.workoutImport] ?? true,
-                    onChanged: (val) => _toggleCategory(HealthCategory.workoutImport, val),
+                    subtitle: const Text(
+                      'Import outdoor walks & runs from Health',
+                    ),
+                    value:
+                        _categoryStates[HealthCategory.workoutImport] ?? true,
+                    onChanged: (val) =>
+                        _toggleCategory(HealthCategory.workoutImport, val),
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
                     title: const Text('Workout Export (Write)'),
-                    subtitle: const Text('Export completed IndiFit workouts to Health'),
-                    value: _categoryStates[HealthCategory.workoutExport] ?? true,
-                    onChanged: (val) => _toggleCategory(HealthCategory.workoutExport, val),
+                    subtitle: const Text(
+                      'Export completed IndiFit workouts to Health',
+                    ),
+                    value:
+                        _categoryStates[HealthCategory.workoutExport] ?? true,
+                    onChanged: (val) =>
+                        _toggleCategory(HealthCategory.workoutExport, val),
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
                     title: const Text('Body Weight Export (Write)'),
-                    subtitle: const Text('Sync logged weight measurements to Health'),
+                    subtitle: const Text(
+                      'Sync logged weight measurements to Health',
+                    ),
                     value: _categoryStates[HealthCategory.weightExport] ?? true,
-                    onChanged: (val) => _toggleCategory(HealthCategory.weightExport, val),
+                    onChanged: (val) =>
+                        _toggleCategory(HealthCategory.weightExport, val),
                   ),
                 ],
               ),
@@ -398,6 +428,26 @@ class _HealthSyncHubScreenState extends ConsumerState<HealthSyncHubScreen> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+            ],
+
+            if (_supportingDataError != null) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.error_outline_rounded,
+                    color: AppColors.danger,
+                  ),
+                  title: Text(_supportingDataError!),
+                  subtitle: const Text(
+                    'Your existing Health connection is unchanged.',
+                  ),
+                  trailing: TextButton(
+                    onPressed: isLoading ? null : _fetchData,
+                    child: const Text('Retry'),
                   ),
                 ),
               ),

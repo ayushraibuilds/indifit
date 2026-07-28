@@ -30,6 +30,23 @@ class MockDioAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
+class FailingDioAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<List<int>>? requestStream,
+    Future<void>? cancelFuture,
+  ) {
+    throw DioException.connectionError(
+      requestOptions: options,
+      reason: 'No network',
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -136,7 +153,7 @@ void main() {
     );
 
     test(
-      'Open Food Facts barcode and search lookups are blocked in offline mode',
+      'Open Food Facts barcode and search lookups surface strict offline policy failures',
       () async {
         const offlinePolicy = PrivacyPolicy(
           isOfflineOnly: true,
@@ -145,16 +162,36 @@ void main() {
 
         final service = FoodApiService(dio, offlinePolicy);
 
-        final barcodeResult = await service.fetchByBarcode('8901058852319');
-        expect(barcodeResult, isNull);
-
-        final searchResults = await service.searchOnline('Paneer');
-        expect(searchResults, isEmpty);
+        await expectLater(
+          service.fetchByBarcode('8901058852319'),
+          throwsA(isA<StateError>()),
+        );
+        await expectLater(
+          service.searchOnline('Paneer'),
+          throwsA(isA<StateError>()),
+        );
 
         expect(
           mockAdapter.requestCount,
           equals(0),
         ); // Zero outbound HTTP requests
+      },
+    );
+
+    test(
+      'Open Food Facts network errors are not mistaken for missing products',
+      () async {
+        dio.httpClientAdapter = FailingDioAdapter();
+        final service = FoodApiService(dio);
+
+        await expectLater(
+          service.fetchByBarcode('8901058852319'),
+          throwsA(isA<DioException>()),
+        );
+        await expectLater(
+          service.searchOnline('Paneer'),
+          throwsA(isA<DioException>()),
+        );
       },
     );
 

@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -119,18 +120,15 @@ class HealthService {
   /// Request all enabled category permissions
   Future<bool> requestPermissions() async {
     final states = await getAllCategoryStates();
-    final types = <HealthDataType>[];
-    final perms = <HealthDataAccess>[];
 
     for (final cat in HealthCategory.values) {
       if (states[cat] == true) {
-        types.addAll(_getTypesForCategory(cat));
-        perms.addAll(_getPermissionsForCategory(cat));
+        final granted = await requestCategoryPermissions(cat);
+        if (!granted) return false;
       }
     }
 
-    if (types.isEmpty) return true;
-    return _ensurePermissions(types, perms);
+    return true;
   }
 
   Future<bool> _ensurePermissions(
@@ -157,7 +155,7 @@ class HealthService {
         st,
         reason: 'health permission request error',
       );
-      return false;
+      rethrow;
     }
   }
 
@@ -245,7 +243,9 @@ class HealthService {
   }
 
   /// Import outdoor activities with provenance tracking and duplicate prevention
-  Future<List<Map<String, dynamic>>> importOutdoorActivities([AppDatabase? db]) async {
+  Future<List<Map<String, dynamic>>> importOutdoorActivities([
+    AppDatabase? db,
+  ]) async {
     try {
       final categoryStates = await getAllCategoryStates();
       if (categoryStates[HealthCategory.workoutImport] != true) return [];
@@ -274,18 +274,34 @@ class HealthService {
           if (typeStr.contains('walking') || typeStr.contains('running')) {
             final duration = p.dateTo.difference(p.dateFrom).inMinutes;
             final cals = val.totalEnergyBurned ?? 0;
+            final provider = p.sourcePlatform.name;
+            final externalId = p.uuid.isNotEmpty ? '$provider:${p.uuid}' : null;
             final fingerprint =
-                '${p.dateFrom.toIso8601String()}_${typeStr}_${cals}_$duration';
+                '$provider:${p.sourceId}:${p.dateFrom.toIso8601String()}_${typeStr}_${cals}_$duration';
 
-            // Idempotency check: Skip if fingerprint exists in HealthProvenances or source is indifit_app
+            // Never import a workout this app wrote to Health. Source names are
+            // platform supplied, so compare case-insensitively rather than relying
+            // on a single implementation-specific literal.
+            if (_isIndiFitOrigin(p.sourceName)) {
+              continue;
+            }
+
+            int? localSessionId;
             if (db != null) {
-              final existing = await (db.select(db.healthProvenances)
-                    ..where((tbl) => tbl.fingerprint.equals(fingerprint)))
-                  .getSingleOrNull();
-
-              if (existing != null || p.sourceName == 'indifit_app') {
-                continue;
-              }
+              localSessionId = await persistOutdoorActivity(
+                db: db,
+                provider: provider,
+                externalId: externalId,
+                sourceName: p.sourceName,
+                fingerprint: fingerprint,
+                title: typeStr.contains('running')
+                    ? 'Outdoor Run (Health)'
+                    : 'Outdoor Walk (Health)',
+                durationMinutes: duration,
+                calories: cals.round(),
+                completedAt: p.dateFrom,
+              );
+              if (localSessionId == null) continue;
             }
 
             activities.add({
@@ -296,7 +312,10 @@ class HealthService {
               'calories': cals,
               'date': p.dateFrom,
               'fingerprint': fingerprint,
+              'externalId': externalId,
+              'provider': provider,
               'sourceName': p.sourceName,
+              'localSessionId': localSessionId,
             });
           }
         }
@@ -310,8 +329,63 @@ class HealthService {
         st,
         reason: 'importOutdoorActivities error',
       );
-      return [];
+      rethrow;
     }
+  }
+
+  static bool _isIndiFitOrigin(String sourceName) =>
+      sourceName.trim().toLowerCase().contains('indifit');
+
+  /// Persists an external activity and its provenance atomically. Returns the
+  /// new local session ID, or null when the native activity was already seen.
+  Future<int?> persistOutdoorActivity({
+    required AppDatabase db,
+    required String provider,
+    required String? externalId,
+    required String sourceName,
+    required String fingerprint,
+    required String title,
+    required int durationMinutes,
+    required int calories,
+    required DateTime completedAt,
+  }) async {
+    return db.transaction(() async {
+      final existing =
+          await (db.select(db.healthProvenances)..where(
+                (tbl) => externalId == null
+                    ? tbl.fingerprint.equals(fingerprint)
+                    : tbl.externalId.equals(externalId) |
+                          tbl.fingerprint.equals(fingerprint),
+              ))
+              .getSingleOrNull();
+      if (existing != null) return null;
+
+      final sessionId = await db
+          .into(db.workoutSessions)
+          .insert(
+            WorkoutSessionsCompanion.insert(
+              name: title,
+              totalVolume: 0.0,
+              durationSeconds: durationMinutes * 60,
+              estimatedCalories: calories,
+              completedAt: Value(completedAt),
+              isSynced: const Value(true),
+              uuid: Value(externalId ?? fingerprint),
+            ),
+          );
+      await db
+          .into(db.healthProvenances)
+          .insert(
+            HealthProvenancesCompanion.insert(
+              provider: provider,
+              externalId: Value(externalId),
+              sourceName: sourceName.isEmpty ? provider : sourceName,
+              localSessionId: Value(sessionId),
+              fingerprint: fingerprint,
+            ),
+          );
+      return sessionId;
+    });
   }
 
   /// Write logged workout session to HealthKit / Health Connect with origin tag
