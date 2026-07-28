@@ -1,0 +1,179 @@
+{
+  "diet": "vegan",
+  "base_calories": 2000,
+  "days": [
+    {
+      "day": "Monday",
+      "breakfast": {
+        "title": "Moong Dal Cheela (2 pcs) with Mint Chutney & Almonds",
+        "base_kcal": 340,
+        "base_protein_g": 14.0
+      },
+      "lunch": {
+        "title": "Tofu Scramble (Bhurji 150g) with 2 Multigrain Rotis",
+        "base_kcal": 530,
+        "base_protein_g": 26.0
+      },
+      "dinner": {
+        "title": "Yellow Dal Tadka with Steamed Rice & Green Salad",
+        "base_kcal": 490,
+        "base_protein_g": 18.0
+      },
+      "snacks": {
+        "title": "Roasted Chana (50g) & Green Tea",
+        "base_kcal": 180,
+        "base_protein_g": 9.0
+      }
+    },
+    {
+      "day": "Tuesday",
+      "breakfast": {
+        "title": "Oats Upma with Peanuts & Mixed Vegetables",
+        "base_kcal": 350,
+        "base_protein_g": 11.0
+      },
+      "lunch": {
+        "title": "Soya Chunks Curry with Brown Rice & Tomato Salad",
+        "base_kcal": 520,
+        "base_protein_g": 28.0
+      },
+      "dinner": {
+        "title": "Moong Dal Khichdi with Olive Oil & Spiced Salad",
+        "base_kcal": 450,
+        "base_protein_g": 14.0
+      },
+      "snacks": {
+        "title": "Plant Protein Smoothie with 1 Banana & Soy Milk",
+        "base_kcal": 220,
+        "base_protein_g": 20.0
+      }
+    },
+    {
+      "day": "Wednesday",
+      "breakfast": {
+        "title": "Besan Cheela (2 pcs) with Tomato Chutney",
+        "base_kcal": 320,
+        "base_protein_g": 12.0
+      },
+      "lunch": {
+        "title": "Chickpea (Chole) Salad with Cucumber, Onion & Lemon",
+        "base_kcal": 480,
+        "base_protein_g": 18.0
+      },
+      "dinner": {
+        "title": "Tofu Stir-fry with Broccoli, Bell Peppers & Rice",
+        "base_kcal": 510,
+        "base_protein_g": 24.0
+      },
+      "snacks": {
+        "title": "Mixed Seeds (Pumpkin, Sunflower) & Walnuts",
+        "base_kcal": 180,
+        "base_protein_g": 7.0
+      }
+    },
+    {
+      "day": "Thursday",
+      "breakfast": {
+        "title": "Sprouted Moong & Kala Chana Salad",
+        "base_kcal": 290,
+        "base_protein_g": 15.0
+      },
+      "lunch": {
+        "title": "Black Lentil (Kali Dal) Curry with 2 Wheat Rotis",
+        "base_kcal": 520,
+        "base_protein_g": 17.0
+      },
+      "dinner": {
+        "title": "Grilled Tofu Tikka with Spiced Veggies & Brown Rice",
+        "base_kcal": 500,
+        "base_protein_g": 23.0
+      },
+      "snacks": {
+        "title": "Roasted Makhana (1 bowl) with Rock Salt",
+        "base_kcal": 150,
+        "base_protein_g": 4.0
+      }
+    },
+    {
+      "day": "Friday",
+      "breakfast": {
+        "title": "Peanut Butter Toast (2 slices multigrain bread)",
+        "base_kcal": 330,
+        "base_protein_g": 12.0
+      },
+      "lunch": {
+        "title": "Soya Keema Curry with 2 Multigrain Rotis",
+        "base_kcal": 530,
+        "base_protein_g": 27.0
+      },
+      "dinner": {
+        "title": "Lobia (Black Eyed Peas) Curry with Steamed Rice",
+        "base_kcal": 490,
+        "base_protein_g": 18.0
+      },
+      "snacks": {
+        "title": "Boiled Peanut & Corn Salad (50g)",
+        "base_kcal": 200,
+        "base_protein_g": 8.0
+      }
+    },
+    {
+      "day": "Saturday",
+      "breakfast": {
+        "title": "Oats Porridge with Soy Milk & Chia Seeds",
+        "base_kcal": 350,
+        "base_protein_g": 12.0
+      },
+      "lunch": {
+        "title": "Rajma Masala with Jeera Rice & Green Salad",
+        "base_kcal": 540,
+        "base_protein_g": 18.0
+      },
+      "dinner": {
+        "title": "Tofu & Vegetable Roll in Whole Wheat Wrap",
+        "base_kcal": 470,
+        "base_protein_g": 21.0
+      },
+      "snacks": {
+        "title": "Soy Milk Matcha Shake",
+        "base_kcal": 160,
+        "base_protein_g": 8.0
+      }
+    },
+    {
+      "day": "Sunday",
+      "breakfast": {
+        "title": "Vegetable Poha with Roasted Peanuts",
+        "base_kcal": 290,
+        "base_protein_g": 7.0
+      },
+      "lunch": {
+        "title": "Mixed Lentil Khichdi with Olive Oil drizzle",
+        "base_kcal": 470,
+        "base_protein_g": 16.0
+      },
+      "dinner": {
+        "title": "Tofu Bhurji with Spinach & 2 Multigrain Rotis",
+        "base_kcal": 520,
+        "base_protein_g": 26.0
+      },
+      "snacks": {
+        "title": "Fruit Salad (Papaya, Orange, Apple)",
+        "base_kcal": 130,
+        "base_protein_g": 2.0
+      }
+    }
+  ],
+  "grocery_list": [
+    "Rolled Oats & Chia Seeds (1 kg)",
+    "Firm Tofu (750g)",
+    "Moong Dal, Rajma & Kala Chana (1 kg each)",
+    "Soya Chunks & Soya Granules (300g)",
+    "Soy Milk or Almond Milk (2 L)",
+    "Natural Peanut Butter",
+    "Mixed Vegetables (Spinach, Broccoli, Onion, Tomato, Bell Pepper)",
+    "Whole Wheat Atta & Brown Rice",
+    "Roasted Chana & Makhana",
+    "Seasonal Fruits (Apples, Papaya, Oranges)"
+  ]
+}

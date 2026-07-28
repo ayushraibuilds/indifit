@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/di/user_profile_provider.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/ai_routine_service.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -26,6 +27,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   final TextEditingController _injuryController = TextEditingController();
 
   bool _loading = false;
+  bool _profileLoaded = false;
   GeneratedRoutineResult? _generatedRoutine;
 
   @override
@@ -33,6 +35,21 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
     super.initState();
     if (widget.initialGoal != null && widget.initialGoal!.isNotEmpty) {
       _selectedGoal = widget.initialGoal!;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_profileLoaded) {
+      final p = ref.watch(userProfileProvider);
+      if (p.equipmentAccess.isNotEmpty) {
+        _selectedEquipment = p.equipmentAccess;
+      }
+      if (p.injuriesLimitations.isNotEmpty && _injuryController.text.isEmpty) {
+        _injuryController.text = p.injuriesLimitations;
+      }
+      _profileLoaded = true;
     }
   }
 

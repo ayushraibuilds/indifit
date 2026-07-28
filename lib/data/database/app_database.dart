@@ -7,9 +7,14 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
+import 'tables/achievement_tables.dart';
 import 'tables/food_tables.dart';
+import 'tables/health_tables.dart';
+import 'tables/hydration_tables.dart';
 import 'tables/settings_tables.dart';
 import 'tables/user_tables.dart';
 import 'tables/workout_tables.dart';
@@ -32,21 +37,19 @@ part 'app_database.g.dart';
     MealTemplates,
     MealTemplateItems,
     UserSettings,
+    DailyHydrations,
+    HealthProvenances,
+    AchievementUnlocks,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.memory() : super(NativeDatabase.memory());
 
-  /// Schema v13: fixes a type-mismatch bug in upsertSeededExercisesFromAsset
-  /// that made exercise seeding fail (and silently roll back) on every single
-  /// run, including the v12 migration meant to fix the empty-library issue.
-  /// `muscle_groups` in assets/data/exercises.json is a comma-separated
-  /// String, but the seeding code cast it to List and called .join(','),
-  /// which threw immediately and was swallowed by the enclosing try/catch.
-  /// v12 installs never actually got exercises populated as a result.
+  /// Schema v14: Adds DailyHydrations, HealthProvenances, AchievementUnlocks tables,
+  /// extends UserProfiles with name/equipment/injuries, and migrates legacy hydration prefs.
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -104,6 +107,15 @@ class AppDatabase extends _$AppDatabase {
         // type-cast bug fixed above. Re-run now that it's actually fixed
         // so installs sitting on an empty exercise table get populated.
         await upsertSeededExercisesFromAsset();
+      }
+      if (from < 14) {
+        await m.createTable(dailyHydrations);
+        await m.createTable(healthProvenances);
+        await m.createTable(achievementUnlocks);
+        await m.addColumn(userProfiles, userProfiles.name);
+        await m.addColumn(userProfiles, userProfiles.equipmentAccess);
+        await m.addColumn(userProfiles, userProfiles.injuriesLimitations);
+        await _migrateLegacyHydrationPreferencesToDatabase();
       }
     },
 
@@ -290,6 +302,40 @@ class AppDatabase extends _$AppDatabase {
         category: item['category'],
       );
     }).toList();
+  }
+
+  Future<void> _migrateLegacyHydrationPreferencesToDatabase() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final logged = prefs.getInt('water_logged');
+      final goal = prefs.getInt('water_goal') ?? 2000;
+      if (logged != null && logged > 0) {
+        final now = DateTime.now();
+        final dateStr =
+            "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+        final existing = await (select(dailyHydrations)
+              ..where((tbl) => tbl.dateString.equals(dateStr)))
+            .getSingleOrNull();
+
+        if (existing == null) {
+          await into(dailyHydrations).insert(
+            DailyHydrationsCompanion.insert(
+              dateString: dateStr,
+              totalMl: logged,
+              goalMl: goal,
+              updatedAt: Value(now),
+            ),
+          );
+        }
+      }
+    } catch (e, st) {
+      AppLogger.warning('Hydration prefs migration failed: $e');
+      CrashReportingService.recordCrash(
+        e,
+        st,
+        reason: 'Hydration prefs migration failed',
+      );
+    }
   }
 }
 

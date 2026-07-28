@@ -565,16 +565,41 @@ class WeeklyReportRequest(BaseModel):
     total_volume_kg: float = 12500.0
     prs_count: int = 2
     adherence_score: float = 85.0
+    date_range: Optional[str] = None
+    nutrition_days_logged: Optional[int] = 0
+    calorie_adherence_pct: Optional[float] = None
+    protein_adherence_pct: Optional[float] = None
+    hydration_days_at_goal: Optional[int] = 0
+    completed_workouts: Optional[int] = 0
+    planned_workouts: Optional[int] = 0
 
 def _mock_weekly_report(req: WeeklyReportRequest, reason: str = ""):
+    date_context = f"For the period {req.date_range}: " if req.date_range else ""
+    summary_parts = []
+    if req.nutrition_days_logged and req.nutrition_days_logged > 0:
+        summary_parts.append(
+            f"Logged nutrition on {req.nutrition_days_logged} out of 7 days ({req.total_calories_logged} total kcal)."
+        )
+    else:
+        summary_parts.append(f"Logged {req.total_calories_logged} total kcal.")
+
+    if req.planned_workouts and req.planned_workouts > 0:
+        summary_parts.append(
+            f"Completed {req.workout_sessions_count} of {req.planned_workouts} planned workouts ({req.total_volume_kg:.0f} kg volume lifted)."
+        )
+    else:
+        summary_parts.append(
+            f"Completed {req.workout_sessions_count} workouts ({req.total_volume_kg:.0f} kg volume lifted)."
+        )
+
     return {
-        "headline": "Outstanding Consistency This Week!",
+        "headline": "Weekly Progress Summary",
         "adherence_score": req.adherence_score,
-        "summary": f"You completed {req.workout_sessions_count} workouts and hit {req.prs_count} Personal Records with {req.total_volume_kg:.0f} kg total volume lifted.",
-        "coaching_tip": "Maintain your protein intake post-workout and prioritize 7-8 hours of sleep for optimal recovery.",
-        "top_prs": ["Bench Press 80kg x 5", "Barbell Squat 100kg x 3"],
+        "summary": date_context + " ".join(summary_parts),
+        "coaching_tip": "Focus on progressive overload and maintain daily protein and hydration consistency.",
+        "top_prs": [f"{req.prs_count} PRs Hit This Week"] if req.prs_count > 0 else ["Consistent Weekly Effort"],
         "is_fallback": True,
-        "fallback_reason": reason
+        "fallback_reason": reason,
     }
 
 @ai_router.post("/weekly-report")
@@ -583,10 +608,14 @@ async def generate_weekly_report(req: WeeklyReportRequest):
         return _mock_weekly_report(req, "Gemini API key not configured")
 
     prompt = f"""
-    Analyze this user's fitness progress over the past 7 days:
-    - Calories Logged: {req.total_calories_logged} kcal (Goal: {req.calorie_goal} kcal)
-    - Workouts Completed: {req.workout_sessions_count} sessions
-    - Total Volume Lifted: {req.total_volume_kg} kg
+    Act as a professional fitness and nutrition coach. Analyze this user's real 7-day metrics:
+    - Date Range: {req.date_range or "Past 7 days"}
+    - Nutrition Days Logged: {req.nutrition_days_logged or 0} / 7 days
+    - Calories Logged: {req.total_calories_logged} kcal (Goal: {req.calorie_goal} kcal, Calorie Adherence: {req.calorie_adherence_pct or 0:.1f}%)
+    - Protein Adherence: {req.protein_adherence_pct or 0:.1f}%
+    - Hydration Days at Goal: {req.hydration_days_at_goal or 0} / 7 days
+    - Workouts Completed: {req.workout_sessions_count} / {req.planned_workouts or 0} planned
+    - Total Volume Lifted: {req.total_volume_kg:.0f} kg
     - Personal Records Hit: {req.prs_count} PRs
     - Overall Adherence Score: {req.adherence_score:.1f}%
 

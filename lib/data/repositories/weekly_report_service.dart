@@ -5,6 +5,7 @@ import '../../core/di/providers.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
+import 'progress_statistics_repository.dart';
 
 final weeklyReportServiceProvider = Provider<WeeklyReportService>((ref) {
   final dio = ref.watch(dioProvider);
@@ -19,6 +20,7 @@ class WeeklyReportResult {
   final String coachingTip;
   final List<String> topPrs;
   final bool isFallback;
+  final bool isInsufficientData;
   final String? fallbackReason;
 
   WeeklyReportResult({
@@ -28,6 +30,7 @@ class WeeklyReportResult {
     required this.coachingTip,
     required this.topPrs,
     this.isFallback = false,
+    this.isInsufficientData = false,
     this.fallbackReason,
   });
 }
@@ -47,6 +50,20 @@ class WeeklyReportService {
           ),
       _policy = policy;
 
+  Future<WeeklyReportResult> generateReportFromMetrics(
+    WeeklyMetrics metrics,
+  ) async {
+    return generateReport(
+      totalCaloriesLogged: metrics.totalCaloriesLogged,
+      calorieGoal: metrics.totalCaloriesGoal,
+      workoutSessionsCount: metrics.completedWorkoutsCount,
+      totalVolumeKg: metrics.totalVolumeKg,
+      prsCount: metrics.prsCount,
+      adherenceScore: metrics.overallAdherenceScore * 100,
+      metrics: metrics,
+    );
+  }
+
   Future<WeeklyReportResult> generateReport({
     required int totalCaloriesLogged,
     required int calorieGoal,
@@ -54,32 +71,72 @@ class WeeklyReportService {
     required double totalVolumeKg,
     required int prsCount,
     required double adherenceScore,
+    WeeklyMetrics? metrics,
   }) async {
+    final nutritionDays = metrics?.nutritionDaysLogged ?? (totalCaloriesLogged > 0 ? 1 : 0);
+    final completedWorkouts = metrics?.completedWorkoutsCount ?? workoutSessionsCount;
+    final plannedWorkouts = metrics?.plannedWorkoutsCount ?? 0;
+    final hydrationDays = metrics?.hydrationDaysAtGoal ?? 0;
+    final dateRangeStr = metrics != null
+        ? "${metrics.startDate.year}-${metrics.startDate.month.toString().padLeft(2, '0')}-${metrics.startDate.day.toString().padLeft(2, '0')} to ${metrics.endDate.year}-${metrics.endDate.month.toString().padLeft(2, '0')}-${metrics.endDate.day.toString().padLeft(2, '0')}"
+        : null;
+
+    // Honest insufficient data state check
+    if (nutritionDays < 2 && completedWorkouts == 0) {
+      return WeeklyReportResult(
+        headline: 'Log a few more days to unlock your report',
+        adherenceScore: 0.0,
+        summary:
+            'Log at least 2 days of nutrition or 1 workout session during the week to unlock your personalized AI weekly report.',
+        coachingTip:
+            'Focus on logging your daily meals and water intake to build baseline habits!',
+        topPrs: const [],
+        isFallback: true,
+        isInsufficientData: true,
+        fallbackReason: 'Insufficient Weekly Data',
+      );
+    }
+
     if (_policy != null && !_policy.isAiAllowed) {
       return _generateOfflineFallback(
         totalCaloriesLogged: totalCaloriesLogged,
-        workoutSessionsCount: workoutSessionsCount,
+        workoutSessionsCount: completedWorkouts,
+        plannedWorkoutsCount: plannedWorkouts,
+        totalVolumeKg: totalVolumeKg,
+        prsCount: prsCount,
+        nutritionDaysLogged: nutritionDays,
         adherenceScore: adherenceScore,
+        dateRange: dateRangeStr,
         reason: 'Strict Offline Privacy Mode',
       );
     }
+
     try {
+      final payload = <String, dynamic>{
+        'total_calories_logged': totalCaloriesLogged,
+        'calorie_goal': calorieGoal,
+        'workout_sessions_count': completedWorkouts,
+        'total_volume_kg': totalVolumeKg,
+        'prs_count': prsCount,
+        'adherence_score': adherenceScore,
+        'date_range': dateRangeStr,
+        'nutrition_days_logged': nutritionDays,
+        'calorie_adherence_pct': (metrics?.calorieAdherenceScore ?? 0.0) * 100,
+        'protein_adherence_pct': (metrics?.proteinAdherenceScore ?? 0.0) * 100,
+        'hydration_days_at_goal': hydrationDays,
+        'completed_workouts': completedWorkouts,
+        'planned_workouts': plannedWorkouts,
+      };
+
       final response = await _dio.post(
         '${AppConfig.backendUrl}/api/ai/weekly-report',
-        data: {
-          'total_calories_logged': totalCaloriesLogged,
-          'calorie_goal': calorieGoal,
-          'workout_sessions_count': workoutSessionsCount,
-          'total_volume_kg': totalVolumeKg,
-          'prs_count': prsCount,
-          'adherence_score': adherenceScore,
-        },
+        data: payload,
       );
 
       if (response.statusCode == 200 && response.data != null) {
         final d = response.data;
         return WeeklyReportResult(
-          headline: d['headline'] ?? 'Great Week!',
+          headline: d['headline'] ?? 'Weekly Summary',
           adherenceScore:
               (d['adherence_score'] as num?)?.toDouble() ?? adherenceScore,
           summary:
@@ -105,25 +162,44 @@ class WeeklyReportService {
 
     return _generateOfflineFallback(
       totalCaloriesLogged: totalCaloriesLogged,
-      workoutSessionsCount: workoutSessionsCount,
+      workoutSessionsCount: completedWorkouts,
+      plannedWorkoutsCount: plannedWorkouts,
+      totalVolumeKg: totalVolumeKg,
+      prsCount: prsCount,
+      nutritionDaysLogged: nutritionDays,
       adherenceScore: adherenceScore,
+      dateRange: dateRangeStr,
     );
   }
 
   WeeklyReportResult _generateOfflineFallback({
     required int totalCaloriesLogged,
     required int workoutSessionsCount,
+    required int plannedWorkoutsCount,
+    required double totalVolumeKg,
+    required int prsCount,
+    required int nutritionDaysLogged,
     required double adherenceScore,
+    String? dateRange,
     String reason = 'Offline Local Generator',
   }) {
+    final rangeText = dateRange != null ? 'For $dateRange: ' : '';
+    final workoutText = plannedWorkoutsCount > 0
+        ? '$workoutSessionsCount of $plannedWorkoutsCount planned workouts'
+        : '$workoutSessionsCount workouts';
+
+    final prText = prsCount > 0
+        ? '$prsCount Personal Records Hit'
+        : 'Consistent Logging Effort';
+
     return WeeklyReportResult(
-      headline: 'Outstanding Consistency This Week!',
+      headline: 'Weekly Progress Summary',
       adherenceScore: adherenceScore,
       summary:
-          'You completed $workoutSessionsCount workouts and logged $totalCaloriesLogged kcal total across the week.',
+          '${rangeText}You logged nutrition on $nutritionDaysLogged days ($totalCaloriesLogged total kcal), completed $workoutText (${totalVolumeKg.toStringAsFixed(0)} kg total volume), and achieved $prsCount PRs.',
       coachingTip:
-          'Prioritize adequate sleep and keep hitting your daily protein target.',
-      topPrs: ['Consistent Log Streak', 'Workout Target Completed'],
+          'Maintain your progressive overload, stay hydrated, and target consistent protein intake.',
+      topPrs: [prText],
       isFallback: true,
       fallbackReason: reason,
     );

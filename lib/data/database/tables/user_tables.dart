@@ -15,5 +15,10 @@ class UserProfiles extends Table {
   RealColumn get proteinGoal => real().withDefault(const Constant(140.0))();
   RealColumn get carbsGoal => real().withDefault(const Constant(220.0))();
   RealColumn get fatGoal => real().withDefault(const Constant(60.0))();
+  TextColumn get name => text().withDefault(const Constant(''))();
+  TextColumn get equipmentAccess =>
+      text().withDefault(const Constant('full_gym'))();
+  TextColumn get injuriesLimitations =>
+      text().withDefault(const Constant(''))();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }

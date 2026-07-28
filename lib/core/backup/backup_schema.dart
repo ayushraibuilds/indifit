@@ -8,7 +8,7 @@ import '../../data/database/app_database.dart';
 /// database records and persisted application preferences.
 /// Shared identically by manual backup/export and automated background backups.
 class BackupData {
-  static const int currentVersion = 4;
+  static const int currentVersion = 5;
 
   final int version;
   final String timestamp;
@@ -34,6 +34,9 @@ class BackupData {
 
   final List<WorkoutDraft> workoutDrafts;
   final List<BodyMeasurement> bodyMeasurements;
+  final List<DailyHydration> dailyHydrations;
+  final List<HealthProvenance> healthProvenances;
+  final List<AchievementUnlock> achievementUnlocks;
 
   BackupData({
     required this.version,
@@ -54,6 +57,9 @@ class BackupData {
     required this.routineExercises,
     required this.workoutDrafts,
     required this.bodyMeasurements,
+    required this.dailyHydrations,
+    required this.healthProvenances,
+    required this.achievementUnlocks,
   });
 
   /// Constructs a [BackupData] payload directly from the database and optional [SharedPreferences].
@@ -83,6 +89,9 @@ class BackupData {
 
     final workoutDrafts = await db.select(db.workoutDrafts).get();
     final bodyMeasurements = await db.select(db.bodyMeasurements).get();
+    final dailyHydrations = await db.select(db.dailyHydrations).get();
+    final healthProvenances = await db.select(db.healthProvenances).get();
+    final achievementUnlocks = await db.select(db.achievementUnlocks).get();
 
     final userPreferences = <String, dynamic>{};
     if (prefs != null) {
@@ -167,6 +176,9 @@ class BackupData {
       routineExercises: routineExercises,
       workoutDrafts: workoutDrafts,
       bodyMeasurements: bodyMeasurements,
+      dailyHydrations: dailyHydrations,
+      healthProvenances: healthProvenances,
+      achievementUnlocks: achievementUnlocks,
     );
   }
 
@@ -190,6 +202,9 @@ class BackupData {
           'protein_goal': userProfile!.proteinGoal,
           'carbs_goal': userProfile!.carbsGoal,
           'fat_goal': userProfile!.fatGoal,
+          'name': userProfile!.name,
+          'equipment_access': userProfile!.equipmentAccess,
+          'injuries_limitations': userProfile!.injuriesLimitations,
           'updated_at': userProfile!.updatedAt.toIso8601String(),
         },
       'user_settings': userSettings
@@ -377,6 +392,39 @@ class BackupData {
             },
           )
           .toList(),
+      'daily_hydrations': dailyHydrations
+          .map(
+            (h) => {
+              'id': h.id,
+              'date_string': h.dateString,
+              'total_ml': h.totalMl,
+              'goal_ml': h.goalMl,
+              'updated_at': h.updatedAt.toIso8601String(),
+            },
+          )
+          .toList(),
+      'health_provenances': healthProvenances
+          .map(
+            (p) => {
+              'id': p.id,
+              'provider': p.provider,
+              'external_id': p.externalId,
+              'source_name': p.sourceName,
+              'imported_at': p.importedAt.toIso8601String(),
+              'local_session_id': p.localSessionId,
+              'fingerprint': p.fingerprint,
+            },
+          )
+          .toList(),
+      'achievement_unlocks': achievementUnlocks
+          .map(
+            (a) => {
+              'id': a.id,
+              'achievement_id': a.achievementId,
+              'unlocked_at': a.unlockedAt.toIso8601String(),
+            },
+          )
+          .toList(),
     };
   }
 
@@ -423,6 +471,9 @@ class BackupData {
         proteinGoal: (p['protein_goal'] as num?)?.toDouble() ?? 140.0,
         carbsGoal: (p['carbs_goal'] as num?)?.toDouble() ?? 220.0,
         fatGoal: (p['fat_goal'] as num?)?.toDouble() ?? 60.0,
+        name: p['name'] as String? ?? '',
+        equipmentAccess: p['equipment_access'] as String? ?? 'full_gym',
+        injuriesLimitations: p['injuries_limitations'] as String? ?? '',
         updatedAt: p['updated_at'] != null
             ? DateTime.parse(p['updated_at'] as String)
             : DateTime.now(),
@@ -449,7 +500,9 @@ class BackupData {
     // User Preferences
     final userPreferences = <String, dynamic>{};
     if (json['user_preferences'] != null) {
-      userPreferences.addAll(json['user_preferences'] as Map<String, dynamic>);
+      userPreferences.addAll(
+        Map<String, dynamic>.from(json['user_preferences'] as Map),
+      );
     }
 
     // Custom Food Items
@@ -711,6 +764,63 @@ class BackupData {
       }
     }
 
+    // Daily Hydrations
+    final dailyHydrations = <DailyHydration>[];
+    if (json['daily_hydrations'] != null) {
+      for (final raw in json['daily_hydrations'] as List) {
+        final h = raw as Map<String, dynamic>;
+        dailyHydrations.add(
+          DailyHydration(
+            id: (h['id'] as num?)?.toInt() ?? 0,
+            dateString: h['date_string'] as String,
+            totalMl: (h['total_ml'] as num).toInt(),
+            goalMl: (h['goal_ml'] as num).toInt(),
+            updatedAt: h['updated_at'] != null
+                ? DateTime.parse(h['updated_at'] as String)
+                : DateTime.now(),
+          ),
+        );
+      }
+    }
+
+    // Health Provenances
+    final healthProvenances = <HealthProvenance>[];
+    if (json['health_provenances'] != null) {
+      for (final raw in json['health_provenances'] as List) {
+        final p = raw as Map<String, dynamic>;
+        healthProvenances.add(
+          HealthProvenance(
+            id: (p['id'] as num?)?.toInt() ?? 0,
+            provider: p['provider'] as String,
+            externalId: p['external_id'] as String?,
+            sourceName: p['source_name'] as String? ?? 'External Provider',
+            importedAt: p['imported_at'] != null
+                ? DateTime.parse(p['imported_at'] as String)
+                : DateTime.now(),
+            localSessionId: (p['local_session_id'] as num?)?.toInt(),
+            fingerprint: p['fingerprint'] as String,
+          ),
+        );
+      }
+    }
+
+    // Achievement Unlocks
+    final achievementUnlocks = <AchievementUnlock>[];
+    if (json['achievement_unlocks'] != null) {
+      for (final raw in json['achievement_unlocks'] as List) {
+        final a = raw as Map<String, dynamic>;
+        achievementUnlocks.add(
+          AchievementUnlock(
+            id: (a['id'] as num?)?.toInt() ?? 0,
+            achievementId: a['achievement_id'] as String,
+            unlockedAt: a['unlocked_at'] != null
+                ? DateTime.parse(a['unlocked_at'] as String)
+                : DateTime.now(),
+          ),
+        );
+      }
+    }
+
     return BackupData(
       version: rawVersion,
       timestamp: timestamp,
@@ -730,6 +840,9 @@ class BackupData {
       routineExercises: routineExercises,
       workoutDrafts: workoutDrafts,
       bodyMeasurements: bodyMeasurements,
+      dailyHydrations: dailyHydrations,
+      healthProvenances: healthProvenances,
+      achievementUnlocks: achievementUnlocks,
     );
   }
 
@@ -811,6 +924,9 @@ class BackupData {
         await db.delete(db.workoutRoutines).go();
         await db.delete(db.workoutDrafts).go();
         await db.delete(db.bodyMeasurements).go();
+        await db.delete(db.dailyHydrations).go();
+        await db.delete(db.healthProvenances).go();
+        await db.delete(db.achievementUnlocks).go();
         await db.delete(db.userProfiles).go();
         await db.delete(db.userSettings).go();
 
@@ -839,6 +955,9 @@ class BackupData {
                   proteinGoal: Value(userProfile!.proteinGoal),
                   carbsGoal: Value(userProfile!.carbsGoal),
                   fatGoal: Value(userProfile!.fatGoal),
+                  name: Value(userProfile!.name),
+                  equipmentAccess: Value(userProfile!.equipmentAccess),
+                  injuriesLimitations: Value(userProfile!.injuriesLimitations),
                   updatedAt: Value(userProfile!.updatedAt),
                 ),
               );
@@ -1091,6 +1210,53 @@ class BackupData {
                   recordedAt: Value(m.recordedAt),
                   isSynced: Value(m.isSynced),
                 ),
+              );
+        }
+
+        for (final h in dailyHydrations) {
+          await db
+              .into(db.dailyHydrations)
+              .insert(
+                DailyHydrationsCompanion.insert(
+                  dateString: h.dateString,
+                  totalMl: h.totalMl,
+                  goalMl: h.goalMl,
+                  updatedAt: Value(h.updatedAt),
+                ),
+                mode: InsertMode.insertOrReplace,
+              );
+        }
+
+        for (final p in healthProvenances) {
+          int? targetLocalSessionId = p.localSessionId;
+          if (targetLocalSessionId != null &&
+              sessionIdMap.containsKey(targetLocalSessionId)) {
+            targetLocalSessionId = sessionIdMap[targetLocalSessionId];
+          }
+          await db
+              .into(db.healthProvenances)
+              .insert(
+                HealthProvenancesCompanion.insert(
+                  provider: p.provider,
+                  externalId: Value(p.externalId),
+                  sourceName: p.sourceName,
+                  importedAt: Value(p.importedAt),
+                  localSessionId: Value(targetLocalSessionId),
+                  fingerprint: p.fingerprint,
+                ),
+                mode: InsertMode.insertOrReplace,
+              );
+        }
+
+        for (final a in achievementUnlocks) {
+          await db
+              .into(db.achievementUnlocks)
+              .insert(
+                AchievementUnlocksCompanion.insert(
+                  achievementId: a.achievementId,
+                  unlockedAt: Value(a.unlockedAt),
+                ),
+                mode: InsertMode.insertOrReplace,
               );
         }
       });

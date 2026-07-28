@@ -1,0 +1,179 @@
+{
+  "diet": "veg",
+  "base_calories": 2000,
+  "days": [
+    {
+      "day": "Monday",
+      "breakfast": {
+        "title": "Oats Upma with Almonds",
+        "base_kcal": 350,
+        "base_protein_g": 12.0
+      },
+      "lunch": {
+        "title": "Paneer Bhurji (150g) with 2 Rotis & Curd",
+        "base_kcal": 550,
+        "base_protein_g": 28.0
+      },
+      "dinner": {
+        "title": "Yellow Dal Tadka with Mixed Veg & 2 Rotis",
+        "base_kcal": 480,
+        "base_protein_g": 18.0
+      },
+      "snacks": {
+        "title": "Roasted Chana (50g) & Green Tea",
+        "base_kcal": 180,
+        "base_protein_g": 9.0
+      }
+    },
+    {
+      "day": "Tuesday",
+      "breakfast": {
+        "title": "Paneer Stuffed Paratha with Curd",
+        "base_kcal": 380,
+        "base_protein_g": 14.0
+      },
+      "lunch": {
+        "title": "Soya Chunks Curry with Jeera Rice",
+        "base_kcal": 520,
+        "base_protein_g": 26.0
+      },
+      "dinner": {
+        "title": "Moong Dal Khichdi with Ghee & Salad",
+        "base_kcal": 440,
+        "base_protein_g": 12.0
+      },
+      "snacks": {
+        "title": "Greek Yogurt with Mixed Seeds",
+        "base_kcal": 200,
+        "base_protein_g": 15.0
+      }
+    },
+    {
+      "day": "Wednesday",
+      "breakfast": {
+        "title": "Besan Cheela (2 pcs) with Mint Chutney",
+        "base_kcal": 320,
+        "base_protein_g": 12.0
+      },
+      "lunch": {
+        "title": "Chickpea (Chole) Salad with Cucumber & Tomato",
+        "base_kcal": 480,
+        "base_protein_g": 18.0
+      },
+      "dinner": {
+        "title": "Paneer Tikka with Grilled Veg & Brown Rice",
+        "base_kcal": 510,
+        "base_protein_g": 25.0
+      },
+      "snacks": {
+        "title": "Roasted Makhana & Almonds",
+        "base_kcal": 170,
+        "base_protein_g": 6.0
+      }
+    },
+    {
+      "day": "Thursday",
+      "breakfast": {
+        "title": "Sprouted Moong Salad with Lemon & Spices",
+        "base_kcal": 280,
+        "base_protein_g": 14.0
+      },
+      "lunch": {
+        "title": "Dal Makhani with Jeera Rice & Cucumber Salad",
+        "base_kcal": 540,
+        "base_protein_g": 16.0
+      },
+      "dinner": {
+        "title": "Matar Paneer Curry with 2 Multigrain Rotis",
+        "base_kcal": 500,
+        "base_protein_g": 22.0
+      },
+      "snacks": {
+        "title": "Buttermilk (1 glass) & Roasted Chana",
+        "base_kcal": 160,
+        "base_protein_g": 8.0
+      }
+    },
+    {
+      "day": "Friday",
+      "breakfast": {
+        "title": "Vegetable Idli (3 pcs) with Sambhar",
+        "base_kcal": 310,
+        "base_protein_g": 9.0
+      },
+      "lunch": {
+        "title": "Palak Paneer (150g) with 2 Wheat Rotis",
+        "base_kcal": 520,
+        "base_protein_g": 24.0
+      },
+      "dinner": {
+        "title": "Lobia (Black Eyed Peas) Curry with Steamed Rice",
+        "base_kcal": 490,
+        "base_protein_g": 18.0
+      },
+      "snacks": {
+        "title": "Boiled Peanut Salad (50g)",
+        "base_kcal": 200,
+        "base_protein_g": 8.0
+      }
+    },
+    {
+      "day": "Saturday",
+      "breakfast": {
+        "title": "Oats Porridge with Nuts & Cinnamon",
+        "base_kcal": 340,
+        "base_protein_g": 11.0
+      },
+      "lunch": {
+        "title": "Rajma Masala with Jeera Rice & Green Salad",
+        "base_kcal": 540,
+        "base_protein_g": 18.0
+      },
+      "dinner": {
+        "title": "Paneer Kathi Roll with Mint Dip",
+        "base_kcal": 480,
+        "base_protein_g": 20.0
+      },
+      "snacks": {
+        "title": "Spiced Curd Bowl with Chia Seeds",
+        "base_kcal": 170,
+        "base_protein_g": 10.0
+      }
+    },
+    {
+      "day": "Sunday",
+      "breakfast": {
+        "title": "Vegetable Poha with Peanuts",
+        "base_kcal": 290,
+        "base_protein_g": 7.0
+      },
+      "lunch": {
+        "title": "Mixed Dal Khichdi with Curd & Pickle",
+        "base_kcal": 480,
+        "base_protein_g": 16.0
+      },
+      "dinner": {
+        "title": "Paneer Bhurji with 2 Multigrain Rotis",
+        "base_kcal": 530,
+        "base_protein_g": 28.0
+      },
+      "snacks": {
+        "title": "Fresh Fruit Bowl (Apple, Papaya)",
+        "base_kcal": 130,
+        "base_protein_g": 2.0
+      }
+    }
+  ],
+  "grocery_list": [
+    "Rolled Oats (1 kg)",
+    "Fresh Paneer (500g)",
+    "Moong Dal, Rajma & Toor Dal (1 kg each)",
+    "Soya Chunks (200g)",
+    "Fresh Curd / Yogurt (1.5 kg)",
+    "Mixed Vegetables (Spinach, Onion, Tomato, Bell Pepper)",
+    "Whole Wheat Atta & Rice",
+    "Roasted Chana & Makhana",
+    "Almonds & Mixed Seeds",
+    "Seasonal Fruits (Apples, Papaya, Bananas)"
+  ]
+}

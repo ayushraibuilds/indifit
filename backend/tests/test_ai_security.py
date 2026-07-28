@@ -258,5 +258,34 @@ class AiRouteSecurityTests(unittest.TestCase):
         )
 
 
+    def test_weekly_report_structured_parameters(self):
+        response = self.client.post(
+            "/api/ai/weekly-report",
+            headers=self.valid_headers,
+            json={
+                "total_calories_logged": 14000,
+                "calorie_goal": 14000,
+                "workout_sessions_count": 4,
+                "total_volume_kg": 12000.0,
+                "prs_count": 2,
+                "adherence_score": 85.0,
+                "date_range": "2026-07-22 to 2026-07-28",
+                "nutrition_days_logged": 5,
+                "calorie_adherence_pct": 90.0,
+                "protein_adherence_pct": 85.0,
+                "hydration_days_at_goal": 6,
+                "completed_workouts": 4,
+                "planned_workouts": 4,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("headline", data)
+        self.assertIn("summary", data)
+        self.assertIn("coaching_tip", data)
+        self.assertTrue(data.get("is_fallback"))
+        self.assertIn("2026-07-22 to 2026-07-28", data["summary"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -50,20 +50,20 @@ void main() {
   });
 
   group('Task T3: Canonical Versioned Backup Schema Tests', () {
-    test('Empty database produces valid version 4 backup', () async {
+    test('Empty database produces valid version 5 backup', () async {
       final prefs = await SharedPreferences.getInstance();
       final backup = await BackupData.createFromDatabase(db, prefs);
 
-      expect(backup.version, equals(4));
-      expect(backup.schemaVersion, equals(13));
+      expect(backup.version, equals(5));
+      expect(backup.schemaVersion, equals(14));
 
       final jsonMap = backup.toJson();
-      expect(jsonMap['version'], equals(4));
-      expect(jsonMap['schema_version'], equals(13));
+      expect(jsonMap['version'], equals(5));
+      expect(jsonMap['schema_version'], equals(14));
       expect(jsonMap.containsKey('user_preferences'), isTrue);
 
       final restored = BackupData.fromJson(jsonMap);
-      expect(restored.version, equals(4));
+      expect(restored.version, equals(5));
       expect(restored.userPreferences['water_logged'], equals(5));
       expect(restored.userPreferences['user_streak_count'], equals(14));
     });
@@ -268,8 +268,8 @@ void main() {
         final decodedMap = jsonDecode(jsonString) as Map<String, dynamic>;
         final restored = BackupData.fromJson(decodedMap);
 
-        expect(restored.version, equals(4));
-        expect(restored.schemaVersion, equals(13));
+        expect(restored.version, equals(5));
+        expect(restored.schemaVersion, equals(14));
 
         // 1. User Profile check
         expect(restored.userProfile, isNotNull);
@@ -358,14 +358,14 @@ void main() {
       );
     });
 
-    test('Rejects unsupported newer backup format versions (version > 4)', () {
+    test('Rejects unsupported newer backup format versions (version > 5)', () {
       expect(
-        () => BackupData.fromJson({'version': 5, 'schema_version': 13}),
+        () => BackupData.fromJson({'version': 6, 'schema_version': 14}),
         throwsA(
           isA<FormatException>().having(
             (e) => e.message,
             'message',
-            contains('Unsupported backup format version 5'),
+            contains('Unsupported backup format version 6'),
           ),
         ),
       );

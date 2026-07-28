@@ -1,0 +1,179 @@
+{
+  "diet": "non_veg",
+  "base_calories": 2000,
+  "days": [
+    {
+      "day": "Monday",
+      "breakfast": {
+        "title": "3 Egg Omelette (2 Whites + 1 Whole) with Whole Wheat Toast",
+        "base_kcal": 360,
+        "base_protein_g": 22.0
+      },
+      "lunch": {
+        "title": "Grilled Chicken Breast (150g) with Steamed Rice & Salad",
+        "base_kcal": 540,
+        "base_protein_g": 38.0
+      },
+      "dinner": {
+        "title": "Yellow Dal Tadka with 2 Multigrain Rotis & Cucumber",
+        "base_kcal": 460,
+        "base_protein_g": 18.0
+      },
+      "snacks": {
+        "title": "Boiled Eggs (2 pcs) with Black Pepper",
+        "base_kcal": 150,
+        "base_protein_g": 13.0
+      }
+    },
+    {
+      "day": "Tuesday",
+      "breakfast": {
+        "title": "Oats Porridge with 1 Scoop Whey Protein & Almonds",
+        "base_kcal": 360,
+        "base_protein_g": 28.0
+      },
+      "lunch": {
+        "title": "Chicken Curry (150g) with 2 Wheat Rotis & Salad",
+        "base_kcal": 530,
+        "base_protein_g": 35.0
+      },
+      "dinner": {
+        "title": "Egg Bhurji (3 eggs) with 2 Rotis & Green Salad",
+        "base_kcal": 480,
+        "base_protein_g": 24.0
+      },
+      "snacks": {
+        "title": "Greek Yogurt with Berries",
+        "base_kcal": 180,
+        "base_protein_g": 14.0
+      }
+    },
+    {
+      "day": "Wednesday",
+      "breakfast": {
+        "title": "Egg White Scramble with Spinach & Whole Wheat Toast",
+        "base_kcal": 310,
+        "base_protein_g": 24.0
+      },
+      "lunch": {
+        "title": "Fish Curry (Rohu / Katla 150g) with Steamed Rice",
+        "base_kcal": 510,
+        "base_protein_g": 32.0
+      },
+      "dinner": {
+        "title": "Grilled Chicken Breast with Stir-fried Vegetables",
+        "base_kcal": 490,
+        "base_protein_g": 38.0
+      },
+      "snacks": {
+        "title": "Roasted Chana & Green Tea",
+        "base_kcal": 170,
+        "base_protein_g": 9.0
+      }
+    },
+    {
+      "day": "Thursday",
+      "breakfast": {
+        "title": "Chicken Sausages (2 pcs) with Boiled Egg & Toast",
+        "base_kcal": 350,
+        "base_protein_g": 24.0
+      },
+      "lunch": {
+        "title": "Chicken Keema Curry with 2 Wheat Rotis",
+        "base_kcal": 550,
+        "base_protein_g": 36.0
+      },
+      "dinner": {
+        "title": "Moong Dal Tadka with Brown Rice & Mixed Veg",
+        "base_kcal": 470,
+        "base_protein_g": 18.0
+      },
+      "snacks": {
+        "title": "Roasted Makhana & Almonds",
+        "base_kcal": 160,
+        "base_protein_g": 5.0
+      }
+    },
+    {
+      "day": "Friday",
+      "breakfast": {
+        "title": "3 Egg Omelette with Mushrooms & Peppers",
+        "base_kcal": 340,
+        "base_protein_g": 22.0
+      },
+      "lunch": {
+        "title": "Chicken Tikka (150g) with Mint Chutney & 2 Rotis",
+        "base_kcal": 520,
+        "base_protein_g": 38.0
+      },
+      "dinner": {
+        "title": "Egg Curry (2 Eggs) with Steamed Rice & Cucumber",
+        "base_kcal": 490,
+        "base_protein_g": 20.0
+      },
+      "snacks": {
+        "title": "Whey Protein Shake",
+        "base_kcal": 150,
+        "base_protein_g": 24.0
+      }
+    },
+    {
+      "day": "Saturday",
+      "breakfast": {
+        "title": "Oats Upma with Boiled Egg White",
+        "base_kcal": 330,
+        "base_protein_g": 16.0
+      },
+      "lunch": {
+        "title": "Chicken Biryani (Lean portion) with Cucumber Raita",
+        "base_kcal": 560,
+        "base_protein_g": 34.0
+      },
+      "dinner": {
+        "title": "Grilled Fish Fillet with Asparagus & Sweet Potato",
+        "base_kcal": 470,
+        "base_protein_g": 33.0
+      },
+      "snacks": {
+        "title": "Spiced Buttermilk & Roasted Chana",
+        "base_kcal": 160,
+        "base_protein_g": 8.0
+      }
+    },
+    {
+      "day": "Sunday",
+      "breakfast": {
+        "title": "Egg & Cheese Roll (Whole Wheat Wrap)",
+        "base_kcal": 380,
+        "base_protein_g": 20.0
+      },
+      "lunch": {
+        "title": "Home-style Mutton / Lamb Curry with 2 Wheat Rotis",
+        "base_kcal": 570,
+        "base_protein_g": 32.0
+      },
+      "dinner": {
+        "title": "Yellow Dal with Steamed Rice & Green Salad",
+        "base_kcal": 450,
+        "base_protein_g": 16.0
+      },
+      "snacks": {
+        "title": "Fresh Fruit Bowl (Apple, Papaya)",
+        "base_kcal": 130,
+        "base_protein_g": 2.0
+      }
+    }
+  ],
+  "grocery_list": [
+    "Fresh Eggs (2 Dozen)",
+    "Boneless Chicken Breast & Fish Fillet (1.5 kg)",
+    "Whole Wheat Atta & Rice",
+    "Rolled Oats & Whey Protein",
+    "Fresh Curd & Greek Yogurt",
+    "Toor Dal & Moong Dal (1 kg each)",
+    "Mixed Vegetables (Onion, Tomato, Spinach, Peppers)",
+    "Roasted Chana & Makhana",
+    "Almonds & Mixed Seeds",
+    "Seasonal Fruits (Apples, Papaya, Berries)"
+  ]
+}

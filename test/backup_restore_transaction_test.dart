@@ -151,6 +151,9 @@ void main() {
           routineExercises: [],
           workoutDrafts: [],
           bodyMeasurements: [],
+          dailyHydrations: const [],
+          healthProvenances: const [],
+          achievementUnlocks: const [],
         );
 
         await backup.restoreToDatabase(db, prefs);
@@ -220,6 +223,9 @@ void main() {
           routineExercises: [],
           workoutDrafts: [],
           bodyMeasurements: [],
+          dailyHydrations: const [],
+          healthProvenances: const [],
+          achievementUnlocks: const [],
         );
 
         final prefs = await SharedPreferences.getInstance();
@@ -305,6 +311,9 @@ void main() {
           routineExercises: [],
           workoutDrafts: [],
           bodyMeasurements: [],
+          dailyHydrations: const [],
+          healthProvenances: const [],
+          achievementUnlocks: const [],
         );
 
         final prefs = await SharedPreferences.getInstance();
@@ -372,6 +381,9 @@ void main() {
           routineExercises: [],
           workoutDrafts: [],
           bodyMeasurements: [],
+          dailyHydrations: const [],
+          healthProvenances: const [],
+          achievementUnlocks: const [],
         );
 
         final prefs = await SharedPreferences.getInstance();
@@ -415,6 +427,9 @@ void main() {
           routineExercises: [],
           workoutDrafts: [],
           bodyMeasurements: [],
+          dailyHydrations: const [],
+          healthProvenances: const [],
+          achievementUnlocks: const [],
         ).toJson();
 
         // Launch two restores simultaneously

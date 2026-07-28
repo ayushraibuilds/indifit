@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/colors.dart';
+import '../profile/profile_screen.dart';
 import 'data_management_sub_screen.dart';
 import 'health_sync_hub_screen.dart';
 import 'notification_settings_screen.dart';
@@ -108,6 +109,21 @@ class SettingsScreen extends ConsumerWidget {
                   Card(
                     child: Column(
                       children: [
+                        _buildSettingTile(
+                          context,
+                          icon: Icons.person_outline_rounded,
+                          iconColor: AppColors.primary,
+                          title: 'My Profile',
+                          subtitle:
+                              'Body measurements, goals, diet & equipment',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ProfileScreen(),
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1, color: AppColors.border),
                         _buildSettingTile(
                           context,
                           icon: Icons.notifications_none_rounded,
