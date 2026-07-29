@@ -11,6 +11,7 @@ import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
+import '../../data/repositories/travel_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../config/app_config.dart';
@@ -341,3 +342,11 @@ final workoutExecutionCompatibilityAdapterProvider =
         preferenceRepo: ref.watch(exercisePreferenceRepositoryProvider),
       );
     });
+
+final travelRepositoryProvider = Provider<TravelRepository>((ref) {
+  return TravelRepository(
+    db: ref.watch(databaseProvider),
+    calendarRepo: ref.watch(calendarRepositoryProvider),
+    equipmentRepo: ref.watch(equipmentProfileRepositoryProvider),
+  );
+});
