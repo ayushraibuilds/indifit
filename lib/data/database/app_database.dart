@@ -45,6 +45,7 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.memory() : super(NativeDatabase.memory());
+  AppDatabase.executor(super.executor);
 
   /// Schema v14: Adds DailyHydrations, HealthProvenances, AchievementUnlocks tables,
   /// extends UserProfiles with name/equipment/injuries, and migrates legacy hydration prefs.

@@ -1,109 +1,231 @@
-import 'package:drift/drift.dart' show Value;
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:indifit/data/database/app_database.dart';
+
+import 'fixtures/v14_db_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Drift DB Schema Migration Integration Tests', () {
+  late Directory tempDir;
+
+  setUp(() async {
+    tempDir = await Directory.systemTemp.createTemp('indifit_v14_test_');
+  });
+
+  tearDown(() async {
+    if (await tempDir.exists()) await tempDir.delete(recursive: true);
+  });
+
+  group('B01-02 real v14 source database harness', () {
     test(
-      'AppDatabase schema version 11 or higher initializes and supports CRUD operations',
+      'preserves the zero-routine and zero-session source fixture',
       () async {
-        final db = AppDatabase.memory();
+        final file = V14DbFixtures.createSourceDatabase(
+          tempDir,
+          'empty.db',
+          scenario: V14FixtureScenario.empty,
+        );
+        final db = V14DbFixtures.openCurrentDatabase(file);
+        try {
+          await db.customSelect('SELECT 1').get();
+          expect(await db.select(db.workoutRoutines).get(), isEmpty);
+          expect(await db.select(db.workoutSessions).get(), isEmpty);
+        } finally {
+          await db.close();
+        }
+      },
+    );
 
-        expect(db.schemaVersion, greaterThanOrEqualTo(11));
+    test(
+      'creates a deterministic raw v14 source before AppDatabase opens it',
+      () async {
+        final file = V14DbFixtures.createSourceDatabase(
+          tempDir,
+          'single_routine.db',
+          scenario: V14FixtureScenario.singleRoutine,
+        );
 
-        // Verify UserProfiles table CRUD (added in v5)
-        await db
-            .into(db.userProfiles)
-            .insert(
-              UserProfilesCompanion.insert(
-                calorieGoal: const Value(2200),
-                proteinGoal: const Value(160.0),
-                carbsGoal: const Value(220.0),
-                fatGoal: const Value(70.0),
-              ),
-            );
+        expect(
+          V14DbFixtures.readUserVersion(file),
+          V14DbFixtures.schemaVersion,
+        );
 
-        final profiles = await db.select(db.userProfiles).get();
-        expect(profiles.length, 1);
-        expect(profiles.first.calorieGoal, 2200);
+        final db = V14DbFixtures.openCurrentDatabase(file);
+        try {
+          await db.customSelect('SELECT 1').get();
+          final routines = await db.select(db.workoutRoutines).get();
+          final days = await db.select(db.routineDays).get();
+          final prescriptions = await db.select(db.routineExercises).get();
 
-        // Verify MealTemplates table CRUD (added in v6)
-        final templateId = await db
-            .into(db.mealTemplates)
-            .insert(
-              MealTemplatesCompanion.insert(
-                name: 'High Protein Oats',
-                defaultMealType: const Value('breakfast'),
-              ),
-            );
+          expect(routines.single.name, 'Push Day');
+          expect(days.single.name, 'Push Primary');
+          expect(prescriptions.map((item) => item.exerciseName), [
+            'Flat Barbell Bench Press',
+            'Seated Dumbbell Shoulder Press',
+          ]);
+        } finally {
+          await db.close();
+        }
+      },
+    );
 
-        expect(templateId, greaterThan(0));
+    test(
+      'preserves historical sessions, sets, and active legacy draft',
+      () async {
+        final file = V14DbFixtures.createSourceDatabase(
+          tempDir,
+          'rich_history.db',
+          scenario: V14FixtureScenario.richHistory,
+        );
+        final db = V14DbFixtures.openCurrentDatabase(file);
 
-        final templates = await db.select(db.mealTemplates).get();
-        expect(templates.length, 1);
-        expect(templates.first.name, 'High Protein Oats');
+        try {
+          await db.customSelect('SELECT 1').get();
+          final routines = await db.select(db.workoutRoutines).get();
+          final sessions = await db.select(db.workoutSessions).get();
+          final sets = await db.select(db.workoutSets).get();
+          final drafts = await db.select(db.workoutDrafts).get();
 
-        // Verify brand & regionPack columns (added in v8)
-        final foodId = await db
-            .into(db.foodItems)
-            .insert(
-              FoodItemsCompanion.insert(
-                name: 'Test Paneer',
-                calories: 300,
-                proteinG: 20.0,
-                carbsG: 5.0,
-                fatG: 22.0,
-                servingSize: 100.0,
-                servingUnit: 'g',
-                category: 'dairy',
-                brand: const Value('Amul'),
-                regionPack: const Value('gujarati'),
-              ),
-            );
+          expect(routines, hasLength(2));
+          expect(sessions, hasLength(2));
+          expect(sets, hasLength(3));
+          expect(drafts.single.routineName, 'Push Day');
+          expect(drafts.single.elapsedSeconds, 900);
 
-        final insertedFood = await (db.select(
-          db.foodItems,
-        )..where((t) => t.id.equals(foodId))).getSingle();
-        expect(insertedFood.brand, 'Amul');
-        expect(insertedFood.regionPack, 'gujarati');
+          final benchSet = sets.firstWhere(
+            (item) => item.exerciseName == 'Flat Barbell Bench Press',
+          );
+          expect(benchSet.rpe, 8);
+          expect(benchSet.setNotes, 'Felt strong, clean form 💪');
 
-        // Verify durationSeconds, distanceKm, inclinePercentage columns (added in v9)
-        final sessionId = await db
-            .into(db.workoutSessions)
-            .insert(
-              WorkoutSessionsCompanion.insert(
-                name: 'Test Session',
-                totalVolume: 0.0,
-                durationSeconds: 300,
-                estimatedCalories: 100,
-              ),
-            );
+          final cardioSet = sets.firstWhere(
+            (item) => item.exerciseName == 'Treadmill Run',
+          );
+          expect(cardioSet.durationSeconds, 1200);
+          expect(cardioSet.distanceKm, 3.2);
+          expect(cardioSet.inclinePercentage, 2.0);
+        } finally {
+          await db.close();
+        }
+      },
+    );
 
-        final setId = await db
-            .into(db.workoutSets)
-            .insert(
-              WorkoutSetsCompanion.insert(
-                sessionId: sessionId,
-                exerciseName: 'Treadmill Run',
-                weight: 0.0,
-                reps: 0,
-                setNumber: 1,
-                durationSeconds: const Value(600),
-                distanceKm: const Value(1.5),
-                inclinePercentage: const Value(2.5),
-              ),
-            );
+    test(
+      'preserves custom, unresolved, and unknown equipment source values',
+      () async {
+        final customFile = V14DbFixtures.createSourceDatabase(
+          tempDir,
+          'custom.db',
+          scenario: V14FixtureScenario.customAndUnresolved,
+        );
+        final customDb = V14DbFixtures.openCurrentDatabase(customFile);
+        try {
+          await customDb.customSelect('SELECT 1').get();
+          final customExercises = await customDb
+              .select(customDb.exercises)
+              .get();
+          final routineExercises = await customDb
+              .select(customDb.routineExercises)
+              .get();
+          expect(customExercises.map((item) => item.name), [
+            'Pike Push-ups',
+            'Superman Lat Pulls',
+          ]);
+          expect(
+            routineExercises.single.exerciseName,
+            'Anti-gravity Chamber Press',
+          );
+        } finally {
+          await customDb.close();
+        }
 
-        final insertedSet = await (db.select(
-          db.workoutSets,
-        )..where((t) => t.id.equals(setId))).getSingle();
-        expect(insertedSet.durationSeconds, 600);
-        expect(insertedSet.distanceKm, 1.5);
-        expect(insertedSet.inclinePercentage, 2.5);
+        final knownEquipmentFile = V14DbFixtures.createSourceDatabase(
+          tempDir,
+          'known_equipment.db',
+          scenario: V14FixtureScenario.knownEquipment,
+        );
+        final knownEquipmentDb = V14DbFixtures.openCurrentDatabase(
+          knownEquipmentFile,
+        );
+        try {
+          await knownEquipmentDb.customSelect('SELECT 1').get();
+          final profile = await knownEquipmentDb
+              .select(knownEquipmentDb.userProfiles)
+              .getSingle();
+          expect(profile.equipmentAccess, 'full_gym');
+        } finally {
+          await knownEquipmentDb.close();
+        }
 
-        await db.close();
+        final unknownEquipmentFile = V14DbFixtures.createSourceDatabase(
+          tempDir,
+          'unknown_equipment.db',
+          scenario: V14FixtureScenario.unknownEquipment,
+        );
+        final equipmentDb = V14DbFixtures.openCurrentDatabase(
+          unknownEquipmentFile,
+        );
+        try {
+          await equipmentDb.customSelect('SELECT 1').get();
+          final profile = await equipmentDb
+              .select(equipmentDb.userProfiles)
+              .getSingle();
+          expect(profile.equipmentAccess, 'mystery_space_station_gym');
+        } finally {
+          await equipmentDb.close();
+        }
+      },
+    );
+
+    test(
+      'preserves malformed source relationships for migration rejection tests',
+      () async {
+        final file = V14DbFixtures.createSourceDatabase(
+          tempDir,
+          'orphaned_set.db',
+          scenario: V14FixtureScenario.malformedRelationship,
+        );
+        final db = V14DbFixtures.openCurrentDatabase(file);
+        try {
+          await db.customSelect('SELECT 1').get();
+          final sets = await db.select(db.workoutSets).get();
+          expect(sets.single.sessionId, 999);
+          expect(sets.single.exerciseName, 'Orphaned Bench Press');
+        } finally {
+          await db.close();
+        }
+      },
+    );
+
+    test(
+      'injected future-upgrade failure rolls back source writes on disk',
+      () async {
+        final file = V14DbFixtures.createSourceDatabase(
+          tempDir,
+          'rollback.db',
+          scenario: V14FixtureScenario.singleRoutine,
+        );
+        final db = V14DbFixtures.openCurrentDatabase(file);
+        try {
+          await db.customSelect('SELECT 1').get();
+          await expectLater(
+            db.transaction(() async {
+              await db.customStatement('''
+              INSERT INTO workout_routines (name, goal, created_at)
+              VALUES ('Temporary Routine', 'Testing', 1704067200000);
+            ''');
+              throw StateError('simulated migration upgrade failure');
+            }),
+            throwsA(isA<StateError>()),
+          );
+
+          expect(await file.exists(), isTrue);
+          final routines = await db.select(db.workoutRoutines).get();
+          expect(routines.map((item) => item.name), ['Push Day']);
+        } finally {
+          await db.close();
+        }
       },
     );
   });
