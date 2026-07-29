@@ -9,6 +9,8 @@ enum V14FixtureScenario {
   empty,
   singleRoutine,
   richHistory,
+  canonicalIdentity,
+  duplicateCanonicalIdentity,
   customAndUnresolved,
   knownEquipment,
   unknownEquipment,
@@ -49,8 +51,14 @@ class V14DbFixtures {
 
   /// Opens a v14 source using the application's current database class.
   /// Once schema v15 exists, this call executes the production upgrade path.
-  static AppDatabase openCurrentDatabase(File file) {
-    return AppDatabase.executor(NativeDatabase(file));
+  static AppDatabase openCurrentDatabase(
+    File file, {
+    Future<void> Function()? v15MigrationFailureInjector,
+  }) {
+    return AppDatabase.executor(
+      NativeDatabase(file),
+      v15MigrationFailureInjector: v15MigrationFailureInjector,
+    );
   }
 
   static int readUserVersion(File file) {
@@ -84,6 +92,10 @@ class V14DbFixtures {
       case V14FixtureScenario.richHistory:
         _insertSingleRoutine(database);
         _insertRichHistory(database);
+      case V14FixtureScenario.canonicalIdentity:
+        _insertCanonicalIdentity(database);
+      case V14FixtureScenario.duplicateCanonicalIdentity:
+        _insertDuplicateCanonicalIdentity(database);
       case V14FixtureScenario.customAndUnresolved:
         _insertCustomAndUnresolved(database);
       case V14FixtureScenario.knownEquipment:
@@ -181,6 +193,69 @@ class V14DbFixtures {
     database.execute('''
       INSERT INTO routine_exercises (id, day_id, exercise_name, sets, reps_range, order_index)
       VALUES (1, 1, 'Anti-gravity Chamber Press', 3, '10', 0);
+    ''');
+  }
+
+  static void _insertCanonicalIdentity(sqlite.Database database) {
+    database.execute('''
+      INSERT INTO exercises
+        (id, name, muscle_groups, equipment, difficulty, form_cues, common_mistakes, youtube_id, is_custom)
+      VALUES
+        (1, 'Flat Barbell Bench Press', 'Chest, Triceps', 'Barbell', 'Intermediate', 'Press evenly', 'Flaring elbows', NULL, 0),
+        (2, 'Seated Dumbbell Shoulder Press', 'Shoulders', 'Dumbbells', 'Intermediate', 'Keep core tight', 'Overarching', NULL, 0),
+        (3, 'Dumbbell Hammer Curl', 'Biceps', 'Dumbbells', 'Beginner', 'Keep wrists neutral', 'Swinging', NULL, 0),
+        (4, 'Incline Dumbbell Curl', 'Biceps', 'Dumbbells', 'Intermediate', 'Keep shoulders back', 'Rushing', NULL, 0),
+        (5, 'Pike Push-ups', 'Shoulders', 'Bodyweight', 'Intermediate', 'Keep hips high', 'Flaring elbows', NULL, 1);
+    ''');
+    database.execute('''
+      INSERT INTO workout_sessions
+        (id, name, total_volume, duration_seconds, estimated_calories, completed_at, is_synced, uuid)
+      VALUES (1, 'Identity fixture', 1200.0, 1800, 220, $_sessionOneMillis, 0, NULL);
+    ''');
+    database.execute('''
+      INSERT INTO workout_sets
+        (id, session_id, exercise_name, weight, reps, set_number, is_pr, rpe, is_warm_up, set_notes, uuid, set_type, duration_seconds, distance_km, incline_percentage)
+      VALUES
+        (1, 1, '  flat   barbell bench press ', 80.0, 8, 1, 0, 8, 0, NULL, NULL, 'working', NULL, NULL, NULL),
+        (2, 1, 'seated dumbbell press', 24.0, 10, 1, 0, 7, 0, NULL, NULL, 'working', NULL, NULL, NULL),
+        (3, 1, 'dumbbell curls', 12.0, 10, 1, 0, NULL, 0, NULL, NULL, 'working', NULL, NULL, NULL),
+        (4, 1, 'Pike Push-ups', 0.0, 12, 1, 0, NULL, 0, NULL, NULL, 'working', NULL, NULL, NULL);
+    ''');
+    database.execute('''
+      INSERT INTO workout_routines (id, name, goal, notes, created_at)
+      VALUES (1, 'Identity Routine', 'Strength', NULL, $_createdAtMillis);
+    ''');
+    database.execute('''
+      INSERT INTO routine_days (id, routine_id, day_of_week, name, is_rest_day)
+      VALUES (1, 1, 1, 'Identity day', 0);
+    ''');
+    database.execute('''
+      INSERT INTO routine_exercises (id, day_id, exercise_name, sets, reps_range, order_index)
+      VALUES
+        (1, 1, 'flat barbell bench press', 4, '8', 0),
+        (2, 1, 'seated dumbbell press', 3, '10', 1),
+        (3, 1, 'dumbbell curls', 3, '10', 2),
+        (4, 1, 'Pike Push-ups', 3, '12', 3);
+    ''');
+  }
+
+  static void _insertDuplicateCanonicalIdentity(sqlite.Database database) {
+    database.execute('''
+      INSERT INTO exercises
+        (id, name, muscle_groups, equipment, difficulty, form_cues, common_mistakes, youtube_id, is_custom)
+      VALUES
+        (1, 'Flat Barbell Bench Press', 'Chest', 'Barbell', 'Intermediate', 'Press evenly', 'Flaring elbows', NULL, 0),
+        (2, 'flat   barbell bench press', 'Chest', 'Barbell', 'Intermediate', 'Press evenly', 'Flaring elbows', NULL, 0);
+    ''');
+    database.execute('''
+      INSERT INTO workout_sessions
+        (id, name, total_volume, duration_seconds, estimated_calories, completed_at, is_synced, uuid)
+      VALUES (1, 'Duplicate identity fixture', 800.0, 1200, 150, $_sessionOneMillis, 0, NULL);
+    ''');
+    database.execute('''
+      INSERT INTO workout_sets
+        (id, session_id, exercise_name, weight, reps, set_number, is_pr, rpe, is_warm_up, set_notes, uuid, set_type, duration_seconds, distance_km, incline_percentage)
+      VALUES (1, 1, 'Flat Barbell Bench Press', 80.0, 8, 1, 0, NULL, 0, NULL, NULL, 'working', NULL, NULL, NULL);
     ''');
   }
 
