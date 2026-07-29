@@ -4,8 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/services/local_schedule_date_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/colors.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
 
@@ -21,20 +20,20 @@ class ProgramReviewScreen extends ConsumerStatefulWidget {
 }
 
 class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
-  final LocalScheduleDateService _dateService = LocalScheduleDateService();
   late String _selectedDate;
   late String _selectedTimezone;
 
   bool _isLoading = true;
-  ProgramVersionDetail? _versionDetail;
-  String? _programName;
+  ProgramDetailAggregate? _versionDetail;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = _dateService.todayLocalDate();
-    _selectedTimezone = _dateService.deviceTimezoneId();
+    final now = DateTime.now();
+    _selectedDate =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    _selectedTimezone = 'Asia/Kolkata';
     _loadVersionDetail();
   }
 
@@ -50,10 +49,8 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
         return;
       }
 
-      final prog = await repo.getProgram(detail.programId);
       setState(() {
         _versionDetail = detail;
-        _programName = prog?.name ?? 'Training Program';
         _isLoading = false;
       });
     } catch (e) {
@@ -75,7 +72,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
 
       final result = await coordinator.activate(
         ActivateProgramVersionCommand(
-          programVersionId: detail.id,
+          programVersionId: detail.version.id,
           commandId: commandId,
           activationLocalDate: _selectedDate,
           timezoneId: _selectedTimezone,
@@ -113,7 +110,8 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
     );
     if (picked != null) {
       setState(() {
-        _selectedDate = _dateService.formatLocalDate(picked);
+        _selectedDate =
+            '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
       });
     }
   }
@@ -148,7 +146,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _programName ?? 'Training Program',
+                            detail.program.name,
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -157,7 +155,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Version ${detail.versionNumber} • ${detail.blocks.length} Blocks • ${detail.weeks.length} Weeks',
+                            'Version ${detail.version.versionNumber} • ${detail.blocks.length} Blocks • ${detail.weeks.length} Weeks',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],

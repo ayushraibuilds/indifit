@@ -9,11 +9,11 @@ import '../../core/theme/colors.dart';
 import '../../core/widgets/confetti_overlay.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
+import 'player_setup_cues_panel.dart';
 import 'widgets/exercise_set_input_card.dart';
 import 'widgets/prior_session_card.dart';
 import 'widgets/rest_timer_bottom_sheet.dart';
 import 'widgets/workout_player_header.dart';
-import 'player_setup_cues_panel.dart';
 import 'workout_player_controller.dart';
 
 class WorkoutPlayerScreen extends ConsumerStatefulWidget {

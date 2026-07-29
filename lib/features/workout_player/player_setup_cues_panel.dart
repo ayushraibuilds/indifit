@@ -52,7 +52,7 @@ class PlayerSetupCuesPanel extends ConsumerWidget {
             final uri = Uri(
               path: '/exercise-preference-editor',
               queryParameters: {
-                if (stableId != null) 'stableId': stableId!,
+                if (stableId != null) 'stableId': stableId,
                 'rawName': exerciseName,
               },
             );

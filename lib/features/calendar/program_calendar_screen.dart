@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../core/services/local_schedule_date_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/colors.dart';
+import '../../data/repositories/calendar_read_repository.dart';
 import 'calendar_controller.dart';
-import 'calendar_read_model.dart';
 import 'occurrence_actions_sheet.dart';
 
 /// Calendar screen exposing Today, Week, and Month planning views for scheduled occurrences.
@@ -21,7 +20,6 @@ class ProgramCalendarScreen extends ConsumerStatefulWidget {
 class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final LocalScheduleDateService _dateService = LocalScheduleDateService();
 
   @override
   void initState() {
@@ -35,7 +33,7 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen>
     super.dispose();
   }
 
-  void _showActions(CalendarOccurrenceItem item) {
+  void _showActions(CalendarOccurrenceReadItem item) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -64,7 +62,7 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen>
     }
   }
 
-  Widget _buildOccurrenceCard(CalendarOccurrenceItem item) {
+  Widget _buildOccurrenceCard(CalendarOccurrenceReadItem item) {
     final occ = item.occurrence;
     final color = _statusColor(occ.status, item.isDeload);
 
@@ -85,7 +83,7 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen>
           ),
         ),
         title: Text(
-          item.templateName,
+          item.template.name,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontFamily: GoogleFonts.outfit().fontFamily,
@@ -117,7 +115,7 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen>
     );
   }
 
-  Widget _buildOccurrenceList(List<CalendarOccurrenceItem> items) {
+  Widget _buildOccurrenceList(List<CalendarOccurrenceReadItem> items) {
     if (items.isEmpty) {
       return Center(
         child: Column(
@@ -167,9 +165,9 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen>
           labelColor: AppColors.primary,
           unselectedLabelColor: Colors.grey,
           tabs: const [
-            Tab(text: 'Today'),
-            Tab(text: 'This Week'),
-            Tab(text: 'All Range'),
+            Tab(text: 'Selected Date'),
+            Tab(text: 'Range'),
+            Tab(text: 'Overdue'),
           ],
         ),
       ),
@@ -178,12 +176,12 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen>
           : TabBarView(
               controller: _tabController,
               children: [
-                // 1. Today View
-                _buildOccurrenceList(uiState.todayOccurrences),
-                // 2. Week View
+                // 1. Selected Date View
+                _buildOccurrenceList(uiState.selectedDateOccurrences),
+                // 2. Range View
                 _buildOccurrenceList(uiState.rangeOccurrences),
-                // 3. Range / All View
-                _buildOccurrenceList(uiState.rangeOccurrences),
+                // 3. Overdue View
+                _buildOccurrenceList(uiState.overdueOccurrences),
               ],
             ),
     );

@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/data/database/app_database.dart';
-import 'package:indifit/data/repositories/calendar_repository.dart';
+import 'package:indifit/data/repositories/calendar_read_repository.dart';
 import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
 import 'package:indifit/features/calendar/occurrence_actions_sheet.dart';
@@ -73,7 +73,7 @@ void main() {
                           plannedSets: 3,
                           repsRange: '5',
                           ordinal: 0,
-                          allowUnresolvedRawFallback: true,
+                          allowUnresolvedExerciseFallback: true,
                         ),
                       ],
                     ),
@@ -108,16 +108,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Training Calendar'), findsOneWidget);
-      expect(find.text('Today'), findsOneWidget);
-      expect(find.text('This Week'), findsOneWidget);
-      expect(find.text('All Range'), findsOneWidget);
+      expect(find.text('Selected Date'), findsOneWidget);
+      expect(find.text('Range'), findsOneWidget);
+      expect(find.text('Overdue'), findsOneWidget);
     });
 
     testWidgets(
       '4. OccurrenceActionsSheet displays B01-PD01 skip options dialog on tap',
       (tester) async {
         final dates = LocalScheduleDateService();
-        final calendarRepo = CalendarRepository(db, dates: dates);
+        final calendarReadRepo = CalendarReadRepository(db, dates: dates);
         final programRepo = ProgramRepository(db);
         final coordinator = ProgramActivationCoordinator(db, dates: dates);
 
@@ -142,7 +142,7 @@ void main() {
                           plannedSets: 3,
                           repsRange: '8',
                           ordinal: 0,
-                          allowUnresolvedRawFallback: true,
+                          allowUnresolvedExerciseFallback: true,
                         ),
                       ],
                     ),
@@ -163,20 +163,18 @@ void main() {
           ),
         );
 
-        final items = await calendarRepo.getOccurrencesInLocalDateRange(
+        final snapshot = await calendarReadRepo.readSnapshot(
           startLocalDate: '2026-08-01',
           endLocalDate: '2026-08-10',
+          timezoneId: 'Asia/Kolkata',
         );
-        expect(items.isNotEmpty, isTrue);
+        expect(snapshot.rangeOccurrences.isNotEmpty, isTrue);
 
-        final readModel = await calendarRepo.getCalendarOccurrenceItem(
-          items.first.id,
-        );
-        expect(readModel, isNotNull);
+        final readModel = snapshot.rangeOccurrences.first;
 
         await tester.pumpWidget(
           createWidgetUnderTest(
-            OccurrenceActionsSheet(occurrenceItem: readModel!),
+            OccurrenceActionsSheet(occurrenceItem: readModel),
           ),
         );
         await tester.pumpAndSettle();

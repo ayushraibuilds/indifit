@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/colors.dart';
 import '../../data/repositories/program_repository.dart';
 
 /// Screen for creating, editing, and copying draft training programs.
@@ -46,21 +46,19 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
           _currentVersionId!,
         );
         if (versionDetail != null) {
-          final prog = await repo.getProgram(versionDetail.programId);
-          _programNameController.text = prog?.name ?? 'My Training Program';
-          _descriptionController.text = prog?.description ?? '';
-          _currentProgramId = prog?.id;
+          _programNameController.text = versionDetail.program.name;
+          _descriptionController.text = versionDetail.program.notes ?? '';
+          _currentProgramId = versionDetail.program.id;
           _blocks = _mapDetailToBlockInputs(versionDetail);
         }
       } else if (_currentProgramId != null) {
-        final prog = await repo.getProgram(_currentProgramId!);
-        _programNameController.text = prog?.name ?? 'My Training Program';
-        _descriptionController.text = prog?.description ?? '';
         final versions = await repo.getVersionsForProgram(_currentProgramId!);
         if (versions.isNotEmpty) {
           final detail = await repo.getProgramVersionDetail(versions.last.id);
           if (detail != null) {
-            _currentVersionId = detail.id;
+            _programNameController.text = detail.program.name;
+            _descriptionController.text = detail.program.notes ?? '';
+            _currentVersionId = detail.version.id;
             _blocks = _mapDetailToBlockInputs(detail);
           }
         }
@@ -87,7 +85,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                         plannedSets: 4,
                         repsRange: '8-10',
                         ordinal: 0,
-                        allowUnresolvedRawFallback: true,
+                        allowUnresolvedExerciseFallback: true,
                       ),
                     ],
                   ),
@@ -108,7 +106,9 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     }
   }
 
-  List<ProgramBlockInput> _mapDetailToBlockInputs(ProgramVersionDetail detail) {
+  List<ProgramBlockInput> _mapDetailToBlockInputs(
+    ProgramDetailAggregate detail,
+  ) {
     return detail.blocks.map((b) {
       return ProgramBlockInput(
         name: b.name,
@@ -136,7 +136,8 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                             plannedSets: ep.plannedSets,
                             repsRange: ep.repsRange,
                             ordinal: ep.ordinal,
-                            allowUnresolvedRawFallback: ep.exerciseId == null,
+                            allowUnresolvedExerciseFallback:
+                                ep.exerciseId == null,
                           );
                         })
                         .toList(),
@@ -164,19 +165,14 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
       if (progId.isEmpty) {
         progId = await repo.createProgram(
           name: _programNameController.text.trim(),
-          description: _descriptionController.text.trim(),
+          notes: _descriptionController.text.trim(),
           blocks: _blocks,
         );
         _currentProgramId = progId;
         final versions = await repo.getVersionsForProgram(progId);
         _currentVersionId = versions.last.id;
       } else if (_currentVersionId != null) {
-        await repo.updateDraftProgramVersion(
-          programVersionId: _currentVersionId!,
-          name: _programNameController.text.trim(),
-          description: _descriptionController.text.trim(),
-          blocks: _blocks,
-        );
+        await repo.updateDraftVersion(_currentVersionId!, blocks: _blocks);
       }
 
       if (mounted) {
@@ -200,9 +196,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     setState(() => _isLoading = true);
     try {
       final repo = ref.read(programRepositoryProvider);
-      final newVersionId = await repo.copyProgramVersionToDraft(
-        _currentVersionId!,
-      );
+      final newVersionId = await repo.copyToNewDraftVersion(_currentVersionId!);
       _currentVersionId = newVersionId;
       await _loadOrCreateDraft();
       if (mounted) {
@@ -221,10 +215,10 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     }
   }
 
-  void _proceedToReview() async {
+  Future<void> _proceedToReview() async {
     await _saveDraft();
     if (_currentVersionId != null && mounted) {
-      context.push('/program-review/$_currentVersionId');
+      await context.push('/program-review/$_currentVersionId');
     }
   }
 

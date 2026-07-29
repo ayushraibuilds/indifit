@@ -106,7 +106,7 @@ class _EquipmentProfilesScreenState
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await context.push('/equipment-profile-editor');
-          _loadProfiles();
+          await _loadProfiles();
         },
         icon: const Icon(Icons.add_rounded),
         label: const Text('New Profile'),

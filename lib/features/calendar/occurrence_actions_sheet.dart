@@ -4,14 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/services/local_schedule_date_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/colors.dart';
+import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/calendar_repository.dart';
 import 'calendar_controller.dart';
-import 'calendar_read_model.dart';
 
 /// Modal action sheet for calendar occurrences exposing B01 domain actions.
 class OccurrenceActionsSheet extends ConsumerStatefulWidget {
-  final CalendarOccurrenceItem occurrenceItem;
+  final CalendarOccurrenceReadItem occurrenceItem;
 
   const OccurrenceActionsSheet({super.key, required this.occurrenceItem});
 
@@ -22,7 +22,6 @@ class OccurrenceActionsSheet extends ConsumerStatefulWidget {
 
 class _OccurrenceActionsSheetState
     extends ConsumerState<OccurrenceActionsSheet> {
-  final LocalScheduleDateService _dates = LocalScheduleDateService();
   bool _isLoading = false;
 
   Future<void> _startWorkout() async {
@@ -38,7 +37,7 @@ class _OccurrenceActionsSheetState
 
       if (mounted) {
         Navigator.pop(context); // Close sheet
-        context.push('/workout-player', extra: {'scheduledLaunch': launchData});
+        await context.push('/workout-player', extra: {'scheduledLaunch': launchData});
       }
     } catch (e) {
       if (mounted) {
@@ -62,16 +61,18 @@ class _OccurrenceActionsSheetState
 
     if (picked == null) return;
 
-    final newDateStr = _dates.formatLocalDate(picked);
-    final commandId = 'cmd-resched-${DateTime.now().millisecondsSinceEpoch}';
+    final dates = ref.read(localScheduleDateServiceProvider);
+    final newDateStr = dates.normalizeLocalDate(
+      '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}',
+    );
 
     setState(() => _isLoading = true);
     try {
       final controller = ref.read(calendarControllerProvider.notifier);
-      await controller.reschedule(
-        occurrenceId: widget.occurrenceItem.occurrence.id,
-        commandId: commandId,
-        newEffectiveLocalDate: newDateStr,
+      await controller.rescheduleOccurrence(
+        widget.occurrenceItem.occurrence.id,
+        newDateStr,
+        confirmed: true,
       );
       if (mounted) {
         Navigator.pop(context);
@@ -91,7 +92,6 @@ class _OccurrenceActionsSheetState
   }
 
   Future<void> _showSkipDialog() async {
-    // B01-PD01: Explicit User Choice Required. No option selected by default.
     final choice = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -123,16 +123,16 @@ class _OccurrenceActionsSheetState
 
     if (choice == null) return;
 
-    final commandId = 'cmd-skip-${DateTime.now().millisecondsSinceEpoch}';
     final isBypass = choice == 'skipAndAdvance';
 
     setState(() => _isLoading = true);
     try {
       final controller = ref.read(calendarControllerProvider.notifier);
-      await controller.skip(
-        occurrenceId: widget.occurrenceItem.occurrence.id,
-        commandId: commandId,
-        advanceProgression: isBypass,
+      await controller.skipOccurrence(
+        widget.occurrenceItem.occurrence.id,
+        disposition: isBypass
+            ? SkipDisposition.advance
+            : SkipDisposition.keepPending,
         reason: isBypass
             ? 'User chose skip and advance'
             : 'User chose keep pending',
@@ -161,13 +161,11 @@ class _OccurrenceActionsSheetState
   }
 
   Future<void> _cancelOccurrence() async {
-    final commandId = 'cmd-cancel-${DateTime.now().millisecondsSinceEpoch}';
     setState(() => _isLoading = true);
     try {
       final controller = ref.read(calendarControllerProvider.notifier);
-      await controller.cancel(
-        occurrenceId: widget.occurrenceItem.occurrence.id,
-        commandId: commandId,
+      await controller.cancelOccurrence(
+        widget.occurrenceItem.occurrence.id,
         reason: 'User cancelled via action sheet',
       );
       if (mounted) {
@@ -209,14 +207,21 @@ class _OccurrenceActionsSheetState
 
     if (purpose == null) return;
 
-    final commandId = 'cmd-repeat-${DateTime.now().millisecondsSinceEpoch}';
+    final dates = ref.read(localScheduleDateServiceProvider);
+    final now = DateTime.now();
+    final todayStr = dates.normalizeLocalDate(
+      '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
+    );
+
     setState(() => _isLoading = true);
     try {
       final controller = ref.read(calendarControllerProvider.notifier);
-      await controller.repeat(
-        occurrenceId: widget.occurrenceItem.occurrence.id,
-        commandId: commandId,
-        repeatPurpose: purpose,
+      await controller.repeatOccurrence(
+        widget.occurrenceItem.occurrence.id,
+        todayStr,
+        purpose: purpose == 'makeUp'
+            ? RepeatPurpose.makeUp
+            : RepeatPurpose.extra,
       );
       if (mounted) {
         Navigator.pop(context);
@@ -251,7 +256,7 @@ class _OccurrenceActionsSheetState
             children: [
               Expanded(
                 child: Text(
-                  item.templateName,
+                  item.template.name,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
