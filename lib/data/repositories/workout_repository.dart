@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../database/app_database.dart';
+import 'legacy_program_compatibility_adapter.dart';
 
 final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
   final db = ref.watch(databaseProvider);
@@ -144,6 +145,10 @@ class WorkoutRepository {
           }
         }
       }
+
+      await LegacyProgramCompatibilityAdapter(
+        _db,
+      ).syncLegacyRoutineToImportVersion(targetRoutineId);
 
       return targetRoutineId;
     });
