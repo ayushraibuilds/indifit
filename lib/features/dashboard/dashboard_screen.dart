@@ -1,10 +1,8 @@
-import 'dart:convert';
-
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
@@ -73,22 +71,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(dialogCtx);
-                  final List<dynamic> rawSets = jsonDecode(
-                    draft.loggedSetsJson,
-                  );
-                  final List<WorkoutSetsCompanion> loggedCompanions = rawSets
-                      .map((s) {
-                        final map = s as Map<String, dynamic>;
-                        return WorkoutSetsCompanion.insert(
-                          sessionId: map['sessionId'] ?? 0,
-                          exerciseName: map['exerciseName'] ?? '',
-                          weight: (map['weight'] as num).toDouble(),
-                          reps: map['reps'] ?? 0,
-                          setNumber: map['setNumber'] ?? 1,
-                          isPr: Value(map['isPr'] ?? false),
-                        );
-                      })
-                      .toList();
+                  final List<WorkoutSetsCompanion> loggedCompanions =
+                      WorkoutDraftCodec.decodeLoggedSets(draft.loggedSetsJson);
 
                   final exercises = await repo.getExercisesForRoutineName(
                     draft.routineName,

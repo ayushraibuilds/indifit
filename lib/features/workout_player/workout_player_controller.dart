@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vibration/vibration.dart';
 
+import '../../core/fixtures/workout_draft_codec.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 
@@ -323,19 +323,13 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
 
   Future<void> saveDraft() async {
     final repo = _ref.read(workoutRepositoryProvider);
-    final rawSets = state.loggedSets
-        .map(
-          (s) => {
-            'sessionId': s.sessionId.value,
-            'exerciseName': s.exerciseName.value,
-            'weight': s.weight.value,
-            'reps': s.reps.value,
-            'setNumber': s.setNumber.value,
-            'isPr': s.isPr.value,
-          },
-        )
-        .toList();
-    final jsonStr = jsonEncode(rawSets);
+    final jsonStr = WorkoutDraftCodec.encode(
+      routineName: routineName,
+      currentExerciseIndex: state.currentExerciseIndex,
+      currentSetIndex: state.currentSetIndex,
+      elapsedSeconds: state.elapsedSeconds,
+      loggedSets: state.loggedSets,
+    );
 
     await repo.saveWorkoutDraft(
       WorkoutDraftsCompanion.insert(
@@ -348,7 +342,14 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     );
   }
 
+  /// Cancels the active player timer when transitioning to summary screen.
+  /// Note: The active draft remains preserved in the database until the session is durably saved.
   Future<void> finishWorkout() async {
+    _timer?.cancel();
+  }
+
+  /// Explicit user action to discard the workout draft.
+  Future<void> discardDraft() async {
     _timer?.cancel();
     final repo = _ref.read(workoutRepositoryProvider);
     await repo.deleteActiveDraft();
