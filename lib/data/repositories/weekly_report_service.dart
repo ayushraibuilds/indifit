@@ -73,8 +73,10 @@ class WeeklyReportService {
     required double adherenceScore,
     WeeklyMetrics? metrics,
   }) async {
-    final nutritionDays = metrics?.nutritionDaysLogged ?? (totalCaloriesLogged > 0 ? 1 : 0);
-    final completedWorkouts = metrics?.completedWorkoutsCount ?? workoutSessionsCount;
+    final nutritionDays =
+        metrics?.nutritionDaysLogged ?? (totalCaloriesLogged > 0 ? 1 : 0);
+    final completedWorkouts =
+        metrics?.completedWorkoutsCount ?? workoutSessionsCount;
     final plannedWorkouts = metrics?.plannedWorkoutsCount ?? 0;
     final hydrationDays = metrics?.hydrationDaysAtGoal ?? 0;
     final dateRangeStr = metrics != null
