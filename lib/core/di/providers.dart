@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/equipment_preference_repository.dart';
+import '../../data/repositories/program_repository.dart';
 import '../config/app_config.dart';
 import '../privacy/privacy_policy.dart';
 
@@ -244,4 +246,16 @@ class WaterNotifier extends StateNotifier<WaterState> {
 
 final waterProvider = StateNotifierProvider<WaterNotifier, WaterState>((ref) {
   return WaterNotifier(ref.watch(databaseProvider));
+});
+
+final programRepositoryProvider = Provider<ProgramRepository>((ref) {
+  return ProgramRepository(ref.watch(databaseProvider));
+});
+
+final equipmentRepositoryProvider = Provider<EquipmentRepository>((ref) {
+  return EquipmentRepository(ref.watch(databaseProvider));
+});
+
+final exercisePreferenceRepositoryProvider = Provider<ExercisePreferenceRepository>((ref) {
+  return ExercisePreferenceRepository(ref.watch(databaseProvider));
 });
