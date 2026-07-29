@@ -45,6 +45,7 @@ void main() {
         final sets = await db.select(db.workoutSets).get();
         expect(sets.length, equals(1));
         expect(sets.first.exerciseName, equals('Flat Barbell Bench Press'));
+        expect(sets.first.exerciseId, isNotNull);
 
         final customFoods = (await db.select(db.foodItems).get())
             .where((item) => item.isCustom)
@@ -57,9 +58,24 @@ void main() {
             .toList();
         expect(customExercises.single.name, equals('Pike Push-ups'));
         expect(customExercises.single.isCustom, isTrue);
+        expect(customExercises.single.stableId, isNotNull);
+
+        final importedVersions = await db.select(db.programVersions).get();
+        expect(importedVersions, hasLength(1));
+        expect(importedVersions.single.origin, equals('legacyImport'));
+        final legacyMappings = await db
+            .select(db.legacyRoutineProgramMappings)
+            .get();
+        expect(legacyMappings, hasLength(1));
+        expect(await db.select(db.scheduledSessionOccurrences).get(), isEmpty);
+        final planSettings = await db
+            .select(db.trainingPlanSettings)
+            .getSingle();
+        expect(planSettings.activeProgramVersionId, isNull);
 
         expect(prefs.getInt('water_logged'), equals(6));
         expect(prefs.getInt('user_streak_count'), equals(10));
+        expect(prefs.getBool('pref_remind_workout'), isTrue);
       },
     );
 

@@ -6,11 +6,15 @@ class BackupV5Fixtures {
 
   static Map<String, dynamic> validBackupV5Map() {
     return {
-      'version': BackupData.currentVersion,
+      'version': 5,
       'timestamp': timestamp,
       'schema_version': 14,
       'user_settings': [],
-      'user_preferences': {'water_logged': 6, 'user_streak_count': 10},
+      'user_preferences': {
+        'water_logged': 6,
+        'user_streak_count': 10,
+        'prefRemindWorkout': true,
+      },
       'food_items': [
         {
           'id': 101,
@@ -135,12 +139,12 @@ class BackupV5Fixtures {
 
   static Map<String, dynamic> unsupportedVersionBackupMap() {
     final map = validBackupV5Map();
-    map['version'] = BackupData.currentVersion + 1;
+    map['version'] = 7;
     return map;
   }
 
   static Map<String, dynamic> corruptSchemaBackupMap() => {
-    'version': BackupData.currentVersion,
+    'version': 5,
     'timestamp': timestamp,
     'schema_version': 'not_an_int',
     'user_preferences': 'corrupt_string_instead_of_map',

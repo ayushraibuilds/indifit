@@ -134,6 +134,11 @@ class BackupFileAdapter {
 
     final payloadMap = jsonDecode(jsonPayload) as Map<String, dynamic>;
     final backupData = BackupData.fromJson(payloadMap);
+    if (envelope.version != backupData.version) {
+      throw const FormatException(
+        'Backup envelope version does not match its payload version.',
+      );
+    }
 
     return BackupInspectionResult(
       envelope: envelope,

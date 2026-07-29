@@ -616,6 +616,17 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
+  /// Reuses the v14-to-v15 import rules after a validated v3-v5 backup has
+  /// restored its retained legacy tables. Callers must already be inside the
+  /// restore transaction; this method intentionally neither activates a
+  /// version nor materializes calendar occurrences.
+  Future<void> importLegacyCompatibilityDataForRestore() async {
+    await _backfillWorkoutSetExerciseIds();
+    await _importLegacyRoutinePrograms();
+    final defaultProfileId = await _importLegacyEquipmentProfile();
+    await _ensureTrainingPlanSettings(defaultProfileId: defaultProfileId);
+  }
+
   Future<String?> _importLegacyEquipmentProfile() async {
     final profiles = await (select(
       userProfiles,
