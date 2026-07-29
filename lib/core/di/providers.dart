@@ -9,6 +9,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
+import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
 import '../../data/repositories/travel_repository.dart';
@@ -351,3 +352,8 @@ final travelRepositoryProvider = Provider<TravelRepository>((ref) {
     equipmentRepo: ref.watch(equipmentProfileRepositoryProvider),
   );
 });
+
+final legacyProgramCompatibilityAdapterProvider =
+    Provider<LegacyProgramCompatibilityAdapter>((ref) {
+      return LegacyProgramCompatibilityAdapter(ref.watch(databaseProvider));
+    });
