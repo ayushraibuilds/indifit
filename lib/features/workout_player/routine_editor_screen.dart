@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 
 class RoutineEditorScreen extends ConsumerStatefulWidget {
@@ -25,6 +27,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
     text: 'My Custom Split',
   );
   int? _activeRoutineId;
+  String? _activeProgramVersionId;
   final List<_BuilderDayData> _builderDays = [];
 
   List<dynamic> _templates = [];
@@ -45,9 +48,19 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
   Future<void> _loadActiveRoutine() async {
     try {
       final repo = ref.read(workoutRepositoryProvider);
-      final savedRoutines = await repo.getSavedRoutines();
-      if (savedRoutines.isNotEmpty) {
-        final active = savedRoutines.last;
+      final selection = await ref
+          .read(legacyProgramCompatibilityAdapterProvider)
+          .resolveActivePlanSelection();
+      if (selection.type == ActivePlanType.b01Program) {
+        if (mounted) {
+          setState(() => _activeProgramVersionId = selection.programVersionId);
+        }
+        return;
+      }
+      if (selection.type == ActivePlanType.legacyRoutine) {
+        final active = (await repo.getSavedRoutines()).singleWhere(
+          (routine) => routine.id == selection.legacyRoutineId,
+        );
         _activeRoutineId = active.id;
         _routineNameController.text = active.name;
         final details = await repo.getRoutineDetails(active.id);
@@ -305,6 +318,20 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_activeProgramVersionId != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Training Program')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(28),
+            child: Text(
+              'This route edits legacy splits only. The active program is immutable; create a replacement version from the training-program flow.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text(

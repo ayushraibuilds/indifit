@@ -259,5 +259,97 @@ void main() {
         expect(latestSets.first.reps, equals(10));
       },
     );
+
+    test(
+      '5. Editing a legacy routine cannot rewrite its published imported snapshot',
+      () async {
+        final routineId = await workoutRepo.saveRoutine(
+          name: 'Legacy Rest Split',
+          goal: 'Maintenance',
+          days: [
+            RoutineDayWithExercises(
+              dayName: 'Legs',
+              dayOfWeek: DateTime.monday,
+              isRestDay: false,
+              exercises: [
+                RoutineExerciseInput(
+                  name: 'Barbell Squat',
+                  sets: 3,
+                  repsRange: '5',
+                ),
+              ],
+            ),
+          ],
+        );
+        final mapping =
+            await (db.select(db.legacyRoutineProgramMappings)
+                  ..where((table) => table.legacyRoutineId.equals(routineId)))
+                .getSingle();
+
+        await coordinator.activate(
+          ActivateProgramVersionCommand(
+            programVersionId: mapping.programVersionId,
+            commandId: 'activate-imported-snapshot',
+            activationLocalDate: '2026-08-03',
+            timezoneId: 'Asia/Kolkata',
+          ),
+        );
+
+        await expectLater(
+          workoutRepo.saveRoutine(
+            routineId: routineId,
+            name: 'Attempted Legacy Rewrite',
+            goal: 'Maintenance',
+            days: [
+              RoutineDayWithExercises(
+                dayName: 'Changed Day',
+                dayOfWeek: DateTime.tuesday,
+                isRestDay: true,
+                exercises: const [],
+              ),
+            ],
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        final legacy = await (db.select(
+          db.workoutRoutines,
+        )..where((table) => table.id.equals(routineId))).getSingle();
+        final version =
+            await (db.select(db.programVersions)
+                  ..where((table) => table.id.equals(mapping.programVersionId)))
+                .getSingle();
+        expect(legacy.name, equals('Legacy Rest Split'));
+        expect(version.status, equals('published'));
+      },
+    );
+
+    test(
+      '6. An invalid active-version pointer never falls back to a legacy routine',
+      () async {
+        final routineId = await workoutRepo.saveRoutine(
+          name: 'Fallback Must Not Win',
+          goal: 'Maintenance',
+          days: const [],
+        );
+        final mapping =
+            await (db.select(db.legacyRoutineProgramMappings)
+                  ..where((table) => table.legacyRoutineId.equals(routineId)))
+                .getSingle();
+        await (db.update(
+          db.trainingPlanSettings,
+        )..where((table) => table.id.equals(1))).write(
+          TrainingPlanSettingsCompanion(
+            activeProgramVersionId: Value(mapping.programVersionId),
+            updatedAtUtc: Value(DateTime.now().toUtc()),
+          ),
+        );
+
+        await expectLater(
+          legacyAdapter.resolveActivePlanSelection(),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
   });
 }

@@ -54,9 +54,12 @@ class LegacyProgramCompatibilityAdapter {
           await (db.select(db.programVersions)
                 ..where((t) => t.id.equals(settings.activeProgramVersionId!)))
               .getSingleOrNull();
-      if (activeVersion != null && activeVersion.status != 'archived') {
-        return ActivePlanSelection.b01Program(activeVersion.id);
+      if (activeVersion == null || activeVersion.status != 'published') {
+        throw StateError(
+          'The active program-version pointer must reference a published version.',
+        );
       }
+      return ActivePlanSelection.b01Program(activeVersion.id);
     }
 
     final legacyFallback = await getActiveLegacyRoutineFallback();
@@ -104,6 +107,27 @@ class LegacyProgramCompatibilityAdapter {
     final now = DateTime.now().toUtc();
 
     await _db.transaction(() async {
+      final existingVersion = await (_db.select(
+        _db.programVersions,
+      )..where((table) => table.id.equals(versionId))).getSingleOrNull();
+      if (existingVersion != null && existingVersion.status != 'draft') {
+        throw StateError(
+          'A published or archived legacy-import version cannot be changed by legacy routine editing.',
+        );
+      }
+      if (existingVersion != null) {
+        final occurrence =
+            await (_db.select(_db.scheduledSessionOccurrences)
+                  ..where((table) => table.programVersionId.equals(versionId))
+                  ..limit(1))
+                .getSingleOrNull();
+        if (occurrence != null) {
+          throw StateError(
+            'A legacy-import snapshot with scheduled occurrences cannot be rewritten.',
+          );
+        }
+      }
+
       // Upsert Program
       await _db
           .into(_db.programs)

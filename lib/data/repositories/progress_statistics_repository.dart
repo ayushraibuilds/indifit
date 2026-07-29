@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../database/app_database.dart';
+import 'legacy_program_compatibility_adapter.dart';
 
 final progressStatisticsRepositoryProvider =
     Provider<ProgressStatisticsRepository>((ref) {
@@ -216,14 +217,20 @@ class ProgressStatisticsRepository {
         .where((s) => sessionIds.contains(s.sessionId) && s.isPr)
         .length;
 
-    // Planned workout days calculation from active routine
-    final routines = await _db.select(_db.workoutRoutines).get();
+    // Legacy adherence preserves its historical greatest-ID fallback only when
+    // no B01 version is active. B01 occurrence adherence remains owned by the
+    // calendar read model; this statistics repository must not select a second
+    // active plan or reinterpret civil schedule dates.
     int plannedWorkoutsCount = 0;
-    if (routines.isNotEmpty) {
-      final activeRoutineId = routines.last.id;
-      final days = await (_db.select(
-        _db.routineDays,
-      )..where((tbl) => tbl.routineId.equals(activeRoutineId))).get();
+    final activePlan = await LegacyProgramCompatibilityAdapter(
+      _db,
+    ).resolveActivePlanSelection();
+    if (activePlan.type == ActivePlanType.legacyRoutine) {
+      final days =
+          await (_db.select(_db.routineDays)..where(
+                (tbl) => tbl.routineId.equals(activePlan.legacyRoutineId!),
+              ))
+              .get();
       plannedWorkoutsCount = days.where((d) => !d.isRestDay).length;
     }
 
