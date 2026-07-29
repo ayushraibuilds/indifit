@@ -74,20 +74,23 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   }
 
   @override
-  AppColorsExtension lerp(
-    ThemeExtension<AppColorsExtension>? other,
-    double t,
-  ) {
+  AppColorsExtension lerp(ThemeExtension<AppColorsExtension>? other, double t) {
     if (other is! AppColorsExtension) return this;
     return AppColorsExtension(
       streakOrange: Color.lerp(streakOrange, other.streakOrange, t)!,
       infoBlue: Color.lerp(infoBlue, other.infoBlue, t)!,
       fiberTeal: Color.lerp(fiberTeal, other.fiberTeal, t)!,
       achievementGold: Color.lerp(achievementGold, other.achievementGold, t)!,
-      achievementSilver:
-          Color.lerp(achievementSilver, other.achievementSilver, t)!,
-      achievementBronze:
-          Color.lerp(achievementBronze, other.achievementBronze, t)!,
+      achievementSilver: Color.lerp(
+        achievementSilver,
+        other.achievementSilver,
+        t,
+      )!,
+      achievementBronze: Color.lerp(
+        achievementBronze,
+        other.achievementBronze,
+        t,
+      )!,
       cardBackground: Color.lerp(cardBackground, other.cardBackground, t)!,
       border: Color.lerp(border, other.border, t)!,
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,

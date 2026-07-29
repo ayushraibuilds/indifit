@@ -1,13 +1,13 @@
 # IndiFit Implementation Tracker
 
-Baseline commit: `056f959`
-Current schema: v14
-Current backup format: v5
+Baseline commit: `87a5294`
+Current schema: v15
+Current backup format: v6
 Current active batch: **B01 — Training Programs and Scheduling**
 
 | Batch | Status | Current step | Blockers |
 |:------|:-------|:-------------|:---------|
-| B01 — Training Programs and Scheduling | Implementing | B01-01, B01-02 and B01-04 | None |
+| B01 — Training Programs and Scheduling | Verifying | B01-14 manual platform matrix | Android/iOS manual release evidence |
 | B02 — Workout Execution | Not started | Waiting for B01 | B01 |
 | B03 — Nutrition Foundation | Not started | Not scheduled | None |
 | B04 — Adaptive Coaching | Not started | Waiting for B01–B03 | B01–B03 |
@@ -15,12 +15,16 @@ Current active batch: **B01 — Training Programs and Scheduling**
 
 ## Current action
 
-Critical architecture review for B01.
+Complete B01-M01 through B01-M07 on Android and iOS, then record final B01
+sign-off in `B01-training-programs/VERIFICATION.md`.
 
 ## Quality baseline
 
 | Check | Result |
 |:------|:-------|
-| Flutter analyze | Passed |
-| Flutter tests | 162 declared tests passed |
+| Flutter analyze | Passed — no issues |
+| Flutter tests | Passed — 286 tests |
+| B01 high-risk tests | Passed — 113 tests |
+| Android release build | Passed — APK produced |
+| iOS release build | Passed — unsigned device app produced |
 | Backend security tests | 12 tests and 15 subtests passed |

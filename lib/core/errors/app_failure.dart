@@ -32,7 +32,8 @@ class AppFailure {
   }) {
     return AppFailure(
       type: AppFailureType.offlinePolicyBlocked,
-      message: message ??
+      message:
+          message ??
           'This feature requires an active connection, but "No Backend / Offline Mode" is enabled in settings.',
       actionLabel: 'Settings',
       onAction: onAction,
@@ -90,9 +91,7 @@ class AppFailure {
     );
   }
 
-  factory AppFailure.unsupportedPlatform({
-    required String message,
-  }) {
+  factory AppFailure.unsupportedPlatform({required String message}) {
     return AppFailure(
       type: AppFailureType.unsupportedPlatform,
       message: message,
@@ -132,7 +131,8 @@ sealed class Result<T> {
   bool get isFailure => this is Failure<T>;
 
   T? get dataOrNull => isSuccess ? (this as Success<T>).data : null;
-  AppFailure? get failureOrNull => isFailure ? (this as Failure<T>).failure : null;
+  AppFailure? get failureOrNull =>
+      isFailure ? (this as Failure<T>).failure : null;
 }
 
 final class Success<T> extends Result<T> {

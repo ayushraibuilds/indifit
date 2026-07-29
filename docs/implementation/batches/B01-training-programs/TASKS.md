@@ -471,6 +471,11 @@ per-exercise notification scheduling.
 
 ## B01-14 — Final cross-domain verification and release gates
 
+- Verification status (2026-07-29): automated cross-domain, migration, backup,
+  formatting, analysis, generated-source, and Android/iOS release-build gates
+  pass. Final batch sign-off remains blocked only on the manual Android/iOS
+  matrix B01-M01 through B01-M07 in `VERIFICATION.md`.
+
 - Goal: independently verify that the delivered batch matches the charter and
   this architecture.
 - Dependencies: all applicable B01 tasks, including B01-07R/B01-12R only when

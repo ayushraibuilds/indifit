@@ -66,12 +66,18 @@ class SettingsScreen extends ConsumerWidget {
                                 ButtonSegment<ThemeMode>(
                                   value: ThemeMode.system,
                                   label: Text('System'),
-                                  icon: Icon(Icons.settings_suggest_rounded, size: 16),
+                                  icon: Icon(
+                                    Icons.settings_suggest_rounded,
+                                    size: 16,
+                                  ),
                                 ),
                                 ButtonSegment<ThemeMode>(
                                   value: ThemeMode.light,
                                   label: Text('Light'),
-                                  icon: Icon(Icons.light_mode_rounded, size: 16),
+                                  icon: Icon(
+                                    Icons.light_mode_rounded,
+                                    size: 16,
+                                  ),
                                 ),
                                 ButtonSegment<ThemeMode>(
                                   value: ThemeMode.dark,
@@ -80,13 +86,14 @@ class SettingsScreen extends ConsumerWidget {
                                 ),
                               ],
                               selected: {currentThemeMode},
-                              onSelectionChanged: (Set<ThemeMode> newSelection) {
-                                if (newSelection.isNotEmpty) {
-                                  ref
-                                      .read(themeModeProvider.notifier)
-                                      .setThemeMode(newSelection.first);
-                                }
-                              },
+                              onSelectionChanged:
+                                  (Set<ThemeMode> newSelection) {
+                                    if (newSelection.isNotEmpty) {
+                                      ref
+                                          .read(themeModeProvider.notifier)
+                                          .setThemeMode(newSelection.first);
+                                    }
+                                  },
                             ),
                           ),
                         ],

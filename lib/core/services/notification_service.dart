@@ -589,8 +589,8 @@ class NotificationService {
     // unlike DateTime.timeZoneName which is commonly an ambiguous abbreviation
     // such as IST or PST. This is essential for travel and DST correctness.
     try {
-      final nativeTimeZoneId = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(nativeTimeZoneId));
+      final nativeTimeZone = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(nativeTimeZone.identifier));
       return;
     } catch (e) {
       AppLogger.warning('Native timezone lookup failed: $e');

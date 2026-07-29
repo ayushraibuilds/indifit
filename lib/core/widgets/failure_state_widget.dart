@@ -51,9 +51,7 @@ class FailureStateWidget extends StatelessWidget {
       color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: iconColor.withValues(alpha: 0.3),
-        ),
+        side: BorderSide(color: iconColor.withValues(alpha: 0.3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),

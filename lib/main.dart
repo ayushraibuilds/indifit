@@ -54,12 +54,8 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final container = ProviderContainer(
     overrides: [
-      privacyPolicyProvider.overrideWith(
-        (ref) => PrivacyPolicyNotifier(prefs),
-      ),
-      themeModeProvider.overrideWith(
-        (ref) => ThemeModeNotifier(prefs),
-      ),
+      privacyPolicyProvider.overrideWith((ref) => PrivacyPolicyNotifier(prefs)),
+      themeModeProvider.overrideWith((ref) => ThemeModeNotifier(prefs)),
     ],
   );
   final AppDatabase db = container.read(databaseProvider);

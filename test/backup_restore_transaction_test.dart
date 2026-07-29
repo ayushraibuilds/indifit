@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/backup/backup_file_adapter.dart';
 import 'package:indifit/core/backup/backup_schema.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/data/database/app_database.dart';
@@ -76,6 +79,56 @@ void main() {
         expect(prefs.getInt('water_logged'), equals(6));
         expect(prefs.getInt('user_streak_count'), equals(10));
         expect(prefs.getBool('pref_remind_workout'), isTrue);
+      },
+    );
+
+    test(
+      'Raw and encrypted Backup v5 files inspect and restore transactionally',
+      () async {
+        const password = 'B01-v5-release-gate';
+        final fixture = BackupV5Fixtures.validBackupV5Object();
+        final rawContent = jsonEncode(BackupV5Fixtures.validBackupV5Map());
+        final encryptedContent = BackupFileAdapter.exportToEnvelopeJson(
+          data: fixture,
+          password: password,
+        );
+
+        final rawInspection = await BackupFileAdapter.inspectBackupContent(
+          rawContent,
+        );
+        expect(rawInspection.isEncrypted, isFalse);
+        expect(rawInspection.backupData.version, 5);
+
+        await expectLater(
+          BackupFileAdapter.inspectBackupContent(encryptedContent),
+          throwsA(isA<FormatException>()),
+        );
+        final encryptedInspection =
+            await BackupFileAdapter.inspectBackupContent(
+              encryptedContent,
+              password: password,
+            );
+        expect(encryptedInspection.isEncrypted, isTrue);
+        expect(encryptedInspection.backupData.version, 5);
+
+        Future<void> expectInactiveLegacyImport() async {
+          expect(await db.select(db.workoutRoutines).get(), hasLength(1));
+          expect(await db.select(db.workoutSessions).get(), hasLength(1));
+          expect(await db.select(db.workoutSets).get(), hasLength(1));
+          expect(await db.select(db.programVersions).get(), hasLength(1));
+          expect(
+            await db.select(db.scheduledSessionOccurrences).get(),
+            isEmpty,
+          );
+          final settings = await db.select(db.trainingPlanSettings).getSingle();
+          expect(settings.activeProgramVersionId, isNull);
+        }
+
+        await rawInspection.backupData.restoreToDatabase(db);
+        await expectInactiveLegacyImport();
+
+        await encryptedInspection.backupData.restoreToDatabase(db);
+        await expectInactiveLegacyImport();
       },
     );
 

@@ -53,6 +53,26 @@ jobs:
       - name: Build Release APK
         run: flutter build apk --release --dart-define=INDIFIT_API_KEY=ci_build_test_key
 
+  ios_release:
+    name: iOS Release Build
+    runs-on: macos-15
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.4'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Unsigned Release App
+        run: flutter build ios --release --no-codesign --dart-define=INDIFIT_API_KEY=ci_build_test_key
+
   backend_ci:
     name: Backend CI Checks
     runs-on: ubuntu-latest

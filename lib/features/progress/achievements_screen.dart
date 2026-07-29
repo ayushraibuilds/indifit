@@ -35,7 +35,8 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
       final statsRepo = ref.read(progressStatisticsRepositoryProvider);
       final stats = await statsRepo.getLifetimeStats();
       final prefs = await SharedPreferences.getInstance();
-      final streak = prefs.getInt('user_streak_count') ??
+      final streak =
+          prefs.getInt('user_streak_count') ??
           ref.read(dashboardControllerProvider).streakCount;
 
       final achievements = AchievementService.evaluateFromLifetimeStats(
@@ -218,10 +219,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
                   const SizedBox(height: 10),
                   const Text(
                     'No Badges Unlocked Yet',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   const SizedBox(height: 4),
                   const Text(

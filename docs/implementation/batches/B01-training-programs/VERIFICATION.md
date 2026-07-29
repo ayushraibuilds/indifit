@@ -1,199 +1,130 @@
-# B01 Critical Architecture Verification
+# B01 Final Cross-Domain Verification
 
-Baseline: commit `78851f6`
+Baseline: commit `87a5294`
 
-Review date: 2026-07-29
+Verification date: 2026-07-29
 
-Scope: architecture gate only; no feature implementation performed.
+Scope: B01-14 final architecture, data-integrity, portability, automated
+regression, and release-build gates.
 
 ## Gate verdict
 
-**Passed with product decisions.**
+**Automated and release-build gates passed. Final B01 release sign-off is
+blocked on the required Android and iOS manual interaction matrix.**
 
-B01 is safe to begin only with the three prerequisite tasks listed below.
-Schema v15, travel, reminders, backup v6 implementation, and feature UI are not
-authorized until the two schema-affecting product decisions are recorded. The
-skip product decision blocks only the skip interaction, not the underlying
-state-machine commands.
+No product-owner decision remains open. B01-PD01, B01-PD02, and B01-PD03 are
+recorded as accepted in `DECISIONS.md` and are covered by domain and widget
+tests.
 
-The gate passes because every engineering-critical ambiguity now has a final
-rule in `DECISIONS.md`: stable exercise identity, inactive legacy imports,
-single active-version ownership, immutable versioning, a complete idempotent
-state machine, progression disposition, civil-date/timezone semantics, atomic
-execution finalization, backup ordering, and repository boundaries.
-
-## Repository evidence verified
-
-- `lib/data/database/tables/workout_tables.dart` confirms local auto-increment
-  exercise IDs, name-only routine/set relationships, no program ancestry, and a
-  single JSON draft row.
-- `lib/data/repositories/workout_repository.dart` confirms routine edits
-  delete/recreate children in place, `getSavedRoutines()` has no ordering or
-  durable active selection, history uses exact names, and session logging is a
-  separate transaction.
-- `lib/features/workout_player/workout_player_controller.dart` confirms draft
-  JSON drops RPE, set type, warm-up, notes, duration, distance, and incline.
-- `lib/features/workout_player/workout_player_screen.dart` deletes the active
-  draft before navigating to the summary; the summary then independently calls
-  `logSession`, so termination can lose data and duplicate taps can duplicate
-  sessions.
-- `lib/features/dashboard/dashboard_screen.dart` directly parses the old bare
-  array and restores only basic set fields; malformed JSON is caught only by a
-  broad screen-level error path.
-- `lib/core/backup/backup_schema.dart` verifies Backup v5 prevalidation, custom
-  exercise ID remapping, one Drift restore transaction, SharedPreferences
-  compensation, and rejection of unsupported newer versions.
-- `test/db_migration_test.dart` creates a fresh memory database; it is not a
-  real v14-file upgrade test. `test/backup_restore_transaction_test.dart`
-  verifies rollback and orphan rejection but has no B01 graph.
-- `pubspec.yaml` already includes TZDB support through `timezone` and
-  `flutter_timezone`.
-- The current exercise asset has 140 rows, five equipment labels, and no exact
-  case-folded duplicate names, but that does not make auto-increment IDs stable
-  across custom-exercise restore or future catalogue renames.
-- `NotificationService.prefRemindWorkout` is `pref_remind_workout`, while the
-  Backup v5 preference allow-list contains `prefRemindWorkout`; relying on the
-  existing global reminder without reconciliation would not round-trip the
-  authoritative key.
-
-## Decision-gate inventory
-
-All original `SOL-GATE REQUIRED` items were reviewed. Final results are:
-
-| Area | Result | Decision |
-|---|---|---|
-| v15 / Backup v6 ownership | Amended | B01-D01, D10, D13 |
-| Legacy routine migration | Amended | B01-D02 |
-| Program versioning/activation | Amended | B01-D03, D04, D16 |
-| Occurrence transitions/idempotency | Amended | B01-D05, D06 |
-| Local date/timezone | Amended | B01-D08 |
-| Exercise identity | Amended | B01-D01 |
-| Execution ancestry/snapshot | Amended | B01-D12 |
-| Travel progression | Product-deferred | B01-D09 |
-| Reminders | Product-deferred | B01-D11 |
-| Repository/provider boundaries | Accepted | B01-D14 |
-| Notes/setup preferences | Accepted | B01-D15 |
+The repository is safe to continue through manual release validation. It must
+not be marked fully released until the device checks in this document pass on
+both Android and iOS.
 
 ## Blocking findings
 
-### Product blockers
+| ID | Finding | Release effect | Required closure |
+|---|---|---|---|
+| B01-14-G01 | The required manual timezone, offline, accessibility, draft kill/relaunch, and backup-import journeys have not been executed on Android and iOS. | Blocks final B01 sign-off; does not block merging the verification implementation. | Execute and record every row in the manual platform matrix on both platforms. |
+| B01-14-G02 | This verification host has no connected Android device or configured Android emulator. An iOS simulator and a wireless user-owned iPhone are visible, but no deployment to the user device was authorized. | Prevents completing G01 in this task. | Provide an Android device/emulator and run the checklist; use an iOS simulator or explicitly authorized test device for the iOS rows. |
 
-1. **Travel behavior is unresolved.** The canonical roadmap assigns the
-   preserve/reduce/insert/replace choice to the product owner. This affects the
-   v15 travel schema, Backup v6 graph, controllers, and UI.
-2. **Reminder scope is unresolved.** Passive cues require no reminder table;
-   scheduled per-exercise notifications require Drift records, backup,
-   timezone, permission, and quiet-hours behavior. This also affects v15.
-3. **Skip interaction default is unresolved.** Both domain commands are
-   approved, but calendar UI must not silently choose hold or advance.
+## Release blockers found and resolved
 
-### Mandatory engineering amendments, now resolved
-
-These are not pending decisions, but implementation that ignores them fails the
-gate:
-
-- Do not use `Exercises.id` as the canonical B01 identity.
-- Do not auto-activate a migrated routine or create migration-dated
-  occurrences.
-- Do not store active state in both ProgramVersion lifecycle and settings.
-- Do not treat partial/held-skip status as automatic progression.
-- Do not finalize sessions, occurrences, and drafts in separate owners.
-- Do not rely on UTC-midnight date queries.
-- Do not delete legacy routine tables in B01.
-- Do not ship v15 without a real v14 upgrade fixture and rollback test.
-
-## Tasks safe to begin immediately
-
-| Order | Task | Why safe | Implementation model | Required review |
-|---|---|---|---|---|
-| 1 (parallel) | B01-01 — identity/equipment migration fixtures | Read-only/deterministic inputs; no unresolved product behavior. | Gemini Flash | Sol High |
-| 1 (parallel) | B01-02 — real v14/v5 fixture harness | Test foundation only; does not commit schema choices. | Gemini Flash | Sol High |
-| 1 (parallel) | B01-04 — backward-compatible draft codec/lifecycle repair | Isolated existing data-loss fix; no v15 dependency. | Gemini Flash | Sol High |
-
-B01-04 must remain bounded to the current draft JSON and legacy save lifecycle.
-Occurrence columns and scheduled finalization belong to B01-09.
-
-## Tasks safe after prerequisites
-
-| Wave | Tasks | Prerequisite |
+| Finding | Resolution | Evidence |
 |---|---|---|
-| 2 | B01-03 | B01-01/B01-02 Sol approval plus travel and reminder product decisions |
-| 3 | B01-05, B01-07 | B01-03 |
-| 4 | B01-06 | B01-03 and B01-05 |
-| 5 | B01-08A, B01-09 | B01-06; B01-09 also needs B01-04/B01-07 |
-| 6 | B01-13 | B01-05 and B01-09 |
-| 7 | B01-10 | All durable conditional entities plus B01-06/B01-09 |
-| 8 | B01-11A, B01-12 | Calendar/execution/compatibility dependencies; skip UI decision for B01-11A |
-| 9 | B01-14 | Every applicable task and platform/manual evidence |
+| Repository-wide format gate failed under pinned Flutter 3.41.4. | Applied the pinned Dart formatter mechanically to `lib/` and `test/`; no behavior was changed. | `dart format --output=none --set-exit-if-changed lib test` passes with 195 files and zero changes. |
+| Committed Drift generated output was stale under the pinned toolchain. | Regenerated and formatted `app_database.g.dart`; the B01 gate now verifies before/after content identity. | `dart run build_runner build --delete-conflicting-outputs` succeeds and a second gate run produces identical generated content. |
+| `flutter_timezone` 1.0.8 used Flutter's removed Android `Registrar` API and blocked release compilation. | Updated to maintained `flutter_timezone` 5.1.0 and adapted the returned `TimezoneInfo.identifier`. | Android release APK and unsigned iOS release app both build; timezone regression tests and analysis pass. |
+| Backup v5 file evidence covered object restore but not both raw and encrypted file envelopes. | Added a release regression that inspects and transactionally restores both forms. | `backup_restore_transaction_test.dart` passes and proves inactive legacy import semantics for both paths. |
+| CI built Android release only. | Added an unsigned iOS release-build job on `macos-15` with the pinned Flutter version. | `.github/workflows/ci.yml` now gates both Android and iOS release compilation. |
 
-## Blocked tasks
+## Automated validation evidence
 
-| Task | Blocker |
+| Gate | Result | Evidence |
+|---|---|---|
+| Formatting | Passed | 195 files checked; zero changes required after correction. |
+| Static analysis | Passed | `flutter analyze`: no issues found. |
+| Generated Drift output | Passed | Build runner succeeded; regenerated output is idempotent. |
+| High-risk B01 suite | Passed | 113 tests covering identity, equipment, v14→v15, versioning, occurrences, travel, preferences, drafts, execution, legacy compatibility, v5, and v6. |
+| Complete Flutter suite | Passed | 286 tests passed. |
+| Android release build | Passed | `build/app/outputs/flutter-apk/app-release.apk`, 93.0 MB. |
+| iOS release build | Passed | `build/ios/iphoneos/Runner.app`, 53.5 MB, release mode without code signing. |
+| Whitespace errors | Passed | `git diff --check`. |
+
+The reusable automated command is:
+
+```bash
+tool/verify_b01_release.sh
+```
+
+On macOS with production-equivalent signing configuration available, include
+both platform builds with:
+
+```bash
+tool/verify_b01_release.sh --release-builds
+```
+
+## PLAN acceptance-criteria traceability
+
+| PLAN criterion | Status | Passing evidence |
+|---|---|---|
+| Fresh v15 database creates the required graph and indexes. | Passed | `b01_schema_v15_migration_test.dart`, `data_quality_gaps_test.dart` |
+| Real v14 upgrade preserves legacy rows, creates deterministic inactive imports, leaves historical ancestry nullable, and rolls back failure. | Passed — SOL gate | `db_migration_test.dart`, `b01_schema_v15_migration_test.dart` |
+| Legacy routines and selection remain compatible until explicit B01 activation. | Passed — SOL gate | `legacy_compatibility_adapter_test.dart`, `wave3_features_test.dart` |
+| Draft versions are editable; published graphs are immutable; copies are source-linked. | Passed — SOL gate | `program_repository_test.dart` |
+| Activation validates and atomically creates civil-date, zone-labelled occurrences with one active authority. | Passed — SOL gate | `occurrence_state_machine_test.dart` |
+| Civil dates survive DST and stored IANA zones; device-zone behavior is correct. | Automated portion passed; manual pending | `local_schedule_date_service_test.dart`, `phase6_failure_retry_test.dart`; manual Android/iOS row B01-M02 remains open. |
+| Reschedule records history without ordinal mutation and rejects invalid transitions. | Passed — SOL gate | `occurrence_state_machine_test.dart`, `calendar_controller_test.dart` |
+| Skip is explicit; hold/advance and repeat follow accepted progression semantics. | Passed | `occurrence_state_machine_test.dart`, `calendar_controller_test.dart`, `b01_program_calendar_widget_test.dart` |
+| Full/partial scheduled execution freezes ancestry; manual sessions remain nullable; same-day ordering is deterministic. | Passed — SOL gate | `execution_bridge_test.dart`, `calendar_controller_test.dart` |
+| Travel overrides equipment without mutating date/order/deload and survives durable reload. | Passed | `travel_coordination_test.dart`, `b01_travel_widget_test.dart`, `execution_bridge_test.dart` |
+| Equipment migration and compatibility preserve known, unknown, and unresolved values. | Passed — SOL gate | `equipment_fixture_test.dart`, `b01_schema_v15_migration_test.dart`, `equipment_preference_repository_test.dart` |
+| Personal notes/setup/cues persist and freeze into execution context. | Passed | `equipment_preference_repository_test.dart`, `exercise_reminder_passive_cues_test.dart`, `b01_equipment_preferences_widget_test.dart`, `execution_bridge_test.dart` |
+| Legacy draft arrays decode; new envelopes preserve all fields and lifecycle failure remains recoverable. | Passed — SOL gate | `workout_draft_codec_test.dart`, `workout_summary_lifecycle_test.dart`, `execution_bridge_test.dart` |
+| Backup v5 imports into inactive compatibility data; v6 round-trips the graph and rejects invalid relationships before mutation. | Passed — SOL gate | `backup_restore_transaction_test.dart`, `b01_backup_v6_test.dart`, `backup_schema_test.dart` |
+| B01 flows remain offline and require no AI/API. | Automated portion passed; manual pending | `privacy_policy_enforcement_test.dart`, `travel_coordination_test.dart`, `exercise_reminder_passive_cues_test.dart`; manual rows B01-M03 and B01-M05 remain open. |
+
+## SOL-gate disposition
+
+| Gate | Disposition |
 |---|---|
-| B01-03 | Travel and reminder decisions can change the one-time v15 graph. |
-| B01-08B | Travel behavior not selected. |
-| B01-10 | Cannot freeze Backup v6 until travel/reminder entities are known and execution ancestry exists. |
-| B01-11A skip interaction | Skip default/explicit-choice decision not recorded. Other UI also awaits dependencies. |
-| B01-11B | Travel behavior/controller not selected. |
-| B01-07R and B01-12R | Conditional on retaining scheduled per-exercise reminders. |
-| B01-14 | Final verification necessarily waits for the full batch. |
+| Stable exercise identity and equipment mappings | Passed |
+| Transactional v14→v15 migration and representative fixtures | Passed |
+| Program lifecycle and activation authority | Passed |
+| Occurrence transition, progression, and idempotency rules | Passed |
+| Execution ancestry, frozen snapshot, and finalization transaction | Passed |
+| Backup v5/v6 compatibility and prevalidation | Passed |
+| Final automated cross-domain verification | Passed |
+| Final manual Android/iOS verification | Blocked pending B01-14-G01/G02 |
 
-Calendar UI must not begin before B01-03 and B01-06 freeze schema and
-occurrence semantics.
+## Product-owner decisions
 
-## High/critical and Sol-routed task inventory
-
-| Task | Risk | Sol role |
+| Decision | Status | Evidence |
 |---|---|---|
-| B01-01 | High data quality | Required identity-fixture review |
-| B01-02 | High test foundation | Required fixture/rollback review |
-| B01-03 | Critical data loss | Sol High implementation |
-| B01-04 | High user data loss | Required codec/lifecycle review |
-| B01-05 | High invariants | Terra implementation; lifecycle contract already gated |
-| B01-06 | Critical scheduling semantics | Sol High implementation |
-| B01-08A | High scheduling | Terra implementation against gated state machine |
-| B01-08B | High multi-domain | Terra implementation; Sol review |
-| B01-09 | High compatibility | Terra implementation; Sol atomicity/idempotency review |
-| B01-10 | Critical portability | Sol High implementation |
-| B01-07R | High platform/state, conditional | Terra implementation; Sol review |
-| B01-13 | High regression | Terra implementation; Sol authority/compatibility review |
-| B01-14 | Critical final verification | Sol High |
+| B01-PD01 — explicit skip choice with no default | Accepted and implemented | Occurrence state-machine and calendar widget tests |
+| B01-PD02 — travel preserves program structure and applies previewed equipment override | Accepted and implemented | Travel repository/controller/widget tests |
+| B01-PD03 — passive exercise-context cues; no per-exercise notifications | Accepted and implemented | Preference, passive-cue, player, and backup tests |
 
-No critical task was left with Flash-only ownership. Flash tasks are bounded to
-deterministic fixtures, codecs, CRUD, and clearly specified UI/tests.
+No product-owner decision blocks B01.
 
-## Product-owner decisions required
+## Manual Android/iOS platform matrix
 
-| Question | Recommended default | Alternative | User-visible consequence | Blocked? |
+Every row must pass independently on Android and iOS. Record device/OS, build
+identifier, result, tester, and date. A release build passing compilation does
+not satisfy these interaction checks.
+
+| ID | Journey | Android | iOS | Required evidence |
 |---|---|---|---|---|
-| How should skip choose progression? | Show an explicit unselected choice; list “Keep this workout pending” first. | Preselect hold or advance. | Determines whether a skipped workout remains the next required ordinal. | Blocks skip UI only; domain supports both. |
-| What is the B01 travel-week behavior? | Preserve dates/order/deload and apply a temporary equipment profile to explicitly previewed occurrences. | Reduce volume, insert a non-consuming week, or replace/consume a week. | Determines whether the normal plan changes and which workouts/equipment appear during travel. | Yes: travel schema, backup, coordination, UI, and B01-03. |
-| What does “personal reminders” mean in B01? | Passive personal cues/setup notes displayed during workout; no scheduled per-exercise notification. | Scheduled per-exercise reminders. | Passive has no alerts; scheduled adds permissions, quiet hours, timezone behavior, and reminder CRUD. | Yes: reminder schema/backup/UI and B01-03. |
+| B01-M01 | Create, review, activate, edit-by-copy, and reopen a multi-block program with a deload week. | Pending | Pending | Screen recording or timestamped checklist; active version and old version remain distinct after relaunch. |
+| B01-M02 | Activate in `Asia/Kolkata`, switch device timezone across a date boundary and DST zone, reschedule while travelling, then return home. | Pending | Pending | Original civil date/zone and ordinals remain stable; only explicit reschedule changes effective date/zone. |
+| B01-M03 | Enable strict offline mode, relaunch, use calendar/skip/repeat/travel/equipment/preferences, and confirm no API dependency. | Pending | Pending | Network-disabled journey completes; durable state survives relaunch. |
+| B01-M04 | Start a scheduled workout, record all supported set fields, kill the app before summary and during summary, relaunch, retry, and complete once. | Pending | Pending | Draft survives; one session and one completion result; no field loss or duplicate completion. |
+| B01-M05 | Export v6 encrypted backup, import it after local mutations, then import representative raw and encrypted v5 files. | Pending | Pending | Preview succeeds, invalid password mutates nothing, v6 graph restores, v5 routines remain inactive and recoverable. |
+| B01-M06 | Exercise calendar, action sheets, travel preview, equipment/profile editors, and player cue panel with screen reader and 200% text. | Pending | Pending | Controls have usable labels/order; no clipped critical action or inaccessible dialog. |
+| B01-M07 | Cancel/close skip, reschedule, travel, deletion, and backup dialogs at every stage. | Pending | Pending | Closing causes no mutation; retry remains available after injected/user-visible failure paths. |
 
-Cross-week/block rescheduling does not require product input: it is accepted
-with confirmation, preserves original ancestry, and never changes program
-ordinal.
+## Final sign-off rule
 
-## Exact implementation order
-
-1. B01-01, B01-02, and B01-04 in parallel.
-2. Record travel and reminder decisions.
-3. B01-03.
-4. B01-05 and B01-07 in parallel.
-5. B01-06.
-6. B01-08A and B01-09 in parallel; B01-08B after the travel decision.
-7. B01-07R only if scheduled reminders are retained.
-8. B01-13.
-9. B01-10.
-10. B01-11A and B01-12; then B01-11B/B01-12R when applicable.
-11. B01-14.
-
-## Implementation entry criteria
-
-The unrestricted B01 implementation gate opens only when:
-
-- B01-01 and B01-02 receive Sol approval;
-- the travel and reminder product decisions are recorded;
-- B01-03 implements `DECISIONS.md`, not conflicting Terra proposals;
-- no implementation introduces a second active owner, a fuzzy exercise match,
-  migration-time activation, or split completion transaction.
+B01-14 is technically implemented and all automated/release-build gates pass.
+The B01 batch remains in **Verifying** status until B01-M01 through B01-M07 are
+recorded as passing on both Android and iOS. Any failure reopens the owning B01
+task and blocks release; it must not be waived in this document.

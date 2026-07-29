@@ -189,7 +189,9 @@ class SettingsController extends StateNotifier<SettingsState> {
       await tempFile.writeAsString(envelopeJson);
 
       final xFile = XFile(tempFile.path);
-      await Share.shareXFiles([xFile], subject: 'IndiFit Health Backup (.indifit-backup)');
+      await Share.shareXFiles([
+        xFile,
+      ], subject: 'IndiFit Health Backup (.indifit-backup)');
 
       return null;
     } catch (e) {
