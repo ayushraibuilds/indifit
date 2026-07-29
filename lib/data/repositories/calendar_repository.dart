@@ -156,11 +156,18 @@ class StartOccurrenceCommand extends OccurrenceCommand {
   /// date starts without an additional confirmation.
   final bool confirmedOutsideEffectiveDate;
 
+  /// JSON-safe user context displayed by the player (for example personal
+  /// setup values and cues). It is merged into the immutable execution
+  /// snapshot in the same transaction that starts the occurrence and creates
+  /// its draft. Template content itself remains owned by this repository.
+  final Map<String, dynamic>? executionContext;
+
   const StartOccurrenceCommand({
     required super.occurrenceId,
     required super.commandId,
     required super.expectedStatus,
     this.confirmedOutsideEffectiveDate = false,
+    this.executionContext,
   });
 }
 
@@ -732,7 +739,10 @@ class CalendarRepository {
           'Another occurrence is already in progress and requires recovery.',
         );
       }
-      final snapshot = await _buildExecutionSnapshot(occurrence);
+      final snapshot = await _buildExecutionSnapshot(
+        occurrence,
+        executionContext: command.executionContext,
+      );
       final now = _nowUtc().toUtc();
       final changed =
           await (_db.update(_db.scheduledSessionOccurrences)..where(
@@ -873,7 +883,25 @@ class CalendarRepository {
         'Only an in-progress occurrence can complete.',
       );
     }
-    return _db.transaction(() async {
+    return _db.transaction(
+      () => completeWithPersistedSessionInTransaction(command),
+    );
+  }
+
+  /// Completes an occurrence inside a transaction owned by the execution
+  /// bridge. B01-09 uses this after inserting the linked session and sets and
+  /// before deleting the draft last. Callers must already be in a Drift
+  /// transaction; this method never persists a session or draft itself.
+  Future<OccurrenceMutationResult> completeWithPersistedSessionInTransaction(
+    CompleteOccurrenceCommand command,
+  ) async {
+    _validateCommand(command);
+    if (command.expectedStatus != OccurrenceStatus.inProgress) {
+      throw const InvalidOccurrenceTransitionException(
+        'Only an in-progress occurrence can complete.',
+      );
+    }
+    {
       final existing = await _existingEvent(
         command.occurrenceId,
         command.commandId,
@@ -957,7 +985,7 @@ class CalendarRepository {
         event: event,
         wasIdempotent: false,
       );
-    });
+    }
   }
 
   Future<OccurrenceMutationResult> _idempotentResult(
@@ -1057,8 +1085,9 @@ class CalendarRepository {
   }
 
   Future<String> _buildExecutionSnapshot(
-    ScheduledSessionOccurrence occurrence,
-  ) async {
+    ScheduledSessionOccurrence occurrence, {
+    Map<String, dynamic>? executionContext,
+  }) async {
     final template =
         await (_db.select(_db.sessionTemplates)
               ..where((table) => table.id.equals(occurrence.sessionTemplateId)))
@@ -1103,7 +1132,7 @@ class CalendarRepository {
               ..where((table) => table.sessionTemplateId.equals(template.id))
               ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
             .get();
-    return jsonEncode({
+    final snapshot = <String, dynamic>{
       'version': 1,
       'occurrenceId': occurrence.id,
       'program': {
@@ -1147,7 +1176,11 @@ class CalendarRepository {
             },
           )
           .toList(),
-    });
+    };
+    if (executionContext != null) {
+      snapshot['personalExerciseContext'] = executionContext;
+    }
+    return jsonEncode(snapshot);
   }
 
   Future<OccurrenceEvent> _insertEvent({

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
@@ -61,7 +62,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               TextButton(
                 onPressed: () async {
                   Navigator.pop(dialogCtx);
-                  await repo.deleteActiveDraft();
+                  if (draft.scheduledOccurrenceId case final occurrenceId?) {
+                    await ref
+                        .read(workoutExecutionCompatibilityAdapterProvider)
+                        .discardScheduledOccurrenceDraft(
+                          occurrenceId: occurrenceId,
+                          commandId: const Uuid().v4(),
+                        );
+                  } else {
+                    await repo.deleteActiveDraft();
+                  }
                 },
                 child: const Text(
                   'Discard',
@@ -73,10 +83,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   Navigator.pop(dialogCtx);
                   final List<WorkoutSetsCompanion> loggedCompanions =
                       WorkoutDraftCodec.decodeLoggedSets(draft.loggedSetsJson);
-
-                  final exercises = await repo.getExercisesForRoutineName(
-                    draft.routineName,
-                  );
+                  final scheduledLaunch = draft.scheduledOccurrenceId == null
+                      ? null
+                      : await ref
+                            .read(workoutExecutionCompatibilityAdapterProvider)
+                            .resumeScheduledDraft(draft);
+                  final exercises =
+                      scheduledLaunch?.exercises ??
+                      await repo.getExercisesForRoutineName(draft.routineName);
                   if (mounted) {
                     await Navigator.push(
                       context,
@@ -88,6 +102,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           initialSetIndex: draft.currentSetIndex,
                           initialElapsedSeconds: draft.elapsedSeconds,
                           initialLoggedSets: loggedCompanions,
+                          scheduledOccurrenceId: scheduledLaunch?.occurrenceId,
+                          executionSnapshotJson:
+                              scheduledLaunch?.executionSnapshotJson,
+                          personalExerciseContextByName:
+                              scheduledLaunch?.personalExerciseContextByName ??
+                              const {},
                         ),
                       ),
                     );

@@ -2,20 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/calendar_repository.dart';
+import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 
 class WorkoutSummaryScreen extends ConsumerStatefulWidget {
   final String routineName;
   final int elapsedSeconds;
   final List<WorkoutSetsCompanion> loggedSets;
+  final String? scheduledOccurrenceId;
+  final String? completionCommandId;
+  final CompletionKind completionKind;
 
   const WorkoutSummaryScreen({
     super.key,
     required this.routineName,
     required this.elapsedSeconds,
     required this.loggedSets,
+    this.scheduledOccurrenceId,
+    this.completionCommandId,
+    this.completionKind = CompletionKind.full,
   });
 
   @override
@@ -53,17 +62,38 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final repo = ref.read(workoutRepositoryProvider);
-      await repo.logSession(
-        name: widget.routineName,
-        volume: _calculateTotalVolume(),
-        durationSeconds: widget.elapsedSeconds,
-        calories: _calculateCaloriesBurned(),
-        sets: widget.loggedSets,
-      );
+      if (widget.scheduledOccurrenceId case final occurrenceId?) {
+        final commandId = widget.completionCommandId;
+        if (commandId == null || commandId.trim().isEmpty) {
+          throw const ScheduledWorkoutFinalizationException(
+            'Scheduled workout completion is missing its command ID.',
+          );
+        }
+        await ref
+            .read(workoutExecutionCompatibilityAdapterProvider)
+            .finalizeScheduledWorkoutSession(
+              occurrenceId: occurrenceId,
+              commandId: commandId,
+              name: widget.routineName,
+              volume: _calculateTotalVolume(),
+              durationSeconds: widget.elapsedSeconds,
+              calories: _calculateCaloriesBurned(),
+              sets: widget.loggedSets,
+              completionKind: widget.completionKind,
+            );
+      } else {
+        final repo = ref.read(workoutRepositoryProvider);
+        await repo.logSession(
+          name: widget.routineName,
+          volume: _calculateTotalVolume(),
+          durationSeconds: widget.elapsedSeconds,
+          calories: _calculateCaloriesBurned(),
+          sets: widget.loggedSets,
+        );
 
-      // Delete active draft ONLY AFTER durable session logging succeeds
-      await repo.deleteActiveDraft();
+        // Legacy/unscheduled behavior intentionally stays unchanged.
+        await repo.deleteActiveDraft();
+      }
 
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.pop(context); // Exit summary and return to split view

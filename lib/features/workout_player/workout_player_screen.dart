@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/theme/colors.dart';
 import '../../core/widgets/confetti_overlay.dart';
@@ -21,6 +22,9 @@ class WorkoutPlayerScreen extends ConsumerStatefulWidget {
   final int initialSetIndex;
   final int initialElapsedSeconds;
   final List<WorkoutSetsCompanion>? initialLoggedSets;
+  final String? scheduledOccurrenceId;
+  final String? executionSnapshotJson;
+  final Map<String, Map<String, dynamic>> personalExerciseContextByName;
 
   const WorkoutPlayerScreen({
     super.key,
@@ -30,6 +34,9 @@ class WorkoutPlayerScreen extends ConsumerStatefulWidget {
     this.initialSetIndex = 0,
     this.initialElapsedSeconds = 0,
     this.initialLoggedSets,
+    this.scheduledOccurrenceId,
+    this.executionSnapshotJson,
+    this.personalExerciseContextByName = const {},
   });
 
   @override
@@ -63,6 +70,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
             initialSetIndex: widget.initialSetIndex,
             initialElapsedSeconds: widget.initialElapsedSeconds,
             initialLoggedSets: widget.initialLoggedSets,
+            scheduledOccurrenceId: widget.scheduledOccurrenceId,
+            executionSnapshotJson: widget.executionSnapshotJson,
           );
         });
 
@@ -183,12 +192,17 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
     } else {
       await controller.finishWorkout();
       if (mounted) {
+        final finalState = ref.read(_controllerProvider);
         context.pushReplacement(
           '/workout-summary',
           extra: {
             'routineName': widget.routineName,
-            'elapsedSeconds': state.elapsedSeconds,
-            'loggedSets': state.loggedSets,
+            'elapsedSeconds': finalState.elapsedSeconds,
+            'loggedSets': finalState.loggedSets,
+            'scheduledOccurrenceId': widget.scheduledOccurrenceId,
+            'completionCommandId': widget.scheduledOccurrenceId == null
+                ? null
+                : const Uuid().v4(),
           },
         );
       }

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/database/app_database.dart';
+import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../features/dashboard/main_navigation_scaffold.dart';
 import '../../features/food_log/ai_meal_logger_screen.dart';
 import '../../features/food_log/ai_meal_planner_screen.dart';
@@ -95,6 +96,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/workout-player',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
+          final scheduled = extra['scheduledLaunch'];
+          if (scheduled is WorkoutPlayerLaunchData) {
+            return WorkoutPlayerScreen(
+              routineName: scheduled.routineName,
+              exercises: scheduled.exercises,
+              scheduledOccurrenceId: scheduled.occurrenceId,
+              executionSnapshotJson: scheduled.executionSnapshotJson,
+              personalExerciseContextByName:
+                  scheduled.personalExerciseContextByName,
+            );
+          }
           return WorkoutPlayerScreen(
             routineName: extra['routineName'] ?? 'Workout',
             exercises:
@@ -112,6 +124,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             loggedSets:
                 (extra['loggedSets'] as List?)?.cast<WorkoutSetsCompanion>() ??
                 [],
+            scheduledOccurrenceId: extra['scheduledOccurrenceId'] as String?,
+            completionCommandId: extra['completionCommandId'] as String?,
           );
         },
       ),

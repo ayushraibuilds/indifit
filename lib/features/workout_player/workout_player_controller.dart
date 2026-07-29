@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'package:vibration/vibration.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -83,6 +85,8 @@ class WorkoutPlayerState {
 class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
   final Ref _ref;
   final String routineName;
+  final String? scheduledOccurrenceId;
+  final String? executionSnapshotJson;
   Timer? _timer;
 
   WorkoutPlayerController(
@@ -93,6 +97,8 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     int initialSetIndex = 0,
     int initialElapsedSeconds = 0,
     List<WorkoutSetsCompanion>? initialLoggedSets,
+    this.scheduledOccurrenceId,
+    this.executionSnapshotJson,
   }) : super(
          WorkoutPlayerState(
            activeExercises: initialExercises,
@@ -338,6 +344,8 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
         currentSetIndex: state.currentSetIndex,
         elapsedSeconds: state.elapsedSeconds,
         loggedSetsJson: jsonStr,
+        scheduledOccurrenceId: Value(scheduledOccurrenceId),
+        executionSnapshotJson: Value(executionSnapshotJson),
       ),
     );
   }
@@ -351,6 +359,15 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
   /// Explicit user action to discard the workout draft.
   Future<void> discardDraft() async {
     _timer?.cancel();
+    if (scheduledOccurrenceId case final occurrenceId?) {
+      await _ref
+          .read(workoutExecutionCompatibilityAdapterProvider)
+          .discardScheduledOccurrenceDraft(
+            occurrenceId: occurrenceId,
+            commandId: const Uuid().v4(),
+          );
+      return;
+    }
     final repo = _ref.read(workoutRepositoryProvider);
     await repo.deleteActiveDraft();
   }

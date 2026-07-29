@@ -107,9 +107,18 @@ void main() {
       '1. Launches scheduled occurrence, creates frozen execution snapshot & draft',
       () async {
         final occId = await setupActivatedOccurrence();
+        await preferenceRepo.savePreference(
+          stableId: 'ex-bench-press-stable-id',
+          generalNote: 'Keep wrists stacked.',
+          setupValues: const [
+            SetupValueInput(ordinal: 0, label: 'Bench', value: 'Flat'),
+          ],
+          personalCues: const ['Drive through the floor'],
+        );
 
         final launchData = await adapter.startScheduledOccurrence(
           occurrenceId: occId,
+          commandId: 'cmd-start-launch',
           confirmedOutsideEffectiveDate: true,
         );
 
@@ -121,6 +130,11 @@ void main() {
         expect(
           launchData.executionSnapshotJson,
           contains('Flat Barbell Bench Press'),
+        );
+        expect(
+          launchData
+              .personalExerciseContextByName['Flat Barbell Bench Press']?['generalNote'],
+          'Keep wrists stacked.',
         );
 
         // Check occurrence state is inProgress
@@ -136,6 +150,12 @@ void main() {
         final draft = await workoutRepo.getActiveDraft();
         expect(draft, isNotNull);
         expect(draft!.scheduledOccurrenceId, equals(occId));
+        final resumed = await adapter.resumeScheduledDraft(draft);
+        expect(resumed.executionSnapshotJson, launchData.executionSnapshotJson);
+        expect(
+          resumed.exercises.single.exerciseName,
+          'Flat Barbell Bench Press',
+        );
       },
     );
 
@@ -146,13 +166,15 @@ void main() {
 
         await adapter.startScheduledOccurrence(
           occurrenceId: occId,
+          commandId: 'cmd-start-first',
           confirmedOutsideEffectiveDate: true,
         );
 
         // Attempt starting again or starting another occurrence fails
-        expect(
-          () => adapter.startScheduledOccurrence(
+        await expectLater(
+          adapter.startScheduledOccurrence(
             occurrenceId: occId,
+            commandId: 'cmd-start-second',
             confirmedOutsideEffectiveDate: true,
           ),
           throwsA(isA<InvalidOccurrenceTransitionException>()),
@@ -167,6 +189,7 @@ void main() {
 
         await adapter.startScheduledOccurrence(
           occurrenceId: occId,
+          commandId: 'cmd-start-finalize',
           confirmedOutsideEffectiveDate: true,
         );
 
@@ -238,6 +261,19 @@ void main() {
 
         final allSessions = await db.select(db.workoutSessions).get();
         expect(allSessions.length, equals(1)); // Still exactly 1 session
+
+        await expectLater(
+          adapter.finalizeScheduledWorkoutSession(
+            occurrenceId: occId,
+            commandId: commandId,
+            name: 'Chest & Triceps Focus',
+            volume: 681.0,
+            durationSeconds: 2400,
+            calories: 250,
+            sets: sets,
+          ),
+          throwsA(isA<ScheduledWorkoutFinalizationException>()),
+        );
       },
     );
 
@@ -248,12 +284,16 @@ void main() {
 
         await adapter.startScheduledOccurrence(
           occurrenceId: occId,
+          commandId: 'cmd-start-discard',
           confirmedOutsideEffectiveDate: true,
         );
 
         expect(await workoutRepo.getActiveDraft(), isNotNull);
 
-        await adapter.discardScheduledOccurrenceDraft(occurrenceId: occId);
+        await adapter.discardScheduledOccurrenceDraft(
+          occurrenceId: occId,
+          commandId: 'cmd-discard',
+        );
 
         // Draft deleted
         expect(await workoutRepo.getActiveDraft(), isNull);
@@ -293,6 +333,87 @@ void main() {
           session.scheduledOccurrenceId,
           isNull,
         ); // Null occurrence link for unscheduled logs
+      },
+    );
+
+    test(
+      '7. Partial scheduled completion preserves pending progression and provenance',
+      () async {
+        final occId = await setupActivatedOccurrence();
+        await adapter.startScheduledOccurrence(
+          occurrenceId: occId,
+          commandId: 'cmd-start-partial',
+          confirmedOutsideEffectiveDate: true,
+        );
+        final sessionId = await adapter.finalizeScheduledWorkoutSession(
+          occurrenceId: occId,
+          commandId: 'cmd-finalize-partial',
+          name: 'Partial chest',
+          volume: 320,
+          durationSeconds: 900,
+          calories: 90,
+          completionKind: CompletionKind.partial,
+          sets: [
+            WorkoutSetsCompanion.insert(
+              sessionId: 0,
+              exerciseName: 'Flat Barbell Bench Press',
+              weight: 80,
+              reps: 4,
+              setNumber: 1,
+            ),
+          ],
+        );
+
+        final occurrence = await calendarRepo.getOccurrence(occId);
+        final session = await (db.select(
+          db.workoutSessions,
+        )..where((table) => table.id.equals(sessionId))).getSingle();
+        final set = await (db.select(
+          db.workoutSets,
+        )..where((table) => table.sessionId.equals(sessionId))).getSingle();
+        expect(occurrence!.status, 'partiallyCompleted');
+        expect(occurrence.progressionDisposition, 'pending');
+        expect(session.executionSnapshotJson, occurrence.executionSnapshotJson);
+        expect(session.executionTimezoneId, 'UTC');
+        expect(session.completionKind, 'partial');
+        expect(set.exerciseId, 'ex-bench-press-stable-id');
+      },
+    );
+
+    test(
+      '8. Failed scheduled finalization leaves the draft and occurrence recoverable',
+      () async {
+        final occId = await setupActivatedOccurrence();
+        await adapter.startScheduledOccurrence(
+          occurrenceId: occId,
+          commandId: 'cmd-start-failure',
+          confirmedOutsideEffectiveDate: true,
+        );
+
+        await expectLater(
+          adapter.finalizeScheduledWorkoutSession(
+            occurrenceId: occId,
+            commandId: 'cmd-finalize-failure',
+            name: 'Will roll back',
+            volume: 100,
+            durationSeconds: 60,
+            calories: 10,
+            sets: [
+              WorkoutSetsCompanion.insert(
+                sessionId: 0,
+                exerciseName: 'Flat Barbell Bench Press',
+                weight: 50,
+                reps: 5,
+                setNumber: 1,
+                exerciseId: const Value('missing-exercise-id'),
+              ),
+            ],
+          ),
+          throwsA(anything),
+        );
+        expect(await db.select(db.workoutSessions).get(), isEmpty);
+        expect((await calendarRepo.getOccurrence(occId))!.status, 'inProgress');
+        expect(await workoutRepo.getActiveDraft(), isNotNull);
       },
     );
   });

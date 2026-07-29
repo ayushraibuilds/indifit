@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
@@ -273,6 +274,13 @@ final programActivationCoordinatorProvider =
 
 final calendarRepositoryProvider = Provider<CalendarRepository>((ref) {
   return CalendarRepository(
+    ref.watch(databaseProvider),
+    dates: ref.watch(localScheduleDateServiceProvider),
+  );
+});
+
+final calendarReadRepositoryProvider = Provider<CalendarReadRepository>((ref) {
+  return CalendarReadRepository(
     ref.watch(databaseProvider),
     dates: ref.watch(localScheduleDateServiceProvider),
   );
