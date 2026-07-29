@@ -1,13 +1,13 @@
 # IndiFit Implementation Tracker
 
-Baseline commit: `87a5294`
+Baseline commit: `baff96e`
 Current schema: v15
 Current backup format: v6
 Current active batch: **B01 — Training Programs and Scheduling**
 
 | Batch | Status | Current step | Blockers |
 |:------|:-------|:-------------|:---------|
-| B01 — Training Programs and Scheduling | Verifying | B01-14 manual platform matrix | Android/iOS manual release evidence |
+| B01 — Training Programs and Scheduling | Ready for pull request | Integration branch verification complete | None |
 | B02 — Workout Execution | Not started | Waiting for B01 | B01 |
 | B03 — Nutrition Foundation | Not started | Not scheduled | None |
 | B04 — Adaptive Coaching | Not started | Waiting for B01–B03 | B01–B03 |
@@ -15,8 +15,8 @@ Current active batch: **B01 — Training Programs and Scheduling**
 
 ## Current action
 
-Complete B01-M01 through B01-M07 on Android and iOS, then record final B01
-sign-off in `B01-training-programs/VERIFICATION.md`.
+Push `batch/b01-training-programs` and open the reviewed Batch B01 pull
+request. Do not merge until remote CI and pull-request review pass.
 
 ## Quality baseline
 

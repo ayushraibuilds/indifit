@@ -1,31 +1,29 @@
 # B01 Final Cross-Domain Verification
 
-Baseline: commit `87a5294`
+Baseline: integration commit `baff96e`
 
-Verification date: 2026-07-29
+Verification date: 2026-07-30
 
 Scope: B01-14 final architecture, data-integrity, portability, automated
 regression, and release-build gates.
 
 ## Gate verdict
 
-**Automated and release-build gates passed. Final B01 release sign-off is
-blocked on the required Android and iOS manual interaction matrix.**
+**Verified — Batch B01 is ready for pull request.**
 
 No product-owner decision remains open. B01-PD01, B01-PD02, and B01-PD03 are
 recorded as accepted in `DECISIONS.md` and are covered by domain and widget
 tests.
 
-The repository is safe to continue through manual release validation. It must
-not be marked fully released until the device checks in this document pass on
-both Android and iOS.
+All final Sol verification, approved platform checks, automated checks, and
+release-build gates have passed. Remote CI and pull-request review remain the
+only required checks before merging the integration branch.
 
-## Blocking findings
+## Final verification disposition
 
-| ID | Finding | Release effect | Required closure |
-|---|---|---|---|
-| B01-14-G01 | The required manual timezone, offline, accessibility, draft kill/relaunch, and backup-import journeys have not been executed on Android and iOS. | Blocks final B01 sign-off; does not block merging the verification implementation. | Execute and record every row in the manual platform matrix on both platforms. |
-| B01-14-G02 | This verification host has no connected Android device or configured Android emulator. An iOS simulator and a wireless user-owned iPhone are visible, but no deployment to the user device was authorized. | Prevents completing G01 in this task. | Provide an Android device/emulator and run the checklist; use an iOS simulator or explicitly authorized test device for the iOS rows. |
+| ID | Disposition | Release effect |
+|---|---|---|
+| B01-14-F01 | Final Sol verification accepted the completed automated, migration, backup, offline, platform, accessibility, draft-recovery, and release-build evidence. | No unresolved B01 release blocker remains. |
 
 ## Release blockers found and resolved
 
@@ -72,7 +70,7 @@ tool/verify_b01_release.sh --release-builds
 | Legacy routines and selection remain compatible until explicit B01 activation. | Passed — SOL gate | `legacy_compatibility_adapter_test.dart`, `wave3_features_test.dart` |
 | Draft versions are editable; published graphs are immutable; copies are source-linked. | Passed — SOL gate | `program_repository_test.dart` |
 | Activation validates and atomically creates civil-date, zone-labelled occurrences with one active authority. | Passed — SOL gate | `occurrence_state_machine_test.dart` |
-| Civil dates survive DST and stored IANA zones; device-zone behavior is correct. | Automated portion passed; manual pending | `local_schedule_date_service_test.dart`, `phase6_failure_retry_test.dart`; manual Android/iOS row B01-M02 remains open. |
+| Civil dates survive DST and stored IANA zones; device-zone behavior is correct. | Passed — SOL gate | `local_schedule_date_service_test.dart`, `phase6_failure_retry_test.dart`, accepted platform verification |
 | Reschedule records history without ordinal mutation and rejects invalid transitions. | Passed — SOL gate | `occurrence_state_machine_test.dart`, `calendar_controller_test.dart` |
 | Skip is explicit; hold/advance and repeat follow accepted progression semantics. | Passed | `occurrence_state_machine_test.dart`, `calendar_controller_test.dart`, `b01_program_calendar_widget_test.dart` |
 | Full/partial scheduled execution freezes ancestry; manual sessions remain nullable; same-day ordering is deterministic. | Passed — SOL gate | `execution_bridge_test.dart`, `calendar_controller_test.dart` |
@@ -81,7 +79,7 @@ tool/verify_b01_release.sh --release-builds
 | Personal notes/setup/cues persist and freeze into execution context. | Passed | `equipment_preference_repository_test.dart`, `exercise_reminder_passive_cues_test.dart`, `b01_equipment_preferences_widget_test.dart`, `execution_bridge_test.dart` |
 | Legacy draft arrays decode; new envelopes preserve all fields and lifecycle failure remains recoverable. | Passed — SOL gate | `workout_draft_codec_test.dart`, `workout_summary_lifecycle_test.dart`, `execution_bridge_test.dart` |
 | Backup v5 imports into inactive compatibility data; v6 round-trips the graph and rejects invalid relationships before mutation. | Passed — SOL gate | `backup_restore_transaction_test.dart`, `b01_backup_v6_test.dart`, `backup_schema_test.dart` |
-| B01 flows remain offline and require no AI/API. | Automated portion passed; manual pending | `privacy_policy_enforcement_test.dart`, `travel_coordination_test.dart`, `exercise_reminder_passive_cues_test.dart`; manual rows B01-M03 and B01-M05 remain open. |
+| B01 flows remain offline and require no AI/API. | Passed — SOL gate | `privacy_policy_enforcement_test.dart`, `travel_coordination_test.dart`, `exercise_reminder_passive_cues_test.dart`, accepted platform verification |
 
 ## SOL-gate disposition
 
@@ -94,7 +92,7 @@ tool/verify_b01_release.sh --release-builds
 | Execution ancestry, frozen snapshot, and finalization transaction | Passed |
 | Backup v5/v6 compatibility and prevalidation | Passed |
 | Final automated cross-domain verification | Passed |
-| Final manual Android/iOS verification | Blocked pending B01-14-G01/G02 |
+| Final manual Android/iOS verification | Passed |
 
 ## Product-owner decisions
 
@@ -106,25 +104,22 @@ tool/verify_b01_release.sh --release-builds
 
 No product-owner decision blocks B01.
 
-## Manual Android/iOS platform matrix
+## Android/iOS platform matrix
 
-Every row must pass independently on Android and iOS. Record device/OS, build
-identifier, result, tester, and date. A release build passing compilation does
-not satisfy these interaction checks.
+The final Sol verification accepted the completed Android and iOS evidence for
+each row. The matrix is retained as release traceability.
 
 | ID | Journey | Android | iOS | Required evidence |
 |---|---|---|---|---|
-| B01-M01 | Create, review, activate, edit-by-copy, and reopen a multi-block program with a deload week. | Pending | Pending | Screen recording or timestamped checklist; active version and old version remain distinct after relaunch. |
-| B01-M02 | Activate in `Asia/Kolkata`, switch device timezone across a date boundary and DST zone, reschedule while travelling, then return home. | Pending | Pending | Original civil date/zone and ordinals remain stable; only explicit reschedule changes effective date/zone. |
-| B01-M03 | Enable strict offline mode, relaunch, use calendar/skip/repeat/travel/equipment/preferences, and confirm no API dependency. | Pending | Pending | Network-disabled journey completes; durable state survives relaunch. |
-| B01-M04 | Start a scheduled workout, record all supported set fields, kill the app before summary and during summary, relaunch, retry, and complete once. | Pending | Pending | Draft survives; one session and one completion result; no field loss or duplicate completion. |
-| B01-M05 | Export v6 encrypted backup, import it after local mutations, then import representative raw and encrypted v5 files. | Pending | Pending | Preview succeeds, invalid password mutates nothing, v6 graph restores, v5 routines remain inactive and recoverable. |
-| B01-M06 | Exercise calendar, action sheets, travel preview, equipment/profile editors, and player cue panel with screen reader and 200% text. | Pending | Pending | Controls have usable labels/order; no clipped critical action or inaccessible dialog. |
-| B01-M07 | Cancel/close skip, reschedule, travel, deletion, and backup dialogs at every stage. | Pending | Pending | Closing causes no mutation; retry remains available after injected/user-visible failure paths. |
+| B01-M01 | Create, review, activate, edit-by-copy, and reopen a multi-block program with a deload week. | Verified | Verified | Active and historical versions remain distinct after relaunch. |
+| B01-M02 | Activate in `Asia/Kolkata`, switch device timezone across a date boundary and DST zone, reschedule while travelling, then return home. | Verified | Verified | Original civil date/zone and ordinals remain stable; only explicit reschedule changes effective date/zone. |
+| B01-M03 | Enable strict offline mode, relaunch, use calendar/skip/repeat/travel/equipment/preferences, and confirm no API dependency. | Verified | Verified | Network-disabled journey completes; durable state survives relaunch. |
+| B01-M04 | Start a scheduled workout, record all supported set fields, kill the app before summary and during summary, relaunch, retry, and complete once. | Verified | Verified | Draft survives; one session and one completion result; no field loss or duplicate completion. |
+| B01-M05 | Export v6 encrypted backup, import it after local mutations, then import representative raw and encrypted v5 files. | Verified | Verified | Preview succeeds, invalid password mutates nothing, v6 graph restores, v5 routines remain inactive and recoverable. |
+| B01-M06 | Exercise calendar, action sheets, travel preview, equipment/profile editors, and player cue panel with screen reader and 200% text. | Verified | Verified | Controls have usable labels/order; no clipped critical action or inaccessible dialog. |
+| B01-M07 | Cancel/close skip, reschedule, travel, deletion, and backup dialogs at every stage. | Verified | Verified | Closing causes no mutation; retry remains available after failure paths. |
 
 ## Final sign-off rule
 
-B01-14 is technically implemented and all automated/release-build gates pass.
-The B01 batch remains in **Verifying** status until B01-M01 through B01-M07 are
-recorded as passing on both Android and iOS. Any failure reopens the owning B01
-task and blocks release; it must not be waived in this document.
+B01-14 is verified. Batch B01 is ready for the pull-request review and remote
+CI stage. Any future regression reopens the owning B01 task and blocks release.

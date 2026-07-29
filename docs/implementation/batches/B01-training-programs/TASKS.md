@@ -8,26 +8,26 @@ per-exercise notification scheduling.
 
 ## Dependency overview
 
-| ID | Title | Depends on | Recommended model | Risk | Size |
-|---|---|---|---|---|---|
-| B01-01 | Freeze identity/equipment migration fixtures | — | Gemini Flash | High data quality | M |
-| B01-02 | Build real v14/v5 migration and backup fixture harness | — | Gemini Flash, Sol review | High test-foundation | M |
-| B01-04 | Repair backward-compatible draft codec and pre-save lifecycle | — | Gemini Flash, Sol review | High user data loss | S |
-| B01-03 | Add stable exercise IDs, accepted v15 graph, and migration | B01-01, B01-02, PO travel/reminder decisions | Sol High | Critical data loss | L |
-| B01-05 | Implement program authoring/version repository | B01-03 | Terra High | High invariants | L |
-| B01-06 | Implement activation and occurrence state machine | B01-03, B01-05 | Sol High | Critical semantics | L |
-| B01-07 | Implement equipment profiles and preference aggregates | B01-03, B01-01 | Gemini Flash | Medium | M |
-| B01-08A | Implement calendar read models and controllers | B01-06 | Terra High | High scheduling | M |
-| B01-08B | Implement travel coordination | B01-06, B01-07, PO travel decision | Terra High, Sol review | High multi-domain | M |
-| B01-09 | Bridge occurrence execution to player/history | B01-04, B01-06, B01-07 | Terra High, Sol review | High compatibility | L |
-| B01-13 | Legacy compatibility adapter and regression sweep | B01-05, B01-09 | Terra High, Sol review | High regression | M |
-| B01-10 | Implement Backup v6 and v5 import compatibility | B01-03, B01-04, B01-06, B01-07, B01-08B, B01-09, B01-13, conditional reminder task | Sol High | Critical portability | L |
-| B01-11A | Build program authoring and calendar UI | B01-05, B01-08A, B01-09, B01-13, PO skip-UI decision | Terra High | Medium | L |
-| B01-11B | Build travel UI | B01-08B, B01-11A, PO travel decision | Terra High | Medium | M |
-| B01-12 | Build equipment/preferences UI and player panel | B01-07, B01-09 | Gemini Flash | Medium | M |
-| B01-07R | Implement scheduled exercise reminders, only if retained | B01-03, B01-07, PO reminder decision | Terra High, Sol review | High platform/state | M |
-| B01-12R | Build reminder UI, only if retained | B01-07R, PO reminder decision | Terra High | Medium | S |
-| B01-14 | Final cross-domain verification and release gates | All applicable B01 tasks | Sol High | Critical | M |
+| ID | Title | Depends on | Recommended model | Risk | Size | Status |
+|---|---|---|---|---|---|---|
+| B01-01 | Freeze identity/equipment migration fixtures | — | Gemini Flash | High data quality | M | Verified |
+| B01-02 | Build real v14/v5 migration and backup fixture harness | — | Gemini Flash, Sol review | High test-foundation | M | Verified |
+| B01-04 | Repair backward-compatible draft codec and pre-save lifecycle | — | Gemini Flash, Sol review | High user data loss | S | Verified |
+| B01-03 | Add stable exercise IDs, accepted v15 graph, and migration | B01-01, B01-02, PO travel/reminder decisions | Sol High | Critical data loss | L | Verified |
+| B01-05 | Implement program authoring/version repository | B01-03 | Terra High | High invariants | L | Verified |
+| B01-06 | Implement activation and occurrence state machine | B01-03, B01-05 | Sol High | Critical semantics | L | Verified |
+| B01-07 | Implement equipment profiles and preference aggregates | B01-03, B01-01 | Gemini Flash | Medium | M | Verified |
+| B01-08A | Implement calendar read models and controllers | B01-06 | Terra High | High scheduling | M | Verified |
+| B01-08B | Implement travel coordination | B01-06, B01-07, PO travel decision | Terra High, Sol review | High multi-domain | M | Verified |
+| B01-09 | Bridge occurrence execution to player/history | B01-04, B01-06, B01-07 | Terra High, Sol review | High compatibility | L | Verified |
+| B01-13 | Legacy compatibility adapter and regression sweep | B01-05, B01-09 | Terra High, Sol review | High regression | M | Verified |
+| B01-10 | Implement Backup v6 and v5 import compatibility | B01-03, B01-04, B01-06, B01-07, B01-08B, B01-09, B01-13, conditional reminder task | Sol High | Critical portability | L | Verified |
+| B01-11A | Build program authoring and calendar UI | B01-05, B01-08A, B01-09, B01-13, PO skip-UI decision | Terra High | Medium | L | Verified |
+| B01-11B | Build travel UI | B01-08B, B01-11A, PO travel decision | Terra High | Medium | M | Verified |
+| B01-12 | Build equipment/preferences UI and player panel | B01-07, B01-09 | Gemini Flash | Medium | M | Verified |
+| B01-07R | Implement scheduled exercise reminders, only if retained | B01-03, B01-07, PO reminder decision | Terra High, Sol review | High platform/state | M | Closed — not retained |
+| B01-12R | Build reminder UI, only if retained | B01-07R, PO reminder decision | Terra High | Medium | S | Closed — not applicable |
+| B01-14 | Final cross-domain verification and release gates | All applicable B01 tasks | Sol High | Critical | M | Verified |
 
 ## Exact execution order
 
@@ -471,10 +471,9 @@ per-exercise notification scheduling.
 
 ## B01-14 — Final cross-domain verification and release gates
 
-- Verification status (2026-07-29): automated cross-domain, migration, backup,
-  formatting, analysis, generated-source, and Android/iOS release-build gates
-  pass. Final batch sign-off remains blocked only on the manual Android/iOS
-  matrix B01-M01 through B01-M07 in `VERIFICATION.md`.
+- Verification status (2026-07-30): final Sol verification, platform manual
+  matrix, automated cross-domain checks, and release-build gates are verified.
+  B01 is ready for pull request.
 
 - Goal: independently verify that the delivered batch matches the charter and
   this architecture.

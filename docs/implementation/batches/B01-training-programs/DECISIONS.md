@@ -210,7 +210,7 @@ upgrade fixture in `test/db_migration_test.dart`.
 
 ## B01-D07 — Default skip interaction
 
-- **Status:** Deferred to product owner.
+- **Status:** Accepted; superseded by B01-PD01.
 - **Final rule:** Both hold and advance are valid domain commands, but the UI
   must not silently choose one until the product owner decides. Recommended
   default is an explicit, unselected choice with “Keep this workout pending”
@@ -222,8 +222,7 @@ upgrade fixture in `test/db_migration_test.dart`.
   in the occurrence event/disposition; later undo follows B01-D05 guards.
 - **Required tests:** controller requires a disposition; UI has no implicit
   advance; both commands produce correct progression.
-- **Affected tasks:** B01-06 is not blocked; skip UI in B01-11A is blocked until
-  the choice is recorded.
+- **Affected tasks:** B01-06 and B01-11A are complete under B01-PD01.
 
 ## B01-D08 — Date, timezone, and DST semantics
 
@@ -256,13 +255,12 @@ upgrade fixture in `test/db_migration_test.dart`.
 
 ## B01-D09 — Travel-week MVP
 
-- **Status:** Deferred to product owner; implementation blocked.
+- **Status:** Accepted; superseded by B01-PD02.
 - **Final rule:** Recommended option is preserve normal program order, weeks,
   dates, and deload flags while applying a temporary equipment-profile override.
   No automatic volume reduction, substitute-week generation, or week
   consumption is permitted. Because the roadmap reserves this choice for the
-  product owner, TravelContext schema and behavior are not approved until that
-  option is confirmed.
+  product owner, TravelContext schema and behavior are approved by B01-PD02.
 - **Rationale:** The recommended option is the smallest reversible behavior,
   but other listed choices require materially different schedule data.
 - **Invariants if accepted:**
@@ -278,8 +276,8 @@ upgrade fixture in `test/db_migration_test.dart`.
 - **Required tests:** inclusive boundaries; explicit membership; cancellation;
   reschedule into/out of context; deload preservation; restart/offline; snapshot
   retention.
-- **Affected tasks:** blocks travel portions of B01-03, B01-08B, B01-10, and
-  B01-11B.
+- **Affected tasks:** B01-03, B01-08B, B01-10, and B01-11B are complete under
+  B01-PD02.
 
 ## B01-D10 — Durable-state ownership
 
@@ -307,7 +305,7 @@ upgrade fixture in `test/db_migration_test.dart`.
 
 ## B01-D11 — Reminder scope and existing preference compatibility
 
-- **Status:** Deferred to product owner; reminder implementation blocked.
+- **Status:** Accepted; superseded by B01-PD03.
 - **Final rule:** The product owner must decide whether B01 “personal
   reminders” means passive exercise cues shown during execution or scheduled
   per-exercise notifications. If passive, B01-D15 satisfies the scope and no
@@ -325,8 +323,9 @@ upgrade fixture in `test/db_migration_test.dart`.
 - **Required tests:** key-alias backup compatibility; conditional reminder DTO/
   restore tests if retained; notification timezone/permission tests if
   scheduled.
-- **Affected tasks:** blocks reminder portions of B01-03, B01-07R, B01-10, and
-  B01-12R. B01-10 owns the historical global-key alias compatibility.
+- **Affected tasks:** B01-03, B01-10, and passive-cue scope are complete under
+  B01-PD03. B01-07R and B01-12R are closed because scheduled reminders were
+  not retained. B01-10 owns the historical global-key alias compatibility.
 
 ## B01-D12 — Draft compatibility and sole finalization owner
 
@@ -439,19 +438,15 @@ upgrade fixture in `test/db_migration_test.dart`.
   archive rejection; FK/history retention; Backup v6 archive round trip.
 - **Affected tasks:** B01-03, B01-05, B01-10, B01-11A.
 
-## Product-owner decisions required
+## Product-owner decisions resolved
 
-1. **Skip interaction:** recommended explicit unselected choice, with “keep
-   pending” first. Alternative is a preselected default. Only skip UI is
-   blocked; both domain commands may be implemented.
-2. **Travel mode:** recommended preserve program dates/order/deload and apply an
-   equipment-profile override to explicitly previewed occurrences. Alternatives
-   reduce volume, insert a temporary week, or consume/replace a week. Travel
-   schema, coordination, backup, and UI are blocked.
-3. **Personal reminders:** recommended interpret them as passive personal cues
-   in the workout player for B01. Alternative is scheduled per-exercise
-   notifications with typed Drift records and platform scheduling. Reminder
-   schema/backup/UI are blocked.
+1. **Skip interaction:** accepted as B01-PD01 — an explicit unselected choice,
+   with “Keep pending” listed first.
+2. **Travel mode:** accepted as B01-PD02 — preserve program dates, order,
+   ordinals, deloads, and occurrences while applying a previewed equipment
+   override.
+3. **Personal reminders:** accepted as B01-PD03 — passive exercise-context
+   cues; scheduled per-exercise notifications are outside B01 scope.
 
 Cross-week and cross-block rescheduling is an engineering rule, not a pending
 product decision: it is allowed with confirmation and never changes program
