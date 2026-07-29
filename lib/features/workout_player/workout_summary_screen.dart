@@ -65,7 +65,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
       // Delete active draft ONLY AFTER durable session logging succeeds
       await repo.deleteActiveDraft();
 
-      if (mounted) {
+      if (mounted && Navigator.of(context).canPop()) {
         Navigator.pop(context); // Exit summary and return to split view
       }
     } catch (e) {

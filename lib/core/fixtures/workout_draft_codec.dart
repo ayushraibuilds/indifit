@@ -2,10 +2,36 @@ import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import '../../data/database/app_database.dart';
 
+/// Exception thrown when encountering an unsupported future or legacy codec envelope version.
+class UnsupportedDraftVersionException implements Exception {
+  final int version;
+  const UnsupportedDraftVersionException(this.version);
+
+  @override
+  String toString() =>
+      'UnsupportedDraftVersionException: Draft codec version $version is not supported (supported version: ${WorkoutDraftCodec.currentVersion}).';
+}
+
 /// Versioned codec for serializing and deserializing active workout drafts.
 /// Preserves all performed-set fields and supports legacy bare-array payloads.
+///
+/// NOTE ON BOUNDED LIFECYCLE LIMITATION:
+/// Session logging (logSession) saves session and performed sets atomically in Drift database.
+/// Active draft deletion (deleteActiveDraft) occurs immediately after logSession succeeds.
+/// In the event of process termination between these operations, both a saved session and an active draft
+/// may persist. Full database-level transactional occurrence finalization and command-ID idempotency
+/// are explicitly deferred to task B01-09.
 class WorkoutDraftCodec {
   static const int currentVersion = 1;
+
+  /// Allowed canonical set types supported in the application.
+  static const Set<String> allowedSetTypes = {
+    'working',
+    'warmup',
+    'dropset',
+    'failure',
+    'amrap',
+  };
 
   /// Serializes active draft state into a versioned JSON envelope string.
   static String encode({
@@ -28,11 +54,13 @@ class WorkoutDraftCodec {
         'setType': s.setType.present ? s.setType.value : 'working',
         'setNotes': s.setNotes.present ? s.setNotes.value : null,
         'uuid': s.uuid.present ? s.uuid.value : null,
-        'durationSeconds':
-            s.durationSeconds.present ? s.durationSeconds.value : null,
+        'durationSeconds': s.durationSeconds.present
+            ? s.durationSeconds.value
+            : null,
         'distanceKm': s.distanceKm.present ? s.distanceKm.value : null,
-        'inclinePercentage':
-            s.inclinePercentage.present ? s.inclinePercentage.value : null,
+        'inclinePercentage': s.inclinePercentage.present
+            ? s.inclinePercentage.value
+            : null,
       };
       return map;
     }).toList();
@@ -51,7 +79,9 @@ class WorkoutDraftCodec {
 
   /// Deserializes a draft JSON string (envelope v1 or legacy bare-array v0) into a list of [WorkoutSetsCompanion] objects.
   static List<WorkoutSetsCompanion> decodeLoggedSets(String jsonStr) {
-    if (jsonStr.trim().isEmpty) return const [];
+    if (jsonStr.trim().isEmpty) {
+      throw const FormatException('Draft payload must not be empty.');
+    }
 
     dynamic decoded;
     try {
@@ -76,13 +106,37 @@ class WorkoutDraftCodec {
     } else if (decoded is Map) {
       // Versioned envelope format (v1+)
       final envelope = Map<String, dynamic>.from(decoded);
-      final rawSets = envelope['loggedSets'];
-      if (rawSets == null) return const [];
-      if (rawSets is! List) {
+
+      // 1. Validate version member presence and version compatibility
+      final versionRaw = envelope['version'];
+      if (versionRaw == null) {
         throw const FormatException(
-          'Envelope "loggedSets" must be a JSON array.',
+          'Missing required "version" in draft envelope payload.',
         );
       }
+      if (versionRaw is! int) {
+        throw const FormatException(
+          'Draft envelope "version" must be an integer.',
+        );
+      }
+      if (versionRaw != currentVersion) {
+        throw UnsupportedDraftVersionException(versionRaw);
+      }
+
+      // 2. Validate loggedSets presence and list type
+      if (!envelope.containsKey('loggedSets') ||
+          envelope['loggedSets'] == null) {
+        throw const FormatException(
+          'Missing required "loggedSets" array in draft envelope.',
+        );
+      }
+      final rawSets = envelope['loggedSets'];
+      if (rawSets is! List) {
+        throw const FormatException(
+          'Draft envelope "loggedSets" must be a JSON array.',
+        );
+      }
+
       return rawSets.map((item) {
         if (item is! Map<String, dynamic> && item is! Map) {
           throw const FormatException('Draft set item must be a JSON object.');
@@ -110,7 +164,14 @@ class WorkoutDraftCodec {
 
     final rpe = _parseOptionalInt(map, 'rpe');
     final isWarmUp = _parseOptionalBool(map, 'isWarmUp') ?? false;
+
     final setType = _parseOptionalString(map, 'setType') ?? 'working';
+    if (!allowedSetTypes.contains(setType.toLowerCase())) {
+      throw FormatException(
+        'Invalid setType "$setType". Allowed set types: ${allowedSetTypes.join(', ')}.',
+      );
+    }
+
     final setNotes = _parseOptionalString(map, 'setNotes');
     final uuid = _parseOptionalString(map, 'uuid');
     final durationSeconds = _parseOptionalInt(map, 'durationSeconds');

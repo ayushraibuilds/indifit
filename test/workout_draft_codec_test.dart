@@ -8,189 +8,211 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('B01-04 WorkoutDraftCodec Unit Tests', () {
-    test('1. Current draft round trip preserves all supported fields', () {
-      final set1 = WorkoutSetsCompanion.insert(
-        sessionId: 0,
-        exerciseName: 'Flat Barbell Bench Press',
-        weight: 85.5,
-        reps: 8,
-        setNumber: 1,
-        isPr: const Value(true),
-        rpe: const Value(9),
-        isWarmUp: const Value(false),
-        setType: const Value('working'),
-        setNotes: const Value('Heavy set, clean form! 💪'),
-        uuid: const Value('550e8400-e29b-41d4-a716-446655440000'),
-        durationSeconds: const Value(45),
-        distanceKm: const Value(null),
-        inclinePercentage: const Value(null),
-      );
+  group('B01-04 WorkoutDraftCodec Remediation Unit Tests', () {
+    test(
+      '1. Full-field draft round trip explicitly asserts all supported fields',
+      () {
+        final set1 = WorkoutSetsCompanion.insert(
+          sessionId: 0,
+          exerciseName: 'Treadmill Incline Run',
+          weight: 0.0,
+          reps: 0,
+          setNumber: 1,
+          isPr: const Value(true),
+          rpe: const Value(9),
+          isWarmUp: const Value(false),
+          setType: const Value('working'),
+          setNotes: const Value('High intensity interval 🔥'),
+          uuid: const Value('550e8400-e29b-41d4-a716-446655440000'),
+          durationSeconds: const Value(1200),
+          distanceKm: const Value(3.5),
+          inclinePercentage: const Value(5.0),
+        );
 
-      final encoded = WorkoutDraftCodec.encode(
-        routineName: 'Push Day',
-        currentExerciseIndex: 1,
-        currentSetIndex: 2,
-        elapsedSeconds: 300,
-        loggedSets: [set1],
-      );
+        final encoded = WorkoutDraftCodec.encode(
+          routineName: 'Cardio Blast',
+          currentExerciseIndex: 0,
+          currentSetIndex: 0,
+          elapsedSeconds: 1200,
+          loggedSets: [set1],
+        );
 
-      expect(encoded, contains('"version":1'));
-      expect(encoded, contains('Heavy set, clean form! 💪'));
+        expect(encoded, contains('"version":1'));
+        expect(encoded, contains('High intensity interval 🔥'));
 
-      final decoded = WorkoutDraftCodec.decodeLoggedSets(encoded);
-      expect(decoded.length, equals(1));
+        final decoded = WorkoutDraftCodec.decodeLoggedSets(encoded);
+        expect(decoded.length, equals(1));
 
-      final restored = decoded.first;
-      expect(restored.sessionId.value, equals(0));
-      expect(restored.exerciseName.value, equals('Flat Barbell Bench Press'));
-      expect(restored.weight.value, equals(85.5));
-      expect(restored.reps.value, equals(8));
-      expect(restored.setNumber.value, equals(1));
-      expect(restored.isPr.value, isTrue);
-      expect(restored.rpe.value, equals(9));
-      expect(restored.isWarmUp.value, isFalse);
-      expect(restored.setType.value, equals('working'));
-      expect(restored.setNotes.value, equals('Heavy set, clean form! 💪'));
+        final restored = decoded.first;
+        expect(restored.sessionId.value, equals(0));
+        expect(restored.exerciseName.value, equals('Treadmill Incline Run'));
+        expect(restored.weight.value, equals(0.0));
+        expect(restored.reps.value, equals(0));
+        expect(restored.setNumber.value, equals(1));
+        expect(restored.isPr.value, isTrue);
+        expect(restored.rpe.value, equals(9));
+        expect(restored.isWarmUp.value, isFalse);
+        expect(restored.setType.value, equals('working'));
+        expect(restored.setNotes.value, equals('High intensity interval 🔥'));
+        expect(
+          restored.uuid.value,
+          equals('550e8400-e29b-41d4-a716-446655440000'),
+        );
+        expect(restored.durationSeconds.value, equals(1200));
+        expect(restored.distanceKm.value, equals(3.5));
+        expect(restored.inclinePercentage.value, equals(5.0));
+      },
+    );
+
+    test(
+      '2. Unsupported future codec version throws UnsupportedDraftVersionException',
+      () {
+        final futureEnvelope = jsonEncode({
+          'version': 99,
+          'routineName': 'Future Workout',
+          'loggedSets': [],
+        });
+
+        expect(
+          () => WorkoutDraftCodec.decodeLoggedSets(futureEnvelope),
+          throwsA(isA<UnsupportedDraftVersionException>()),
+        );
+      },
+    );
+
+    test('3. Missing version in envelope object throws FormatException', () {
+      final missingVersionEnvelope = jsonEncode({
+        'routineName': 'No Version Workout',
+        'loggedSets': [],
+      });
+
       expect(
-        restored.uuid.value,
-        equals('550e8400-e29b-41d4-a716-446655440000'),
-      );
-      expect(restored.durationSeconds.value, equals(45));
-    });
-
-    test('2. Legacy draft JSON remains readable', () {
-      final legacyJson = jsonEncode([
-        {
-          'sessionId': 0,
-          'exerciseName': 'Barbell Squat',
-          'weight': 100.0,
-          'reps': 5,
-          'setNumber': 1,
-          'isPr': false,
-        },
-      ]);
-
-      final decoded = WorkoutDraftCodec.decodeLoggedSets(legacyJson);
-      expect(decoded.length, equals(1));
-
-      final restored = decoded.first;
-      expect(restored.exerciseName.value, equals('Barbell Squat'));
-      expect(restored.weight.value, equals(100.0));
-      expect(restored.reps.value, equals(5));
-      expect(restored.isPr.value, isFalse);
-    });
-
-    test('3. Missing optional legacy fields receive documented defaults', () {
-      final legacyJson = jsonEncode([
-        {
-          'sessionId': 0,
-          'exerciseName': 'Barbell Squat',
-          'weight': 100.0,
-          'reps': 5,
-          'setNumber': 1,
-          'isPr': false,
-        },
-      ]);
-
-      final restored = WorkoutDraftCodec.decodeLoggedSets(legacyJson).first;
-      expect(restored.rpe.value, isNull);
-      expect(restored.isWarmUp.value, isFalse);
-      expect(restored.setType.value, equals('working'));
-      expect(restored.setNotes.value, isNull);
-      expect(restored.uuid.value, isNull);
-      expect(restored.durationSeconds.value, isNull);
-      expect(restored.distanceKm.value, isNull);
-      expect(restored.inclinePercentage.value, isNull);
-    });
-
-    test('4. Null optional fields survive round trip', () {
-      final setWithNulls = WorkoutSetsCompanion.insert(
-        sessionId: 0,
-        exerciseName: 'Overhead Press',
-        weight: 50.0,
-        reps: 10,
-        setNumber: 1,
-        isPr: const Value(false),
-        rpe: const Value(null),
-        isWarmUp: const Value(false),
-        setType: const Value('working'),
-        setNotes: const Value(null),
-        uuid: const Value(null),
-      );
-
-      final encoded = WorkoutDraftCodec.encode(
-        routineName: 'Shoulders',
-        currentExerciseIndex: 0,
-        currentSetIndex: 0,
-        elapsedSeconds: 60,
-        loggedSets: [setWithNulls],
-      );
-
-      final restored = WorkoutDraftCodec.decodeLoggedSets(encoded).first;
-      expect(restored.rpe.value, isNull);
-      expect(restored.setNotes.value, isNull);
-      expect(restored.uuid.value, isNull);
-    });
-
-    test('5. Unicode set notes survive round trip', () {
-      final setWithEmoji = WorkoutSetsCompanion.insert(
-        sessionId: 0,
-        exerciseName: 'Lat Pulldown',
-        weight: 60.0,
-        reps: 12,
-        setNumber: 2,
-        isPr: const Value(true),
-        setNotes: const Value('Hindi note: बहुत बढ़िया सेट 🔥🏋️‍♂️'),
-      );
-
-      final encoded = WorkoutDraftCodec.encode(
-        routineName: 'Pull',
-        currentExerciseIndex: 0,
-        currentSetIndex: 1,
-        elapsedSeconds: 150,
-        loggedSets: [setWithEmoji],
-      );
-
-      final restored = WorkoutDraftCodec.decodeLoggedSets(encoded).first;
-      expect(
-        restored.setNotes.value,
-        equals('Hindi note: बहुत बढ़िया सेट 🔥🏋️‍♂️'),
-      );
-    });
-
-    test('6. Invalid JSON fails safely', () {
-      expect(
-        () => WorkoutDraftCodec.decodeLoggedSets('{invalid json...'),
+        () => WorkoutDraftCodec.decodeLoggedSets(missingVersionEnvelope),
         throwsA(isA<FormatException>()),
       );
-    });
-
-    test('7. Invalid field types fail safely', () {
-      final badTypeJson = jsonEncode([
-        {
-          'sessionId': 'not-an-int',
-          'exerciseName': 'Bench',
-          'weight': 80.0,
-          'reps': 8,
-          'setNumber': 1,
-          'isPr': true,
-        },
-      ]);
-
-      expect(
-        () => WorkoutDraftCodec.decodeLoggedSets(badTypeJson),
-        throwsA(isA<FormatException>()),
-      );
-    });
-
-    test('14. Active draft empty payload returns empty list', () {
-      final decoded = WorkoutDraftCodec.decodeLoggedSets('');
-      expect(decoded, isEmpty);
     });
 
     test(
-      '15. Existing session logging companion conversion remains intact',
+      '4. Missing or null loggedSets in envelope throws FormatException',
+      () {
+        final missingSetsEnvelope = jsonEncode({
+          'version': 1,
+          'routineName': 'No Sets Workout',
+        });
+
+        final nullSetsEnvelope = jsonEncode({
+          'version': 1,
+          'routineName': 'Null Sets Workout',
+          'loggedSets': null,
+        });
+
+        expect(
+          () => WorkoutDraftCodec.decodeLoggedSets(missingSetsEnvelope),
+          throwsA(isA<FormatException>()),
+        );
+
+        expect(
+          () => WorkoutDraftCodec.decodeLoggedSets(nullSetsEnvelope),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
+
+    test('5. Corrupt empty object throws FormatException', () {
+      final emptyObject = jsonEncode({});
+
+      expect(
+        () => WorkoutDraftCodec.decodeLoggedSets(emptyObject),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('6. Invalid setType throws FormatException', () {
+      final invalidSetTypeJson = jsonEncode([
+        {
+          'sessionId': 0,
+          'exerciseName': 'Bench Press',
+          'weight': 80.0,
+          'reps': 8,
+          'setNumber': 1,
+          'isPr': false,
+          'setType': 'super_ultra_invalid_set',
+        },
+      ]);
+
+      expect(
+        () => WorkoutDraftCodec.decodeLoggedSets(invalidSetTypeJson),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test(
+      '7. Allowed setTypes (working, warmup, dropset, failure, amrap) pass validation',
+      () {
+        for (final type in [
+          'working',
+          'warmup',
+          'dropset',
+          'failure',
+          'amrap',
+        ]) {
+          final json = jsonEncode([
+            {
+              'sessionId': 0,
+              'exerciseName': 'Squat',
+              'weight': 100.0,
+              'reps': 5,
+              'setNumber': 1,
+              'isPr': false,
+              'setType': type,
+            },
+          ]);
+
+          final restored = WorkoutDraftCodec.decodeLoggedSets(json).first;
+          expect(restored.setType.value, equals(type));
+        }
+      },
+    );
+
+    test(
+      '8. Legacy bare array format remains readable with documented defaults',
+      () {
+        final legacyJson = jsonEncode([
+          {
+            'sessionId': 0,
+            'exerciseName': 'Barbell Squat',
+            'weight': 100.0,
+            'reps': 5,
+            'setNumber': 1,
+            'isPr': false,
+          },
+        ]);
+
+        final restored = WorkoutDraftCodec.decodeLoggedSets(legacyJson).first;
+        expect(restored.exerciseName.value, equals('Barbell Squat'));
+        expect(restored.weight.value, equals(100.0));
+        expect(restored.reps.value, equals(5));
+        expect(restored.isPr.value, isFalse);
+        expect(restored.rpe.value, isNull);
+        expect(restored.isWarmUp.value, isFalse);
+        expect(restored.setType.value, equals('working'));
+        expect(restored.setNotes.value, isNull);
+        expect(restored.uuid.value, isNull);
+        expect(restored.durationSeconds.value, isNull);
+        expect(restored.distanceKm.value, isNull);
+        expect(restored.inclinePercentage.value, isNull);
+      },
+    );
+
+    test('9. Active draft empty payload fails safely', () {
+      expect(
+        () => WorkoutDraftCodec.decodeLoggedSets(''),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test(
+      '10. Existing session logging companion conversion remains intact',
       () async {
         SharedPreferences.setMockInitialValues({});
         final db = AppDatabase.memory();
