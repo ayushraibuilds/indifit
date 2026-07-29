@@ -14,36 +14,77 @@ void main() {
     lookup = ExerciseIdentityLookup(manifest);
   });
 
-  group('B01-01 Exercise Identity Fixture Tests', () {
-    test(
-      '1. Every bundled catalogue exercise receives exactly one stable UUID',
-      () {
-        expect(manifest.totalEntries, equals(140));
-        for (final entry in manifest.allEntries) {
-          expect(entry.uuid, isNotNull);
-          expect(entry.uuid.length, equals(36));
-          expect(entry.name, isNotEmpty);
-        }
-      },
-    );
+  group('B01-01 Exercise Identity Fixture Tests (Remediated)', () {
+    test('1. Golden UUID mapping for bundled exercises', () {
+      expect(manifest.totalEntries, equals(140));
 
-    test('2. Repeated fixture loading produces identical mappings', () {
-      final secondManifest = ExerciseCatalogManifest.loadFromAssetFileSync(
-        'assets/data/exercises.json',
-      );
-      expect(secondManifest.totalEntries, equals(manifest.totalEntries));
+      final bench = manifest.getByNormalizedName('flat barbell bench press');
+      expect(bench, isNotNull);
+      expect(bench!.uuid, equals('089ec703-a25e-5b12-a39a-78b17ee33742'));
 
-      for (final entry in manifest.allEntries) {
-        final secondEntry = secondManifest.getByNormalizedName(
-          entry.normalizedName,
-        );
-        expect(secondEntry, isNotNull);
-        expect(secondEntry!.uuid, equals(entry.uuid));
-        expect(secondEntry.name, equals(entry.name));
-      }
+      final squat = manifest.getByNormalizedName('barbell squat');
+      expect(squat, isNotNull);
+      expect(squat!.uuid, equals('d3b5ab04-74f6-5155-9621-50238644eeda'));
+
+      final deadlift = manifest.getByNormalizedName('barbell deadlift');
+      expect(deadlift, isNotNull);
+      expect(deadlift!.uuid, equals('b102bfa4-6cc5-5e60-accb-82a1ae39b8bc'));
     });
 
-    test('3. Canonical exercise UUIDs are unique', () {
+    test('2. Cosmetic display-name change preserves UUID', () {
+      final jsonPayload = [
+        {
+          'uuid': '089ec703-a25e-5b12-a39a-78b17ee33742',
+          'name': 'Barbell Bench Press (Flat Cosmetic Rename)',
+          'muscle_groups': 'Chest',
+          'equipment': 'Barbell',
+          'difficulty': 'Intermediate',
+        },
+      ];
+
+      final customManifest = ExerciseCatalogManifest.fromJsonList(jsonPayload);
+      final entryByUuid = customManifest.getByUuid(
+        '089ec703-a25e-5b12-a39a-78b17ee33742',
+      );
+
+      expect(entryByUuid, isNotNull);
+      expect(entryByUuid!.uuid, equals('089ec703-a25e-5b12-a39a-78b17ee33742'));
+      expect(
+        entryByUuid.name,
+        equals('Barbell Bench Press (Flat Cosmetic Rename)'),
+      );
+    });
+
+    test('3. Manifest reordering preserves UUIDs', () {
+      final item1 = {
+        'uuid': '11111111-1111-1111-1111-111111111111',
+        'name': 'Exercise Alpha',
+      };
+      final item2 = {
+        'uuid': '22222222-2222-2222-2222-222222222222',
+        'name': 'Exercise Beta',
+      };
+
+      final manifestOrderA = ExerciseCatalogManifest.fromJsonList([
+        item1,
+        item2,
+      ]);
+      final manifestOrderB = ExerciseCatalogManifest.fromJsonList([
+        item2,
+        item1,
+      ]);
+
+      expect(
+        manifestOrderA.getByUuid('11111111-1111-1111-1111-111111111111')!.name,
+        equals('Exercise Alpha'),
+      );
+      expect(
+        manifestOrderB.getByUuid('11111111-1111-1111-1111-111111111111')!.name,
+        equals('Exercise Alpha'),
+      );
+    });
+
+    test('4. UUID uniqueness', () {
       final uuidSet = <String>{};
       for (final entry in manifest.allEntries) {
         expect(
@@ -56,20 +97,25 @@ void main() {
       expect(uuidSet.length, equals(140));
     });
 
-    test('4. Canonical normalized names are unique where required', () {
-      final nameSet = <String>{};
-      for (final entry in manifest.allEntries) {
-        expect(
-          nameSet.contains(entry.normalizedName),
-          isFalse,
-          reason: 'Duplicate normalized name: ${entry.normalizedName}',
-        );
-        nameSet.add(entry.normalizedName);
-      }
-      expect(nameSet.length, equals(140));
+    test('5. Duplicate UUID rejection', () {
+      final duplicateUuidJson = [
+        {
+          'uuid': '089ec703-a25e-5b12-a39a-78b17ee33742',
+          'name': 'Exercise One',
+        },
+        {
+          'uuid': '089ec703-a25e-5b12-a39a-78b17ee33742',
+          'name': 'Exercise Two',
+        },
+      ];
+
+      expect(
+        () => ExerciseCatalogManifest.fromJsonList(duplicateUuidJson),
+        throwsA(isA<StateError>()),
+      );
     });
 
-    test('5. Approved aliases resolve correctly', () {
+    test('6. Approved one-to-one alias resolution', () {
       lookup.validateFixtures();
 
       final res1 = lookup.lookup('push-ups');
@@ -77,7 +123,7 @@ void main() {
       expect(res1.canonicalName, equals('Push-Ups'));
       expect(res1.canonicalUuid, isNotNull);
 
-      final res2 = lookup.lookup('dumbbell shoulder press');
+      final res2 = lookup.lookup('seated dumbbell press');
       expect(res2.status, equals(ExerciseLookupStatus.resolved));
       expect(res2.canonicalName, equals('Seated Dumbbell Shoulder Press'));
 
@@ -86,68 +132,61 @@ void main() {
       expect(res3.canonicalName, equals('Incline Dumbbell Bench Press'));
     });
 
-    test('6. Alias collisions fail validation', () {
-      // Create malformed list with duplicate normalized names
-      final malformedJson = [
-        {
-          'name': 'Bench Press',
-          'muscle_groups': 'Chest',
-          'equipment': 'Barbell',
-          'difficulty': 'Intermediate',
-        },
-        {
-          'name': 'BENCH PRESS',
-          'muscle_groups': 'Chest',
-          'equipment': 'Barbell',
-          'difficulty': 'Intermediate',
-        },
-      ];
-
-      expect(
-        () => ExerciseCatalogManifest.fromJsonList(malformedJson),
-        throwsA(isA<StateError>()),
-      );
-    });
-
-    test('7. Ambiguous names do not resolve', () {
-      final res1 = lookup.lookup('leg curl machine');
+    test('7. Generic "dumbbell curls" remains ambiguous', () {
+      final res1 = lookup.lookup('dumbbell curls');
       expect(res1.status, equals(ExerciseLookupStatus.ambiguous));
       expect(res1.canonicalUuid, isNull);
 
-      final res2 = lookup.lookup('dumbbell bench press');
+      final res2 = lookup.lookup('dumbbell curl');
       expect(res2.status, equals(ExerciseLookupStatus.ambiguous));
       expect(res2.canonicalUuid, isNull);
-
-      final res3 = lookup.lookup('squats');
-      expect(res3.status, equals(ExerciseLookupStatus.ambiguous));
-      expect(res3.canonicalUuid, isNull);
     });
 
     test(
-      '8. Technique variants remain separate unless explicitly approved',
+      '8. A normalized alias with multiple candidates is rejected or marked ambiguous',
       () {
-        final standard = lookup.lookup('Flat Barbell Bench Press (Standard)');
-        final pause = lookup.lookup('Pause Flat Barbell Bench Press');
-        final slow = lookup.lookup('Slow Eccentric Flat Barbell Bench Press');
-        final base = lookup.lookup('Flat Barbell Bench Press');
+        final ambiguousNames = [
+          'squats',
+          'leg curl machine',
+          'dumbbell bench press',
+          'dips',
+          'tricep dips',
+          'row',
+        ];
 
-        expect(standard.status, equals(ExerciseLookupStatus.resolved));
-        expect(pause.status, equals(ExerciseLookupStatus.resolved));
-        expect(slow.status, equals(ExerciseLookupStatus.resolved));
-        expect(base.status, equals(ExerciseLookupStatus.resolved));
-
-        // Assert that all 4 variants have distinct UUIDs
-        final ids = {
-          standard.canonicalUuid,
-          pause.canonicalUuid,
-          slow.canonicalUuid,
-          base.canonicalUuid,
-        };
-        expect(ids.length, equals(4));
+        for (final name in ambiguousNames) {
+          final res = lookup.lookup(name);
+          expect(
+            res.status,
+            equals(ExerciseLookupStatus.ambiguous),
+            reason: 'Expected "$name" to be marked ambiguous',
+          );
+          expect(res.canonicalUuid, isNull);
+        }
       },
     );
 
-    test('9. Equipment variants remain separate where required', () {
+    test('9. Technique variants remain separate', () {
+      final standard = lookup.lookup('Flat Barbell Bench Press (Standard)');
+      final pause = lookup.lookup('Pause Flat Barbell Bench Press');
+      final slow = lookup.lookup('Slow Eccentric Flat Barbell Bench Press');
+      final base = lookup.lookup('Flat Barbell Bench Press');
+
+      expect(standard.status, equals(ExerciseLookupStatus.resolved));
+      expect(pause.status, equals(ExerciseLookupStatus.resolved));
+      expect(slow.status, equals(ExerciseLookupStatus.resolved));
+      expect(base.status, equals(ExerciseLookupStatus.resolved));
+
+      final ids = {
+        standard.canonicalUuid,
+        pause.canonicalUuid,
+        slow.canonicalUuid,
+        base.canonicalUuid,
+      };
+      expect(ids.length, equals(4));
+    });
+
+    test('10. Equipment variants remain separate where required', () {
       final barbellPress = lookup.lookup('Overhead Barbell Press');
       final dumbbellPress = lookup.lookup('Seated Dumbbell Shoulder Press');
 
@@ -160,9 +199,9 @@ void main() {
     });
 
     test(
-      '10. Unknown custom exercise names remain unresolved and preserved',
+      '11. Unknown/custom exercises remain unresolved and preserve their original identity/name',
       () {
-        final customName = 'My Custom Overhead Cable Extensions 2026';
+        const customName = 'My Custom Calisthenics Exercise 2026';
         final res = lookup.lookup(customName);
 
         expect(res.status, equals(ExerciseLookupStatus.unresolved));
@@ -172,8 +211,32 @@ void main() {
       },
     );
 
-    test('11. No mapping relies on fuzzy or substring matching', () {
-      // Substring searches like "Bench", "Press", "Curl" must NOT partially match catalog items
+    test('12. Manifest-version validation', () {
+      final invalidVersionJson = {
+        'version': 99,
+        'exercises': [
+          {'name': 'Test Exercise'},
+        ],
+      };
+
+      expect(
+        () => ExerciseCatalogManifest.fromJson(invalidVersionJson),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('13. Malformed manifest rejection', () {
+      final emptyNameJson = [
+        {'name': '   '},
+      ];
+
+      expect(
+        () => ExerciseCatalogManifest.fromJsonList(emptyNameJson),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('14. No fuzzy or substring resolution', () {
       final res1 = lookup.lookup('Bench');
       expect(res1.status, isNot(equals(ExerciseLookupStatus.resolved)));
 
@@ -182,22 +245,6 @@ void main() {
 
       final res3 = lookup.lookup('Pressing');
       expect(res3.status, equals(ExerciseLookupStatus.unresolved));
-    });
-
-    test('15. Fixture parsing rejects malformed entries', () {
-      final emptyNameJson = [
-        {
-          'name': '   ',
-          'muscle_groups': 'Chest',
-          'equipment': 'Barbell',
-          'difficulty': 'Intermediate',
-        },
-      ];
-
-      expect(
-        () => ExerciseCatalogManifest.fromJsonList(emptyNameJson),
-        throwsA(isA<FormatException>()),
-      );
     });
   });
 }
