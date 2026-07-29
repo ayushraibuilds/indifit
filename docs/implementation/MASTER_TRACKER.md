@@ -7,7 +7,7 @@ Current active batch: **B01 — Training Programs and Scheduling**
 
 | Batch | Status | Current step | Blockers |
 |:------|:-------|:-------------|:---------|
-| B01 — Training Programs and Scheduling | Sol gate | Critical architecture review | None |
+| B01 — Training Programs and Scheduling | Implementing | B01-01, B01-02 and B01-04 | None |
 | B02 — Workout Execution | Not started | Waiting for B01 | B01 |
 | B03 — Nutrition Foundation | Not started | Not scheduled | None |
 | B04 — Adaptive Coaching | Not started | Waiting for B01–B03 | B01–B03 |
