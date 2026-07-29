@@ -361,8 +361,13 @@ per-exercise notification scheduling.
 - Validation commands: `flutter test test/<b01-program-widget-tests>.dart test/<b01-calendar-widget-tests>.dart`; `flutter analyze`.
 - Definition of done: UI contains no independent progression calculations.
 
-## B01-11B — Build travel MVP UI
+## B01-11B — Build travel MVP UI ✅ DONE
 
+- Status: DONE.
+- Implementation: `TravelModeScreen` (setup form + active summary),
+  `TravelPreviewSheet` (preview bottom sheet with incompatibility display),
+  `/travel-mode` route, calendar app bar travel badge. Verified via
+  `test/b01_travel_widget_test.dart`.
 - Goal: expose the approved travel preview/apply/cancel/restore journey.
 - Dependencies: B01-08B, B01-11A, and recorded product-owner travel decision.
 - Recommended model: Terra High.
@@ -423,24 +428,19 @@ per-exercise notification scheduling.
 - Definition of done: reminder scope is product-approved and Sol confirms
   single ownership/backup behavior. **SOL-GATE REQUIRED**.
 
-## B01-12R — Build reminder UI, only if retained
+## B01-12R — Build reminder UI, only if retained — ❌ CLOSED
 
-- Goal: expose scheduled reminder CRUD only if B01-07R exists.
+- Status: CLOSED — not applicable.
+- Rationale: B01-PD03 (Accepted) selected passive exercise cues, not scheduled
+  per-exercise notifications. The definition of done states: "UI is omitted
+  entirely if passive cues satisfy the product decision." Passive cues are
+  fully served by `PlayerSetupCuesPanel` (B01-12) and
+  `ExercisePreferenceEditorScreen` (B01-12). No scheduled-reminder domain
+  (B01-07R) was retained, so no reminder UI exists.
+- Original goal: expose scheduled reminder CRUD only if B01-07R exists.
 - Dependencies: B01-07R and recorded product-owner reminder decision.
 - Recommended model: Terra High.
 - Risk / size: Medium / S.
-- Exact scope: exercise reminder editor, permission/quiet-hours feedback, and
-  enable/disable/delete interactions.
-- Implementation instructions: delegate all behavior to the reminder
-  controller and show the effective timezone.
-- Prohibited changes: no platform scheduling in widgets and no reminder data in
-  local widget state beyond form input.
-- Acceptance criteria: accessible CRUD and denied-permission behavior match the
-  approved contract.
-- Tests: widget/controller/semantics tests.
-- Validation commands: `flutter test test/<exercise-reminder-widget-tests>.dart`; `flutter analyze`.
-- Definition of done: UI is omitted entirely if passive cues satisfy the
-  product decision.
 
 ## B01-13 — Legacy compatibility adapter and regression sweep
 

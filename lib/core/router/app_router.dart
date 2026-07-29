@@ -19,6 +19,7 @@ import '../../features/progress/achievements_screen.dart';
 import '../../features/reports/weekly_report_screen.dart';
 import '../../features/settings/health_sync_hub_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/travel/travel_mode_screen.dart';
 import '../../features/workout_player/routine_display_screen.dart';
 import '../../features/workout_player/routine_editor_screen.dart';
 import '../../features/workout_player/workout_player_screen.dart';
@@ -178,6 +179,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             rawName: rawName,
           );
         },
+      ),
+      GoRoute(
+        path: '/travel-mode',
+        builder: (context, state) => const TravelModeScreen(),
       ),
     ],
   );

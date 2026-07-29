@@ -238,6 +238,17 @@ class TravelRepository {
     return contexts.isEmpty ? null : contexts.single;
   }
 
+  /// Read model for UI badges. Membership is deliberately returned from the
+  /// durable, explicit join table rather than inferred from a date range.
+  Future<Set<String>> getActiveTravelMembershipIds() async {
+    final context = await getActiveTravelContext();
+    if (context == null) return const <String>{};
+    final rows = await (db.select(
+      db.travelContextOccurrences,
+    )..where((table) => table.travelContextId.equals(context.id))).get();
+    return rows.map((row) => row.occurrenceId).toSet();
+  }
+
   Future<TravelRescheduleMembershipImpact> getRescheduleMembershipImpact({
     required String occurrenceId,
     required String targetLocalDate,

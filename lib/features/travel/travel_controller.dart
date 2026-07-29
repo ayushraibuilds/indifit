@@ -7,12 +7,14 @@ import '../../data/repositories/travel_repository.dart';
 /// Reactive UI state for travel coordination and equipment profile overrides.
 class TravelUiState {
   final TravelContext? activeTravelContext;
+  final Set<String> activeTravelOccurrenceIds;
   final TravelPreviewResult? previewResult;
   final bool isLoading;
   final String? errorMessage;
 
   const TravelUiState({
     this.activeTravelContext,
+    this.activeTravelOccurrenceIds = const <String>{},
     this.previewResult,
     this.isLoading = false,
     this.errorMessage,
@@ -21,6 +23,7 @@ class TravelUiState {
   TravelUiState copyWith({
     TravelContext? activeTravelContext,
     bool clearActiveTravel = false,
+    Set<String>? activeTravelOccurrenceIds,
     TravelPreviewResult? previewResult,
     bool clearPreview = false,
     bool isLoading = false,
@@ -30,6 +33,9 @@ class TravelUiState {
       activeTravelContext: clearActiveTravel
           ? null
           : (activeTravelContext ?? this.activeTravelContext),
+      activeTravelOccurrenceIds: clearActiveTravel
+          ? const <String>{}
+          : (activeTravelOccurrenceIds ?? this.activeTravelOccurrenceIds),
       previewResult: clearPreview
           ? null
           : (previewResult ?? this.previewResult),
@@ -63,7 +69,12 @@ class TravelController extends StateNotifier<TravelUiState> {
       if (active == null) {
         state = state.copyWith(clearActiveTravel: true, isLoading: false);
       } else {
-        state = state.copyWith(activeTravelContext: active, isLoading: false);
+        final membershipIds = await _travelRepo.getActiveTravelMembershipIds();
+        state = state.copyWith(
+          activeTravelContext: active,
+          activeTravelOccurrenceIds: membershipIds,
+          isLoading: false,
+        );
       }
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
@@ -91,6 +102,23 @@ class TravelController extends StateNotifier<TravelUiState> {
     }
   }
 
+  /// Ends the active context while retaining it as historical travel data.
+  /// Widgets use this command instead of reaching around the controller to the
+  /// repository, keeping travel lifecycle state in one presentation boundary.
+  Future<void> endActiveTravel() async {
+    final active = state.activeTravelContext;
+    if (active == null) return;
+
+    state = state.copyWith(isLoading: true);
+    try {
+      await _travelRepo.endTravelContext(active.id);
+      await loadActiveTravel();
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      rethrow;
+    }
+  }
+
   /// Applies the active preview travel context.
   Future<void> applyTravel({String? note}) async {
     final preview = state.previewResult;
@@ -107,6 +135,7 @@ class TravelController extends StateNotifier<TravelUiState> {
       await loadActiveTravel();
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      rethrow;
     }
   }
 
@@ -121,6 +150,7 @@ class TravelController extends StateNotifier<TravelUiState> {
       await loadActiveTravel();
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      rethrow;
     }
   }
 

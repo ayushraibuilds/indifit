@@ -171,6 +171,10 @@ void main() {
         );
         await travelRepo.createAndApplyTravelContext(preview: reviewedPreview);
         expect(
+          await travelRepo.getActiveTravelMembershipIds(),
+          equals({occurrence.id}),
+        );
+        expect(
           await travelRepo.getEffectiveEquipmentProfileId(
             occurrenceId: occurrence.id,
           ),
@@ -212,6 +216,7 @@ void main() {
           ),
           equals(homeProfileId),
         );
+        expect(await travelRepo.getActiveTravelMembershipIds(), isEmpty);
 
         // Assert program structure (blocks/weeks/templates) was NOT mutated
         final detail = await programRepo.getProgramVersionDetail(v1.id);
@@ -367,8 +372,28 @@ void main() {
         await controller.applyTravel(note: 'Vacation in Goa');
         expect(controller.state.activeTravelContext, isNotNull);
 
+        // A rejected second apply is surfaced to the UI instead of being
+        // swallowed and allowing the preview sheet to dismiss as success.
+        await expectLater(controller.applyTravel(), throwsA(isA<StateError>()));
+        expect(controller.state.activeTravelContext, isNotNull);
+
         await controller.cancelActiveTravel();
         expect(controller.state.activeTravelContext, isNull);
+
+        await controller.previewTravel(
+          startLocalDate: '2026-10-08',
+          endLocalDate: '2026-10-09',
+          timezoneId: 'Asia/Kolkata',
+          equipmentProfileId: profileId,
+        );
+        await controller.applyTravel();
+        final endedId = controller.state.activeTravelContext!.id;
+        await controller.endActiveTravel();
+        expect(controller.state.activeTravelContext, isNull);
+        final ended = await (db.select(
+          db.travelContexts,
+        )..where((table) => table.id.equals(endedId))).getSingle();
+        expect(ended.status, equals('ended'));
       },
     );
   });

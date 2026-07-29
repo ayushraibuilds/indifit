@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../travel/travel_controller.dart';
 import 'calendar_controller.dart';
 import 'calendar_read_model.dart';
 import 'occurrence_actions_sheet.dart';
@@ -100,8 +101,9 @@ class ProgramCalendarScreen extends ConsumerWidget {
 
   Widget _buildOccurrenceCard(
     BuildContext context,
-    CalendarOccurrenceReadItem item,
-  ) {
+    CalendarOccurrenceReadItem item, {
+    required bool hasTravelOverride,
+  }) {
     final occurrence = item.occurrence;
     final color = _statusColor(occurrence.status, item.isDeload);
     return Card(
@@ -128,7 +130,7 @@ class ProgramCalendarScreen extends ConsumerWidget {
           ),
         ),
         subtitle: Text(
-          '${occurrence.effectiveLocalDate} • ${item.block.name} • Week ${item.week.programWeekOrdinal + 1}${item.isDeload ? ' • Deload' : ''}${item.isOverdue ? ' • Overdue' : ''}',
+          '${occurrence.effectiveLocalDate} • ${item.block.name} • Week ${item.week.programWeekOrdinal + 1}${item.isDeload ? ' • Deload' : ''}${hasTravelOverride ? ' • Travel equipment' : ''}${item.isOverdue ? ' • Overdue' : ''}',
           style: TextStyle(
             color: item.isOverdue ? Colors.orange : Colors.grey,
             fontWeight: item.isOverdue ? FontWeight.bold : FontWeight.normal,
@@ -148,6 +150,7 @@ class ProgramCalendarScreen extends ConsumerWidget {
   Widget _buildOccurrences(
     BuildContext context,
     List<CalendarOccurrenceReadItem> items,
+    Set<String> activeTravelOccurrenceIds,
   ) {
     if (items.isEmpty) {
       return const Center(
@@ -164,8 +167,13 @@ class ProgramCalendarScreen extends ConsumerWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: items.length,
-      itemBuilder: (context, index) =>
-          _buildOccurrenceCard(context, items[index]),
+      itemBuilder: (context, index) => _buildOccurrenceCard(
+        context,
+        items[index],
+        hasTravelOverride: activeTravelOccurrenceIds.contains(
+          items[index].occurrence.id,
+        ),
+      ),
     );
   }
 
@@ -173,6 +181,7 @@ class ProgramCalendarScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(calendarControllerProvider);
     final controller = ref.read(calendarControllerProvider.notifier);
+    final travelState = ref.watch(travelControllerProvider);
     final visibleItems = switch (state.view) {
       CalendarView.day => state.selectedDateOccurrences,
       CalendarView.week || CalendarView.month => state.rangeOccurrences,
@@ -188,6 +197,20 @@ class ProgramCalendarScreen extends ConsumerWidget {
           style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
         ),
         actions: [
+          Consumer(
+            builder: (context, ref, child) {
+              final travelState = ref.watch(travelControllerProvider);
+              final isActive = travelState.activeTravelContext != null;
+              return IconButton(
+                icon: Icon(
+                  Icons.flight_rounded,
+                  color: isActive ? AppColors.success : null,
+                ),
+                tooltip: isActive ? 'Travel mode active' : 'Travel mode',
+                onPressed: () => context.push('/travel-mode'),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.add_box_rounded),
             tooltip: 'Author / activate program',
@@ -251,10 +274,28 @@ class ProgramCalendarScreen extends ConsumerWidget {
                 style: const TextStyle(color: Colors.red),
               ),
             ),
+          if (travelState.activeTravelContext case final travel?)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Travel mode: ${travel.startLocalDate} – ${travel.endLocalDate} • ${travelState.activeTravelOccurrenceIds.length} previewed workout${travelState.activeTravelOccurrenceIds.length == 1 ? '' : 's'} use travel equipment.',
+                style: const TextStyle(color: AppColors.textPrimary),
+              ),
+            ),
           Expanded(
             child: state.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _buildOccurrences(context, visibleItems),
+                : _buildOccurrences(
+                    context,
+                    visibleItems,
+                    travelState.activeTravelOccurrenceIds,
+                  ),
           ),
         ],
       ),
