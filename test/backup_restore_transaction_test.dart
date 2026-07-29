@@ -46,6 +46,18 @@ void main() {
         expect(sets.length, equals(1));
         expect(sets.first.exerciseName, equals('Flat Barbell Bench Press'));
 
+        final customFoods = (await db.select(db.foodItems).get())
+            .where((item) => item.isCustom)
+            .toList();
+        expect(customFoods.single.name, equals('Home Made Whey Shake'));
+        expect(customFoods.single.isCustom, isTrue);
+
+        final customExercises = (await db.select(db.exercises).get())
+            .where((item) => item.isCustom)
+            .toList();
+        expect(customExercises.single.name, equals('Pike Push-ups'));
+        expect(customExercises.single.isCustom, isTrue);
+
         expect(prefs.getInt('water_logged'), equals(6));
         expect(prefs.getInt('user_streak_count'), equals(10));
       },
@@ -133,56 +145,28 @@ void main() {
     );
 
     test(
-      'Injected transaction failure rolls back 100% of database writes',
+      'Injected restore failure rolls back database and preferences',
       () async {
-        await db
-            .into(db.userProfiles)
-            .insert(
-              UserProfilesCompanion.insert(
-                age: const Value(25),
-                calorieGoal: const Value(2000),
-              ),
-            );
-        await db
-            .into(db.foodLogs)
-            .insert(
-              FoodLogsCompanion.insert(
-                name: 'Existing Log',
-                calories: 100,
-                proteinG: 5.0,
-                carbsG: 10.0,
-                fatG: 2.0,
-                servingLogged: 1.0,
-                servingUnit: 'portion',
-                mealType: 'lunch',
-              ),
-            );
-
-        final initialProfiles = await db.select(db.userProfiles).get();
-        expect(initialProfiles.length, equals(1));
-
         final prefs = await SharedPreferences.getInstance();
+        await db.customStatement('''
+          CREATE TRIGGER fail_b01_backup_restore
+          BEFORE INSERT ON food_items
+          BEGIN
+            SELECT RAISE(ABORT, 'simulated restore database failure');
+          END;
+        ''');
 
-        try {
-          await db.transaction(() async {
-            await db.delete(db.foodLogs).go();
-            await db.delete(db.userProfiles).go();
-            throw Exception('Simulated Database Transaction Failure');
-          });
-        } catch (e) {
-          expect(
-            e.toString(),
-            contains('Simulated Database Transaction Failure'),
-          );
-        }
+        await expectLater(
+          BackupV5Fixtures.validBackupV5Object().restoreToDatabase(db, prefs),
+          throwsA(isA<Exception>()),
+        );
 
-        final restoredProfiles = await db.select(db.userProfiles).get();
-        final restoredLogs = await db.select(db.foodLogs).get();
-
-        expect(restoredProfiles.length, equals(1));
-        expect(restoredProfiles.first.calorieGoal, equals(2000));
-        expect(restoredLogs.length, equals(1));
-        expect(restoredLogs.first.name, equals('Existing Log'));
+        expect(
+          (await db.select(db.foodItems).get()).where((item) => item.isCustom),
+          isEmpty,
+        );
+        expect(await db.select(db.workoutRoutines).get(), isEmpty);
+        expect(await db.select(db.workoutSessions).get(), isEmpty);
         expect(prefs.getInt('water_logged'), equals(2));
       },
     );

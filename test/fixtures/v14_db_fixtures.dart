@@ -1,307 +1,295 @@
 import 'dart:io';
-import 'package:drift/drift.dart';
+
 import 'package:drift/native.dart';
 import 'package:indifit/data/database/app_database.dart';
-import 'package:path/path.dart' as p;
+import 'package:sqlite3/sqlite3.dart' as sqlite;
 
-/// Deterministic v14 database fixture builders and seeders.
+/// Source-data scenarios represented by the immutable schema-v14 fixture.
+enum V14FixtureScenario {
+  empty,
+  singleRoutine,
+  richHistory,
+  customAndUnresolved,
+  knownEquipment,
+  unknownEquipment,
+  malformedRelationship,
+}
+
+/// Creates deterministic on-disk SQLite sources that are independent from the
+/// current Drift schema. These files remain genuine v14 sources after the app
+/// moves to v15, so B01-03 can open them through [AppDatabase] to exercise the
+/// real upgrade path.
 class V14DbFixtures {
-  /// Opens an AppDatabase backed by an on-disk SQLite file in [dir].
-  static AppDatabase openOnDiskDatabase(Directory dir, String filename) {
-    final file = File(p.join(dir.path, filename));
+  static const int schemaVersion = 14;
+  static const int _createdAtMillis = 1704067200000; // 2024-01-01T00:00:00Z
+  static const int _sessionOneMillis = 1703894400000;
+  static const int _sessionTwoMillis = 1703980800000;
+
+  static File createSourceDatabase(
+    Directory directory,
+    String filename, {
+    required V14FixtureScenario scenario,
+  }) {
+    final file = File('${directory.path}/$filename');
+    final database = sqlite.sqlite3.open(file.path);
+    try {
+      database.execute('BEGIN;');
+      _createV14Schema(database);
+      _seedScenario(database, scenario);
+      database.execute('PRAGMA user_version = $schemaVersion;');
+      database.execute('COMMIT;');
+    } catch (_) {
+      database.execute('ROLLBACK;');
+      rethrow;
+    } finally {
+      database.dispose();
+    }
+    return file;
+  }
+
+  /// Opens a v14 source using the application's current database class.
+  /// Once schema v15 exists, this call executes the production upgrade path.
+  static AppDatabase openCurrentDatabase(File file) {
     return AppDatabase.executor(NativeDatabase(file));
   }
 
-  /// Seeds a database with Zero Routines / Zero Sessions baseline.
-  static Future<void> seedZeroRoutines(AppDatabase db) async {
-    // Database remains empty of routines and sessions
+  static int readUserVersion(File file) {
+    final database = sqlite.sqlite3.open(
+      file.path,
+      mode: sqlite.OpenMode.readOnly,
+    );
+    try {
+      return database.select('PRAGMA user_version;').single['user_version']
+          as int;
+    } finally {
+      database.dispose();
+    }
   }
 
-  /// Seeds a database with Single Routine ("Push Day").
-  static Future<int> seedSingleRoutine(AppDatabase db) async {
-    final routineId = await db
-        .into(db.workoutRoutines)
-        .insert(
-          WorkoutRoutinesCompanion.insert(
-            name: 'Push Day',
-            goal: 'Hypertrophy',
-          ),
-        );
-
-    final dayId = await db
-        .into(db.routineDays)
-        .insert(
-          RoutineDaysCompanion.insert(
-            routineId: routineId,
-            dayOfWeek: 1,
-            name: 'Push Primary',
-          ),
-        );
-
-    await db
-        .into(db.routineExercises)
-        .insert(
-          RoutineExercisesCompanion.insert(
-            dayId: dayId,
-            exerciseName: 'Flat Barbell Bench Press',
-            sets: 4,
-            repsRange: '8',
-            orderIndex: 0,
-          ),
-        );
-
-    await db
-        .into(db.routineExercises)
-        .insert(
-          RoutineExercisesCompanion.insert(
-            dayId: dayId,
-            exerciseName: 'Seated Dumbbell Shoulder Press',
-            sets: 3,
-            repsRange: '10',
-            orderIndex: 1,
-          ),
-        );
-
-    return routineId;
+  static void _createV14Schema(sqlite.Database database) {
+    for (final statement in _v14SchemaStatements) {
+      database.execute(statement);
+    }
   }
 
-  /// Seeds a database with Multiple Routines ("Push", "Pull", "Legs") and historical sessions/sets.
-  static Future<void> seedMultipleRoutinesAndHistory(AppDatabase db) async {
-    // 1. Push Routine
-    await seedSingleRoutine(db);
-
-    // 2. Pull Routine
-    final pullId = await db
-        .into(db.workoutRoutines)
-        .insert(
-          WorkoutRoutinesCompanion.insert(name: 'Pull Day', goal: 'Strength'),
-        );
-
-    final pullDayId = await db
-        .into(db.routineDays)
-        .insert(
-          RoutineDaysCompanion.insert(
-            routineId: pullId,
-            dayOfWeek: 1,
-            name: 'Pull Primary',
-          ),
-        );
-
-    await db
-        .into(db.routineExercises)
-        .insert(
-          RoutineExercisesCompanion.insert(
-            dayId: pullDayId,
-            exerciseName: 'Barbell Deadlift',
-            sets: 3,
-            repsRange: '5',
-            orderIndex: 0,
-          ),
-        );
-
-    await db
-        .into(db.routineExercises)
-        .insert(
-          RoutineExercisesCompanion.insert(
-            dayId: pullDayId,
-            exerciseName: 'Lat Pulldown',
-            sets: 4,
-            repsRange: '10',
-            orderIndex: 1,
-          ),
-        );
-
-    // 3. Historical Workout Session 1
-    final sess1Id = await db
-        .into(db.workoutSessions)
-        .insert(
-          WorkoutSessionsCompanion.insert(
-            name: 'Push Day',
-            totalVolume: 3200.0,
-            durationSeconds: 2700,
-            estimatedCalories: 320,
-            completedAt: Value(
-              DateTime.now().subtract(const Duration(days: 2)),
-            ),
-          ),
-        );
-
-    await db
-        .into(db.workoutSets)
-        .insert(
-          WorkoutSetsCompanion.insert(
-            sessionId: sess1Id,
-            exerciseName: 'Flat Barbell Bench Press',
-            weight: 80.0,
-            reps: 8,
-            setNumber: 1,
-            isPr: const Value(true),
-            rpe: const Value(8),
-            setNotes: const Value('Felt strong, clean form 💪'),
-          ),
-        );
-
-    await db
-        .into(db.workoutSets)
-        .insert(
-          WorkoutSetsCompanion.insert(
-            sessionId: sess1Id,
-            exerciseName: 'Seated Dumbbell Shoulder Press',
-            weight: 24.0,
-            reps: 10,
-            setNumber: 1,
-            isPr: const Value(false),
-            rpe: const Value(7),
-          ),
-        );
-
-    // 4. Historical Workout Session 2 (Cardio & Bodyweight)
-    final sess2Id = await db
-        .into(db.workoutSessions)
-        .insert(
-          WorkoutSessionsCompanion.insert(
-            name: 'Cardio & Abs',
-            totalVolume: 0.0,
-            durationSeconds: 1800,
-            estimatedCalories: 200,
-            completedAt: Value(
-              DateTime.now().subtract(const Duration(days: 1)),
-            ),
-          ),
-        );
-
-    await db
-        .into(db.workoutSets)
-        .insert(
-          WorkoutSetsCompanion.insert(
-            sessionId: sess2Id,
-            exerciseName: 'Treadmill Run',
-            weight: 0.0,
-            reps: 0,
-            setNumber: 1,
-            durationSeconds: const Value(1200),
-            distanceKm: const Value(3.2),
-            inclinePercentage: const Value(2.0),
-          ),
-        );
-
-    // 5. Active Workout Draft row
-    await db
-        .into(db.workoutDrafts)
-        .insert(
-          WorkoutDraftsCompanion.insert(
-            routineName: 'Push Day',
-            currentExerciseIndex: 1,
-            currentSetIndex: 0,
-            elapsedSeconds: 900,
-            loggedSetsJson:
-                '[{"sessionId":0,"exerciseName":"Flat Barbell Bench Press","weight":82.5,"reps":8,"setNumber":1,"isPr":false,"rpe":8,"isWarmUp":false,"setType":"working","setNotes":"Draft note"}]',
-          ),
-        );
+  static void _seedScenario(
+    sqlite.Database database,
+    V14FixtureScenario scenario,
+  ) {
+    switch (scenario) {
+      case V14FixtureScenario.empty:
+        return;
+      case V14FixtureScenario.singleRoutine:
+        _insertSingleRoutine(database);
+      case V14FixtureScenario.richHistory:
+        _insertSingleRoutine(database);
+        _insertRichHistory(database);
+      case V14FixtureScenario.customAndUnresolved:
+        _insertCustomAndUnresolved(database);
+      case V14FixtureScenario.knownEquipment:
+        _insertEquipmentProfile(database, 'full_gym');
+      case V14FixtureScenario.unknownEquipment:
+        _insertEquipmentProfile(database, 'mystery_space_station_gym');
+      case V14FixtureScenario.malformedRelationship:
+        _insertMalformedRelationship(database);
+    }
   }
 
-  /// Seeds a database containing custom/uncatalogued user exercises.
-  static Future<void> seedCustomAndUnresolvedExercises(AppDatabase db) async {
-    await db
-        .into(db.exercises)
-        .insert(
-          ExercisesCompanion.insert(
-            name: 'Pike Push-ups',
-            muscleGroups: 'Shoulders, Triceps',
-            equipment: 'Bodyweight',
-            difficulty: 'Intermediate',
-            formCues: 'Keep hips high',
-            commonMistakes: 'Flaring elbows',
-            isCustom: const Value(true),
-          ),
-        );
-
-    await db
-        .into(db.exercises)
-        .insert(
-          ExercisesCompanion.insert(
-            name: 'Superman Lat Pulls',
-            muscleGroups: 'Back',
-            equipment: 'Bands',
-            difficulty: 'Beginner',
-            formCues: 'Squeeze lats',
-            commonMistakes: 'Arching too much',
-            isCustom: const Value(true),
-          ),
-        );
-
-    final sessId = await db
-        .into(db.workoutSessions)
-        .insert(
-          WorkoutSessionsCompanion.insert(
-            name: 'Bodyweight Skill Session',
-            totalVolume: 0.0,
-            durationSeconds: 1500,
-            estimatedCalories: 150,
-          ),
-        );
-
-    await db
-        .into(db.workoutSets)
-        .insert(
-          WorkoutSetsCompanion.insert(
-            sessionId: sessId,
-            exerciseName: 'Pike Push-ups',
-            weight: 0.0,
-            reps: 12,
-            setNumber: 1,
-          ),
-        );
-  }
-
-  /// Seeds a database containing known and unknown equipment strings.
-  static Future<void> seedKnownAndUnknownEquipment(AppDatabase db) async {
-    await db
-        .into(db.userProfiles)
-        .insert(
-          UserProfilesCompanion.insert(
-            equipmentAccess: const Value('full_gym'),
-            calorieGoal: const Value(2400),
-          ),
-        );
-
-    final routineId = await db
-        .into(db.workoutRoutines)
-        .insert(
-          WorkoutRoutinesCompanion.insert(
-            name: 'Special Equipment Routine',
-            goal: 'General Fitness',
-          ),
-        );
-
-    final dayId = await db
-        .into(db.routineDays)
-        .insert(
-          RoutineDaysCompanion.insert(
-            routineId: routineId,
-            dayOfWeek: 1,
-            name: 'Day 1',
-          ),
-        );
-
-    await db
-        .into(db.routineExercises)
-        .insert(
-          RoutineExercisesCompanion.insert(
-            dayId: dayId,
-            exerciseName: 'Anti-gravity Chamber Press',
-            sets: 3,
-            repsRange: '10',
-            orderIndex: 0,
-          ),
-        );
-  }
-
-  /// Seeds a database containing malformed / orphaned relationships (for test assertion).
-  static Future<void> seedMalformedRelationships(AppDatabase db) async {
-    await db.customStatement('''
-      INSERT INTO workout_sets (session_id, exercise_name, weight, reps, set_number, is_pr, is_warm_up, set_type)
-      VALUES (999, 'Orphaned Bench Press', 80.0, 10, 1, 0, 0, 'normal');
+  static void _insertSingleRoutine(sqlite.Database database) {
+    database.execute('''
+      INSERT INTO workout_routines (id, name, goal, notes, created_at)
+      VALUES (1, 'Push Day', 'Hypertrophy', NULL, $_createdAtMillis);
+    ''');
+    database.execute('''
+      INSERT INTO routine_days (id, routine_id, day_of_week, name, is_rest_day)
+      VALUES (1, 1, 1, 'Push Primary', 0);
+    ''');
+    database.execute('''
+      INSERT INTO routine_exercises (id, day_id, exercise_name, sets, reps_range, order_index)
+      VALUES
+        (1, 1, 'Flat Barbell Bench Press', 4, '8', 0),
+        (2, 1, 'Seated Dumbbell Shoulder Press', 3, '10', 1);
     ''');
   }
+
+  static void _insertRichHistory(sqlite.Database database) {
+    database.execute('''
+      INSERT INTO workout_routines (id, name, goal, notes, created_at)
+      VALUES (2, 'Pull Day', 'Strength', NULL, $_createdAtMillis);
+    ''');
+    database.execute('''
+      INSERT INTO routine_days (id, routine_id, day_of_week, name, is_rest_day)
+      VALUES (2, 2, 3, 'Pull Primary', 0);
+    ''');
+    database.execute('''
+      INSERT INTO routine_exercises (id, day_id, exercise_name, sets, reps_range, order_index)
+      VALUES
+        (3, 2, 'Barbell Deadlift', 3, '5', 0),
+        (4, 2, 'Lat Pulldown', 4, '10', 1);
+    ''');
+    database.execute('''
+      INSERT INTO workout_sessions
+        (id, name, total_volume, duration_seconds, estimated_calories, completed_at, is_synced, uuid)
+      VALUES
+        (1, 'Push Day', 3200.0, 2700, 320, $_sessionOneMillis, 0, NULL),
+        (2, 'Cardio & Abs', 0.0, 1800, 200, $_sessionTwoMillis, 0, NULL);
+    ''');
+    database.execute('''
+      INSERT INTO workout_sets
+        (id, session_id, exercise_name, weight, reps, set_number, is_pr, rpe, is_warm_up, set_notes, uuid, set_type, duration_seconds, distance_km, incline_percentage)
+      VALUES
+        (1, 1, 'Flat Barbell Bench Press', 80.0, 8, 1, 1, 8, 0, 'Felt strong, clean form 💪', NULL, 'working', NULL, NULL, NULL),
+        (2, 1, 'Seated Dumbbell Shoulder Press', 24.0, 10, 1, 0, 7, 0, NULL, NULL, 'working', NULL, NULL, NULL),
+        (3, 2, 'Treadmill Run', 0.0, 0, 1, 0, NULL, 0, NULL, NULL, 'working', 1200, 3.2, 2.0);
+    ''');
+    database.execute('''
+      INSERT INTO workout_drafts
+        (id, routine_name, current_exercise_index, current_set_index, elapsed_seconds, logged_sets_json, updated_at)
+      VALUES
+        (1, 'Push Day', 1, 0, 900,
+         '[{"sessionId":0,"exerciseName":"Flat Barbell Bench Press","weight":82.5,"reps":8,"setNumber":1,"isPr":false,"rpe":8,"isWarmUp":false,"setType":"working","setNotes":"Draft note"}]',
+         $_sessionTwoMillis);
+    ''');
+  }
+
+  static void _insertCustomAndUnresolved(sqlite.Database database) {
+    database.execute('''
+      INSERT INTO exercises
+        (id, name, muscle_groups, equipment, difficulty, form_cues, common_mistakes, youtube_id, is_custom)
+      VALUES
+        (1, 'Pike Push-ups', 'Shoulders, Triceps', 'Bodyweight', 'Intermediate', 'Keep hips high', 'Flaring elbows', NULL, 1),
+        (2, 'Superman Lat Pulls', 'Back', 'Bands', 'Beginner', 'Squeeze lats', 'Arching too much', NULL, 1);
+    ''');
+    database.execute('''
+      INSERT INTO workout_sessions
+        (id, name, total_volume, duration_seconds, estimated_calories, completed_at, is_synced, uuid)
+      VALUES (1, 'Bodyweight Skill Session', 0.0, 1500, 150, $_sessionOneMillis, 0, NULL);
+    ''');
+    database.execute('''
+      INSERT INTO workout_sets
+        (id, session_id, exercise_name, weight, reps, set_number, is_pr, rpe, is_warm_up, set_notes, uuid, set_type, duration_seconds, distance_km, incline_percentage)
+      VALUES (1, 1, 'Pike Push-ups', 0.0, 12, 1, 0, NULL, 0, NULL, NULL, 'working', NULL, NULL, NULL);
+    ''');
+    database.execute('''
+      INSERT INTO workout_routines (id, name, goal, notes, created_at)
+      VALUES (1, 'Unresolved Equipment Routine', 'General Fitness', NULL, $_createdAtMillis);
+    ''');
+    database.execute('''
+      INSERT INTO routine_days (id, routine_id, day_of_week, name, is_rest_day)
+      VALUES (1, 1, 1, 'Day 1', 0);
+    ''');
+    database.execute('''
+      INSERT INTO routine_exercises (id, day_id, exercise_name, sets, reps_range, order_index)
+      VALUES (1, 1, 'Anti-gravity Chamber Press', 3, '10', 0);
+    ''');
+  }
+
+  static void _insertEquipmentProfile(
+    sqlite.Database database,
+    String equipmentAccess,
+  ) {
+    database.execute('''
+      INSERT INTO user_profiles
+        (id, age, height, weight, sex, activity_level, goal, diet_preference, calorie_goal, protein_goal, carbs_goal, fat_goal, name, equipment_access, injuries_limitations, updated_at)
+      VALUES (1, 30, 175.0, 75.0, 'male', 'moderate', 'maintain', 'balanced', 2400, 140.0, 220.0, 60.0, 'Fixture User', '$equipmentAccess', '', $_createdAtMillis);
+    ''');
+  }
+
+  static void _insertMalformedRelationship(sqlite.Database database) {
+    database.execute('''
+      INSERT INTO workout_sets
+        (id, session_id, exercise_name, weight, reps, set_number, is_pr, rpe, is_warm_up, set_notes, uuid, set_type, duration_seconds, distance_km, incline_percentage)
+      VALUES (1, 999, 'Orphaned Bench Press', 80.0, 8, 1, 0, NULL, 0, NULL, NULL, 'working', NULL, NULL, NULL);
+    ''');
+  }
+
+  static const List<String> _v14SchemaStatements = [
+    '''CREATE TABLE exercises (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      muscle_groups TEXT NOT NULL,
+      equipment TEXT NOT NULL,
+      difficulty TEXT NOT NULL,
+      form_cues TEXT NOT NULL,
+      common_mistakes TEXT NOT NULL,
+      youtube_id TEXT NULL,
+      is_custom INTEGER NOT NULL DEFAULT 0
+    );''',
+    '''CREATE TABLE workout_sessions (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      total_volume REAL NOT NULL,
+      duration_seconds INTEGER NOT NULL,
+      estimated_calories INTEGER NOT NULL,
+      completed_at INTEGER NOT NULL,
+      is_synced INTEGER NOT NULL DEFAULT 0,
+      uuid TEXT NULL
+    );''',
+    '''CREATE TABLE workout_sets (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      session_id INTEGER NOT NULL REFERENCES workout_sessions(id),
+      exercise_name TEXT NOT NULL,
+      weight REAL NOT NULL,
+      reps INTEGER NOT NULL,
+      set_number INTEGER NOT NULL,
+      is_pr INTEGER NOT NULL DEFAULT 0,
+      rpe INTEGER NULL,
+      is_warm_up INTEGER NOT NULL DEFAULT 0,
+      set_notes TEXT NULL,
+      uuid TEXT NULL,
+      set_type TEXT NOT NULL DEFAULT 'working',
+      duration_seconds INTEGER NULL,
+      distance_km REAL NULL,
+      incline_percentage REAL NULL
+    );''',
+    '''CREATE TABLE workout_routines (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      goal TEXT NOT NULL,
+      notes TEXT NULL,
+      created_at INTEGER NOT NULL
+    );''',
+    '''CREATE TABLE routine_days (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      routine_id INTEGER NOT NULL REFERENCES workout_routines(id),
+      day_of_week INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      is_rest_day INTEGER NOT NULL DEFAULT 0
+    );''',
+    '''CREATE TABLE routine_exercises (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      day_id INTEGER NOT NULL REFERENCES routine_days(id),
+      exercise_name TEXT NOT NULL,
+      sets INTEGER NOT NULL,
+      reps_range TEXT NOT NULL,
+      order_index INTEGER NOT NULL
+    );''',
+    '''CREATE TABLE workout_drafts (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      routine_name TEXT NOT NULL,
+      current_exercise_index INTEGER NOT NULL,
+      current_set_index INTEGER NOT NULL,
+      elapsed_seconds INTEGER NOT NULL,
+      logged_sets_json TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    );''',
+    '''CREATE TABLE user_profiles (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      age INTEGER NOT NULL DEFAULT 25,
+      height REAL NOT NULL DEFAULT 170.0,
+      weight REAL NOT NULL DEFAULT 70.0,
+      sex TEXT NOT NULL DEFAULT 'male',
+      activity_level TEXT NOT NULL DEFAULT 'moderate',
+      goal TEXT NOT NULL DEFAULT 'maintain',
+      diet_preference TEXT NOT NULL DEFAULT 'balanced',
+      calorie_goal INTEGER NOT NULL DEFAULT 2000,
+      protein_goal REAL NOT NULL DEFAULT 140.0,
+      carbs_goal REAL NOT NULL DEFAULT 220.0,
+      fat_goal REAL NOT NULL DEFAULT 60.0,
+      name TEXT NOT NULL DEFAULT '',
+      equipment_access TEXT NOT NULL DEFAULT 'full_gym',
+      injuries_limitations TEXT NOT NULL DEFAULT '',
+      updated_at INTEGER NOT NULL
+    );''',
+  ];
 }

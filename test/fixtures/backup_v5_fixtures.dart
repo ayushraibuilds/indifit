@@ -1,20 +1,17 @@
 import 'package:indifit/core/backup/backup_schema.dart';
 
-/// Deterministic Backup v5 payload fixtures for testing backup prevalidation and restore transactions.
+/// Deterministic Backup v5 payloads for restore and prevalidation tests.
 class BackupV5Fixtures {
-  /// Returns a valid Backup v5 JSON payload map (schema_version 14, version 4/5).
+  static const String timestamp = '2024-01-01T00:00:00.000Z';
+
   static Map<String, dynamic> validBackupV5Map() {
     return {
-      'version': 4,
-      'timestamp': DateTime.now().toIso8601String(),
+      'version': BackupData.currentVersion,
+      'timestamp': timestamp,
       'schema_version': 14,
       'user_settings': [],
-      'user_preferences': {
-        'water_logged': 6,
-        'user_streak_count': 10,
-        'equipment_profile': 'dumbbells',
-      },
-      'custom_food_items': [
+      'user_preferences': {'water_logged': 6, 'user_streak_count': 10},
+      'food_items': [
         {
           'id': 101,
           'name': 'Home Made Whey Shake',
@@ -22,10 +19,13 @@ class BackupV5Fixtures {
           'protein_g': 30.0,
           'carbs_g': 4.0,
           'fat_g': 2.5,
+          'fiber_g': 0.0,
           'serving_size': 300.0,
           'serving_unit': 'ml',
           'category': 'custom',
           'is_custom': true,
+          'brand': null,
+          'region_pack': null,
         },
       ],
       'food_logs': [],
@@ -40,6 +40,7 @@ class BackupV5Fixtures {
           'difficulty': 'Intermediate',
           'form_cues': 'Keep hips high in V position',
           'common_mistakes': 'Flaring elbows outward',
+          'youtube_id': null,
           'is_custom': true,
         },
       ],
@@ -50,9 +51,9 @@ class BackupV5Fixtures {
           'total_volume': 1600.0,
           'duration_seconds': 1800,
           'estimated_calories': 200,
-          'completed_at': DateTime.now()
-              .subtract(const Duration(days: 1))
-              .toIso8601String(),
+          'completed_at': '2023-12-31T00:00:00.000Z',
+          'is_synced': false,
+          'uuid': null,
         },
       ],
       'workout_sets': [
@@ -64,9 +65,14 @@ class BackupV5Fixtures {
           'reps': 10,
           'set_number': 1,
           'is_pr': true,
+          'rpe': 8,
           'is_warm_up': false,
           'set_type': 'working',
           'set_notes': 'Felt good!',
+          'uuid': null,
+          'duration_seconds': null,
+          'distance_km': null,
+          'incline_percentage': null,
         },
       ],
       'workout_routines': [
@@ -74,13 +80,18 @@ class BackupV5Fixtures {
           'id': 1,
           'name': 'Upper Body Split',
           'goal': 'Hypertrophy',
-          'description': 'Upper focus',
-          'target_gender': 'unisex',
-          'created_at': DateTime.now().toIso8601String(),
+          'notes': 'Upper focus',
+          'created_at': timestamp,
         },
       ],
       'routine_days': [
-        {'id': 1, 'routine_id': 1, 'day_of_week': 1, 'name': 'Upper Day 1'},
+        {
+          'id': 1,
+          'routine_id': 1,
+          'day_of_week': 1,
+          'name': 'Upper Day 1',
+          'is_rest_day': false,
+        },
       ],
       'routine_exercises': [
         {
@@ -100,44 +111,38 @@ class BackupV5Fixtures {
     };
   }
 
-  /// Returns a valid BackupData object constructed from validBackupV5Map.
-  static BackupData validBackupV5Object() {
-    return BackupData.fromJson(validBackupV5Map());
-  }
+  static BackupData validBackupV5Object() =>
+      BackupData.fromJson(validBackupV5Map());
 
-  /// Returns an invalid Backup v5 payload containing orphaned workout sets referencing missing session ID 999.
   static Map<String, dynamic> orphanedSetsBackupV5Map() {
     final map = validBackupV5Map();
-    map['workout_sessions'] = []; // Clear sessions
+    map['workout_sessions'] = [];
     map['workout_sets'] = [
       {
         'id': 1,
-        'session_id': 999, // Non-existent session
+        'session_id': 999,
         'exercise_name': 'Orphaned Bench Press',
         'weight': 80.0,
         'reps': 8,
         'set_number': 1,
         'is_pr': false,
         'is_warm_up': false,
-        'set_type': 'normal',
+        'set_type': 'working',
       },
     ];
     return map;
   }
 
-  /// Returns an unsupported backup version payload (e.g. version 99).
   static Map<String, dynamic> unsupportedVersionBackupMap() {
     final map = validBackupV5Map();
-    map['version'] = 99;
+    map['version'] = BackupData.currentVersion + 1;
     return map;
   }
 
-  /// Returns a corrupt JSON payload map (missing required schema_version or invalid types).
-  static Map<String, dynamic> corruptSchemaBackupMap() {
-    return {
-      'version': 4,
-      'schema_version': 'not_an_int',
-      'user_preferences': 'corrupt_string_instead_of_map',
-    };
-  }
+  static Map<String, dynamic> corruptSchemaBackupMap() => {
+    'version': BackupData.currentVersion,
+    'timestamp': timestamp,
+    'schema_version': 'not_an_int',
+    'user_preferences': 'corrupt_string_instead_of_map',
+  };
 }
