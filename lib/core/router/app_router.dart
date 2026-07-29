@@ -13,6 +13,12 @@ import '../../features/progress/achievements_screen.dart';
 import '../../features/reports/weekly_report_screen.dart';
 import '../../features/settings/health_sync_hub_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/calendar/program_calendar_screen.dart';
+import '../../features/equipment/equipment_profile_editor_screen.dart';
+import '../../features/equipment/equipment_profiles_screen.dart';
+import '../../features/equipment/exercise_preference_editor_screen.dart';
+import '../../features/program_authoring/program_author_screen.dart';
+import '../../features/program_authoring/program_review_screen.dart';
 import '../../features/workout_player/routine_display_screen.dart';
 import '../../features/workout_player/routine_editor_screen.dart';
 import '../../features/workout_player/workout_player_screen.dart';
@@ -126,6 +132,50 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 [],
             scheduledOccurrenceId: extra['scheduledOccurrenceId'] as String?,
             completionCommandId: extra['completionCommandId'] as String?,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/program-author',
+        builder: (context, state) {
+          final programId = state.uri.queryParameters['programId'];
+          final versionId = state.uri.queryParameters['versionId'];
+          return ProgramAuthorScreen(
+            programId: programId,
+            programVersionId: versionId,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/program-review/:versionId',
+        builder: (context, state) {
+          final versionId = state.pathParameters['versionId']!;
+          return ProgramReviewScreen(programVersionId: versionId);
+        },
+      ),
+      GoRoute(
+        path: '/calendar',
+        builder: (context, state) => const ProgramCalendarScreen(),
+      ),
+      GoRoute(
+        path: '/equipment-profiles',
+        builder: (context, state) => const EquipmentProfilesScreen(),
+      ),
+      GoRoute(
+        path: '/equipment-profile-editor',
+        builder: (context, state) {
+          final profileId = state.uri.queryParameters['profileId'];
+          return EquipmentProfileEditorScreen(profileId: profileId);
+        },
+      ),
+      GoRoute(
+        path: '/exercise-preference-editor',
+        builder: (context, state) {
+          final stableId = state.uri.queryParameters['stableId'];
+          final rawName = state.uri.queryParameters['rawName'] ?? 'Exercise';
+          return ExercisePreferenceEditorScreen(
+            stableId: stableId,
+            rawName: rawName,
           );
         },
       ),

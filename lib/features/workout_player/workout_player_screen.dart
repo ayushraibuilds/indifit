@@ -13,6 +13,7 @@ import 'widgets/exercise_set_input_card.dart';
 import 'widgets/prior_session_card.dart';
 import 'widgets/rest_timer_bottom_sheet.dart';
 import 'widgets/workout_player_header.dart';
+import 'player_setup_cues_panel.dart';
 import 'workout_player_controller.dart';
 
 class WorkoutPlayerScreen extends ConsumerStatefulWidget {
@@ -544,7 +545,13 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                     bestPrSet: state.bestPrSet,
                     suggestedWeight: state.suggestedWeight,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  PlayerSetupCuesPanel(
+                    exerciseName: currentEx.exerciseName,
+                    frozenContext: widget
+                        .personalExerciseContextByName[currentEx.exerciseName],
+                  ),
+                  const SizedBox(height: 12),
                   ExerciseSetInputCard(
                     currentExercise: currentEx,
                     currentSetIndex: state.currentSetIndex,
