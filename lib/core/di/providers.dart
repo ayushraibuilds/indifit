@@ -252,10 +252,48 @@ final programRepositoryProvider = Provider<ProgramRepository>((ref) {
   return ProgramRepository(ref.watch(databaseProvider));
 });
 
-final equipmentRepositoryProvider = Provider<EquipmentRepository>((ref) {
-  return EquipmentRepository(ref.watch(databaseProvider));
+final equipmentProfileRepositoryProvider = Provider<EquipmentProfileRepository>(
+  (ref) {
+    return EquipmentProfileRepository(ref.watch(databaseProvider));
+  },
+);
+
+/// Compatibility alias for callers not yet migrated to the bounded-context
+/// name. It is the same provider/owner, not a second authority.
+final equipmentRepositoryProvider = equipmentProfileRepositoryProvider;
+
+final exercisePreferenceRepositoryProvider =
+    Provider<ExercisePreferenceRepository>((ref) {
+      return ExercisePreferenceRepository(ref.watch(databaseProvider));
+    });
+
+final programListProvider = StreamProvider<List<Program>>((ref) {
+  return ref.watch(programRepositoryProvider).watchAllPrograms();
 });
 
-final exercisePreferenceRepositoryProvider = Provider<ExercisePreferenceRepository>((ref) {
-  return ExercisePreferenceRepository(ref.watch(databaseProvider));
+final programVersionDetailProvider =
+    StreamProvider.family<ProgramDetailAggregate?, String>((ref, versionId) {
+      return ref
+          .watch(programRepositoryProvider)
+          .watchProgramVersionDetail(versionId);
+    });
+
+final equipmentProfileListProvider = StreamProvider<List<EquipmentProfile>>((
+  ref,
+) {
+  return ref.watch(equipmentProfileRepositoryProvider).watchActiveProfiles();
 });
+
+final defaultEquipmentProfileIdProvider = StreamProvider<String?>((ref) {
+  return ref.watch(equipmentProfileRepositoryProvider).watchDefaultProfileId();
+});
+
+final exercisePreferenceAggregateProvider =
+    StreamProvider.family<
+      ExercisePreferenceAggregate?,
+      ExercisePreferenceLookup
+    >((ref, lookup) {
+      return ref
+          .watch(exercisePreferenceRepositoryProvider)
+          .watchPreference(stableId: lookup.stableId, rawName: lookup.rawName);
+    });

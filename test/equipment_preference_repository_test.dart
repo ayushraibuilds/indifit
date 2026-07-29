@@ -7,181 +7,226 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
-  late EquipmentRepository equipRepo;
-  late ExercisePreferenceRepository prefRepo;
+  late EquipmentProfileRepository equipment;
+  late ExercisePreferenceRepository preferences;
 
-  setUp(() {
+  setUp(() async {
     db = AppDatabase.memory();
-    equipRepo = EquipmentRepository(db);
-    prefRepo = ExercisePreferenceRepository(db);
-  });
-
-  tearDown(() async {
-    await db.close();
-  });
-
-  group('B01-07 Equipment & Exercise Preference Repository Tests', () {
-    test('1. Creates equipment profile and checks item availability', () async {
-      final profileId = await equipRepo.createProfile(
-        name: 'Home Dumbbell Setup',
-        defaultWeightIncrementKg: 2.5,
-        items: [
-          const EquipmentProfileItemInput(
-            equipmentCode: 'dumbbell',
-            isAvailable: true,
-            weightIncrementKg: 2.5,
+    equipment = EquipmentProfileRepository(db);
+    preferences = ExercisePreferenceRepository(db);
+    await db
+        .into(db.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            stableId: const Value('exercise-bench-v1'),
+            name: 'Flat Barbell Bench Press',
+            muscleGroups: 'Chest',
+            equipment: 'Barbell, Bench',
+            difficulty: 'Intermediate',
+            formCues: 'Brace',
+            commonMistakes: 'Bounce',
           ),
-          const EquipmentProfileItemInput(
+        );
+  });
+
+  tearDown(() => db.close());
+
+  group('B01-07 equipment profiles', () {
+    test(
+      'uses fixture-owned codes, increments, and implicit bodyweight',
+      () async {
+        final profileId = await equipment.createProfile(
+          name: 'Home',
+          defaultWeightIncrementKg: 2.5,
+          items: const [
+            EquipmentProfileItemInput(
+              equipmentCode: 'dumbbell',
+              weightIncrementKg: 2.5,
+            ),
+            EquipmentProfileItemInput(equipmentCode: 'bench'),
+          ],
+        );
+        final profile = await equipment.getProfile(profileId);
+        expect(profile!.items.map((item) => item.equipmentCode), [
+          'bench',
+          'dumbbell',
+        ]);
+        expect(
+          await equipment.isEquipmentAvailable(
+            profileId: profileId,
+            equipmentCode: 'bodyweight',
+          ),
+          isTrue,
+        );
+        expect(
+          await equipment.isEquipmentAvailable(
+            profileId: profileId,
             equipmentCode: 'barbell',
-            isAvailable: false,
           ),
-        ],
-      );
+          isFalse,
+        );
+        await expectLater(
+          equipment.createProfile(
+            name: 'Invalid code',
+            items: const [
+              EquipmentProfileItemInput(equipmentCode: 'smith_machine'),
+            ],
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+        await expectLater(
+          equipment.createProfile(
+            name: 'Invalid bodyweight item',
+            items: const [
+              EquipmentProfileItemInput(equipmentCode: 'bodyweight'),
+            ],
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
 
-      final profile = await equipRepo.getProfileById(profileId);
-      expect(profile, isNotNull);
-      expect(profile!.name, equals('Home Dumbbell Setup'));
-
-      final items = await equipRepo.getItemsForProfile(profileId);
-      expect(items.length, equals(2));
-
-      // Check equipment availability
-      expect(
-        await equipRepo.isEquipmentAvailable(
+    test(
+      'has explicit compatible, incompatible, and unknown outcomes',
+      () async {
+        final profileId = await equipment.createProfile(
+          name: 'Cable only',
+          items: const [EquipmentProfileItemInput(equipmentCode: 'cable')],
+        );
+        final compatible = await equipment.checkCompatibility(
           profileId: profileId,
-          equipmentCode: 'dumbbell',
-        ),
-        isTrue,
-      );
-      expect(
-        await equipRepo.isEquipmentAvailable(
+          exerciseEquipmentRequirement: 'Cable',
+        );
+        final incompatible = await equipment.checkCompatibility(
           profileId: profileId,
-          equipmentCode: 'barbell',
-        ),
-        isFalse,
-      );
+          exerciseEquipmentRequirement: 'Barbell, Bench',
+        );
+        final unknown = await equipment.checkCompatibility(
+          profileId: profileId,
+          exerciseEquipmentRequirement: 'Alien machine',
+        );
+        expect(compatible.status, EquipmentCompatibilityStatus.compatible);
+        expect(incompatible.status, EquipmentCompatibilityStatus.incompatible);
+        expect(incompatible.unavailableEquipmentCodes, ['barbell', 'bench']);
+        expect(unknown.status, EquipmentCompatibilityStatus.unknown);
+      },
+    );
 
-      // Bodyweight is always available implicitly
+    test('stores the sole default profile in training plan settings', () async {
+      final first = await equipment.createProfile(name: 'Commercial Gym');
+      final second = await equipment.createProfile(name: 'Garage Gym');
+      await equipment.setDefaultProfileId(first);
+      await equipment.setDefaultProfileId(second);
+      expect(await equipment.getDefaultProfileId(), second);
+      await expectLater(
+        equipment.archiveProfile(second),
+        throwsA(isA<StateError>()),
+      );
+      await equipment.clearDefaultProfile();
+      await equipment.archiveProfile(second);
       expect(
-        await equipRepo.isEquipmentAvailable(
-          profileId: profileId,
-          equipmentCode: 'bodyweight',
-        ),
-        isTrue,
+        (await equipment.getProfileById(second))!.archivedAtUtc,
+        isNotNull,
       );
     });
 
-    test(
-      '2. Default equipment profile configuration in TrainingPlanSettings',
-      () async {
-        final p1Id = await equipRepo.createProfile(name: 'Commercial Gym');
-        final p2Id = await equipRepo.createProfile(name: 'Garage Gym');
-
-        expect(await equipRepo.getDefaultProfileId(), isNull);
-
-        await equipRepo.setDefaultProfileId(p1Id);
-        expect(await equipRepo.getDefaultProfileId(), equals(p1Id));
-
-        await equipRepo.setDefaultProfileId(p2Id);
-        expect(await equipRepo.getDefaultProfileId(), equals(p2Id));
-      },
-    );
-
-    test(
-      '3. Archiving default equipment profile or profile in active travel throws StateError',
-      () async {
-        final pId = await equipRepo.createProfile(name: 'Travel Gym Profile');
-        await equipRepo.setDefaultProfileId(pId);
-
-        // Cannot archive default profile
-        expect(() => equipRepo.archiveProfile(pId), throwsA(isA<StateError>()));
-
-        // Change default profile to another
-        final otherId = await equipRepo.createProfile(name: 'Home Profile');
-        await equipRepo.setDefaultProfileId(otherId);
-
-        // Add active travel context using pId
-        await db
-            .into(db.travelContexts)
-            .insert(
-              TravelContextsCompanion.insert(
-                id: 'travel-1',
-                startLocalDate: '2026-08-01',
-                endLocalDate: '2026-08-07',
-                timezoneId: 'Asia/Kolkata',
-                equipmentProfileId: pId,
-                status: const Value('active'),
-                createdAtUtc: DateTime.now().toUtc(),
-              ),
-            );
-
-        // Cannot archive profile used in active travel context
-        expect(() => equipRepo.archiveProfile(pId), throwsA(isA<StateError>()));
-      },
-    );
-
-    test(
-      '4. Exercise preference aggregate lookup by stableId or rawName fallback',
-      () async {
-        // Seed exercise in database with stable ID
-        await db
-            .into(db.exercises)
-            .insert(
-              ExercisesCompanion.insert(
-                stableId: const Value('ex-bench-press-uuid'),
-                name: 'Barbell Bench Press',
-                muscleGroups: 'Chest',
-                equipment: 'Barbell',
-                difficulty: 'Intermediate',
-                formCues: 'Arch upper back',
-                commonMistakes: 'Bouncing bar off chest',
-              ),
-            );
-
-        final prefId1 = await prefRepo.savePreference(
-          stableId: 'ex-bench-press-uuid',
-          generalNote: 'Arch shoulders, drive through heels',
-          setupValues: [
-            const SetupValueInput(
-              ordinal: 0,
-              label: 'Bench Pin Height',
-              value: '4',
+    test('does not archive a profile used by active travel', () async {
+      final profile = await equipment.createProfile(name: 'Travel');
+      await db
+          .into(db.travelContexts)
+          .insert(
+            TravelContextsCompanion.insert(
+              id: 'travel-1',
+              startLocalDate: '2026-08-01',
+              endLocalDate: '2026-08-07',
+              timezoneId: 'Asia/Kolkata',
+              equipmentProfileId: profile,
+              status: const Value('active'),
+              createdAtUtc: DateTime.utc(2026, 8, 1),
             ),
+          );
+      await expectLater(
+        equipment.archiveProfile(profile),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
+
+  group('B01-07 exercise preference aggregate', () {
+    test(
+      'persists ordered setup values, personal cues, and a general note',
+      () async {
+        await preferences.savePreference(
+          stableId: 'exercise-bench-v1',
+          generalNote: 'Seat position 4',
+          setupValues: const [
+            SetupValueInput(ordinal: 0, label: 'Bench pin', value: '4'),
+            SetupValueInput(ordinal: 1, label: 'Safety arm', value: '6'),
           ],
-          personalCues: ['Bend the bar', 'Touch lower sternum'],
+          personalCues: const ['Bend the bar', 'Touch lower sternum'],
         );
+        final saved = await preferences.getPreference(
+          stableId: 'exercise-bench-v1',
+        );
+        expect(saved!.preference.generalNote, 'Seat position 4');
+        expect(saved.setupValues.map((value) => value.label), [
+          'Bench pin',
+          'Safety arm',
+        ]);
+        expect(saved.personalCues.map((cue) => cue.cueText), [
+          'Bend the bar',
+          'Touch lower sternum',
+        ]);
 
-        final aggregate1 = await prefRepo.getPreference(
-          stableId: 'ex-bench-press-uuid',
+        await preferences.savePreference(
+          stableId: 'exercise-bench-v1',
+          personalCues: const ['New first cue'],
         );
-        expect(aggregate1, isNotNull);
-        expect(aggregate1!.preference.id, equals(prefId1));
-        expect(
-          aggregate1.preference.generalNote,
-          equals('Arch shoulders, drive through heels'),
+        final reordered = await preferences.getPreference(
+          stableId: 'exercise-bench-v1',
         );
-        expect(aggregate1.setupValues.length, equals(1));
-        expect(aggregate1.setupValues.first.label, equals('Bench Pin Height'));
-        expect(aggregate1.personalCues.length, equals(2));
-        expect(aggregate1.personalCues.first.cueText, equals('Bend the bar'));
+        expect(reordered!.preference.generalNote, 'Seat position 4');
+        expect(reordered.setupValues.map((value) => value.label), [
+          'Bench pin',
+          'Safety arm',
+        ]);
+        expect(reordered.personalCues.single.cueText, 'New first cue');
+      },
+    );
 
-        // Raw name fallback lookup for uncatalogued custom exercise
-        final prefId2 = await prefRepo.savePreference(
-          rawName: 'Pike Push-ups',
-          generalNote: 'Elevate feet on bench',
-          personalCues: ['Look at toes'],
+    test(
+      'preserves an unresolved raw fallback only when explicitly requested',
+      () async {
+        await expectLater(
+          preferences.savePreference(rawName: 'Pike Push-ups'),
+          throwsA(isA<ArgumentError>()),
         );
+        await preferences.savePreference(
+          rawName: ' Pike   Push-ups ',
+          allowUnresolvedRawFallback: true,
+          personalCues: const ['Look at toes'],
+        );
+        final saved = await preferences.getPreference(rawName: 'pike push-ups');
+        expect(saved!.preference.exerciseId, isNull);
+        expect(saved.preference.exerciseNameFallback, 'Pike   Push-ups');
+        expect(saved.personalCues.single.cueText, 'Look at toes');
+      },
+    );
 
-        final aggregate2 = await prefRepo.getPreference(
-          rawName: 'Pike Push-ups',
+    test(
+      'rejects invalid children and never changes template or history tables',
+      () async {
+        await expectLater(
+          preferences.savePreference(
+            stableId: 'exercise-bench-v1',
+            setupValues: const [
+              SetupValueInput(ordinal: 1, label: 'Pin', value: '4'),
+            ],
+          ),
+          throwsA(isA<ArgumentError>()),
         );
-        expect(aggregate2, isNotNull);
-        expect(aggregate2!.preference.id, equals(prefId2));
-        expect(
-          aggregate2.preference.identityKey,
-          equals('raw_name:pike push-ups'),
-        );
-        expect(aggregate2.personalCues.single.cueText, equals('Look at toes'));
+        expect(await db.select(db.exercisePrescriptions).get(), isEmpty);
+        expect(await db.select(db.workoutSets).get(), isEmpty);
       },
     );
   });
