@@ -145,6 +145,74 @@ void main() {
         );
         expect(preview.occurrenceIncompatibleExercises.isNotEmpty, isTrue);
 
+        // Applying a stale preview must not silently select the newly moved
+        // occurrence. The caller must review the changed plan.
+        final occurrence = preview.affectedOccurrences.single;
+        await calendarRepo.reschedule(
+          RescheduleOccurrenceCommand(
+            occurrenceId: occurrence.id,
+            commandId: 'move-before-apply',
+            expectedStatus: OccurrenceStatus.planned,
+            effectiveLocalDate: '2026-08-04',
+            effectiveTimezoneId: 'Asia/Kolkata',
+            confirmed: true,
+          ),
+        );
+        await expectLater(
+          travelRepo.createAndApplyTravelContext(preview: preview),
+          throwsA(isA<TravelPreviewStaleException>()),
+        );
+
+        final reviewedPreview = await travelRepo.previewTravelContext(
+          startLocalDate: '2026-08-03',
+          endLocalDate: '2026-08-05',
+          timezoneId: 'Asia/Kolkata',
+          equipmentProfileId: hotelProfileId,
+        );
+        await travelRepo.createAndApplyTravelContext(preview: reviewedPreview);
+        expect(
+          await travelRepo.getEffectiveEquipmentProfileId(
+            occurrenceId: occurrence.id,
+          ),
+          equals(hotelProfileId),
+        );
+
+        await expectLater(
+          travelRepo.rescheduleWithMembership(
+            command: RescheduleOccurrenceCommand(
+              occurrenceId: occurrence.id,
+              commandId: 'move-out-without-choice',
+              expectedStatus: OccurrenceStatus.rescheduled,
+              effectiveLocalDate: '2026-08-06',
+              effectiveTimezoneId: 'Asia/Kolkata',
+              confirmed: true,
+            ),
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        // Moving out requires a visible membership decision and restores the
+        // normal profile; it never shifts another session or program ordinal.
+        final moved = await travelRepo.rescheduleWithMembership(
+          command: RescheduleOccurrenceCommand(
+            occurrenceId: occurrence.id,
+            commandId: 'move-out-of-travel',
+            expectedStatus: OccurrenceStatus.rescheduled,
+            effectiveLocalDate: '2026-08-06',
+            effectiveTimezoneId: 'Asia/Kolkata',
+            confirmed: true,
+          ),
+          membershipChoice: TravelMembershipChoice.removeFromTravel,
+        );
+        expect(moved.occurrence.programWeekOrdinal, equals(0));
+        expect(moved.occurrence.sessionOrdinal, equals(0));
+        expect(
+          await travelRepo.getEffectiveEquipmentProfileId(
+            occurrenceId: occurrence.id,
+          ),
+          equals(homeProfileId),
+        );
+
         // Assert program structure (blocks/weeks/templates) was NOT mutated
         final detail = await programRepo.getProgramVersionDetail(v1.id);
         expect(detail!.weeks.first.isDeload, isFalse);
@@ -165,11 +233,14 @@ void main() {
         );
 
         // Create travel context
-        final travelId = await travelRepo.createAndApplyTravelContext(
+        final preview = await travelRepo.previewTravelContext(
           startLocalDate: '2026-08-10',
           endLocalDate: '2026-08-17',
           timezoneId: 'Asia/Kolkata',
           equipmentProfileId: travelProfileId,
+        );
+        final travelId = await travelRepo.createAndApplyTravelContext(
+          preview: preview,
           note: 'Business trip to Mumbai',
         );
 
@@ -182,6 +253,18 @@ void main() {
         expect(activeTravel, isNotNull);
         expect(activeTravel!.id, equals(travelId));
         expect(activeTravel.equipmentProfileId, equals(travelProfileId));
+
+        final otherProfile = await equipRepo.createProfile(name: 'Other Hotel');
+        final overlappingPreview = await travelRepo.previewTravelContext(
+          startLocalDate: '2026-08-11',
+          endLocalDate: '2026-08-12',
+          timezoneId: 'Asia/Kolkata',
+          equipmentProfileId: otherProfile,
+        );
+        await expectLater(
+          travelRepo.createAndApplyTravelContext(preview: overlappingPreview),
+          throwsA(isA<StateError>()),
+        );
 
         // Resolve effective profile during travel date vs outside travel date
         expect(
@@ -209,11 +292,14 @@ void main() {
 
         final travelId = await equipRepo.createProfile(name: 'Travel Profile');
 
-        final tcId = await travelRepo.createAndApplyTravelContext(
+        final preview = await travelRepo.previewTravelContext(
           startLocalDate: '2026-09-01',
           endLocalDate: '2026-09-07',
           timezoneId: 'Asia/Kolkata',
           equipmentProfileId: travelId,
+        );
+        final tcId = await travelRepo.createAndApplyTravelContext(
+          preview: preview,
         );
 
         expect(
@@ -233,6 +319,27 @@ void main() {
         expect(
           await travelRepo.getEffectiveEquipmentProfileId(
             localDate: '2026-09-03',
+          ),
+          equals(defaultId),
+        );
+
+        final endPreview = await travelRepo.previewTravelContext(
+          startLocalDate: '2026-09-08',
+          endLocalDate: '2026-09-09',
+          timezoneId: 'Asia/Kolkata',
+          equipmentProfileId: travelId,
+        );
+        final endId = await travelRepo.createAndApplyTravelContext(
+          preview: endPreview,
+        );
+        await travelRepo.endTravelContext(endId);
+        final ended = await (db.select(
+          db.travelContexts,
+        )..where((table) => table.id.equals(endId))).getSingle();
+        expect(ended.status, equals('ended'));
+        expect(
+          await travelRepo.getEffectiveEquipmentProfileId(
+            localDate: '2026-09-08',
           ),
           equals(defaultId),
         );

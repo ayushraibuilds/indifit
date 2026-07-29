@@ -340,6 +340,7 @@ final workoutExecutionCompatibilityAdapterProvider =
         calendarRepo: ref.watch(calendarRepositoryProvider),
         workoutRepo: ref.watch(workoutRepositoryProvider),
         preferenceRepo: ref.watch(exercisePreferenceRepositoryProvider),
+        travelRepo: ref.watch(travelRepositoryProvider),
       );
     });
 

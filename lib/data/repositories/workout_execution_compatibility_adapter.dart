@@ -7,6 +7,7 @@ import '../../core/fixtures/workout_draft_codec.dart';
 import '../database/app_database.dart';
 import 'calendar_repository.dart';
 import 'equipment_preference_repository.dart';
+import 'travel_repository.dart';
 import 'workout_repository.dart';
 
 class ScheduledWorkoutRecoveryException implements Exception {
@@ -53,17 +54,20 @@ class WorkoutExecutionCompatibilityAdapter {
   final AppDatabase _db;
   final CalendarRepository _calendarRepo;
   final ExercisePreferenceRepository _preferenceRepo;
+  final TravelRepository? _travelRepo;
   final Uuid _uuid;
 
   WorkoutExecutionCompatibilityAdapter({
     required AppDatabase db,
     required CalendarRepository calendarRepo,
     required ExercisePreferenceRepository preferenceRepo,
+    TravelRepository? travelRepo,
     WorkoutRepository? workoutRepo,
     Uuid? uuid,
   }) : _db = db,
        _calendarRepo = calendarRepo,
        _preferenceRepo = preferenceRepo,
+       _travelRepo = travelRepo,
        _uuid = uuid ?? const Uuid();
 
   Future<WorkoutPlayerLaunchData> startScheduledOccurrence({
@@ -78,7 +82,7 @@ class WorkoutExecutionCompatibilityAdapter {
         commandId: commandId,
         expectedStatus: _status(occurrence.status),
         confirmedOutsideEffectiveDate: confirmedOutsideEffectiveDate,
-        executionContext: await _buildPersonalExerciseContext(occurrence),
+        executionContext: await _buildExecutionContext(occurrence),
       ),
     );
     final snapshot = result.occurrence.executionSnapshotJson;
@@ -287,7 +291,7 @@ class WorkoutExecutionCompatibilityAdapter {
     return occurrence;
   }
 
-  Future<Map<String, dynamic>> _buildPersonalExerciseContext(
+  Future<Map<String, dynamic>> _buildExecutionContext(
     ScheduledSessionOccurrence occurrence,
   ) async {
     final prescriptions =
@@ -323,7 +327,17 @@ class WorkoutExecutionCompatibilityAdapter {
             const [],
       });
     }
-    return {'version': 1, 'exercises': entries};
+    final profile = _travelRepo == null
+        ? null
+        : await _travelRepo.resolveEffectiveProfile(
+            occurrenceId: occurrence.id,
+          );
+    return {
+      'version': 1,
+      'exercises': entries,
+      // This is immutable player provenance, not a new profile authority.
+      'equipmentProfile': profile?.toSnapshotJson(),
+    };
   }
 
   WorkoutPlayerLaunchData _launchFromSnapshot({

@@ -5,6 +5,7 @@ import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/data/repositories/equipment_preference_repository.dart';
 import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
+import 'package:indifit/data/repositories/travel_repository.dart';
 import 'package:indifit/data/repositories/workout_execution_compatibility_adapter.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,6 +19,8 @@ void main() {
   late CalendarRepository calendarRepo;
   late WorkoutRepository workoutRepo;
   late ExercisePreferenceRepository preferenceRepo;
+  late EquipmentProfileRepository equipmentRepo;
+  late TravelRepository travelRepo;
   late WorkoutExecutionCompatibilityAdapter adapter;
 
   setUp(() async {
@@ -28,11 +31,18 @@ void main() {
     calendarRepo = CalendarRepository(db);
     workoutRepo = WorkoutRepository(db);
     preferenceRepo = ExercisePreferenceRepository(db);
+    equipmentRepo = EquipmentProfileRepository(db);
+    travelRepo = TravelRepository(
+      db: db,
+      calendarRepo: calendarRepo,
+      equipmentRepo: equipmentRepo,
+    );
     adapter = WorkoutExecutionCompatibilityAdapter(
       db: db,
       calendarRepo: calendarRepo,
       workoutRepo: workoutRepo,
       preferenceRepo: preferenceRepo,
+      travelRepo: travelRepo,
     );
 
     // Seed exercise for FK validation
@@ -156,6 +166,42 @@ void main() {
           resumed.exercises.single.exerciseName,
           'Flat Barbell Bench Press',
         );
+      },
+    );
+
+    test(
+      'travel equipment provenance is frozen when the occurrence starts',
+      () async {
+        final occurrenceId = await setupActivatedOccurrence();
+        final defaultProfile = await equipmentRepo.createProfile(name: 'Home');
+        await equipmentRepo.setDefaultProfileId(defaultProfile);
+        final travelProfile = await equipmentRepo.createProfile(name: 'Hotel');
+        final preview = await travelRepo.previewTravelContext(
+          startLocalDate: '2026-08-03',
+          endLocalDate: '2026-08-03',
+          timezoneId: 'UTC',
+          equipmentProfileId: travelProfile,
+        );
+        await travelRepo.createAndApplyTravelContext(preview: preview);
+
+        final launch = await adapter.startScheduledOccurrence(
+          occurrenceId: occurrenceId,
+          commandId: 'start-with-travel-provenance',
+          confirmedOutsideEffectiveDate: true,
+        );
+        expect(launch.executionSnapshotJson, contains('"source":"travel"'));
+        expect(launch.executionSnapshotJson, contains(travelProfile));
+
+        final context = await travelRepo.getActiveTravelContext();
+        await travelRepo.cancelTravelContext(context!.id);
+        // Cancelling travel changes future resolution only, never the started
+        // occurrence snapshot.
+        final occurrence = await calendarRepo.getOccurrence(occurrenceId);
+        expect(
+          occurrence!.executionSnapshotJson,
+          equals(launch.executionSnapshotJson),
+        );
+        expect(occurrence.executionSnapshotJson, contains(travelProfile));
       },
     );
 

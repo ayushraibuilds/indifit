@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/travel_repository.dart';
 
 /// Reactive UI state for travel coordination and equipment profile overrides.
@@ -100,10 +101,7 @@ class TravelController extends StateNotifier<TravelUiState> {
     state = state.copyWith(isLoading: true);
     try {
       await _travelRepo.createAndApplyTravelContext(
-        startLocalDate: preview.startLocalDate,
-        endLocalDate: preview.endLocalDate,
-        timezoneId: preview.timezoneId,
-        equipmentProfileId: preview.equipmentProfileId,
+        preview: preview,
         note: note,
       );
       await loadActiveTravel();
@@ -123,6 +121,35 @@ class TravelController extends StateNotifier<TravelUiState> {
       await loadActiveTravel();
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  /// The calendar UI first reads this impact to present the mandatory travel
+  /// membership choice when an occurrence is moved into or out of travel.
+  Future<TravelRescheduleMembershipImpact> previewRescheduleMembership({
+    required String occurrenceId,
+    required String targetLocalDate,
+  }) {
+    return _travelRepo.getRescheduleMembershipImpact(
+      occurrenceId: occurrenceId,
+      targetLocalDate: targetLocalDate,
+    );
+  }
+
+  Future<void> rescheduleOccurrence({
+    required RescheduleOccurrenceCommand command,
+    TravelMembershipChoice? membershipChoice,
+  }) async {
+    state = state.copyWith(isLoading: true);
+    try {
+      await _travelRepo.rescheduleWithMembership(
+        command: command,
+        membershipChoice: membershipChoice,
+      );
+      await loadActiveTravel();
+    } catch (error) {
+      state = state.copyWith(isLoading: false, errorMessage: '$error');
+      rethrow;
     }
   }
 }
