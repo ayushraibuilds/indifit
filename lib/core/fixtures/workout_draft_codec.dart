@@ -28,7 +28,7 @@ class WorkoutDraftCodec {
   static const Set<String> allowedSetTypes = {
     'working',
     'warmup',
-    'drop',
+    'dropset',
     'failure',
     'amrap',
   };
@@ -79,7 +79,9 @@ class WorkoutDraftCodec {
 
   /// Deserializes a draft JSON string (envelope v1 or legacy bare-array v0) into a list of [WorkoutSetsCompanion] objects.
   static List<WorkoutSetsCompanion> decodeLoggedSets(String jsonStr) {
-    if (jsonStr.trim().isEmpty) return const [];
+    if (jsonStr.trim().isEmpty) {
+      throw const FormatException('Draft payload must not be empty.');
+    }
 
     dynamic decoded;
     try {

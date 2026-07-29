@@ -147,9 +147,15 @@ void main() {
     });
 
     test(
-      '7. Allowed setTypes (working, warmup, drop, failure, amrap) pass validation',
+      '7. Allowed setTypes (working, warmup, dropset, failure, amrap) pass validation',
       () {
-        for (final type in ['working', 'warmup', 'drop', 'failure', 'amrap']) {
+        for (final type in [
+          'working',
+          'warmup',
+          'dropset',
+          'failure',
+          'amrap',
+        ]) {
           final json = jsonEncode([
             {
               'sessionId': 0,
@@ -198,9 +204,11 @@ void main() {
       },
     );
 
-    test('9. Active draft empty payload returns empty list', () {
-      final decoded = WorkoutDraftCodec.decodeLoggedSets('');
-      expect(decoded, isEmpty);
+    test('9. Active draft empty payload fails safely', () {
+      expect(
+        () => WorkoutDraftCodec.decodeLoggedSets(''),
+        throwsA(isA<FormatException>()),
+      );
     });
 
     test(

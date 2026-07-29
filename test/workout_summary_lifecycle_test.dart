@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,8 +14,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Test repository seam allowing controllable failure injection and call count tracking.
 class ControllableWorkoutRepository extends WorkoutRepository {
-  bool shouldFail = false;
   int logSessionCallCount = 0;
+  int deleteActiveDraftCallCount = 0;
+  final List<_SessionLogCommand> _pendingSessionLogs = [];
+  final List<Completer<int>> _pendingDraftDeletes = [];
 
   ControllableWorkoutRepository(super.db);
 
@@ -27,10 +31,7 @@ class ControllableWorkoutRepository extends WorkoutRepository {
     DateTime? completedAt,
   }) async {
     logSessionCallCount++;
-    if (shouldFail) {
-      throw Exception('Simulated database failure during session save');
-    }
-    return super.logSession(
+    final command = _SessionLogCommand(
       name: name,
       volume: volume,
       durationSeconds: durationSeconds,
@@ -38,7 +39,87 @@ class ControllableWorkoutRepository extends WorkoutRepository {
       sets: sets,
       completedAt: completedAt,
     );
+    _pendingSessionLogs.add(command);
+    return command.result.future;
   }
+
+  Future<void> persistSession(int callNumber) async {
+    final command = _pendingSessionLogs[callNumber - 1];
+    try {
+      final sessionId = await super.logSession(
+        name: command.name,
+        volume: command.volume,
+        durationSeconds: command.durationSeconds,
+        calories: command.calories,
+        sets: command.sets,
+        completedAt: command.completedAt,
+      );
+      command.result.complete(sessionId);
+    } catch (error, stackTrace) {
+      command.result.completeError(error, stackTrace);
+      rethrow;
+    }
+  }
+
+  void failSession(int callNumber) {
+    _pendingSessionLogs[callNumber - 1].result.completeError(
+      Exception('Simulated database failure during session save'),
+    );
+  }
+
+  @override
+  Future<int> deleteActiveDraft() async {
+    deleteActiveDraftCallCount++;
+    final result = Completer<int>();
+    _pendingDraftDeletes.add(result);
+    return result.future;
+  }
+
+  Future<void> persistDraftDelete(int callNumber) async {
+    final result = _pendingDraftDeletes[callNumber - 1];
+    try {
+      result.complete(await super.deleteActiveDraft());
+    } catch (error, stackTrace) {
+      result.completeError(error, stackTrace);
+      rethrow;
+    }
+  }
+}
+
+class _SessionLogCommand {
+  final String name;
+  final double volume;
+  final int durationSeconds;
+  final int calories;
+  final List<WorkoutSetsCompanion> sets;
+  final DateTime? completedAt;
+  final Completer<int> result = Completer<int>();
+
+  _SessionLogCommand({
+    required this.name,
+    required this.volume,
+    required this.durationSeconds,
+    required this.calories,
+    required this.sets,
+    required this.completedAt,
+  });
+}
+
+Future<T> runDatabaseAction<T>(
+  WidgetTester tester,
+  Future<T> Function() action,
+) async {
+  final result = await tester.runAsync(
+    () async => _DatabaseActionResult<T>(await action()),
+  );
+  if (result == null) throw StateError('Database action did not complete.');
+  return result.value;
+}
+
+class _DatabaseActionResult<T> {
+  final T value;
+
+  const _DatabaseActionResult(this.value);
 }
 
 void main() {
@@ -126,30 +207,41 @@ void main() {
         ],
       );
 
-      await repo.saveWorkoutDraft(
-        WorkoutDraftsCompanion.insert(
-          routineName: 'Leg Split',
-          currentExerciseIndex: 1,
-          currentSetIndex: 0,
-          elapsedSeconds: 240,
-          loggedSetsJson: jsonStr,
-        ),
-      );
+      await tester.runAsync(() async {
+        await repo.saveWorkoutDraft(
+          WorkoutDraftsCompanion.insert(
+            routineName: 'Leg Split',
+            currentExerciseIndex: 1,
+            currentSetIndex: 0,
+            elapsedSeconds: 240,
+            loggedSetsJson: jsonStr,
+          ),
+        );
+      });
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [workoutRepositoryProvider.overrideWithValue(repo)],
-          child: const MaterialApp(
-            home: WorkoutSummaryScreen(
-              routineName: 'Leg Split',
-              elapsedSeconds: 240,
-              loggedSets: [],
-            ),
+          child: MaterialApp(
+            initialRoute: '/summary',
+            routes: {
+              '/': (_) => const Scaffold(body: Text('Workout player')),
+              '/summary': (_) => const WorkoutSummaryScreen(
+                routineName: 'Leg Split',
+                elapsedSeconds: 240,
+                loggedSets: [],
+              ),
+            },
           ),
         ),
       );
 
-      final draft = await repo.getActiveDraft();
+      expect(find.text('Workout Summary'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.text('Workout player'), findsOneWidget);
+
+      final draft = await runDatabaseAction(tester, repo.getActiveDraft);
       expect(draft, isNotNull);
       expect(draft!.routineName, equals('Leg Split'));
     });
@@ -173,17 +265,19 @@ void main() {
           ],
         );
 
-        await repo.saveWorkoutDraft(
-          WorkoutDraftsCompanion.insert(
-            routineName: 'Chest & Arms',
-            currentExerciseIndex: 0,
-            currentSetIndex: 1,
-            elapsedSeconds: 300,
-            loggedSetsJson: jsonStr,
-          ),
-        );
+        await tester.runAsync(() async {
+          await repo.saveWorkoutDraft(
+            WorkoutDraftsCompanion.insert(
+              routineName: 'Chest & Arms',
+              currentExerciseIndex: 0,
+              currentSetIndex: 1,
+              elapsedSeconds: 300,
+              loggedSetsJson: jsonStr,
+            ),
+          );
+        });
 
-        expect(await repo.getActiveDraft(), isNotNull);
+        expect(await runDatabaseAction(tester, repo.getActiveDraft), isNotNull);
 
         await tester.pumpWidget(
           ProviderScope(
@@ -213,20 +307,35 @@ void main() {
         expect(saveButton, findsOneWidget);
 
         await tester.tap(saveButton);
-        await tester.pump(); // Execute tap handler
+        await tester.pump();
+        expect(repo.logSessionCallCount, equals(1));
+        await tester.runAsync(() => repo.persistSession(1));
+        await tester.pump();
+        expect(repo.deleteActiveDraftCallCount, equals(1));
+        await tester.runAsync(() => repo.persistDraftDelete(1));
+        await tester.pump();
 
         // 1. Exactly 1 session must be logged in database
-        final sessions = await db.select(db.workoutSessions).get();
+        final sessions = await runDatabaseAction(
+          tester,
+          () => db.select(db.workoutSessions).get(),
+        );
         expect(sessions.length, equals(1));
         expect(sessions.first.name, equals('Chest & Arms'));
 
         // 2. Logged sets must be present in database
-        final sets = await db.select(db.workoutSets).get();
+        final sets = await runDatabaseAction(
+          tester,
+          () => db.select(db.workoutSets).get(),
+        );
         expect(sets.length, equals(1));
         expect(sets.first.exerciseName, equals('Incline Bench'));
 
         // 3. Active draft MUST be deleted ONLY AFTER successful save
-        final activeDraft = await repo.getActiveDraft();
+        final activeDraft = await runDatabaseAction(
+          tester,
+          repo.getActiveDraft,
+        );
         expect(activeDraft, isNull);
         expect(repo.logSessionCallCount, equals(1));
       },
@@ -235,8 +344,6 @@ void main() {
     testWidgets(
       '5 & 6. Failed session save preserves draft and displays failure',
       (WidgetTester tester) async {
-        repo.shouldFail = true; // Inject database failure
-
         final jsonStr = WorkoutDraftCodec.encode(
           routineName: 'Failing Routine',
           currentExerciseIndex: 0,
@@ -253,15 +360,17 @@ void main() {
           ],
         );
 
-        await repo.saveWorkoutDraft(
-          WorkoutDraftsCompanion.insert(
-            routineName: 'Failing Routine',
-            currentExerciseIndex: 0,
-            currentSetIndex: 0,
-            elapsedSeconds: 100,
-            loggedSetsJson: jsonStr,
-          ),
-        );
+        await tester.runAsync(() async {
+          await repo.saveWorkoutDraft(
+            WorkoutDraftsCompanion.insert(
+              routineName: 'Failing Routine',
+              currentExerciseIndex: 0,
+              currentSetIndex: 0,
+              elapsedSeconds: 100,
+              loggedSetsJson: jsonStr,
+            ),
+          );
+        });
 
         await tester.pumpWidget(
           ProviderScope(
@@ -281,18 +390,27 @@ void main() {
           'Save Workout & Exit',
         );
         await tester.tap(saveButton);
-        await tester.pump(); // Execute save handler and trigger error SnackBar
+        await tester.pump();
+        expect(repo.logSessionCallCount, equals(1));
+        repo.failSession(1);
+        await tester.pump();
 
         // SnackBar must display failure message
         expect(find.byType(SnackBar), findsOneWidget);
         expect(find.textContaining('Failed to save session'), findsOneWidget);
 
         // Database session count MUST be 0
-        final sessions = await db.select(db.workoutSessions).get();
+        final sessions = await runDatabaseAction(
+          tester,
+          () => db.select(db.workoutSessions).get(),
+        );
         expect(sessions, isEmpty);
 
         // Active draft MUST be preserved in database for user recovery
-        final activeDraft = await repo.getActiveDraft();
+        final activeDraft = await runDatabaseAction(
+          tester,
+          repo.getActiveDraft,
+        );
         expect(activeDraft, isNotNull);
         expect(activeDraft!.routineName, equals('Failing Routine'));
       },
@@ -301,7 +419,24 @@ void main() {
     testWidgets(
       '7 & 8 & 10. Retry after failure succeeds and resets saving guard',
       (WidgetTester tester) async {
-        repo.shouldFail = true;
+        final jsonStr = WorkoutDraftCodec.encode(
+          routineName: 'Retry Test Routine',
+          currentExerciseIndex: 0,
+          currentSetIndex: 0,
+          elapsedSeconds: 150,
+          loggedSets: const [],
+        );
+        await tester.runAsync(() async {
+          await repo.saveWorkoutDraft(
+            WorkoutDraftsCompanion.insert(
+              routineName: 'Retry Test Routine',
+              currentExerciseIndex: 0,
+              currentSetIndex: 0,
+              elapsedSeconds: 150,
+              loggedSetsJson: jsonStr,
+            ),
+          );
+        });
 
         await tester.pumpWidget(
           ProviderScope(
@@ -332,22 +467,37 @@ void main() {
         // Attempt 1: Fails
         await tester.tap(saveButton);
         await tester.pump();
+        repo.failSession(1);
+        await tester.pump();
         expect(repo.logSessionCallCount, equals(1));
-        expect((await db.select(db.workoutSessions).get()), isEmpty);
-
-        // Fix failure condition and retry
-        repo.shouldFail = false;
+        expect(
+          await runDatabaseAction(
+            tester,
+            () => db.select(db.workoutSessions).get(),
+          ),
+          isEmpty,
+        );
+        expect(await runDatabaseAction(tester, repo.getActiveDraft), isNotNull);
 
         // Attempt 2 (Retry): Succeeds
         await tester.tap(saveButton);
+        await tester.pump();
+        expect(repo.logSessionCallCount, equals(2));
+        await tester.runAsync(() => repo.persistSession(2));
+        await tester.pump();
+        await tester.runAsync(() => repo.persistDraftDelete(1));
         await tester.pump();
 
         expect(repo.logSessionCallCount, equals(2));
 
         // Exactly ONE durable session created for the successful attempt
-        final sessions = await db.select(db.workoutSessions).get();
+        final sessions = await runDatabaseAction(
+          tester,
+          () => db.select(db.workoutSessions).get(),
+        );
         expect(sessions.length, equals(1));
         expect(sessions.first.name, equals('Retry Test Routine'));
+        expect(await runDatabaseAction(tester, repo.getActiveDraft), isNull);
       },
     );
 
@@ -380,13 +530,22 @@ void main() {
 
         // Rapid multi-tap
         await tester.tap(saveButton);
+        await tester.pump();
+        expect(repo.logSessionCallCount, equals(1));
         await tester.tap(saveButton);
         await tester.tap(saveButton);
         await tester.pump();
 
         // Exactly ONE repository logSession call must occur
         expect(repo.logSessionCallCount, equals(1));
-        final sessions = await db.select(db.workoutSessions).get();
+        await tester.runAsync(() => repo.persistSession(1));
+        await tester.pump();
+        await tester.runAsync(() => repo.persistDraftDelete(1));
+        await tester.pump();
+        final sessions = await runDatabaseAction(
+          tester,
+          () => db.select(db.workoutSessions).get(),
+        );
         expect(sessions.length, equals(1));
       },
     );
