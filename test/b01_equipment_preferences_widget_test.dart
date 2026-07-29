@@ -9,6 +9,39 @@ import 'package:indifit/features/equipment/equipment_profiles_screen.dart';
 import 'package:indifit/features/equipment/exercise_preference_editor_screen.dart';
 import 'package:indifit/features/workout_player/player_setup_cues_panel.dart';
 
+class _ProfileListRepository extends EquipmentProfileRepository {
+  final EquipmentProfile profile = EquipmentProfile(
+    id: 'b01-ui-home-profile',
+    name: 'My Home Gym',
+    createdAtUtc: DateTime.utc(2026, 7, 29),
+    updatedAtUtc: DateTime.utc(2026, 7, 29),
+  );
+
+  _ProfileListRepository(super.db);
+
+  @override
+  Future<List<EquipmentProfile>> getActiveProfiles() async => [profile];
+
+  @override
+  Future<String?> getDefaultProfileId() async => profile.id;
+
+  @override
+  Future<EquipmentProfileAggregate?> getProfile(String profileId) async =>
+      profileId == profile.id
+      ? EquipmentProfileAggregate(profile: profile, items: const [])
+      : null;
+}
+
+class _EmptyPreferenceRepository extends ExercisePreferenceRepository {
+  _EmptyPreferenceRepository(super.db);
+
+  @override
+  Future<ExercisePreferenceAggregate?> getPreference({
+    String? stableId,
+    String? rawName,
+  }) async => null;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -22,9 +55,12 @@ void main() {
     await db.close();
   });
 
-  Widget createWidgetUnderTest(Widget child) {
+  Widget createWidgetUnderTest(
+    Widget child, {
+    List<Override> overrides = const [],
+  }) {
     return ProviderScope(
-      overrides: [databaseProvider.overrideWithValue(db)],
+      overrides: [databaseProvider.overrideWithValue(db), ...overrides],
       child: MaterialApp(home: child),
     );
   }
@@ -33,12 +69,15 @@ void main() {
     testWidgets(
       '1. EquipmentProfilesScreen renders profile list and default badge',
       (tester) async {
-        final equipRepo = EquipmentProfileRepository(db);
-        final profileId = await equipRepo.createProfile(name: 'My Home Gym');
-        await equipRepo.setDefaultProfileId(profileId);
+        final repository = _ProfileListRepository(db);
 
         await tester.pumpWidget(
-          createWidgetUnderTest(const EquipmentProfilesScreen()),
+          createWidgetUnderTest(
+            const EquipmentProfilesScreen(),
+            overrides: [
+              equipmentProfileRepositoryProvider.overrideWithValue(repository),
+            ],
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -58,8 +97,15 @@ void main() {
 
         expect(find.text('New Profile'), findsOneWidget);
         expect(find.text('Equipment Availability'), findsOneWidget);
-        expect(find.text('BARBELL'), findsOneWidget);
-        expect(find.text('DUMBBELL'), findsOneWidget);
+        expect(find.text('Barbell'), findsOneWidget);
+        expect(find.text('Dumbbell'), findsOneWidget);
+        expect(find.text('Power Rack'), findsOneWidget);
+        expect(
+          find.text(
+            'Bodyweight is always available and is not stored as an item.',
+          ),
+          findsOneWidget,
+        );
         expect(find.text('Save Profile'), findsOneWidget);
       },
     );
@@ -70,6 +116,11 @@ void main() {
         await tester.pumpWidget(
           createWidgetUnderTest(
             const ExercisePreferenceEditorScreen(rawName: 'Leg Press Machine'),
+            overrides: [
+              exercisePreferenceRepositoryProvider.overrideWithValue(
+                _EmptyPreferenceRepository(db),
+              ),
+            ],
           ),
         );
         await tester.pumpAndSettle();

@@ -548,6 +548,10 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                   const SizedBox(height: 12),
                   PlayerSetupCuesPanel(
                     exerciseName: currentEx.exerciseName,
+                    stableId:
+                        widget.personalExerciseContextByName[currentEx
+                                .exerciseName]?['exerciseId']
+                            as String?,
                     frozenContext: widget
                         .personalExerciseContextByName[currentEx.exerciseName],
                   ),

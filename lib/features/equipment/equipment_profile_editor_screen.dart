@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/fixtures/equipment_fixtures.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
 
@@ -20,30 +21,42 @@ class EquipmentProfileEditorScreen extends ConsumerStatefulWidget {
 class _EquipmentProfileEditorScreenState
     extends ConsumerState<EquipmentProfileEditorScreen> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _defaultIncrementController =
+      TextEditingController();
 
-  static const List<String> _catalogCodes = [
-    'barbell',
-    'dumbbell',
-    'cable',
-    'machine',
-    'smith_machine',
-    'kettlebell',
-    'bodyweight',
-    'band',
-  ];
+  /// This is intentionally derived from B01-01's canonical fixture rather
+  /// than maintaining a UI-specific list. Bodyweight is an implicit
+  /// capability and must not be persisted as an equipment profile item.
+  static final List<CanonicalEquipmentItem> _catalogItems =
+      CanonicalEquipmentItem.values
+          .where((item) => item != CanonicalEquipmentItem.bodyweight)
+          .toList(growable: false);
 
-  final Map<String, bool> _availability = {
-    for (final code in _catalogCodes) code: true,
-  };
+  late final Map<String, bool> _availability;
+  late final Map<String, TextEditingController> _incrementControllers;
 
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _availability = {for (final item in _catalogItems) item.id: false};
+    _incrementControllers = {
+      for (final item in _catalogItems) item.id: TextEditingController(),
+    };
     if (widget.profileId != null) {
       _loadProfile();
     }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _defaultIncrementController.dispose();
+    for (final controller in _incrementControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _loadProfile() async {
@@ -53,8 +66,12 @@ class _EquipmentProfileEditorScreenState
       final aggregate = await repo.getProfile(widget.profileId!);
       if (aggregate != null) {
         _nameController.text = aggregate.profile.name;
+        _defaultIncrementController.text =
+            aggregate.profile.defaultWeightIncrementKg?.toString() ?? '';
         for (final item in aggregate.items) {
           _availability[item.equipmentCode] = item.isAvailable;
+          _incrementControllers[item.equipmentCode]?.text =
+              item.weightIncrementKg?.toString() ?? '';
         }
       }
     } catch (e) {
@@ -77,12 +94,41 @@ class _EquipmentProfileEditorScreenState
       return;
     }
 
-    final items = _availability.entries.map((e) {
-      return EquipmentProfileItemInput(
-        equipmentCode: e.key,
-        isAvailable: e.value,
+    double? parseIncrement(String raw, String label) {
+      final value = raw.trim();
+      if (value.isEmpty) return null;
+      final parsed = double.tryParse(value);
+      if (parsed == null || !parsed.isFinite || parsed <= 0) {
+        throw ArgumentError('$label must be a positive number.');
+      }
+      return parsed;
+    }
+
+    List<EquipmentProfileItemInput> items;
+    double? defaultIncrement;
+    try {
+      defaultIncrement = parseIncrement(
+        _defaultIncrementController.text,
+        'Default weight increment',
       );
-    }).toList();
+      items = _catalogItems
+          .map(
+            (item) => EquipmentProfileItemInput(
+              equipmentCode: item.id,
+              isAvailable: _availability[item.id] ?? false,
+              weightIncrementKg: parseIncrement(
+                _incrementControllers[item.id]!.text,
+                '${item.displayName} weight increment',
+              ),
+            ),
+          )
+          .toList(growable: false);
+    } on ArgumentError catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message?.toString() ?? '$error')),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -91,10 +137,16 @@ class _EquipmentProfileEditorScreenState
         await repo.updateProfile(
           profileId: widget.profileId!,
           name: name,
+          defaultWeightIncrementKg: defaultIncrement,
+          clearDefaultWeightIncrement: defaultIncrement == null,
           items: items,
         );
       } else {
-        await repo.createProfile(name: name, items: items);
+        await repo.createProfile(
+          name: name,
+          defaultWeightIncrementKg: defaultIncrement,
+          items: items,
+        );
       }
 
       if (mounted) {
@@ -143,6 +195,19 @@ class _EquipmentProfileEditorScreenState
                     ),
                   ),
                   const SizedBox(height: 24),
+                  TextField(
+                    controller: _defaultIncrementController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Default weight increment (kg, optional)',
+                      helperText:
+                          'Used when an item does not have its own increment.',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Text(
                     'Equipment Availability',
                     style: TextStyle(
@@ -152,20 +217,51 @@ class _EquipmentProfileEditorScreenState
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ..._catalogCodes.map((code) {
-                    final isAvailable = _availability[code] ?? true;
-                    return SwitchListTile(
-                      tileColor: AppColors.cardBackground,
-                      title: Text(
-                        code.replaceAll('_', ' ').toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                  const Text(
+                    'Bodyweight is always available and is not stored as an item.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                  ..._catalogItems.map((item) {
+                    final isAvailable = _availability[item.id] ?? false;
+                    return Card(
+                      color: AppColors.cardBackground,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Column(
+                          children: [
+                            SwitchListTile(
+                              title: Text(
+                                item.displayName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              value: isAvailable,
+                              onChanged: (value) {
+                                setState(() => _availability[item.id] = value);
+                              },
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                              child: TextField(
+                                controller: _incrementControllers[item.id],
+                                enabled: isAvailable,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                decoration: InputDecoration(
+                                  labelText:
+                                      '${item.displayName} increment (kg, optional)',
+                                  isDense: true,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      value: isAvailable,
-                      onChanged: (val) {
-                        setState(() {
-                          _availability[code] = val;
-                        });
-                      },
                     );
                   }),
                   const SizedBox(height: 24),

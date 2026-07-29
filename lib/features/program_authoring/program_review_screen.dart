@@ -20,6 +20,15 @@ class ProgramReviewScreen extends ConsumerStatefulWidget {
 }
 
 class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
+  static const _timezoneOptions = <String>[
+    'Asia/Kolkata',
+    'UTC',
+    'America/New_York',
+    'Europe/London',
+    'Asia/Tokyo',
+    'Australia/Sydney',
+  ];
+
   late String _selectedDate;
   late String _selectedTimezone;
 
@@ -183,14 +192,31 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     onTap: _selectDate,
                   ),
                   const SizedBox(height: 8),
-                  ListTile(
-                    tileColor: AppColors.cardBackground,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedTimezone,
+                    decoration: const InputDecoration(
+                      labelText: 'Program timezone',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.public_rounded),
                     ),
-                    title: const Text('Home Timezone'),
-                    subtitle: Text(_selectedTimezone),
-                    trailing: const Icon(Icons.public_rounded),
+                    items: _timezoneOptions
+                        .map(
+                          (timezone) => DropdownMenuItem(
+                            value: timezone,
+                            child: Text(timezone),
+                          ),
+                        )
+                        .toList(growable: false),
+                    onChanged: (timezone) {
+                      if (timezone != null) {
+                        setState(() => _selectedTimezone = timezone);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Existing scheduled workouts from earlier versions stay on their original dates unless you explicitly cancel them.',
+                    style: TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 24),
                   Text(

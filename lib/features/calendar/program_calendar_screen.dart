@@ -3,80 +3,118 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import 'calendar_controller.dart';
+import 'calendar_read_model.dart';
 import 'occurrence_actions_sheet.dart';
 
-/// Calendar screen exposing Today, Week, and Month planning views for scheduled occurrences.
-class ProgramCalendarScreen extends ConsumerStatefulWidget {
+/// Calendar MVP for dated B01 occurrences. The selected date and view are
+/// Riverpod-memory state; occurrence data remains repository-owned.
+class ProgramCalendarScreen extends ConsumerWidget {
   const ProgramCalendarScreen({super.key});
 
-  @override
-  ConsumerState<ProgramCalendarScreen> createState() =>
-      _ProgramCalendarScreenState();
-}
-
-class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  void _showActions(CalendarOccurrenceReadItem item) {
-    showModalBottomSheet(
+  void _showActions(BuildContext context, CalendarOccurrenceReadItem item) {
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (context) => OccurrenceActionsSheet(occurrenceItem: item),
     );
   }
 
-  Color _statusColor(String status, bool isDeload) {
-    if (isDeload) return Colors.purple;
-    switch (status) {
-      case 'completed':
-        return Colors.green;
-      case 'partiallyCompleted':
-        return Colors.teal;
-      case 'inProgress':
-        return Colors.cyan;
-      case 'rescheduled':
-        return Colors.amber;
-      case 'skipped':
-        return Colors.grey;
-      case 'cancelled':
-        return Colors.red;
-      case 'planned':
-      default:
-        return AppColors.primary;
-    }
+  Future<void> _pickDate(BuildContext context, WidgetRef ref) async {
+    final state = ref.read(calendarControllerProvider);
+    final selected = DateTime.parse('${state.selectedLocalDate}T12:00:00Z');
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selected,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    await ref
+        .read(calendarControllerProvider.notifier)
+        .selectDate(_formatDate(picked));
   }
 
-  Widget _buildOccurrenceCard(CalendarOccurrenceReadItem item) {
-    final occ = item.occurrence;
-    final color = _statusColor(occ.status, item.isDeload);
+  Future<void> _moveDate(WidgetRef ref, int direction) async {
+    final state = ref.read(calendarControllerProvider);
+    final dates = ref.read(localScheduleDateServiceProvider);
+    final next = switch (state.view) {
+      CalendarView.day => dates.addCalendarDays(
+        state.selectedLocalDate,
+        state.timezoneId,
+        direction,
+      ),
+      CalendarView.week => dates.addCalendarDays(
+        state.selectedLocalDate,
+        state.timezoneId,
+        direction * 7,
+      ),
+      CalendarView.month => _moveMonth(state.selectedLocalDate, direction),
+    };
+    await ref.read(calendarControllerProvider.notifier).selectDate(next);
+  }
 
+  Future<void> _goToToday(WidgetRef ref) {
+    final state = ref.read(calendarControllerProvider);
+    final dates = ref.read(localScheduleDateServiceProvider);
+    return ref
+        .read(calendarControllerProvider.notifier)
+        .selectDate(dates.todayIn(state.timezoneId));
+  }
+
+  static String _moveMonth(String localDate, int direction) {
+    final year = int.parse(localDate.substring(0, 4));
+    final month = int.parse(localDate.substring(5, 7));
+    final day = int.parse(localDate.substring(8, 10));
+    final monthStart = DateTime.utc(year, month + direction, 1);
+    final lastDay = DateTime.utc(monthStart.year, monthStart.month + 1, 0).day;
+    return _formatDate(
+      DateTime.utc(monthStart.year, monthStart.month, day.clamp(1, lastDay)),
+    );
+  }
+
+  static String _formatDate(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
+  static String _viewLabel(CalendarView view) => switch (view) {
+    CalendarView.day => 'Today',
+    CalendarView.week => 'Week',
+    CalendarView.month => 'Month',
+  };
+
+  Color _statusColor(String status, bool isDeload) {
+    if (isDeload) return Colors.purple;
+    return switch (status) {
+      'completed' => Colors.green,
+      'partiallyCompleted' => Colors.teal,
+      'inProgress' => Colors.cyan,
+      'rescheduled' => Colors.amber,
+      'skipped' => Colors.grey,
+      'cancelled' => Colors.red,
+      _ => AppColors.primary,
+    };
+  }
+
+  Widget _buildOccurrenceCard(
+    BuildContext context,
+    CalendarOccurrenceReadItem item,
+  ) {
+    final occurrence = item.occurrence;
+    final color = _statusColor(occurrence.status, item.isDeload);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       color: AppColors.cardBackground,
       child: ListTile(
-        onTap: () => _showActions(item),
+        onTap: () => _showActions(context, item),
         leading: CircleAvatar(
           backgroundColor: color.withValues(alpha: 0.2),
           child: Icon(
-            occ.status == 'completed'
+            occurrence.status == 'completed'
                 ? Icons.check_circle_rounded
-                : occ.status == 'inProgress'
+                : occurrence.status == 'inProgress'
                 ? Icons.play_circle_fill_rounded
                 : Icons.fitness_center_rounded,
             color: color,
@@ -90,100 +128,136 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen>
           ),
         ),
         subtitle: Text(
-          'Date: ${occ.effectiveLocalDate}${item.isDeload ? " • Deload" : ""}',
+          '${occurrence.effectiveLocalDate} • ${item.block.name} • Week ${item.week.programWeekOrdinal + 1}${item.isDeload ? ' • Deload' : ''}${item.isOverdue ? ' • Overdue' : ''}',
           style: TextStyle(
             color: item.isOverdue ? Colors.orange : Colors.grey,
             fontWeight: item.isOverdue ? FontWeight.bold : FontWeight.normal,
           ),
         ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
+        trailing: Semantics(
+          label: 'Status ${occurrence.status}',
           child: Text(
-            occ.status.toUpperCase(),
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-            ),
+            occurrence.status,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildOccurrenceList(List<CalendarOccurrenceReadItem> items) {
+  Widget _buildOccurrences(
+    BuildContext context,
+    List<CalendarOccurrenceReadItem> items,
+  ) {
     if (items.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.event_note_rounded, size: 48, color: Colors.grey),
-            const SizedBox(height: 12),
-            Text(
-              'No workouts scheduled in this range.',
-              style: TextStyle(
-                color: Colors.grey,
-                fontFamily: GoogleFonts.outfit().fontFamily,
-              ),
-            ),
+            Icon(Icons.event_note_rounded, size: 48, color: Colors.grey),
+            SizedBox(height: 12),
+            Text('No workouts scheduled in this range.'),
           ],
         ),
       );
     }
-
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: items.length,
-      itemBuilder: (context, idx) => _buildOccurrenceCard(items[idx]),
+      itemBuilder: (context, index) =>
+          _buildOccurrenceCard(context, items[index]),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    final uiState = ref.watch(calendarControllerProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(calendarControllerProvider);
+    final controller = ref.read(calendarControllerProvider.notifier);
+    final visibleItems = switch (state.view) {
+      CalendarView.day => state.selectedDateOccurrences,
+      CalendarView.week || CalendarView.month => state.rangeOccurrences,
+    };
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Training Calendar',
+          state.activeProgramName == null
+              ? 'Training Calendar'
+              : 'Training Calendar • ${state.activeProgramName}',
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_box_rounded),
-            tooltip: 'Author / Activate Program',
+            tooltip: 'Author / activate program',
             onPressed: () => context.push('/program-author'),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey,
-          tabs: const [
-            Tab(text: 'Selected Date'),
-            Tab(text: 'Range'),
-            Tab(text: 'Overdue'),
-          ],
-        ),
       ),
-      body: uiState.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Wrap(
+              spacing: 8,
+              children: CalendarView.values
+                  .map(
+                    (view) => ChoiceChip(
+                      label: Text(_viewLabel(view)),
+                      selected: state.view == view,
+                      onSelected: (_) => controller.setView(view),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
               children: [
-                // 1. Selected Date View
-                _buildOccurrenceList(uiState.selectedDateOccurrences),
-                // 2. Range View
-                _buildOccurrenceList(uiState.rangeOccurrences),
-                // 3. Overdue View
-                _buildOccurrenceList(uiState.overdueOccurrences),
+                IconButton(
+                  tooltip: 'Previous ${_viewLabel(state.view).toLowerCase()}',
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () => _moveDate(ref, -1),
+                ),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => _pickDate(context, ref),
+                    child: Text(
+                      '${state.selectedLocalDate} • ${state.timezoneId}',
+                      semanticsLabel:
+                          'Selected calendar date ${state.selectedLocalDate} in ${state.timezoneId}',
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _goToToday(ref),
+                  child: const Text('Today'),
+                ),
+                IconButton(
+                  tooltip: 'Next ${_viewLabel(state.view).toLowerCase()}',
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () => _moveDate(ref, 1),
+                ),
               ],
             ),
+          ),
+          if (state.errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                state.errorMessage!,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
+          Expanded(
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildOccurrences(context, visibleItems),
+          ),
+        ],
+      ),
     );
   }
 }

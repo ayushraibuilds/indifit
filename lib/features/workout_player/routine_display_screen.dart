@@ -166,28 +166,34 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   }
 
   Widget _buildActiveProgramState() {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(28),
+        padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.calendar_month_rounded,
               size: 56,
               color: AppColors.primary,
             ),
-            SizedBox(height: 20),
-            Text(
+            const SizedBox(height: 20),
+            const Text(
               'A scheduled training program is active',
               textAlign: TextAlign.center,
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
-            SizedBox(height: 10),
-            Text(
+            const SizedBox(height: 10),
+            const Text(
               'Legacy split editing is unavailable while this program is active. Your scheduled workouts remain separate from older routines.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: () => context.push('/calendar'),
+              icon: const Icon(Icons.calendar_today_rounded),
+              label: const Text('Open training calendar'),
             ),
           ],
         ),

@@ -93,6 +93,20 @@ class ProgramDetailAggregate {
   });
 }
 
+/// Small UI-safe exercise selection model. It exposes stable identity and
+/// display metadata without making authoring widgets database owners.
+class ExerciseAuthoringOption {
+  final String stableId;
+  final String name;
+  final String equipment;
+
+  const ExerciseAuthoringOption({
+    required this.stableId,
+    required this.name,
+    required this.equipment,
+  });
+}
+
 /// B01 authoring owner. It intentionally cannot activate or publish a
 /// version: B01-06's activation coordinator owns that cross-aggregate
 /// transaction together with occurrence materialisation.
@@ -124,6 +138,50 @@ class ProgramRepository {
       query.where((t) => t.archivedAtUtc.isNull());
     }
     return query.watch();
+  }
+
+  /// Authoring read model for the exact, stable-ID exercise picker. The UI
+  /// never resolves a typed name itself: a normal prescription is created from
+  /// one of these persisted catalogue/custom rows, while unresolved names are
+  /// an explicit compatibility-only choice.
+  Future<List<ExerciseAuthoringOption>> getExercisesForAuthoring() async {
+    final rows =
+        await (db.select(db.exercises)
+              ..where((table) => table.stableId.isNotNull())
+              ..orderBy([(table) => OrderingTerm(expression: table.name)]))
+            .get();
+    return rows
+        .map(
+          (row) => ExerciseAuthoringOption(
+            stableId: row.stableId!,
+            name: row.name,
+            equipment: row.equipment,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  /// Program identity metadata is user-owned but is deliberately separate
+  /// from a version graph. Updating it cannot mutate a published version or a
+  /// frozen execution snapshot.
+  Future<void> updateProgramMetadata({
+    required String programId,
+    required String name,
+    String? notes,
+  }) async {
+    _requireText(name, 'Program name');
+    final changed =
+        await (db.update(
+          db.programs,
+        )..where((table) => table.id.equals(programId))).write(
+          ProgramsCompanion(
+            name: Value(name.trim()),
+            notes: Value(_nullableTrim(notes)),
+          ),
+        );
+    if (changed != 1) {
+      throw StateError('Program $programId is unavailable for editing.');
+    }
   }
 
   Future<List<ProgramVersion>> getVersionsForProgram(String programId) {

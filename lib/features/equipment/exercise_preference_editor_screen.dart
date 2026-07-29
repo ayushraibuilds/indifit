@@ -36,6 +36,19 @@ class _ExercisePreferenceEditorScreenState
     _loadPreference();
   }
 
+  @override
+  void dispose() {
+    _generalNoteController.dispose();
+    for (final controllers in _setupValueControllers) {
+      controllers['label']?.dispose();
+      controllers['value']?.dispose();
+    }
+    for (final controller in _cueControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
   Future<void> _loadPreference() async {
     setState(() => _isLoading = true);
     try {
@@ -46,6 +59,15 @@ class _ExercisePreferenceEditorScreenState
       );
 
       if (aggregate != null) {
+        for (final controllers in _setupValueControllers) {
+          controllers['label']?.dispose();
+          controllers['value']?.dispose();
+        }
+        for (final controller in _cueControllers) {
+          controller.dispose();
+        }
+        _setupValueControllers.clear();
+        _cueControllers.clear();
         _generalNoteController.text = aggregate.preference.generalNote ?? '';
         for (final sv in aggregate.setupValues) {
           _setupValueControllers.add({
@@ -205,7 +227,11 @@ class _ExercisePreferenceEditorScreenState
                             ),
                             onPressed: () {
                               setState(() {
-                                _setupValueControllers.removeAt(idx);
+                                final removed = _setupValueControllers.removeAt(
+                                  idx,
+                                );
+                                removed['label']?.dispose();
+                                removed['value']?.dispose();
                               });
                             },
                           ),
@@ -254,7 +280,7 @@ class _ExercisePreferenceEditorScreenState
                             ),
                             onPressed: () {
                               setState(() {
-                                _cueControllers.removeAt(idx);
+                                _cueControllers.removeAt(idx).dispose();
                               });
                             },
                           ),

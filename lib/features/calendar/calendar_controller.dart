@@ -143,6 +143,20 @@ class CalendarController extends StateNotifier<CalendarUiState> {
     await refresh();
   }
 
+  /// Restoring a skipped or cancelled occurrence is guarded by the repository
+  /// so a later started dependent can never be silently rewound from the UI.
+  Future<void> restoreOccurrence(String occurrenceId) async {
+    final occurrence = await _requireOccurrence(occurrenceId);
+    await _calendarRepo.restore(
+      RestoreOccurrenceCommand(
+        occurrenceId: occurrenceId,
+        commandId: _uuid.v4(),
+        expectedStatus: _status(occurrence.status),
+      ),
+    );
+    await refresh();
+  }
+
   Future<void> repeatOccurrence(
     String occurrenceId,
     String targetLocalDate, {

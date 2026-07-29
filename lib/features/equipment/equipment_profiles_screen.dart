@@ -76,6 +76,26 @@ class _EquipmentProfilesScreenState
   }
 
   Future<void> _archiveProfile(String profileId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Archive equipment profile?'),
+        content: const Text(
+          'Archived profiles stay available for historical workouts but cannot be selected for future planning.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Archive'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     try {
       final repo = ref.read(equipmentProfileRepositoryProvider);
       await repo.archiveProfile(profileId);

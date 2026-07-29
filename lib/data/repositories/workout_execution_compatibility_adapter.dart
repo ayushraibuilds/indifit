@@ -130,6 +130,25 @@ class WorkoutExecutionCompatibilityAdapter {
     );
   }
 
+  /// UI-safe resume entry point. The player never reads a draft directly; the
+  /// compatibility adapter remains the single owner of scheduled execution
+  /// reconstruction.
+  Future<WorkoutPlayerLaunchData> resumeScheduledOccurrence(
+    String occurrenceId,
+  ) async {
+    final draft =
+        await (_db.select(_db.workoutDrafts)..where(
+              (table) => table.scheduledOccurrenceId.equals(occurrenceId),
+            ))
+            .getSingleOrNull();
+    if (draft == null) {
+      throw const ScheduledWorkoutRecoveryException(
+        'The in-progress workout draft is missing. Recover or discard it explicitly.',
+      );
+    }
+    return resumeScheduledDraft(draft);
+  }
+
   /// Inserts session, sets, event/status and deletes the exact linked draft in
   /// one transaction. A retry with the same command and payload returns the
   /// original session; a different command/payload is rejected.
