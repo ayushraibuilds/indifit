@@ -172,8 +172,9 @@ class TravelRepository {
     final travel = await (db.select(
       db.travelContexts,
     )..where((t) => t.id.equals(travelContextId))).getSingleOrNull();
-    if (travel == null)
+    if (travel == null) {
       throw StateError('TravelContext $travelContextId not found.');
+    }
 
     final now = DateTime.now().toUtc();
     await (db.update(

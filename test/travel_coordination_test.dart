@@ -255,18 +255,14 @@ void main() {
           equipmentProfileId: profileId,
         );
 
-        expect(controller.debugState.previewResult, isNotNull);
+        expect(controller.state.previewResult, isNotNull);
 
         await controller.applyTravel(note: 'Vacation in Goa');
-        expect(controller.debugState.activeTravelContext, isNotNull);
+        expect(controller.state.activeTravelContext, isNotNull);
 
         await controller.cancelActiveTravel();
-        expect(controller.debugState.activeTravelContext, isNull);
+        expect(controller.state.activeTravelContext, isNull);
       },
     );
   });
-}
-
-extension _TravelControllerTestExt on TravelController {
-  TravelUiState get debugState => state;
 }
