@@ -17,20 +17,22 @@ class WorkoutDraftCodec {
   }) {
     final rawSets = loggedSets.map((s) {
       final map = <String, dynamic>{
-        'sessionId': s.sessionId.value,
-        'exerciseName': s.exerciseName.value,
-        'weight': s.weight.value,
-        'reps': s.reps.value,
-        'setNumber': s.setNumber.value,
-        'isPr': s.isPr.value,
-        'rpe': s.rpe.value,
-        'isWarmUp': s.isWarmUp.value,
-        'setType': s.setType.value,
-        'setNotes': s.setNotes.value,
-        'uuid': s.uuid.value,
-        'durationSeconds': s.durationSeconds.value,
-        'distanceKm': s.distanceKm.value,
-        'inclinePercentage': s.inclinePercentage.value,
+        'sessionId': s.sessionId.present ? s.sessionId.value : 0,
+        'exerciseName': s.exerciseName.present ? s.exerciseName.value : '',
+        'weight': s.weight.present ? s.weight.value : 0.0,
+        'reps': s.reps.present ? s.reps.value : 0,
+        'setNumber': s.setNumber.present ? s.setNumber.value : 1,
+        'isPr': s.isPr.present ? s.isPr.value : false,
+        'rpe': s.rpe.present ? s.rpe.value : null,
+        'isWarmUp': s.isWarmUp.present ? s.isWarmUp.value : false,
+        'setType': s.setType.present ? s.setType.value : 'working',
+        'setNotes': s.setNotes.present ? s.setNotes.value : null,
+        'uuid': s.uuid.present ? s.uuid.value : null,
+        'durationSeconds':
+            s.durationSeconds.present ? s.durationSeconds.value : null,
+        'distanceKm': s.distanceKm.present ? s.distanceKm.value : null,
+        'inclinePercentage':
+            s.inclinePercentage.present ? s.inclinePercentage.value : null,
       };
       return map;
     }).toList();

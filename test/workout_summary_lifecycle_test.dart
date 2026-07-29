@@ -189,7 +189,8 @@ void main() {
       expect(saveButton, findsOneWidget);
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // 1. Session must be logged in database
       final sessions = await db.select(db.workoutSessions).get();
@@ -232,7 +233,8 @@ void main() {
       await tester.tap(saveButton);
       await tester.tap(saveButton);
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Only exactly 1 session should have been saved
       final sessions = await db.select(db.workoutSessions).get();
