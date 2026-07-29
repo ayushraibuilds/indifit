@@ -1,13 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:uuid/uuid.dart';
 
 /// Fixed Manifest Version for Exercise Identity Fixtures.
 const int kExerciseManifestVersion = 1;
-
-/// Fixed Namespace UUID for IndiFit Exercise Identity (v5 fallback UUIDs).
-const String kIndiFitExerciseNamespaceUuid =
-    '6ba7b811-9dad-11d1-80b4-00c04fd430c8';
 
 /// Status of an exercise identity lookup.
 enum ExerciseLookupStatus {
@@ -63,6 +58,17 @@ class CanonicalExerciseEntry {
   });
 }
 
+/// A deliberately approved one-to-one legacy alias.
+///
+/// A list is used instead of a map so fixture validation can reject two source
+/// entries that normalize to the same alias but target different exercises.
+class ApprovedExerciseAlias {
+  final String alias;
+  final String canonicalName;
+
+  const ApprovedExerciseAlias(this.alias, this.canonicalName);
+}
+
 /// Normalizer for exercise names.
 class ExerciseIdentityNormalizer {
   static String normalize(String name) {
@@ -75,7 +81,6 @@ class ExerciseIdentityNormalizer {
 /// Manifest containing deterministic catalog identities, approved aliases, and ambiguous fixtures.
 class ExerciseCatalogManifest {
   static const int manifestVersion = kExerciseManifestVersion;
-  static const Uuid _uuidGen = Uuid();
 
   /// Static immutable golden UUID map for all 140 bundled catalog exercises (v1).
   /// Decouples exercise identity completely from dynamic string evaluation.
@@ -93,6 +98,13 @@ class ExerciseCatalogManifest {
         'c3c0efc1-7d1a-512c-afbf-aa58832a8435',
     'slow eccentric incline dumbbell bench press':
         '6dbfc969-9524-5d55-8dd2-8eb99a9b708d',
+    'decline hammer strength press': '767caf63-b617-5a2f-9a01-a22b55918316',
+    'decline hammer strength press (standard)':
+        'f2103bf2-af7f-5133-87d8-b8786f3eaf7e',
+    'pause decline hammer strength press':
+        'a5854b31-1917-565c-8d1a-7e88e2a5772d',
+    'slow eccentric decline hammer strength press':
+        '5cdc2480-a820-57e5-87fd-73743346ad72',
     'chest dips': '74aa39bb-ff5a-5ff7-8cbe-e75878af3cf3',
     'chest dips (standard)': '8fe2c474-0f11-5d9c-be8a-c60318ce992e',
     'pause chest dips': '2fa5be19-f538-5182-82dc-df4c0840cb8f',
@@ -101,10 +113,10 @@ class ExerciseCatalogManifest {
     'push-ups (standard)': 'b20a3a7f-ae82-5555-89f5-19ae1fa3c749',
     'pause push-ups': 'bfdfef59-a292-5ee3-a5aa-c3a5e845c43d',
     'slow eccentric push-ups': 'c01c0c9e-561b-53c8-aa5e-26fbd0eb4e5e',
-    'cable chest flyes': 'd1ea21fb-ca2a-5fe4-b529-1a48c66e2c3e',
-    'cable chest flyes (standard)': 'dbafb9d3-d2eb-5460-a2ef-98cf1eb19bc5',
-    'pause cable chest flyes': '8470a7d9-c020-5fe8-ba68-d0bfebe706e2',
-    'slow eccentric cable chest flyes': '61bc7ff5-e8d9-5e92-ba7d-fe3910c22d4f',
+    'cable chest fly': 'd1ea21fb-ca2a-5fe4-b529-1a48c66e2c3e',
+    'cable chest fly (standard)': 'dbafb9d3-d2eb-5460-a2ef-98cf1eb19bc5',
+    'pause cable chest fly': '8470a7d9-c020-5fe8-ba68-d0bfebe706e2',
+    'slow eccentric cable chest fly': '61bc7ff5-e8d9-5e92-ba7d-fe3910c22d4f',
     'barbell deadlift': 'b102bfa4-6cc5-5e60-accb-82a1ae39b8bc',
     'barbell deadlift (standard)': '7fd950ce-79e5-5558-86d7-fc197b1026ea',
     'pause barbell deadlift': '18b6bdf9-9941-5bb1-9369-1c8d73f41560',
@@ -243,30 +255,39 @@ class ExerciseCatalogManifest {
     'slow eccentric hanging leg raise': 'da4d6b6f-ec07-5d98-b994-cb0bea76a66f',
   };
 
-  /// Explicitly approved 1-to-1 alias mappings (normalized alias -> exact canonical catalog name).
-  static const Map<String, String> approvedAliases = {
-    'push-ups': 'Push-Ups',
-    'push ups': 'Push-Ups',
-    'pushup': 'Push-Ups',
-    'pushups': 'Push-Ups',
-    'barbell squats': 'Barbell Squat',
-    'seated dumbbell press': 'Seated Dumbbell Shoulder Press',
-    'dumbbell shoulder press': 'Seated Dumbbell Shoulder Press',
-    'incline dumbbell press': 'Incline Dumbbell Bench Press',
-    'single-arm dumbbell row': 'One-Arm Dumbbell Row',
-    'single arm dumbbell row': 'One-Arm Dumbbell Row',
-    'barbell row': 'Bent Over Barbell Row',
-    'leg extension machine': 'Leg Extensions',
-    'leg extension': 'Leg Extensions',
-    'rdl': 'Romanian Deadlift (RDL)',
-    'romanian deadlift': 'Romanian Deadlift (RDL)',
-    'flat bench press': 'Flat Barbell Bench Press',
-    'lat pulldown machine': 'Lat Pulldown',
-    'cable row': 'Seated Cable Row',
-    'cable face pulls': 'Face Pulls',
-    'ez bar skull crushers': 'Skull Crushers (EZ Bar)',
-    'skullcrushers': 'Skull Crushers (EZ Bar)',
-  };
+  /// Explicitly approved 1-to-1 aliases (alias -> exact canonical catalog name).
+  static const List<ApprovedExerciseAlias> approvedAliases = [
+    ApprovedExerciseAlias('push-ups', 'Push-Ups'),
+    ApprovedExerciseAlias('push ups', 'Push-Ups'),
+    ApprovedExerciseAlias('pushup', 'Push-Ups'),
+    ApprovedExerciseAlias('pushups', 'Push-Ups'),
+    ApprovedExerciseAlias('barbell squats', 'Barbell Squat'),
+    ApprovedExerciseAlias(
+      'seated dumbbell press',
+      'Seated Dumbbell Shoulder Press',
+    ),
+    ApprovedExerciseAlias(
+      'dumbbell shoulder press',
+      'Seated Dumbbell Shoulder Press',
+    ),
+    ApprovedExerciseAlias(
+      'incline dumbbell press',
+      'Incline Dumbbell Bench Press',
+    ),
+    ApprovedExerciseAlias('single-arm dumbbell row', 'One-Arm Dumbbell Row'),
+    ApprovedExerciseAlias('single arm dumbbell row', 'One-Arm Dumbbell Row'),
+    ApprovedExerciseAlias('barbell row', 'Bent Over Barbell Row'),
+    ApprovedExerciseAlias('leg extension machine', 'Leg Extensions'),
+    ApprovedExerciseAlias('leg extension', 'Leg Extensions'),
+    ApprovedExerciseAlias('rdl', 'Romanian Deadlift (RDL)'),
+    ApprovedExerciseAlias('romanian deadlift', 'Romanian Deadlift (RDL)'),
+    ApprovedExerciseAlias('flat bench press', 'Flat Barbell Bench Press'),
+    ApprovedExerciseAlias('lat pulldown machine', 'Lat Pulldown'),
+    ApprovedExerciseAlias('cable row', 'Seated Cable Row'),
+    ApprovedExerciseAlias('cable face pulls', 'Face Pulls'),
+    ApprovedExerciseAlias('ez bar skull crushers', 'Skull Crushers (EZ Bar)'),
+    ApprovedExerciseAlias('skullcrushers', 'Skull Crushers (EZ Bar)'),
+  ];
 
   /// Explicitly classified ambiguous legacy exercise names that MUST NOT resolve automatically.
   static const Set<String> ambiguousLegacyNames = {
@@ -348,14 +369,19 @@ class ExerciseCatalogManifest {
       }
       final normalized = ExerciseIdentityNormalizer.normalize(name);
 
-      // Explicit immutable UUID assignment:
-      // 1. Explicit 'uuid' in JSON entry if present
-      // 2. Static golden UUID lookup table (manifest v1)
-      // 3. Fallback UUID v5 generation (explicitly bound)
+      // Bundled identities are assigned only by the checked-in manifest. A
+      // catalogue rename must be accompanied by an explicit retained UUID or a
+      // manifest update that preserves the prior UUID; it must never mint one.
+      final explicitUuid = map['uuid'];
+      if (explicitUuid != null && explicitUuid is! String) {
+        throw const FormatException('Catalog exercise UUID must be a string.');
+      }
       final String uuid =
-          map['uuid'] as String? ??
+          explicitUuid as String? ??
           goldenCatalogUuids[normalized] ??
-          _uuidGen.v5(kIndiFitExerciseNamespaceUuid, normalized);
+          (throw FormatException(
+            'Bundled catalog exercise "$name" has no immutable manifest UUID.',
+          ));
 
       entries.add(
         CanonicalExerciseEntry(
@@ -416,8 +442,56 @@ class ExerciseCatalogManifest {
 /// Lookup engine for exercise identities.
 class ExerciseIdentityLookup {
   final ExerciseCatalogManifest _manifest;
+  final List<ApprovedExerciseAlias> _approvedAliases;
+  final Set<String> _ambiguousLegacyNames;
 
-  ExerciseIdentityLookup(this._manifest);
+  late final Map<String, String> _aliasTargets = _validatedAliasTargets(
+    _approvedAliases,
+    _ambiguousLegacyNames,
+  );
+
+  ExerciseIdentityLookup(
+    this._manifest, {
+    Iterable<ApprovedExerciseAlias>? approvedAliases,
+    Set<String>? ambiguousLegacyNames,
+  }) : _approvedAliases = List.unmodifiable(
+         approvedAliases ?? ExerciseCatalogManifest.approvedAliases,
+       ),
+       _ambiguousLegacyNames = Set.unmodifiable(
+         ambiguousLegacyNames ?? ExerciseCatalogManifest.ambiguousLegacyNames,
+       );
+
+  static Map<String, String> _validatedAliasTargets(
+    Iterable<ApprovedExerciseAlias> aliases,
+    Set<String> ambiguousLegacyNames,
+  ) {
+    final targets = <String, String>{};
+    for (final alias in aliases) {
+      final aliasNormalized = ExerciseIdentityNormalizer.normalize(alias.alias);
+      final targetNormalized = ExerciseIdentityNormalizer.normalize(
+        alias.canonicalName,
+      );
+      if (aliasNormalized.isEmpty || targetNormalized.isEmpty) {
+        throw StateError(
+          'Malformed alias entry: "${alias.alias}" -> "${alias.canonicalName}"',
+        );
+      }
+      if (ambiguousLegacyNames.contains(aliasNormalized)) {
+        throw StateError(
+          'Conflict: Alias "${alias.alias}" is also listed as ambiguous.',
+        );
+      }
+      final existingTarget = targets[aliasNormalized];
+      if (existingTarget != null && existingTarget != targetNormalized) {
+        throw StateError(
+          'Alias collision: "${alias.alias}" targets both '
+          '"$existingTarget" and "$targetNormalized".',
+        );
+      }
+      targets[aliasNormalized] = targetNormalized;
+    }
+    return Map.unmodifiable(targets);
+  }
 
   /// Resolves an input exercise display name to an [ExerciseLookupResult].
   ExerciseLookupResult lookup(String rawName) {
@@ -443,12 +517,9 @@ class ExerciseIdentityLookup {
     }
 
     // 2. Approved 1-to-1 alias match
-    final aliasTarget = ExerciseCatalogManifest.approvedAliases[normalized];
+    final aliasTarget = _aliasTargets[normalized];
     if (aliasTarget != null) {
-      final targetNormalized = ExerciseIdentityNormalizer.normalize(
-        aliasTarget,
-      );
-      final aliasMatch = _manifest.getByNormalizedName(targetNormalized);
+      final aliasMatch = _manifest.getByNormalizedName(aliasTarget);
       if (aliasMatch != null) {
         return ExerciseLookupResult(
           status: ExerciseLookupStatus.resolved,
@@ -460,7 +531,7 @@ class ExerciseIdentityLookup {
     }
 
     // 3. Ambiguous legacy name match
-    if (ExerciseCatalogManifest.ambiguousLegacyNames.contains(normalized)) {
+    if (_ambiguousLegacyNames.contains(normalized)) {
       return ExerciseLookupResult(
         status: ExerciseLookupStatus.ambiguous,
         originalName: originalName,
@@ -476,37 +547,22 @@ class ExerciseIdentityLookup {
 
   /// Validates fixture integrity (no alias collisions, valid targets, no orphan aliases).
   void validateFixtures() {
+    // Force structural validation before checking that alias targets exist.
+    final aliasTargets = _aliasTargets;
+
     // 1. Validate approved aliases
-    for (final entry in ExerciseCatalogManifest.approvedAliases.entries) {
-      final aliasNormalized = entry.key;
-      final targetName = entry.value;
-
-      if (aliasNormalized.isEmpty || targetName.isEmpty) {
-        throw StateError(
-          'Malformed alias entry: "${entry.key}" -> "${entry.value}"',
-        );
-      }
-
-      final targetNormalized = ExerciseIdentityNormalizer.normalize(targetName);
-      final targetMatch = _manifest.getByNormalizedName(targetNormalized);
+    for (final entry in aliasTargets.entries) {
+      final targetMatch = _manifest.getByNormalizedName(entry.value);
 
       if (targetMatch == null) {
         throw StateError(
-          'Approved alias "${entry.key}" points to non-existent catalog entry "$targetName"',
-        );
-      }
-
-      if (ExerciseCatalogManifest.ambiguousLegacyNames.contains(
-        aliasNormalized,
-      )) {
-        throw StateError(
-          'Conflict: Alias "${entry.key}" is also listed as ambiguous.',
+          'Approved alias "${entry.key}" points to non-existent catalog entry "${entry.value}"',
         );
       }
     }
 
     // 2. Validate ambiguous names
-    for (final ambiguous in ExerciseCatalogManifest.ambiguousLegacyNames) {
+    for (final ambiguous in _ambiguousLegacyNames) {
       if (ambiguous.isEmpty) {
         throw StateError('Malformed empty ambiguous name entry.');
       }
