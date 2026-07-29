@@ -55,11 +55,11 @@ void main() {
       final backup = await BackupData.createFromDatabase(db, prefs);
 
       expect(backup.version, equals(5));
-      expect(backup.schemaVersion, equals(14));
+      expect(backup.schemaVersion, equals(15));
 
       final jsonMap = backup.toJson();
       expect(jsonMap['version'], equals(5));
-      expect(jsonMap['schema_version'], equals(14));
+      expect(jsonMap['schema_version'], equals(15));
       expect(jsonMap.containsKey('user_preferences'), isTrue);
 
       final restored = BackupData.fromJson(jsonMap);
@@ -269,7 +269,7 @@ void main() {
         final restored = BackupData.fromJson(decodedMap);
 
         expect(restored.version, equals(5));
-        expect(restored.schemaVersion, equals(14));
+        expect(restored.schemaVersion, equals(15));
 
         // 1. User Profile check
         expect(restored.userProfile, isNotNull);

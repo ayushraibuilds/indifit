@@ -740,6 +740,9 @@ class BackupData {
             updatedAt: d['updated_at'] != null
                 ? DateTime.parse(d['updated_at'] as String)
                 : DateTime.now(),
+            scheduledOccurrenceId: null,
+            executionSnapshotJson: null,
+            draftSchemaVersion: 1,
           ),
         );
       }
