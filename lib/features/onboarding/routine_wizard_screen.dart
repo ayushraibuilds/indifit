@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/di/user_profile_provider.dart';
+import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/ai_routine_service.dart';
+import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 
 class RoutineWizardScreen extends ConsumerStatefulWidget {
@@ -108,6 +109,21 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
     if (_generatedRoutine == null) return;
 
     try {
+      final selection = await ref
+          .read(legacyProgramCompatibilityAdapterProvider)
+          .resolveActivePlanSelection();
+      if (selection.type == ActivePlanType.b01Program) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'A scheduled program is active. Create a replacement version from the training-program flow instead.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
       final workoutRepo = ref.read(workoutRepositoryProvider);
       await workoutRepo.saveRoutine(
         name: _generatedRoutine!.name,

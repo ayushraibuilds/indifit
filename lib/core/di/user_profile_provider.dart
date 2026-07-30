@@ -329,56 +329,53 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
               height: height != null ? Value(height) : const Value.absent(),
               weight: weight != null ? Value(weight) : const Value.absent(),
               sex: sex != null ? Value(sex) : const Value.absent(),
-              activityLevel:
-                  activityLevel != null
-                      ? Value(activityLevel)
-                      : const Value.absent(),
+              activityLevel: activityLevel != null
+                  ? Value(activityLevel)
+                  : const Value.absent(),
               goal: goal != null ? Value(goal) : const Value.absent(),
-              dietPreference:
-                  dietPreference != null
-                      ? Value(dietPreference)
-                      : const Value.absent(),
-              calorieGoal:
-                  calorieGoal != null
-                      ? Value(calorieGoal)
-                      : const Value.absent(),
-              proteinGoal:
-                  proteinGoal != null
-                      ? Value(proteinGoal)
-                      : const Value.absent(),
-              carbsGoal:
-                  carbsGoal != null ? Value(carbsGoal) : const Value.absent(),
+              dietPreference: dietPreference != null
+                  ? Value(dietPreference)
+                  : const Value.absent(),
+              calorieGoal: calorieGoal != null
+                  ? Value(calorieGoal)
+                  : const Value.absent(),
+              proteinGoal: proteinGoal != null
+                  ? Value(proteinGoal)
+                  : const Value.absent(),
+              carbsGoal: carbsGoal != null
+                  ? Value(carbsGoal)
+                  : const Value.absent(),
               fatGoal: fatGoal != null ? Value(fatGoal) : const Value.absent(),
-              equipmentAccess:
-                  equipmentAccess != null
-                      ? Value(equipmentAccess)
-                      : const Value.absent(),
-              injuriesLimitations:
-                  injuriesLimitations != null
-                      ? Value(injuriesLimitations)
-                      : const Value.absent(),
+              equipmentAccess: equipmentAccess != null
+                  ? Value(equipmentAccess)
+                  : const Value.absent(),
+              injuriesLimitations: injuriesLimitations != null
+                  ? Value(injuriesLimitations)
+                  : const Value.absent(),
               updatedAt: Value(DateTime.now()),
             ),
           );
         } else {
-          await db.into(db.userProfiles).insert(
-            UserProfilesCompanion.insert(
-              name: Value(name ?? ''),
-              age: Value(age ?? 25),
-              height: Value(height ?? 170.0),
-              weight: Value(weight ?? 70.0),
-              sex: Value(sex ?? 'male'),
-              activityLevel: Value(activityLevel ?? 'moderate'),
-              goal: Value(goal ?? 'maintain'),
-              dietPreference: Value(dietPreference ?? 'balanced'),
-              calorieGoal: Value(calorieGoal ?? 2000),
-              proteinGoal: Value(proteinGoal ?? 140.0),
-              carbsGoal: Value(carbsGoal ?? 220.0),
-              fatGoal: Value(fatGoal ?? 60.0),
-              equipmentAccess: Value(equipmentAccess ?? 'full_gym'),
-              injuriesLimitations: Value(injuriesLimitations ?? ''),
-            ),
-          );
+          await db
+              .into(db.userProfiles)
+              .insert(
+                UserProfilesCompanion.insert(
+                  name: Value(name ?? ''),
+                  age: Value(age ?? 25),
+                  height: Value(height ?? 170.0),
+                  weight: Value(weight ?? 70.0),
+                  sex: Value(sex ?? 'male'),
+                  activityLevel: Value(activityLevel ?? 'moderate'),
+                  goal: Value(goal ?? 'maintain'),
+                  dietPreference: Value(dietPreference ?? 'balanced'),
+                  calorieGoal: Value(calorieGoal ?? 2000),
+                  proteinGoal: Value(proteinGoal ?? 140.0),
+                  carbsGoal: Value(carbsGoal ?? 220.0),
+                  fatGoal: Value(fatGoal ?? 60.0),
+                  equipmentAccess: Value(equipmentAccess ?? 'full_gym'),
+                  injuriesLimitations: Value(injuriesLimitations ?? ''),
+                ),
+              );
         }
       } catch (e, st) {
         AppLogger.warning('updateProfile database write failed: $e');

@@ -2,15 +2,16 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/local_schedule_date_service.dart';
 import '../../data/database/app_database.dart';
 
-/// Canonical Versioned Backup Schema (Version 4).
+/// Canonical Versioned Backup Schema (Version 6).
 ///
 /// Provides a unified, production-safe DTO and serializer for all user-owned
 /// database records and persisted application preferences.
 /// Shared identically by manual backup/export and automated background backups.
 class BackupData {
-  static const int currentVersion = 5;
+  static const int currentVersion = 6;
 
   final int version;
   final String timestamp;
@@ -40,6 +41,27 @@ class BackupData {
   final List<HealthProvenance> healthProvenances;
   final List<AchievementUnlock> achievementUnlocks;
 
+  // B01 durable training-plan graph. These are deliberately individual typed
+  // collections instead of a JSON blob so the restore path can validate every
+  // FK, enum, civil date and timezone before it mutates the database.
+  final List<Program> programs;
+  final List<ProgramVersion> programVersions;
+  final List<ProgramBlock> programBlocks;
+  final List<ProgramWeek> programWeeks;
+  final List<SessionTemplate> sessionTemplates;
+  final List<ExercisePrescription> exercisePrescriptions;
+  final List<ScheduledSessionOccurrence> scheduledSessionOccurrences;
+  final List<OccurrenceEvent> occurrenceEvents;
+  final TrainingPlanSetting? trainingPlanSettings;
+  final List<EquipmentProfile> equipmentProfiles;
+  final List<EquipmentProfileItem> equipmentProfileItems;
+  final List<TravelContext> travelContexts;
+  final List<TravelContextOccurrence> travelContextOccurrences;
+  final List<ExerciseUserPreference> exerciseUserPreferences;
+  final List<ExerciseSetupValue> exerciseSetupValues;
+  final List<ExercisePersonalCue> exercisePersonalCues;
+  final List<LegacyRoutineProgramMapping> legacyRoutineProgramMappings;
+
   BackupData({
     required this.version,
     required this.timestamp,
@@ -62,6 +84,23 @@ class BackupData {
     required this.dailyHydrations,
     required this.healthProvenances,
     required this.achievementUnlocks,
+    this.programs = const [],
+    this.programVersions = const [],
+    this.programBlocks = const [],
+    this.programWeeks = const [],
+    this.sessionTemplates = const [],
+    this.exercisePrescriptions = const [],
+    this.scheduledSessionOccurrences = const [],
+    this.occurrenceEvents = const [],
+    this.trainingPlanSettings,
+    this.equipmentProfiles = const [],
+    this.equipmentProfileItems = const [],
+    this.travelContexts = const [],
+    this.travelContextOccurrences = const [],
+    this.exerciseUserPreferences = const [],
+    this.exerciseSetupValues = const [],
+    this.exercisePersonalCues = const [],
+    this.legacyRoutineProgramMappings = const [],
   });
 
   /// Constructs a [BackupData] payload directly from the database and optional [SharedPreferences].
@@ -94,6 +133,37 @@ class BackupData {
     final dailyHydrations = await db.select(db.dailyHydrations).get();
     final healthProvenances = await db.select(db.healthProvenances).get();
     final achievementUnlocks = await db.select(db.achievementUnlocks).get();
+    final programs = await db.select(db.programs).get();
+    final programVersions = await db.select(db.programVersions).get();
+    final programBlocks = await db.select(db.programBlocks).get();
+    final programWeeks = await db.select(db.programWeeks).get();
+    final sessionTemplates = await db.select(db.sessionTemplates).get();
+    final exercisePrescriptions = await db
+        .select(db.exercisePrescriptions)
+        .get();
+    final scheduledSessionOccurrences = await db
+        .select(db.scheduledSessionOccurrences)
+        .get();
+    final occurrenceEvents = await db.select(db.occurrenceEvents).get();
+    final trainingPlanSettings = await db
+        .select(db.trainingPlanSettings)
+        .getSingleOrNull();
+    final equipmentProfiles = await db.select(db.equipmentProfiles).get();
+    final equipmentProfileItems = await db
+        .select(db.equipmentProfileItems)
+        .get();
+    final travelContexts = await db.select(db.travelContexts).get();
+    final travelContextOccurrences = await db
+        .select(db.travelContextOccurrences)
+        .get();
+    final exerciseUserPreferences = await db
+        .select(db.exerciseUserPreferences)
+        .get();
+    final exerciseSetupValues = await db.select(db.exerciseSetupValues).get();
+    final exercisePersonalCues = await db.select(db.exercisePersonalCues).get();
+    final legacyRoutineProgramMappings = await db
+        .select(db.legacyRoutineProgramMappings)
+        .get();
 
     final userPreferences = <String, dynamic>{};
     if (prefs != null) {
@@ -129,6 +199,7 @@ class BackupData {
         'fat_goal',
         'pref_achievements_json',
         'prefRemindWorkout',
+        'pref_remind_workout',
         'prefRemindMeals',
         'prefRemindWater',
         'prefRemindEvening',
@@ -181,6 +252,23 @@ class BackupData {
       dailyHydrations: dailyHydrations,
       healthProvenances: healthProvenances,
       achievementUnlocks: achievementUnlocks,
+      programs: programs,
+      programVersions: programVersions,
+      programBlocks: programBlocks,
+      programWeeks: programWeeks,
+      sessionTemplates: sessionTemplates,
+      exercisePrescriptions: exercisePrescriptions,
+      scheduledSessionOccurrences: scheduledSessionOccurrences,
+      occurrenceEvents: occurrenceEvents,
+      trainingPlanSettings: trainingPlanSettings,
+      equipmentProfiles: equipmentProfiles,
+      equipmentProfileItems: equipmentProfileItems,
+      travelContexts: travelContexts,
+      travelContextOccurrences: travelContextOccurrences,
+      exerciseUserPreferences: exerciseUserPreferences,
+      exerciseSetupValues: exerciseSetupValues,
+      exercisePersonalCues: exercisePersonalCues,
+      legacyRoutineProgramMappings: legacyRoutineProgramMappings,
     );
   }
 
@@ -288,6 +376,7 @@ class BackupData {
           .map(
             (e) => {
               'id': e.id,
+              'stable_id': e.stableId,
               'name': e.name,
               'muscle_groups': e.muscleGroups,
               'equipment': e.equipment,
@@ -310,6 +399,10 @@ class BackupData {
               'completed_at': s.completedAt.toIso8601String(),
               'is_synced': s.isSynced,
               'uuid': s.uuid,
+              'scheduled_occurrence_id': s.scheduledOccurrenceId,
+              'execution_snapshot_json': s.executionSnapshotJson,
+              'execution_timezone_id': s.executionTimezoneId,
+              'completion_kind': s.completionKind,
             },
           )
           .toList(),
@@ -331,6 +424,7 @@ class BackupData {
               'duration_seconds': s.durationSeconds,
               'distance_km': s.distanceKm,
               'incline_percentage': s.inclinePercentage,
+              'exercise_id': s.exerciseId,
             },
           )
           .toList(),
@@ -378,6 +472,9 @@ class BackupData {
               'elapsed_seconds': d.elapsedSeconds,
               'logged_sets_json': d.loggedSetsJson,
               'updated_at': d.updatedAt.toIso8601String(),
+              'scheduled_occurrence_id': d.scheduledOccurrenceId,
+              'execution_snapshot_json': d.executionSnapshotJson,
+              'draft_schema_version': d.draftSchemaVersion,
             },
           )
           .toList(),
@@ -427,6 +524,47 @@ class BackupData {
             },
           )
           .toList(),
+      'programs': programs.map((item) => item.toJson()).toList(),
+      'program_versions': programVersions.map((item) => item.toJson()).toList(),
+      'program_blocks': programBlocks.map((item) => item.toJson()).toList(),
+      'program_weeks': programWeeks.map((item) => item.toJson()).toList(),
+      'session_templates': sessionTemplates
+          .map((item) => item.toJson())
+          .toList(),
+      'exercise_prescriptions': exercisePrescriptions
+          .map((item) => item.toJson())
+          .toList(),
+      'scheduled_session_occurrences': scheduledSessionOccurrences
+          .map((item) => item.toJson())
+          .toList(),
+      'occurrence_events': occurrenceEvents
+          .map((item) => item.toJson())
+          .toList(),
+      'training_plan_settings': trainingPlanSettings == null
+          ? const <Map<String, dynamic>>[]
+          : [trainingPlanSettings!.toJson()],
+      'equipment_profiles': equipmentProfiles
+          .map((item) => item.toJson())
+          .toList(),
+      'equipment_profile_items': equipmentProfileItems
+          .map((item) => item.toJson())
+          .toList(),
+      'travel_contexts': travelContexts.map((item) => item.toJson()).toList(),
+      'travel_context_occurrences': travelContextOccurrences
+          .map((item) => item.toJson())
+          .toList(),
+      'exercise_user_preferences': exerciseUserPreferences
+          .map((item) => item.toJson())
+          .toList(),
+      'exercise_setup_values': exerciseSetupValues
+          .map((item) => item.toJson())
+          .toList(),
+      'exercise_personal_cues': exercisePersonalCues
+          .map((item) => item.toJson())
+          .toList(),
+      'legacy_routine_program_mappings': legacyRoutineProgramMappings
+          .map((item) => item.toJson())
+          .toList(),
     };
   }
 
@@ -455,6 +593,7 @@ class BackupData {
     final timestamp =
         json['timestamp'] as String? ?? DateTime.now().toIso8601String();
     final schemaVersion = (json['schema_version'] as num?)?.toInt() ?? 13;
+    final isB01Payload = rawVersion >= 6;
 
     // User Profile
     UserProfile? userProfile;
@@ -505,6 +644,14 @@ class BackupData {
       userPreferences.addAll(
         Map<String, dynamic>.from(json['user_preferences'] as Map),
       );
+      // v5 exported the historical camel-case key while the notification
+      // service now reads the snake-case key. Keep the legacy key intact for
+      // round-trip fidelity and restore its canonical equivalent as well.
+      if (userPreferences.containsKey('prefRemindWorkout') &&
+          !userPreferences.containsKey('pref_remind_workout')) {
+        userPreferences['pref_remind_workout'] =
+            userPreferences['prefRemindWorkout'];
+      }
     }
 
     // Custom Food Items
@@ -608,6 +755,7 @@ class BackupData {
         customExercises.add(
           Exercise(
             id: (e['id'] as num?)?.toInt() ?? 0,
+            stableId: e['stable_id'] as String?,
             name: e['name'] as String,
             muscleGroups: e['muscle_groups'] as String,
             equipment: e['equipment'] as String,
@@ -638,6 +786,10 @@ class BackupData {
                 : DateTime.now(),
             isSynced: s['is_synced'] as bool? ?? false,
             uuid: s['uuid'] as String?,
+            scheduledOccurrenceId: s['scheduled_occurrence_id'] as String?,
+            executionSnapshotJson: s['execution_snapshot_json'] as String?,
+            executionTimezoneId: s['execution_timezone_id'] as String?,
+            completionKind: s['completion_kind'] as String?,
           ),
         );
       }
@@ -665,6 +817,7 @@ class BackupData {
             durationSeconds: (s['duration_seconds'] as num?)?.toInt(),
             distanceKm: (s['distance_km'] as num?)?.toDouble(),
             inclinePercentage: (s['incline_percentage'] as num?)?.toDouble(),
+            exerciseId: s['exercise_id'] as String?,
           ),
         );
       }
@@ -740,6 +893,10 @@ class BackupData {
             updatedAt: d['updated_at'] != null
                 ? DateTime.parse(d['updated_at'] as String)
                 : DateTime.now(),
+            scheduledOccurrenceId: d['scheduled_occurrence_id'] as String?,
+            executionSnapshotJson: d['execution_snapshot_json'] as String?,
+            draftSchemaVersion:
+                (d['draft_schema_version'] as num?)?.toInt() ?? 1,
           ),
         );
       }
@@ -823,6 +980,104 @@ class BackupData {
       }
     }
 
+    final programs = isB01Payload
+        ? _readB01List(json, 'programs', Program.fromJson)
+        : const <Program>[];
+    final programVersions = isB01Payload
+        ? _readB01List(json, 'program_versions', ProgramVersion.fromJson)
+        : const <ProgramVersion>[];
+    final programBlocks = isB01Payload
+        ? _readB01List(json, 'program_blocks', ProgramBlock.fromJson)
+        : const <ProgramBlock>[];
+    final programWeeks = isB01Payload
+        ? _readB01List(json, 'program_weeks', ProgramWeek.fromJson)
+        : const <ProgramWeek>[];
+    final sessionTemplates = isB01Payload
+        ? _readB01List(json, 'session_templates', SessionTemplate.fromJson)
+        : const <SessionTemplate>[];
+    final exercisePrescriptions = isB01Payload
+        ? _readB01List(
+            json,
+            'exercise_prescriptions',
+            ExercisePrescription.fromJson,
+          )
+        : const <ExercisePrescription>[];
+    final scheduledSessionOccurrences = isB01Payload
+        ? _readB01List(
+            json,
+            'scheduled_session_occurrences',
+            ScheduledSessionOccurrence.fromJson,
+          )
+        : const <ScheduledSessionOccurrence>[];
+    final occurrenceEvents = isB01Payload
+        ? _readB01List(json, 'occurrence_events', OccurrenceEvent.fromJson)
+        : const <OccurrenceEvent>[];
+    final settings = isB01Payload
+        ? _readB01List(
+            json,
+            'training_plan_settings',
+            TrainingPlanSetting.fromJson,
+          )
+        : const <TrainingPlanSetting>[];
+    if (settings.length > 1) {
+      throw const FormatException(
+        'Backup validation failed: multiple training-plan settings rows.',
+      );
+    }
+    final equipmentProfiles = isB01Payload
+        ? _readB01List(json, 'equipment_profiles', EquipmentProfile.fromJson)
+        : const <EquipmentProfile>[];
+    final equipmentProfileItems = isB01Payload
+        ? _readB01List(
+            json,
+            'equipment_profile_items',
+            EquipmentProfileItem.fromJson,
+          )
+        : const <EquipmentProfileItem>[];
+    final travelContexts = isB01Payload
+        ? _readB01List(json, 'travel_contexts', TravelContext.fromJson)
+        : const <TravelContext>[];
+    final travelContextOccurrences = isB01Payload
+        ? _readB01List(
+            json,
+            'travel_context_occurrences',
+            TravelContextOccurrence.fromJson,
+          )
+        : const <TravelContextOccurrence>[];
+    final exerciseUserPreferences = isB01Payload
+        ? _readB01List(
+            json,
+            'exercise_user_preferences',
+            ExerciseUserPreference.fromJson,
+          )
+        : const <ExerciseUserPreference>[];
+    final exerciseSetupValues = isB01Payload
+        ? _readB01List(
+            json,
+            'exercise_setup_values',
+            ExerciseSetupValue.fromJson,
+          )
+        : const <ExerciseSetupValue>[];
+    final exercisePersonalCues = isB01Payload
+        ? _readB01List(
+            json,
+            'exercise_personal_cues',
+            ExercisePersonalCue.fromJson,
+          )
+        : const <ExercisePersonalCue>[];
+    final legacyRoutineProgramMappings = isB01Payload
+        ? _readB01List(
+            json,
+            'legacy_routine_program_mappings',
+            LegacyRoutineProgramMapping.fromJson,
+          )
+        : const <LegacyRoutineProgramMapping>[];
+    if (isB01Payload && settings.isEmpty) {
+      throw const FormatException(
+        'Backup validation failed: missing training-plan settings row.',
+      );
+    }
+
     return BackupData(
       version: rawVersion,
       timestamp: timestamp,
@@ -845,7 +1100,700 @@ class BackupData {
       dailyHydrations: dailyHydrations,
       healthProvenances: healthProvenances,
       achievementUnlocks: achievementUnlocks,
+      programs: programs,
+      programVersions: programVersions,
+      programBlocks: programBlocks,
+      programWeeks: programWeeks,
+      sessionTemplates: sessionTemplates,
+      exercisePrescriptions: exercisePrescriptions,
+      scheduledSessionOccurrences: scheduledSessionOccurrences,
+      occurrenceEvents: occurrenceEvents,
+      trainingPlanSettings: settings.isEmpty ? null : settings.single,
+      equipmentProfiles: equipmentProfiles,
+      equipmentProfileItems: equipmentProfileItems,
+      travelContexts: travelContexts,
+      travelContextOccurrences: travelContextOccurrences,
+      exerciseUserPreferences: exerciseUserPreferences,
+      exerciseSetupValues: exerciseSetupValues,
+      exercisePersonalCues: exercisePersonalCues,
+      legacyRoutineProgramMappings: legacyRoutineProgramMappings,
     );
+  }
+
+  static List<T> _readB01List<T>(
+    Map<String, dynamic> json,
+    String key,
+    T Function(Map<String, dynamic>) decoder,
+  ) {
+    final raw = json[key];
+    if (raw == null) return List<T>.empty(growable: false);
+    if (raw is! List) {
+      throw FormatException(
+        'Invalid B01 backup field "$key": expected a list.',
+      );
+    }
+    try {
+      return raw
+          .map(
+            (entry) =>
+                decoder(Map<String, dynamic>.from(_requireMap(entry, key))),
+          )
+          .toList(growable: false);
+    } on FormatException {
+      rethrow;
+    } catch (error) {
+      throw FormatException('Invalid B01 backup field "$key": $error');
+    }
+  }
+
+  static Map<dynamic, dynamic> _requireMap(Object? value, String key) {
+    if (value is Map) return value;
+    throw FormatException(
+      'Invalid B01 backup field "$key": expected an object.',
+    );
+  }
+
+  void _validateB01Graph(Set<String> seededExerciseStableIds) {
+    if (version < 6) return;
+
+    final customStableIds = <String>{};
+    for (final exercise in customExercises) {
+      final stableId = exercise.stableId;
+      if (stableId == null || stableId.trim().isEmpty) {
+        throw FormatException(
+          'Backup validation failed: custom exercise ${exercise.id} has no stable ID.',
+        );
+      }
+      if (!customStableIds.add(stableId)) {
+        throw FormatException(
+          'Backup validation failed: duplicate custom exercise stable ID "$stableId".',
+        );
+      }
+      if (seededExerciseStableIds.contains(stableId)) {
+        throw FormatException(
+          'Backup validation failed: custom exercise stable ID "$stableId" conflicts with the bundled catalogue.',
+        );
+      }
+    }
+    final knownExerciseIds = {...seededExerciseStableIds, ...customStableIds};
+
+    final programIds = _uniqueIds('program', programs, (row) => row.id);
+    final versionIds = _uniqueIds(
+      'program version',
+      programVersions,
+      (row) => row.id,
+    );
+    _uniqueIds('program block', programBlocks, (row) => row.id);
+    final weekIds = _uniqueIds('program week', programWeeks, (row) => row.id);
+    final templateIds = _uniqueIds(
+      'session template',
+      sessionTemplates,
+      (row) => row.id,
+    );
+    _uniqueIds('exercise prescription', exercisePrescriptions, (row) => row.id);
+    final occurrenceIds = _uniqueIds(
+      'scheduled occurrence',
+      scheduledSessionOccurrences,
+      (row) => row.id,
+    );
+    _uniqueIds('occurrence event', occurrenceEvents, (row) => row.id);
+    final profileIds = _uniqueIds(
+      'equipment profile',
+      equipmentProfiles,
+      (row) => row.id,
+    );
+    _uniqueIds(
+      'equipment profile item',
+      equipmentProfileItems,
+      (row) => row.id,
+    );
+    final travelIds = _uniqueIds(
+      'travel context',
+      travelContexts,
+      (row) => row.id,
+    );
+    final preferenceIds = _uniqueIds(
+      'exercise user preference',
+      exerciseUserPreferences,
+      (row) => row.id,
+    );
+    _uniqueIds('exercise setup value', exerciseSetupValues, (row) => row.id);
+    _uniqueIds('exercise personal cue', exercisePersonalCues, (row) => row.id);
+
+    final versionsById = {for (final row in programVersions) row.id: row};
+    for (final row in programVersions) {
+      _require(
+        programIds.contains(row.programId),
+        'program version ${row.id} references missing program ${row.programId}',
+      );
+      _require(
+        const {'draft', 'published', 'archived'}.contains(row.status),
+        'program version ${row.id} has invalid status ${row.status}',
+      );
+      _require(
+        const {'user', 'legacyImport'}.contains(row.origin),
+        'program version ${row.id} has invalid origin ${row.origin}',
+      );
+      if (row.sourceVersionId != null) {
+        _require(
+          versionIds.contains(row.sourceVersionId),
+          'program version ${row.id} references missing source version ${row.sourceVersionId}',
+        );
+        _require(
+          row.sourceVersionId != row.id,
+          'program version ${row.id} cannot source itself',
+        );
+      }
+    }
+    _assertAcyclic(
+      versionsById.keys,
+      (id) => versionsById[id]!.sourceVersionId,
+      'program-version source',
+    );
+    _uniqueKeys(
+      'program version number',
+      programVersions,
+      (row) => '${row.programId}\u0000${row.versionNumber}',
+    );
+
+    final blocksById = {for (final row in programBlocks) row.id: row};
+    for (final row in programBlocks) {
+      _require(
+        versionIds.contains(row.programVersionId),
+        'program block ${row.id} references missing version ${row.programVersionId}',
+      );
+    }
+    _uniqueKeys(
+      'program block ordinal',
+      programBlocks,
+      (row) => '${row.programVersionId}\u0000${row.ordinal}',
+    );
+
+    final weeksById = {for (final row in programWeeks) row.id: row};
+    for (final row in programWeeks) {
+      final block = blocksById[row.programBlockId];
+      _require(
+        block != null,
+        'program week ${row.id} references missing block ${row.programBlockId}',
+      );
+      _require(
+        block!.programVersionId == row.programVersionId,
+        'program week ${row.id} does not belong to its declared version',
+      );
+    }
+    _uniqueKeys(
+      'program week block ordinal',
+      programWeeks,
+      (row) => '${row.programBlockId}\u0000${row.ordinalInBlock}',
+    );
+    _uniqueKeys(
+      'program week ordinal',
+      programWeeks,
+      (row) => '${row.programVersionId}\u0000${row.programWeekOrdinal}',
+    );
+
+    final templatesById = {for (final row in sessionTemplates) row.id: row};
+    for (final row in sessionTemplates) {
+      _require(
+        weekIds.contains(row.programWeekId),
+        'session template ${row.id} references missing week ${row.programWeekId}',
+      );
+      _require(
+        row.plannedWeekday >= 1 && row.plannedWeekday <= 7,
+        'session template ${row.id} has invalid planned weekday',
+      );
+      _require(
+        row.plannedStartMinute == null ||
+            (row.plannedStartMinute! >= 0 && row.plannedStartMinute! <= 1439),
+        'session template ${row.id} has invalid planned start minute',
+      );
+    }
+    _uniqueKeys(
+      'session template ordinal',
+      sessionTemplates,
+      (row) => '${row.programWeekId}\u0000${row.ordinal}',
+    );
+
+    for (final row in exercisePrescriptions) {
+      _require(
+        templateIds.contains(row.sessionTemplateId),
+        'exercise prescription ${row.id} references missing template ${row.sessionTemplateId}',
+      );
+      _validateExerciseReference(
+        row.exerciseId,
+        knownExerciseIds,
+        'exercise prescription ${row.id}',
+      );
+    }
+    _uniqueKeys(
+      'exercise prescription ordinal',
+      exercisePrescriptions,
+      (row) => '${row.sessionTemplateId}\u0000${row.ordinal}',
+    );
+
+    final occurrencesById = {
+      for (final row in scheduledSessionOccurrences) row.id: row,
+    };
+    for (final row in scheduledSessionOccurrences) {
+      final template = templatesById[row.sessionTemplateId];
+      _require(
+        versionIds.contains(row.programVersionId),
+        'occurrence ${row.id} references missing version ${row.programVersionId}',
+      );
+      _require(
+        template != null,
+        'occurrence ${row.id} references missing template ${row.sessionTemplateId}',
+      );
+      final week = template == null ? null : weeksById[template.programWeekId];
+      _require(
+        week != null && week.programVersionId == row.programVersionId,
+        'occurrence ${row.id} template does not belong to its declared version',
+      );
+      _require(
+        week != null && week.programWeekOrdinal == row.programWeekOrdinal,
+        'occurrence ${row.id} has an inconsistent program week ordinal',
+      );
+      _require(
+        week != null &&
+            blocksById[week.programBlockId]!.ordinal == row.programBlockOrdinal,
+        'occurrence ${row.id} has an inconsistent program block ordinal',
+      );
+      _require(
+        template != null && template.ordinal == row.sessionOrdinal,
+        'occurrence ${row.id} has an inconsistent session ordinal',
+      );
+      _require(
+        const {
+          'planned',
+          'rescheduled',
+          'inProgress',
+          'completed',
+          'partiallyCompleted',
+          'skipped',
+          'cancelled',
+        }.contains(row.status),
+        'occurrence ${row.id} has invalid status ${row.status}',
+      );
+      _require(
+        const {
+          'pending',
+          'satisfied',
+          'bypassed',
+        }.contains(row.progressionDisposition),
+        'occurrence ${row.id} has invalid progression disposition',
+      );
+      _require(
+        row.skipMode == null ||
+            const {'keepPending', 'advance'}.contains(row.skipMode),
+        'occurrence ${row.id} has invalid skip mode',
+      );
+      _require(
+        row.repeatPurpose == null ||
+            const {'makeUp', 'extra'}.contains(row.repeatPurpose),
+        'occurrence ${row.id} has invalid repeat purpose',
+      );
+      _validateLocalDateTimezone(
+        row.originalLocalDate,
+        row.originalTimezoneId,
+        'occurrence ${row.id} original placement',
+      );
+      _validateLocalDateTimezone(
+        row.effectiveLocalDate,
+        row.effectiveTimezoneId,
+        'occurrence ${row.id} effective placement',
+      );
+      if (row.repeatedFromOccurrenceId != null) {
+        _require(
+          occurrenceIds.contains(row.repeatedFromOccurrenceId),
+          'occurrence ${row.id} references missing repeated occurrence ${row.repeatedFromOccurrenceId}',
+        );
+        _require(
+          row.repeatedFromOccurrenceId != row.id,
+          'occurrence ${row.id} cannot repeat itself',
+        );
+      }
+    }
+    _assertAcyclic(
+      occurrencesById.keys,
+      (id) => occurrencesById[id]!.repeatedFromOccurrenceId,
+      'repeated-occurrence',
+    );
+    _uniqueKeys(
+      'occurrence repeat ordinal',
+      scheduledSessionOccurrences,
+      (row) =>
+          '${row.programVersionId}\u0000${row.programWeekOrdinal}\u0000${row.sessionTemplateId}\u0000${row.repeatOrdinal}',
+    );
+
+    _uniqueKeys(
+      'occurrence event command',
+      occurrenceEvents,
+      (row) => '${row.occurrenceId}\u0000${row.commandId}',
+    );
+    for (final row in occurrenceEvents) {
+      _require(
+        occurrenceIds.contains(row.occurrenceId),
+        'occurrence event ${row.id} references missing occurrence ${row.occurrenceId}',
+      );
+      _require(
+        row.commandId.trim().isNotEmpty,
+        'occurrence event ${row.id} has an empty command ID',
+      );
+      _validateOptionalOccurrenceStatus(
+        row.fromStatus,
+        'event ${row.id} from status',
+      );
+      _validateOptionalOccurrenceStatus(
+        row.toStatus,
+        'event ${row.id} to status',
+      );
+      _validateOptionalLocalDateTimezone(
+        row.beforeLocalDate,
+        row.beforeTimezoneId,
+        'event ${row.id} before placement',
+      );
+      _validateOptionalLocalDateTimezone(
+        row.afterLocalDate,
+        row.afterTimezoneId,
+        'event ${row.id} after placement',
+      );
+    }
+
+    for (final row in equipmentProfileItems) {
+      _require(
+        profileIds.contains(row.equipmentProfileId),
+        'equipment profile item ${row.id} references missing profile ${row.equipmentProfileId}',
+      );
+    }
+    _uniqueKeys(
+      'equipment profile item code',
+      equipmentProfileItems,
+      (row) => '${row.equipmentProfileId}\u0000${row.equipmentCode}',
+    );
+
+    for (final row in travelContexts) {
+      _require(
+        profileIds.contains(row.equipmentProfileId),
+        'travel context ${row.id} references missing profile ${row.equipmentProfileId}',
+      );
+      _require(
+        const {'active', 'cancelled', 'ended'}.contains(row.status),
+        'travel context ${row.id} has invalid status ${row.status}',
+      );
+      _validateLocalDateTimezone(
+        row.startLocalDate,
+        row.timezoneId,
+        'travel context ${row.id} start',
+      );
+      _validateLocalDateTimezone(
+        row.endLocalDate,
+        row.timezoneId,
+        'travel context ${row.id} end',
+      );
+      _require(
+        row.startLocalDate.compareTo(row.endLocalDate) <= 0,
+        'travel context ${row.id} ends before it starts',
+      );
+    }
+    final travelMemberships = <String>{};
+    for (final row in travelContextOccurrences) {
+      _require(
+        travelIds.contains(row.travelContextId),
+        'travel membership references missing travel context ${row.travelContextId}',
+      );
+      _require(
+        occurrenceIds.contains(row.occurrenceId),
+        'travel membership references missing occurrence ${row.occurrenceId}',
+      );
+      _require(
+        travelMemberships.add(
+          '${row.travelContextId}\u0000${row.occurrenceId}',
+        ),
+        'duplicate travel membership for ${row.travelContextId}/${row.occurrenceId}',
+      );
+    }
+
+    _uniqueKeys(
+      'exercise preference identity key',
+      exerciseUserPreferences,
+      (row) => row.identityKey,
+    );
+    for (final row in exerciseUserPreferences) {
+      _validateExerciseReference(
+        row.exerciseId,
+        knownExerciseIds,
+        'exercise preference ${row.id}',
+      );
+    }
+    for (final row in exerciseSetupValues) {
+      _require(
+        preferenceIds.contains(row.exerciseUserPreferenceId),
+        'exercise setup ${row.id} references missing preference ${row.exerciseUserPreferenceId}',
+      );
+    }
+    _uniqueKeys(
+      'exercise setup ordinal',
+      exerciseSetupValues,
+      (row) => '${row.exerciseUserPreferenceId}\u0000${row.ordinal}',
+    );
+    for (final row in exercisePersonalCues) {
+      _require(
+        preferenceIds.contains(row.exerciseUserPreferenceId),
+        'personal cue ${row.id} references missing preference ${row.exerciseUserPreferenceId}',
+      );
+    }
+    _uniqueKeys(
+      'personal cue ordinal',
+      exercisePersonalCues,
+      (row) => '${row.exerciseUserPreferenceId}\u0000${row.ordinal}',
+    );
+
+    final settings = trainingPlanSettings;
+    if (settings != null) {
+      _require(settings.id == 1, 'training-plan settings must have ID 1');
+      if (settings.activeProgramVersionId != null) {
+        final active = versionsById[settings.activeProgramVersionId];
+        _require(
+          active != null && active.status == 'published',
+          'active training-plan setting must reference a published version',
+        );
+      }
+      if (settings.defaultEquipmentProfileId != null) {
+        _require(
+          profileIds.contains(settings.defaultEquipmentProfileId),
+          'training-plan settings references missing default equipment profile',
+        );
+      }
+      _validateOptionalLocalDateTimezone(
+        settings.activeSinceLocalDate,
+        settings.activeSinceTimezoneId,
+        'training-plan activation',
+      );
+    }
+
+    final routineIds = workoutRoutines.map((row) => row.id).toSet();
+    final mappedPrograms = <String>{};
+    final mappedVersions = <String>{};
+    final mappedRoutines = <int>{};
+    for (final row in legacyRoutineProgramMappings) {
+      _require(
+        routineIds.contains(row.legacyRoutineId),
+        'legacy mapping references missing routine ${row.legacyRoutineId}',
+      );
+      _require(
+        programIds.contains(row.programId),
+        'legacy mapping references missing program ${row.programId}',
+      );
+      _require(
+        versionIds.contains(row.programVersionId),
+        'legacy mapping references missing version ${row.programVersionId}',
+      );
+      final version = versionsById[row.programVersionId]!;
+      _require(
+        version.programId == row.programId && version.origin == 'legacyImport',
+        'legacy mapping must reference its own legacy-import program version',
+      );
+      _require(
+        mappedRoutines.add(row.legacyRoutineId),
+        'duplicate legacy mapping for routine ${row.legacyRoutineId}',
+      );
+      _require(
+        mappedPrograms.add(row.programId),
+        'duplicate legacy mapping program ${row.programId}',
+      );
+      _require(
+        mappedVersions.add(row.programVersionId),
+        'duplicate legacy mapping version ${row.programVersionId}',
+      );
+    }
+    for (final routineId in routineIds) {
+      _require(
+        mappedRoutines.contains(routineId),
+        'legacy routine $routineId has no compatibility mapping in v6 backup',
+      );
+    }
+
+    final sessionIds = workoutSessions.map((row) => row.id).toSet();
+    _uniqueKeys(
+      'workout-session occurrence',
+      workoutSessions,
+      (row) => row.scheduledOccurrenceId == null
+          ? 'none:${row.id}'
+          : row.scheduledOccurrenceId!,
+    );
+    for (final row in workoutSessions) {
+      if (row.scheduledOccurrenceId != null) {
+        final occurrence = occurrencesById[row.scheduledOccurrenceId];
+        _require(
+          occurrence != null &&
+              const {
+                'completed',
+                'partiallyCompleted',
+              }.contains(occurrence.status),
+          'workout session ${row.id} references a non-terminal occurrence',
+        );
+      }
+      if (row.executionTimezoneId != null) {
+        _validateTimezone(
+          row.executionTimezoneId!,
+          'workout session ${row.id} execution timezone',
+        );
+      }
+      _require(
+        row.completionKind == null ||
+            const {'full', 'partial'}.contains(row.completionKind),
+        'workout session ${row.id} has invalid completion kind',
+      );
+    }
+    for (final row in workoutSets) {
+      _require(
+        sessionIds.contains(row.sessionId),
+        'workout set ${row.id} references missing session ${row.sessionId}',
+      );
+      _validateExerciseReference(
+        row.exerciseId,
+        knownExerciseIds,
+        'workout set ${row.id}',
+      );
+    }
+    for (final row in workoutDrafts) {
+      if (row.scheduledOccurrenceId == null) continue;
+      final occurrence = occurrencesById[row.scheduledOccurrenceId];
+      _require(
+        occurrence != null && occurrence.status == 'inProgress',
+        'scheduled draft ${row.id} must reference an in-progress occurrence',
+      );
+      _require(
+        row.executionSnapshotJson != null &&
+            row.executionSnapshotJson == occurrence?.executionSnapshotJson,
+        'scheduled draft ${row.id} has no matching frozen execution snapshot',
+      );
+    }
+  }
+
+  static Set<String> _uniqueIds<T>(
+    String entity,
+    Iterable<T> rows,
+    String Function(T) id,
+  ) {
+    final ids = <String>{};
+    for (final row in rows) {
+      final value = id(row);
+      _require(value.trim().isNotEmpty, '$entity has an empty ID');
+      _require(ids.add(value), 'duplicate $entity ID "$value"');
+    }
+    return ids;
+  }
+
+  static void _uniqueKeys<T>(
+    String entity,
+    Iterable<T> rows,
+    String Function(T) key,
+  ) {
+    final keys = <String>{};
+    for (final row in rows) {
+      final value = key(row);
+      _require(keys.add(value), 'duplicate $entity "$value"');
+    }
+  }
+
+  static void _assertAcyclic(
+    Iterable<String> ids,
+    String? Function(String id) parentOf,
+    String entity,
+  ) {
+    final visiting = <String>{};
+    final visited = <String>{};
+    void visit(String id) {
+      if (visited.contains(id)) return;
+      if (!visiting.add(id)) {
+        throw FormatException(
+          'Backup validation failed: $entity graph contains a cycle at $id',
+        );
+      }
+      final parent = parentOf(id);
+      if (parent != null) visit(parent);
+      visiting.remove(id);
+      visited.add(id);
+    }
+
+    for (final id in ids) {
+      visit(id);
+    }
+  }
+
+  static void _validateExerciseReference(
+    String? stableId,
+    Set<String> knownIds,
+    String owner,
+  ) {
+    if (stableId == null) return;
+    _require(
+      knownIds.contains(stableId),
+      '$owner references unknown exercise stable ID $stableId',
+    );
+  }
+
+  static void _validateOptionalOccurrenceStatus(String? status, String owner) {
+    if (status == null) return;
+    _require(
+      const {
+        'planned',
+        'rescheduled',
+        'inProgress',
+        'completed',
+        'partiallyCompleted',
+        'skipped',
+        'cancelled',
+      }.contains(status),
+      '$owner has invalid occurrence status $status',
+    );
+  }
+
+  static void _validateLocalDateTimezone(
+    String localDate,
+    String timezoneId,
+    String owner,
+  ) {
+    try {
+      final dates = LocalScheduleDateService();
+      dates.normalizeLocalDate(localDate);
+      dates.validateTimezone(timezoneId);
+    } catch (_) {
+      throw FormatException(
+        'Backup validation failed: $owner has invalid local date or IANA timezone',
+      );
+    }
+  }
+
+  static void _validateOptionalLocalDateTimezone(
+    String? localDate,
+    String? timezoneId,
+    String owner,
+  ) {
+    _require(
+      (localDate == null) == (timezoneId == null),
+      '$owner must provide both local date and timezone or neither',
+    );
+    if (localDate != null) {
+      _validateLocalDateTimezone(localDate, timezoneId!, owner);
+    }
+  }
+
+  static void _validateTimezone(String timezoneId, String owner) {
+    try {
+      LocalScheduleDateService().validateTimezone(timezoneId);
+    } catch (_) {
+      throw FormatException(
+        'Backup validation failed: $owner is not an IANA timezone',
+      );
+    }
+  }
+
+  static void _require(bool condition, String message) {
+    if (!condition) {
+      throw FormatException('Backup validation failed: $message');
+    }
   }
 
   /// Atomically restores all database tables and persisted preferences.
@@ -894,6 +1842,15 @@ class BackupData {
       }
     }
 
+    if (version >= 6) {
+      final seededExerciseStableIds = (await db.select(db.exercises).get())
+          .where((exercise) => !exercise.isCustom)
+          .map((exercise) => exercise.stableId)
+          .whereType<String>()
+          .toSet();
+      _validateB01Graph(seededExerciseStableIds);
+    }
+
     // Capture previous preference values for compensation on failure.
     // `SharedPreferences` has no transaction API, so preferences are applied
     // before the database transaction and restored if it cannot commit.
@@ -916,6 +1873,36 @@ class BackupData {
 
       // 3. Perform DB deletion and remapped insertion inside one single transaction.
       await db.transaction(() async {
+        // Delete the v15 graph in child-first order. Legacy routine/history
+        // rows remain separate compatibility data and are cleared below.
+        await db.delete(db.travelContextOccurrences).go();
+        await db.delete(db.occurrenceEvents).go();
+        await db.delete(db.exercisePersonalCues).go();
+        await db.delete(db.exerciseSetupValues).go();
+        await db.delete(db.exerciseUserPreferences).go();
+        await db.delete(db.legacyRoutineProgramMappings).go();
+        await db.delete(db.trainingPlanSettings).go();
+        await db.delete(db.equipmentProfileItems).go();
+        await db.delete(db.travelContexts).go();
+        await db.delete(db.workoutDrafts).go();
+        await db.delete(db.healthProvenances).go();
+        await db.delete(db.workoutSets).go();
+        await db.delete(db.workoutSessions).go();
+        await db.customStatement(
+          'UPDATE scheduled_session_occurrences SET repeated_from_occurrence_id = NULL',
+        );
+        await db.delete(db.scheduledSessionOccurrences).go();
+        await db.delete(db.exercisePrescriptions).go();
+        await db.delete(db.sessionTemplates).go();
+        await db.delete(db.programWeeks).go();
+        await db.delete(db.programBlocks).go();
+        await db.customStatement(
+          'UPDATE program_versions SET source_version_id = NULL',
+        );
+        await db.delete(db.programVersions).go();
+        await db.delete(db.programs).go();
+        await db.delete(db.equipmentProfiles).go();
+
         await db.delete(db.foodLogs).go();
         await db.delete(db.mealTemplateItems).go();
         await db.delete(db.mealTemplates).go();
@@ -1047,6 +2034,7 @@ class BackupData {
               .into(db.exercises)
               .insert(
                 ExercisesCompanion.insert(
+                  stableId: Value(e.stableId),
                   name: e.name,
                   muscleGroups: e.muscleGroups,
                   equipment: e.equipment,
@@ -1142,6 +2130,10 @@ class BackupData {
               );
         }
 
+        if (version >= 6) {
+          await _insertB01Graph(db, routineIdMap);
+        }
+
         // Remap workout sessions and sets
         final sessionIdMap = <int, int>{};
         for (final s in workoutSessions) {
@@ -1156,6 +2148,10 @@ class BackupData {
                   completedAt: Value(s.completedAt),
                   isSynced: Value(s.isSynced),
                   uuid: Value(s.uuid),
+                  scheduledOccurrenceId: Value(s.scheduledOccurrenceId),
+                  executionSnapshotJson: Value(s.executionSnapshotJson),
+                  executionTimezoneId: Value(s.executionTimezoneId),
+                  completionKind: Value(s.completionKind),
                 ),
               );
           sessionIdMap[s.id] = newId;
@@ -1181,6 +2177,7 @@ class BackupData {
                   durationSeconds: Value(s.durationSeconds),
                   distanceKm: Value(s.distanceKm),
                   inclinePercentage: Value(s.inclinePercentage),
+                  exerciseId: Value(s.exerciseId),
                 ),
               );
         }
@@ -1196,6 +2193,9 @@ class BackupData {
                   elapsedSeconds: d.elapsedSeconds,
                   loggedSetsJson: d.loggedSetsJson,
                   updatedAt: Value(d.updatedAt),
+                  scheduledOccurrenceId: Value(d.scheduledOccurrenceId),
+                  executionSnapshotJson: Value(d.executionSnapshotJson),
+                  draftSchemaVersion: Value(d.draftSchemaVersion),
                 ),
               );
         }
@@ -1261,6 +2261,14 @@ class BackupData {
                 mode: InsertMode.insertOrReplace,
               );
         }
+
+        if (version < 6) {
+          // v3-v5 payloads deliberately contain no B01 graph. Build only the
+          // inactive, deterministic compatibility snapshots from their
+          // restored legacy routines, history, and equipment string in this
+          // same transaction; never activate or schedule anything.
+          await db.importLegacyCompatibilityDataForRestore();
+        }
       });
     } catch (e) {
       // Revert every managed preference, including keys created by this restore.
@@ -1269,6 +2277,112 @@ class BackupData {
       }
       rethrow;
     }
+  }
+
+  Future<void> _insertB01Graph(
+    AppDatabase db,
+    Map<int, int> routineIdMap,
+  ) async {
+    for (final row in programs) {
+      await db.into(db.programs).insert(row);
+    }
+    for (final row in _parentFirstProgramVersions()) {
+      await db.into(db.programVersions).insert(row);
+    }
+    for (final row in programBlocks) {
+      await db.into(db.programBlocks).insert(row);
+    }
+    for (final row in programWeeks) {
+      await db.into(db.programWeeks).insert(row);
+    }
+    for (final row in sessionTemplates) {
+      await db.into(db.sessionTemplates).insert(row);
+    }
+    for (final row in exercisePrescriptions) {
+      await db.into(db.exercisePrescriptions).insert(row);
+    }
+
+    for (final row in equipmentProfiles) {
+      await db.into(db.equipmentProfiles).insert(row);
+    }
+    for (final row in equipmentProfileItems) {
+      await db.into(db.equipmentProfileItems).insert(row);
+    }
+
+    for (final row in _parentFirstOccurrences()) {
+      await db.into(db.scheduledSessionOccurrences).insert(row);
+    }
+    for (final row in occurrenceEvents) {
+      await db.into(db.occurrenceEvents).insert(row);
+    }
+
+    if (trainingPlanSettings != null) {
+      await db.into(db.trainingPlanSettings).insert(trainingPlanSettings!);
+    }
+    for (final row in travelContexts) {
+      await db.into(db.travelContexts).insert(row);
+    }
+    for (final row in travelContextOccurrences) {
+      await db.into(db.travelContextOccurrences).insert(row);
+    }
+
+    for (final row in exerciseUserPreferences) {
+      await db.into(db.exerciseUserPreferences).insert(row);
+    }
+    for (final row in exerciseSetupValues) {
+      await db.into(db.exerciseSetupValues).insert(row);
+    }
+    for (final row in exercisePersonalCues) {
+      await db.into(db.exercisePersonalCues).insert(row);
+    }
+    for (final row in legacyRoutineProgramMappings) {
+      await db
+          .into(db.legacyRoutineProgramMappings)
+          .insert(
+            LegacyRoutineProgramMappingsCompanion.insert(
+              legacyRoutineId: Value(
+                routineIdMap[row.legacyRoutineId] ?? row.legacyRoutineId,
+              ),
+              programId: row.programId,
+              programVersionId: row.programVersionId,
+              importedAtUtc: row.importedAtUtc,
+            ),
+          );
+    }
+  }
+
+  List<ProgramVersion> _parentFirstProgramVersions() {
+    final byId = {for (final row in programVersions) row.id: row};
+    final inserted = <String>{};
+    final ordered = <ProgramVersion>[];
+    void visit(ProgramVersion row) {
+      if (!inserted.add(row.id)) return;
+      final sourceId = row.sourceVersionId;
+      if (sourceId != null) visit(byId[sourceId]!);
+      ordered.add(row);
+    }
+
+    for (final row in programVersions) {
+      visit(row);
+    }
+    return ordered;
+  }
+
+  List<ScheduledSessionOccurrence> _parentFirstOccurrences() {
+    final byId = {for (final row in scheduledSessionOccurrences) row.id: row};
+    final inserted = <String>{};
+    final ordered = <ScheduledSessionOccurrence>[];
+    void visit(ScheduledSessionOccurrence row) {
+      if (!inserted.add(row.id)) return;
+      final sourceId = row.repeatedFromOccurrenceId;
+      if (sourceId != null) visit(byId[sourceId]!);
+      ordered.add(row);
+    }
+
+    for (final row in scheduledSessionOccurrences) {
+      visit(row);
+    }
+    return ordered;
   }
 
   static void _validatePreferences(Map<String, dynamic> preferences) {
@@ -1367,6 +2481,24 @@ class BackupEnvelope {
       'body_measurements': data.bodyMeasurements.length,
       'daily_hydrations': data.dailyHydrations.length,
       'achievement_unlocks': data.achievementUnlocks.length,
+      'programs': data.programs.length,
+      'program_versions': data.programVersions.length,
+      'program_blocks': data.programBlocks.length,
+      'program_weeks': data.programWeeks.length,
+      'session_templates': data.sessionTemplates.length,
+      'exercise_prescriptions': data.exercisePrescriptions.length,
+      'scheduled_session_occurrences': data.scheduledSessionOccurrences.length,
+      'occurrence_events': data.occurrenceEvents.length,
+      'training_plan_settings': data.trainingPlanSettings == null ? 0 : 1,
+      'equipment_profiles': data.equipmentProfiles.length,
+      'equipment_profile_items': data.equipmentProfileItems.length,
+      'travel_contexts': data.travelContexts.length,
+      'travel_context_occurrences': data.travelContextOccurrences.length,
+      'exercise_user_preferences': data.exerciseUserPreferences.length,
+      'exercise_setup_values': data.exerciseSetupValues.length,
+      'exercise_personal_cues': data.exercisePersonalCues.length,
+      'legacy_routine_program_mappings':
+          data.legacyRoutineProgramMappings.length,
     };
 
     return BackupEnvelope(
@@ -1402,6 +2534,13 @@ class BackupEnvelope {
       throw const FormatException('Invalid backup envelope header identifier.');
     }
 
+    final version = (json['version'] as num?)?.toInt();
+    if (version == null || version < 3 || version > BackupData.currentVersion) {
+      throw FormatException(
+        'Unsupported backup envelope version ${json['version']} (latest supported is ${BackupData.currentVersion}).',
+      );
+    }
+
     final rawPayload = json['payload'] as String?;
     if (rawPayload == null || rawPayload.isEmpty) {
       throw const FormatException('Empty payload string in backup envelope.');
@@ -1409,8 +2548,7 @@ class BackupEnvelope {
 
     final expectedChecksum = json['checksum'] as String?;
     if (expectedChecksum != null) {
-      final actualChecksum =
-          sha256.convert(utf8.encode(rawPayload)).toString();
+      final actualChecksum = sha256.convert(utf8.encode(rawPayload)).toString();
       if (actualChecksum != expectedChecksum) {
         throw const FormatException(
           'Backup file checksum mismatch: File is corrupt or truncated.',
@@ -1419,15 +2557,14 @@ class BackupEnvelope {
     }
 
     final rawCounts = json['table_counts'] as Map<String, dynamic>? ?? {};
-    final counts = rawCounts.map(
-      (k, v) => MapEntry(k, (v as num).toInt()),
-    );
+    final counts = rawCounts.map((k, v) => MapEntry(k, (v as num).toInt()));
 
     return BackupEnvelope(
       formatIdentifier: format ?? 'INDIFIT_BACKUP_ENVELOPE',
-      version: (json['version'] as num?)?.toInt() ?? 5,
+      version: version,
       schemaVersion: (json['schema_version'] as num?)?.toInt() ?? 13,
-      timestamp: json['timestamp'] as String? ?? DateTime.now().toIso8601String(),
+      timestamp:
+          json['timestamp'] as String? ?? DateTime.now().toIso8601String(),
       isEncrypted: json['is_encrypted'] as bool? ?? false,
       checksum: expectedChecksum ?? '',
       profileName: json['profile_name'] as String? ?? 'User Profile',

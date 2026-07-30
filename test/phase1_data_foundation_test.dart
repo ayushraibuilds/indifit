@@ -22,9 +22,9 @@ void main() {
     });
 
     test(
-      '1. Schema v14 initializes with new tables and extended user profile columns',
+      '1. Schema v15 initializes with retained user profile columns',
       () async {
-        expect(db.schemaVersion, equals(14));
+        expect(db.schemaVersion, equals(15));
 
         // Test UserProfiles extended columns
         await db
@@ -106,7 +106,7 @@ void main() {
     );
 
     test(
-      '2. BackupData Version 5 round-trips all new tables and extended profile data',
+      '2. BackupData Version 6 round-trips all new tables and extended profile data',
       () async {
         // Seed user profile
         await db
@@ -142,7 +142,7 @@ void main() {
         await prefs.setString('user_name', 'Jane Doe');
 
         final backup = await BackupData.createFromDatabase(db, prefs);
-        expect(backup.version, equals(5));
+        expect(backup.version, equals(6));
         expect(backup.userProfile?.name, equals('Jane Doe'));
         expect(backup.dailyHydrations.length, equals(1));
         expect(backup.achievementUnlocks.length, equals(1));
@@ -150,7 +150,7 @@ void main() {
         final json = backup.toJson();
         final parsed = BackupData.fromJson(json);
 
-        expect(parsed.version, equals(5));
+        expect(parsed.version, equals(6));
         expect(parsed.userProfile?.name, equals('Jane Doe'));
         expect(parsed.dailyHydrations.first.totalMl, equals(2250));
         expect(

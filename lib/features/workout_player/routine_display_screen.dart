@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 import 'widgets/manual_log_sheet.dart';
 
@@ -21,6 +23,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   int _selectedDayOfWeek = DateTime.now().weekday; // 1 = Mon, 7 = Sun
   bool _loading = false;
   Set<int> _completedDayOfWeeks = {};
+  String? _activeProgramVersionId;
 
   @override
   void initState() {
@@ -33,7 +36,9 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
 
     try {
       final repo = ref.read(workoutRepositoryProvider);
-      final routines = await repo.getSavedRoutines();
+      final selection = await ref
+          .read(legacyProgramCompatibilityAdapterProvider)
+          .resolveActivePlanSelection();
       final sessions = await repo.watchSessions().first;
 
       final now = DateTime.now();
@@ -56,19 +61,33 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
           .map((s) => s.completedAt.weekday)
           .toSet();
 
-      if (routines.isNotEmpty) {
-        final active = routines.last;
+      if (selection.type == ActivePlanType.legacyRoutine) {
+        final active = await repo.getSavedRoutines().then(
+          (routines) => routines.singleWhere(
+            (routine) => routine.id == selection.legacyRoutineId,
+          ),
+        );
         final details = await repo.getRoutineDetails(active.id);
 
         setState(() {
           _activeRoutine = active;
+          _activeProgramVersionId = null;
           _routineDays = details;
+          _completedDayOfWeeks = completed;
+          _loading = false;
+        });
+      } else if (selection.type == ActivePlanType.b01Program) {
+        setState(() {
+          _activeRoutine = null;
+          _activeProgramVersionId = selection.programVersionId;
+          _routineDays = [];
           _completedDayOfWeeks = completed;
           _loading = false;
         });
       } else {
         setState(() {
           _activeRoutine = null;
+          _activeProgramVersionId = null;
           _routineDays = [];
           _completedDayOfWeeks = completed;
           _loading = false;
@@ -139,8 +158,46 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               child: SkeletonList(count: 4),
             )
           : _activeRoutine == null
-          ? _buildEmptyState()
+          ? _activeProgramVersionId == null
+                ? _buildEmptyState()
+                : _buildActiveProgramState()
           : _buildRoutineLayout(),
+    );
+  }
+
+  Widget _buildActiveProgramState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.calendar_month_rounded,
+              size: 56,
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'A scheduled training program is active',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Legacy split editing is unavailable while this program is active. Your scheduled workouts remain separate from older routines.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: () => context.push('/calendar'),
+              icon: const Icon(Icons.calendar_today_rounded),
+              label: const Text('Open training calendar'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

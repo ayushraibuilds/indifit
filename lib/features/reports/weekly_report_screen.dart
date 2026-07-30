@@ -467,8 +467,9 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
                       _isActionSaved ? 'Action Saved!' : 'Commit to Action',
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _isActionSaved ? Colors.green : AppColors.primary,
+                      backgroundColor: _isActionSaved
+                          ? Colors.green
+                          : AppColors.primary,
                       minimumSize: const Size.fromHeight(44),
                     ),
                   ),
@@ -515,19 +516,22 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
             const SizedBox(height: 12),
             _buildMetricProgressRow(
               label: 'Calorie Target',
-              valueText: '${m.totalCaloriesLogged} / ${m.totalCaloriesGoal} kcal (${m.nutritionDaysLogged}/7 days)',
+              valueText:
+                  '${m.totalCaloriesLogged} / ${m.totalCaloriesGoal} kcal (${m.nutritionDaysLogged}/7 days)',
               score: b.calorieScore,
             ),
             const SizedBox(height: 8),
             _buildMetricProgressRow(
               label: 'Protein Target',
-              valueText: '${m.totalProteinG.toStringAsFixed(0)} / ${m.totalProteinGoal.toStringAsFixed(0)} g',
+              valueText:
+                  '${m.totalProteinG.toStringAsFixed(0)} / ${m.totalProteinGoal.toStringAsFixed(0)} g',
               score: b.proteinScore,
             ),
             const SizedBox(height: 8),
             _buildMetricProgressRow(
               label: 'Workouts',
-              valueText: '${m.completedWorkoutsCount} / ${m.plannedWorkoutsCount > 0 ? m.plannedWorkoutsCount : "–"} completed (${m.totalVolumeKg.toStringAsFixed(0)} kg, ${m.prsCount} PRs)',
+              valueText:
+                  '${m.completedWorkoutsCount} / ${m.plannedWorkoutsCount > 0 ? m.plannedWorkoutsCount : "–"} completed (${m.totalVolumeKg.toStringAsFixed(0)} kg, ${m.prsCount} PRs)',
               score: b.workoutScore,
             ),
             const SizedBox(height: 8),

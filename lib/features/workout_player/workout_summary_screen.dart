@@ -2,21 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/calendar_repository.dart';
+import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 
-class WorkoutSummaryScreen extends ConsumerWidget {
+class WorkoutSummaryScreen extends ConsumerStatefulWidget {
   final String routineName;
   final int elapsedSeconds;
   final List<WorkoutSetsCompanion> loggedSets;
+  final String? scheduledOccurrenceId;
+  final String? completionCommandId;
+  final CompletionKind completionKind;
 
   const WorkoutSummaryScreen({
     super.key,
     required this.routineName,
     required this.elapsedSeconds,
     required this.loggedSets,
+    this.scheduledOccurrenceId,
+    this.completionCommandId,
+    this.completionKind = CompletionKind.full,
   });
+
+  @override
+  ConsumerState<WorkoutSummaryScreen> createState() =>
+      _WorkoutSummaryScreenState();
+}
+
+class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
+  bool _isSaving = false;
 
   String _formatDuration(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
@@ -26,7 +43,7 @@ class WorkoutSummaryScreen extends ConsumerWidget {
 
   double _calculateTotalVolume() {
     double total = 0;
-    for (final set in loggedSets) {
+    for (final set in widget.loggedSets) {
       final double weight = set.weight.value;
       final int reps = set.reps.value;
       total += weight * reps;
@@ -35,20 +52,74 @@ class WorkoutSummaryScreen extends ConsumerWidget {
   }
 
   int _calculateCaloriesBurned() {
-    // Basic estimation: approx 6 kcal burned per minute of active workout
-    final minutes = elapsedSeconds / 60.0;
+    // Basic estimation: approx 6.5 kcal burned per minute of active workout
+    final minutes = widget.elapsedSeconds / 60.0;
     return (minutes * 6.5).round();
   }
 
+  Future<void> _handleSave() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
+    try {
+      if (widget.scheduledOccurrenceId case final occurrenceId?) {
+        final commandId = widget.completionCommandId;
+        if (commandId == null || commandId.trim().isEmpty) {
+          throw const ScheduledWorkoutFinalizationException(
+            'Scheduled workout completion is missing its command ID.',
+          );
+        }
+        await ref
+            .read(workoutExecutionCompatibilityAdapterProvider)
+            .finalizeScheduledWorkoutSession(
+              occurrenceId: occurrenceId,
+              commandId: commandId,
+              name: widget.routineName,
+              volume: _calculateTotalVolume(),
+              durationSeconds: widget.elapsedSeconds,
+              calories: _calculateCaloriesBurned(),
+              sets: widget.loggedSets,
+              completionKind: widget.completionKind,
+            );
+      } else {
+        final repo = ref.read(workoutRepositoryProvider);
+        await repo.logSession(
+          name: widget.routineName,
+          volume: _calculateTotalVolume(),
+          durationSeconds: widget.elapsedSeconds,
+          calories: _calculateCaloriesBurned(),
+          sets: widget.loggedSets,
+        );
+
+        // Legacy/unscheduled behavior intentionally stays unchanged.
+        await repo.deleteActiveDraft();
+      }
+
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.pop(context); // Exit summary and return to split view
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save session: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final double totalVolume = _calculateTotalVolume();
     final int calories = _calculateCaloriesBurned();
-    final String durationText = _formatDuration(elapsedSeconds);
+    final String durationText = _formatDuration(widget.elapsedSeconds);
 
     // Group sets by exercise name for summary listing
     final Map<String, List<WorkoutSetsCompanion>> grouped = {};
-    for (final set in loggedSets) {
+    for (final set in widget.loggedSets) {
       final name = set.exerciseName.value;
       if (!grouped.containsKey(name)) {
         grouped[name] = [];
@@ -86,7 +157,7 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      routineName,
+                      widget.routineName,
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w600,
@@ -193,16 +264,18 @@ class WorkoutSummaryScreen extends ConsumerWidget {
 
             // Share Summary Button
             OutlinedButton.icon(
-              onPressed: () {
-                final text =
-                    'Crushed my workout today! 🏋️\n'
-                    'Routine: $routineName\n'
-                    'Volume Lifted: ${totalVolume.round()} kg\n'
-                    'Duration: $durationText\n'
-                    'Burned: $calories kcal\n'
-                    'Logged with IndiFit App ⚡';
-                Share.share(text);
-              },
+              onPressed: _isSaving
+                  ? null
+                  : () {
+                      final text =
+                          'Crushed my workout today! 🏋️\n'
+                          'Routine: ${widget.routineName}\n'
+                          'Volume Lifted: ${totalVolume.round()} kg\n'
+                          'Duration: $durationText\n'
+                          'Burned: $calories kcal\n'
+                          'Logged with IndiFit App ⚡';
+                      Share.share(text);
+                    },
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.primary),
                 foregroundColor: AppColors.primary,
@@ -219,24 +292,9 @@ class WorkoutSummaryScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
 
-            // Save Workout Button
+            // Save Workout Button with Multi-Tap Guard
             ElevatedButton(
-              onPressed: () async {
-                final repo = ref.read(workoutRepositoryProvider);
-                await repo.logSession(
-                  name: routineName,
-                  volume: totalVolume,
-                  durationSeconds: elapsedSeconds,
-                  calories: calories,
-                  sets: loggedSets,
-                );
-
-                if (context.mounted) {
-                  Navigator.pop(
-                    context,
-                  ); // Exit summary and return to split view
-                }
-              },
+              onPressed: _isSaving ? null : _handleSave,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -245,10 +303,22 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Save Workout & Exit',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Save Workout & Exit',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
             ),
           ],
         ),

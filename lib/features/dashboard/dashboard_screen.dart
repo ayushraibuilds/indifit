@@ -1,10 +1,9 @@
-import 'dart:convert';
-
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
@@ -63,7 +62,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               TextButton(
                 onPressed: () async {
                   Navigator.pop(dialogCtx);
-                  await repo.deleteActiveDraft();
+                  if (draft.scheduledOccurrenceId case final occurrenceId?) {
+                    await ref
+                        .read(workoutExecutionCompatibilityAdapterProvider)
+                        .discardScheduledOccurrenceDraft(
+                          occurrenceId: occurrenceId,
+                          commandId: const Uuid().v4(),
+                        );
+                  } else {
+                    await repo.deleteActiveDraft();
+                  }
                 },
                 child: const Text(
                   'Discard',
@@ -73,26 +81,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(dialogCtx);
-                  final List<dynamic> rawSets = jsonDecode(
-                    draft.loggedSetsJson,
-                  );
-                  final List<WorkoutSetsCompanion> loggedCompanions = rawSets
-                      .map((s) {
-                        final map = s as Map<String, dynamic>;
-                        return WorkoutSetsCompanion.insert(
-                          sessionId: map['sessionId'] ?? 0,
-                          exerciseName: map['exerciseName'] ?? '',
-                          weight: (map['weight'] as num).toDouble(),
-                          reps: map['reps'] ?? 0,
-                          setNumber: map['setNumber'] ?? 1,
-                          isPr: Value(map['isPr'] ?? false),
-                        );
-                      })
-                      .toList();
-
-                  final exercises = await repo.getExercisesForRoutineName(
-                    draft.routineName,
-                  );
+                  final List<WorkoutSetsCompanion> loggedCompanions =
+                      WorkoutDraftCodec.decodeLoggedSets(draft.loggedSetsJson);
+                  final scheduledLaunch = draft.scheduledOccurrenceId == null
+                      ? null
+                      : await ref
+                            .read(workoutExecutionCompatibilityAdapterProvider)
+                            .resumeScheduledDraft(draft);
+                  final exercises =
+                      scheduledLaunch?.exercises ??
+                      await repo.getExercisesForRoutineName(draft.routineName);
                   if (mounted) {
                     await Navigator.push(
                       context,
@@ -104,6 +102,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           initialSetIndex: draft.currentSetIndex,
                           initialElapsedSeconds: draft.elapsedSeconds,
                           initialLoggedSets: loggedCompanions,
+                          scheduledOccurrenceId: scheduledLaunch?.occurrenceId,
+                          executionSnapshotJson:
+                              scheduledLaunch?.executionSnapshotJson,
+                          personalExerciseContextByName:
+                              scheduledLaunch?.personalExerciseContextByName ??
+                              const {},
                         ),
                       ),
                     );

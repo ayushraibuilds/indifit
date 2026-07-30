@@ -44,14 +44,34 @@ jobs:
 
       - name: Generate Dummy Release Keystore
         run: |
-          echo "storePassword=dummy_store_password" > android/key.properties
-          echo "keyPassword=dummy_key_password" >> android/key.properties
-          echo "keyAlias=dummy_alias" >> android/key.properties
-          echo "storeFile=dummy.keystore" >> android/key.properties
-          keytool -genkey -v -keystore android/app/dummy.keystore -alias dummy_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass dummy_store_password -keypass dummy_key_password -dname "CN=IndiFit, OU=Dev, O=IndiFit, L=Local, S=Local, C=IN"
+          echo "storePassword=ci_release_password" > android/key.properties
+          echo "keyPassword=ci_release_password" >> android/key.properties
+          echo "keyAlias=ci_release_alias" >> android/key.properties
+          echo "storeFile=ci-release.keystore" >> android/key.properties
+          keytool -genkeypair -noprompt -storetype JKS -keystore android/app/ci-release.keystore -alias ci_release_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass ci_release_password -keypass ci_release_password -dname "CN=IndiFit, OU=Dev, O=IndiFit, L=Local, S=Local, C=IN"
 
       - name: Build Release APK
         run: flutter build apk --release --dart-define=INDIFIT_API_KEY=ci_build_test_key
+
+  ios_release:
+    name: iOS Release Build
+    runs-on: macos-15
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.4'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Unsigned Release App
+        run: flutter build ios --release --no-codesign --dart-define=INDIFIT_API_KEY=ci_build_test_key
 
   backend_ci:
     name: Backend CI Checks

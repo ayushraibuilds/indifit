@@ -67,7 +67,8 @@ class AchievementService {
       required bool thresholdMet,
     }) {
       final isUnlocked = thresholdMet || timestamps.containsKey(id);
-      final unlockedAt = timestamps[id] ?? (thresholdMet ? DateTime.now() : null);
+      final unlockedAt =
+          timestamps[id] ?? (thresholdMet ? DateTime.now() : null);
 
       return Achievement(
         id: id,

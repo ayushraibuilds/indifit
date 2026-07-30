@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../database/app_database.dart';
+import 'legacy_program_compatibility_adapter.dart';
 
 final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
   final db = ref.watch(databaseProvider);
@@ -145,26 +146,41 @@ class WorkoutRepository {
         }
       }
 
+      await LegacyProgramCompatibilityAdapter(
+        _db,
+      ).syncLegacyRoutineToImportVersion(targetRoutineId);
+
       return targetRoutineId;
     });
   }
 
   // 3. Retrieve all cached routines
   Future<List<WorkoutRoutine>> getSavedRoutines() async {
-    return await _db.select(_db.workoutRoutines).get();
+    return await (_db.select(
+      _db.workoutRoutines,
+    )..orderBy([(table) => OrderingTerm(expression: table.id)])).get();
   }
 
   // 4. Retrieve single routine structure (days and exercises)
   Future<List<Map<String, dynamic>>> getRoutineDetails(int routineId) async {
-    final days = await (_db.select(
-      _db.routineDays,
-    )..where((tbl) => tbl.routineId.equals(routineId))).get();
+    final days =
+        await (_db.select(_db.routineDays)
+              ..where((tbl) => tbl.routineId.equals(routineId))
+              ..orderBy([
+                (table) => OrderingTerm(expression: table.dayOfWeek),
+                (table) => OrderingTerm(expression: table.id),
+              ]))
+            .get();
 
     final List<Map<String, dynamic>> results = [];
     for (final day in days) {
-      final exercises = await (_db.select(
-        _db.routineExercises,
-      )..where((tbl) => tbl.dayId.equals(day.id))).get();
+      final exercises =
+          await (_db.select(_db.routineExercises)
+                ..where((tbl) => tbl.dayId.equals(day.id))
+                ..orderBy([
+                  (table) => OrderingTerm(expression: table.orderIndex),
+                ]))
+              .get();
       results.add({'day': day, 'exercises': exercises});
     }
     return results;

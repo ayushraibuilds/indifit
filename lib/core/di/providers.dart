@@ -6,8 +6,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/calendar_repository.dart';
+import '../../data/repositories/equipment_preference_repository.dart';
+import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/program_activation_coordinator.dart';
+import '../../data/repositories/program_repository.dart';
+import '../../data/repositories/travel_repository.dart';
+import '../../data/repositories/workout_execution_compatibility_adapter.dart';
+import '../../data/repositories/workout_repository.dart';
 import '../config/app_config.dart';
 import '../privacy/privacy_policy.dart';
+import '../services/local_schedule_date_service.dart';
 
 export 'user_profile_provider.dart';
 
@@ -245,3 +255,105 @@ class WaterNotifier extends StateNotifier<WaterState> {
 final waterProvider = StateNotifierProvider<WaterNotifier, WaterState>((ref) {
   return WaterNotifier(ref.watch(databaseProvider));
 });
+
+final programRepositoryProvider = Provider<ProgramRepository>((ref) {
+  return ProgramRepository(ref.watch(databaseProvider));
+});
+
+final localScheduleDateServiceProvider = Provider<LocalScheduleDateService>((
+  ref,
+) {
+  return LocalScheduleDateService();
+});
+
+final programActivationCoordinatorProvider =
+    Provider<ProgramActivationCoordinator>((ref) {
+      return ProgramActivationCoordinator(
+        ref.watch(databaseProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
+      );
+    });
+
+final calendarRepositoryProvider = Provider<CalendarRepository>((ref) {
+  return CalendarRepository(
+    ref.watch(databaseProvider),
+    dates: ref.watch(localScheduleDateServiceProvider),
+  );
+});
+
+final calendarReadRepositoryProvider = Provider<CalendarReadRepository>((ref) {
+  return CalendarReadRepository(
+    ref.watch(databaseProvider),
+    dates: ref.watch(localScheduleDateServiceProvider),
+  );
+});
+
+final equipmentProfileRepositoryProvider = Provider<EquipmentProfileRepository>(
+  (ref) {
+    return EquipmentProfileRepository(ref.watch(databaseProvider));
+  },
+);
+
+/// Compatibility alias for callers not yet migrated to the bounded-context
+/// name. It is the same provider/owner, not a second authority.
+final equipmentRepositoryProvider = equipmentProfileRepositoryProvider;
+
+final exercisePreferenceRepositoryProvider =
+    Provider<ExercisePreferenceRepository>((ref) {
+      return ExercisePreferenceRepository(ref.watch(databaseProvider));
+    });
+
+final programListProvider = StreamProvider<List<Program>>((ref) {
+  return ref.watch(programRepositoryProvider).watchAllPrograms();
+});
+
+final programVersionDetailProvider =
+    StreamProvider.family<ProgramDetailAggregate?, String>((ref, versionId) {
+      return ref
+          .watch(programRepositoryProvider)
+          .watchProgramVersionDetail(versionId);
+    });
+
+final equipmentProfileListProvider = StreamProvider<List<EquipmentProfile>>((
+  ref,
+) {
+  return ref.watch(equipmentProfileRepositoryProvider).watchActiveProfiles();
+});
+
+final defaultEquipmentProfileIdProvider = StreamProvider<String?>((ref) {
+  return ref.watch(equipmentProfileRepositoryProvider).watchDefaultProfileId();
+});
+
+final exercisePreferenceAggregateProvider =
+    StreamProvider.family<
+      ExercisePreferenceAggregate?,
+      ExercisePreferenceLookup
+    >((ref, lookup) {
+      return ref
+          .watch(exercisePreferenceRepositoryProvider)
+          .watchPreference(stableId: lookup.stableId, rawName: lookup.rawName);
+    });
+
+final workoutExecutionCompatibilityAdapterProvider =
+    Provider<WorkoutExecutionCompatibilityAdapter>((ref) {
+      return WorkoutExecutionCompatibilityAdapter(
+        db: ref.watch(databaseProvider),
+        calendarRepo: ref.watch(calendarRepositoryProvider),
+        workoutRepo: ref.watch(workoutRepositoryProvider),
+        preferenceRepo: ref.watch(exercisePreferenceRepositoryProvider),
+        travelRepo: ref.watch(travelRepositoryProvider),
+      );
+    });
+
+final travelRepositoryProvider = Provider<TravelRepository>((ref) {
+  return TravelRepository(
+    db: ref.watch(databaseProvider),
+    calendarRepo: ref.watch(calendarRepositoryProvider),
+    equipmentRepo: ref.watch(equipmentProfileRepositoryProvider),
+  );
+});
+
+final legacyProgramCompatibilityAdapterProvider =
+    Provider<LegacyProgramCompatibilityAdapter>((ref) {
+      return LegacyProgramCompatibilityAdapter(ref.watch(databaseProvider));
+    });

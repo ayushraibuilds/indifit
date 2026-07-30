@@ -45,12 +45,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final p = ref.watch(userProfileProvider);
       _nameController.text = p.userName ?? '';
       _ageController.text = p.userAge > 0 ? p.userAge.toString() : '25';
-      _heightController.text =
-          (p.userHeight != null && p.userHeight! > 0)
-              ? p.userHeight!.round().toString()
-              : '170';
-      _weightController.text =
-          p.currentWeight > 0 ? p.currentWeight.toStringAsFixed(1) : '70.0';
+      _heightController.text = (p.userHeight != null && p.userHeight! > 0)
+          ? p.userHeight!.round().toString()
+          : '170';
+      _weightController.text = p.currentWeight > 0
+          ? p.currentWeight.toStringAsFixed(1)
+          : '70.0';
       _injuriesController.text = p.injuriesLimitations;
 
       _selectedSex = p.userSex;
@@ -108,38 +108,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (bodyOrGoalChanged) {
       final choice = await showDialog<bool>(
         context: context,
-        builder:
-            (context) => AlertDialog(
-              backgroundColor: AppColors.surface,
-              title: const Row(
-                children: [
-                  Icon(
-                    Icons.auto_awesome_rounded,
-                    color: AppColors.primary,
-                    size: 22,
-                  ),
-                  SizedBox(width: 8),
-                  Text('Recalculate Goals?'),
-                ],
+        builder: (context) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: const Row(
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                color: AppColors.primary,
+                size: 22,
               ),
-              content: const Text(
-                'Your body measurements or fitness goals have changed. Would you like to recalculate daily calorie & macronutrient targets using Mifflin-St Jeor equation?',
-                style: TextStyle(fontSize: 13, height: 1.4),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Keep Current Goals'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                  ),
-                  child: const Text('Recalculate Goals'),
-                ),
-              ],
+              SizedBox(width: 8),
+              Text('Recalculate Goals?'),
+            ],
+          ),
+          content: const Text(
+            'Your body measurements or fitness goals have changed. Would you like to recalculate daily calorie & macronutrient targets using Mifflin-St Jeor equation?',
+            style: TextStyle(fontSize: 13, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Keep Current Goals'),
             ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: const Text('Recalculate Goals'),
+            ),
+          ],
+        ),
       );
 
       if (choice == null) return; // User dismissed/cancelled dialog
@@ -152,8 +151,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     double? newFat;
 
     if (recalculateGoals) {
-      final gender =
-          _selectedSex == 'female' ? Gender.female : Gender.male;
+      final gender = _selectedSex == 'female' ? Gender.female : Gender.male;
       final actLevel = switch (_selectedActivity) {
         'sedentary' => ActivityLevel.sedentary,
         'light' => ActivityLevel.lightlyActive,
@@ -277,9 +275,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           child: DropdownButtonFormField<String>(
                             // ignore: deprecated_member_use
                             value: _selectedSex,
-                            decoration: const InputDecoration(
-                              labelText: 'Sex',
-                            ),
+                            decoration: const InputDecoration(labelText: 'Sex'),
                             items: const [
                               DropdownMenuItem(
                                 value: 'male',
@@ -486,8 +482,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       maxLines: 2,
                       decoration: const InputDecoration(
                         labelText: 'Injuries or Limitations',
-                        hintText:
-                            'e.g. Lower back pain, shoulder impingement',
+                        hintText: 'e.g. Lower back pain, shoulder impingement',
                         prefixIcon: Icon(Icons.medical_services_outlined),
                       ),
                     ),

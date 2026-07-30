@@ -11,9 +11,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
-      extensions: const [
-        AppColorsExtension.dark,
-      ],
+      extensions: const [AppColorsExtension.dark],
 
       // Color Scheme
       colorScheme: const ColorScheme.dark(
@@ -66,9 +64,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-      extensions: const [
-        AppColorsExtension.light,
-      ],
+      extensions: const [AppColorsExtension.light],
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         surface: Colors.white,

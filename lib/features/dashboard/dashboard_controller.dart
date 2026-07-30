@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/di/user_profile_provider.dart';
+import '../../core/di/providers.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
@@ -9,6 +9,7 @@ import '../../core/utils/streak_calculator.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/health_service.dart';
+import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 
 class DashboardState {
@@ -227,9 +228,21 @@ class DashboardController extends StateNotifier<DashboardState> {
   Future<void> loadTodayWorkout() async {
     try {
       final repo = _ref.read(workoutRepositoryProvider);
-      final routines = await repo.getSavedRoutines();
-      if (routines.isNotEmpty) {
-        final active = routines.last;
+      final selection = await _ref
+          .read(legacyProgramCompatibilityAdapterProvider)
+          .resolveActivePlanSelection();
+      if (selection.type == ActivePlanType.b01Program) {
+        state = state.copyWith(
+          todayWorkoutName: 'Scheduled program',
+          isRestDay: false,
+          todayExercises: const [],
+        );
+        return;
+      }
+      if (selection.type == ActivePlanType.legacyRoutine) {
+        final active = (await repo.getSavedRoutines()).singleWhere(
+          (routine) => routine.id == selection.legacyRoutineId,
+        );
         final details = await repo.getRoutineDetails(active.id);
         final todayWeekday = DateTime.now().weekday;
         final dayData = details.firstWhere(
@@ -291,10 +304,12 @@ class DashboardController extends StateNotifier<DashboardState> {
           .toList();
 
       int targetWorkoutDays = 3;
-      final savedRoutines = await workoutRepo.getSavedRoutines();
-      if (savedRoutines.isNotEmpty) {
+      final selection = await _ref
+          .read(legacyProgramCompatibilityAdapterProvider)
+          .resolveActivePlanSelection();
+      if (selection.type == ActivePlanType.legacyRoutine) {
         final details = await workoutRepo.getRoutineDetails(
-          savedRoutines.last.id,
+          selection.legacyRoutineId!,
         );
         final Map<int, bool> restDayMap = {};
         for (final d in details) {

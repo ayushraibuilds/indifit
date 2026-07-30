@@ -28,9 +28,9 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('dexterous.com/flutter/local_notifications'),
-        (MethodCall methodCall) async => true,
-      );
+            const MethodChannel('dexterous.com/flutter/local_notifications'),
+            (MethodCall methodCall) async => true,
+          );
       db = AppDatabase.memory();
     });
 
@@ -38,163 +38,203 @@ void main() {
       await db.close();
     });
 
-    test('1. AppFailure & Result DTO classify errors accurately with action callbacks', () {
-      bool actionTriggered = false;
+    test(
+      '1. AppFailure & Result DTO classify errors accurately with action callbacks',
+      () {
+        bool actionTriggered = false;
 
-      final failure = AppFailure.offlinePolicyBlocked(
-        onAction: () => actionTriggered = true,
-      );
+        final failure = AppFailure.offlinePolicyBlocked(
+          onAction: () => actionTriggered = true,
+        );
 
-      expect(failure.type, equals(AppFailureType.offlinePolicyBlocked));
-      expect(failure.actionLabel, equals('Settings'));
+        expect(failure.type, equals(AppFailureType.offlinePolicyBlocked));
+        expect(failure.actionLabel, equals('Settings'));
 
-      failure.onAction?.call();
-      expect(actionTriggered, isTrue);
+        failure.onAction?.call();
+        expect(actionTriggered, isTrue);
 
-      final resultSuccess = Result.success('data', fallbackReason: 'Offline Fallback');
-      expect(resultSuccess.isSuccess, isTrue);
-      expect((resultSuccess as Success<String>).isFallback, isTrue);
+        final resultSuccess = Result.success(
+          'data',
+          fallbackReason: 'Offline Fallback',
+        );
+        expect(resultSuccess.isSuccess, isTrue);
+        expect((resultSuccess as Success<String>).isFallback, isTrue);
 
-      final resultFailure = Result<String>.failure(failure);
-      expect(resultFailure.isFailure, isTrue);
-      expect(resultFailure.failureOrNull?.type, equals(AppFailureType.offlinePolicyBlocked));
-    });
+        final resultFailure = Result<String>.failure(failure);
+        expect(resultFailure.isFailure, isTrue);
+        expect(
+          resultFailure.failureOrNull?.type,
+          equals(AppFailureType.offlinePolicyBlocked),
+        );
+      },
+    );
 
-    test('2. ProgressStatisticsRepository handles 7-day boundaries, leap days, and adherence weighting', () async {
-      final repo = ProgressStatisticsRepository(db);
+    test(
+      '2. ProgressStatisticsRepository handles 7-day boundaries, leap days, and adherence weighting',
+      () async {
+        final repo = ProgressStatisticsRepository(db);
 
-      // Leap day test date: 2028-02-29
-      final leapDate = DateTime(2028, 2, 29);
-      final metrics = await repo.getWeeklyMetrics(referenceDate: leapDate);
+        // Leap day test date: 2028-02-29
+        final leapDate = DateTime(2028, 2, 29);
+        final metrics = await repo.getWeeklyMetrics(referenceDate: leapDate);
 
-      expect(metrics.startDate, equals(DateTime(2028, 2, 23)));
-      expect(metrics.nutritionDaysLogged, equals(0));
-      expect(metrics.overallAdherenceScore, equals(0.0));
+        expect(metrics.startDate, equals(DateTime(2028, 2, 23)));
+        expect(metrics.nutritionDaysLogged, equals(0));
+        expect(metrics.overallAdherenceScore, equals(0.0));
 
-      // Log food on leap day
-      await db.into(db.foodLogs).insert(
-        FoodLogsCompanion.insert(
-          name: 'Poha',
-          calories: 300,
-          proteinG: 8.0,
-          carbsG: 45.0,
-          fatG: 10.0,
-          servingLogged: 1.0,
-          servingUnit: 'plate',
-          mealType: 'breakfast',
-          loggedAt: Value(leapDate),
-        ),
-      );
+        // Log food on leap day
+        await db
+            .into(db.foodLogs)
+            .insert(
+              FoodLogsCompanion.insert(
+                name: 'Poha',
+                calories: 300,
+                proteinG: 8.0,
+                carbsG: 45.0,
+                fatG: 10.0,
+                servingLogged: 1.0,
+                servingUnit: 'plate',
+                mealType: 'breakfast',
+                loggedAt: Value(leapDate),
+              ),
+            );
 
-      final leapMetrics = await repo.getWeeklyMetrics(referenceDate: leapDate);
-      expect(leapMetrics.nutritionDaysLogged, equals(1));
-      expect(leapMetrics.totalCaloriesLogged, equals(300));
-    });
+        final leapMetrics = await repo.getWeeklyMetrics(
+          referenceDate: leapDate,
+        );
+        expect(leapMetrics.nutritionDaysLogged, equals(1));
+        expect(leapMetrics.totalCaloriesLogged, equals(300));
+      },
+    );
 
-    test('3. AchievementService evaluates thresholds and unlocks correctly', () async {
-      final achievementsBefore = AchievementService.evaluateAchievements(
-        completedWorkoutsCount: 0,
-        currentStreakDays: 0,
-        totalVolumeKg: 0.0,
-        totalLoggedMealsCount: 0,
-      );
+    test(
+      '3. AchievementService evaluates thresholds and unlocks correctly',
+      () async {
+        final achievementsBefore = AchievementService.evaluateAchievements(
+          completedWorkoutsCount: 0,
+          currentStreakDays: 0,
+          totalVolumeKg: 0.0,
+          totalLoggedMealsCount: 0,
+        );
 
-      final firstWorkoutBefore = achievementsBefore.firstWhere((a) => a.id == 'first_workout');
-      expect(firstWorkoutBefore.isUnlocked, isFalse);
+        final firstWorkoutBefore = achievementsBefore.firstWhere(
+          (a) => a.id == 'first_workout',
+        );
+        expect(firstWorkoutBefore.isUnlocked, isFalse);
 
-      // Evaluate after completing 1 workout
-      final achievementsAfter = AchievementService.evaluateAchievements(
-        completedWorkoutsCount: 1,
-        currentStreakDays: 1,
-        totalVolumeKg: 800.0,
-        totalLoggedMealsCount: 5,
-      );
+        // Evaluate after completing 1 workout
+        final achievementsAfter = AchievementService.evaluateAchievements(
+          completedWorkoutsCount: 1,
+          currentStreakDays: 1,
+          totalVolumeKg: 800.0,
+          totalLoggedMealsCount: 5,
+        );
 
-      final firstWorkoutAfter = achievementsAfter.firstWhere((a) => a.id == 'first_workout');
-      expect(firstWorkoutAfter.isUnlocked, isTrue);
-    });
+        final firstWorkoutAfter = achievementsAfter.firstWhere(
+          (a) => a.id == 'first_workout',
+        );
+        expect(firstWorkoutAfter.isUnlocked, isTrue);
+      },
+    );
 
-    test('4. Database schema v14 & backup schema v5 round-trip serialization', () async {
-      final prefs = await SharedPreferences.getInstance();
+    test(
+      '4. Database schema v14 & backup schema v5 round-trip serialization',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
 
-      // Insert record into userProfile & dailyHydrations
-      await db.into(db.userProfiles).insert(
-        UserProfilesCompanion.insert(
-          name: const Value('Test Athlete'),
-          age: const Value(28),
-          sex: const Value('male'),
-          height: const Value(175.0),
-          weight: const Value(70.0),
-          activityLevel: const Value('active'),
-          goal: const Value('maintain'),
-        ),
-      );
+        // Insert record into userProfile & dailyHydrations
+        await db
+            .into(db.userProfiles)
+            .insert(
+              UserProfilesCompanion.insert(
+                name: const Value('Test Athlete'),
+                age: const Value(28),
+                sex: const Value('male'),
+                height: const Value(175.0),
+                weight: const Value(70.0),
+                activityLevel: const Value('active'),
+                goal: const Value('maintain'),
+              ),
+            );
 
-      await db.into(db.dailyHydrations).insert(
-        DailyHydrationsCompanion.insert(
-          dateString: '2026-07-28',
-          totalMl: 2500,
-          goalMl: 3000,
-        ),
-      );
+        await db
+            .into(db.dailyHydrations)
+            .insert(
+              DailyHydrationsCompanion.insert(
+                dateString: '2026-07-28',
+                totalMl: 2500,
+                goalMl: 3000,
+              ),
+            );
 
-      final backupData = await BackupData.createFromDatabase(db, prefs);
-      expect(backupData.version, equals(BackupData.currentVersion));
-      expect(backupData.userProfile?.name, equals('Test Athlete'));
-      expect(backupData.dailyHydrations.length, equals(1));
+        final backupData = await BackupData.createFromDatabase(db, prefs);
+        expect(backupData.version, equals(BackupData.currentVersion));
+        expect(backupData.userProfile?.name, equals('Test Athlete'));
+        expect(backupData.dailyHydrations.length, equals(1));
 
-      // Verify envelope creation and inspection
-      final envelopeJson = BackupFileAdapter.exportToEnvelopeJson(
-        data: backupData,
-        password: 'Password123!',
-      );
+        // Verify envelope creation and inspection
+        final envelopeJson = BackupFileAdapter.exportToEnvelopeJson(
+          data: backupData,
+          password: 'Password123!',
+        );
 
-      final inspection = await BackupFileAdapter.inspectBackupContent(
-        envelopeJson,
-        password: 'Password123!',
-      );
+        final inspection = await BackupFileAdapter.inspectBackupContent(
+          envelopeJson,
+          password: 'Password123!',
+        );
 
-      expect(inspection.isEncrypted, isTrue);
-      expect(inspection.profileName, equals('Test Athlete'));
-      expect(inspection.tableCounts['daily_hydrations'], equals(1));
-    });
+        expect(inspection.isEncrypted, isTrue);
+        expect(inspection.profileName, equals('Test Athlete'));
+        expect(inspection.tableCounts['daily_hydrations'], equals(1));
+      },
+    );
 
-    testWidgets('5. FailureStateWidget renders failure details and responds to retry action', (WidgetTester tester) async {
-      bool retried = false;
-      final failure = AppFailure.network(
-        message: 'Unable to connect to IndiFit AI server.',
-        onRetry: () => retried = true,
-      );
+    testWidgets(
+      '5. FailureStateWidget renders failure details and responds to retry action',
+      (WidgetTester tester) async {
+        bool retried = false;
+        final failure = AppFailure.network(
+          message: 'Unable to connect to IndiFit AI server.',
+          onRetry: () => retried = true,
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: Scaffold(
-            body: FailureStateWidget(
-              failure: failure,
-              onRetry: () => retried = true,
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: FailureStateWidget(
+                failure: failure,
+                onRetry: () => retried = true,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Unable to connect to IndiFit AI server.'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
+        expect(
+          find.text('Unable to connect to IndiFit AI server.'),
+          findsOneWidget,
+        );
+        expect(find.text('Retry'), findsOneWidget);
 
-      await tester.tap(find.text('Retry'));
-      await tester.pump();
+        await tester.tap(find.text('Retry'));
+        await tester.pump();
 
-      expect(retried, isTrue);
-    });
+        expect(retried, isTrue);
+      },
+    );
 
-    testWidgets('6. HealthSyncHubScreen displays category permission toggles', (WidgetTester tester) async {
+    testWidgets('6. HealthSyncHubScreen displays category permission toggles', (
+      WidgetTester tester,
+    ) async {
       final mockService = MockHealthService();
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             databaseProvider.overrideWithValue(db),
             healthServiceProvider.overrideWithValue(mockService),
-            healthStateProvider.overrideWith((ref) => FixedHealthNotifier(mockService)),
+            healthStateProvider.overrideWith(
+              (ref) => FixedHealthNotifier(mockService),
+            ),
           ],
           child: MaterialApp(
             theme: AppTheme.lightTheme,
@@ -211,16 +251,23 @@ void main() {
       expect(find.text('Steps Import (Read)'), findsOneWidget);
     });
 
-    test('7. Timezone resolver handles injected IANA locations and DST transitions cleanly', () async {
-      await NotificationService.initialize();
-      final prefs = await SharedPreferences.getInstance();
+    test(
+      '7. Timezone resolver handles injected IANA locations and DST transitions cleanly',
+      () async {
+        await NotificationService.initialize();
+        final prefs = await SharedPreferences.getInstance();
 
-      await prefs.setString(NotificationService.prefLastScheduledTimezoneId, 'Europe/London');
-      await prefs.setInt(NotificationService.prefLastUtcOffsetMinutes, 0);
+        await prefs.setString(
+          NotificationService.prefLastScheduledTimezoneId,
+          'Europe/London',
+        );
+        await prefs.setInt(NotificationService.prefLastUtcOffsetMinutes, 0);
 
-      final rescheduled = await NotificationService.checkAndUpdateTimezoneAndReschedule(db);
-      expect(rescheduled, isTrue);
-    });
+        final rescheduled =
+            await NotificationService.checkAndUpdateTimezoneAndReschedule(db);
+        expect(rescheduled, isTrue);
+      },
+    );
   });
 }
 
@@ -244,7 +291,9 @@ class MockHealthService extends HealthService {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> importOutdoorActivities([AppDatabase? db]) async {
+  Future<List<Map<String, dynamic>>> importOutdoorActivities([
+    AppDatabase? db,
+  ]) async {
     return [];
   }
 

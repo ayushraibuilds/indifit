@@ -2,6 +2,11 @@ import 'package:drift/drift.dart';
 
 class Exercises extends Table {
   IntColumn get id => integer().autoIncrement()();
+
+  /// Portable B01 identity. It remains nullable at the SQL declaration so a
+  /// v14 table can be upgraded without a destructive table rebuild; v15
+  /// migration and the insert trigger ensure every persisted row receives one.
+  TextColumn get stableId => text().nullable()();
   TextColumn get name => text()();
   TextColumn get muscleGroups =>
       text()(); // Store as comma-separated values, e.g., "Chest,Triceps"
@@ -25,6 +30,12 @@ class WorkoutSessions extends Table {
       dateTime().withDefault(currentDateAndTime)();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
   TextColumn get uuid => text().nullable()();
+  TextColumn get scheduledOccurrenceId => text().nullable().customConstraint(
+    'REFERENCES scheduled_session_occurrences(id)',
+  )();
+  TextColumn get executionSnapshotJson => text().nullable()();
+  TextColumn get executionTimezoneId => text().nullable()();
+  TextColumn get completionKind => text().nullable()();
 }
 
 class WorkoutSets extends Table {
@@ -45,6 +56,10 @@ class WorkoutSets extends Table {
   IntColumn get durationSeconds => integer().nullable()();
   RealColumn get distanceKm => real().nullable()();
   RealColumn get inclinePercentage => real().nullable()();
+
+  /// Stable exercise identity is additive; legacy name history remains intact.
+  TextColumn get exerciseId =>
+      text().nullable().references(Exercises, #stableId)();
 }
 
 class BodyMeasurements extends Table {
@@ -92,4 +107,10 @@ class WorkoutDrafts extends Table {
   TextColumn get loggedSetsJson =>
       text()(); // serialized JSON string of completed sets
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  TextColumn get scheduledOccurrenceId => text().nullable().customConstraint(
+    'REFERENCES scheduled_session_occurrences(id)',
+  )();
+  TextColumn get executionSnapshotJson => text().nullable()();
+  IntColumn get draftSchemaVersion =>
+      integer().withDefault(const Constant(1))();
 }

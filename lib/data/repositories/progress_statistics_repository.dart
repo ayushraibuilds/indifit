@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../database/app_database.dart';
+import 'legacy_program_compatibility_adapter.dart';
 
 final progressStatisticsRepositoryProvider =
     Provider<ProgressStatisticsRepository>((ref) {
@@ -115,10 +116,8 @@ class ProgressStatisticsRepository {
   final AppDatabase _db;
   final DateTime Function() _getNow;
 
-  ProgressStatisticsRepository(
-    this._db, {
-    DateTime Function()? clock,
-  }) : _getNow = clock ?? DateTime.now;
+  ProgressStatisticsRepository(this._db, {DateTime Function()? clock})
+    : _getNow = clock ?? DateTime.now;
 
   /// Returns 7-day metrics ending on [referenceDate] (inclusive).
   Future<WeeklyMetrics> getWeeklyMetrics({DateTime? referenceDate}) async {
@@ -137,13 +136,12 @@ class ProgressStatisticsRepository {
 
     // 1. Food logs in window
     final allFoodLogs = await _db.select(_db.foodLogs).get();
-    final windowFoodLogs =
-        allFoodLogs.where((log) {
-          return log.loggedAt.isAfter(
-                startDate.subtract(const Duration(milliseconds: 1)),
-              ) &&
-              log.loggedAt.isBefore(endDate);
-        }).toList();
+    final windowFoodLogs = allFoodLogs.where((log) {
+      return log.loggedAt.isAfter(
+            startDate.subtract(const Duration(milliseconds: 1)),
+          ) &&
+          log.loggedAt.isBefore(endDate);
+    }).toList();
 
     int totalCaloriesLogged = 0;
     double totalProteinG = 0.0;
@@ -172,14 +170,13 @@ class ProgressStatisticsRepository {
 
     // 2. Hydration in window
     final allHydration = await _db.select(_db.dailyHydrations).get();
-    final windowHydration =
-        allHydration.where((h) {
-          final parsed = DateTime.tryParse(h.dateString);
-          if (parsed == null) return false;
-          final d = DateTime(parsed.year, parsed.month, parsed.day);
-          return (d.isAtSameMomentAs(startDate) || d.isAfter(startDate)) &&
-              (d.isAtSameMomentAs(todayStart) || d.isBefore(todayStart));
-        }).toList();
+    final windowHydration = allHydration.where((h) {
+      final parsed = DateTime.tryParse(h.dateString);
+      if (parsed == null) return false;
+      final d = DateTime(parsed.year, parsed.month, parsed.day);
+      return (d.isAtSameMomentAs(startDate) || d.isAfter(startDate)) &&
+          (d.isAtSameMomentAs(todayStart) || d.isBefore(todayStart));
+    }).toList();
 
     int totalHydrationMl = 0;
     int totalHydrationGoalMl = 0;
@@ -200,13 +197,12 @@ class ProgressStatisticsRepository {
 
     // 3. Workouts in window
     final allSessions = await _db.select(_db.workoutSessions).get();
-    final windowSessions =
-        allSessions.where((s) {
-          return s.completedAt.isAfter(
-                startDate.subtract(const Duration(milliseconds: 1)),
-              ) &&
-              s.completedAt.isBefore(endDate);
-        }).toList();
+    final windowSessions = allSessions.where((s) {
+      return s.completedAt.isAfter(
+            startDate.subtract(const Duration(milliseconds: 1)),
+          ) &&
+          s.completedAt.isBefore(endDate);
+    }).toList();
 
     final completedWorkoutsCount = windowSessions.length;
     double totalVolumeKg = 0.0;
@@ -217,17 +213,23 @@ class ProgressStatisticsRepository {
     // PR sets in window
     final allSets = await _db.select(_db.workoutSets).get();
     final sessionIds = windowSessions.map((s) => s.id).toSet();
-    final prsCount =
-        allSets.where((s) => sessionIds.contains(s.sessionId) && s.isPr).length;
+    final prsCount = allSets
+        .where((s) => sessionIds.contains(s.sessionId) && s.isPr)
+        .length;
 
-    // Planned workout days calculation from active routine
-    final routines = await _db.select(_db.workoutRoutines).get();
+    // Legacy adherence preserves its historical greatest-ID fallback only when
+    // no B01 version is active. B01 occurrence adherence remains owned by the
+    // calendar read model; this statistics repository must not select a second
+    // active plan or reinterpret civil schedule dates.
     int plannedWorkoutsCount = 0;
-    if (routines.isNotEmpty) {
-      final activeRoutineId = routines.last.id;
+    final activePlan = await LegacyProgramCompatibilityAdapter(
+      _db,
+    ).resolveActivePlanSelection();
+    if (activePlan.type == ActivePlanType.legacyRoutine) {
       final days =
-          await (_db.select(_db.routineDays)
-                ..where((tbl) => tbl.routineId.equals(activeRoutineId)))
+          await (_db.select(_db.routineDays)..where(
+                (tbl) => tbl.routineId.equals(activePlan.legacyRoutineId!),
+              ))
               .get();
       plannedWorkoutsCount = days.where((d) => !d.isRestDay).length;
     }
@@ -250,10 +252,9 @@ class ProgressStatisticsRepository {
       ?hydrationScore,
     ];
 
-    final double overallScore =
-        validScores.isNotEmpty
-            ? validScores.reduce((a, b) => a + b) / validScores.length
-            : 0.0;
+    final double overallScore = validScores.isNotEmpty
+        ? validScores.reduce((a, b) => a + b) / validScores.length
+        : 0.0;
 
     final breakdown = AdherenceBreakdown(
       calorieScore: calorieScore,
@@ -303,14 +304,13 @@ class ProgressStatisticsRepository {
     final totalPrs = sets.where((s) => s.isPr).length;
 
     // Count thali meals (explicit thali marker or grouped meals with 3+ items)
-    final thaliLoggedCount =
-        foodLogs
-            .where(
-              (f) =>
-                  f.name.toLowerCase().contains('thali') ||
-                  (f.mealGroupId != null && f.mealGroupId!.isNotEmpty),
-            )
-            .length;
+    final thaliLoggedCount = foodLogs
+        .where(
+          (f) =>
+              f.name.toLowerCase().contains('thali') ||
+              (f.mealGroupId != null && f.mealGroupId!.isNotEmpty),
+        )
+        .length;
 
     final unlocks = await _db.select(_db.achievementUnlocks).get();
     final unlockedMap = <String, DateTime>{
