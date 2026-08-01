@@ -682,6 +682,11 @@ class B02TechniqueFields {
     }
     _positive(assistanceKg, 'assistance load');
     _contiguousOrdinals(segments.map((segment) => segment.ordinal), 'Segment');
+    if (segments.isNotEmpty && !isDropSet && !isRestPause) {
+      throw const B02ValidationException(
+        'Segments require drop-set or rest-pause intent.',
+      );
+    }
     if (isDropSet && segments.length < 2) {
       throw B02ValidationException('Drop sets require at least two segments.');
     }
