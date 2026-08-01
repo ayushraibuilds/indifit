@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/data/database/app_database.dart';
+import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/data/repositories/equipment_preference_repository.dart';
 import 'package:indifit/data/repositories/program_activation_coordinator.dart';
@@ -66,7 +69,7 @@ void main() {
   });
 
   group('B01-09 Execution Bridge & Scheduled Workout Completion Tests', () {
-    Future<String> setupActivatedOccurrence() async {
+    Future<String> setupActivatedOccurrence({bool withGroup = false}) async {
       final programId = await programRepo.createProgram(
         name: 'Hypertrophy Bridge Program',
         blocks: [
@@ -84,13 +87,49 @@ void main() {
                     plannedWeekday: 1,
                     prescriptions: [
                       const ExercisePrescriptionInput(
+                        id: 'prescription-bridge-1',
                         exerciseId: 'ex-bench-press-stable-id',
                         exerciseNameSnapshot: 'Flat Barbell Bench Press',
                         plannedSets: 4,
                         repsRange: '8-10',
                         ordinal: 0,
                       ),
+                      if (withGroup)
+                        const ExercisePrescriptionInput(
+                          id: 'prescription-bridge-2',
+                          exerciseId: 'ex-bench-press-stable-id',
+                          exerciseNameSnapshot: 'Flat Barbell Bench Press',
+                          plannedSets: 3,
+                          repsRange: '10',
+                          ordinal: 1,
+                        ),
                     ],
+                    groups: withGroup
+                        ? const [
+                            ExerciseGroupInput(
+                              id: 'group-bridge-1',
+                              ordinal: 0,
+                              groupType: B02GroupType.superset,
+                              roundCount: 3,
+                              restAfterRoundSeconds: 75,
+                              members: [
+                                ExerciseGroupMemberInput(
+                                  id: 'group-member-bridge-1',
+                                  exercisePrescriptionId:
+                                      'prescription-bridge-1',
+                                  ordinal: 0,
+                                ),
+                                ExerciseGroupMemberInput(
+                                  id: 'group-member-bridge-2',
+                                  exercisePrescriptionId:
+                                      'prescription-bridge-2',
+                                  ordinal: 1,
+                                  transitionRestSeconds: 10,
+                                ),
+                              ],
+                            ),
+                          ]
+                        : const [],
                   ),
                 ],
               ),
@@ -165,6 +204,42 @@ void main() {
         expect(
           resumed.exercises.single.exerciseName,
           'Flat Barbell Bench Press',
+        );
+      },
+    );
+
+    test(
+      'freezes the exact published group graph at occurrence start',
+      () async {
+        final occurrenceId = await setupActivatedOccurrence(withGroup: true);
+        final launchData = await adapter.startScheduledOccurrence(
+          occurrenceId: occurrenceId,
+          commandId: 'cmd-start-group-snapshot',
+          confirmedOutsideEffectiveDate: true,
+        );
+        final snapshot =
+            jsonDecode(launchData.executionSnapshotJson)
+                as Map<String, dynamic>;
+        final group =
+            (snapshot['groups'] as List).single as Map<String, dynamic>;
+
+        expect(group['id'], 'group-bridge-1');
+        expect(group['groupType'], 'superset');
+        expect(group['roundCount'], 3);
+        expect(group['restAfterRoundSeconds'], 75);
+        expect(
+          (group['members'] as List).map(
+            (member) =>
+                (member as Map<String, dynamic>)['exercisePrescriptionId'],
+          ),
+          ['prescription-bridge-1', 'prescription-bridge-2'],
+        );
+        expect(
+          (group['members'] as List).map(
+            (member) =>
+                (member as Map<String, dynamic>)['transitionRestSeconds'],
+          ),
+          [null, 10],
         );
       },
     );

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
+import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/program_repository.dart';
+import 'program_authoring_controller.dart';
 
 /// Screen for creating, editing, and copying draft training programs.
 class ProgramAuthorScreen extends ConsumerStatefulWidget {
@@ -23,7 +26,6 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
   final TextEditingController _programNameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
-  bool _isLoading = false;
   String? _currentProgramId;
   String? _currentVersionId;
   bool _isDraftVersion = true;
@@ -35,11 +37,14 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     super.initState();
     _currentProgramId = widget.programId;
     _currentVersionId = widget.programVersionId;
-    _loadOrCreateDraft();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadOrCreateDraft();
+    });
   }
 
   Future<void> _loadOrCreateDraft() async {
-    setState(() => _isLoading = true);
+    final authoring = ref.read(programAuthoringControllerProvider.notifier);
+    authoring.beginLoading();
     try {
       final repo = ref.read(programRepositoryProvider);
 
@@ -99,14 +104,14 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
           ),
         ];
       }
+      authoring.markReady();
     } catch (e) {
+      authoring.markFailure(e);
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error loading draft: $e')));
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -136,6 +141,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                         .where((ep) => ep.sessionTemplateId == st.id)
                         .map((ep) {
                           return ExercisePrescriptionInput(
+                            id: ep.id,
                             exerciseId: ep.exerciseId,
                             exerciseNameSnapshot: ep.exerciseNameSnapshot,
                             plannedSets: ep.plannedSets,
@@ -145,6 +151,35 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                                 ep.exerciseId == null,
                           );
                         })
+                        .toList(),
+                    groups: detail.groups
+                        .where((group) => group.sessionTemplateId == st.id)
+                        .map(
+                          (group) => ExerciseGroupInput(
+                            id: group.id,
+                            ordinal: group.ordinal,
+                            groupType: B02GroupType.parse(group.groupType),
+                            roundCount: group.roundCount,
+                            restAfterRoundSeconds: group.restAfterRoundSeconds,
+                            label: group.label,
+                            members: detail.groupMembers
+                                .where(
+                                  (member) =>
+                                      member.exerciseGroupId == group.id,
+                                )
+                                .map(
+                                  (member) => ExerciseGroupMemberInput(
+                                    id: member.id,
+                                    exercisePrescriptionId:
+                                        member.exercisePrescriptionId,
+                                    ordinal: member.ordinal,
+                                    transitionRestSeconds:
+                                        member.transitionRestSeconds,
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        )
                         .toList(),
                   );
                 })
@@ -157,6 +192,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
 
   void _replaceBlocks(List<ProgramBlockInput> blocks) {
     setState(() => _blocks = _reindexBlocks(blocks));
+    ref.read(programAuthoringControllerProvider.notifier).markEdited();
   }
 
   List<ProgramBlockInput> _reindexBlocks(List<ProgramBlockInput> blocks) {
@@ -176,6 +212,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
               (prescriptionIndex) {
                 final prescription = template.prescriptions[prescriptionIndex];
                 return ExercisePrescriptionInput(
+                  id: prescription.id,
                   exerciseId: prescription.exerciseId,
                   exerciseNameSnapshot: prescription.exerciseNameSnapshot,
                   plannedSets: prescription.plannedSets,
@@ -193,6 +230,35 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
               plannedStartMinute: template.plannedStartMinute,
               notes: template.notes,
               prescriptions: prescriptions,
+              groups: template.groups
+                  .asMap()
+                  .entries
+                  .map(
+                    (groupEntry) => ExerciseGroupInput(
+                      id: groupEntry.value.id,
+                      ordinal: groupEntry.key,
+                      groupType: groupEntry.value.groupType,
+                      roundCount: groupEntry.value.roundCount,
+                      restAfterRoundSeconds:
+                          groupEntry.value.restAfterRoundSeconds,
+                      label: groupEntry.value.label,
+                      members: groupEntry.value.members
+                          .asMap()
+                          .entries
+                          .map(
+                            (memberEntry) => ExerciseGroupMemberInput(
+                              id: memberEntry.value.id,
+                              exercisePrescriptionId:
+                                  memberEntry.value.exercisePrescriptionId,
+                              ordinal: memberEntry.key,
+                              transitionRestSeconds:
+                                  memberEntry.value.transitionRestSeconds,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  )
+                  .toList(),
             );
           },
         );
@@ -494,6 +560,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                 Navigator.pop(
                   context,
                   ExercisePrescriptionInput(
+                    id: Uuid().v4(),
                     exerciseId: selected?.stableId,
                     exerciseNameSnapshot: exerciseName,
                     plannedSets: count,
@@ -526,6 +593,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
       plannedStartMinute: template.plannedStartMinute,
       notes: template.notes,
       prescriptions: [...template.prescriptions, result],
+      groups: template.groups,
     );
     weeks[weekIndex] = ProgramWeekInput(
       name: week.name,
@@ -543,64 +611,333 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
     _replaceBlocks(updated);
   }
 
-  Future<void> _saveDraft() async {
+  Future<void> _addGroup(
+    int blockIndex,
+    int weekIndex,
+    int templateIndex,
+  ) async {
+    final template =
+        _blocks[blockIndex].weeks[weekIndex].templates[templateIndex];
+    final options = template.prescriptions
+        .where((prescription) => prescription.id != null)
+        .toList(growable: false);
+    if (options.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Add at least two stable-ID exercises before grouping.',
+          ),
+        ),
+      );
+      return;
+    }
+    final label = TextEditingController();
+    final rounds = TextEditingController(text: '3');
+    final rest = TextEditingController();
+    var groupType = B02GroupType.superset;
+    final selectedIds = <String>{};
+    String? error;
+    final result = await showDialog<ExerciseGroupInput>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final selectedCount = selectedIds.length;
+          final canSubmit = groupType.acceptsMemberCount(selectedCount);
+          return AlertDialog(
+            title: const Text('Add exercise group'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<B02GroupType>(
+                    initialValue: groupType,
+                    decoration: const InputDecoration(labelText: 'Group type'),
+                    items: B02GroupType.values
+                        .map(
+                          (type) => DropdownMenuItem(
+                            value: type,
+                            child: Text(type.dbValue),
+                          ),
+                        )
+                        .toList(growable: false),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() {
+                          groupType = value;
+                          error = null;
+                        });
+                      }
+                    },
+                  ),
+                  TextField(
+                    controller: rounds,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Shared rounds',
+                    ),
+                  ),
+                  TextField(
+                    controller: rest,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Rest after round (seconds, optional)',
+                    ),
+                  ),
+                  TextField(
+                    controller: label,
+                    decoration: const InputDecoration(
+                      labelText: 'Label (optional)',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Select members by stable prescription:'),
+                  ),
+                  ...options.map(
+                    (prescription) => CheckboxListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      value: selectedIds.contains(prescription.id),
+                      title: Text(prescription.exerciseNameSnapshot),
+                      subtitle: Text(
+                        '${prescription.plannedSets} × ${prescription.repsRange}',
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          if (value == true) {
+                            selectedIds.add(prescription.id!);
+                          } else {
+                            selectedIds.remove(prescription.id);
+                          }
+                          error = null;
+                        });
+                      },
+                    ),
+                  ),
+                  if (error != null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final roundCount = int.tryParse(rounds.text.trim());
+                  final restSeconds = rest.text.trim().isEmpty
+                      ? null
+                      : int.tryParse(rest.text.trim());
+                  if (!canSubmit) {
+                    setDialogState(
+                      () => error = switch (groupType) {
+                        B02GroupType.superset =>
+                          'A superset needs exactly two members.',
+                        B02GroupType.circuit =>
+                          'A circuit needs at least two members.',
+                        B02GroupType.giantSet =>
+                          'A giant set needs at least three members.',
+                      },
+                    );
+                    return;
+                  }
+                  if (roundCount == null || roundCount < 1) {
+                    setDialogState(
+                      () => error = 'Shared rounds must be positive.',
+                    );
+                    return;
+                  }
+                  if (rest.text.trim().isNotEmpty &&
+                      (restSeconds == null || restSeconds < 0)) {
+                    setDialogState(
+                      () =>
+                          error = 'Rest after round must be zero or positive.',
+                    );
+                    return;
+                  }
+                  final selected = options
+                      .where(
+                        (prescription) => selectedIds.contains(prescription.id),
+                      )
+                      .toList(growable: false);
+                  Navigator.pop(
+                    context,
+                    ExerciseGroupInput(
+                      id: Uuid().v4(),
+                      ordinal: template.groups.length,
+                      groupType: groupType,
+                      roundCount: roundCount,
+                      restAfterRoundSeconds: restSeconds,
+                      label: label.text.trim().isEmpty
+                          ? null
+                          : label.text.trim(),
+                      members: selected
+                          .asMap()
+                          .entries
+                          .map(
+                            (entry) => ExerciseGroupMemberInput(
+                              id: Uuid().v4(),
+                              exercisePrescriptionId: entry.value.id!,
+                              ordinal: entry.key,
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  );
+                },
+                child: const Text('Add group'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    label.dispose();
+    rounds.dispose();
+    rest.dispose();
+    if (result == null) return;
+    final updated = [..._blocks];
+    final block = updated[blockIndex];
+    final weeks = [...block.weeks];
+    final week = weeks[weekIndex];
+    final templates = [...week.templates];
+    templates[templateIndex] = SessionTemplateInput(
+      name: template.name,
+      ordinal: template.ordinal,
+      plannedWeekday: template.plannedWeekday,
+      plannedStartMinute: template.plannedStartMinute,
+      notes: template.notes,
+      prescriptions: template.prescriptions,
+      groups: [...template.groups, result],
+    );
+    weeks[weekIndex] = ProgramWeekInput(
+      name: week.name,
+      ordinalInBlock: week.ordinalInBlock,
+      programWeekOrdinal: week.programWeekOrdinal,
+      isDeload: week.isDeload,
+      templates: templates,
+    );
+    updated[blockIndex] = ProgramBlockInput(
+      name: block.name,
+      description: block.description,
+      ordinal: block.ordinal,
+      weeks: weeks,
+    );
+    _replaceBlocks(updated);
+  }
+
+  void _deleteGroup(
+    int blockIndex,
+    int weekIndex,
+    int templateIndex,
+    int groupIndex,
+  ) {
+    final updated = [..._blocks];
+    final block = updated[blockIndex];
+    final weeks = [...block.weeks];
+    final week = weeks[weekIndex];
+    final templates = [...week.templates];
+    final template = templates[templateIndex];
+    final groups = [...template.groups]..removeAt(groupIndex);
+    templates[templateIndex] = SessionTemplateInput(
+      name: template.name,
+      ordinal: template.ordinal,
+      plannedWeekday: template.plannedWeekday,
+      plannedStartMinute: template.plannedStartMinute,
+      notes: template.notes,
+      prescriptions: template.prescriptions,
+      groups: groups,
+    );
+    weeks[weekIndex] = ProgramWeekInput(
+      name: week.name,
+      ordinalInBlock: week.ordinalInBlock,
+      programWeekOrdinal: week.programWeekOrdinal,
+      isDeload: week.isDeload,
+      templates: templates,
+    );
+    updated[blockIndex] = ProgramBlockInput(
+      name: block.name,
+      description: block.description,
+      ordinal: block.ordinal,
+      weeks: weeks,
+    );
+    _replaceBlocks(updated);
+  }
+
+  Future<bool> _saveDraft() async {
     if (_programNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a program name.')),
       );
-      return;
+      return false;
     }
 
-    setState(() => _isLoading = true);
+    final authoring = ref.read(programAuthoringControllerProvider.notifier);
     try {
-      final repo = ref.read(programRepositoryProvider);
-      String progId = _currentProgramId ?? '';
-      if (progId.isEmpty) {
-        progId = await repo.createProgram(
-          name: _programNameController.text.trim(),
-          notes: _descriptionController.text.trim(),
-          blocks: _blocks,
-        );
-        _currentProgramId = progId;
-        final versions = await repo.getVersionsForProgram(progId);
-        _currentVersionId = versions.last.id;
-        _isDraftVersion = true;
-      } else if (_currentVersionId != null) {
-        if (!_isDraftVersion) {
-          throw StateError(
-            'Published versions are immutable. Create a new draft before editing.',
+      await authoring.run(() async {
+        final repo = ref.read(programRepositoryProvider);
+        String progId = _currentProgramId ?? '';
+        if (progId.isEmpty) {
+          progId = await repo.createProgram(
+            name: _programNameController.text.trim(),
+            notes: _descriptionController.text.trim(),
+            blocks: _blocks,
           );
+          _currentProgramId = progId;
+          final versions = await repo.getVersionsForProgram(progId);
+          _currentVersionId = versions.last.id;
+          _isDraftVersion = true;
+        } else if (_currentVersionId != null) {
+          if (!_isDraftVersion) {
+            throw StateError(
+              'Published versions are immutable. Create a new draft before editing.',
+            );
+          }
+          await repo.updateProgramMetadata(
+            programId: progId,
+            name: _programNameController.text.trim(),
+            notes: _descriptionController.text.trim(),
+          );
+          await repo.updateDraftVersion(_currentVersionId!, blocks: _blocks);
         }
-        await repo.updateProgramMetadata(
-          programId: progId,
-          name: _programNameController.text.trim(),
-          notes: _descriptionController.text.trim(),
-        );
-        await repo.updateDraftVersion(_currentVersionId!, blocks: _blocks);
-      }
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Draft saved successfully.')),
         );
       }
+      return true;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error saving draft: $e')));
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      return false;
     }
   }
 
   Future<void> _copyToNewDraft() async {
     if (_currentVersionId == null) return;
-    setState(() => _isLoading = true);
+    final authoring = ref.read(programAuthoringControllerProvider.notifier);
     try {
-      final repo = ref.read(programRepositoryProvider);
-      final newVersionId = await repo.copyToNewDraftVersion(_currentVersionId!);
+      final newVersionId = await authoring.run(
+        () => ref
+            .read(programRepositoryProvider)
+            .copyToNewDraftVersion(_currentVersionId!),
+      );
       _currentVersionId = newVersionId;
       _isDraftVersion = true;
       await _loadOrCreateDraft();
@@ -615,14 +952,12 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text('Error copying draft: $e')));
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _proceedToReview() async {
-    await _saveDraft();
-    if (_currentVersionId != null && mounted) {
+    final saved = await _saveDraft();
+    if (saved && _currentVersionId != null && mounted) {
       await context.push('/program-review/$_currentVersionId');
     }
   }
@@ -640,6 +975,8 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authoringState = ref.watch(programAuthoringControllerProvider);
+    final isLoading = authoringState.isBusy;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -651,17 +988,39 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
             IconButton(
               icon: const Icon(Icons.copy_rounded),
               tooltip: 'Copy to New Draft',
-              onPressed: _isLoading ? null : _copyToNewDraft,
+              onPressed: isLoading ? null : _copyToNewDraft,
             ),
         ],
       ),
-      body: _isLoading
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (authoringState.status == ProgramAuthoringStatus.failure)
+                    Card(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      child: ListTile(
+                        title: const Text('Draft needs recovery'),
+                        subtitle: Text(
+                          authoringState.errorMessage ??
+                              'The in-memory draft is retained. Retry when storage is available.',
+                        ),
+                        trailing: TextButton(
+                          onPressed: () {
+                            ref
+                                .read(
+                                  programAuthoringControllerProvider.notifier,
+                                )
+                                .recover();
+                            _loadOrCreateDraft();
+                          },
+                          child: const Text('Recover'),
+                        ),
+                      ),
+                    ),
                   TextField(
                     controller: _programNameController,
                     decoration: const InputDecoration(
@@ -699,7 +1058,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                               ),
                             ),
                             TextButton(
-                              onPressed: _isLoading ? null : _copyToNewDraft,
+                              onPressed: isLoading ? null : _copyToNewDraft,
                               child: const Text('Create draft'),
                             ),
                           ],
@@ -869,6 +1228,87 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                                                       ),
                                                     ),
                                                   ),
+                                                  if (st.groups.isNotEmpty) ...[
+                                                    const SizedBox(height: 8),
+                                                    const Text(
+                                                      'Explicit exercise groups',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    ...st.groups.asMap().entries.map((
+                                                      groupEntry,
+                                                    ) {
+                                                      final group =
+                                                          groupEntry.value;
+                                                      final namesById = {
+                                                        for (final prescription
+                                                            in st.prescriptions)
+                                                          if (prescription.id !=
+                                                              null)
+                                                            prescription
+                                                                .id!: prescription
+                                                                .exerciseNameSnapshot,
+                                                      };
+                                                      final memberLabels = group
+                                                          .members
+                                                          .map(
+                                                            (member) =>
+                                                                namesById[member
+                                                                    .exercisePrescriptionId] ??
+                                                                'Missing prescription',
+                                                          )
+                                                          .join(' → ');
+                                                      return ListTile(
+                                                        dense: true,
+                                                        contentPadding:
+                                                            EdgeInsets.zero,
+                                                        title: Text(
+                                                          '${group.groupType.dbValue} • ${group.roundCount} rounds',
+                                                        ),
+                                                        subtitle: Text(
+                                                          'Members: $memberLabels${group.restAfterRoundSeconds == null ? '' : ' • ${group.restAfterRoundSeconds}s rest after round'}',
+                                                        ),
+                                                        trailing: IconButton(
+                                                          tooltip:
+                                                              'Delete group',
+                                                          onPressed:
+                                                              _isDraftVersion
+                                                              ? () => _deleteGroup(
+                                                                  bIdx,
+                                                                  wIdx,
+                                                                  templateIndex,
+                                                                  groupEntry
+                                                                      .key,
+                                                                )
+                                                              : null,
+                                                          icon: const Icon(
+                                                            Icons
+                                                                .delete_outline,
+                                                            color: Colors.red,
+                                                          ),
+                                                        ),
+                                                      );
+                                                    }),
+                                                  ],
+                                                  TextButton.icon(
+                                                    onPressed: _isDraftVersion
+                                                        ? () => _addGroup(
+                                                            bIdx,
+                                                            wIdx,
+                                                            templateIndex,
+                                                          )
+                                                        : null,
+                                                    icon: const Icon(
+                                                      Icons
+                                                          .account_tree_outlined,
+                                                      size: 16,
+                                                    ),
+                                                    label: const Text(
+                                                      'Add group',
+                                                    ),
+                                                  ),
                                                   TextButton.icon(
                                                     onPressed: _isDraftVersion
                                                         ? () =>
@@ -907,7 +1347,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: _isLoading || !_isDraftVersion
+                          onPressed: isLoading || !_isDraftVersion
                               ? null
                               : _saveDraft,
                           icon: const Icon(Icons.save_outlined),
@@ -917,7 +1357,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: _isLoading || !_isDraftVersion
+                          onPressed: isLoading || !_isDraftVersion
                               ? null
                               : _proceedToReview,
                           icon: const Icon(Icons.rate_review_outlined),

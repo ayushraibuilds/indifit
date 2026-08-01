@@ -5,6 +5,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/services/local_schedule_date_service.dart';
 import '../database/app_database.dart';
+import '../models/b02_execution_models.dart';
+import '../models/b02_group_plan_validator.dart';
 
 class ActivationRejectedException implements Exception {
   final String message;
@@ -391,6 +393,18 @@ class ProgramActivationCoordinator {
               ..where((table) => table.sessionTemplateId.isIn(templateIds))
               ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
             .get();
+    final groups =
+        await (_db.select(_db.exerciseGroups)
+              ..where((table) => table.sessionTemplateId.isIn(templateIds))
+              ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
+            .get();
+    final groupIds = groups.map((group) => group.id).toList();
+    final groupMembers = groupIds.isEmpty
+        ? <ExerciseGroupMember>[]
+        : await (_db.select(_db.exerciseGroupMembers)
+                ..where((table) => table.exerciseGroupId.isIn(groupIds))
+                ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
+              .get();
     for (final template in templates) {
       final inTemplate = prescriptions.where(
         (prescription) => prescription.sessionTemplateId == template.id,
@@ -412,6 +426,41 @@ class ProgramActivationCoordinator {
       )) {
         throw const ActivationRejectedException(
           'A prescription has invalid execution data.',
+        );
+      }
+      final inGroups = groups.where(
+        (group) => group.sessionTemplateId == template.id,
+      );
+      final prescriptionIds = inTemplate.map((row) => row.id).toSet();
+      try {
+        B02GroupPlanValidator.validate(
+          groups: inGroups.map(
+            (group) => B02ExerciseGroup(
+              id: group.id,
+              sessionTemplateId: group.sessionTemplateId,
+              ordinal: group.ordinal,
+              groupType: B02GroupType.parse(group.groupType),
+              roundCount: group.roundCount,
+              restAfterRoundSeconds: group.restAfterRoundSeconds,
+              label: group.label,
+              members: groupMembers
+                  .where((member) => member.exerciseGroupId == group.id)
+                  .map(
+                    (member) => B02ExerciseGroupMember(
+                      id: member.id,
+                      exercisePrescriptionId: member.exercisePrescriptionId,
+                      ordinal: member.ordinal,
+                      transitionRestSeconds: member.transitionRestSeconds,
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ),
+          prescriptionIds: prescriptionIds,
+        );
+      } on B02ValidationException catch (error) {
+        throw ActivationRejectedException(
+          'Invalid exercise group in template ${template.name}: ${error.message}',
         );
       }
     }
