@@ -8,7 +8,7 @@ Current active batch: **B01 — Training Programs and Scheduling**
 | Batch | Status | Current step | Blockers |
 |:------|:-------|:-------------|:---------|
 | B01 — Training Programs and Scheduling | Ready for pull request | Integration branch verification complete | None |
-| B02 — Workout Execution | Not started | Waiting for B01 | B01 |
+| B02 — Workout Execution and Modalities | Chartered | GPT Luna repository audit | None |
 | B03 — Nutrition Foundation | Not started | Not scheduled | None |
 | B04 — Adaptive Coaching | Not started | Waiting for B01–B03 | B01–B03 |
 | B05 — UI and Education | Not started | Not scheduled | None |
