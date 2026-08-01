@@ -1117,10 +1117,14 @@ class B02TargetRecommendation {
     'wasOverridden': wasOverridden,
   };
 
-  B02TargetRecommendation copyWith({bool? wasOverridden}) {
+  B02TargetRecommendation copyWith({
+    String? id,
+    String? performedExerciseId,
+    bool? wasOverridden,
+  }) {
     return B02TargetRecommendation(
-      id: id,
-      performedExerciseId: performedExerciseId,
+      id: id ?? this.id,
+      performedExerciseId: performedExerciseId ?? this.performedExerciseId,
       ruleVersion: ruleVersion,
       confidence: confidence,
       completeness: completeness,
@@ -2251,6 +2255,7 @@ class B02ExecutionDraftState {
   }
 
   B02ExecutionDraftState copyWith({
+    int? elapsedSeconds,
     List<B02PerformedExerciseDraft>? performedExercises,
     List<B02RestPeriod>? restPeriods,
     B02WarmupRecommendation? warmupRecommendation,
@@ -2262,7 +2267,7 @@ class B02ExecutionDraftState {
       snapshotVersion: snapshotVersion,
       activityType: activityType,
       routineName: routineName,
-      elapsedSeconds: elapsedSeconds,
+      elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
       currentGroupOrdinal: currentGroupOrdinal,
       currentGroupId: currentGroupId,
       currentRoundOrdinal: currentRoundOrdinal,
