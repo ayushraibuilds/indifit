@@ -2055,6 +2055,8 @@ class B02ExecutionDraftState {
   final List<B02PerformedExerciseDraft> performedExercises;
   final List<B02RestPeriod> restPeriods;
   final B02WarmupRecommendation? warmupRecommendation;
+  final B02CardioSessionDetail? cardioDetail;
+  final B02MobilitySessionDetail? mobilityDetail;
 
   B02ExecutionDraftState({
     required this.snapshotId,
@@ -2072,6 +2074,8 @@ class B02ExecutionDraftState {
     this.performedExercises = const [],
     this.restPeriods = const [],
     this.warmupRecommendation,
+    this.cardioDetail,
+    this.mobilityDetail,
   }) {
     _requiredString(snapshotId, 'snapshot id');
     _atLeast(snapshotVersion, 1, 'snapshot version');
@@ -2092,6 +2096,38 @@ class B02ExecutionDraftState {
     if ((currentGroupOrdinal == null) != (currentGroupId == null)) {
       throw B02ValidationException(
         'Current group position requires both ordinal and ID.',
+      );
+    }
+    final isCardio = [
+      B02ActivityType.running,
+      B02ActivityType.cycling,
+      B02ActivityType.walking,
+    ].contains(activityType);
+    final isMobility = [
+      B02ActivityType.yoga,
+      B02ActivityType.mobility,
+    ].contains(activityType);
+    if (isCardio &&
+        (cardioDetail == null || cardioDetail!.activityType != activityType)) {
+      throw B02ValidationException(
+        'Cardio drafts require matching typed cardio details.',
+      );
+    }
+    if (isMobility &&
+        (mobilityDetail == null ||
+            mobilityDetail!.practiceType != activityType)) {
+      throw B02ValidationException(
+        'Yoga or mobility drafts require matching typed practice details.',
+      );
+    }
+    if (!isCardio && cardioDetail != null) {
+      throw B02ValidationException(
+        'Only cardio drafts may carry cardio details.',
+      );
+    }
+    if (!isMobility && mobilityDetail != null) {
+      throw B02ValidationException(
+        'Only yoga or mobility drafts may carry mobility details.',
       );
     }
     _contiguousOrdinals(groups.map((group) => group.ordinal), 'Group');
@@ -2120,6 +2156,16 @@ class B02ExecutionDraftState {
         ? null
         : B02WarmupRecommendation.fromJson(
             _object(json['warmupRecommendation'], 'warm-up recommendation'),
+          );
+    final cardioDetail = json['cardioDetail'] == null
+        ? null
+        : B02CardioSessionDetail.fromJson(
+            _object(json['cardioDetail'], 'cardio detail'),
+          );
+    final mobilityDetail = json['mobilityDetail'] == null
+        ? null
+        : B02MobilitySessionDetail.fromJson(
+            _object(json['mobilityDetail'], 'mobility detail'),
           );
     return B02ExecutionDraftState(
       snapshotId: _requiredString(json['snapshotId'], 'snapshot id'),
@@ -2158,12 +2204,16 @@ class B02ExecutionDraftState {
       performedExercises: performedExercises,
       restPeriods: restPeriods,
       warmupRecommendation: warmupRecommendation,
+      cardioDetail: cardioDetail,
+      mobilityDetail: mobilityDetail,
     );
   }
 
   B02ExecutionDraftState copyWith({
     List<B02RestPeriod>? restPeriods,
     B02WarmupRecommendation? warmupRecommendation,
+    B02CardioSessionDetail? cardioDetail,
+    B02MobilitySessionDetail? mobilityDetail,
   }) {
     return B02ExecutionDraftState(
       snapshotId: snapshotId,
@@ -2181,6 +2231,8 @@ class B02ExecutionDraftState {
       performedExercises: performedExercises,
       restPeriods: restPeriods ?? this.restPeriods,
       warmupRecommendation: warmupRecommendation ?? this.warmupRecommendation,
+      cardioDetail: cardioDetail ?? this.cardioDetail,
+      mobilityDetail: mobilityDetail ?? this.mobilityDetail,
     );
   }
 
@@ -2205,5 +2257,7 @@ class B02ExecutionDraftState {
     'restPeriods': restPeriods.map((period) => period.toJson()).toList(),
     if (warmupRecommendation != null)
       'warmupRecommendation': warmupRecommendation!.toJson(),
+    if (cardioDetail != null) 'cardioDetail': cardioDetail!.toJson(),
+    if (mobilityDetail != null) 'mobilityDetail': mobilityDetail!.toJson(),
   };
 }
