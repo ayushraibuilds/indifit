@@ -24,7 +24,7 @@ void main() {
         final seededExercise = (await source.select(source.exercises).get())
             .firstWhere((exercise) => !exercise.isCustom);
 
-        expect(backup.version, 6);
+        expect(backup.version, BackupData.currentVersion);
         expect(backup.programs, hasLength(1));
         expect(backup.programVersions, hasLength(1));
         expect(backup.programBlocks, hasLength(1));

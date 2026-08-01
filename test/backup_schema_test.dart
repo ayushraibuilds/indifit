@@ -50,20 +50,20 @@ void main() {
   });
 
   group('Task T3: Canonical Versioned Backup Schema Tests', () {
-    test('Empty database produces valid version 6 backup', () async {
+    test('Empty database produces valid version 7 backup', () async {
       final prefs = await SharedPreferences.getInstance();
       final backup = await BackupData.createFromDatabase(db, prefs);
 
-      expect(backup.version, equals(6));
+      expect(backup.version, equals(7));
       expect(backup.schemaVersion, equals(16));
 
       final jsonMap = backup.toJson();
-      expect(jsonMap['version'], equals(6));
+      expect(jsonMap['version'], equals(7));
       expect(jsonMap['schema_version'], equals(16));
       expect(jsonMap.containsKey('user_preferences'), isTrue);
 
       final restored = BackupData.fromJson(jsonMap);
-      expect(restored.version, equals(6));
+      expect(restored.version, equals(7));
       expect(restored.userPreferences['water_logged'], equals(5));
       expect(restored.userPreferences['user_streak_count'], equals(14));
     });
@@ -268,7 +268,7 @@ void main() {
         final decodedMap = jsonDecode(jsonString) as Map<String, dynamic>;
         final restored = BackupData.fromJson(decodedMap);
 
-        expect(restored.version, equals(6));
+        expect(restored.version, equals(7));
         expect(restored.schemaVersion, equals(16));
 
         // 1. User Profile check
@@ -358,14 +358,14 @@ void main() {
       );
     });
 
-    test('Rejects unsupported newer backup format versions (version > 6)', () {
+    test('Rejects unsupported newer backup format versions (version > 7)', () {
       expect(
-        () => BackupData.fromJson({'version': 7, 'schema_version': 15}),
+        () => BackupData.fromJson({'version': 8, 'schema_version': 15}),
         throwsA(
           isA<FormatException>().having(
             (e) => e.message,
             'message',
-            contains('Unsupported backup format version 7'),
+            contains('Unsupported backup format version 8'),
           ),
         ),
       );
@@ -375,13 +375,13 @@ void main() {
       expect(
         () => BackupEnvelope.fromJson({
           'format_identifier': 'INDIFIT_BACKUP_ENVELOPE',
-          'version': 7,
+          'version': 8,
         }),
         throwsA(
           isA<FormatException>().having(
             (e) => e.message,
             'message',
-            contains('Unsupported backup envelope version 7'),
+            contains('Unsupported backup envelope version 8'),
           ),
         ),
       );

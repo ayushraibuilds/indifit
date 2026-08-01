@@ -1,17 +1,22 @@
 import 'dart:convert';
+
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/services/local_schedule_date_service.dart';
 import '../../data/database/app_database.dart';
+import '../../data/models/b02_execution_models.dart';
+import '../../data/models/b02_rich_set_helpers.dart';
+import '../fixtures/b02_execution_draft_codec.dart';
 
-/// Canonical Versioned Backup Schema (Version 6).
+/// Canonical Versioned Backup Schema (Version 7).
 ///
 /// Provides a unified, production-safe DTO and serializer for all user-owned
 /// database records and persisted application preferences.
 /// Shared identically by manual backup/export and automated background backups.
 class BackupData {
-  static const int currentVersion = 6;
+  static const int currentVersion = 7;
 
   final int version;
   final String timestamp;
@@ -62,6 +67,24 @@ class BackupData {
   final List<ExercisePersonalCue> exercisePersonalCues;
   final List<LegacyRoutineProgramMapping> legacyRoutineProgramMappings;
 
+  // B02 typed execution, modality, target, and reviewed-catalog rows. These
+  // remain relational collections in the backup so the complete graph can be
+  // validated before a restore mutates either preferences or the database.
+  final List<ExerciseGroup> exerciseGroups;
+  final List<ExerciseGroupMember> exerciseGroupMembers;
+  final List<StrengthSetPrescription> strengthSetPrescriptions;
+  final List<CardioSessionDetail> cardioSessionDetails;
+  final List<CardioInterval> cardioIntervals;
+  final List<MobilitySessionDetail> mobilitySessionDetails;
+  final List<PerformedExerciseGroup> performedExerciseGroups;
+  final List<PerformedExercise> performedExercises;
+  final List<ExerciseTargetRecommendation> exerciseTargetRecommendations;
+  final List<PerformedSet> performedSets;
+  final List<PerformedSetSegment> performedSetSegments;
+  final List<PerformedRestPeriod> performedRestPeriods;
+  final List<Muscle> muscles;
+  final List<ExerciseMuscleMapping> exerciseMuscleMappings;
+
   BackupData({
     required this.version,
     required this.timestamp,
@@ -101,6 +124,20 @@ class BackupData {
     this.exerciseSetupValues = const [],
     this.exercisePersonalCues = const [],
     this.legacyRoutineProgramMappings = const [],
+    this.exerciseGroups = const [],
+    this.exerciseGroupMembers = const [],
+    this.strengthSetPrescriptions = const [],
+    this.cardioSessionDetails = const [],
+    this.cardioIntervals = const [],
+    this.mobilitySessionDetails = const [],
+    this.performedExerciseGroups = const [],
+    this.performedExercises = const [],
+    this.exerciseTargetRecommendations = const [],
+    this.performedSets = const [],
+    this.performedSetSegments = const [],
+    this.performedRestPeriods = const [],
+    this.muscles = const [],
+    this.exerciseMuscleMappings = const [],
   });
 
   /// Constructs a [BackupData] payload directly from the database and optional [SharedPreferences].
@@ -163,6 +200,30 @@ class BackupData {
     final exercisePersonalCues = await db.select(db.exercisePersonalCues).get();
     final legacyRoutineProgramMappings = await db
         .select(db.legacyRoutineProgramMappings)
+        .get();
+    final exerciseGroups = await db.select(db.exerciseGroups).get();
+    final exerciseGroupMembers = await db.select(db.exerciseGroupMembers).get();
+    final strengthSetPrescriptions = await db
+        .select(db.strengthSetPrescriptions)
+        .get();
+    final cardioSessionDetails = await db.select(db.cardioSessionDetails).get();
+    final cardioIntervals = await db.select(db.cardioIntervals).get();
+    final mobilitySessionDetails = await db
+        .select(db.mobilitySessionDetails)
+        .get();
+    final performedExerciseGroups = await db
+        .select(db.performedExerciseGroups)
+        .get();
+    final performedExercises = await db.select(db.performedExercises).get();
+    final exerciseTargetRecommendations = await db
+        .select(db.exerciseTargetRecommendations)
+        .get();
+    final performedSets = await db.select(db.performedSets).get();
+    final performedSetSegments = await db.select(db.performedSetSegments).get();
+    final performedRestPeriods = await db.select(db.performedRestPeriods).get();
+    final muscles = await db.select(db.muscles).get();
+    final exerciseMuscleMappings = await db
+        .select(db.exerciseMuscleMappings)
         .get();
 
     final userPreferences = <String, dynamic>{};
@@ -269,6 +330,20 @@ class BackupData {
       exerciseSetupValues: exerciseSetupValues,
       exercisePersonalCues: exercisePersonalCues,
       legacyRoutineProgramMappings: legacyRoutineProgramMappings,
+      exerciseGroups: exerciseGroups,
+      exerciseGroupMembers: exerciseGroupMembers,
+      strengthSetPrescriptions: strengthSetPrescriptions,
+      cardioSessionDetails: cardioSessionDetails,
+      cardioIntervals: cardioIntervals,
+      mobilitySessionDetails: mobilitySessionDetails,
+      performedExerciseGroups: performedExerciseGroups,
+      performedExercises: performedExercises,
+      exerciseTargetRecommendations: exerciseTargetRecommendations,
+      performedSets: performedSets,
+      performedSetSegments: performedSetSegments,
+      performedRestPeriods: performedRestPeriods,
+      muscles: muscles,
+      exerciseMuscleMappings: exerciseMuscleMappings,
     );
   }
 
@@ -403,6 +478,9 @@ class BackupData {
               'execution_snapshot_json': s.executionSnapshotJson,
               'execution_timezone_id': s.executionTimezoneId,
               'completion_kind': s.completionKind,
+              if (version >= 7) 'activity_type': s.activityType,
+              if (version >= 7)
+                'activity_schema_version': s.activitySchemaVersion,
             },
           )
           .toList(),
@@ -475,6 +553,8 @@ class BackupData {
               'scheduled_occurrence_id': d.scheduledOccurrenceId,
               'execution_snapshot_json': d.executionSnapshotJson,
               'draft_schema_version': d.draftSchemaVersion,
+              if (version >= 7) 'activity_type': d.activityType,
+              if (version >= 7) 'execution_state_json': d.executionStateJson,
             },
           )
           .toList(),
@@ -565,6 +645,44 @@ class BackupData {
       'legacy_routine_program_mappings': legacyRoutineProgramMappings
           .map((item) => item.toJson())
           .toList(),
+      if (version >= 7) ...{
+        'exercise_groups': exerciseGroups.map((item) => item.toJson()).toList(),
+        'exercise_group_members': exerciseGroupMembers
+            .map((item) => item.toJson())
+            .toList(),
+        'strength_set_prescriptions': strengthSetPrescriptions
+            .map((item) => item.toJson())
+            .toList(),
+        'cardio_session_details': cardioSessionDetails
+            .map((item) => item.toJson())
+            .toList(),
+        'cardio_intervals': cardioIntervals
+            .map((item) => item.toJson())
+            .toList(),
+        'mobility_session_details': mobilitySessionDetails
+            .map((item) => item.toJson())
+            .toList(),
+        'performed_exercise_groups': performedExerciseGroups
+            .map((item) => item.toJson())
+            .toList(),
+        'performed_exercises': performedExercises
+            .map((item) => item.toJson())
+            .toList(),
+        'exercise_target_recommendations': exerciseTargetRecommendations
+            .map((item) => item.toJson())
+            .toList(),
+        'performed_sets': performedSets.map((item) => item.toJson()).toList(),
+        'performed_set_segments': performedSetSegments
+            .map((item) => item.toJson())
+            .toList(),
+        'performed_rest_periods': performedRestPeriods
+            .map((item) => item.toJson())
+            .toList(),
+        'muscles': muscles.map((item) => item.toJson()).toList(),
+        'exercise_muscle_mappings': exerciseMuscleMappings
+            .map((item) => item.toJson())
+            .toList(),
+      },
     };
   }
 
@@ -594,6 +712,7 @@ class BackupData {
         json['timestamp'] as String? ?? DateTime.now().toIso8601String();
     final schemaVersion = (json['schema_version'] as num?)?.toInt() ?? 13;
     final isB01Payload = rawVersion >= 6;
+    final isB02Payload = rawVersion >= 7;
 
     // User Profile
     UserProfile? userProfile;
@@ -774,6 +893,13 @@ class BackupData {
     if (json['workout_sessions'] != null) {
       for (final raw in json['workout_sessions'] as List) {
         final s = raw as Map<String, dynamic>;
+        if (isB02Payload &&
+            (!s.containsKey('activity_type') ||
+                !s.containsKey('activity_schema_version'))) {
+          throw const FormatException(
+            'Backup validation failed: v7 workout session is missing typed activity fields.',
+          );
+        }
         workoutSessions.add(
           WorkoutSession(
             id: (s['id'] as num).toInt(),
@@ -790,10 +916,14 @@ class BackupData {
             executionSnapshotJson: s['execution_snapshot_json'] as String?,
             executionTimezoneId: s['execution_timezone_id'] as String?,
             completionKind: s['completion_kind'] as String?,
-            // Backup v5/v6 has no B02 activity graph. Its retained B01
-            // sessions therefore restore only as explicit legacy history.
-            activityType: 'legacy',
-            activitySchemaVersion: 1,
+            // v5/v6 have no typed B02 activity graph. Retain those sessions
+            // as explicit legacy history; v7 carries the exact typed fields.
+            activityType: isB02Payload
+                ? s['activity_type'] as String? ?? 'legacy'
+                : 'legacy',
+            activitySchemaVersion: isB02Payload
+                ? (s['activity_schema_version'] as num?)?.toInt() ?? 1
+                : 1,
           ),
         );
       }
@@ -886,6 +1016,13 @@ class BackupData {
     if (json['workout_drafts'] != null) {
       for (final raw in json['workout_drafts'] as List) {
         final d = raw as Map<String, dynamic>;
+        if (isB02Payload &&
+            (!d.containsKey('activity_type') ||
+                !d.containsKey('execution_state_json'))) {
+          throw const FormatException(
+            'Backup validation failed: v7 workout draft is missing typed activity fields.',
+          );
+        }
         workoutDrafts.add(
           WorkoutDraft(
             id: (d['id'] as num).toInt(),
@@ -903,7 +1040,12 @@ class BackupData {
                 (d['draft_schema_version'] as num?)?.toInt() ?? 1,
             // v5/v6 draft payloads remain B01-compatible and are never
             // upgraded into a B02 execution-state draft during restore.
-            activityType: 'legacy',
+            activityType: isB02Payload
+                ? d['activity_type'] as String? ?? 'legacy'
+                : 'legacy',
+            executionStateJson: isB02Payload
+                ? d['execution_state_json'] as String?
+                : null,
           ),
         );
       }
@@ -1085,6 +1227,110 @@ class BackupData {
       );
     }
 
+    if (isB02Payload) {
+      for (final key in _b02BackupKeys) {
+        if (!json.containsKey(key)) {
+          throw FormatException(
+            'Backup validation failed: v7 payload is missing B02 field "$key".',
+          );
+        }
+      }
+    }
+
+    final exerciseGroups = isB02Payload
+        ? _readTypedList(json, 'exercise_groups', ExerciseGroup.fromJson)
+        : const <ExerciseGroup>[];
+    final exerciseGroupMembers = isB02Payload
+        ? _readTypedList(
+            json,
+            'exercise_group_members',
+            ExerciseGroupMember.fromJson,
+          )
+        : const <ExerciseGroupMember>[];
+    final strengthSetPrescriptions = isB02Payload
+        ? _readTypedList(
+            json,
+            'strength_set_prescriptions',
+            StrengthSetPrescription.fromJson,
+          )
+        : const <StrengthSetPrescription>[];
+    final cardioSessionDetails = isB02Payload
+        ? _readTypedList(
+            json,
+            'cardio_session_details',
+            CardioSessionDetail.fromJson,
+          )
+        : const <CardioSessionDetail>[];
+    final cardioIntervals = isB02Payload
+        ? _readTypedList(json, 'cardio_intervals', CardioInterval.fromJson)
+        : const <CardioInterval>[];
+    final mobilitySessionDetails = isB02Payload
+        ? _readTypedList(
+            json,
+            'mobility_session_details',
+            MobilitySessionDetail.fromJson,
+          )
+        : const <MobilitySessionDetail>[];
+    final performedExerciseGroups = isB02Payload
+        ? _readTypedList(
+            json,
+            'performed_exercise_groups',
+            PerformedExerciseGroup.fromJson,
+          )
+        : const <PerformedExerciseGroup>[];
+    final performedExercises = isB02Payload
+        ? _readTypedList(
+            json,
+            'performed_exercises',
+            PerformedExercise.fromJson,
+          )
+        : const <PerformedExercise>[];
+    final exerciseTargetRecommendations = isB02Payload
+        ? _readTypedList(
+            json,
+            'exercise_target_recommendations',
+            ExerciseTargetRecommendation.fromJson,
+          )
+        : const <ExerciseTargetRecommendation>[];
+    final performedSets = isB02Payload
+        ? _readTypedList(json, 'performed_sets', PerformedSet.fromJson)
+        : const <PerformedSet>[];
+    final performedSetSegments = isB02Payload
+        ? _readTypedList(
+            json,
+            'performed_set_segments',
+            PerformedSetSegment.fromJson,
+          )
+        : const <PerformedSetSegment>[];
+    final performedRestPeriods = isB02Payload
+        ? _readTypedList(
+            json,
+            'performed_rest_periods',
+            PerformedRestPeriod.fromJson,
+          )
+        : const <PerformedRestPeriod>[];
+    final muscles = isB02Payload
+        ? _readTypedList(json, 'muscles', Muscle.fromJson)
+        : const <Muscle>[];
+    final exerciseMuscleMappings = isB02Payload
+        ? _readTypedList(
+            json,
+            'exercise_muscle_mappings',
+            ExerciseMuscleMapping.fromJson,
+          )
+        : const <ExerciseMuscleMapping>[];
+
+    if (!isB02Payload) {
+      for (final key in _b02BackupKeys) {
+        final raw = json[key];
+        if (raw is List && raw.isNotEmpty) {
+          throw FormatException(
+            'Backup validation failed: B02 field "$key" requires backup v7.',
+          );
+        }
+      }
+    }
+
     return BackupData(
       version: rawVersion,
       timestamp: timestamp,
@@ -1124,6 +1370,20 @@ class BackupData {
       exerciseSetupValues: exerciseSetupValues,
       exercisePersonalCues: exercisePersonalCues,
       legacyRoutineProgramMappings: legacyRoutineProgramMappings,
+      exerciseGroups: exerciseGroups,
+      exerciseGroupMembers: exerciseGroupMembers,
+      strengthSetPrescriptions: strengthSetPrescriptions,
+      cardioSessionDetails: cardioSessionDetails,
+      cardioIntervals: cardioIntervals,
+      mobilitySessionDetails: mobilitySessionDetails,
+      performedExerciseGroups: performedExerciseGroups,
+      performedExercises: performedExercises,
+      exerciseTargetRecommendations: exerciseTargetRecommendations,
+      performedSets: performedSets,
+      performedSetSegments: performedSetSegments,
+      performedRestPeriods: performedRestPeriods,
+      muscles: muscles,
+      exerciseMuscleMappings: exerciseMuscleMappings,
     );
   }
 
@@ -1152,6 +1412,49 @@ class BackupData {
       throw FormatException('Invalid B01 backup field "$key": $error');
     }
   }
+
+  static List<T> _readTypedList<T>(
+    Map<String, dynamic> json,
+    String key,
+    T Function(Map<String, dynamic>) decoder,
+  ) {
+    final raw = json[key];
+    if (raw == null) return List<T>.empty(growable: false);
+    if (raw is! List) {
+      throw FormatException(
+        'Invalid B02 backup field "$key": expected a list.',
+      );
+    }
+    try {
+      return raw
+          .map(
+            (entry) =>
+                decoder(Map<String, dynamic>.from(_requireMap(entry, key))),
+          )
+          .toList(growable: false);
+    } on FormatException {
+      rethrow;
+    } catch (error) {
+      throw FormatException('Invalid B02 backup field "$key": $error');
+    }
+  }
+
+  static const _b02BackupKeys = [
+    'exercise_groups',
+    'exercise_group_members',
+    'strength_set_prescriptions',
+    'cardio_session_details',
+    'cardio_intervals',
+    'mobility_session_details',
+    'performed_exercise_groups',
+    'performed_exercises',
+    'exercise_target_recommendations',
+    'performed_sets',
+    'performed_set_segments',
+    'performed_rest_periods',
+    'muscles',
+    'exercise_muscle_mappings',
+  ];
 
   static Map<dynamic, dynamic> _requireMap(Object? value, String key) {
     if (value is Map) return value;
@@ -1616,7 +1919,7 @@ class BackupData {
     for (final routineId in routineIds) {
       _require(
         mappedRoutines.contains(routineId),
-        'legacy routine $routineId has no compatibility mapping in v6 backup',
+        'legacy routine $routineId has no compatibility mapping in B01 backup',
       );
     }
 
@@ -1678,6 +1981,843 @@ class BackupData {
     }
   }
 
+  /// Validates the complete v7 B02 graph before any restore mutation.  The
+  /// validator intentionally works on stored typed columns rather than
+  /// display labels; every relation, enum, modality pairing, technique fact,
+  /// and reviewed mapping allocation is checked here.
+  void _validateB02Graph(Set<String> knownExerciseIds) {
+    if (version < 7) return;
+
+    final sessionIds = _uniqueIntIds(
+      'workout session',
+      workoutSessions,
+      (row) => row.id,
+    );
+    final templateIds = _uniqueIds(
+      'session template',
+      sessionTemplates,
+      (row) => row.id,
+    );
+    final prescriptionIds = _uniqueIds(
+      'exercise prescription',
+      exercisePrescriptions,
+      (row) => row.id,
+    );
+    final groupIds = _uniqueIds(
+      'exercise group',
+      exerciseGroups,
+      (row) => row.id,
+    );
+    _uniqueIds('exercise group member', exerciseGroupMembers, (row) => row.id);
+    _uniqueIds(
+      'strength set prescription',
+      strengthSetPrescriptions,
+      (row) => row.id,
+    );
+    _uniqueIds('cardio interval', cardioIntervals, (row) => row.id);
+    _uniqueIds(
+      'performed exercise group',
+      performedExerciseGroups,
+      (row) => row.id,
+    );
+    final performedExerciseIds = _uniqueIds(
+      'performed exercise',
+      performedExercises,
+      (row) => row.id,
+    );
+    _uniqueIds(
+      'exercise target recommendation',
+      exerciseTargetRecommendations,
+      (row) => row.id,
+    );
+    final setIds = _uniqueIds('performed set', performedSets, (row) => row.id);
+    _uniqueIds('performed set segment', performedSetSegments, (row) => row.id);
+    _uniqueIds('performed rest period', performedRestPeriods, (row) => row.id);
+    final muscleIds = _uniqueIds('muscle', muscles, (row) => row.id);
+    _uniqueIds(
+      'exercise-muscle mapping',
+      exerciseMuscleMappings,
+      (row) => row.id,
+    );
+    _uniqueIntIds(
+      'cardio session detail',
+      cardioSessionDetails,
+      (row) => row.sessionId,
+    );
+    _uniqueIntIds(
+      'mobility session detail',
+      mobilitySessionDetails,
+      (row) => row.sessionId,
+    );
+
+    final sessionById = {for (final row in workoutSessions) row.id: row};
+    final groupById = {for (final row in exerciseGroups) row.id: row};
+    final performedGroupById = {
+      for (final row in performedExerciseGroups) row.id: row,
+    };
+    final performedExerciseById = {
+      for (final row in performedExercises) row.id: row,
+    };
+    final performedSetById = {for (final row in performedSets) row.id: row};
+
+    for (final session in workoutSessions) {
+      _parseB02Enum(
+        'workout session ${session.id} activity type',
+        () => B02ActivityType.parse(session.activityType),
+      );
+      _require(
+        session.activitySchemaVersion >= 1,
+        'workout session ${session.id} has an invalid activity schema version',
+      );
+    }
+
+    for (final group in exerciseGroups) {
+      _require(
+        templateIds.contains(group.sessionTemplateId),
+        'exercise group ${group.id} references missing session template ${group.sessionTemplateId}',
+      );
+      _parseB02Enum(
+        'exercise group ${group.id} type',
+        () => B02GroupType.parse(group.groupType),
+      );
+      _require(
+        group.ordinal >= 0,
+        'exercise group ${group.id} has invalid ordinal',
+      );
+      _require(
+        group.roundCount >= 1,
+        'exercise group ${group.id} has invalid round count',
+      );
+      _require(
+        group.restAfterRoundSeconds == null ||
+            group.restAfterRoundSeconds! >= 0,
+        'exercise group ${group.id} has invalid rest',
+      );
+    }
+    _uniqueKeys(
+      'exercise group ordinal',
+      exerciseGroups,
+      (row) => '${row.sessionTemplateId}\u0000${row.ordinal}',
+    );
+
+    final memberOrdinalsByGroup = <String, List<int>>{};
+    final memberPrescriptionsByGroup = <String, Set<String>>{};
+    for (final member in exerciseGroupMembers) {
+      _require(
+        groupIds.contains(member.exerciseGroupId),
+        'exercise group member ${member.id} references missing group ${member.exerciseGroupId}',
+      );
+      _require(
+        prescriptionIds.contains(member.exercisePrescriptionId),
+        'exercise group member ${member.id} references missing prescription ${member.exercisePrescriptionId}',
+      );
+      _require(
+        member.ordinal >= 0,
+        'exercise group member ${member.id} has invalid ordinal',
+      );
+      _require(
+        member.transitionRestSeconds == null ||
+            member.transitionRestSeconds! >= 0,
+        'exercise group member ${member.id} has invalid transition rest',
+      );
+      memberOrdinalsByGroup
+          .putIfAbsent(member.exerciseGroupId, () => [])
+          .add(member.ordinal);
+      final prescriptions = memberPrescriptionsByGroup.putIfAbsent(
+        member.exerciseGroupId,
+        () => <String>{},
+      );
+      _require(
+        prescriptions.add(member.exercisePrescriptionId),
+        'exercise group ${member.exerciseGroupId} repeats prescription ${member.exercisePrescriptionId}',
+      );
+    }
+    _uniqueKeys(
+      'exercise group member prescription',
+      exerciseGroupMembers,
+      (row) => row.exercisePrescriptionId,
+    );
+    for (final entry in memberOrdinalsByGroup.entries) {
+      _uniqueIntValues(
+        'exercise group ${entry.key} member ordinal',
+        entry.value,
+      );
+      final group = groupById[entry.key]!;
+      final groupType = B02GroupType.parse(group.groupType);
+      _require(
+        groupType.acceptsMemberCount(entry.value.length),
+        '${groupType.dbValue} group ${group.id} has an invalid member count',
+      );
+    }
+
+    for (final row in strengthSetPrescriptions) {
+      _require(
+        prescriptionIds.contains(row.exercisePrescriptionId),
+        'strength set prescription ${row.id} references missing exercise prescription ${row.exercisePrescriptionId}',
+      );
+      _validateStoredSetValues(
+        owner: 'strength set prescription ${row.id}',
+        loadBasis: row.loadBasis,
+        targetLoadKg: row.targetLoadKg,
+        targetRepsMin: row.targetRepsMin,
+        targetRepsMax: row.targetRepsMax,
+        targetRpe: row.targetRpe,
+        effortMode: row.effortMode,
+        tempo: [
+          row.tempoEccentricSeconds,
+          row.tempoBottomPauseSeconds,
+          row.tempoConcentricSeconds,
+          row.tempoLockoutPauseSeconds,
+        ],
+        pausedRepPosition: row.pausedRepPosition,
+        pausedRepSeconds: row.pausedRepSeconds,
+        assistanceMode: row.assistanceMode,
+        assistanceKg: row.assistanceKg,
+      );
+      if (row.techniquePlanJson != null) {
+        try {
+          final technique = B02TechniqueDraftCodec.decode(
+            row.techniquePlanJson!,
+          );
+          B02RichSetValidator.validateTechnique(technique);
+        } on Object catch (error) {
+          throw FormatException(
+            'Backup validation failed: strength set prescription ${row.id} has invalid technique plan: $error',
+          );
+        }
+      }
+    }
+    _uniqueKeys(
+      'strength set prescription ordinal',
+      strengthSetPrescriptions,
+      (row) => '${row.exercisePrescriptionId}\u0000${row.ordinal}',
+    );
+
+    for (final detail in cardioSessionDetails) {
+      final session = sessionById[detail.sessionId];
+      _require(
+        session != null,
+        'cardio detail ${detail.sessionId} references missing session',
+      );
+      _require(
+        session != null &&
+            const {
+              'running',
+              'cycling',
+              'walking',
+            }.contains(session.activityType),
+        'cardio detail ${detail.sessionId} does not match a cardio session',
+      );
+      _parseB02Enum(
+        'cardio detail ${detail.sessionId} input mode',
+        () => detail.inputMode == null
+            ? null
+            : B02InputMode.parse(detail.inputMode),
+      );
+      _require(
+        detail.distanceMetres == null || detail.distanceMetres! > 0,
+        'cardio detail ${detail.sessionId} has invalid distance',
+      );
+      _require(
+        detail.observedPaceSecondsPerKm == null ||
+            detail.observedPaceSecondsPerKm! > 0,
+        'cardio detail ${detail.sessionId} has invalid pace',
+      );
+      _require(
+        detail.observedSpeedKph == null || detail.observedSpeedKph! > 0,
+        'cardio detail ${detail.sessionId} has invalid speed',
+      );
+      _require(
+        detail.perceivedExertion == null ||
+            (detail.perceivedExertion! >= 1 && detail.perceivedExertion! <= 10),
+        'cardio detail ${detail.sessionId} has invalid perceived exertion',
+      );
+      _require(
+        detail.averageHeartRate == null || detail.averageHeartRate! > 0,
+        'cardio detail ${detail.sessionId} has invalid average heart rate',
+      );
+    }
+    for (final interval in cardioIntervals) {
+      _require(
+        cardioSessionDetails.any(
+          (row) => row.sessionId == interval.cardioSessionId,
+        ),
+        'cardio interval ${interval.id} references missing cardio detail',
+      );
+      _parseB02Enum(
+        'cardio interval ${interval.id} segment type',
+        () => B02CardioSegmentType.parse(interval.segmentType),
+      );
+      _require(
+        interval.ordinal >= 0,
+        'cardio interval ${interval.id} has invalid ordinal',
+      );
+      _require(
+        interval.durationSeconds == null || interval.durationSeconds! > 0,
+        'cardio interval ${interval.id} has invalid duration',
+      );
+      _require(
+        interval.distanceMetres == null || interval.distanceMetres! > 0,
+        'cardio interval ${interval.id} has invalid distance',
+      );
+      _require(
+        interval.targetPaceSecondsPerKm == null ||
+            interval.targetPaceSecondsPerKm! > 0,
+        'cardio interval ${interval.id} has invalid target pace',
+      );
+      _require(
+        interval.actualPaceSecondsPerKm == null ||
+            interval.actualPaceSecondsPerKm! > 0,
+        'cardio interval ${interval.id} has invalid actual pace',
+      );
+      _require(
+        interval.averageHeartRate == null || interval.averageHeartRate! > 0,
+        'cardio interval ${interval.id} has invalid average heart rate',
+      );
+    }
+    _uniqueKeys(
+      'cardio interval ordinal',
+      cardioIntervals,
+      (row) => '${row.cardioSessionId}\u0000${row.ordinal}',
+    );
+
+    for (final detail in mobilitySessionDetails) {
+      final session = sessionById[detail.sessionId];
+      _require(
+        session != null &&
+            const {'yoga', 'mobility'}.contains(session.activityType),
+        'mobility detail ${detail.sessionId} does not match a mobility session',
+      );
+      _require(
+        const {'yoga', 'mobility'}.contains(detail.practiceType),
+        'mobility detail ${detail.sessionId} has invalid practice type',
+      );
+      _require(
+        session == null || session.activityType == detail.practiceType,
+        'mobility detail ${detail.sessionId} practice type does not match activity type',
+      );
+      _require(
+        detail.averageHeartRate == null || detail.averageHeartRate! > 0,
+        'mobility detail ${detail.sessionId} has invalid average heart rate',
+      );
+    }
+
+    for (final row in performedExerciseGroups) {
+      final session = sessionById[row.sessionId];
+      _require(
+        session != null &&
+            session.activityType == B02ActivityType.strength.dbValue,
+        'performed exercise group ${row.id} does not belong to a strength session',
+      );
+      if (row.sourceExerciseGroupId != null) {
+        _require(
+          groupIds.contains(row.sourceExerciseGroupId),
+          'performed exercise group ${row.id} references missing source group ${row.sourceExerciseGroupId}',
+        );
+      }
+      _parseB02Enum(
+        'performed exercise group ${row.id} type',
+        () => B02GroupType.parse(row.groupTypeSnapshot),
+      );
+      _require(
+        row.ordinal >= 0,
+        'performed exercise group ${row.id} has invalid ordinal',
+      );
+      _require(
+        row.plannedRounds >= 1,
+        'performed exercise group ${row.id} has invalid planned rounds',
+      );
+      _require(
+        row.completedRounds >= 0 && row.completedRounds <= row.plannedRounds,
+        'performed exercise group ${row.id} has invalid completed rounds',
+      );
+      _require(
+        const {'inProgress', 'completed', 'partial'}.contains(row.status),
+        'performed exercise group ${row.id} has invalid status',
+      );
+    }
+    _uniqueKeys(
+      'performed exercise group ordinal',
+      performedExerciseGroups,
+      (row) => '${row.sessionId}\u0000${row.ordinal}',
+    );
+
+    for (final row in performedExercises) {
+      final session = sessionById[row.sessionId];
+      _require(
+        session != null &&
+            session.activityType == B02ActivityType.strength.dbValue,
+        'performed exercise ${row.id} does not belong to a strength session',
+      );
+      if (row.performedExerciseGroupId != null) {
+        final group = performedGroupById[row.performedExerciseGroupId];
+        _require(
+          group != null && group.sessionId == row.sessionId,
+          'performed exercise ${row.id} references a group from another session',
+        );
+      }
+      if (row.sourceExercisePrescriptionId != null) {
+        _require(
+          prescriptionIds.contains(row.sourceExercisePrescriptionId),
+          'performed exercise ${row.id} references missing source prescription ${row.sourceExercisePrescriptionId}',
+        );
+      }
+      _validateExerciseReference(
+        row.expectedExerciseId,
+        knownExerciseIds,
+        'performed exercise ${row.id} expected exercise',
+      );
+      _validateExerciseReference(
+        row.actualExerciseId,
+        knownExerciseIds,
+        'performed exercise ${row.id} actual exercise',
+      );
+      _require(
+        row.actualExerciseId.trim().isNotEmpty,
+        'performed exercise ${row.id} has an empty actual exercise ID',
+      );
+      _require(
+        row.ordinal >= 0,
+        'performed exercise ${row.id} has invalid ordinal',
+      );
+      _require(
+        row.groupMemberOrdinal == null || row.groupMemberOrdinal! >= 0,
+        'performed exercise ${row.id} has invalid member ordinal',
+      );
+      _require(
+        row.groupRoundOrdinal == null || row.groupRoundOrdinal! >= 0,
+        'performed exercise ${row.id} has invalid round ordinal',
+      );
+      _require(
+        const {
+          'inProgress',
+          'completed',
+          'partial',
+          'skipped',
+        }.contains(row.status),
+        'performed exercise ${row.id} has invalid status',
+      );
+    }
+    _uniqueKeys(
+      'performed exercise ordinal',
+      performedExercises,
+      (row) => '${row.sessionId}\u0000${row.ordinal}',
+    );
+
+    for (final row in exerciseTargetRecommendations) {
+      _require(
+        performedExerciseIds.contains(row.performedExerciseId),
+        'target recommendation ${row.id} references missing performed exercise ${row.performedExerciseId}',
+      );
+      _require(
+        row.ruleVersion.trim().isNotEmpty,
+        'target recommendation ${row.id} has no rule version',
+      );
+      _parseB02Enum(
+        'target recommendation ${row.id} confidence',
+        () => B02Confidence.parse(row.confidence),
+      );
+      _validateStoredSetValues(
+        owner: 'target recommendation ${row.id}',
+        loadBasis: row.loadBasis,
+        targetLoadKg: row.recommendedLoadKg,
+        targetRepsMin: row.targetRepsMin,
+        targetRepsMax: row.targetRepsMax,
+        targetRpe: row.targetRpe,
+        incrementKg: row.incrementKg,
+      );
+      _require(
+        row.comparatorCount >= 0,
+        'target recommendation ${row.id} has invalid comparator count',
+      );
+      try {
+        final completeness = jsonDecode(row.completenessJson);
+        _require(
+          completeness is Map,
+          'target recommendation ${row.id} completeness must be an object',
+        );
+        final rationale = jsonDecode(row.rationaleCodesJson);
+        _require(
+          rationale is List && rationale.every((value) => value is String),
+          'target recommendation ${row.id} rationale codes must be a string array',
+        );
+      } on FormatException {
+        rethrow;
+      } on Object catch (error) {
+        throw FormatException(
+          'Backup validation failed: target recommendation ${row.id} has invalid evidence JSON: $error',
+        );
+      }
+    }
+    _uniqueKeys(
+      'target recommendation owner',
+      exerciseTargetRecommendations,
+      (row) => row.performedExerciseId,
+    );
+
+    final segmentsBySet = <String, List<PerformedSetSegment>>{};
+    for (final row in performedSetSegments) {
+      _require(
+        setIds.contains(row.performedSetId),
+        'performed set segment ${row.id} references missing performed set ${row.performedSetId}',
+      );
+      _require(
+        row.ordinal >= 0,
+        'performed set segment ${row.id} has invalid ordinal',
+      );
+      _require(
+        row.reps >= 1,
+        'performed set segment ${row.id} has invalid reps',
+      );
+      _parseB02OptionalEnum(
+        'performed set segment ${row.id} load basis',
+        row.loadBasis,
+        B02LoadBasis.parse,
+      );
+      _require(
+        row.externalLoadKg == null || row.externalLoadKg! >= 0,
+        'performed set segment ${row.id} has invalid load',
+      );
+      _require(
+        row.assistanceKg == null || row.assistanceKg! > 0,
+        'performed set segment ${row.id} has invalid assistance',
+      );
+      _require(
+        row.restBeforeSeconds == null || row.restBeforeSeconds! >= 0,
+        'performed set segment ${row.id} has invalid rest',
+      );
+      segmentsBySet.putIfAbsent(row.performedSetId, () => []).add(row);
+    }
+    _uniqueKeys(
+      'performed set segment ordinal',
+      performedSetSegments,
+      (row) => '${row.performedSetId}\u0000${row.ordinal}',
+    );
+
+    for (final row in performedSets) {
+      final exercise = performedExerciseById[row.performedExerciseId];
+      _require(
+        exercise != null,
+        'performed set ${row.id} references missing performed exercise ${row.performedExerciseId}',
+      );
+      _parseB02Enum(
+        'performed set ${row.id} role',
+        () => B02SetRole.parse(row.role),
+      );
+      _validateStoredSetValues(
+        owner: 'performed set ${row.id}',
+        loadBasis: row.targetLoadBasis,
+        targetLoadKg: row.targetLoadKg,
+        targetRepsMin: row.targetRepsMin,
+        targetRepsMax: row.targetRepsMax,
+        targetRpe: row.targetRpe,
+        effortMode: row.effortMode,
+        tempo: [
+          row.tempoEccentricSeconds,
+          row.tempoBottomPauseSeconds,
+          row.tempoConcentricSeconds,
+          row.tempoLockoutPauseSeconds,
+        ],
+        pausedRepPosition: row.pausedRepPosition,
+        pausedRepSeconds: row.pausedRepSeconds,
+        assistanceMode: row.assistanceMode,
+        assistanceKg: row.assistanceKg,
+      );
+      _validateStoredSetValues(
+        owner: 'performed set ${row.id} actual values',
+        loadBasis: row.actualLoadBasis,
+        targetLoadKg: row.actualLoadKg,
+        targetRepsMin: row.actualReps,
+        targetRepsMax: null,
+        targetRpe: row.actualRpe,
+        allowZeroReps: true,
+      );
+      final segments = segmentsBySet[row.id] ?? const <PerformedSetSegment>[];
+      if (row.actualReps != null) {
+        final segmentReps = segments.fold<int>(
+          0,
+          (sum, segment) => sum + segment.reps,
+        );
+        _require(
+          segments.isEmpty || segmentReps == row.actualReps,
+          'performed set ${row.id} segment reps do not equal actual reps',
+        );
+      }
+      final ordinals = segments.map((segment) => segment.ordinal).toList();
+      if (ordinals.isNotEmpty) {
+        _requireContiguous(ordinals, 'performed set ${row.id} segment');
+      }
+    }
+    _uniqueKeys(
+      'performed set ordinal',
+      performedSets,
+      (row) => '${row.performedExerciseId}\u0000${row.ordinal}',
+    );
+
+    for (final row in performedRestPeriods) {
+      final session = sessionById[row.sessionId];
+      _require(
+        session != null,
+        'performed rest period ${row.id} references missing session ${row.sessionId}',
+      );
+      var hasParent = false;
+      if (row.performedSetId != null) {
+        final set = performedSetById[row.performedSetId];
+        _require(
+          set != null,
+          'performed rest period ${row.id} references missing performed set ${row.performedSetId}',
+        );
+        hasParent = true;
+        final exercise = set == null
+            ? null
+            : performedExerciseById[set.performedExerciseId];
+        _require(
+          exercise != null && exercise.sessionId == row.sessionId,
+          'performed rest period ${row.id} set parent belongs to another session',
+        );
+      }
+      if (row.performedExerciseGroupId != null) {
+        final group = performedGroupById[row.performedExerciseGroupId];
+        _require(
+          group != null,
+          'performed rest period ${row.id} references missing group ${row.performedExerciseGroupId}',
+        );
+        hasParent = true;
+        _require(
+          group == null || group.sessionId == row.sessionId,
+          'performed rest period ${row.id} group parent belongs to another session',
+        );
+      }
+      _require(
+        hasParent,
+        'performed rest period ${row.id} has no parent execution row',
+      );
+      _parseB02Enum(
+        'performed rest period ${row.id} scope',
+        () => B02RestScope.parse(row.scope),
+      );
+      _parseB02Enum(
+        'performed rest period ${row.id} source',
+        () => B02RestSource.parse(row.source),
+      );
+      _parseB02OptionalEnum(
+        'performed rest period ${row.id} end reason',
+        row.endReason,
+        B02RestEndReason.parse,
+      );
+      _require(
+        row.recommendedSeconds == null || row.recommendedSeconds! >= 0,
+        'performed rest period ${row.id} has invalid recommendation',
+      );
+      _require(
+        row.selectedSeconds == null || row.selectedSeconds! >= 0,
+        'performed rest period ${row.id} has invalid selection',
+      );
+      _require(
+        row.actualSeconds == null || row.actualSeconds! >= 0,
+        'performed rest period ${row.id} has invalid actual rest',
+      );
+      _require(
+        row.endedAtUtc == null || !row.endedAtUtc!.isBefore(row.startedAtUtc),
+        'performed rest period ${row.id} ends before it starts',
+      );
+    }
+
+    for (final muscle in muscles) {
+      _require(muscle.id.trim().isNotEmpty, 'muscle has an empty ID');
+      _require(
+        muscle.displayName.trim().isNotEmpty,
+        'muscle ${muscle.id} has an empty display name',
+      );
+      _require(
+        muscle.catalogVersion >= 1,
+        'muscle ${muscle.id} has invalid catalog version',
+      );
+    }
+    _uniqueKeys(
+      'muscle display/catalog identity',
+      muscles,
+      (row) => '${row.displayName}\u0000${row.catalogVersion}',
+    );
+    final mappingsByExercise = <String, List<ExerciseMuscleMapping>>{};
+    for (final row in exerciseMuscleMappings) {
+      _validateExerciseReference(
+        row.exerciseId,
+        knownExerciseIds,
+        'mapping ${row.id}',
+      );
+      _require(
+        muscleIds.contains(row.muscleId),
+        'mapping ${row.id} references missing muscle ${row.muscleId}',
+      );
+      _parseB02Enum(
+        'mapping ${row.id} role',
+        () => B02MuscleRole.parse(row.role),
+      );
+      _parseB02Enum(
+        'mapping ${row.id} status',
+        () => B02MappingStatus.parse(row.mappingStatus),
+      );
+      _require(
+        row.contributionBasisPoints >= 1 &&
+            row.contributionBasisPoints <= 10000,
+        'mapping ${row.id} has invalid contribution',
+      );
+      _require(
+        row.catalogVersion >= 1,
+        'mapping ${row.id} has invalid catalog version',
+      );
+      if (row.mappingStatus == B02MappingStatus.reviewed.dbValue) {
+        _require(
+          row.source?.trim().isNotEmpty == true,
+          'reviewed mapping ${row.id} has no source',
+        );
+      }
+      mappingsByExercise.putIfAbsent(row.exerciseId, () => []).add(row);
+    }
+    _uniqueKeys(
+      'exercise-muscle mapping pair',
+      exerciseMuscleMappings,
+      (row) => '${row.exerciseId}\u0000${row.muscleId}',
+    );
+    for (final entry in mappingsByExercise.entries) {
+      final statuses = entry.value.map((row) => row.mappingStatus).toSet();
+      if (statuses.length == 1 &&
+          statuses.single == B02MappingStatus.reviewed.dbValue) {
+        final total = entry.value.fold<int>(
+          0,
+          (sum, row) => sum + row.contributionBasisPoints,
+        );
+        _require(
+          total == 10000,
+          'reviewed mapping ${entry.key} does not total 10000 basis points',
+        );
+        final sources = entry.value.map((row) => row.source).toSet();
+        final versions = entry.value.map((row) => row.catalogVersion).toSet();
+        _require(
+          sources.length == 1 && versions.length == 1,
+          'reviewed mapping ${entry.key} disagrees on source or catalog version',
+        );
+      }
+    }
+
+    final cardioBySession = cardioSessionDetails
+        .map((row) => row.sessionId)
+        .toSet();
+    final mobilityBySession = mobilitySessionDetails
+        .map((row) => row.sessionId)
+        .toSet();
+    final performedBySession = performedExercises
+        .map((row) => row.sessionId)
+        .toSet();
+    for (final session in workoutSessions) {
+      final isCardio = const {
+        'running',
+        'cycling',
+        'walking',
+      }.contains(session.activityType);
+      final isMobility = const {
+        'yoga',
+        'mobility',
+      }.contains(session.activityType);
+      final isStrength =
+          session.activityType == B02ActivityType.strength.dbValue;
+      if (isCardio) {
+        _require(
+          cardioBySession.contains(session.id),
+          'cardio session ${session.id} is missing its detail row',
+        );
+        _require(
+          !mobilityBySession.contains(session.id),
+          'cardio session ${session.id} has mobility detail',
+        );
+        _require(
+          !performedBySession.contains(session.id),
+          'cardio session ${session.id} has strength execution rows',
+        );
+      } else if (isMobility) {
+        _require(
+          mobilityBySession.contains(session.id),
+          'mobility session ${session.id} is missing its detail row',
+        );
+        _require(
+          !cardioBySession.contains(session.id),
+          'mobility session ${session.id} has cardio detail',
+        );
+        _require(
+          !performedBySession.contains(session.id),
+          'mobility session ${session.id} has strength execution rows',
+        );
+      } else if (isStrength) {
+        _require(
+          !cardioBySession.contains(session.id),
+          'strength session ${session.id} has cardio detail',
+        );
+        _require(
+          !mobilityBySession.contains(session.id),
+          'strength session ${session.id} has mobility detail',
+        );
+      } else {
+        _require(
+          !cardioBySession.contains(session.id) &&
+              !mobilityBySession.contains(session.id) &&
+              !performedBySession.contains(session.id),
+          'legacy session ${session.id} has typed B02 rows',
+        );
+      }
+    }
+    for (final draft in workoutDrafts) {
+      _parseB02Enum(
+        'draft ${draft.id} activity type',
+        () => B02ActivityType.parse(draft.activityType),
+      );
+      if (draft.activityType == B02ActivityType.legacy.dbValue) {
+        _require(
+          draft.executionStateJson == null,
+          'legacy draft ${draft.id} contains a typed execution state',
+        );
+      } else {
+        _require(
+          draft.executionStateJson != null,
+          'canonical draft ${draft.id} is missing execution state',
+        );
+        try {
+          final decoded = B02ExecutionDraftCodec.decode(
+            draft.executionStateJson!,
+          );
+          _require(
+            decoded.isCanonical,
+            'canonical draft ${draft.id} did not decode as v2 state',
+          );
+          _require(
+            decoded.state!.activityType.dbValue == draft.activityType,
+            'draft ${draft.id} activity type does not match execution state',
+          );
+        } on Object catch (error) {
+          throw FormatException(
+            'Backup validation failed: draft ${draft.id} has invalid execution state: $error',
+          );
+        }
+      }
+    }
+    for (final provenance in healthProvenances) {
+      if (provenance.localSessionId != null) {
+        _require(
+          sessionIds.contains(provenance.localSessionId),
+          'health provenance ${provenance.id} references missing session ${provenance.localSessionId}',
+        );
+      }
+      _require(
+        provenance.provider.trim().isNotEmpty,
+        'health provenance ${provenance.id} has no provider',
+      );
+      _require(
+        provenance.fingerprint.trim().isNotEmpty,
+        'health provenance ${provenance.id} has no fingerprint',
+      );
+    }
+  }
+
   static Set<String> _uniqueIds<T>(
     String entity,
     Iterable<T> rows,
@@ -1690,6 +2830,138 @@ class BackupData {
       _require(ids.add(value), 'duplicate $entity ID "$value"');
     }
     return ids;
+  }
+
+  static Set<int> _uniqueIntIds<T>(
+    String entity,
+    Iterable<T> rows,
+    int Function(T) id,
+  ) {
+    final ids = <int>{};
+    for (final row in rows) {
+      final value = id(row);
+      _require(value > 0, '$entity has an invalid ID');
+      _require(ids.add(value), 'duplicate $entity ID "$value"');
+    }
+    return ids;
+  }
+
+  static void _uniqueIntValues(String entity, Iterable<int> values) {
+    final seen = <int>{};
+    for (final value in values) {
+      _require(seen.add(value), 'duplicate $entity "$value"');
+    }
+  }
+
+  static void _requireContiguous(Iterable<int> values, String entity) {
+    final sorted = [...values]..sort();
+    for (var index = 0; index < sorted.length; index++) {
+      _require(
+        sorted[index] == index,
+        '$entity ordinals must be contiguous from 0',
+      );
+    }
+  }
+
+  static void _parseB02Enum(String owner, Object? Function() parser) {
+    try {
+      parser();
+    } on B02ValidationException catch (error) {
+      throw FormatException(
+        'Backup validation failed: $owner: ${error.message}',
+      );
+    }
+  }
+
+  static void _parseB02OptionalEnum<T>(
+    String owner,
+    String? raw,
+    T Function(Object?) parser,
+  ) {
+    if (raw == null) return;
+    _parseB02Enum(owner, () => parser(raw));
+  }
+
+  static void _validateStoredSetValues({
+    required String owner,
+    String? loadBasis,
+    double? targetLoadKg,
+    int? targetRepsMin,
+    int? targetRepsMax,
+    int? targetRpe,
+    String? effortMode,
+    List<int?> tempo = const [],
+    String? pausedRepPosition,
+    int? pausedRepSeconds,
+    String? assistanceMode,
+    double? assistanceKg,
+    double? incrementKg,
+    bool allowZeroReps = false,
+  }) {
+    _parseB02OptionalEnum(owner, loadBasis, B02LoadBasis.parse);
+    _parseB02OptionalEnum(owner, effortMode, B02EffortMode.parse);
+    _parseB02OptionalEnum(owner, pausedRepPosition, B02PausedRepPosition.parse);
+    _parseB02OptionalEnum(owner, assistanceMode, B02AssistanceMode.parse);
+    _require(
+      targetLoadKg == null || targetLoadKg >= 0,
+      '$owner has a negative load',
+    );
+    if (targetRepsMin != null) {
+      _require(
+        allowZeroReps ? targetRepsMin >= 0 : targetRepsMin >= 1,
+        '$owner has invalid minimum reps',
+      );
+    }
+    if (targetRepsMax != null) {
+      _require(targetRepsMax >= 1, '$owner has invalid maximum reps');
+    }
+    _require(
+      targetRepsMin == null ||
+          targetRepsMax == null ||
+          targetRepsMin <= targetRepsMax,
+      '$owner has a minimum reps value above its maximum',
+    );
+    _require(
+      targetRpe == null || (targetRpe >= 1 && targetRpe <= 10),
+      '$owner has invalid RPE',
+    );
+    _require(
+      incrementKg == null || incrementKg > 0,
+      '$owner has invalid increment',
+    );
+    if (tempo.isNotEmpty) {
+      final hasTempo = tempo.any((value) => value != null);
+      _require(
+        !hasTempo || tempo.every((value) => value != null),
+        '$owner has incomplete tempo values',
+      );
+      if (hasTempo) {
+        _require(
+          tempo.every((value) => value! >= 0),
+          '$owner has negative tempo values',
+        );
+        _require(
+          tempo.any((value) => value! > 0),
+          '$owner tempo cannot contain four zero values',
+        );
+      }
+    }
+    _require(
+      (pausedRepPosition == null) == (pausedRepSeconds == null),
+      '$owner paused-rep fields must be provided together',
+    );
+    _require(
+      pausedRepSeconds == null || pausedRepSeconds >= 1,
+      '$owner has invalid paused-rep duration',
+    );
+    _require(
+      (assistanceMode == null) == (assistanceKg == null),
+      '$owner assisted-rep fields must be provided together',
+    );
+    _require(
+      assistanceKg == null || assistanceKg > 0,
+      '$owner has invalid assistance load',
+    );
   }
 
   static void _uniqueKeys<T>(
@@ -1856,6 +3128,16 @@ class BackupData {
           .whereType<String>()
           .toSet();
       _validateB01Graph(seededExerciseStableIds);
+      if (version >= 7) {
+        final customExerciseStableIds = customExercises
+            .map((exercise) => exercise.stableId)
+            .whereType<String>()
+            .toSet();
+        _validateB02Graph({
+          ...seededExerciseStableIds,
+          ...customExerciseStableIds,
+        });
+      }
     }
 
     // Capture previous preference values for compensation on failure.
@@ -1880,6 +3162,25 @@ class BackupData {
 
       // 3. Perform DB deletion and remapped insertion inside one single transaction.
       await db.transaction(() async {
+        if (version >= 7) {
+          // B02 children must be removed before their parent sessions and
+          // prescriptions. Muscle catalog rows are deliberately retained so
+          // unknown/legacy catalog data survives a restore; v7 mappings are
+          // then replaced from the validated backup graph.
+          await db.delete(db.performedRestPeriods).go();
+          await db.delete(db.exerciseTargetRecommendations).go();
+          await db.delete(db.performedSetSegments).go();
+          await db.delete(db.performedSets).go();
+          await db.delete(db.performedExercises).go();
+          await db.delete(db.performedExerciseGroups).go();
+          await db.delete(db.cardioIntervals).go();
+          await db.delete(db.cardioSessionDetails).go();
+          await db.delete(db.mobilitySessionDetails).go();
+          await db.delete(db.exerciseMuscleMappings).go();
+          await db.delete(db.exerciseGroupMembers).go();
+          await db.delete(db.strengthSetPrescriptions).go();
+          await db.delete(db.exerciseGroups).go();
+        }
         // Delete the v15 graph in child-first order. Legacy routine/history
         // rows remain separate compatibility data and are cleared below.
         await db.delete(db.travelContextOccurrences).go();
@@ -2057,6 +3358,25 @@ class BackupData {
           }
         }
 
+        if (version >= 7) {
+          for (final muscle in muscles) {
+            await db
+                .into(db.muscles)
+                .insert(
+                  muscle.toCompanion(true),
+                  mode: InsertMode.insertOrReplace,
+                );
+          }
+          for (final mapping in exerciseMuscleMappings) {
+            await db
+                .into(db.exerciseMuscleMappings)
+                .insert(
+                  mapping.toCompanion(true),
+                  mode: InsertMode.insertOrReplace,
+                );
+          }
+        }
+
         // Remap meal templates
         final templateIdMap = <int, int>{};
         for (final t in mealTemplates) {
@@ -2139,6 +3459,9 @@ class BackupData {
 
         if (version >= 6) {
           await _insertB01Graph(db, routineIdMap);
+          if (version >= 7) {
+            await _insertB02PlanGraph(db);
+          }
         }
 
         // Remap workout sessions and sets
@@ -2159,8 +3482,14 @@ class BackupData {
                   executionSnapshotJson: Value(s.executionSnapshotJson),
                   executionTimezoneId: Value(s.executionTimezoneId),
                   completionKind: Value(s.completionKind),
-                  activityType: const Value('legacy'),
-                  activitySchemaVersion: const Value(1),
+                  activityType: Value(
+                    version >= 7
+                        ? s.activityType
+                        : B02ActivityType.legacy.dbValue,
+                  ),
+                  activitySchemaVersion: Value(
+                    version >= 7 ? s.activitySchemaVersion : 1,
+                  ),
                 ),
               );
           sessionIdMap[s.id] = newId;
@@ -2191,6 +3520,10 @@ class BackupData {
               );
         }
 
+        if (version >= 7) {
+          await _insertB02ExecutionGraph(db, sessionIdMap);
+        }
+
         for (final d in workoutDrafts) {
           await db
               .into(db.workoutDrafts)
@@ -2205,7 +3538,14 @@ class BackupData {
                   scheduledOccurrenceId: Value(d.scheduledOccurrenceId),
                   executionSnapshotJson: Value(d.executionSnapshotJson),
                   draftSchemaVersion: Value(d.draftSchemaVersion),
-                  activityType: const Value('legacy'),
+                  activityType: Value(
+                    version >= 7
+                        ? d.activityType
+                        : B02ActivityType.legacy.dbValue,
+                  ),
+                  executionStateJson: Value(
+                    version >= 7 ? d.executionStateJson : null,
+                  ),
                 ),
               );
         }
@@ -2286,6 +3626,103 @@ class BackupData {
         await _restorePreferences(prefs, oldPrefValues);
       }
       rethrow;
+    }
+  }
+
+  Future<void> _insertB02PlanGraph(AppDatabase db) async {
+    for (final row in exerciseGroups) {
+      await db.into(db.exerciseGroups).insert(row.toCompanion(true));
+    }
+    for (final row in exerciseGroupMembers) {
+      await db.into(db.exerciseGroupMembers).insert(row.toCompanion(true));
+    }
+    for (final row in strengthSetPrescriptions) {
+      await db.into(db.strengthSetPrescriptions).insert(row.toCompanion(true));
+    }
+  }
+
+  Future<void> _insertB02ExecutionGraph(
+    AppDatabase db,
+    Map<int, int> sessionIdMap,
+  ) async {
+    for (final row in cardioSessionDetails) {
+      await db
+          .into(db.cardioSessionDetails)
+          .insert(
+            row
+                .toCompanion(true)
+                .copyWith(
+                  sessionId: Value(
+                    sessionIdMap[row.sessionId] ?? row.sessionId,
+                  ),
+                ),
+          );
+    }
+    for (final row in cardioIntervals) {
+      await db.into(db.cardioIntervals).insert(row.toCompanion(true));
+    }
+    for (final row in mobilitySessionDetails) {
+      await db
+          .into(db.mobilitySessionDetails)
+          .insert(
+            row
+                .toCompanion(true)
+                .copyWith(
+                  sessionId: Value(
+                    sessionIdMap[row.sessionId] ?? row.sessionId,
+                  ),
+                ),
+          );
+    }
+    for (final row in performedExerciseGroups) {
+      await db
+          .into(db.performedExerciseGroups)
+          .insert(
+            row
+                .toCompanion(true)
+                .copyWith(
+                  sessionId: Value(
+                    sessionIdMap[row.sessionId] ?? row.sessionId,
+                  ),
+                ),
+          );
+    }
+    for (final row in performedExercises) {
+      await db
+          .into(db.performedExercises)
+          .insert(
+            row
+                .toCompanion(true)
+                .copyWith(
+                  sessionId: Value(
+                    sessionIdMap[row.sessionId] ?? row.sessionId,
+                  ),
+                ),
+          );
+    }
+    for (final row in performedSets) {
+      await db.into(db.performedSets).insert(row.toCompanion(true));
+    }
+    for (final row in performedSetSegments) {
+      await db.into(db.performedSetSegments).insert(row.toCompanion(true));
+    }
+    for (final row in performedRestPeriods) {
+      await db
+          .into(db.performedRestPeriods)
+          .insert(
+            row
+                .toCompanion(true)
+                .copyWith(
+                  sessionId: Value(
+                    sessionIdMap[row.sessionId] ?? row.sessionId,
+                  ),
+                ),
+          );
+    }
+    for (final row in exerciseTargetRecommendations) {
+      await db
+          .into(db.exerciseTargetRecommendations)
+          .insert(row.toCompanion(true));
     }
   }
 
@@ -2509,6 +3946,23 @@ class BackupEnvelope {
       'exercise_personal_cues': data.exercisePersonalCues.length,
       'legacy_routine_program_mappings':
           data.legacyRoutineProgramMappings.length,
+      if (data.version >= 7) ...{
+        'exercise_groups': data.exerciseGroups.length,
+        'exercise_group_members': data.exerciseGroupMembers.length,
+        'strength_set_prescriptions': data.strengthSetPrescriptions.length,
+        'cardio_session_details': data.cardioSessionDetails.length,
+        'cardio_intervals': data.cardioIntervals.length,
+        'mobility_session_details': data.mobilitySessionDetails.length,
+        'performed_exercise_groups': data.performedExerciseGroups.length,
+        'performed_exercises': data.performedExercises.length,
+        'exercise_target_recommendations':
+            data.exerciseTargetRecommendations.length,
+        'performed_sets': data.performedSets.length,
+        'performed_set_segments': data.performedSetSegments.length,
+        'performed_rest_periods': data.performedRestPeriods.length,
+        'muscles': data.muscles.length,
+        'exercise_muscle_mappings': data.exerciseMuscleMappings.length,
+      },
     };
 
     return BackupEnvelope(
