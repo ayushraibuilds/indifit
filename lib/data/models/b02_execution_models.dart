@@ -1116,6 +1116,26 @@ class B02TargetRecommendation {
     'rationaleCodes': rationaleCodes,
     'wasOverridden': wasOverridden,
   };
+
+  B02TargetRecommendation copyWith({bool? wasOverridden}) {
+    return B02TargetRecommendation(
+      id: id,
+      performedExerciseId: performedExerciseId,
+      ruleVersion: ruleVersion,
+      confidence: confidence,
+      completeness: completeness,
+      recommendedLoadKg: recommendedLoadKg,
+      loadBasis: loadBasis,
+      targetRepsMin: targetRepsMin,
+      targetRepsMax: targetRepsMax,
+      targetRpe: targetRpe,
+      incrementKg: incrementKg,
+      evidenceCutoffUtc: evidenceCutoffUtc,
+      comparatorCount: comparatorCount,
+      rationaleCodes: rationaleCodes,
+      wasOverridden: wasOverridden ?? this.wasOverridden,
+    );
+  }
 }
 
 class B02RestPeriod {
@@ -1732,6 +1752,27 @@ class B02PerformedExerciseDraft {
     if (targetRecommendation != null)
       'targetRecommendation': targetRecommendation!.toJson(),
   };
+
+  B02PerformedExerciseDraft copyWith({
+    B02TargetRecommendation? targetRecommendation,
+  }) {
+    return B02PerformedExerciseDraft(
+      id: id,
+      performedExerciseGroupId: performedExerciseGroupId,
+      sourceExercisePrescriptionId: sourceExercisePrescriptionId,
+      groupMemberOrdinal: groupMemberOrdinal,
+      groupRoundOrdinal: groupRoundOrdinal,
+      ordinal: ordinal,
+      expectedExerciseId: expectedExerciseId,
+      expectedExerciseNameSnapshot: expectedExerciseNameSnapshot,
+      actualExerciseId: actualExerciseId,
+      actualExerciseNameSnapshot: actualExerciseNameSnapshot,
+      status: status,
+      substitutionReason: substitutionReason,
+      sets: sets,
+      targetRecommendation: targetRecommendation ?? this.targetRecommendation,
+    );
+  }
 }
 
 enum B02WarmupPreference {
@@ -2210,6 +2251,7 @@ class B02ExecutionDraftState {
   }
 
   B02ExecutionDraftState copyWith({
+    List<B02PerformedExerciseDraft>? performedExercises,
     List<B02RestPeriod>? restPeriods,
     B02WarmupRecommendation? warmupRecommendation,
     B02CardioSessionDetail? cardioDetail,
@@ -2228,7 +2270,7 @@ class B02ExecutionDraftState {
       currentExerciseOrdinal: currentExerciseOrdinal,
       currentSetOrdinal: currentSetOrdinal,
       groups: groups,
-      performedExercises: performedExercises,
+      performedExercises: performedExercises ?? this.performedExercises,
       restPeriods: restPeriods ?? this.restPeriods,
       warmupRecommendation: warmupRecommendation ?? this.warmupRecommendation,
       cardioDetail: cardioDetail ?? this.cardioDetail,
