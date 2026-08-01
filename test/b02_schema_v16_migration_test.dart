@@ -23,7 +23,7 @@ void main() {
 
   group('B02-02 v15 to v16 activity schema migration', () {
     test(
-      'upgrades a real v15 file without reclassifying history or fabricating B02 rows',
+      'upgrades a real v15 file without reclassifying history or fabricating B02 execution rows',
       () async {
         final file = await V15DbFixtures.createSourceDatabase(
           tempDir,
@@ -111,8 +111,11 @@ void main() {
           expect(await db.select(db.performedSets).get(), isEmpty);
           expect(await db.select(db.performedSetSegments).get(), isEmpty);
           expect(await db.select(db.performedRestPeriods).get(), isEmpty);
-          expect(await db.select(db.muscles).get(), isEmpty);
-          expect(await db.select(db.exerciseMuscleMappings).get(), isEmpty);
+          expect(await db.select(db.muscles).get(), hasLength(4));
+          expect(
+            await db.select(db.exerciseMuscleMappings).get(),
+            hasLength(4),
+          );
 
           expect(
             await db.customSelect('PRAGMA foreign_key_check').get(),
@@ -266,7 +269,7 @@ void main() {
           );
           expect(await second.select(second.workoutSets).get(), hasLength(1));
           expect(await second.select(second.exerciseGroups).get(), isEmpty);
-          expect(await second.select(second.muscles).get(), isEmpty);
+          expect(await second.select(second.muscles).get(), hasLength(4));
         } finally {
           await second.close();
         }

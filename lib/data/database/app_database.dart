@@ -9,10 +9,12 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/fixtures/b02_muscle_catalog.dart';
 import '../../core/fixtures/equipment_fixtures.dart';
 import '../../core/fixtures/exercise_identity_fixtures.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
+import '../models/b02_execution_models.dart';
 import 'b01_legacy_import_support.dart';
 import 'tables/achievement_tables.dart';
 import 'tables/b02_activity_tables.dart';
@@ -189,6 +191,7 @@ class AppDatabase extends _$AppDatabase {
       await _ensureTrainingPlanSettings();
       await seedFoodsFromAsset();
       await seedExercisesFromAsset();
+      await _seedReviewedMuscleCatalogIfPossible();
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON;');
@@ -527,6 +530,11 @@ class AppDatabase extends _$AppDatabase {
 
       await _createV16IndexesAndTriggers();
 
+      // Seed only when every reviewed exercise parent already exists. A
+      // legacy-only file therefore receives no fabricated taxonomy/mapping
+      // rows, while a canonical catalog is seeded atomically.
+      await _seedReviewedMuscleCatalogIfPossible();
+
       final injectedFailure = v16MigrationFailureInjector;
       if (injectedFailure != null) await injectedFailure();
     });
@@ -535,6 +543,134 @@ class AppDatabase extends _$AppDatabase {
   Future<bool> _tableHasColumn(String tableName, String columnName) async {
     final rows = await customSelect('PRAGMA table_info($tableName)').get();
     return rows.any((row) => row.data['name'] == columnName);
+  }
+
+  /// Seeds the reviewed B02 muscle catalog without deriving anything from
+  /// legacy display text. The helper is intentionally a no-op until every
+  /// accepted reviewed mapping has a canonical exercise parent; this keeps a
+  /// v15 legacy-only database unchanged and explicitly unknown.
+  Future<void> _seedReviewedMuscleCatalogIfPossible() async {
+    final seedMuscles = {
+      for (final muscle in B02CanonicalMuscleCatalog.muscles) muscle.id: muscle,
+    };
+    final seedMappings = B02CanonicalMuscleCatalog.reviewedMappings();
+    final parentIds = seedMappings.map((mapping) => mapping.exerciseId).toSet();
+    final parentRows = await (select(
+      exercises,
+    )..where((table) => table.stableId.isIn(parentIds))).get();
+    // A user-created row is never a reviewed catalog parent, even if a
+    // malformed import reused a canonical stable ID. Leave the file
+    // explicitly unmapped rather than attaching reviewed arithmetic to it.
+    if (parentRows.length != parentIds.length ||
+        parentRows.any((row) => row.isCustom)) {
+      return;
+    }
+
+    await transaction(() async {
+      final existingMuscles = await select(muscles).get();
+      final existingById = {for (final row in existingMuscles) row.id: row};
+      final existingDisplayKeys = {
+        for (final row in existingMuscles)
+          '${row.displayName}\u0000${row.catalogVersion}': row.id,
+      };
+      final musclesToInsert = <MusclesCompanion>[];
+      for (final seed in seedMuscles.values) {
+        final existing = existingById[seed.id];
+        if (existing != null) {
+          if (existing.displayName != seed.displayName ||
+              existing.region != seed.region ||
+              existing.catalogVersion != seed.catalogVersion ||
+              !existing.isActive) {
+            throw StateError(
+              'Existing muscle ${seed.id} conflicts with the reviewed seed.',
+            );
+          }
+          continue;
+        }
+        final displayKey = '${seed.displayName}\u0000${seed.catalogVersion}';
+        if (existingDisplayKeys.containsKey(displayKey)) {
+          throw StateError('Reviewed muscle seed violates catalog uniqueness.');
+        }
+        musclesToInsert.add(
+          MusclesCompanion.insert(
+            id: seed.id,
+            displayName: seed.displayName,
+            region: seed.region,
+            catalogVersion: seed.catalogVersion,
+          ),
+        );
+      }
+
+      final existingMappings = await (select(
+        exerciseMuscleMappings,
+      )..where((table) => table.exerciseId.isIn(parentIds))).get();
+      final existingByPair = {
+        for (final row in existingMappings)
+          '${row.exerciseId}\u0000${row.muscleId}': row,
+      };
+      final expectedByPair = {
+        for (final mapping in seedMappings)
+          for (final contribution in mapping.contributions)
+            '${mapping.exerciseId}\u0000${contribution.muscleId}': true,
+      };
+      for (final existing in existingMappings) {
+        if (existing.mappingStatus != B02MappingStatus.unknown.dbValue &&
+            !expectedByPair.containsKey(
+              '${existing.exerciseId}\u0000${existing.muscleId}',
+            )) {
+          throw StateError(
+            'Existing reviewed exercise-muscle data conflicts with the seed.',
+          );
+        }
+      }
+      final mappingsToInsert = <ExerciseMuscleMappingsCompanion>[];
+      for (final mapping in seedMappings) {
+        for (final contribution in mapping.contributions) {
+          final existing =
+              existingByPair['${mapping.exerciseId}\u0000${contribution.muscleId}'];
+          if (existing != null) {
+            if (existing.mappingStatus == B02MappingStatus.unknown.dbValue) {
+              continue;
+            }
+            if (existing.mappingStatus != mapping.status.dbValue ||
+                existing.role != contribution.role.dbValue ||
+                existing.contributionBasisPoints !=
+                    contribution.contributionBasisPoints ||
+                existing.source != mapping.source ||
+                existing.catalogVersion != mapping.catalogVersion) {
+              throw StateError(
+                'Existing mapping ${mapping.exerciseId}/${contribution.muscleId} '
+                'conflicts with the reviewed seed.',
+              );
+            }
+            continue;
+          }
+          mappingsToInsert.add(
+            ExerciseMuscleMappingsCompanion.insert(
+              id:
+                  '${mapping.exerciseId}:${contribution.muscleId}:v'
+                  '${mapping.catalogVersion}',
+              exerciseId: mapping.exerciseId,
+              muscleId: contribution.muscleId,
+              role: contribution.role.dbValue,
+              contributionBasisPoints: contribution.contributionBasisPoints,
+              mappingStatus: mapping.status.dbValue,
+              source: Value(mapping.source),
+              catalogVersion: mapping.catalogVersion,
+            ),
+          );
+        }
+      }
+
+      if (musclesToInsert.isNotEmpty) {
+        await batch((batch) => batch.insertAll(muscles, musclesToInsert));
+      }
+      if (mappingsToInsert.isNotEmpty) {
+        await batch(
+          (batch) => batch.insertAll(exerciseMuscleMappings, mappingsToInsert),
+        );
+      }
+    });
   }
 
   Future<void> _backfillStableExerciseIds() async {
