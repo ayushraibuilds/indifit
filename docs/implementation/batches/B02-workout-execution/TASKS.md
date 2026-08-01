@@ -60,7 +60,7 @@ write user-owned state outside Drift/backup policy.
   fixture cases cover the edge conditions named in the decision document; a
   reviewer can determine expected behavior without source-code guesses.
 - Tests: fixture parser/determinism tests only.
-- Validation commands: `flutter test test/exercise_identity_fixture_test.dart test/equipment_fixture_test.dart`; `flutter analyze`.
+- Validation commands: `flutter test test/b02_execution_fixture_matrix_test.dart test/exercise_identity_fixture_test.dart test/equipment_fixture_test.dart test/b01_schema_v15_migration_test.dart test/b01_backup_v6_test.dart test/backup_restore_transaction_test.dart`; `flutter analyze`.
 - Definition of done: Sol signs off the schema/backup, identity, draft,
   technique, modality, mapping and target contracts. **SOL-GATE REQUIRED**.
 
@@ -134,7 +134,8 @@ write user-owned state outside Drift/backup policy.
   mutation, no player execution work, no legacy routine graph rewrite.
 - Acceptance criteria: all valid group types author/publish/start; invalid
   cardinality/ordinals reject; reorder/remove works only while draft; snapshot
-  represents group/member/rest data exactly.
+  represents group/member/rest data exactly; UI exposes explicit group,
+  round/member and skipped/partial state per accepted B02-PD01.
 - Tests: repository transition/validation tests; snapshot tests; authoring
   controller/widget tests.
 - Validation commands: `flutter test test/program_repository_test.dart test/execution_bridge_test.dart`; `flutter analyze`.
@@ -207,7 +208,9 @@ write user-owned state outside Drift/backup policy.
   no silent preference writes, no hardcoded display-name rest/cue checks.
 - Acceptance criteria: deterministic output for all fixtures; timer survives
   lifecycle; every selected/rest actual/source fact is durable; no configured
-  rest is overwritten by auto rule.
+  rest is overwritten by auto rule; no preference is persisted until an
+  explicit user choice, and timer adjustments remain current-session only per
+  accepted B02-PD02/B02-PD03.
 - Tests: all warm-up stages/fallbacks; rest precedence; elapsed time; draft
   round trip; preference/equipment fixture tests.
 - Validation commands: `flutter test test/equipment_preference_repository_test.dart test/workout_draft_codec_test.dart`; `flutter analyze`.
@@ -254,7 +257,9 @@ write user-owned state outside Drift/backup policy.
   post-completion mutation workflow.
 - Acceptance criteria: manual activity draft→completion works for every B02
   modality; intervals remain ordered; duplicate import is suppressed; unknown
-  type is visible/not imported; export uses correct native type.
+  type is visible/not imported; export uses correct native type; yoga/mobility
+  require duration only and keep style/focus/intensity optional per accepted
+  B02-PD04.
 - Tests: repository/controller/import adapter tests; provenance duplicate cases;
   optional/required field tests; B01 health regressions.
 - Validation commands: `flutter test test/health_service_test.dart test/phase5_health_backup_notifications_test.dart`; `flutter analyze`.
@@ -284,8 +289,7 @@ write user-owned state outside Drift/backup policy.
 - Tests: provider/controller, widget and end-to-end navigation tests; regression
   suite for player/summary/calendar.
 - Validation commands: `flutter test test/workout_summary_lifecycle_test.dart test/execution_bridge_test.dart test/calendar_controller_test.dart`; `flutter analyze`.
-- Definition of done: product-owner PD01–PD04 outcomes are visibly implemented
-  or the documented provisional behavior is used.
+- Definition of done: accepted B02-PD01–PD04 defaults are visibly implemented.
 
 ## B02-11 — Implement muscle mappings and volume read model
 
@@ -326,8 +330,8 @@ write user-owned state outside Drift/backup policy.
 - Prohibited changes: no direct SQL/domain arithmetic in widgets, no new
   recommendation algorithm, no hardcoded muscle allocation or color-only cue.
 - Acceptance criteria: empty, partial, unknown, loading and error states are
-  clear; cards match modality; heat maps are accessible; no legacy session is
-  falsely classified.
+  clear; cards match modality; heat maps use the accepted B02-PD05 neutral
+  unknown state plus textual coverage; no legacy session is falsely classified.
 - Tests: provider/widget/screenshot-size tests; metric formatting and unknown
   state tests.
 - Validation commands: `flutter test test/phase2_trustworthy_reports_and_achievements_test.dart`; `flutter analyze`.

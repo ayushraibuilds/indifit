@@ -1,9 +1,10 @@
 # B02 Decisions — Workout Execution and Modalities
 
-Status: proposed architecture gate. The decisions marked **SOL-GATE REQUIRED**
-must be approved before the dependent implementation task begins. Product
-choices are intentionally not encoded as defaults until the product owner
-records them.
+Status: B02-01 contract gate accepted. The decisions marked
+**SOL-GATE REQUIRED** remain mandatory integration-review points before their
+durable consumers land. The B02-01 fixture matrix is the executable semantic
+baseline; it does not implement the schema, backup format, volume engine or
+target engine.
 
 `CHARTER.md`, the B01 decisions, and B01 verification remain binding. In a
 conflict, this document controls B02 implementation; `PLAN.md` explains the
@@ -14,18 +15,28 @@ resulting architecture.
 | ID | Decision | Status | Principal risk |
 |---|---|---|---|
 | B02-D01 | Reuse `WorkoutSessions` as the physical activity-session header | Proposed | Breaking history/provenance ancestry |
-| B02-D02 | Schema v16 and Backup v7 compatibility | **SOL-GATE REQUIRED** | Data loss or un-restorable records |
-| B02-D03 | Canonical identity and substitution provenance | **SOL-GATE REQUIRED** | Fragmented history/fuzzy mapping |
-| B02-D04 | Frozen snapshot, v2 draft and idempotent finalization | **SOL-GATE REQUIRED** | Draft loss or duplicate completion |
+| B02-D02 | Schema v16 and Backup v7 compatibility | **Accepted — SOL review required** | Data loss or un-restorable records |
+| B02-D03 | Canonical identity and substitution provenance | **Accepted — SOL review required** | Fragmented history/fuzzy mapping |
+| B02-D04 | Frozen snapshot, v2 draft and idempotent finalization | **Accepted — SOL review required** | Draft loss or duplicate completion |
 | B02-D05 | Explicit ordered exercise groups | Proposed | Invalid group execution/partial state |
-| B02-D06 | Composable technique representation | **SOL-GATE REQUIRED** | Lossy technique history |
+| B02-D06 | Composable technique representation | **Accepted — SOL review required** | Lossy technique history |
 | B02-D07 | Deterministic warm-up recommendation | Proposed | Unsafe/invented load recommendation |
 | B02-D08 | Rest precedence and actual-rest persistence | Proposed | Silent override/incorrect rest history |
-| B02-D09 | Typed cardio, yoga and mobility activity records | **SOL-GATE REQUIRED** | Misclassified health/import data |
-| B02-D10 | Reviewed muscle mapping and metric semantics | **SOL-GATE REQUIRED** | False precision in analytics |
-| B02-D11 | Explainable load/repetition target rule v1 | **SOL-GATE REQUIRED** | Unsafe opaque progression |
+| B02-D09 | Typed cardio, yoga and mobility activity records | **Accepted — SOL review required** | Misclassified health/import data |
+| B02-D10 | Reviewed muscle mapping and metric semantics | **Accepted — SOL review required** | False precision in analytics |
+| B02-D11 | Explainable load/repetition target rule v1 | **Accepted — SOL review required** | Unsafe opaque progression |
 | B02-D12 | Bounded ownership and legacy-adapter retirement | Proposed | Global repository/dual-authority growth |
-| B02-PD01–PD05 | Product-visible choices | Product owner required | Unexpected UX defaults |
+| B02-PD01–PD05 | Product-visible defaults | **Accepted in B02-01** | Unexpected UX defaults |
+
+## B02-01 fixture contract
+
+`lib/core/fixtures/b02_execution_fixture_matrix.dart` is the checked-in,
+versioned contract for the accepted gates. It uses B01 canonical stable IDs and
+contains explicit legacy v15/v5/v6 cases, group/resume/substitution examples,
+technique compositions, modality/provenance cases, equipment increments,
+reviewed and unknown mappings, target truth-table rows, provider mappings and
+valid/invalid backup graphs. Its validator fails closed on an ambiguous ID,
+invalid technique/group/mapping, unsafe target or incomplete backup contract.
 
 ## B02-D01 — Reuse the existing session as the activity header
 
@@ -44,6 +55,8 @@ resulting architecture.
 
 ## B02-D02 — Schema v16 and Backup v7
 
+- **Status:** Accepted in B02-01. B02-02 and B02-13 require Sol High review
+  of the actual migration/restore implementation against the fixture matrix.
 - **Final rule:** B02 is one migration from v15 to v16 and one backup format
   from v6 to v7. It adds the exact extension/new-table set in `PLAN.md`.
 - **Migration policy:** run all DDL, safe defaults, indexes, catalog seeding
@@ -64,6 +77,7 @@ resulting architecture.
 
 ## B02-D03 — Identity, history and substitution
 
+- **Status:** Accepted in B02-01.
 - **Final rule:** Every B02 prescribed/performed exercise write needs an exact
   resolved `Exercises.stableId`, an immutable name snapshot, and source
   prescription ID where applicable. `PerformedExercises` owns actual identity;
@@ -83,6 +97,7 @@ resulting architecture.
 
 ## B02-D04 — Frozen B02 snapshot, draft v2 and completion
 
+- **Status:** Accepted in B02-01.
 - **Final rule:** Keep B01 `WorkoutDrafts` as the one active durable draft.
   Add `activityType` and `executionStateJson`; v2 draft content includes a
   snapshot ID/version, activity route facts, group progress, substitutions,
@@ -120,6 +135,7 @@ resulting architecture.
 
 ## B02-D06 — Techniques compose; segments preserve actual work
 
+- **Status:** Accepted in B02-01.
 - **Final rule:** Do not expand the legacy `WorkoutSets.setType` string list.
   B02 `StrengthSetPrescriptions` and `PerformedSets` use independent role,
   effort, tempo, pause, assistance, drop and rest-pause fields. “Standard” is
@@ -167,6 +183,7 @@ resulting architecture.
 
 ## B02-D09 — Typed modality, import and provenance rules
 
+- **Status:** Accepted in B02-01.
 - **Final rule:** New activity types are `strength`, `running`, `cycling`,
   `walking`, `yoga` and `mobility`; `legacy` is compatibility-only. Cardio uses
   typed detail/interval tables. Yoga/mobility use their own detail table and
@@ -186,6 +203,8 @@ resulting architecture.
 
 ## B02-D10 — Muscle mapping, working sets and coverage
 
+- **Status:** Accepted in B02-01. B02-01 only freezes reviewed fixture
+  allocations; B02-11 must not add unreviewed production mappings.
 - **Final rule:** `Muscles` and `ExerciseMuscleMappings` are the only source
   for B02 muscle allocation. `Exercises.muscleGroups` remains a legacy display
   field and cannot feed heat-map arithmetic. Seed mappings require reviewed
@@ -204,6 +223,8 @@ resulting architecture.
 
 ## B02-D11 — Load/repetition target rule v1
 
+- **Status:** Accepted in B02-01. B02-01 records target truth-table cases;
+  B02-08 remains the sole implementation task for the pure rule.
 - **Final rule:** Use the exact comparator eligibility, one-increment bound,
   rep/RPE outcome, deload, new-exercise, failure, missing-data, override and
   evidence rules in `PLAN.md`.
@@ -234,15 +255,58 @@ resulting architecture.
 - **Required tests:** no new display-name behavior; route compatibility;
   B01 scheduled/unscheduled regression suite; repository ownership lint/review.
 
-## Product-owner decisions required
+## Product-owner defaults accepted in B02-01
 
-| ID | Decision needed | Safe provisional behavior |
-|---|---|---|
-| B02-PD01 | Player presentation and labels for groups, skipped slots and partial completion | Show explicit type/round/member and require an explicit partial-finish confirmation. |
-| B02-PD02 | Default warm-up preference and whether “ask” is default for new users | Store no preference until chosen; show a non-blocking recommendation. |
-| B02-PD03 | Rest UX: whether per-exercise preference is surfaced in player, exercise setup, or both | Current-session override only; never persist a silent choice. |
-| B02-PD04 | Yoga/mobility fields, intensity labels and history vocabulary | Require duration; style/focus/intensity remain optional. |
-| B02-PD05 | Muscle heat-map palette, time ranges and unknown-data treatment | Use accessible neutral unknown state and text coverage; no red/green-only encoding. |
+### B02-PD01 — Group and partial-completion presentation
+
+- **Status:** Accepted.
+- **Final rule:** Show the explicit group type, round and member. A user must
+  explicitly confirm partial finish; skipped slots remain visible as skipped.
+- **Alternatives not selected:** Hiding group progress or silently treating a
+  partial group as complete was rejected because it loses execution state.
+- **User/data consequence:** B02 drafts and performed-group history retain the
+  exact member/round/status; B02-04, B02-05 and B02-10 must render it.
+
+### B02-PD02 — New-user warm-up default
+
+- **Status:** Accepted.
+- **Final rule:** Store no warm-up preference until the user chooses one and
+  show a non-blocking, editable recommendation when a valid target exists.
+- **Alternatives not selected:** An automatic enabled/disabled default was
+  rejected because it would silently choose a training preference.
+- **User/data consequence:** B02-07 persists an explicit preference only after
+  a user action; no preference means recommendation availability, not refusal.
+
+### B02-PD03 — Rest preference surface
+
+- **Status:** Accepted.
+- **Final rule:** B02 MVP supports only a current-session manual override.
+  It never persists a timer adjustment as an exercise preference implicitly.
+- **Alternatives not selected:** Player-only or setup-only persistent controls
+  are deferred; both would expand preference UX beyond the B02 MVP.
+- **User/data consequence:** B02-07/10 record actual selected rest and source
+  for history, but do not write a persistent preference without explicit UI.
+
+### B02-PD04 — Yoga and mobility fields
+
+- **Status:** Accepted.
+- **Final rule:** Duration is required. Style, focus and intensity are
+  optional; distance and pace are absent for yoga and mobility.
+- **Alternatives not selected:** Requiring movement-by-movement logging or
+  distance fields was rejected because it is unnecessary MVP scope and creates
+  false cardio semantics.
+- **User/data consequence:** B02-09/10 use session-level details only and
+  preserve missing optional observations as unknown.
+
+### B02-PD05 — Muscle heat-map unknown state
+
+- **Status:** Accepted.
+- **Final rule:** Use an accessible neutral unknown state plus textual mapping
+  coverage. Never use red/green-only encoding and never render unknown as zero.
+- **Alternatives not selected:** A palette-only state or treating unavailable
+  mappings as untrained would make the analytics misleading.
+- **User/data consequence:** B02-11 exposes mapping coverage; B02-12 renders
+  coverage and an explicit unknown bucket with every heat-map range.
 
 ## Sol-gate checklist
 
