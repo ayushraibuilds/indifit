@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/backup/backup_schema.dart';
 import 'package:indifit/data/database/app_database.dart';
@@ -129,6 +129,8 @@ void main() {
         expect(session.executionSnapshotJson, _snapshotJson);
         expect(session.executionTimezoneId, 'Asia/Kolkata');
         expect(session.completionKind, 'full');
+        expect(session.activityType, 'legacy');
+        expect(session.activitySchemaVersion, 1);
         final sets = await target.select(target.workoutSets).get();
         expect(
           sets.map((set) => set.exerciseId),
@@ -142,6 +144,8 @@ void main() {
         expect(draft.scheduledOccurrenceId, 'occ-repeat');
         expect(draft.executionSnapshotJson, _snapshotJson);
         expect(draft.draftSchemaVersion, 2);
+        expect(draft.activityType, 'legacy');
+        expect(draft.executionStateJson, isNull);
 
         final settings = await target
             .select(target.trainingPlanSettings)

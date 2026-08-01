@@ -15,6 +15,7 @@ import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
 import 'b01_legacy_import_support.dart';
 import 'tables/achievement_tables.dart';
+import 'tables/b02_activity_tables.dart';
 import 'tables/food_tables.dart';
 import 'tables/health_tables.dart';
 import 'tables/hydration_tables.dart';
@@ -25,7 +26,8 @@ import 'tables/workout_tables.dart';
 
 part 'app_database.g.dart';
 
-// B01 schema v15 is generated from the table graph declared below.
+// B02 schema v16 retains the complete B01 graph and adds typed activity
+// storage. B02-02 deliberately does not write or infer any B02 execution row.
 
 @DriftDatabase(
   tables: [
@@ -63,23 +65,49 @@ part 'app_database.g.dart';
     ExerciseSetupValues,
     ExercisePersonalCues,
     LegacyRoutineProgramMappings,
+    ExerciseGroups,
+    ExerciseGroupMembers,
+    StrengthSetPrescriptions,
+    CardioSessionDetails,
+    CardioIntervals,
+    MobilitySessionDetails,
+    PerformedExerciseGroups,
+    PerformedExercises,
+    ExerciseTargetRecommendations,
+    PerformedSets,
+    PerformedSetSegments,
+    PerformedRestPeriods,
+    Muscles,
+    ExerciseMuscleMappings,
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : v15MigrationFailureInjector = null, super(_openConnection());
+  AppDatabase()
+    : v15MigrationFailureInjector = null,
+      v16MigrationFailureInjector = null,
+      super(_openConnection());
   AppDatabase.memory()
     : v15MigrationFailureInjector = null,
+      v16MigrationFailureInjector = null,
       super(NativeDatabase.memory());
-  AppDatabase.executor(super.executor, {this.v15MigrationFailureInjector});
+  AppDatabase.executor(
+    super.executor, {
+    this.v15MigrationFailureInjector,
+    this.v16MigrationFailureInjector,
+  });
 
   /// Test-only hook used to prove the v14 -> v15 upgrade rolls back as one
   /// transaction. It is intentionally invoked only from the migration path.
   final Future<void> Function()? v15MigrationFailureInjector;
 
-  /// Schema v15 adds the durable B01 training-plan graph while retaining the
-  /// legacy routine and history tables for compatibility.
+  /// Test-only hook used to prove the v15 -> v16 upgrade rolls back its DDL
+  /// and compatibility backfill as one transaction.
+  final Future<void> Function()? v16MigrationFailureInjector;
+
+  /// Schema v16 adds the B02 activity-session table graph while retaining the
+  /// B01 program, occurrence, routine, set, and draft compatibility fields.
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -150,11 +178,14 @@ class AppDatabase extends _$AppDatabase {
       if (from < 15) {
         await _migrateV14ToV15(m);
       }
+      if (from < 16) {
+        await _migrateV15ToV16(m);
+      }
     },
 
     onCreate: (m) async {
       await m.createAll();
-      await _createV15IndexesAndTriggers();
+      await _createV16IndexesAndTriggers();
       await _ensureTrainingPlanSettings();
       await seedFoodsFromAsset();
       await seedExercisesFromAsset();
@@ -403,6 +434,107 @@ class AppDatabase extends _$AppDatabase {
       final injectedFailure = v15MigrationFailureInjector;
       if (injectedFailure != null) await injectedFailure();
     });
+  }
+
+  /// Adds B02 storage without interpreting B01 history. This explicit
+  /// transaction covers every v16 DDL statement, the only permitted backfill
+  /// (`legacy` activity headers), and migration test injection.
+  Future<void> _migrateV15ToV16(Migrator m) async {
+    await transaction(() async {
+      // A direct v14 -> v16 upgrade first creates the B01 tables using the
+      // current declarations. Check physical columns so it neither attempts a
+      // duplicate ALTER nor changes the v15 -> v16 contract for real files.
+      if (!await _tableHasColumn('workout_sessions', 'activity_type')) {
+        await m.addColumn(workoutSessions, workoutSessions.activityType);
+      }
+      if (!await _tableHasColumn(
+        'workout_sessions',
+        'activity_schema_version',
+      )) {
+        await m.addColumn(
+          workoutSessions,
+          workoutSessions.activitySchemaVersion,
+        );
+      }
+      if (!await _tableHasColumn('session_templates', 'activity_type')) {
+        await m.addColumn(sessionTemplates, sessionTemplates.activityType);
+      }
+      if (!await _tableHasColumn('session_templates', 'default_rest_seconds')) {
+        await m.addColumn(
+          sessionTemplates,
+          sessionTemplates.defaultRestSeconds,
+        );
+      }
+      if (!await _tableHasColumn('workout_drafts', 'activity_type')) {
+        await m.addColumn(workoutDrafts, workoutDrafts.activityType);
+      }
+      if (!await _tableHasColumn('workout_drafts', 'execution_state_json')) {
+        await m.addColumn(workoutDrafts, workoutDrafts.executionStateJson);
+      }
+      if (!await _tableHasColumn(
+        'exercise_user_preferences',
+        'warmup_preference',
+      )) {
+        await m.addColumn(
+          exerciseUserPreferences,
+          exerciseUserPreferences.warmupPreference,
+        );
+      }
+      if (!await _tableHasColumn(
+        'exercise_user_preferences',
+        'warmup_set_count',
+      )) {
+        await m.addColumn(
+          exerciseUserPreferences,
+          exerciseUserPreferences.warmupSetCount,
+        );
+      }
+      if (!await _tableHasColumn(
+        'exercise_user_preferences',
+        'custom_rest_seconds',
+      )) {
+        await m.addColumn(
+          exerciseUserPreferences,
+          exerciseUserPreferences.customRestSeconds,
+        );
+      }
+
+      // Parent tables precede their dependants. No B02 data is backfilled:
+      // v15 rows lack evidence for groups, rich sets, modalities, mappings,
+      // targets, intervals, rest periods, and substitutions.
+      await m.createTable(muscles);
+      await m.createTable(exerciseGroups);
+      await m.createTable(strengthSetPrescriptions);
+      await m.createTable(cardioSessionDetails);
+      await m.createTable(mobilitySessionDetails);
+      await m.createTable(performedExerciseGroups);
+      await m.createTable(exerciseMuscleMappings);
+      await m.createTable(exerciseGroupMembers);
+      await m.createTable(cardioIntervals);
+      await m.createTable(performedExercises);
+      await m.createTable(exerciseTargetRecommendations);
+      await m.createTable(performedSets);
+      await m.createTable(performedSetSegments);
+      await m.createTable(performedRestPeriods);
+
+      // The `legacy` default is the only historical classification. It is not
+      // derived from workout names, old set fields, duration, or provenance.
+      await customStatement('''
+        UPDATE workout_sessions
+        SET activity_type = 'legacy', activity_schema_version = 1
+        WHERE activity_type IS NULL OR activity_schema_version IS NULL
+      ''');
+
+      await _createV16IndexesAndTriggers();
+
+      final injectedFailure = v16MigrationFailureInjector;
+      if (injectedFailure != null) await injectedFailure();
+    });
+  }
+
+  Future<bool> _tableHasColumn(String tableName, String columnName) async {
+    final rows = await customSelect('PRAGMA table_info($tableName)').get();
+    return rows.any((row) => row.data['name'] == columnName);
   }
 
   Future<void> _backfillStableExerciseIds() async {
@@ -734,6 +866,93 @@ class AppDatabase extends _$AppDatabase {
         WHERE id = NEW.id;
       END
     ''');
+  }
+
+  Future<void> _createV16IndexesAndTriggers() async {
+    await _createV15IndexesAndTriggers();
+    const statements = [
+      'CREATE INDEX IF NOT EXISTS idx_workout_sessions_activity_completed ON workout_sessions(activity_type, completed_at)',
+      'CREATE INDEX IF NOT EXISTS idx_session_templates_week_activity_ordinal ON session_templates(program_week_id, activity_type, ordinal)',
+      'CREATE INDEX IF NOT EXISTS idx_exercise_groups_template ON exercise_groups(session_template_id)',
+      'CREATE INDEX IF NOT EXISTS idx_exercise_group_members_group ON exercise_group_members(exercise_group_id)',
+      'CREATE INDEX IF NOT EXISTS idx_exercise_group_members_prescription ON exercise_group_members(exercise_prescription_id)',
+      'CREATE INDEX IF NOT EXISTS idx_strength_set_prescriptions_prescription ON strength_set_prescriptions(exercise_prescription_id)',
+      'CREATE INDEX IF NOT EXISTS idx_cardio_session_details_interval ON cardio_session_details(is_interval_workout)',
+      'CREATE INDEX IF NOT EXISTS idx_cardio_intervals_session_ordinal ON cardio_intervals(cardio_session_id, ordinal)',
+      'CREATE INDEX IF NOT EXISTS idx_mobility_session_details_practice ON mobility_session_details(practice_type)',
+      'CREATE INDEX IF NOT EXISTS idx_performed_exercise_groups_session_ordinal ON performed_exercise_groups(session_id, ordinal)',
+      'CREATE INDEX IF NOT EXISTS idx_performed_exercises_session_ordinal ON performed_exercises(session_id, ordinal)',
+      'CREATE INDEX IF NOT EXISTS idx_performed_exercises_actual_session ON performed_exercises(actual_exercise_id, session_id)',
+      'CREATE INDEX IF NOT EXISTS idx_performed_exercises_source_prescription ON performed_exercises(source_exercise_prescription_id)',
+      'CREATE INDEX IF NOT EXISTS idx_target_recommendations_performed_exercise ON exercise_target_recommendations(performed_exercise_id)',
+      'CREATE INDEX IF NOT EXISTS idx_performed_sets_exercise_role ON performed_sets(performed_exercise_id, role)',
+      'CREATE INDEX IF NOT EXISTS idx_performed_set_segments_set_ordinal ON performed_set_segments(performed_set_id, ordinal)',
+      'CREATE INDEX IF NOT EXISTS idx_performed_rest_periods_session_started ON performed_rest_periods(session_id, started_at_utc)',
+      'CREATE INDEX IF NOT EXISTS idx_performed_rest_periods_set ON performed_rest_periods(performed_set_id)',
+      'CREATE INDEX IF NOT EXISTS idx_performed_rest_periods_group ON performed_rest_periods(performed_exercise_group_id)',
+      'CREATE INDEX IF NOT EXISTS idx_muscles_region_active ON muscles(region, is_active)',
+      'CREATE INDEX IF NOT EXISTS idx_exercise_muscle_mappings_muscle_status ON exercise_muscle_mappings(muscle_id, mapping_status)',
+    ];
+    for (final statement in statements) {
+      await customStatement(statement);
+    }
+
+    // ALTER TABLE cannot add a table-level CHECK to existing v15 tables.
+    // These triggers preserve the same typed-value contract on migration as a
+    // fresh v16 database receives from the Drift table constraints.
+    const triggers = [
+      '''
+        CREATE TRIGGER IF NOT EXISTS workout_sessions_validate_activity_insert
+        BEFORE INSERT ON workout_sessions
+        FOR EACH ROW WHEN NEW.activity_type NOT IN ('legacy', 'strength', 'running', 'cycling', 'walking', 'yoga', 'mobility') OR NEW.activity_schema_version < 1
+        BEGIN SELECT RAISE(ABORT, 'invalid workout session activity type'); END
+      ''',
+      '''
+        CREATE TRIGGER IF NOT EXISTS workout_sessions_validate_activity_update
+        BEFORE UPDATE OF activity_type, activity_schema_version ON workout_sessions
+        FOR EACH ROW WHEN NEW.activity_type NOT IN ('legacy', 'strength', 'running', 'cycling', 'walking', 'yoga', 'mobility') OR NEW.activity_schema_version < 1
+        BEGIN SELECT RAISE(ABORT, 'invalid workout session activity type'); END
+      ''',
+      '''
+        CREATE TRIGGER IF NOT EXISTS session_templates_validate_activity_insert
+        BEFORE INSERT ON session_templates
+        FOR EACH ROW WHEN NEW.activity_type NOT IN ('strength', 'running', 'cycling', 'walking', 'yoga', 'mobility') OR (NEW.default_rest_seconds IS NOT NULL AND NEW.default_rest_seconds < 0)
+        BEGIN SELECT RAISE(ABORT, 'invalid session template activity type'); END
+      ''',
+      '''
+        CREATE TRIGGER IF NOT EXISTS session_templates_validate_activity_update
+        BEFORE UPDATE OF activity_type, default_rest_seconds ON session_templates
+        FOR EACH ROW WHEN NEW.activity_type NOT IN ('strength', 'running', 'cycling', 'walking', 'yoga', 'mobility') OR (NEW.default_rest_seconds IS NOT NULL AND NEW.default_rest_seconds < 0)
+        BEGIN SELECT RAISE(ABORT, 'invalid session template activity type'); END
+      ''',
+      '''
+        CREATE TRIGGER IF NOT EXISTS workout_drafts_validate_activity_insert
+        BEFORE INSERT ON workout_drafts
+        FOR EACH ROW WHEN NEW.activity_type NOT IN ('legacy', 'strength', 'running', 'cycling', 'walking', 'yoga', 'mobility')
+        BEGIN SELECT RAISE(ABORT, 'invalid workout draft activity type'); END
+      ''',
+      '''
+        CREATE TRIGGER IF NOT EXISTS workout_drafts_validate_activity_update
+        BEFORE UPDATE OF activity_type ON workout_drafts
+        FOR EACH ROW WHEN NEW.activity_type NOT IN ('legacy', 'strength', 'running', 'cycling', 'walking', 'yoga', 'mobility')
+        BEGIN SELECT RAISE(ABORT, 'invalid workout draft activity type'); END
+      ''',
+      '''
+        CREATE TRIGGER IF NOT EXISTS exercise_preferences_validate_execution_insert
+        BEFORE INSERT ON exercise_user_preferences
+        FOR EACH ROW WHEN (NEW.warmup_preference IS NOT NULL AND NEW.warmup_preference NOT IN ('off', 'ask', 'automatic')) OR (NEW.warmup_set_count IS NOT NULL AND NEW.warmup_set_count NOT BETWEEN 1 AND 4) OR (NEW.custom_rest_seconds IS NOT NULL AND NEW.custom_rest_seconds < 0)
+        BEGIN SELECT RAISE(ABORT, 'invalid exercise execution preference'); END
+      ''',
+      '''
+        CREATE TRIGGER IF NOT EXISTS exercise_preferences_validate_execution_update
+        BEFORE UPDATE OF warmup_preference, warmup_set_count, custom_rest_seconds ON exercise_user_preferences
+        FOR EACH ROW WHEN (NEW.warmup_preference IS NOT NULL AND NEW.warmup_preference NOT IN ('off', 'ask', 'automatic')) OR (NEW.warmup_set_count IS NOT NULL AND NEW.warmup_set_count NOT BETWEEN 1 AND 4) OR (NEW.custom_rest_seconds IS NOT NULL AND NEW.custom_rest_seconds < 0)
+        BEGIN SELECT RAISE(ABORT, 'invalid exercise execution preference'); END
+      ''',
+    ];
+    for (final trigger in triggers) {
+      await customStatement(trigger);
+    }
   }
 
   Future<void> _migrateLegacyHydrationPreferencesToDatabase() async {

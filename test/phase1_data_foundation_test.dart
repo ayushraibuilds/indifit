@@ -22,9 +22,9 @@ void main() {
     });
 
     test(
-      '1. Schema v15 initializes with retained user profile columns',
+      '1. Schema v16 initializes with retained user profile columns',
       () async {
-        expect(db.schemaVersion, equals(15));
+        expect(db.schemaVersion, equals(16));
 
         // Test UserProfiles extended columns
         await db

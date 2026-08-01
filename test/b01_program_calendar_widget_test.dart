@@ -66,6 +66,7 @@ ProgramDetailAggregate _reviewDetail() {
         ordinal: 0,
         name: 'Template 1',
         plannedWeekday: DateTime.monday,
+        activityType: 'strength',
       ),
     ],
     exercisePrescriptions: const [

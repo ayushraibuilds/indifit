@@ -36,6 +36,15 @@ class WorkoutSessions extends Table {
   TextColumn get executionSnapshotJson => text().nullable()();
   TextColumn get executionTimezoneId => text().nullable()();
   TextColumn get completionKind => text().nullable()();
+  TextColumn get activityType => text().withDefault(const Constant('legacy'))();
+  IntColumn get activitySchemaVersion =>
+      integer().withDefault(const Constant(1))();
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK (activity_type IN ('legacy', 'strength', 'running', 'cycling', 'walking', 'yoga', 'mobility'))",
+    'CHECK (activity_schema_version >= 1)',
+  ];
 }
 
 class WorkoutSets extends Table {
@@ -113,4 +122,11 @@ class WorkoutDrafts extends Table {
   TextColumn get executionSnapshotJson => text().nullable()();
   IntColumn get draftSchemaVersion =>
       integer().withDefault(const Constant(1))();
+  TextColumn get activityType => text().withDefault(const Constant('legacy'))();
+  TextColumn get executionStateJson => text().nullable()();
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK (activity_type IN ('legacy', 'strength', 'running', 'cycling', 'walking', 'yoga', 'mobility'))",
+  ];
 }

@@ -790,6 +790,10 @@ class BackupData {
             executionSnapshotJson: s['execution_snapshot_json'] as String?,
             executionTimezoneId: s['execution_timezone_id'] as String?,
             completionKind: s['completion_kind'] as String?,
+            // Backup v5/v6 has no B02 activity graph. Its retained B01
+            // sessions therefore restore only as explicit legacy history.
+            activityType: 'legacy',
+            activitySchemaVersion: 1,
           ),
         );
       }
@@ -897,6 +901,9 @@ class BackupData {
             executionSnapshotJson: d['execution_snapshot_json'] as String?,
             draftSchemaVersion:
                 (d['draft_schema_version'] as num?)?.toInt() ?? 1,
+            // v5/v6 draft payloads remain B01-compatible and are never
+            // upgraded into a B02 execution-state draft during restore.
+            activityType: 'legacy',
           ),
         );
       }
@@ -2152,6 +2159,8 @@ class BackupData {
                   executionSnapshotJson: Value(s.executionSnapshotJson),
                   executionTimezoneId: Value(s.executionTimezoneId),
                   completionKind: Value(s.completionKind),
+                  activityType: const Value('legacy'),
+                  activitySchemaVersion: const Value(1),
                 ),
               );
           sessionIdMap[s.id] = newId;
@@ -2196,6 +2205,7 @@ class BackupData {
                   scheduledOccurrenceId: Value(d.scheduledOccurrenceId),
                   executionSnapshotJson: Value(d.executionSnapshotJson),
                   draftSchemaVersion: Value(d.draftSchemaVersion),
+                  activityType: const Value('legacy'),
                 ),
               );
         }

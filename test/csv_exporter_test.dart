@@ -40,6 +40,8 @@ void main() {
           estimatedCalories: 250,
           completedAt: DateTime(2026, 7, 20, 10, 0),
           isSynced: false,
+          activityType: 'legacy',
+          activitySchemaVersion: 1,
         ),
       ];
 

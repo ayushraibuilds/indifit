@@ -89,6 +89,9 @@ class SessionTemplates extends Table {
   IntColumn get plannedWeekday => integer()();
   IntColumn get plannedStartMinute => integer().nullable()();
   TextColumn get notes => text().nullable()();
+  TextColumn get activityType =>
+      text().withDefault(const Constant('strength'))();
+  IntColumn get defaultRestSeconds => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -103,6 +106,8 @@ class SessionTemplates extends Table {
   List<String> get customConstraints => [
     'CHECK (planned_weekday BETWEEN 1 AND 7)',
     'CHECK (planned_start_minute IS NULL OR planned_start_minute BETWEEN 0 AND 1439)',
+    "CHECK (activity_type IN ('strength', 'running', 'cycling', 'walking', 'yoga', 'mobility'))",
+    'CHECK (default_rest_seconds IS NULL OR default_rest_seconds >= 0)',
   ];
 }
 
@@ -291,6 +296,9 @@ class ExerciseUserPreferences extends Table {
       text().nullable().references(Exercises, #stableId)();
   TextColumn get exerciseNameFallback => text().nullable()();
   TextColumn get generalNote => text().nullable()();
+  TextColumn get warmupPreference => text().nullable()();
+  IntColumn get warmupSetCount => integer().nullable()();
+  IntColumn get customRestSeconds => integer().nullable()();
   DateTimeColumn get createdAtUtc => dateTime()();
   DateTimeColumn get updatedAtUtc => dateTime()();
 
@@ -300,6 +308,13 @@ class ExerciseUserPreferences extends Table {
   @override
   List<Set<Column>> get uniqueKeys => [
     {identityKey},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK (warmup_preference IS NULL OR warmup_preference IN ('off', 'ask', 'automatic'))",
+    'CHECK (warmup_set_count IS NULL OR warmup_set_count BETWEEN 1 AND 4)',
+    'CHECK (custom_rest_seconds IS NULL OR custom_rest_seconds >= 0)',
   ];
 }
 
