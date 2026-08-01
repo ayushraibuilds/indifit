@@ -1734,6 +1734,309 @@ class B02PerformedExerciseDraft {
   };
 }
 
+enum B02WarmupPreference {
+  off('off'),
+  ask('ask'),
+  automatic('automatic');
+
+  final String dbValue;
+
+  const B02WarmupPreference(this.dbValue);
+
+  static B02WarmupPreference parse(Object? raw) {
+    if (raw is! String) {
+      throw B02ValidationException('Warm-up preference must be a string.');
+    }
+    for (final value in values) {
+      if (value.dbValue == raw) return value;
+    }
+    throw B02ValidationException('Unsupported warm-up preference "$raw".');
+  }
+}
+
+enum B02WarmupTargetSource {
+  userEditedDraft('userEditedDraft'),
+  targetRecommendation('targetRecommendation'),
+  prescription('prescription'),
+  recentComparable('recentComparable');
+
+  final String dbValue;
+
+  const B02WarmupTargetSource(this.dbValue);
+
+  static B02WarmupTargetSource parse(Object? raw) {
+    if (raw is! String) {
+      throw B02ValidationException('Warm-up target source must be a string.');
+    }
+    for (final value in values) {
+      if (value.dbValue == raw) return value;
+    }
+    throw B02ValidationException('Unsupported warm-up target source "$raw".');
+  }
+}
+
+enum B02WarmupAvailability {
+  available('available'),
+  unavailable('unavailable');
+
+  final String dbValue;
+
+  const B02WarmupAvailability(this.dbValue);
+
+  static B02WarmupAvailability parse(Object? raw) {
+    if (raw is! String) {
+      throw B02ValidationException('Warm-up availability must be a string.');
+    }
+    for (final value in values) {
+      if (value.dbValue == raw) return value;
+    }
+    throw B02ValidationException('Unsupported warm-up availability "$raw".');
+  }
+}
+
+class B02WarmupLoadCandidate {
+  final double? loadKg;
+  final B02LoadBasis? loadBasis;
+  final B02WarmupTargetSource source;
+
+  const B02WarmupLoadCandidate({
+    required this.loadKg,
+    required this.loadBasis,
+    required this.source,
+  });
+
+  factory B02WarmupLoadCandidate.fromJson(Map<String, dynamic> json) {
+    return B02WarmupLoadCandidate(
+      loadKg: _optionalDouble(json['loadKg'], 'warm-up target load'),
+      loadBasis: json['loadBasis'] == null
+          ? null
+          : B02LoadBasis.parse(json['loadBasis']),
+      source: B02WarmupTargetSource.parse(json['source']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    if (loadKg != null) 'loadKg': loadKg,
+    if (loadBasis != null) 'loadBasis': loadBasis!.dbValue,
+    'source': source.dbValue,
+  };
+}
+
+class B02WarmupSetProposal {
+  final int ordinal;
+  final double? percentageOfWorkingLoad;
+  final double? loadKg;
+  final B02LoadBasis loadBasis;
+  final int reps;
+  final bool techniquePreparation;
+
+  B02WarmupSetProposal({
+    required this.ordinal,
+    this.percentageOfWorkingLoad,
+    required this.loadKg,
+    required this.loadBasis,
+    required this.reps,
+    this.techniquePreparation = false,
+  }) {
+    if (ordinal < 0) {
+      throw B02ValidationException('Warm-up proposal ordinal is invalid.');
+    }
+    _nonNegative(percentageOfWorkingLoad, 'warm-up percentage');
+    if (loadBasis == B02LoadBasis.bodyweight) {
+      if (loadKg != null) {
+        throw B02ValidationException(
+          'Bodyweight warm-up proposals cannot carry external load.',
+        );
+      }
+    } else {
+      _positive(loadKg, 'warm-up load');
+    }
+    _atLeast(reps, 1, 'warm-up reps');
+    if (techniquePreparation && (reps < 5 || reps > 10)) {
+      throw B02ValidationException(
+        'Technique-preparation warm-ups must contain 5 to 10 reps.',
+      );
+    }
+  }
+
+  factory B02WarmupSetProposal.fromJson(Map<String, dynamic> json) {
+    return B02WarmupSetProposal(
+      ordinal: _requiredInt(json['ordinal'], 'warm-up proposal ordinal'),
+      percentageOfWorkingLoad: _optionalDouble(
+        json['percentageOfWorkingLoad'],
+        'warm-up percentage',
+      ),
+      loadKg: _optionalDouble(json['loadKg'], 'warm-up load'),
+      loadBasis: B02LoadBasis.parse(json['loadBasis']),
+      reps: _requiredInt(json['reps'], 'warm-up reps'),
+      techniquePreparation: json['techniquePreparation'] == null
+          ? false
+          : _requiredBool(
+              json['techniquePreparation'],
+              'technique-preparation flag',
+            ),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'ordinal': ordinal,
+    if (percentageOfWorkingLoad != null)
+      'percentageOfWorkingLoad': percentageOfWorkingLoad,
+    if (loadKg != null) 'loadKg': loadKg,
+    'loadBasis': loadBasis.dbValue,
+    'reps': reps,
+    'techniquePreparation': techniquePreparation,
+  };
+}
+
+class B02WarmupRecommendation {
+  static const String ruleVersion = 'b02-warmup-v1';
+
+  final B02WarmupAvailability availability;
+  final B02WarmupPreference? preference;
+  final B02WarmupTargetSource? selectedSource;
+  final B02LoadBasis? loadBasis;
+  final double? workingLoadKg;
+  final int requestedCount;
+  final double? incrementKg;
+  final bool incrementUnavailable;
+  final String reason;
+  final Map<String, bool> completeness;
+  final List<B02WarmupSetProposal> proposals;
+
+  B02WarmupRecommendation({
+    required this.availability,
+    required this.preference,
+    required this.selectedSource,
+    required this.loadBasis,
+    required this.workingLoadKg,
+    required this.requestedCount,
+    required this.incrementKg,
+    required this.incrementUnavailable,
+    required this.reason,
+    required this.completeness,
+    required this.proposals,
+  }) {
+    if (requestedCount < 1 || requestedCount > 4) {
+      throw B02ValidationException(
+        'Warm-up request count must be between 1 and 4.',
+      );
+    }
+    _requiredString(reason, 'warm-up reason');
+    _nonNegative(workingLoadKg, 'warm-up working load');
+    _positive(incrementKg, 'warm-up increment');
+    _contiguousOrdinals(
+      proposals.map((proposal) => proposal.ordinal),
+      'Warm-up proposal',
+    );
+    if (availability == B02WarmupAvailability.available &&
+        selectedSource == null) {
+      throw const B02ValidationException(
+        'Available warm-up recommendations require a target source.',
+      );
+    }
+    if (loadBasis == B02LoadBasis.bodyweight && workingLoadKg != null) {
+      throw const B02ValidationException(
+        'Bodyweight warm-up recommendations cannot carry external load.',
+      );
+    }
+  }
+
+  factory B02WarmupRecommendation.fromJson(Map<String, dynamic> json) {
+    final version = _requiredString(
+      json['ruleVersion'],
+      'warm-up rule version',
+    );
+    if (version != ruleVersion) {
+      throw B02ValidationException(
+        'Unsupported warm-up rule version "$version".',
+      );
+    }
+    final proposals = _list(json['proposals'] ?? const [], 'warm-up proposals')
+        .map(
+          (raw) =>
+              B02WarmupSetProposal.fromJson(_object(raw, 'warm-up proposal')),
+        )
+        .toList(growable: false);
+    final rawCompleteness = _object(
+      json['completeness'] ?? const {},
+      'warm-up completeness',
+    );
+    final completeness = <String, bool>{};
+    for (final entry in rawCompleteness.entries) {
+      completeness[entry.key] = _requiredBool(
+        entry.value,
+        'warm-up completeness ${entry.key}',
+      );
+    }
+    return B02WarmupRecommendation(
+      availability: B02WarmupAvailability.parse(json['availability']),
+      preference: json['preference'] == null
+          ? null
+          : B02WarmupPreference.parse(json['preference']),
+      selectedSource: json['selectedSource'] == null
+          ? null
+          : B02WarmupTargetSource.parse(json['selectedSource']),
+      loadBasis: json['loadBasis'] == null
+          ? null
+          : B02LoadBasis.parse(json['loadBasis']),
+      workingLoadKg: _optionalDouble(
+        json['workingLoadKg'],
+        'warm-up working load',
+      ),
+      requestedCount: _requiredInt(
+        json['requestedCount'],
+        'warm-up request count',
+      ),
+      incrementKg: _optionalDouble(json['incrementKg'], 'warm-up increment'),
+      incrementUnavailable: json['incrementUnavailable'] == null
+          ? false
+          : _requiredBool(
+              json['incrementUnavailable'],
+              'warm-up increment availability',
+            ),
+      reason: _requiredString(json['reason'], 'warm-up reason'),
+      completeness: completeness,
+      proposals: proposals,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'ruleVersion': ruleVersion,
+    'availability': availability.dbValue,
+    if (preference != null) 'preference': preference!.dbValue,
+    if (selectedSource != null) 'selectedSource': selectedSource!.dbValue,
+    if (loadBasis != null) 'loadBasis': loadBasis!.dbValue,
+    if (workingLoadKg != null) 'workingLoadKg': workingLoadKg,
+    'requestedCount': requestedCount,
+    if (incrementKg != null) 'incrementKg': incrementKg,
+    'incrementUnavailable': incrementUnavailable,
+    'reason': reason,
+    'completeness': completeness,
+    'proposals': proposals.map((proposal) => proposal.toJson()).toList(),
+  };
+}
+
+class B02ExerciseExecutionPreference {
+  final B02WarmupPreference? warmupPreference;
+  final int? warmupSetCount;
+  final int? customRestSeconds;
+
+  B02ExerciseExecutionPreference({
+    this.warmupPreference,
+    this.warmupSetCount,
+    this.customRestSeconds,
+  }) {
+    if (warmupSetCount != null &&
+        (warmupSetCount! < 1 || warmupSetCount! > 4)) {
+      throw B02ValidationException(
+        'Warm-up set count must be between 1 and 4.',
+      );
+    }
+    _nonNegative(customRestSeconds, 'custom rest');
+  }
+}
+
 class B02ExecutionDraftState {
   static const int schemaVersion = 2;
 
@@ -1751,6 +2054,7 @@ class B02ExecutionDraftState {
   final List<B02ExerciseGroup> groups;
   final List<B02PerformedExerciseDraft> performedExercises;
   final List<B02RestPeriod> restPeriods;
+  final B02WarmupRecommendation? warmupRecommendation;
 
   B02ExecutionDraftState({
     required this.snapshotId,
@@ -1767,6 +2071,7 @@ class B02ExecutionDraftState {
     this.groups = const [],
     this.performedExercises = const [],
     this.restPeriods = const [],
+    this.warmupRecommendation,
   }) {
     _requiredString(snapshotId, 'snapshot id');
     _atLeast(snapshotVersion, 1, 'snapshot version');
@@ -1811,6 +2116,11 @@ class B02ExecutionDraftState {
     final restPeriods = _list(json['restPeriods'] ?? const [], 'rest periods')
         .map((raw) => B02RestPeriod.fromJson(_object(raw, 'rest period')))
         .toList(growable: false);
+    final warmupRecommendation = json['warmupRecommendation'] == null
+        ? null
+        : B02WarmupRecommendation.fromJson(
+            _object(json['warmupRecommendation'], 'warm-up recommendation'),
+          );
     return B02ExecutionDraftState(
       snapshotId: _requiredString(json['snapshotId'], 'snapshot id'),
       snapshotVersion: _requiredInt(
@@ -1847,6 +2157,30 @@ class B02ExecutionDraftState {
       groups: groups,
       performedExercises: performedExercises,
       restPeriods: restPeriods,
+      warmupRecommendation: warmupRecommendation,
+    );
+  }
+
+  B02ExecutionDraftState copyWith({
+    List<B02RestPeriod>? restPeriods,
+    B02WarmupRecommendation? warmupRecommendation,
+  }) {
+    return B02ExecutionDraftState(
+      snapshotId: snapshotId,
+      snapshotVersion: snapshotVersion,
+      activityType: activityType,
+      routineName: routineName,
+      elapsedSeconds: elapsedSeconds,
+      currentGroupOrdinal: currentGroupOrdinal,
+      currentGroupId: currentGroupId,
+      currentRoundOrdinal: currentRoundOrdinal,
+      currentMemberOrdinal: currentMemberOrdinal,
+      currentExerciseOrdinal: currentExerciseOrdinal,
+      currentSetOrdinal: currentSetOrdinal,
+      groups: groups,
+      performedExercises: performedExercises,
+      restPeriods: restPeriods ?? this.restPeriods,
+      warmupRecommendation: warmupRecommendation ?? this.warmupRecommendation,
     );
   }
 
@@ -1869,5 +2203,7 @@ class B02ExecutionDraftState {
         .map((exercise) => exercise.toJson())
         .toList(),
     'restPeriods': restPeriods.map((period) => period.toJson()).toList(),
+    if (warmupRecommendation != null)
+      'warmupRecommendation': warmupRecommendation!.toJson(),
   };
 }

@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/fixtures/equipment_fixtures.dart';
 import '../../core/fixtures/exercise_identity_fixtures.dart';
 import '../database/app_database.dart';
+import '../models/b02_execution_models.dart';
 
 class EquipmentProfileItemInput {
   final String equipmentCode;
@@ -485,6 +486,22 @@ class ExercisePreferenceRepository {
     return _readPreference(key);
   }
 
+  Future<B02ExerciseExecutionPreference?> getExecutionPreference({
+    String? stableId,
+    String? rawName,
+  }) async {
+    final aggregate = await getPreference(stableId: stableId, rawName: rawName);
+    final row = aggregate?.preference;
+    if (row == null) return null;
+    return B02ExerciseExecutionPreference(
+      warmupPreference: row.warmupPreference == null
+          ? null
+          : B02WarmupPreference.parse(row.warmupPreference),
+      warmupSetCount: row.warmupSetCount,
+      customRestSeconds: row.customRestSeconds,
+    );
+  }
+
   Stream<ExercisePreferenceAggregate?> watchPreference({
     String? stableId,
     String? rawName,
@@ -617,6 +634,67 @@ class ExercisePreferenceRepository {
         db.exerciseUserPreferences,
       )..where((t) => t.id.equals(preference.id))).go();
     });
+  }
+
+  /// Persists execution settings only for an explicit user action. Automatic
+  /// warm-up recommendations and current-session rest adjustments never call
+  /// this method implicitly.
+  Future<void> saveExecutionPreference({
+    String? stableId,
+    String? rawName,
+    bool allowUnresolvedRawFallback = false,
+    B02WarmupPreference? warmupPreference,
+    bool clearWarmupPreference = false,
+    int? warmupSetCount,
+    bool clearWarmupSetCount = false,
+    int? customRestSeconds,
+    bool clearCustomRestSeconds = false,
+  }) async {
+    B02ExerciseExecutionPreference(
+      warmupPreference: warmupPreference,
+      warmupSetCount: warmupSetCount,
+      customRestSeconds: customRestSeconds,
+    );
+    if (warmupPreference == null &&
+        !clearWarmupPreference &&
+        warmupSetCount == null &&
+        !clearWarmupSetCount &&
+        customRestSeconds == null &&
+        !clearCustomRestSeconds) {
+      throw ArgumentError('At least one execution preference must be changed.');
+    }
+    await savePreference(
+      stableId: stableId,
+      rawName: rawName,
+      allowUnresolvedRawFallback: allowUnresolvedRawFallback,
+    );
+    final key = computeIdentityKey(stableId: stableId, rawName: rawName);
+    final changed =
+        await (db.update(
+          db.exerciseUserPreferences,
+        )..where((t) => t.identityKey.equals(key))).write(
+          ExerciseUserPreferencesCompanion(
+            warmupPreference: clearWarmupPreference
+                ? const Value(null)
+                : warmupPreference == null
+                ? const Value.absent()
+                : Value(warmupPreference.dbValue),
+            warmupSetCount: clearWarmupSetCount
+                ? const Value(null)
+                : warmupSetCount == null
+                ? const Value.absent()
+                : Value(warmupSetCount),
+            customRestSeconds: clearCustomRestSeconds
+                ? const Value(null)
+                : customRestSeconds == null
+                ? const Value.absent()
+                : Value(customRestSeconds),
+            updatedAtUtc: Value(DateTime.now().toUtc()),
+          ),
+        );
+    if (changed != 1) {
+      throw StateError('Exercise execution preference was not saved.');
+    }
   }
 
   Future<ExercisePreferenceAggregate?> _readPreference(String key) async {
