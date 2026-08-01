@@ -353,6 +353,30 @@ class ActivitySessionRepository {
     }
   }
 
+  /// Discards only an unscheduled typed activity draft. Scheduled occurrence
+  /// drafts remain owned by the strength/calendar boundary.
+  Future<void> discardDraft(int draftId) async {
+    await _db.transaction(() async {
+      final draft = await (_db.select(
+        _db.workoutDrafts,
+      )..where((table) => table.id.equals(draftId))).getSingleOrNull();
+      if (draft == null || draft.executionStateJson == null) {
+        throw StateError('Typed activity draft $draftId was not found.');
+      }
+      if (draft.scheduledOccurrenceId != null) {
+        throw StateError(
+          'Scheduled drafts must be discarded by the occurrence owner.',
+        );
+      }
+      final deleted = await (_db.delete(
+        _db.workoutDrafts,
+      )..where((table) => table.id.equals(draftId))).go();
+      if (deleted != 1) {
+        throw StateError('Typed activity draft $draftId was not deleted.');
+      }
+    });
+  }
+
   Future<int> completeDraft(int draftId, {DateTime? completedAtUtc}) async {
     final draft = await readDraft(draftId);
     if (draft == null) {

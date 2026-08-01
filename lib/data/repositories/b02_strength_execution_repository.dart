@@ -238,6 +238,151 @@ class StrengthExecutionRepository {
     );
   }
 
+  /// Resolves the frozen group graph to canonical prescription/exercise
+  /// metadata for the player. This is deliberately a repository read: the UI
+  /// must never infer stable IDs or modality from a display name.
+  Future<List<B02StrengthExecutionSlot>> readExecutionSlots(
+    B02StrengthExecutionLaunch launch,
+  ) async {
+    final snapshot = _decodeSnapshot(launch.executionSnapshotJson);
+    final snapshotPrescriptions = <String, Map<String, dynamic>>{
+      for (final raw
+          in (snapshot['prescriptions'] is List
+              ? snapshot['prescriptions'] as List
+              : const <dynamic>[]))
+        if (raw is Map && raw['id'] is String)
+          raw['id'] as String: Map<String, dynamic>.from(raw),
+    };
+    final prescriptionIds = launch.state.groups
+        .expand((group) => group.members)
+        .map((member) => member.exercisePrescriptionId)
+        .toSet();
+    final allPrescriptionIds = {
+      ...prescriptionIds,
+      ...snapshotPrescriptions.keys,
+    };
+    if (allPrescriptionIds.isEmpty) return const [];
+
+    final prescriptions = await (_db.select(
+      _db.exercisePrescriptions,
+    )..where((table) => table.id.isIn(allPrescriptionIds))).get();
+    final prescriptionById = {
+      for (final prescription in prescriptions) prescription.id: prescription,
+    };
+    final stableIds = prescriptions
+        .map((prescription) => prescription.exerciseId)
+        .whereType<String>()
+        .where((id) => id.trim().isNotEmpty)
+        .toSet();
+    final exercises = stableIds.isEmpty
+        ? const <Exercise>[]
+        : await (_db.select(
+            _db.exercises,
+          )..where((table) => table.stableId.isIn(stableIds))).get();
+    final resolvedStableIds = exercises
+        .map((exercise) => exercise.stableId)
+        .whereType<String>()
+        .toSet();
+
+    final slots = <B02StrengthExecutionSlot>[];
+    for (final group in launch.state.groups) {
+      for (var round = 0; round < group.roundCount; round++) {
+        for (final member in group.members) {
+          final prescription = prescriptionById[member.exercisePrescriptionId];
+          final raw = snapshotPrescriptions[member.exercisePrescriptionId];
+          final name =
+              prescription?.exerciseNameSnapshot ??
+              raw?['exerciseNameSnapshot'] as String?;
+          final repsRange =
+              prescription?.repsRange ?? raw?['repsRange'] as String?;
+          final plannedSets =
+              prescription?.plannedSets ?? raw?['plannedSets'] as int?;
+          final exerciseId =
+              prescription?.exerciseId ?? raw?['exerciseId'] as String?;
+          if (name == null || repsRange == null || plannedSets == null) {
+            continue;
+          }
+          final reps = _parseRepsRange(repsRange);
+          slots.add(
+            B02StrengthExecutionSlot(
+              id: '${group.id}:$round:${member.ordinal}',
+              groupId: group.id,
+              groupType: group.groupType,
+              groupLabel: group.label,
+              groupOrdinal: group.ordinal,
+              roundOrdinal: round,
+              memberOrdinal: member.ordinal,
+              prescriptionId: member.exercisePrescriptionId,
+              exerciseId:
+                  exerciseId != null && resolvedStableIds.contains(exerciseId)
+                  ? exerciseId
+                  : null,
+              exerciseNameSnapshot: name,
+              plannedSets: plannedSets,
+              targetRepsMin: reps.$1,
+              targetRepsMax: reps.$2,
+              targetRpe: null,
+              targetLoadKg: null,
+              targetLoadBasis: null,
+            ),
+          );
+        }
+      }
+    }
+    final groupedPrescriptionIds = launch.state.groups
+        .expand((group) => group.members)
+        .map((member) => member.exercisePrescriptionId)
+        .toSet();
+    for (final entry in snapshotPrescriptions.entries) {
+      if (groupedPrescriptionIds.contains(entry.key)) continue;
+      final prescription = prescriptionById[entry.key];
+      final raw = entry.value;
+      final name =
+          prescription?.exerciseNameSnapshot ??
+          raw['exerciseNameSnapshot'] as String?;
+      final repsRange = prescription?.repsRange ?? raw['repsRange'] as String?;
+      final plannedSets =
+          prescription?.plannedSets ?? raw['plannedSets'] as int?;
+      final exerciseId =
+          prescription?.exerciseId ?? raw['exerciseId'] as String?;
+      if (name == null || repsRange == null || plannedSets == null) continue;
+      final reps = _parseRepsRange(repsRange);
+      slots.add(
+        B02StrengthExecutionSlot(
+          id: 'standalone:${entry.key}',
+          groupId: null,
+          groupType: null,
+          groupLabel: null,
+          groupOrdinal: null,
+          roundOrdinal: null,
+          memberOrdinal: null,
+          prescriptionId: entry.key,
+          exerciseId:
+              exerciseId != null && resolvedStableIds.contains(exerciseId)
+              ? exerciseId
+              : null,
+          exerciseNameSnapshot: name,
+          plannedSets: plannedSets,
+          targetRepsMin: reps.$1,
+          targetRepsMax: reps.$2,
+          targetRpe: null,
+          targetLoadKg: null,
+          targetLoadBasis: null,
+        ),
+      );
+    }
+    return slots;
+  }
+
+  (int?, int?) _parseRepsRange(String raw) {
+    final values = RegExp(
+      r'\d+',
+    ).allMatches(raw).map((match) => int.parse(match.group(0)!)).toList();
+    if (values.isEmpty) return (null, null);
+    if (values.length == 1) return (values.single, values.single);
+    return (values.first, values[1]);
+  }
+
   Future<void> saveDraft({
     required int draftId,
     required B02ExecutionDraftState state,
@@ -1188,6 +1333,10 @@ class StrengthExecutionCompatibilityAdapter {
 
   Future<B02StrengthExecutionLaunch> readDraft(int draftId) =>
       _repository.readDraft(draftId);
+
+  Future<List<B02StrengthExecutionSlot>> readExecutionSlots(
+    B02StrengthExecutionLaunch launch,
+  ) => _repository.readExecutionSlots(launch);
 
   Future<B02StrengthExecutionLaunch> startUnscheduledDraft({
     required String routineName,

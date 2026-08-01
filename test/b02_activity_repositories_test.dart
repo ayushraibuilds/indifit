@@ -496,6 +496,36 @@ void main() {
       expect(controller.state.completedSessionId, isNotNull);
     },
   );
+
+  test(
+    'activity controller exposes partial and recovery without losing draft',
+    () async {
+      final controller = B02ActivityController(activities);
+      addTearDown(controller.dispose);
+
+      await controller.startManual(
+        routineName: 'Recoverable mobility',
+        activityType: B02ActivityType.mobility,
+        mobilityDetail: B02MobilitySessionDetail(
+          practiceType: B02ActivityType.mobility,
+          durationSeconds: 300,
+        ),
+      );
+      final draft = controller.state.draft!;
+      await controller.saveDraft(draft.state);
+      expect(controller.state.status, B02ActivityControllerStatus.partial);
+      expect(controller.state.draft?.id, draft.id);
+
+      await controller.recover(draft.id);
+      expect(controller.state.status, B02ActivityControllerStatus.draftReady);
+      await controller.discard();
+      expect(controller.state.status, B02ActivityControllerStatus.idle);
+
+      await controller.recover(draft.id);
+      expect(controller.state.status, B02ActivityControllerStatus.recovery);
+      expect(controller.state.errorMessage, contains('unavailable'));
+    },
+  );
 }
 
 B02HealthActivityInput unknownInput(B02HealthImportResult result) =>

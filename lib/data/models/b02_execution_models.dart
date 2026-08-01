@@ -555,6 +555,57 @@ class B02ExerciseGroup {
   };
 }
 
+/// A read-only execution slot resolved from the frozen group graph and the
+/// canonical exercise-prescription tables. Widgets use this value for labels
+/// and input routing; they never resolve display names or IDs themselves.
+class B02StrengthExecutionSlot {
+  final String id;
+  final String? groupId;
+  final B02GroupType? groupType;
+  final String? groupLabel;
+  final int? groupOrdinal;
+  final int? roundOrdinal;
+  final int? memberOrdinal;
+  final String prescriptionId;
+  final String? exerciseId;
+  final String exerciseNameSnapshot;
+  final int plannedSets;
+  final int? targetRepsMin;
+  final int? targetRepsMax;
+  final int? targetRpe;
+  final double? targetLoadKg;
+  final B02LoadBasis? targetLoadBasis;
+
+  const B02StrengthExecutionSlot({
+    required this.id,
+    required this.groupId,
+    required this.groupType,
+    required this.groupLabel,
+    required this.groupOrdinal,
+    required this.roundOrdinal,
+    required this.memberOrdinal,
+    required this.prescriptionId,
+    required this.exerciseId,
+    required this.exerciseNameSnapshot,
+    required this.plannedSets,
+    required this.targetRepsMin,
+    required this.targetRepsMax,
+    required this.targetRpe,
+    required this.targetLoadKg,
+    required this.targetLoadBasis,
+  });
+
+  bool get hasCanonicalExercise => exerciseId?.trim().isNotEmpty == true;
+
+  String get groupDescription {
+    final type = groupType?.dbValue ?? 'standalone';
+    final group = groupLabel?.trim().isNotEmpty == true
+        ? groupLabel!.trim()
+        : 'Group ${((groupOrdinal ?? 0) + 1)}';
+    return groupType == null ? 'Standalone exercise' : '$group · $type';
+  }
+}
+
 class B02SetSegment {
   final String? id;
   final int ordinal;
@@ -2256,6 +2307,12 @@ class B02ExecutionDraftState {
 
   B02ExecutionDraftState copyWith({
     int? elapsedSeconds,
+    int? currentGroupOrdinal,
+    String? currentGroupId,
+    int? currentRoundOrdinal,
+    int? currentMemberOrdinal,
+    int? currentExerciseOrdinal,
+    int? currentSetOrdinal,
     List<B02PerformedExerciseDraft>? performedExercises,
     List<B02RestPeriod>? restPeriods,
     B02WarmupRecommendation? warmupRecommendation,
@@ -2268,12 +2325,13 @@ class B02ExecutionDraftState {
       activityType: activityType,
       routineName: routineName,
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
-      currentGroupOrdinal: currentGroupOrdinal,
-      currentGroupId: currentGroupId,
-      currentRoundOrdinal: currentRoundOrdinal,
-      currentMemberOrdinal: currentMemberOrdinal,
-      currentExerciseOrdinal: currentExerciseOrdinal,
-      currentSetOrdinal: currentSetOrdinal,
+      currentGroupOrdinal: currentGroupOrdinal ?? this.currentGroupOrdinal,
+      currentGroupId: currentGroupId ?? this.currentGroupId,
+      currentRoundOrdinal: currentRoundOrdinal ?? this.currentRoundOrdinal,
+      currentMemberOrdinal: currentMemberOrdinal ?? this.currentMemberOrdinal,
+      currentExerciseOrdinal:
+          currentExerciseOrdinal ?? this.currentExerciseOrdinal,
+      currentSetOrdinal: currentSetOrdinal ?? this.currentSetOrdinal,
       groups: groups,
       performedExercises: performedExercises ?? this.performedExercises,
       restPeriods: restPeriods ?? this.restPeriods,

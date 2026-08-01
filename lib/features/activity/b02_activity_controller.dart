@@ -4,7 +4,17 @@ import '../../core/di/providers.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_activity_session_repository.dart';
 
-enum B02ActivityControllerStatus { idle, loading, draftReady, completed, error }
+enum B02ActivityControllerStatus {
+  idle,
+  loading,
+  draftReady,
+  ready,
+  partial,
+  completed,
+  error,
+  failure,
+  recovery,
+}
 
 class B02ActivityControllerState {
   final B02ActivityControllerStatus status;
@@ -24,6 +34,23 @@ class B02ActivityControllerState {
       draft = null,
       completedSessionId = null,
       errorMessage = null;
+
+  B02ActivityControllerState copyWith({
+    B02ActivityControllerStatus? status,
+    B02ActivityDraftRecord? draft,
+    int? completedSessionId,
+    String? errorMessage,
+    bool clearError = false,
+  }) {
+    return B02ActivityControllerState(
+      status: status ?? this.status,
+      draft: draft ?? this.draft,
+      completedSessionId: completedSessionId ?? this.completedSessionId,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+    );
+  }
+
+  bool get isBusy => status == B02ActivityControllerStatus.loading;
 }
 
 class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
@@ -56,7 +83,7 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
     } catch (error) {
       if (!mounted) return;
       state = B02ActivityControllerState(
-        status: B02ActivityControllerStatus.error,
+        status: B02ActivityControllerStatus.failure,
         errorMessage: error.toString(),
       );
     }
@@ -66,7 +93,7 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
     final currentDraft = state.draft;
     if (currentDraft == null) {
       state = const B02ActivityControllerState(
-        status: B02ActivityControllerStatus.error,
+        status: B02ActivityControllerStatus.recovery,
         errorMessage: 'No activity draft is loaded.',
       );
       return;
@@ -80,13 +107,13 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
       final restored = await _repository.readDraft(currentDraft.id);
       if (!mounted) return;
       state = B02ActivityControllerState(
-        status: B02ActivityControllerStatus.draftReady,
+        status: B02ActivityControllerStatus.partial,
         draft: restored,
       );
     } catch (error) {
       if (!mounted) return;
       state = B02ActivityControllerState(
-        status: B02ActivityControllerStatus.error,
+        status: B02ActivityControllerStatus.failure,
         draft: currentDraft,
         errorMessage: error.toString(),
       );
@@ -97,7 +124,7 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
     final currentDraft = state.draft;
     if (currentDraft == null) {
       state = const B02ActivityControllerState(
-        status: B02ActivityControllerStatus.error,
+        status: B02ActivityControllerStatus.recovery,
         errorMessage: 'No activity draft is loaded.',
       );
       return;
@@ -116,7 +143,62 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
     } catch (error) {
       if (!mounted) return;
       state = B02ActivityControllerState(
-        status: B02ActivityControllerStatus.error,
+        status: B02ActivityControllerStatus.failure,
+        draft: currentDraft,
+        errorMessage: error.toString(),
+      );
+    }
+  }
+
+  Future<void> recover(int draftId) async {
+    state = const B02ActivityControllerState(
+      status: B02ActivityControllerStatus.loading,
+    );
+    try {
+      final draft = await _repository.readDraft(draftId);
+      if (!mounted) return;
+      if (draft == null) {
+        state = const B02ActivityControllerState(
+          status: B02ActivityControllerStatus.recovery,
+          errorMessage:
+              'The typed activity draft is unavailable or legacy-shaped.',
+        );
+        return;
+      }
+      state = B02ActivityControllerState(
+        status: B02ActivityControllerStatus.draftReady,
+        draft: draft,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      state = B02ActivityControllerState(
+        status: B02ActivityControllerStatus.recovery,
+        errorMessage: error.toString(),
+      );
+    }
+  }
+
+  Future<void> discard() async {
+    final currentDraft = state.draft;
+    if (currentDraft == null) {
+      state = const B02ActivityControllerState(
+        status: B02ActivityControllerStatus.recovery,
+        errorMessage: 'No activity draft is loaded.',
+      );
+      return;
+    }
+    state = B02ActivityControllerState(
+      status: B02ActivityControllerStatus.loading,
+      draft: currentDraft,
+    );
+    try {
+      await _repository.discardDraft(currentDraft.id);
+      if (!mounted) return;
+      state = const B02ActivityControllerState.idle();
+    } catch (error) {
+      if (!mounted) return;
+      state = B02ActivityControllerState(
+        status: B02ActivityControllerStatus.failure,
         draft: currentDraft,
         errorMessage: error.toString(),
       );

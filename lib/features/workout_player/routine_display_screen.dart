@@ -106,6 +106,11 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.directions_run_rounded),
+            tooltip: 'Log typed activity',
+            onPressed: () => context.push('/activity-create'),
+          ),
           if (_activeRoutine != null) ...[
             IconButton(
               icon: const Icon(

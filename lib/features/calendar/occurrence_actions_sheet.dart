@@ -7,6 +7,7 @@ import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
+import '../workout_player/b02_strength_execution_controller.dart';
 import 'calendar_controller.dart';
 
 /// Modal action sheet for calendar occurrences exposing B01 domain actions.
@@ -54,6 +55,38 @@ class _OccurrenceActionsSheetState
     }
     setState(() => _isLoading = true);
     try {
+      final isStrength =
+          widget.occurrenceItem.template.activityType == 'strength';
+      if (isStrength) {
+        final b02 = ref.read(b02StrengthExecutionControllerProvider.notifier);
+        if (occurrence.status == 'inProgress') {
+          await b02.resumeScheduled(occurrence.id);
+        } else {
+          await b02.startScheduled(
+            occurrenceId: occurrence.id,
+            commandId: 'b02-start-${DateTime.now().millisecondsSinceEpoch}',
+            confirmedOutsideEffectiveDate: startsOutsideEffectiveDate,
+          );
+        }
+        final b02State = ref.read(b02StrengthExecutionControllerProvider);
+        if (b02State.status == B02StrengthExecutionStatus.ready &&
+            b02State.launch != null &&
+            mounted) {
+          Navigator.pop(context);
+          await context.push(
+            '/b02-strength-player',
+            extra: {'launch': b02State.launch},
+          );
+          return;
+        }
+        // In-progress v1 drafts intentionally remain on the retained B01
+        // route; the successor reports this as recovery rather than guessing.
+        if (b02State.status != B02StrengthExecutionStatus.recovery) {
+          throw StateError(
+            b02State.errorMessage ?? 'B02 strength draft could not be started.',
+          );
+        }
+      }
       final adapter = ref.read(workoutExecutionCompatibilityAdapterProvider);
       final launchData = occurrence.status == 'inProgress'
           ? await adapter.resumeScheduledOccurrence(occurrence.id)

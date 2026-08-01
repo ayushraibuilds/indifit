@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
@@ -11,8 +12,11 @@ import '../../core/widgets/confetti_overlay.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../activity/b02_activity_controller.dart';
 import '../food_log/ai_meal_planner_screen.dart';
 import '../settings/settings_screen.dart';
+import '../workout_player/b02_strength_execution_controller.dart';
+import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/routine_display_screen.dart';
 import '../workout_player/workout_player_screen.dart';
 import 'dashboard_controller.dart';
@@ -81,6 +85,57 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(dialogCtx);
+                  if (draft.executionStateJson != null &&
+                      draft.activityType == 'strength') {
+                    final b02 = ref.read(
+                      b02StrengthExecutionControllerProvider.notifier,
+                    );
+                    await b02.recover(draft.id);
+                    final b02State = ref.read(
+                      b02StrengthExecutionControllerProvider,
+                    );
+                    if (b02State.status == B02StrengthExecutionStatus.ready &&
+                        b02State.launch != null &&
+                        mounted) {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              B02StrengthPlayerScreen(launch: b02State.launch!),
+                        ),
+                      );
+                      await ref
+                          .read(dashboardControllerProvider.notifier)
+                          .loadStateData();
+                      return;
+                    }
+                    // A canonical B02 draft is never silently downgraded to
+                    // name-based editing; preserve it and expose recovery.
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            b02State.errorMessage ??
+                                'Strength draft recovery needs attention.',
+                          ),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+                  if (draft.executionStateJson != null &&
+                      draft.activityType != 'legacy') {
+                    final activity = ref.read(
+                      b02ActivityControllerProvider.notifier,
+                    );
+                    await activity.recover(draft.id);
+                    if (mounted) {
+                      await context.push(
+                        '/activity-create?draftId=${draft.id}',
+                      );
+                    }
+                    return;
+                  }
                   final List<WorkoutSetsCompanion> loggedCompanions =
                       WorkoutDraftCodec.decodeLoggedSets(draft.loggedSetsJson);
                   final scheduledLaunch = draft.scheduledOccurrenceId == null
