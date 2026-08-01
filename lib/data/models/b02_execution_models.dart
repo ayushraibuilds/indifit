@@ -38,6 +38,10 @@ enum B02ActivityType {
   }
 }
 
+/// Provenance of a history row. Legacy projections remain explicitly
+/// distinguishable from canonical B02 records throughout the read path.
+enum B02HistoryRecordKind { legacyProjection, canonical }
+
 enum B02ActivitySource {
   manual('manual'),
   healthImport('healthImport');

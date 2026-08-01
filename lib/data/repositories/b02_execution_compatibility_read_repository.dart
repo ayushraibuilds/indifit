@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
 
-enum B02HistoryRecordKind { legacyProjection, canonical }
+export '../models/b02_execution_models.dart' show B02HistoryRecordKind;
 
 /// Stable, read-only history contract shared by later B02 consumers.
 ///
@@ -55,6 +55,8 @@ class B02ExecutionCompatibilityReadRepository {
   Future<List<B02ActivityHistoryItem>> readHistory({
     B02ActivityType? activityType,
     int limit = 100,
+    DateTime? completedAtStartUtc,
+    DateTime? completedAtEndExclusiveUtc,
   }) async {
     if (limit < 1 || limit > 500) {
       throw ArgumentError.value(limit, 'limit', 'Must be between 1 and 500.');
@@ -69,6 +71,19 @@ class B02ExecutionCompatibilityReadRepository {
       ..limit(limit);
     if (activityType != null) {
       query.where((table) => table.activityType.equals(activityType.dbValue));
+    }
+    if (completedAtStartUtc != null) {
+      query.where(
+        (table) =>
+            table.completedAt.isBiggerOrEqualValue(completedAtStartUtc.toUtc()),
+      );
+    }
+    if (completedAtEndExclusiveUtc != null) {
+      query.where(
+        (table) => table.completedAt.isSmallerThanValue(
+          completedAtEndExclusiveUtc.toUtc(),
+        ),
+      );
     }
     final sessions = await query.get();
     return [for (final session in sessions) await _readSession(session)];
