@@ -54,6 +54,16 @@ class B02StrengthExecutionLaunch {
   }
 }
 
+/// Read-only coverage result used before a calendar route leaves the retained
+/// B01 bridge. A false result is an explicit lack of canonical metadata, not
+/// a mutation or an inferred modality.
+class B02StrengthExecutionCoverage {
+  final bool supported;
+  final String? reason;
+
+  const B02StrengthExecutionCoverage({required this.supported, this.reason});
+}
+
 /// Durable owner for B02 strength drafts and canonical performed records.
 /// CalendarRepository remains the only owner of occurrence status/events.
 class StrengthExecutionRepository {
@@ -71,6 +81,65 @@ class StrengthExecutionRepository {
        _calendarRepo = calendarRepo,
        _uuid = uuid ?? const Uuid(),
        _nowUtc = nowUtc ?? (() => DateTime.now().toUtc());
+
+  Future<B02StrengthExecutionCoverage> checkScheduledCoverage(
+    String occurrenceId,
+  ) async {
+    final occurrence = await _calendarRepo.getOccurrence(occurrenceId);
+    if (occurrence == null) {
+      return const B02StrengthExecutionCoverage(
+        supported: false,
+        reason: 'Scheduled occurrence was not found.',
+      );
+    }
+    final template =
+        await (_db.select(_db.sessionTemplates)
+              ..where((table) => table.id.equals(occurrence.sessionTemplateId)))
+            .getSingleOrNull();
+    if (template == null) {
+      return const B02StrengthExecutionCoverage(
+        supported: false,
+        reason: 'Strength template ancestry is missing.',
+      );
+    }
+    if (template.activityType != B02ActivityType.strength.dbValue) {
+      return B02StrengthExecutionCoverage(
+        supported: false,
+        reason:
+            'Template activity type ${template.activityType} is not strength.',
+      );
+    }
+    final prescriptions = await (_db.select(
+      _db.exercisePrescriptions,
+    )..where((table) => table.sessionTemplateId.equals(template.id))).get();
+    if (prescriptions.isEmpty) {
+      return const B02StrengthExecutionCoverage(
+        supported: false,
+        reason: 'Strength template has no prescriptions.',
+      );
+    }
+    final stableIds = <String>{};
+    for (final prescription in prescriptions) {
+      final exerciseId = prescription.exerciseId;
+      if (exerciseId == null || exerciseId.trim().isEmpty) {
+        return const B02StrengthExecutionCoverage(
+          supported: false,
+          reason: 'One or more prescriptions have no canonical exercise ID.',
+        );
+      }
+      stableIds.add(exerciseId);
+    }
+    final resolved = await (_db.select(
+      _db.exercises,
+    )..where((table) => table.stableId.isIn(stableIds))).get();
+    if (resolved.length != stableIds.length) {
+      return const B02StrengthExecutionCoverage(
+        supported: false,
+        reason: 'A prescription references a missing canonical exercise.',
+      );
+    }
+    return const B02StrengthExecutionCoverage(supported: true);
+  }
 
   Future<B02StrengthExecutionLaunch> startScheduledOccurrence({
     required String occurrenceId,
@@ -1316,6 +1385,10 @@ class StrengthExecutionCompatibilityAdapter {
   final StrengthExecutionRepository _repository;
 
   StrengthExecutionCompatibilityAdapter(this._repository);
+
+  Future<B02StrengthExecutionCoverage> checkScheduledCoverage(
+    String occurrenceId,
+  ) => _repository.checkScheduledCoverage(occurrenceId);
 
   Future<B02StrengthExecutionLaunch> startScheduledOccurrence({
     required String occurrenceId,

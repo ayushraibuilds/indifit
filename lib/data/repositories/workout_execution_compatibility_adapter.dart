@@ -103,6 +103,7 @@ class WorkoutExecutionCompatibilityAdapter {
   Future<WorkoutPlayerLaunchData> resumeScheduledDraft(
     WorkoutDraft draft,
   ) async {
+    _requireLegacyDraft(draft);
     final occurrenceId = draft.scheduledOccurrenceId;
     if (occurrenceId == null) {
       throw const ScheduledWorkoutRecoveryException(
@@ -203,6 +204,7 @@ class WorkoutExecutionCompatibilityAdapter {
           'The scheduled draft is missing; recover or discard explicitly.',
         );
       }
+      _requireLegacyDraft(draft);
       try {
         WorkoutDraftCodec.decodeLoggedSets(draft.loggedSetsJson);
       } on FormatException catch (error) {
@@ -292,6 +294,12 @@ class WorkoutExecutionCompatibilityAdapter {
     required String occurrenceId,
     required String commandId,
   }) async {
+    final draft =
+        await (_db.select(_db.workoutDrafts)..where(
+              (table) => table.scheduledOccurrenceId.equals(occurrenceId),
+            ))
+            .getSingleOrNull();
+    if (draft != null) _requireLegacyDraft(draft);
     final occurrence = await _requireOccurrence(occurrenceId);
     await _calendarRepo.discardStarted(
       DiscardStartedOccurrenceCommand(
@@ -574,4 +582,14 @@ class WorkoutExecutionCompatibilityAdapter {
 
   static OccurrenceStatus _status(String dbValue) =>
       OccurrenceStatus.values.firstWhere((status) => status.dbValue == dbValue);
+
+  static void _requireLegacyDraft(WorkoutDraft draft) {
+    if (draft.activityType != 'legacy' ||
+        draft.executionStateJson != null ||
+        draft.draftSchemaVersion > 1) {
+      throw const ScheduledWorkoutRecoveryException(
+        'This is a canonical B02 draft; resume or discard it through its typed repository.',
+      );
+    }
+  }
 }

@@ -44,7 +44,11 @@ void main() {
 
   tearDown(() => db.close());
 
-  Future<String> makeOccurrence({bool grouped = false}) async {
+  Future<String> makeOccurrence({
+    bool grouped = false,
+    String? exerciseId = 'bench-stable',
+    bool allowUnresolvedExerciseFallback = false,
+  }) async {
     final programId = await programs.createProgram(
       name: 'B02 Strength',
       blocks: [
@@ -61,13 +65,15 @@ void main() {
                   ordinal: 0,
                   plannedWeekday: 1,
                   prescriptions: [
-                    const ExercisePrescriptionInput(
+                    ExercisePrescriptionInput(
                       id: 'prescription-bench',
-                      exerciseId: 'bench-stable',
+                      exerciseId: exerciseId,
                       exerciseNameSnapshot: 'Flat Barbell Bench Press',
                       plannedSets: 1,
                       repsRange: '8-10',
                       ordinal: 0,
+                      allowUnresolvedExerciseFallback:
+                          allowUnresolvedExerciseFallback,
                     ),
                     if (grouped)
                       const ExercisePrescriptionInput(
@@ -260,6 +266,35 @@ void main() {
       expect(history!.isCanonical, isTrue);
       expect(history.performedExerciseCount, 1);
       expect(history.legacySetCount, 0);
+    },
+  );
+
+  test(
+    'reports canonical template coverage without mutating the occurrence',
+    () async {
+      final occurrenceId = await makeOccurrence();
+      final coverage = await executions.checkScheduledCoverage(occurrenceId);
+
+      expect(coverage.supported, isTrue);
+      expect(coverage.reason, isNull);
+      expect((await calendar.getOccurrence(occurrenceId))!.status, 'planned');
+      expect(await db.select(db.workoutDrafts).get(), isEmpty);
+    },
+  );
+
+  test(
+    'reports unresolved template coverage without mutating the occurrence',
+    () async {
+      final occurrenceId = await makeOccurrence(
+        exerciseId: null,
+        allowUnresolvedExerciseFallback: true,
+      );
+      final coverage = await executions.checkScheduledCoverage(occurrenceId);
+
+      expect(coverage.supported, isFalse);
+      expect(coverage.reason, contains('canonical exercise ID'));
+      expect((await calendar.getOccurrence(occurrenceId))!.status, 'planned');
+      expect(await db.select(db.workoutDrafts).get(), isEmpty);
     },
   );
 

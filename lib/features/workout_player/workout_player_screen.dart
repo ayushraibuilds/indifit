@@ -142,16 +142,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
     final double weight = double.tryParse(_weightController.text) ?? 0.0;
     final int reps = int.tryParse(_repsController.text) ?? 0;
 
-    final nameLower = currentEx.exerciseName.toLowerCase();
-    final isCardio =
-        nameLower.contains('run') ||
-        nameLower.contains('treadmill') ||
-        nameLower.contains('cardio') ||
-        nameLower.contains('cycle') ||
-        nameLower.contains('cycling') ||
-        nameLower.contains('elliptical') ||
-        nameLower.contains('walk') ||
-        nameLower.contains('swim');
+    final isCardio = controller.currentExerciseCompatibilityMetadata.isCardio;
 
     if (!isCardio && (weight <= 0 || reps <= 0)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -174,7 +165,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
 
     await HapticFeedback.mediumImpact();
 
-    final recommendedRest = _getRecommendedRestSeconds(currentEx.exerciseName);
+    final recommendedRest =
+        controller.currentExerciseCompatibilityMetadata.recommendedRestSeconds;
     if (mounted) {
       final updatedState = ref.read(_controllerProvider);
       if (updatedState.showPrConfetti) {
@@ -208,21 +200,6 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
         );
       }
     }
-  }
-
-  int _getRecommendedRestSeconds(String exerciseName) {
-    final name = exerciseName.toLowerCase();
-    if (name.contains('squat') ||
-        name.contains('deadlift') ||
-        name.contains('bench press')) {
-      return 120;
-    } else if (name.contains('curl') ||
-        name.contains('tricep') ||
-        name.contains('lateral') ||
-        name.contains('raise')) {
-      return 60;
-    }
-    return 90;
   }
 
   void _showExerciseHistorySheet(String exerciseName) {
@@ -564,6 +541,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                     durationController: _durationController,
                     distanceController: _distanceController,
                     inclineController: _inclineController,
+                    executionMetadata:
+                        controller.currentExerciseCompatibilityMetadata,
                     isWarmUp: state.isWarmUp,
                     selectedSetType: state.selectedSetType,
                     selectedRpe: state.selectedRpe,
