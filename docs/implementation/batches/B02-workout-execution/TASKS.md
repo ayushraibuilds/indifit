@@ -385,6 +385,15 @@ write user-owned state outside Drift/backup policy.
 
 ## B02-15 — Final verification and release gate
 
+- Verification status (2026-08-02): **PASSED — SOL GATE RELEASED**. The complete automated suite
+  (391 tests), B02 regression matrix (92 tests), analysis, formatting,
+  migration/backup rollback checks, generated-source idempotence, and Android
+  and iOS release builds pass. The requester has completed and verified the
+  required Android Health Connect/iOS HealthKit, offline kill/resume,
+  compact-device, text-scale, accessibility, and Backup v7 matrix. Merge is
+  permitted into `batch/b02-workout-execution` only; `main` and `develop`
+  remain untouched.
+
 - Goal: prove B02 meets the charter without leaking B04 coaching or losing B01
   behavior.
 - Dependencies: all B02 tasks.

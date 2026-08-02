@@ -149,3 +149,20 @@ These are foundations, not proof that B02 fields can be appended without design 
 6. Build a mocked health-import matrix for walking, running, cycling and intervals, including duplicate providers and export semantics.
 7. Specify compact-screen player flows for groups, advanced techniques, warm-up/ramping, custom/intensity rest, substitutions and partial completion.
 8. Expand the test matrix first: codec/draft, grouped execution, target override, stable-ID history, warm-up/rest, modality import/export, muscle analytics, migration and backup.
+
+## Final verification update — 2026-08-02
+
+B02 implementation now has automated evidence for the previously identified
+execution, modality, mapping, target, backup and legacy-ownership risks. The
+release-gate record is [VERIFICATION.md](VERIFICATION.md). It records 391 full
+suite tests and 92 B02-matrix tests passing, schema v15→v16 and Backup v5/v6/v7
+compatibility/rollback evidence, stable-ID and unknown-data behavior, and
+successful unsigned Android/iOS release builds.
+
+The audit is **passed for B02 integration**. The requester attests that the
+required physical Android Health Connect/iOS HealthKit, offline kill/resume,
+compact-device, text-scale, accessibility and Backup v7 checks passed after
+retest. Build success was not used as a substitute for those checks. No B04
+readiness behavior, inferred modality/muscle mapping, destructive migration,
+or release waiver was added during verification. Merge remains limited to
+`batch/b02-workout-execution`; `main` and `develop` are not changed.

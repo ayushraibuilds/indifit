@@ -419,9 +419,7 @@ void main() {
   });
 
   group('B02-07 execution preference repository', () {
-    testWidgets('reads and explicitly persists warm-up/rest settings', (
-      tester,
-    ) async {
+    test('reads and explicitly persists warm-up/rest settings', () async {
       final db = AppDatabase.memory();
       addTearDown(db.close);
       await db

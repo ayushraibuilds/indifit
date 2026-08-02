@@ -1,10 +1,10 @@
 # B02 — Workout Execution and Modalities
 
-Status: Chartered  
+Status: Verified for B02 integration; main/develop merge pending
 Base commit: `9eb7fb6b637cf0cc2aa703056f1e30885c6fd593`  
 Base branch: `main`  
-Current database schema: `v15`  
-Current backup format: `v6`  
+Current database schema: `v16`
+Current backup format: `v7`
 Platforms: Android and iOS
 
 ## Goal
