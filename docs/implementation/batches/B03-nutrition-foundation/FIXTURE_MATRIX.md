@@ -11,13 +11,13 @@ backup format, seed identity, or UI behavior.
 |---|---:|---|---|
 | B03 contract fixture vocabulary | `1` | GPT Luna implementation / Sol High review | Stable semantic cases for downstream B03 tasks |
 | B03 manifest-audit shape | `1` | GPT Luna implementation / Sol High review | Read-only source coverage and unresolved-row report |
-| Future food identity manifest | `1` planned | B03-03 catalogue owner / Sol High identity review | Explicit portable food IDs, aliases, variants, and source revisions |
+| Reviewed food identity manifest | `1` | B03-03 catalogue owner / Sol High identity review | Explicit portable food IDs, aliases, variants, and source revisions |
 
 The planned manifest path is
-`assets/data/nutrition_food_identity_manifest.json`. It is intentionally not
-created by B03-01; B03-03 owns the reviewed manifest. Stable IDs in the
-fixture matrix are semantic fixture IDs and are never derived from display
-names or insertion order.
+`assets/data/nutrition_food_identity_manifest.json`. B03-01 intentionally did
+not create it; B03-03 now owns the reviewed manifest. Stable IDs in the
+fixture matrix and manifest are explicit and are never derived at runtime
+from display names or insertion order.
 
 Implementation: `lib/core/fixtures/b03_nutrition_fixture_matrix.dart`.
 Required tests: `test/b03_contract_fixture_test.dart` and
@@ -161,11 +161,13 @@ regional sources. They remain distinct source rows pending manifest review:
 | `tomato rasam` | base, regional/south_indian |
 
 Every current row is exposed by the audit as `source#rowIndex`, original
-display text, and narrow-normalized text. Since no reviewed manifest exists on
-this branch, all 598 rows are explicit unresolved/unmapped gaps. The audit
-does not promote names, Hindi labels, row order, or current integer IDs to
-identity. Duplicate normalized names within one source fail validation;
-cross-source overlaps are reported for manual review.
+display text, and narrow-normalized text. The source files themselves remain
+unannotated: their inline stable-ID, preparation, alias, and source-revision
+fields are absent. B03-03 maps all 598 rows in the external reviewed manifest
+by explicit source key; the five cross-source overlaps remain distinct
+identities. The audit does not promote names, Hindi labels, row order, or
+current integer IDs to identity. Duplicate normalized names within one source
+fail validation; cross-source overlaps are reported for manual review.
 
 ## Review and change policy
 
@@ -179,7 +181,8 @@ B03-04 consume it. Any fixture change requires:
 5. updated focused tests and this audit artifact; and
 6. a fresh Sol High focused review.
 
-Deferred from B03-01: production schema/backup, food identity manifest
-creation, repository/resolver/calculator behavior, seed rewrite, recipe or
-thali implementation, AI integration, UI, migration, and any new catalogue
-nutrition values.
+Deferred from B03-01: production schema/backup, manifest consumers and
+database writes, calculator behavior, seed rewrite, recipe or thali
+implementation, AI integration, UI, migration, and any new catalogue
+nutrition values. B03-03's pure manifest loader/resolver does not change those
+boundaries.

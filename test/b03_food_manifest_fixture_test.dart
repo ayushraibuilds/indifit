@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/fixtures/b03_nutrition_fixture_matrix.dart';
+import 'package:indifit/core/fixtures/food_identity_manifest.dart';
 
 void main() {
   group('B03-01 food manifest audit fixtures', () {
@@ -20,7 +21,8 @@ void main() {
       );
       expect(audit.totalRegionalRows, 25);
       expect(audit.totalRows, 598);
-      expect(audit.manifestPresent, isFalse);
+      expect(audit.manifestPresent, isTrue);
+      expect(audit.manifestVersion, kFoodIdentityManifestVersion);
       expect(audit.mappedRows, 0);
       expect(audit.unresolvedRows, 598);
     });
@@ -45,7 +47,7 @@ void main() {
     });
 
     test(
-      'every current catalogue row remains unresolved without a manifest ID',
+      'every current source row remains unannotated without an inline manifest ID',
       () {
         expect(audit.rows, isNotEmpty);
         expect(audit.rows.every((row) => !row.hasStableId), isTrue);
@@ -160,5 +162,48 @@ void main() {
         expect(markdown, contains('valid / invalid / unknown'));
       },
     );
+  });
+
+  group('B03-03 manifest-to-asset coverage', () {
+    test(
+      'every base and regional source row has one reviewed manifest entry',
+      () {
+        final audit = B03FoodManifestAudit.loadFromAssetFilesSync();
+        final manifest = FoodIdentityManifest.loadFromAssetFileSync();
+
+        expect(manifest.catalogueEntries, hasLength(audit.totalRows));
+        for (final row in audit.rows) {
+          final sourceKey = 'asset:${row.sourceId}:${row.normalizedName}';
+          final entry = manifest.getBySourceKey(sourceKey);
+          expect(
+            entry,
+            isNotNull,
+            reason: 'Missing manifest entry: $sourceKey',
+          );
+          expect(entry!.isCatalogue, isTrue);
+          expect(entry.reviewState, FoodIdentityReviewState.reviewed);
+          final mapping = manifest.getLegacyMapping(sourceKey);
+          expect(
+            mapping,
+            isNotNull,
+            reason: 'Missing legacy mapping: $sourceKey',
+          );
+          expect(mapping!.targetId, entry.id);
+        }
+      },
+    );
+
+    test('manifest ordering cannot change source-key coverage', () {
+      final manifest = FoodIdentityManifest.loadFromAssetFileSync();
+      final sourceKeys = manifest.catalogueEntries
+          .map((entry) => entry.provenance.key)
+          .toSet();
+      final reversedSourceKeys = manifest.catalogueEntries.reversed
+          .map((entry) => entry.provenance.key)
+          .toSet();
+
+      expect(reversedSourceKeys, equals(sourceKeys));
+      expect(sourceKeys, hasLength(598));
+    });
   });
 }
