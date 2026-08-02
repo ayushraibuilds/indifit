@@ -1132,6 +1132,18 @@ class CalendarRepository {
               ..where((table) => table.sessionTemplateId.equals(template.id))
               ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
             .get();
+    final groups =
+        await (_db.select(_db.exerciseGroups)
+              ..where((table) => table.sessionTemplateId.equals(template.id))
+              ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
+            .get();
+    final groupIds = groups.map((group) => group.id).toList();
+    final groupMembers = groupIds.isEmpty
+        ? <ExerciseGroupMember>[]
+        : await (_db.select(_db.exerciseGroupMembers)
+                ..where((table) => table.exerciseGroupId.isIn(groupIds))
+                ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
+              .get();
     final snapshot = <String, dynamic>{
       'version': 1,
       'occurrenceId': occurrence.id,
@@ -1173,6 +1185,29 @@ class CalendarRepository {
               'exerciseNameSnapshot': prescription.exerciseNameSnapshot,
               'plannedSets': prescription.plannedSets,
               'repsRange': prescription.repsRange,
+            },
+          )
+          .toList(),
+      'groups': groups
+          .map(
+            (group) => {
+              'id': group.id,
+              'ordinal': group.ordinal,
+              'groupType': group.groupType,
+              'roundCount': group.roundCount,
+              'restAfterRoundSeconds': group.restAfterRoundSeconds,
+              'label': group.label,
+              'members': groupMembers
+                  .where((member) => member.exerciseGroupId == group.id)
+                  .map(
+                    (member) => {
+                      'id': member.id,
+                      'exercisePrescriptionId': member.exercisePrescriptionId,
+                      'ordinal': member.ordinal,
+                      'transitionRestSeconds': member.transitionRestSeconds,
+                    },
+                  )
+                  .toList(),
             },
           )
           .toList(),

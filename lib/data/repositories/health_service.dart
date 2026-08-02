@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../database/app_database.dart';
+import '../models/b02_execution_models.dart';
+import 'b02_health_activity_repository.dart';
 
 final healthServiceProvider = Provider<HealthService>((ref) {
   return HealthService();
@@ -266,59 +268,70 @@ class HealthService {
       );
 
       final List<Map<String, dynamic>> activities = [];
+      final importer = db == null ? null : HealthActivityImportRepository(db);
 
       for (final p in data) {
-        final val = p.value;
-        if (val is WorkoutHealthValue) {
-          final typeStr = val.workoutActivityType.name.toLowerCase();
-          if (typeStr.contains('walking') || typeStr.contains('running')) {
-            final duration = p.dateTo.difference(p.dateFrom).inMinutes;
-            final cals = val.totalEnergyBurned ?? 0;
-            final provider = p.sourcePlatform.name;
-            final externalId = p.uuid.isNotEmpty ? '$provider:${p.uuid}' : null;
-            final fingerprint =
-                '$provider:${p.sourceId}:${p.dateFrom.toIso8601String()}_${typeStr}_${cals}_$duration';
+        // Never import a workout this app wrote to Health. This is provenance
+        // filtering, not modality inference.
+        if (_isIndiFitOrigin(p.sourceName)) continue;
 
-            // Never import a workout this app wrote to Health. Source names are
-            // platform supplied, so compare case-insensitively rather than relying
-            // on a single implementation-specific literal.
-            if (_isIndiFitOrigin(p.sourceName)) {
-              continue;
-            }
-
-            int? localSessionId;
-            if (db != null) {
-              localSessionId = await persistOutdoorActivity(
-                db: db,
-                provider: provider,
-                externalId: externalId,
-                sourceName: p.sourceName,
-                fingerprint: fingerprint,
-                title: typeStr.contains('running')
-                    ? 'Outdoor Run (Health)'
-                    : 'Outdoor Walk (Health)',
-                durationMinutes: duration,
-                calories: cals.round(),
-                completedAt: p.dateFrom,
-              );
-              if (localSessionId == null) continue;
-            }
-
-            activities.add({
-              'title': typeStr.contains('running')
-                  ? 'Outdoor Run'
-                  : 'Outdoor Walk',
-              'durationMinutes': duration,
-              'calories': cals,
-              'date': p.dateFrom,
-              'fingerprint': fingerprint,
-              'externalId': externalId,
-              'provider': provider,
-              'sourceName': p.sourceName,
-              'localSessionId': localSessionId,
-            });
-          }
+        final input = B02HealthActivityInput.fromHealthDataPoint(p);
+        final translation = HealthActivityImportRepository.translateInput(
+          input,
+        );
+        if (translation.status != B02HealthImportStatus.imported) {
+          final fingerprint =
+              input.fingerprint ??
+              '${input.provider}|${input.providerType}|${input.startedAtUtc.toIso8601String()}|${input.endedAtUtc.toIso8601String()}';
+          activities.add({
+            'status': translation.status.name,
+            'imported': false,
+            'activityType': translation.activityType?.dbValue,
+            'title': input.displayName ?? 'Imported activity',
+            'durationMinutes': input.endedAtUtc
+                .difference(input.startedAtUtc)
+                .inMinutes,
+            'calories': input.estimatedCalories ?? 0,
+            'date': input.startedAtUtc,
+            'fingerprint': fingerprint,
+            'externalId': input.externalId,
+            'provider': input.provider,
+            'providerType': input.providerType,
+            'sourceName': input.sourceName,
+            'localSessionId': null,
+            'reason': translation.reason,
+          });
+          continue;
         }
+
+        if (importer == null) {
+          final fingerprint =
+              input.fingerprint ??
+              '${input.provider}|${input.providerType}|${input.startedAtUtc.toIso8601String()}|${input.endedAtUtc.toIso8601String()}';
+          activities.add({
+            'status': B02HealthImportStatus.imported.name,
+            'imported': false,
+            'activityType': translation.activityType!.dbValue,
+            'title': input.displayName ?? 'Imported activity',
+            'durationMinutes': input.endedAtUtc
+                .difference(input.startedAtUtc)
+                .inMinutes,
+            'calories': input.estimatedCalories ?? 0,
+            'date': input.startedAtUtc,
+            'fingerprint': fingerprint,
+            'externalId': input.externalId,
+            'provider': input.provider,
+            'providerType': input.providerType,
+            'sourceName': input.sourceName,
+            'localSessionId': null,
+            'reason': 'Typed activity translated but not persisted.',
+          });
+          continue;
+        }
+
+        final result = await importer.importActivity(input);
+        if (result.status == B02HealthImportStatus.duplicate) continue;
+        activities.add(result.toDisplayMap(input));
       }
 
       return activities;
@@ -395,6 +408,24 @@ class HealthService {
     required int caloriesBurned,
     required DateTime startTime,
   }) async {
+    return writeActivitySession(
+      activityType: B02ActivityType.strength,
+      title: title,
+      durationMinutes: durationMinutes,
+      caloriesBurned: caloriesBurned,
+      startTime: startTime,
+    );
+  }
+
+  /// Write a typed B02 activity using the reviewed native mapping. Unsupported
+  /// yoga/mobility export mappings return false without relabelling the record.
+  Future<bool> writeActivitySession({
+    required B02ActivityType activityType,
+    required String title,
+    required int durationMinutes,
+    required int caloriesBurned,
+    required DateTime startTime,
+  }) async {
     try {
       final categoryStates = await getAllCategoryStates();
       if (categoryStates[HealthCategory.workoutExport] != true) return false;
@@ -405,14 +436,14 @@ class HealthService {
       );
       if (!authorized) return false;
 
-      final endTime = startTime.add(Duration(minutes: durationMinutes));
-      return await _health.writeWorkoutData(
-        activityType: HealthWorkoutActivityType.STRENGTH_TRAINING,
+      final platform = _health.platformType;
+      return await HealthActivityExportRepository(_health).writeActivity(
+        activityType: activityType,
         title: '$title (IndiFit)',
-        start: startTime,
-        end: endTime,
-        totalEnergyBurned: caloriesBurned,
-        totalEnergyBurnedUnit: HealthDataUnit.KILOCALORIE,
+        durationSeconds: durationMinutes * 60,
+        caloriesBurned: caloriesBurned,
+        startTime: startTime,
+        platform: platform,
       );
     } catch (e, st) {
       AppLogger.warning('writeWorkoutSession failed: $e');

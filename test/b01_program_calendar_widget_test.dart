@@ -66,6 +66,7 @@ ProgramDetailAggregate _reviewDetail() {
         ordinal: 0,
         name: 'Template 1',
         plannedWeekday: DateTime.monday,
+        activityType: 'strength',
       ),
     ],
     exercisePrescriptions: const [
@@ -76,6 +77,38 @@ ProgramDetailAggregate _reviewDetail() {
         exerciseNameSnapshot: 'Squat',
         plannedSets: 3,
         repsRange: '5',
+      ),
+      ExercisePrescription(
+        id: 'prescription-review-2',
+        sessionTemplateId: templateId,
+        ordinal: 1,
+        exerciseNameSnapshot: 'Row',
+        plannedSets: 3,
+        repsRange: '8',
+      ),
+    ],
+    groups: const [
+      ExerciseGroup(
+        id: 'group-review',
+        sessionTemplateId: templateId,
+        ordinal: 0,
+        groupType: 'superset',
+        roundCount: 3,
+        restAfterRoundSeconds: 90,
+      ),
+    ],
+    groupMembers: const [
+      ExerciseGroupMember(
+        id: 'group-member-review-1',
+        exerciseGroupId: 'group-review',
+        exercisePrescriptionId: 'prescription-review',
+        ordinal: 0,
+      ),
+      ExerciseGroupMember(
+        id: 'group-member-review-2',
+        exerciseGroupId: 'group-review',
+        exercisePrescriptionId: 'prescription-review-2',
+        ordinal: 1,
       ),
     ],
   );
@@ -146,6 +179,7 @@ void main() {
 
         expect(find.text('Program Authoring'), findsOneWidget);
         expect(find.text('New Program'), findsOneWidget);
+        expect(find.text('Add group'), findsOneWidget);
         expect(find.text('Save Draft'), findsOneWidget);
         expect(find.text('Review & Activate'), findsOneWidget);
       },
@@ -171,11 +205,40 @@ void main() {
         expect(find.text('Review & Activate'), findsOneWidget);
         expect(find.text('Review Test Plan'), findsOneWidget);
         expect(find.text('Publish & Activate Program'), findsOneWidget);
+        await tester.tap(find.text('Block 1'));
+        await tester.pumpAndSettle();
+        expect(find.text('superset • 3 rounds • 2 members'), findsOneWidget);
       },
     );
 
     testWidgets(
-      '3. OccurrenceActionsSheet displays B01-PD01 skip options dialog on tap',
+      '3. ProgramAuthorScreen renders persisted group type, rounds and members',
+      (tester) async {
+        final detail = _reviewDetail();
+
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            ProgramAuthorScreen(programVersionId: detail.version.id),
+            overrides: [
+              programRepositoryProvider.overrideWithValue(
+                _ReviewProgramRepository(db, detail),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Explicit exercise groups'), findsOneWidget);
+        expect(find.text('superset • 3 rounds'), findsOneWidget);
+        expect(
+          find.text('Members: Squat → Row • 90s rest after round'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      '4. OccurrenceActionsSheet displays B01-PD01 skip options dialog on tap',
       (tester) async {
         final readModel = _plannedOccurrenceItem();
 

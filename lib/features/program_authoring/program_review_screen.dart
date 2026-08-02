@@ -234,19 +234,47 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                         b.name,
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      children: detail.weeks
-                          .where((w) => w.programBlockId == b.id)
-                          .map((w) {
-                            return ListTile(
-                              title: Text(
-                                'Week ${w.programWeekOrdinal + 1}${w.isDeload ? " (Deload)" : ""}',
+                      children: detail.weeks.where((w) => w.programBlockId == b.id).map((
+                        w,
+                      ) {
+                        final weekTemplates = detail.sessionTemplates
+                            .where((st) => st.programWeekId == w.id)
+                            .toList(growable: false);
+                        final weekTemplateIds = weekTemplates
+                            .map((template) => template.id)
+                            .toSet();
+                        final weekGroups = detail.groups
+                            .where(
+                              (group) => weekTemplateIds.contains(
+                                group.sessionTemplateId,
                               ),
-                              subtitle: Text(
-                                '${detail.sessionTemplates.where((st) => st.programWeekId == w.id).length} Workouts Scheduled',
+                            )
+                            .toList(growable: false);
+                        return ListTile(
+                          title: Text(
+                            'Week ${w.programWeekOrdinal + 1}${w.isDeload ? " (Deload)" : ""}',
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${weekTemplates.length} Workouts Scheduled',
                               ),
-                            );
-                          })
-                          .toList(),
+                              ...weekGroups.map((group) {
+                                final memberCount = detail.groupMembers
+                                    .where(
+                                      (member) =>
+                                          member.exerciseGroupId == group.id,
+                                    )
+                                    .length;
+                                return Text(
+                                  '${group.groupType} • ${group.roundCount} rounds • $memberCount members',
+                                );
+                              }),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     );
                   }),
                   const SizedBox(height: 32),

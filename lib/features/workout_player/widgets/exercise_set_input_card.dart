@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/colors.dart';
 import '../../../data/database/app_database.dart';
+import '../../../data/repositories/legacy_workout_compatibility_adapter.dart';
 import 'plate_calculator_sheet.dart';
 
 class ExerciseSetInputCard extends StatelessWidget {
@@ -12,6 +13,7 @@ class ExerciseSetInputCard extends StatelessWidget {
   final TextEditingController durationController;
   final TextEditingController distanceController;
   final TextEditingController inclineController;
+  final LegacyExerciseExecutionMetadata executionMetadata;
   final bool isWarmUp;
   final String selectedSetType;
   final int? selectedRpe;
@@ -29,6 +31,7 @@ class ExerciseSetInputCard extends StatelessWidget {
     required this.durationController,
     required this.distanceController,
     required this.inclineController,
+    required this.executionMetadata,
     required this.isWarmUp,
     required this.selectedSetType,
     required this.selectedRpe,
@@ -37,28 +40,6 @@ class ExerciseSetInputCard extends StatelessWidget {
     required this.onRpeChanged,
     required this.onCompleteSet,
   });
-
-  String _getExerciseFormCue(String exerciseName) {
-    final name = exerciseName.toLowerCase();
-    if (name.contains('bench press') || name.contains('chest press')) {
-      return 'Form: Scapula retracted (shoulders back and down), chest up, flat feet on floor. Lower under control to touch your mid-chest and press up.';
-    } else if (name.contains('shoulder press') ||
-        name.contains('overhead press')) {
-      return 'Form: Keep core tight, avoid excessive arch in lower back. Drive weight straight up, keeping elbows slightly tucked.';
-    } else if (name.contains('squat')) {
-      return 'Form: Hips back first, push knees outward, keep chest high, brace core. Squat to parallel or lower.';
-    } else if (name.contains('deadlift')) {
-      return 'Form: Hinge at hips, keep flat back, pull bar close to shins. Drive feet into the ground to lock out.';
-    } else if (name.contains('lat pulldown') || name.contains('pull')) {
-      return 'Form: Pull shoulders down and back, pull down to upper chest using elbows, lean back slightly.';
-    } else if (name.contains('curl') ||
-        name.contains('tricep') ||
-        name.contains('lateral') ||
-        name.contains('raise')) {
-      return 'Form: Pin elbows, avoid swinging, squeeze targeted arm muscles.';
-    }
-    return 'Form: Perform with strict form. Keep core braced, breathe out on exertion, and control the negative phase.';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,22 +112,7 @@ class ExerciseSetInputCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (currentExercise.exerciseName.toLowerCase().contains('run') ||
-                currentExercise.exerciseName.toLowerCase().contains(
-                  'treadmill',
-                ) ||
-                currentExercise.exerciseName.toLowerCase().contains('cardio') ||
-                currentExercise.exerciseName.toLowerCase().contains('cycle') ||
-                currentExercise.exerciseName.toLowerCase().contains(
-                  'cycling',
-                ) ||
-                currentExercise.exerciseName.toLowerCase().contains(
-                  'elliptical',
-                ) ||
-                currentExercise.exerciseName.toLowerCase().contains('walk') ||
-                currentExercise.exerciseName.toLowerCase().contains(
-                  'swim',
-                )) ...[
+            if (executionMetadata.isCardio) ...[
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -276,7 +242,7 @@ class ExerciseSetInputCard extends StatelessWidget {
                 border: Border.all(color: AppColors.border),
               ),
               child: Text(
-                _getExerciseFormCue(currentExercise.exerciseName),
+                executionMetadata.formCue,
                 style: const TextStyle(
                   fontSize: 11,
                   color: AppColors.textSecondary,

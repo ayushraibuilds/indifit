@@ -8,6 +8,7 @@ import 'package:vibration/vibration.dart';
 import '../../core/di/providers.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/legacy_workout_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 
 class WorkoutPlayerState {
@@ -87,6 +88,7 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
   final String routineName;
   final String? scheduledOccurrenceId;
   final String? executionSnapshotJson;
+  final LegacyWorkoutCompatibilityAdapter _legacyCompatibility;
   Timer? _timer;
 
   WorkoutPlayerController(
@@ -99,7 +101,10 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
     List<WorkoutSetsCompanion>? initialLoggedSets,
     this.scheduledOccurrenceId,
     this.executionSnapshotJson,
-  }) : super(
+    LegacyWorkoutCompatibilityAdapter? legacyCompatibility,
+  }) : _legacyCompatibility =
+           legacyCompatibility ?? const LegacyWorkoutCompatibilityAdapter(),
+       super(
          WorkoutPlayerState(
            activeExercises: initialExercises,
            currentExerciseIndex: initialExerciseIndex,
@@ -175,6 +180,23 @@ class WorkoutPlayerController extends StateNotifier<WorkoutPlayerState> {
       priorSets: latestSets,
       bestPrSet: prSet,
       suggestedWeight: suggested,
+    );
+  }
+
+  /// The retained B01 player has no typed modality field. Its compatibility
+  /// policy is intentionally exposed through the controller so the widget
+  /// never performs display-name classification itself.
+  LegacyExerciseExecutionMetadata get currentExerciseCompatibilityMetadata {
+    if (state.activeExercises.isEmpty) {
+      return const LegacyExerciseExecutionMetadata(
+        isCardio: false,
+        recommendedRestSeconds: 90,
+        formCue:
+            'Form: Perform with strict form. Keep core braced, breathe out on exertion, and control the negative phase.',
+      );
+    }
+    return _legacyCompatibility.metadataFor(
+      state.activeExercises[state.currentExerciseIndex].exerciseName,
     );
   }
 

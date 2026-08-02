@@ -1,9 +1,13 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/database/app_database.dart';
+import '../../data/models/b02_execution_models.dart';
+import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
+import '../../features/activity/b02_activity_creation_screen.dart';
 import '../../features/calendar/program_calendar_screen.dart';
 import '../../features/dashboard/main_navigation_scaffold.dart';
 import '../../features/equipment/equipment_profile_editor_screen.dart';
@@ -20,6 +24,8 @@ import '../../features/reports/weekly_report_screen.dart';
 import '../../features/settings/health_sync_hub_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/travel/travel_mode_screen.dart';
+import '../../features/workout_player/b02_strength_player_screen.dart';
+import '../../features/workout_player/b02_strength_summary_screen.dart';
 import '../../features/workout_player/routine_display_screen.dart';
 import '../../features/workout_player/routine_editor_screen.dart';
 import '../../features/workout_player/workout_player_screen.dart';
@@ -134,6 +140,50 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             scheduledOccurrenceId: extra['scheduledOccurrenceId'] as String?,
             completionCommandId: extra['completionCommandId'] as String?,
           );
+        },
+      ),
+      GoRoute(
+        path: '/b02-strength-player',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          final launch = extra['launch'];
+          if (launch is! B02StrengthExecutionLaunch) {
+            return const Scaffold(
+              body: Center(child: Text('B02 strength draft is unavailable.')),
+            );
+          }
+          return B02StrengthPlayerScreen(launch: launch);
+        },
+      ),
+      GoRoute(
+        path: '/b02-strength-summary',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          final launch = extra['launch'];
+          if (launch is! B02StrengthExecutionLaunch) {
+            return const Scaffold(
+              body: Center(child: Text('B02 strength draft is unavailable.')),
+            );
+          }
+          return B02StrengthSummaryScreen(launch: launch);
+        },
+      ),
+      GoRoute(
+        path: '/activity-create',
+        builder: (context, state) {
+          final rawType = state.uri.queryParameters['type'];
+          B02ActivityType type = B02ActivityType.running;
+          if (rawType != null) {
+            try {
+              type = B02ActivityType.parse(rawType);
+            } catch (_) {
+              type = B02ActivityType.running;
+            }
+          }
+          final draftId = int.tryParse(
+            state.uri.queryParameters['draftId'] ?? '',
+          );
+          return B02ActivityCreationScreen(initialType: type, draftId: draftId);
         },
       ),
       GoRoute(

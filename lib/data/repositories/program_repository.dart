@@ -4,11 +4,14 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../database/app_database.dart';
+import '../models/b02_execution_models.dart';
+import '../models/b02_group_plan_validator.dart';
 
 /// An explicitly preserved unresolved exercise reference. New authoring must
 /// select a stable exercise ID; this flag exists only for import/compatibility
 /// flows that cannot safely resolve a legacy/custom name.
 class ExercisePrescriptionInput {
+  final String? id;
   final String? exerciseId;
   final String exerciseNameSnapshot;
   final int plannedSets;
@@ -17,12 +20,47 @@ class ExercisePrescriptionInput {
   final bool allowUnresolvedExerciseFallback;
 
   const ExercisePrescriptionInput({
+    this.id,
     this.exerciseId,
     required this.exerciseNameSnapshot,
     required this.plannedSets,
     required this.repsRange,
     required this.ordinal,
     this.allowUnresolvedExerciseFallback = false,
+  });
+}
+
+class ExerciseGroupMemberInput {
+  final String? id;
+  final String exercisePrescriptionId;
+  final int ordinal;
+  final int? transitionRestSeconds;
+
+  const ExerciseGroupMemberInput({
+    this.id,
+    required this.exercisePrescriptionId,
+    required this.ordinal,
+    this.transitionRestSeconds,
+  });
+}
+
+class ExerciseGroupInput {
+  final String? id;
+  final int ordinal;
+  final B02GroupType groupType;
+  final int roundCount;
+  final int? restAfterRoundSeconds;
+  final String? label;
+  final List<ExerciseGroupMemberInput> members;
+
+  const ExerciseGroupInput({
+    this.id,
+    required this.ordinal,
+    required this.groupType,
+    required this.roundCount,
+    this.restAfterRoundSeconds,
+    this.label,
+    required this.members,
   });
 }
 
@@ -33,6 +71,7 @@ class SessionTemplateInput {
   final int? plannedStartMinute;
   final String? notes;
   final List<ExercisePrescriptionInput> prescriptions;
+  final List<ExerciseGroupInput> groups;
 
   const SessionTemplateInput({
     required this.name,
@@ -41,6 +80,7 @@ class SessionTemplateInput {
     this.plannedStartMinute,
     this.notes,
     required this.prescriptions,
+    this.groups = const [],
   });
 }
 
@@ -82,6 +122,8 @@ class ProgramDetailAggregate {
   final List<ProgramWeek> weeks;
   final List<SessionTemplate> sessionTemplates;
   final List<ExercisePrescription> exercisePrescriptions;
+  final List<ExerciseGroup> groups;
+  final List<ExerciseGroupMember> groupMembers;
 
   const ProgramDetailAggregate({
     required this.program,
@@ -90,6 +132,8 @@ class ProgramDetailAggregate {
     required this.weeks,
     required this.sessionTemplates,
     required this.exercisePrescriptions,
+    this.groups = const [],
+    this.groupMembers = const [],
   });
 }
 
@@ -233,6 +277,8 @@ class ProgramRepository {
           )..where((t) => t.programVersionId.equals(versionId))).watch(),
           db.select(db.sessionTemplates).watch(),
           db.select(db.exercisePrescriptions).watch(),
+          db.select(db.exerciseGroups).watch(),
+          db.select(db.exerciseGroupMembers).watch(),
         ];
         for (final watch in watches) {
           subscriptions.add(watch.map<void>((_) {}).listen((_) => emit()));
@@ -328,6 +374,326 @@ class ProgramRepository {
       await _requireDraft(versionId);
       await _deleteVersionGraph(versionId);
       await _insertVersionGraph(versionId, blocks);
+    });
+  }
+
+  /// Adds one explicit group to a draft session template. New groups append at
+  /// the end; callers use [reorderExerciseGroups] for any other order.
+  Future<String> createExerciseGroup(
+    String sessionTemplateId,
+    ExerciseGroupInput input,
+  ) async {
+    return db.transaction(() async {
+      await _requireDraftTemplate(sessionTemplateId);
+      final existing = await _readGroupRows(sessionTemplateId);
+      if (input.ordinal != existing.groups.length) {
+        throw ArgumentError(
+          'A new exercise group must append at ordinal ${existing.groups.length}.',
+        );
+      }
+      final groupId = input.id?.trim().isNotEmpty == true
+          ? input.id!.trim()
+          : _uuid.v4();
+      final prescriptionIds = await _prescriptionIds(sessionTemplateId);
+      final candidate = _groupInputAsDomain(input, groupId);
+      B02GroupPlanValidator.validate(
+        groups: [
+          ..._groupRowsAsDomain(existing.groups, existing.members),
+          candidate,
+        ],
+        prescriptionIds: prescriptionIds,
+      );
+      await _insertGroup(
+        sessionTemplateId: sessionTemplateId,
+        groupId: groupId,
+        input: input,
+      );
+      return groupId;
+    });
+  }
+
+  /// Replaces a group's editable fields and member slots while the parent
+  /// version remains a draft. Published or started graphs are rejected.
+  Future<void> updateExerciseGroup(
+    String groupId,
+    ExerciseGroupInput input,
+  ) async {
+    await db.transaction(() async {
+      final current = await _requireDraftGroup(groupId);
+      if (input.id != null && input.id!.trim() != groupId) {
+        throw ArgumentError(
+          'Exercise group ID cannot change during an update.',
+        );
+      }
+      final existing = await _readGroupRows(current.template.id);
+      final prescriptionIds = await _prescriptionIds(current.template.id);
+      final candidate = _groupInputAsDomain(input, groupId);
+      final groups = _groupRowsAsDomain(existing.groups, existing.members)
+          .map((group) => group.id == groupId ? candidate : group)
+          .toList(growable: false);
+      B02GroupPlanValidator.validate(
+        groups: groups,
+        prescriptionIds: prescriptionIds,
+      );
+      await (db.update(
+        db.exerciseGroups,
+      )..where((t) => t.id.equals(groupId))).write(
+        ExerciseGroupsCompanion(
+          ordinal: Value(input.ordinal),
+          groupType: Value(input.groupType.dbValue),
+          roundCount: Value(input.roundCount),
+          restAfterRoundSeconds: Value(input.restAfterRoundSeconds),
+          label: Value(_nullableTrim(input.label)),
+        ),
+      );
+      await (db.delete(
+        db.exerciseGroupMembers,
+      )..where((t) => t.exerciseGroupId.equals(groupId))).go();
+      await _insertGroupMembers(groupId, input.members);
+    });
+  }
+
+  /// Deletes a group and closes the ordinal gap in the same transaction.
+  Future<void> deleteExerciseGroup(String groupId) async {
+    await db.transaction(() async {
+      final current = await _requireDraftGroup(groupId);
+      await (db.delete(
+        db.exerciseGroupMembers,
+      )..where((t) => t.exerciseGroupId.equals(groupId))).go();
+      await (db.delete(
+        db.exerciseGroups,
+      )..where((t) => t.id.equals(groupId))).go();
+      final remaining =
+          await (db.select(db.exerciseGroups)
+                ..where((t) => t.sessionTemplateId.equals(current.template.id))
+                ..orderBy([(t) => OrderingTerm(expression: t.ordinal)]))
+              .get();
+      for (var index = 0; index < remaining.length; index++) {
+        if (remaining[index].ordinal != index) {
+          await (db.update(db.exerciseGroups)
+                ..where((t) => t.id.equals(remaining[index].id)))
+              .write(ExerciseGroupsCompanion(ordinal: Value(index)));
+        }
+      }
+    });
+  }
+
+  /// Appends one member to a draft group after validating the complete plan.
+  Future<String> addExerciseGroupMember(
+    String groupId,
+    ExerciseGroupMemberInput input,
+  ) async {
+    return db.transaction(() async {
+      final current = await _requireDraftGroup(groupId);
+      final existing = await _readGroupRows(current.template.id);
+      final group = existing.groups.singleWhere((row) => row.id == groupId);
+      final members = existing.members
+          .where((row) => row.exerciseGroupId == groupId)
+          .toList(growable: false);
+      if (input.ordinal != members.length) {
+        throw ArgumentError(
+          'A new group member must append at ordinal ${members.length}.',
+        );
+      }
+      final memberId = input.id?.trim().isNotEmpty == true
+          ? input.id!.trim()
+          : _uuid.v4();
+      final prescriptionIds = await _prescriptionIds(current.template.id);
+      final candidate = B02ExerciseGroup(
+        id: group.id,
+        ordinal: group.ordinal,
+        groupType: B02GroupType.parse(group.groupType),
+        roundCount: group.roundCount,
+        restAfterRoundSeconds: group.restAfterRoundSeconds,
+        label: group.label,
+        members: [
+          ...members.map(_memberRowAsDomain),
+          B02ExerciseGroupMember(
+            id: memberId,
+            exercisePrescriptionId: input.exercisePrescriptionId,
+            ordinal: input.ordinal,
+            transitionRestSeconds: input.transitionRestSeconds,
+          ),
+        ],
+      );
+      final groups = _groupRowsAsDomain(existing.groups, existing.members)
+          .map((row) => row.id == groupId ? candidate : row)
+          .toList(growable: false);
+      B02GroupPlanValidator.validate(
+        groups: groups,
+        prescriptionIds: prescriptionIds,
+      );
+      await _insertGroupMember(groupId, memberId, input);
+      return memberId;
+    });
+  }
+
+  Future<void> updateExerciseGroupMember(
+    String memberId,
+    ExerciseGroupMemberInput input,
+  ) async {
+    await db.transaction(() async {
+      final current = await _requireDraftMember(memberId);
+      final existing = await _readGroupRows(current.template.id);
+      final group = existing.groups.singleWhere(
+        (row) => row.id == current.member.exerciseGroupId,
+      );
+      final candidateMembers = existing.members
+          .where((row) => row.exerciseGroupId == group.id)
+          .map(
+            (row) => row.id == memberId
+                ? B02ExerciseGroupMember(
+                    id: memberId,
+                    exercisePrescriptionId: input.exercisePrescriptionId,
+                    ordinal: input.ordinal,
+                    transitionRestSeconds: input.transitionRestSeconds,
+                  )
+                : _memberRowAsDomain(row),
+          )
+          .toList(growable: false);
+      final candidate = B02ExerciseGroup(
+        id: group.id,
+        ordinal: group.ordinal,
+        groupType: B02GroupType.parse(group.groupType),
+        roundCount: group.roundCount,
+        restAfterRoundSeconds: group.restAfterRoundSeconds,
+        label: group.label,
+        members: candidateMembers,
+      );
+      final groups = _groupRowsAsDomain(existing.groups, existing.members)
+          .map((row) => row.id == group.id ? candidate : row)
+          .toList(growable: false);
+      B02GroupPlanValidator.validate(
+        groups: groups,
+        prescriptionIds: await _prescriptionIds(current.template.id),
+      );
+      await (db.update(
+        db.exerciseGroupMembers,
+      )..where((t) => t.id.equals(memberId))).write(
+        ExerciseGroupMembersCompanion(
+          exercisePrescriptionId: Value(input.exercisePrescriptionId),
+          ordinal: Value(input.ordinal),
+          transitionRestSeconds: Value(input.transitionRestSeconds),
+        ),
+      );
+    });
+  }
+
+  Future<void> deleteExerciseGroupMember(String memberId) async {
+    await db.transaction(() async {
+      final current = await _requireDraftMember(memberId);
+      final existing = await _readGroupRows(current.template.id);
+      final group = existing.groups.singleWhere(
+        (row) => row.id == current.member.exerciseGroupId,
+      );
+      final remaining = existing.members
+          .where((row) => row.exerciseGroupId == group.id && row.id != memberId)
+          .toList(growable: false);
+      final candidate = B02ExerciseGroup(
+        id: group.id,
+        ordinal: group.ordinal,
+        groupType: B02GroupType.parse(group.groupType),
+        roundCount: group.roundCount,
+        restAfterRoundSeconds: group.restAfterRoundSeconds,
+        label: group.label,
+        members: remaining
+            .asMap()
+            .entries
+            .map(
+              (entry) => B02ExerciseGroupMember(
+                id: entry.value.id,
+                exercisePrescriptionId: entry.value.exercisePrescriptionId,
+                ordinal: entry.key,
+                transitionRestSeconds: entry.value.transitionRestSeconds,
+              ),
+            )
+            .toList(growable: false),
+      );
+      final groups = _groupRowsAsDomain(existing.groups, existing.members)
+          .map((row) => row.id == group.id ? candidate : row)
+          .toList(growable: false);
+      B02GroupPlanValidator.validate(
+        groups: groups,
+        prescriptionIds: await _prescriptionIds(current.template.id),
+      );
+      await (db.delete(
+        db.exerciseGroupMembers,
+      )..where((t) => t.id.equals(memberId))).go();
+      for (var index = 0; index < remaining.length; index++) {
+        await (db.update(db.exerciseGroupMembers)
+              ..where((t) => t.id.equals(remaining[index].id)))
+            .write(ExerciseGroupMembersCompanion(ordinal: Value(index)));
+      }
+    });
+  }
+
+  Future<void> reorderExerciseGroups(
+    String sessionTemplateId,
+    List<String> orderedGroupIds,
+  ) async {
+    await db.transaction(() async {
+      await _requireDraftTemplate(sessionTemplateId);
+      final groups = await (db.select(
+        db.exerciseGroups,
+      )..where((t) => t.sessionTemplateId.equals(sessionTemplateId))).get();
+      _requireExactOrder(
+        groups.map((group) => group.id).toSet(),
+        orderedGroupIds,
+        'group',
+      );
+      // The unique (template, ordinal) key makes an in-place swap unsafe.
+      // Move the rows to a valid, non-overlapping ordinal range first, then
+      // assign the requested contiguous order in this same transaction.
+      for (var index = 0; index < orderedGroupIds.length; index++) {
+        await (db.update(
+          db.exerciseGroups,
+        )..where((t) => t.id.equals(orderedGroupIds[index]))).write(
+          ExerciseGroupsCompanion(
+            ordinal: Value(orderedGroupIds.length + index),
+          ),
+        );
+      }
+      for (var index = 0; index < orderedGroupIds.length; index++) {
+        await (db.update(db.exerciseGroups)
+              ..where((t) => t.id.equals(orderedGroupIds[index])))
+            .write(ExerciseGroupsCompanion(ordinal: Value(index)));
+      }
+    });
+  }
+
+  Future<void> reorderExerciseGroupMembers(
+    String groupId,
+    List<String> orderedMemberIds,
+  ) async {
+    await db.transaction(() async {
+      final current = await _requireDraftGroup(groupId);
+      final members = await (db.select(
+        db.exerciseGroupMembers,
+      )..where((t) => t.exerciseGroupId.equals(groupId))).get();
+      _requireExactOrder(
+        members.map((member) => member.id).toSet(),
+        orderedMemberIds,
+        'group member',
+      );
+      for (var index = 0; index < orderedMemberIds.length; index++) {
+        await (db.update(
+          db.exerciseGroupMembers,
+        )..where((t) => t.id.equals(orderedMemberIds[index]))).write(
+          ExerciseGroupMembersCompanion(
+            ordinal: Value(orderedMemberIds.length + index),
+          ),
+        );
+      }
+      for (var index = 0; index < orderedMemberIds.length; index++) {
+        await (db.update(db.exerciseGroupMembers)
+              ..where((t) => t.id.equals(orderedMemberIds[index])))
+            .write(ExerciseGroupMembersCompanion(ordinal: Value(index)));
+      }
+      // Keep the parent read in this method so a deleted/reparented group
+      // cannot be reordered through a stale member list.
+      if (current.group.id != groupId) {
+        throw StateError('Exercise group ancestry changed during reorder.');
+      }
     });
   }
 
@@ -485,6 +851,19 @@ class ProgramRepository {
                 ..where((t) => t.sessionTemplateId.isIn(templateIds))
                 ..orderBy([(t) => OrderingTerm(expression: t.ordinal)]))
               .get();
+    final groups = templateIds.isEmpty
+        ? <ExerciseGroup>[]
+        : await (db.select(db.exerciseGroups)
+                ..where((t) => t.sessionTemplateId.isIn(templateIds))
+                ..orderBy([(t) => OrderingTerm(expression: t.ordinal)]))
+              .get();
+    final groupIds = groups.map((group) => group.id).toList();
+    final groupMembers = groupIds.isEmpty
+        ? <ExerciseGroupMember>[]
+        : await (db.select(db.exerciseGroupMembers)
+                ..where((t) => t.exerciseGroupId.isIn(groupIds))
+                ..orderBy([(t) => OrderingTerm(expression: t.ordinal)]))
+              .get();
     return ProgramDetailAggregate(
       program: program,
       version: version,
@@ -492,6 +871,8 @@ class ProgramRepository {
       weeks: weeks,
       sessionTemplates: templates,
       exercisePrescriptions: prescriptions,
+      groups: groups,
+      groupMembers: groupMembers,
     );
   }
 
@@ -564,12 +945,20 @@ class ProgramRepository {
                   notes: Value(_nullableTrim(template.notes)),
                 ),
               );
+          final prescriptionIdsByInputId = <String, String>{};
           for (final prescription in template.prescriptions) {
+            final prescriptionId = prescription.id?.trim().isNotEmpty == true
+                ? prescription.id!.trim()
+                : _uuid.v4();
+            if (prescription.id != null) {
+              prescriptionIdsByInputId[prescription.id!.trim()] =
+                  prescriptionId;
+            }
             await db
                 .into(db.exercisePrescriptions)
                 .insert(
                   ExercisePrescriptionsCompanion.insert(
-                    id: _uuid.v4(),
+                    id: prescriptionId,
                     sessionTemplateId: templateId,
                     ordinal: prescription.ordinal,
                     exerciseId: Value(prescription.exerciseId),
@@ -579,6 +968,48 @@ class ProgramRepository {
                     repsRange: prescription.repsRange.trim(),
                   ),
                 );
+          }
+          for (final group in template.groups) {
+            final groupId = group.id?.trim().isNotEmpty == true
+                ? group.id!.trim()
+                : _uuid.v4();
+            await db
+                .into(db.exerciseGroups)
+                .insert(
+                  ExerciseGroupsCompanion.insert(
+                    id: groupId,
+                    sessionTemplateId: templateId,
+                    ordinal: group.ordinal,
+                    groupType: group.groupType.dbValue,
+                    roundCount: group.roundCount,
+                    restAfterRoundSeconds: Value(group.restAfterRoundSeconds),
+                    label: Value(_nullableTrim(group.label)),
+                  ),
+                );
+            for (final member in group.members) {
+              final prescriptionId =
+                  prescriptionIdsByInputId[member.exercisePrescriptionId];
+              if (prescriptionId == null) {
+                throw StateError(
+                  'Group member ${member.exercisePrescriptionId} was not found in the inserted template.',
+                );
+              }
+              await db
+                  .into(db.exerciseGroupMembers)
+                  .insert(
+                    ExerciseGroupMembersCompanion.insert(
+                      id: member.id?.trim().isNotEmpty == true
+                          ? member.id!.trim()
+                          : _uuid.v4(),
+                      exerciseGroupId: groupId,
+                      exercisePrescriptionId: prescriptionId,
+                      ordinal: member.ordinal,
+                      transitionRestSeconds: Value(
+                        member.transitionRestSeconds,
+                      ),
+                    ),
+                  );
+            }
           }
         }
       }
@@ -634,16 +1065,21 @@ class ProgramRepository {
                   plannedWeekday: template.plannedWeekday,
                   plannedStartMinute: Value(template.plannedStartMinute),
                   notes: Value(template.notes),
+                  activityType: Value(template.activityType),
+                  defaultRestSeconds: Value(template.defaultRestSeconds),
                 ),
               );
+          final prescriptionIdsBySourceId = <String, String>{};
           for (final prescription in source.exercisePrescriptions.where(
             (row) => row.sessionTemplateId == template.id,
           )) {
+            final newPrescriptionId = _uuid.v4();
+            prescriptionIdsBySourceId[prescription.id] = newPrescriptionId;
             await db
                 .into(db.exercisePrescriptions)
                 .insert(
                   ExercisePrescriptionsCompanion.insert(
-                    id: _uuid.v4(),
+                    id: newPrescriptionId,
                     sessionTemplateId: newTemplateId,
                     ordinal: prescription.ordinal,
                     exerciseId: Value(prescription.exerciseId),
@@ -653,8 +1089,248 @@ class ProgramRepository {
                   ),
                 );
           }
+          for (final group in source.groups.where(
+            (row) => row.sessionTemplateId == template.id,
+          )) {
+            final newGroupId = _uuid.v4();
+            await db
+                .into(db.exerciseGroups)
+                .insert(
+                  ExerciseGroupsCompanion.insert(
+                    id: newGroupId,
+                    sessionTemplateId: newTemplateId,
+                    ordinal: group.ordinal,
+                    groupType: group.groupType,
+                    roundCount: group.roundCount,
+                    restAfterRoundSeconds: Value(group.restAfterRoundSeconds),
+                    label: Value(group.label),
+                  ),
+                );
+            for (final member in source.groupMembers.where(
+              (row) => row.exerciseGroupId == group.id,
+            )) {
+              final newPrescriptionId =
+                  prescriptionIdsBySourceId[member.exercisePrescriptionId];
+              if (newPrescriptionId == null) {
+                throw StateError(
+                  'Group member ${member.id} has no copied prescription.',
+                );
+              }
+              await db
+                  .into(db.exerciseGroupMembers)
+                  .insert(
+                    ExerciseGroupMembersCompanion.insert(
+                      id: _uuid.v4(),
+                      exerciseGroupId: newGroupId,
+                      exercisePrescriptionId: newPrescriptionId,
+                      ordinal: member.ordinal,
+                      transitionRestSeconds: Value(
+                        member.transitionRestSeconds,
+                      ),
+                    ),
+                  );
+            }
+          }
         }
       }
+    }
+  }
+
+  Future<SessionTemplate> _requireDraftTemplate(String templateId) async {
+    final template = await (db.select(
+      db.sessionTemplates,
+    )..where((t) => t.id.equals(templateId))).getSingleOrNull();
+    if (template == null) {
+      throw StateError('Session template $templateId not found.');
+    }
+    final week = await (db.select(
+      db.programWeeks,
+    )..where((t) => t.id.equals(template.programWeekId))).getSingleOrNull();
+    if (week == null) {
+      throw StateError('Session template $templateId has no program week.');
+    }
+    await _requireDraft(week.programVersionId);
+    return template;
+  }
+
+  Future<({ExerciseGroup group, SessionTemplate template})> _requireDraftGroup(
+    String groupId,
+  ) async {
+    final group = await (db.select(
+      db.exerciseGroups,
+    )..where((t) => t.id.equals(groupId))).getSingleOrNull();
+    if (group == null) {
+      throw StateError('Exercise group $groupId not found.');
+    }
+    final template = await _requireDraftTemplate(group.sessionTemplateId);
+    return (group: group, template: template);
+  }
+
+  Future<({ExerciseGroupMember member, SessionTemplate template})>
+  _requireDraftMember(String memberId) async {
+    final member = await (db.select(
+      db.exerciseGroupMembers,
+    )..where((t) => t.id.equals(memberId))).getSingleOrNull();
+    if (member == null) {
+      throw StateError('Exercise group member $memberId not found.');
+    }
+    final group = await (db.select(
+      db.exerciseGroups,
+    )..where((t) => t.id.equals(member.exerciseGroupId))).getSingleOrNull();
+    if (group == null) {
+      throw StateError('Exercise group member $memberId has no group.');
+    }
+    final template = await _requireDraftTemplate(group.sessionTemplateId);
+    return (member: member, template: template);
+  }
+
+  Future<({List<ExerciseGroup> groups, List<ExerciseGroupMember> members})>
+  _readGroupRows(String sessionTemplateId) async {
+    final groups =
+        await (db.select(db.exerciseGroups)
+              ..where((t) => t.sessionTemplateId.equals(sessionTemplateId))
+              ..orderBy([(t) => OrderingTerm(expression: t.ordinal)]))
+            .get();
+    final groupIds = groups.map((group) => group.id).toList();
+    final members = groupIds.isEmpty
+        ? <ExerciseGroupMember>[]
+        : await (db.select(db.exerciseGroupMembers)
+                ..where((t) => t.exerciseGroupId.isIn(groupIds))
+                ..orderBy([(t) => OrderingTerm(expression: t.ordinal)]))
+              .get();
+    return (groups: groups, members: members);
+  }
+
+  Future<Set<String>> _prescriptionIds(String sessionTemplateId) async {
+    final prescriptions = await (db.select(
+      db.exercisePrescriptions,
+    )..where((t) => t.sessionTemplateId.equals(sessionTemplateId))).get();
+    return prescriptions.map((prescription) => prescription.id).toSet();
+  }
+
+  Future<void> _insertGroup({
+    required String sessionTemplateId,
+    required String groupId,
+    required ExerciseGroupInput input,
+  }) async {
+    await db
+        .into(db.exerciseGroups)
+        .insert(
+          ExerciseGroupsCompanion.insert(
+            id: groupId,
+            sessionTemplateId: sessionTemplateId,
+            ordinal: input.ordinal,
+            groupType: input.groupType.dbValue,
+            roundCount: input.roundCount,
+            restAfterRoundSeconds: Value(input.restAfterRoundSeconds),
+            label: Value(_nullableTrim(input.label)),
+          ),
+        );
+    await _insertGroupMembers(groupId, input.members);
+  }
+
+  Future<void> _insertGroupMembers(
+    String groupId,
+    Iterable<ExerciseGroupMemberInput> members,
+  ) async {
+    for (final member in members) {
+      await _insertGroupMember(
+        groupId,
+        member.id?.trim().isNotEmpty == true ? member.id!.trim() : _uuid.v4(),
+        member,
+      );
+    }
+  }
+
+  Future<void> _insertGroupMember(
+    String groupId,
+    String memberId,
+    ExerciseGroupMemberInput input,
+  ) {
+    return db
+        .into(db.exerciseGroupMembers)
+        .insert(
+          ExerciseGroupMembersCompanion.insert(
+            id: memberId,
+            exerciseGroupId: groupId,
+            exercisePrescriptionId: input.exercisePrescriptionId,
+            ordinal: input.ordinal,
+            transitionRestSeconds: Value(input.transitionRestSeconds),
+          ),
+        );
+  }
+
+  B02ExerciseGroup _groupInputAsDomain(
+    ExerciseGroupInput input,
+    String groupId,
+  ) {
+    return B02ExerciseGroup(
+      id: groupId,
+      ordinal: input.ordinal,
+      groupType: input.groupType,
+      roundCount: input.roundCount,
+      restAfterRoundSeconds: input.restAfterRoundSeconds,
+      label: input.label,
+      members: input.members
+          .asMap()
+          .entries
+          .map(
+            (entry) => B02ExerciseGroupMember(
+              id: entry.value.id?.trim().isNotEmpty == true
+                  ? entry.value.id!.trim()
+                  : '$groupId/member/${entry.key}',
+              exercisePrescriptionId: entry.value.exercisePrescriptionId,
+              ordinal: entry.value.ordinal,
+              transitionRestSeconds: entry.value.transitionRestSeconds,
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  List<B02ExerciseGroup> _groupRowsAsDomain(
+    Iterable<ExerciseGroup> groups,
+    Iterable<ExerciseGroupMember> members,
+  ) {
+    return groups
+        .map(
+          (group) => B02ExerciseGroup(
+            id: group.id,
+            sessionTemplateId: group.sessionTemplateId,
+            ordinal: group.ordinal,
+            groupType: B02GroupType.parse(group.groupType),
+            roundCount: group.roundCount,
+            restAfterRoundSeconds: group.restAfterRoundSeconds,
+            label: group.label,
+            members: members
+                .where((member) => member.exerciseGroupId == group.id)
+                .map(_memberRowAsDomain)
+                .toList(growable: false),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  static B02ExerciseGroupMember _memberRowAsDomain(ExerciseGroupMember member) {
+    return B02ExerciseGroupMember(
+      id: member.id,
+      exercisePrescriptionId: member.exercisePrescriptionId,
+      ordinal: member.ordinal,
+      transitionRestSeconds: member.transitionRestSeconds,
+    );
+  }
+
+  static void _requireExactOrder(
+    Set<String> actualIds,
+    List<String> requestedIds,
+    String label,
+  ) {
+    if (requestedIds.length != actualIds.length ||
+        requestedIds.toSet().length != requestedIds.length ||
+        requestedIds.any((id) => !actualIds.contains(id))) {
+      throw ArgumentError(
+        'The requested $label order must contain every existing $label exactly once.',
+      );
     }
   }
 
@@ -669,6 +1345,18 @@ class ProgramRepository {
       )..where((t) => t.programWeekId.isIn(weekIds))).get();
       final templateIds = templates.map((row) => row.id).toList();
       if (templateIds.isNotEmpty) {
+        final groups = await (db.select(
+          db.exerciseGroups,
+        )..where((t) => t.sessionTemplateId.isIn(templateIds))).get();
+        final groupIds = groups.map((group) => group.id).toList();
+        if (groupIds.isNotEmpty) {
+          await (db.delete(
+            db.exerciseGroupMembers,
+          )..where((t) => t.exerciseGroupId.isIn(groupIds))).go();
+          await (db.delete(
+            db.exerciseGroups,
+          )..where((t) => t.id.isIn(groupIds))).go();
+        }
         await (db.delete(
           db.exercisePrescriptions,
         )..where((t) => t.sessionTemplateId.isIn(templateIds))).go();
@@ -718,6 +1406,9 @@ class ProgramRepository {
     _validateOrdinals('block', blocks.map((block) => block.ordinal));
     var expectedProgramWeekOrdinal = 0;
     final exerciseIds = <String>{};
+    final prescriptionRowIds = <String>{};
+    final groupRowIds = <String>{};
+    final groupMemberRowIds = <String>{};
     for (final block in blocks) {
       _requireText(block.name, 'Block name');
       _validateOrdinals(
@@ -749,7 +1440,18 @@ class ProgramRepository {
             'prescription in template ${template.ordinal}',
             template.prescriptions.map((p) => p.ordinal),
           );
+          final templatePrescriptionIds = <String>{};
           for (final prescription in template.prescriptions) {
+            final prescriptionRowId = prescription.id;
+            if (prescriptionRowId != null) {
+              _requireText(prescriptionRowId, 'Exercise prescription ID');
+              if (!prescriptionRowIds.add(prescriptionRowId.trim()) ||
+                  !templatePrescriptionIds.add(prescriptionRowId.trim())) {
+                throw ArgumentError(
+                  'Exercise prescription IDs must be unique in a program graph.',
+                );
+              }
+            }
             _requireText(
               prescription.exerciseNameSnapshot,
               'Exercise name snapshot',
@@ -769,6 +1471,52 @@ class ProgramRepository {
               exerciseIds.add(id);
             }
           }
+          final groups = template.groups
+              .map(
+                (group) => B02ExerciseGroup(
+                  id: group.id?.trim().isNotEmpty == true
+                      ? group.id!.trim()
+                      : 'group-${block.ordinal}-${week.programWeekOrdinal}-${template.ordinal}-${group.ordinal}',
+                  sessionTemplateId:
+                      'template-${block.ordinal}-${week.programWeekOrdinal}-${template.ordinal}',
+                  ordinal: group.ordinal,
+                  groupType: group.groupType,
+                  roundCount: group.roundCount,
+                  restAfterRoundSeconds: group.restAfterRoundSeconds,
+                  label: group.label,
+                  members: group.members
+                      .map(
+                        (member) => B02ExerciseGroupMember(
+                          id: member.id?.trim().isNotEmpty == true
+                              ? member.id!.trim()
+                              : 'member-${block.ordinal}-${week.programWeekOrdinal}-${template.ordinal}-${group.ordinal}-${member.ordinal}',
+                          exercisePrescriptionId: member.exercisePrescriptionId,
+                          ordinal: member.ordinal,
+                          transitionRestSeconds: member.transitionRestSeconds,
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+              )
+              .toList(growable: false);
+          for (final group in groups) {
+            if (!groupRowIds.add(group.id)) {
+              throw ArgumentError(
+                'Exercise group IDs must be unique in a program graph.',
+              );
+            }
+            for (final member in group.members) {
+              if (!groupMemberRowIds.add(member.id)) {
+                throw ArgumentError(
+                  'Exercise group member IDs must be unique in a program graph.',
+                );
+              }
+            }
+          }
+          B02GroupPlanValidator.validate(
+            groups: groups,
+            prescriptionIds: templatePrescriptionIds,
+          );
         }
       }
     }

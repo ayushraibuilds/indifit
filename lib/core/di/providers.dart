@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
+import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
@@ -344,6 +345,21 @@ final workoutExecutionCompatibilityAdapterProvider =
         travelRepo: ref.watch(travelRepositoryProvider),
       );
     });
+
+final strengthExecutionRepositoryProvider =
+    Provider<StrengthExecutionRepository>(
+      (ref) => StrengthExecutionRepository(
+        db: ref.watch(databaseProvider),
+        calendarRepo: ref.watch(calendarRepositoryProvider),
+      ),
+    );
+
+final strengthExecutionCompatibilityAdapterProvider =
+    Provider<StrengthExecutionCompatibilityAdapter>(
+      (ref) => StrengthExecutionCompatibilityAdapter(
+        ref.watch(strengthExecutionRepositoryProvider),
+      ),
+    );
 
 final travelRepositoryProvider = Provider<TravelRepository>((ref) {
   return TravelRepository(
