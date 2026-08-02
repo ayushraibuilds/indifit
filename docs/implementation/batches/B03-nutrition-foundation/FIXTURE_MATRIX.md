@@ -183,3 +183,21 @@ Deferred from B03-01: production schema/backup, food identity manifest
 creation, repository/resolver/calculator behavior, seed rewrite, recipe or
 thali implementation, AI integration, UI, migration, and any new catalogue
 nutrition values.
+
+## B03-02 immutable migration and backup baseline
+
+B03-02 freezes the accepted B02 starting point without changing production
+schema or backup versions. Tests copy these files to temporary paths; they do
+not regenerate them from current seed logic:
+
+| Fixture | Version | SHA-256 | Purpose |
+|---|---:|---|---|
+| `test/fixtures/data/b03_v16_legacy_baseline.db` | schema `16` | `27516799c7cfa9dba53a408c13a638fdb2be8bae32ee887fee2bf9f7ce147eb5` | Real on-disk legacy/custom/imported food-log and B02 baseline |
+| `test/fixtures/data/b03_backup_v7_legacy_baseline.json` | Backup `7`, schema `16` | `16e486faf0abba0f4b075a928eab25f3fe9e651e68687a6f66da14b944daa3ae` | Real v7 compatibility and restore baseline |
+
+The fixture IDs are `b03-v16-legacy-baseline-01` and
+`b03-backup-v7-legacy-baseline-01`. The reusable harness captures durable
+logical snapshots, foreign-key violations, file hashes, and trigger-injected
+restore failures. It also reuses the accepted B02 v15→v16 migration failure
+seam. No schema-v17 table, Backup-v8 field, B03 nutrition entity, or
+historical reinterpretation is present.

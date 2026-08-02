@@ -1,0 +1,353 @@
+{
+  "version": 7,
+  "timestamp": "2026-01-15T08:30:00.000Z",
+  "schema_version": 16,
+  "user_profile": {
+    "id": 9001,
+    "age": 31,
+    "height": 178.0,
+    "weight": 76.5,
+    "sex": "unspecified",
+    "activity_level": "moderate",
+    "goal": "maintain",
+    "diet_preference": "balanced",
+    "calorie_goal": 2350,
+    "protein_goal": 150.0,
+    "carbs_goal": 260.0,
+    "fat_goal": 70.0,
+    "name": "Fixture User",
+    "equipment_access": "full_gym",
+    "injuries_limitations": "",
+    "updated_at": "2026-01-15T14:00:00.000"
+  },
+  "user_settings": [
+    {
+      "key": "fixture_nutrition_mode",
+      "value": "legacy-compatible",
+      "updated_at": "2026-01-15T14:00:00.000"
+    }
+  ],
+  "user_preferences": {
+    "water_logged": 4,
+    "user_streak_count": 12,
+    "pref_remind_workout": true,
+    "prefQuietHoursEnabled": false
+  },
+  "food_items": [
+    {
+      "id": 574,
+      "name": "Fixture Custom Lentil Bowl",
+      "name_hindi": "Fixture Dal Bowl",
+      "calories": 412,
+      "protein_g": 21.5,
+      "carbs_g": 54.0,
+      "fat_g": 11.0,
+      "fiber_g": null,
+      "serving_size": 1.0,
+      "serving_unit": "bowl",
+      "category": "custom",
+      "is_custom": true,
+      "brand": "Fixture Kitchen",
+      "region_pack": null
+    }
+  ],
+  "food_logs": [
+    {
+      "id": 7001,
+      "food_item_id": 574,
+      "name": "Fixture Custom Lentil Bowl",
+      "calories": 412,
+      "protein_g": 21.5,
+      "carbs_g": 54.0,
+      "fat_g": 11.0,
+      "serving_logged": 1.0,
+      "serving_unit": "bowl",
+      "meal_type": "lunch",
+      "logged_at": "2026-01-15T14:00:00.000",
+      "is_synced": false,
+      "meal_group_id": "fixture-meal-group-lunch",
+      "uuid": "fixture-food-log-custom-7001"
+    },
+    {
+      "id": 7002,
+      "food_item_id": 1,
+      "name": "Fixture Seeded Breakfast Food",
+      "calories": 118,
+      "protein_g": 4.2,
+      "carbs_g": 20.0,
+      "fat_g": 2.1,
+      "serving_logged": 0.5,
+      "serving_unit": "serving",
+      "meal_type": "breakfast",
+      "logged_at": "2026-01-16T14:00:00.000",
+      "is_synced": true,
+      "meal_group_id": null,
+      "uuid": "fixture-food-log-seeded-7002"
+    },
+    {
+      "id": 7003,
+      "food_item_id": null,
+      "name": "Fixture Imported Estimate Without Identity",
+      "calories": 275,
+      "protein_g": 12.0,
+      "carbs_g": 31.0,
+      "fat_g": 9.0,
+      "serving_logged": 1.0,
+      "serving_unit": "unknown portion",
+      "meal_type": "dinner",
+      "logged_at": "2026-01-17T14:00:00.000",
+      "is_synced": false,
+      "meal_group_id": null,
+      "uuid": "fixture-food-log-imported-7003"
+    }
+  ],
+  "meal_templates": [
+    {
+      "id": 3001,
+      "name": "Fixture Two-Day Meal Template",
+      "default_meal_type": "breakfast",
+      "created_at": "2026-01-15T14:00:00.000"
+    }
+  ],
+  "meal_template_items": [
+    {
+      "id": 3002,
+      "template_id": 3001,
+      "name": "Fixture Template Item",
+      "calories": 300,
+      "protein_g": 18.0,
+      "carbs_g": 35.0,
+      "fat_g": 8.0,
+      "serving_logged": 1.0,
+      "serving_unit": "serving"
+    }
+  ],
+  "custom_exercises": [
+    {
+      "id": 9002,
+      "stable_id": "fixture-custom-exercise-v16",
+      "name": "Fixture Custom Movement",
+      "muscle_groups": "Unknown",
+      "equipment": "Fixture",
+      "difficulty": "Beginner",
+      "form_cues": "",
+      "common_mistakes": "",
+      "youtube_id": null,
+      "is_custom": true
+    }
+  ],
+  "workout_sessions": [
+    {
+      "id": 4101,
+      "name": "Fixture Strength Session",
+      "total_volume": 1200.0,
+      "duration_seconds": 1800,
+      "estimated_calories": 180,
+      "completed_at": "2026-01-15T15:00:00.000",
+      "is_synced": false,
+      "uuid": "fixture-workout-session-4101",
+      "scheduled_occurrence_id": null,
+      "execution_snapshot_json": null,
+      "execution_timezone_id": null,
+      "completion_kind": null,
+      "activity_type": "strength",
+      "activity_schema_version": 1
+    },
+    {
+      "id": 4102,
+      "name": "Fixture Imported Run",
+      "total_volume": 0.0,
+      "duration_seconds": 1500,
+      "estimated_calories": 210,
+      "completed_at": "2026-01-18T14:00:00.000",
+      "is_synced": true,
+      "uuid": "fixture-workout-session-4102",
+      "scheduled_occurrence_id": null,
+      "execution_snapshot_json": null,
+      "execution_timezone_id": null,
+      "completion_kind": null,
+      "activity_type": "running",
+      "activity_schema_version": 1
+    }
+  ],
+  "workout_sets": [
+    {
+      "id": 4201,
+      "session_id": 4101,
+      "exercise_name": "Flat Barbell Bench Press",
+      "weight": 60.0,
+      "reps": 8,
+      "set_number": 1,
+      "is_pr": false,
+      "rpe": 8,
+      "is_warmup": false,
+      "set_notes": null,
+      "uuid": "fixture-workout-set-4201",
+      "set_type": "working",
+      "duration_seconds": null,
+      "distance_km": null,
+      "incline_percentage": null,
+      "exercise_id": "089ec703-a25e-5b12-a39a-78b17ee33742"
+    }
+  ],
+  "workout_routines": [],
+  "routine_days": [],
+  "routine_exercises": [],
+  "workout_drafts": [
+    {
+      "id": 4501,
+      "routine_name": "Fixture Legacy Routine",
+      "current_exercise_index": 0,
+      "current_set_index": 1,
+      "elapsed_seconds": 600,
+      "logged_sets_json": "[{\"exercise\":\"Fixture Custom Movement\",\"reps\":6}]",
+      "updated_at": "2026-01-15T16:00:00.000",
+      "scheduled_occurrence_id": null,
+      "execution_snapshot_json": null,
+      "draft_schema_version": 1,
+      "activity_type": "legacy",
+      "execution_state_json": null
+    }
+  ],
+  "body_measurements": [],
+  "daily_hydrations": [],
+  "health_provenances": [
+    {
+      "id": 4301,
+      "provider": "health_connect",
+      "external_id": "fixture-health-external-4301",
+      "source_name": "Fixture Health Provider",
+      "imported_at": "2026-01-18T15:00:00.000",
+      "local_session_id": 4102,
+      "fingerprint": "fixture-health-fingerprint-4301"
+    }
+  ],
+  "achievement_unlocks": [],
+  "programs": [],
+  "program_versions": [],
+  "program_blocks": [],
+  "program_weeks": [],
+  "session_templates": [],
+  "exercise_prescriptions": [],
+  "scheduled_session_occurrences": [],
+  "occurrence_events": [],
+  "training_plan_settings": [
+    {
+      "id": 1,
+      "activeProgramVersionId": null,
+      "activeSinceLocalDate": null,
+      "activeSinceTimezoneId": null,
+      "defaultEquipmentProfileId": null,
+      "updatedAtUtc": 0
+    }
+  ],
+  "equipment_profiles": [],
+  "equipment_profile_items": [],
+  "travel_contexts": [],
+  "travel_context_occurrences": [],
+  "exercise_user_preferences": [],
+  "exercise_setup_values": [],
+  "exercise_personal_cues": [],
+  "legacy_routine_program_mappings": [],
+  "exercise_groups": [],
+  "exercise_group_members": [],
+  "strength_set_prescriptions": [],
+  "cardio_session_details": [
+    {
+      "sessionId": 4102,
+      "distanceMetres": 5000,
+      "observedPaceSecondsPerKm": 300.0,
+      "observedSpeedKph": null,
+      "inclinePercentage": null,
+      "elevationMetres": null,
+      "averageHeartRate": 148,
+      "perceivedExertion": 7,
+      "isIntervalWorkout": false,
+      "inputMode": null
+    }
+  ],
+  "cardio_intervals": [],
+  "mobility_session_details": [],
+  "performed_exercise_groups": [],
+  "performed_exercises": [],
+  "exercise_target_recommendations": [],
+  "performed_sets": [],
+  "performed_set_segments": [],
+  "performed_rest_periods": [],
+  "muscles": [
+    {
+      "id": "chest",
+      "displayName": "Chest",
+      "region": "torso",
+      "catalogVersion": 1,
+      "isActive": true
+    },
+    {
+      "id": "glute-maximus",
+      "displayName": "Gluteus Maximus",
+      "region": "hips",
+      "catalogVersion": 1,
+      "isActive": true
+    },
+    {
+      "id": "quadriceps",
+      "displayName": "Quadriceps",
+      "region": "legs",
+      "catalogVersion": 1,
+      "isActive": true
+    },
+    {
+      "id": "triceps",
+      "displayName": "Triceps",
+      "region": "arms",
+      "catalogVersion": 1,
+      "isActive": true
+    }
+  ],
+  "exercise_muscle_mappings": [
+    {
+      "id": "d3b5ab04-74f6-5155-9621-50238644eeda:glute-maximus:v1",
+      "exerciseId": "d3b5ab04-74f6-5155-9621-50238644eeda",
+      "muscleId": "glute-maximus",
+      "role": "secondary",
+      "contributionBasisPoints": 3000,
+      "mappingStatus": "reviewed",
+      "source": "reviewed-b02-v1",
+      "catalogVersion": 1
+    },
+    {
+      "id": "d3b5ab04-74f6-5155-9621-50238644eeda:quadriceps:v1",
+      "exerciseId": "d3b5ab04-74f6-5155-9621-50238644eeda",
+      "muscleId": "quadriceps",
+      "role": "primary",
+      "contributionBasisPoints": 7000,
+      "mappingStatus": "reviewed",
+      "source": "reviewed-b02-v1",
+      "catalogVersion": 1
+    },
+    {
+      "id": "089ec703-a25e-5b12-a39a-78b17ee33742:chest:v1",
+      "exerciseId": "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "muscleId": "chest",
+      "role": "primary",
+      "contributionBasisPoints": 7000,
+      "mappingStatus": "reviewed",
+      "source": "reviewed-b02-v1",
+      "catalogVersion": 1
+    },
+    {
+      "id": "089ec703-a25e-5b12-a39a-78b17ee33742:triceps:v1",
+      "exerciseId": "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "muscleId": "triceps",
+      "role": "secondary",
+      "contributionBasisPoints": 3000,
+      "mappingStatus": "reviewed",
+      "source": "reviewed-b02-v1",
+      "catalogVersion": 1
+    }
+  ],
+  "fixture_unknown_optional": {
+    "kind": "opaque-test-metadata",
+    "value": "must-not-execute"
+  }
+}
