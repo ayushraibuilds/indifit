@@ -106,6 +106,10 @@ void main() {
       expect(NutrientUnitContract.fromStableId('mass_gram'), NutrientUnit.gram);
       expect(NutrientUnit.gram.symbol, 'g');
       expect(NutrientUnit.microgram.displayLabel, 'micrograms');
+      expect(
+        roundTripped.definitionFor('protein').toJson()['unit'],
+        'mass_gram',
+      );
     },
   );
 }

@@ -155,5 +155,7 @@ void main() {
 
     expect(restored.toJsonString(), fact.toJsonString());
     expect(restored.displayPoint(registry), '8.3');
+    expect(restored.toJson()['unit'], 'mass_gram');
+    expect((restored.toJson()['point'] as Map)['unit'], 'mass_gram');
   });
 }

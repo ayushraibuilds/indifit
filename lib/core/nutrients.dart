@@ -182,7 +182,7 @@ class NutrientDefinition {
     'id': id,
     'machine_id': machineId,
     'display_name': displayName,
-    'unit': unit.name,
+    'unit': unit.stableId,
     'category': category.stableId,
     'calculation_precision': calculationPrecision,
     'display_precision': displayPrecision,
@@ -489,7 +489,7 @@ class NutrientAmount {
 
   Map<String, dynamic> toJson() => {
     'value': value.toJsonValue(),
-    'unit': unit.name,
+    'unit': unit.stableId,
   };
 
   factory NutrientAmount.fromJson(Object? raw) {
@@ -682,7 +682,7 @@ class NutrientFact {
   Map<String, dynamic> toJson() => {
     'contract_version': kNutrientFactContractVersion,
     'nutrient_id': nutrientId,
-    'unit': unit.name,
+    'unit': unit.stableId,
     'status': status.stableId,
     if (point != null) 'point': point!.toJson(),
     if (lower != null) 'lower': lower!.toJson(),
