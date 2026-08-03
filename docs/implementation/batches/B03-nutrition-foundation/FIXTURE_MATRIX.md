@@ -169,6 +169,39 @@ identities. The audit does not promote names, Hindi labels, row order, or
 current integer IDs to identity. Duplicate normalized names within one source
 fail validation; cross-source overlaps are reported for manual review.
 
+## B03-03 — Food identity boundary
+
+The checked-in `assets/data/nutrition_food_identity_manifest.json` is the
+runtime authority for the 598 bundled and regional catalogue rows. Manifest
+version `1` uses the `global-durable-id-v1` namespace and carries 598 explicit
+source-to-ID mappings, 598 source fingerprints, and 598 source review records.
+The current artifact contains 598 catalogue entries, 15 aliases, 600 legacy
+mappings, 8 fixture-only identities, 165 preparation variants, 25 regional
+variants, 108 serving-presentation variants, and 3 branded entries.
+
+Maintenance generation requires the reviewed source mapping. Existing IDs are
+selected by source key or by a fingerprint that excludes only the mutable
+English display name; sorted position and insertion order are never identity
+inputs. An unmapped source row fails visibly. A newly mapped row requires an
+explicit portable ID and is emitted as `manualReview`/`unknown` unless a
+source-review record explicitly supplies its kind, variant relationship,
+classification, and evidence reason.
+
+The validator atomically rejects duplicate IDs across entries, canonical
+machine identifiers, aliases, legacy mappings, fixtures, fixture portable IDs,
+and family identifiers; duplicate normalized canonical names; alias/variant
+orphanage and cycles; unsupported versions/namespaces; and contradictory
+source-review evidence. Exact reviewed aliases and explicit ambiguous generic
+names remain separate from durable fuzzy/search suggestions. Custom, imported,
+provider, AI-estimated, recipe, and unknown identities remain fixture-scoped
+and are never attached by name.
+
+The B03-03 maintenance tests cover cross-section collision rejection, atomic
+loading, cosmetic rename and source reorder stability, explicit onboarding of
+new earlier-sorting rows, missing review metadata, and rejection of heuristic
+classification. This section is B03-03-owned; the B03-02 baseline harness has
+its own dedicated section and remains independently mergeable.
+
 ## Review and change policy
 
 Sol High must review the semantic fixture contract before B03-02, B03-03, or
@@ -181,8 +214,7 @@ B03-04 consume it. Any fixture change requires:
 5. updated focused tests and this audit artifact; and
 6. a fresh Sol High focused review.
 
-Deferred from B03-01: production schema/backup, manifest consumers and
-database writes, calculator behavior, seed rewrite, recipe or thali
-implementation, AI integration, UI, migration, and any new catalogue
-nutrition values. B03-03's pure manifest loader/resolver does not change those
-boundaries.
+Deferred from B03-01: production schema/backup, food identity manifest
+creation, repository/resolver/calculator behavior, seed rewrite, recipe or
+thali implementation, AI integration, UI, migration, and any new catalogue
+nutrition values.

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
+
 /// The checked-in food identity contract version.
 const int kFoodIdentityManifestVersion = 1;
 
@@ -12,6 +14,11 @@ const String kFoodIdentityNormalizationVersion =
 
 const String kFoodIdentityManifestPath =
     'assets/data/nutrition_food_identity_manifest.json';
+
+/// All durable manifest identifiers intentionally share one namespace. A
+/// future format must opt into a new namespace version rather than silently
+/// changing collision rules.
+const String kFoodIdentityIdentityNamespace = 'global-durable-id-v1';
 
 enum FoodIdentityLookupStatus { resolved, ambiguous, unresolved }
 
@@ -90,6 +97,30 @@ Map<String, dynamic> _requiredMap(Map<String, dynamic> json, String key) {
     throw FormatException('Food identity field "$key" must be an object.');
   }
   return Map<String, dynamic>.from(value);
+}
+
+Map<String, String> _requiredStringMap(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is! Map) {
+    throw FormatException('Food identity field "$key" must be an object.');
+  }
+  final result = <String, String>{};
+  for (final item in value.entries) {
+    if (item.key is! String || item.value is! String) {
+      throw FormatException(
+        'Food identity field "$key" must contain string keys and values.',
+      );
+    }
+    final source = item.key as String;
+    final target = item.value as String;
+    if (source.trim().isEmpty || target.trim().isEmpty) {
+      throw FormatException(
+        'Food identity field "$key" cannot contain blank mappings.',
+      );
+    }
+    result[source] = target;
+  }
+  return result;
 }
 
 List<dynamic> _requiredList(Map<String, dynamic> json, String key) {
@@ -194,6 +225,65 @@ class FoodIdentityProvenance {
     'path': path,
     'provider_namespace': providerNamespace,
     'external_id': externalId,
+  };
+}
+
+/// Explicit evidence for the durable classification of one source row.
+///
+/// This is deliberately separate from source-file heuristics. A generator
+/// may emit a `manualReview` record when this evidence is absent, but it may
+/// not manufacture a reviewed classification.
+class FoodIdentitySourceReview {
+  final String sourceKey;
+  final String sourceFingerprint;
+  final String targetId;
+  final FoodIdentityKind kind;
+  final String classification;
+  final FoodIdentityReviewState reviewState;
+  final String? variantType;
+  final String? parentId;
+  final String? familyId;
+  final String reason;
+
+  const FoodIdentitySourceReview({
+    required this.sourceKey,
+    required this.sourceFingerprint,
+    required this.targetId,
+    required this.kind,
+    required this.classification,
+    required this.reviewState,
+    required this.variantType,
+    required this.parentId,
+    required this.familyId,
+    required this.reason,
+  });
+
+  factory FoodIdentitySourceReview.fromJson(Map<String, dynamic> json) {
+    return FoodIdentitySourceReview(
+      sourceKey: _requiredString(json, 'source_key'),
+      sourceFingerprint: _requiredString(json, 'source_fingerprint'),
+      targetId: _requiredString(json, 'target_id'),
+      kind: _kindFromJson(_requiredString(json, 'kind')),
+      classification: _requiredString(json, 'classification'),
+      reviewState: _reviewStateFromJson(_requiredString(json, 'review_state')),
+      variantType: _optionalString(json, 'variant_type'),
+      parentId: _optionalString(json, 'parent_id'),
+      familyId: _optionalString(json, 'family_id'),
+      reason: _requiredString(json, 'reason'),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'source_key': sourceKey,
+    'source_fingerprint': sourceFingerprint,
+    'target_id': targetId,
+    'kind': kind.name,
+    'classification': classification,
+    'review_state': reviewState.name,
+    'variant_type': variantType,
+    'parent_id': parentId,
+    'family_id': familyId,
+    'reason': reason,
   };
 }
 
@@ -488,10 +578,14 @@ class FoodLegacyLookupResult {
 class FoodIdentityManifest {
   final int version;
   final String normalizationVersion;
+  final String identityNamespace;
   final List<FoodIdentityEntry> entries;
   final List<FoodIdentityAlias> aliases;
   final List<FoodLegacyMapping> legacyMappings;
   final List<FoodIdentityFixture> identityFixtures;
+  final Map<String, String> sourceToId;
+  final Map<String, String> sourceFingerprintToId;
+  final Map<String, FoodIdentitySourceReview> sourceReviews;
 
   late final Map<String, FoodIdentityEntry> _entryById;
   late final Map<String, FoodIdentityEntry> _entryByMachineId;
@@ -501,14 +595,21 @@ class FoodIdentityManifest {
   FoodIdentityManifest._({
     required this.version,
     required this.normalizationVersion,
+    required this.identityNamespace,
     required List<FoodIdentityEntry> entries,
     required List<FoodIdentityAlias> aliases,
     required List<FoodLegacyMapping> legacyMappings,
     required List<FoodIdentityFixture> identityFixtures,
+    required Map<String, String> sourceToId,
+    required Map<String, String> sourceFingerprintToId,
+    required Map<String, FoodIdentitySourceReview> sourceReviews,
   }) : entries = List.unmodifiable(entries),
        aliases = List.unmodifiable(aliases),
        legacyMappings = List.unmodifiable(legacyMappings),
-       identityFixtures = List.unmodifiable(identityFixtures) {
+       identityFixtures = List.unmodifiable(identityFixtures),
+       sourceToId = Map.unmodifiable(sourceToId),
+       sourceFingerprintToId = Map.unmodifiable(sourceFingerprintToId),
+       sourceReviews = Map.unmodifiable(sourceReviews) {
     _validate();
     _entryById = {for (final entry in this.entries) entry.id: entry};
     _entryByMachineId = {
@@ -551,6 +652,12 @@ class FoodIdentityManifest {
         '$normalizationVersion.',
       );
     }
+    final identityNamespace = _requiredString(json, 'identity_namespace');
+    if (identityNamespace != kFoodIdentityIdentityNamespace) {
+      throw FormatException(
+        'Unsupported food identity namespace: $identityNamespace.',
+      );
+    }
 
     final entries = _parseList(
       _requiredList(json, 'entries'),
@@ -572,14 +679,41 @@ class FoodIdentityManifest {
       FoodIdentityFixture.fromJson,
       'identity fixture',
     );
+    final sourceToId = _requiredStringMap(json, 'source_to_id');
+    final sourceFingerprintToId = _requiredStringMap(
+      json,
+      'source_fingerprints',
+    );
+    final rawReviews = _requiredMap(json, 'source_reviews');
+    final sourceReviews = <String, FoodIdentitySourceReview>{};
+    for (final item in rawReviews.entries) {
+      if (item.value is! Map) {
+        throw const FormatException(
+          'Food identity source_reviews must map strings to objects.',
+        );
+      }
+      final review = FoodIdentitySourceReview.fromJson(
+        Map<String, dynamic>.from(item.value as Map),
+      );
+      if (review.sourceKey != item.key) {
+        throw StateError(
+          'Source review key ${item.key} does not match ${review.sourceKey}.',
+        );
+      }
+      sourceReviews[item.key] = review;
+    }
 
     return FoodIdentityManifest._(
       version: rawVersion,
       normalizationVersion: normalizationVersion,
+      identityNamespace: identityNamespace,
       entries: entries,
       aliases: aliases,
       legacyMappings: legacyMappings,
       identityFixtures: identityFixtures,
+      sourceToId: sourceToId,
+      sourceFingerprintToId: sourceFingerprintToId,
+      sourceReviews: sourceReviews,
     );
   }
 
@@ -628,6 +762,7 @@ class FoodIdentityManifest {
   Map<String, dynamic> toJson() => {
     'version': version,
     'normalization_version': normalizationVersion,
+    'identity_namespace': identityNamespace,
     'entries': entries.map((entry) => entry.toJson()).toList(),
     'aliases': aliases.map((alias) => alias.toJson()).toList(),
     'legacy_mappings': legacyMappings
@@ -636,6 +771,11 @@ class FoodIdentityManifest {
     'identity_fixtures': identityFixtures
         .map((fixture) => fixture.toJson())
         .toList(),
+    'source_to_id': sourceToId,
+    'source_fingerprints': sourceFingerprintToId,
+    'source_reviews': {
+      for (final item in sourceReviews.entries) item.key: item.value.toJson(),
+    },
   };
 
   List<FoodIdentityEntry> get catalogueEntries =>
@@ -739,6 +879,11 @@ class FoodIdentityManifest {
           .length;
 
   void _validate() {
+    if (identityNamespace != kFoodIdentityIdentityNamespace) {
+      throw StateError(
+        'Unsupported food identity namespace: $identityNamespace',
+      );
+    }
     _validateUnique('entry ID', entries.map((entry) => entry.id));
     _validateUnique(
       'canonical machine identifier',
@@ -954,6 +1099,144 @@ class FoodIdentityManifest {
         );
       }
     }
+
+    _validateSourceIdentityEvidence(entryIds);
+    _validateGlobalIdentityNamespace();
+  }
+
+  void _validateSourceIdentityEvidence(Set<String> entryIds) {
+    final catalogue = entries.where((entry) => entry.isCatalogue).toList();
+    final catalogueIds = catalogue.map((entry) => entry.id).toSet();
+    if (sourceToId.length != catalogue.length ||
+        sourceFingerprintToId.length != catalogue.length ||
+        sourceReviews.length != catalogue.length) {
+      throw StateError(
+        'Every catalogue source row requires exactly one source ID, '
+        'fingerprint, and explicit review record.',
+      );
+    }
+    if (sourceFingerprintToId.values.toSet().length != catalogue.length) {
+      throw StateError('Source fingerprints must resolve one-to-one to catalogue IDs.');
+    }
+
+    final reviewTargets = <String>{};
+    for (final entry in catalogue) {
+      final sourceKey = entry.provenance.key;
+      final mappedId = sourceToId[sourceKey];
+      if (mappedId != entry.id) {
+        throw StateError(
+          'Source $sourceKey must map explicitly to ${entry.id}.',
+        );
+      }
+      final review = sourceReviews[sourceKey];
+      if (review == null) {
+        throw StateError('Missing source review evidence for $sourceKey.');
+      }
+      if (review.targetId != entry.id ||
+          review.kind != entry.kind ||
+          review.classification != entry.classification ||
+          review.reviewState != entry.reviewState ||
+          review.variantType != entry.variantType ||
+          review.parentId != entry.parentId ||
+          review.familyId != entry.familyId) {
+        throw StateError(
+          'Source review evidence disagrees with manifest entry ${entry.id}.',
+        );
+      }
+      if (!reviewTargets.add(review.targetId)) {
+        throw StateError(
+          'Source review evidence resolves multiple rows to ${review.targetId}.',
+        );
+      }
+    }
+
+    for (final item in sourceToId.entries) {
+      if (!catalogue.any((entry) => entry.provenance.key == item.key)) {
+        throw StateError(
+          'Source ID mapping targets unknown source ${item.key}.',
+        );
+      }
+      if (!catalogueIds.contains(item.value)) {
+        throw StateError(
+          'Source ID mapping targets unknown entry ${item.value}.',
+        );
+      }
+    }
+    for (final item in sourceFingerprintToId.entries) {
+      if (!catalogueIds.contains(item.value)) {
+        throw StateError(
+          'Source fingerprint ${item.key} targets unknown entry ${item.value}.',
+        );
+      }
+    }
+    for (final review in sourceReviews.values) {
+      if (!sourceToId.containsKey(review.sourceKey) ||
+          sourceToId[review.sourceKey] != review.targetId) {
+        throw StateError(
+          'Source review ${review.sourceKey} has no matching source mapping.',
+        );
+      }
+      if (!sourceFingerprintToId.containsValue(review.targetId)) {
+        throw StateError(
+          'Source review ${review.sourceKey} has no fingerprint mapping.',
+        );
+      }
+      if (review.reviewState == FoodIdentityReviewState.reviewed &&
+          review.reason.trim().isEmpty) {
+        throw StateError(
+          'Reviewed source ${review.sourceKey} must include evidence.',
+        );
+      }
+      if (review.reviewState == FoodIdentityReviewState.manualReview &&
+          review.reason.trim().isEmpty) {
+        throw StateError(
+          'Manual-review source ${review.sourceKey} must include a reason.',
+        );
+      }
+      if (!entryIds.contains(review.targetId)) {
+        throw StateError(
+          'Source review ${review.sourceKey} targets unknown entry.',
+        );
+      }
+    }
+  }
+
+  void _validateGlobalIdentityNamespace() {
+    final claims = <String, String>{};
+
+    void claim(String value, String owner) {
+      final previous = claims[value];
+      if (previous != null && previous != owner) {
+        throw StateError(
+          'Global durable identity collision for "$value": $previous and $owner.',
+        );
+      }
+      claims[value] = owner;
+    }
+
+    for (final entry in entries) {
+      final owner = 'entry:${entry.id}';
+      claim(entry.id, owner);
+      // A catalogue entry commonly uses the same value for its portable and
+      // machine IDs. That is one identity, not a collision; a machine ID that
+      // belongs to another entry is rejected by the owner check.
+      claim(entry.machineId, owner);
+      if (entry.familyId != null) {
+        claim(entry.familyId!, 'family:${entry.familyId}');
+      }
+    }
+    for (final alias in aliases) {
+      claim(alias.id, 'alias:${alias.id}');
+    }
+    for (final mapping in legacyMappings) {
+      claim(mapping.id, 'legacy:${mapping.id}');
+    }
+    for (final fixture in identityFixtures) {
+      claim(fixture.id, 'fixture:${fixture.id}');
+      if (fixture.portableId != null) {
+        claim(fixture.portableId!, 'fixture-portable:${fixture.id}');
+      }
+    }
   }
 
   void _validateParentCycles() {
@@ -990,7 +1273,34 @@ class FoodIdentityManifest {
   static Map<String, dynamic> generateFromAssetFilesSync({
     String basePath = 'assets/data/indian_foods.json',
     String regionalDirectory = 'assets/data/regional',
+    Map<String, String>? sourceToId,
+    Map<String, String>? sourceFingerprintToId,
+    Map<String, Map<String, dynamic>>? sourceReviews,
   }) {
+    FoodIdentityManifest? reviewedManifest;
+    if (sourceToId == null ||
+        sourceFingerprintToId == null ||
+        sourceReviews == null) {
+      final manifestFile = File(kFoodIdentityManifestPath);
+      if (manifestFile.existsSync()) {
+        reviewedManifest = FoodIdentityManifest.loadFromAssetFileSync();
+      }
+    }
+    final explicitSourceToId = sourceToId ?? reviewedManifest?.sourceToId;
+    final explicitSourceFingerprints =
+        sourceFingerprintToId ?? reviewedManifest?.sourceFingerprintToId;
+    final explicitReviews =
+        sourceReviews ??
+        reviewedManifest?.sourceReviews.map(
+          (key, value) => MapEntry(key, value.toJson()),
+        );
+    if (explicitSourceToId == null || explicitSourceFingerprints == null) {
+      throw StateError(
+        'Maintenance generation requires an explicit reviewed source-to-ID '
+        'mapping and source fingerprints.',
+      );
+    }
+
     final rows = <_AssetFoodRow>[];
     rows.addAll(_readAssetRows(basePath, sourceId: 'base'));
     final regionalDirectoryFile = Directory(regionalDirectory);
@@ -1006,47 +1316,102 @@ class FoodIdentityManifest {
       rows.addAll(_readAssetRows(file.path, sourceId: 'regional/$region'));
     }
 
-    final sortedRows = [...rows]
-      ..sort((a, b) => a.sourceKey.compareTo(b.sourceKey));
     final entryIds = <String, String>{};
-    var baseOrdinal = 1;
-    final regionalOrdinals = <String, int>{};
-    for (final row in sortedRows) {
-      if (row.sourceId == 'base') {
-        entryIds[row.sourceKey] =
-            'food-seed-${(baseOrdinal++).toString().padLeft(4, '0')}';
-      } else {
-        final region = row.sourceId.split('/').last;
-        final ordinal = (regionalOrdinals[region] ?? 0) + 1;
-        regionalOrdinals[region] = ordinal;
-        entryIds[row.sourceKey] =
-            'food-regional-$region-${ordinal.toString().padLeft(4, '0')}';
+    final sourceKeysByFingerprint = <String, String>{};
+    final rowFingerprints = <String, String>{};
+    for (final row in rows) {
+      final id =
+          explicitSourceToId[row.sourceKey] ??
+          explicitSourceFingerprints[row.sourceFingerprint];
+      if (id == null) {
+        throw StateError(
+          'Missing reviewed source-to-ID mapping for ${row.sourceKey} '
+          '(fingerprint ${row.sourceFingerprint}); manual review is required.',
+        );
       }
-    }
-
-    final baseByNormalized = <String, _AssetFoodRow>{};
-    for (final row in rows.where((row) => row.sourceId == 'base')) {
-      baseByNormalized[row.normalizedName] = row;
+      String? previousRow;
+      for (final item in entryIds.entries) {
+        if (item.value == id) {
+          previousRow = item.key;
+          break;
+        }
+      }
+      if (previousRow != null && previousRow != row.sourceKey) {
+        throw StateError(
+          'Reviewed source mapping assigns $id to both $previousRow and '
+          '${row.sourceKey}.',
+        );
+      }
+      var fingerprint = row.sourceFingerprint;
+      final previousFingerprint = sourceKeysByFingerprint[fingerprint];
+      if (previousFingerprint == null &&
+          explicitSourceToId.containsKey(row.sourceKey) &&
+          explicitSourceFingerprints[fingerprint] != null &&
+          explicitSourceFingerprints[fingerprint] != id) {
+        fingerprint = row.disambiguatedSourceFingerprint;
+      }
+      if (previousFingerprint != null && previousFingerprint != row.sourceKey) {
+        if (!explicitSourceToId.containsKey(row.sourceKey)) {
+          throw StateError(
+            'Source fingerprint $fingerprint is not unique; manual '
+            'disambiguation is required.',
+          );
+        }
+        fingerprint = row.disambiguatedSourceFingerprint;
+      }
+      entryIds[row.sourceKey] = id;
+      rowFingerprints[row.sourceKey] = fingerprint;
+      sourceKeysByFingerprint[fingerprint] = row.sourceKey;
     }
 
     final entries = <Map<String, dynamic>>[];
+    final generatedSourceReviews = <String, Map<String, dynamic>>{};
     for (final row in rows) {
-      final kind = _generatedKind(row);
-      final variantType = _generatedVariantType(row, kind);
-      final rootName = _generatedVariantRoot(row.displayName);
-      final parentRow = rootName == null
-          ? null
-          : baseByNormalized[FoodIdentityNormalizer.normalize(rootName)];
-      final parentId = parentRow == null ? null : entryIds[parentRow.sourceKey];
-      final familyId = parentId == null ? null : 'family:$parentId';
       final id = entryIds[row.sourceKey]!;
+      final review =
+          explicitReviews?[row.sourceKey] ??
+          explicitReviews?.values.firstWhere(
+            (item) =>
+                item['source_fingerprint'] == rowFingerprints[row.sourceKey],
+            orElse: () => <String, dynamic>{},
+          );
+      final hasReview = review != null && review.isNotEmpty;
+      final kind = hasReview
+          ? _kindFromJson(review['kind'] as String)
+          : FoodIdentityKind.unknown;
+      final variantType = hasReview
+          ? review['variant_type'] as String?
+          : 'unresolved';
+      final parentId = hasReview ? review['parent_id'] as String? : null;
+      final familyId = hasReview ? review['family_id'] as String? : null;
+      final reviewState = hasReview
+          ? _reviewStateFromJson(review['review_state'] as String)
+          : FoodIdentityReviewState.manualReview;
+      final classification = hasReview
+          ? review['classification'] as String
+          : row.classification;
+      final sourceReview = <String, dynamic>{
+        'source_key': row.sourceKey,
+        'source_fingerprint': rowFingerprints[row.sourceKey],
+        'target_id': id,
+        'kind': kind.name,
+        'classification': classification,
+        'review_state': reviewState.name,
+        'variant_type': variantType,
+        'parent_id': parentId,
+        'family_id': familyId,
+        'reason': hasReview
+            ? review['reason'] as String
+            : 'No explicit reviewed source metadata; manual review required.',
+      };
+      generatedSourceReviews[row.sourceKey] = sourceReview;
       entries.add({
         'id': id,
         'machine_id': id,
         'display_name': row.displayName,
         'normalized_name': row.normalizedName,
         'kind': kind.name,
-        'classification': row.classification,
+        'classification': classification,
         'locale': 'en-IN',
         'region': row.sourceId == 'base'
             ? 'bundled'
@@ -1059,7 +1424,7 @@ class FoodIdentityManifest {
           'provider_namespace': null,
           'external_id': null,
         },
-        'review_state': 'reviewed',
+        'review_state': reviewState.name,
         'deprecated': false,
         'is_catalogue': true,
         'variant_type': variantType,
@@ -1076,9 +1441,24 @@ class FoodIdentityManifest {
       String targetName, {
       String? targetSourceId,
     }) {
+      final targetKey =
+          'asset:${targetSourceId ?? 'base'}:${FoodIdentityNormalizer.normalize(targetName)}';
       final target =
-          entryIds['asset:${targetSourceId ?? 'base'}:${FoodIdentityNormalizer.normalize(targetName)}'];
-      if (target == null) {
+          entryIds[targetKey] ??
+          reviewedManifest?.entries
+              .where(
+                (entry) =>
+                    entry.displayName == targetName &&
+                    entry.provenance.key.startsWith(
+                      'asset:${targetSourceId ?? 'base'}:',
+                    ),
+              )
+              .map((entry) => entry.id)
+              .firstWhere(
+                (id) => entryIds.values.contains(id),
+                orElse: () => '',
+              );
+      if (target == null || target.isEmpty) {
         throw StateError('Generator alias target is missing: $targetName');
       }
       aliases.add({
@@ -1167,12 +1547,15 @@ class FoodIdentityManifest {
       );
     }
 
+    final legacyIdsByTarget = <String, String>{
+      for (final mapping in reviewedManifest?.legacyMappings ?? const [])
+        if (mapping.targetId != null) mapping.targetId!: mapping.id,
+    };
     final legacyMappings = <Map<String, dynamic>>[];
     for (final row in rows) {
       final id = entryIds[row.sourceKey]!;
       legacyMappings.add({
-        'id':
-            'legacy-${row.sourceId.replaceAll('/', '-')}-${row.index.toString().padLeft(4, '0')}',
+        'id': legacyIdsByTarget[id] ?? 'legacy-source-$id',
         'source_key': row.sourceKey,
         'source_type': row.sourceId == 'base'
             ? 'legacy_food_seed'
@@ -1416,10 +1799,19 @@ class FoodIdentityManifest {
     final payload = {
       'version': kFoodIdentityManifestVersion,
       'normalization_version': kFoodIdentityNormalizationVersion,
+      'identity_namespace': kFoodIdentityIdentityNamespace,
       'entries': entries,
       'aliases': aliases,
       'legacy_mappings': legacyMappings,
       'identity_fixtures': identityFixtures,
+      'source_to_id': {
+        for (final row in rows) row.sourceKey: entryIds[row.sourceKey],
+      },
+      'source_fingerprints': {
+        for (final row in rows)
+          rowFingerprints[row.sourceKey]!: entryIds[row.sourceKey]!,
+      },
+      'source_reviews': generatedSourceReviews,
     };
     // Validate the complete generated graph before it is written by the
     // maintenance/test caller.
@@ -1457,71 +1849,11 @@ class FoodIdentityManifest {
           displayName: displayName,
           normalizedName: normalizedName,
           classification: classification,
+          sourceData: json,
         ),
       );
     }
     return rows;
-  }
-
-  static FoodIdentityKind _generatedKind(_AssetFoodRow row) {
-    if (row.sourceId != 'base') return FoodIdentityKind.regionalVariant;
-    if (row.displayName.toLowerCase().contains('amul')) {
-      return FoodIdentityKind.branded;
-    }
-    if (_hasServingPresentationSuffix(row.displayName)) {
-      return FoodIdentityKind.servingPresentationVariant;
-    }
-    if (_hasPreparationMarker(row.displayName)) {
-      return FoodIdentityKind.preparationVariant;
-    }
-    return FoodIdentityKind.canonical;
-  }
-
-  static String? _generatedVariantType(
-    _AssetFoodRow row,
-    FoodIdentityKind kind,
-  ) {
-    return switch (kind) {
-      FoodIdentityKind.canonical => null,
-      FoodIdentityKind.regionalVariant => 'regional',
-      FoodIdentityKind.preparationVariant => 'preparation',
-      FoodIdentityKind.servingPresentationVariant => 'serving_presentation',
-      FoodIdentityKind.branded =>
-        _hasServingPresentationSuffix(row.displayName)
-            ? 'serving_presentation'
-            : 'branded',
-      _ => 'fixture',
-    };
-  }
-
-  static bool _hasServingPresentationSuffix(String name) => RegExp(
-    r'\s+\((?:mini|double|jumbo / large|half plate|double serving)\)$',
-    caseSensitive: false,
-  ).hasMatch(name);
-
-  static bool _hasPreparationMarker(String name) => RegExp(
-    r'(?:\braw\b|\bcooked\b|\bboiled\b|\broasted?\b|\bfried\b|\bgrilled\b|\btandoori\b|low oil|extra oil|extra butter|premium ghee|double paneer|sugar free|sugar-free|salted)',
-    caseSensitive: false,
-  ).hasMatch(name);
-
-  static String? _generatedVariantRoot(String name) {
-    if (_hasServingPresentationSuffix(name)) {
-      return name.replaceFirst(
-        RegExp(
-          r'\s+\((?:mini|double|jumbo / large|half plate|double serving)\)$',
-          caseSensitive: false,
-        ),
-        '',
-      );
-    }
-    if (_hasPreparationMarker(name)) {
-      final root = name.replaceFirst(
-        RegExp(r'\s+\((?:cooked|raw)\)$', caseSensitive: false),
-        '',
-      );
-      return root == name ? null : root;
-    }
-    return null;
   }
 }
 
@@ -1532,6 +1864,7 @@ class _AssetFoodRow {
   final String displayName;
   final String normalizedName;
   final String classification;
+  final Map<String, dynamic> sourceData;
 
   const _AssetFoodRow({
     required this.index,
@@ -1540,9 +1873,33 @@ class _AssetFoodRow {
     required this.displayName,
     required this.normalizedName,
     required this.classification,
+    required this.sourceData,
   });
 
   String get sourceKey => 'asset:$sourceId:$normalizedName';
+
+  /// Stable content identity used only by maintenance tooling. Display names
+  /// is intentionally excluded so an English cosmetic rename does not change
+  /// the reviewed portable ID. Localized/source labels remain evidence for
+  /// distinguishing otherwise identical source rows; nutrition/source
+  /// changes still require a fresh explicit review.
+  String get sourceFingerprint {
+    final keys = sourceData.keys.where((key) => key != 'name').toList()..sort();
+    final identityFields = <String, dynamic>{
+      'source_id': sourceId,
+      for (final key in keys) key: sourceData[key],
+    };
+    final canonical = jsonEncode(identityFields);
+    return sha256.convert(utf8.encode(canonical)).toString();
+  }
+
+  /// Deterministic fallback for a newly reviewed row whose non-name source
+  /// data is byte-for-byte identical to an existing row. Existing rows never
+  /// switch to this form automatically; the explicit source-to-ID mapping is
+  /// what authorizes the new identity.
+  String get disambiguatedSourceFingerprint => sha256
+      .convert(utf8.encode('$sourceFingerprint|$normalizedName'))
+      .toString();
 }
 
 /// Exact-only resolver. It never strips punctuation, preparation terms, brand

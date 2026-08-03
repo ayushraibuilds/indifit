@@ -118,6 +118,47 @@ void main() {
       expect(resolver.resolve('Masala Dosai').isResolved, isTrue);
     });
 
+    test('global durable identity collisions fail atomically', () {
+      final fixtureCollision = manifestJson();
+      final fixture =
+          ((fixtureCollision['identity_fixtures']! as List).first
+              as Map<String, dynamic>);
+      fixture['portable_id'] = 'food-seed-0303';
+      expect(
+        () => FoodIdentityManifest.fromJson(fixtureCollision),
+        throwsA(isA<StateError>()),
+      );
+
+      final machineCollision = manifestJson();
+      final machineEntry =
+          ((machineCollision['entries']! as List).firstWhere(
+                (item) =>
+                    (item as Map<String, dynamic>)['id'] == 'food-seed-0303',
+              )
+              as Map<String, dynamic>);
+      machineEntry['machine_id'] = 'canonical-machine-only-0303';
+      final machineFixture =
+          ((machineCollision['identity_fixtures']! as List).first
+              as Map<String, dynamic>);
+      machineFixture['portable_id'] = 'canonical-machine-only-0303';
+      expect(
+        () => FoodIdentityManifest.fromJson(machineCollision),
+        throwsA(isA<StateError>()),
+      );
+
+      final crossSection = manifestJson();
+      final alias =
+          ((crossSection['aliases']! as List).first as Map<String, dynamic>);
+      alias['id'] = 'food-seed-0303';
+      expect(
+        () => FoodIdentityManifest.fromJson(crossSection),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(manifest.catalogueEntries, hasLength(598));
+      expect(resolver.resolve('Masala Dosai').isResolved, isTrue);
+    });
+
     test('duplicate canonical normalized identifiers are rejected', () {
       final payload = manifestJson();
       final entries = (payload['entries']! as List).cast<dynamic>();
@@ -418,8 +459,179 @@ void main() {
           .toString();
       expect(
         checksum,
-        '57c317256e1d58e69d5d62c71eaf74dc143f6a63f516b388c6a7c361f009b629',
+        'f5f727eef95baa84ae6d26dc94ff16e9f54069c6f25f160e138154f9b3a80ef1',
       );
+    });
+
+    group('explicit maintenance identity mapping', () {
+      Directory makeAssetCopy() {
+        final directory = Directory.systemTemp.createTempSync(
+          'b03-food-identity-',
+        );
+        File(
+          kFoodIdentityManifestPath,
+        ).copySync('${directory.path}/manifest.json');
+        File(
+          'assets/data/indian_foods.json',
+        ).copySync('${directory.path}/base.json');
+        final regional = Directory('${directory.path}/regional')..createSync();
+        for (final file in Directory(
+          'assets/data/regional',
+        ).listSync().whereType<File>()) {
+          file.copySync('${regional.path}/${file.uri.pathSegments.last}');
+        }
+        return directory;
+      }
+
+      Map<String, dynamic> generate(
+        Directory directory, {
+        Map<String, String>? sourceToId,
+        Map<String, String>? sourceFingerprints,
+        Map<String, Map<String, dynamic>>? sourceReviews,
+      }) => FoodIdentityManifest.generateFromAssetFilesSync(
+        basePath: '${directory.path}/base.json',
+        regionalDirectory: '${directory.path}/regional',
+        sourceToId: sourceToId,
+        sourceFingerprintToId: sourceFingerprints,
+        sourceReviews: sourceReviews,
+      );
+
+      test('cosmetic rename and source reorder preserve IDs', () {
+        final directory = makeAssetCopy();
+        try {
+          final rows =
+              (jsonDecode(
+                        File('${directory.path}/base.json').readAsStringSync(),
+                      )
+                      as List)
+                  .cast<dynamic>();
+          final renamed = Map<String, dynamic>.from(rows.first as Map)
+            ..['name'] = 'Whole Wheat Roti / Chapati — edited label';
+          rows[0] = renamed;
+          File(
+            '${directory.path}/base.json',
+          ).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(rows));
+
+          final generated = generate(directory);
+          final entries = (generated['entries']! as List).cast<dynamic>();
+          expect(
+            (entries.firstWhere(
+                  (item) =>
+                      (item as Map<String, dynamic>)['display_name'] ==
+                      renamed['name'],
+                )
+                as Map<String, dynamic>)['id'],
+            'food-seed-0564',
+          );
+
+          rows.sort(
+            (a, b) => (b as Map<String, dynamic>)['name'].toString().compareTo(
+              (a as Map<String, dynamic>)['name'].toString(),
+            ),
+          );
+          File(
+            '${directory.path}/base.json',
+          ).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(rows));
+          final reordered = generate(directory);
+          final reorderedIds = {
+            for (final item in (reordered['entries']! as List))
+              (item as Map<String, dynamic>)['display_name'] as String:
+                  item['id'] as String,
+          };
+          final masalaDosa = (reordered['entries']! as List)
+              .cast<Map<String, dynamic>>()
+              .singleWhere(
+                (item) =>
+                    item['display_name'] == 'Masala Dosa' &&
+                    (item['provenance'] as Map<String, dynamic>)['key'] ==
+                        'asset:base:masala dosa',
+              );
+          expect(masalaDosa['id'], 'food-seed-0303');
+          expect(reorderedIds['Basmati White Rice (Cooked)'], 'food-seed-0051');
+        } finally {
+          directory.deleteSync(recursive: true);
+        }
+      });
+
+      test('new earlier-sorting source needs an explicit reviewed ID', () {
+        final directory = makeAssetCopy();
+        try {
+          final rows =
+              (jsonDecode(
+                        File('${directory.path}/base.json').readAsStringSync(),
+                      )
+                      as List)
+                  .cast<dynamic>();
+          final newRow = Map<String, dynamic>.from(rows.first as Map)
+            ..['name'] = 'Aardvark fixture food';
+          rows.insert(0, newRow);
+          File(
+            '${directory.path}/base.json',
+          ).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(rows));
+
+          expect(() => generate(directory), throwsA(isA<StateError>()));
+
+          final sourceToId = <String, String>{
+            ...manifest.sourceToId,
+            'asset:base:aardvark fixture food': 'food-seed-new-0001',
+          };
+          final generated = generate(directory, sourceToId: sourceToId);
+          final idsByName = {
+            for (final item in (generated['entries']! as List))
+              (item as Map<String, dynamic>)['display_name'] as String:
+                  item['id'] as String,
+          };
+          expect(idsByName['Aardvark fixture food'], 'food-seed-new-0001');
+          expect(idsByName['Whole Wheat Roti / Chapati'], 'food-seed-0564');
+        } finally {
+          directory.deleteSync(recursive: true);
+        }
+      });
+
+      test('missing review metadata stays manual-review and never heuristic', () {
+        final directory = makeAssetCopy();
+        try {
+          final regionalPath = '${directory.path}/regional/south_indian.json';
+          final rows =
+              (jsonDecode(File(regionalPath).readAsStringSync()) as List)
+                  .cast<dynamic>();
+          final uncertain = Map<String, dynamic>.from(rows.first as Map)
+            ..['name'] = 'Amul cooked regional fixture';
+          rows.insert(0, uncertain);
+          File(
+            regionalPath,
+          ).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(rows));
+          final sourceToId = <String, String>{
+            ...manifest.sourceToId,
+            'asset:regional/south_indian:amul cooked regional fixture':
+                'food-regional-south_indian-new-0002',
+          };
+          final generated = generate(directory, sourceToId: sourceToId);
+          final entry = (generated['entries']! as List)
+              .cast<Map<String, dynamic>>()
+              .singleWhere(
+                (item) => item['id'] == 'food-regional-south_indian-new-0002',
+              );
+          expect(entry['kind'], 'unknown');
+          expect(entry['review_state'], 'manualReview');
+          expect(
+            entry['review_reason'],
+            isNull,
+            reason:
+                'reason is kept in source_reviews, not heuristic entry data',
+          );
+          final review =
+              (generated['source_reviews']
+                      as Map<
+                        String,
+                        dynamic
+                      >)['asset:regional/south_indian:amul cooked regional fixture']
+                  as Map<String, dynamic>;
+          expect(review['reason'], contains('manual review'));
+        } finally {
+          directory.deleteSync(recursive: true);
+        }
+      });
     });
   });
 }
