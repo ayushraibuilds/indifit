@@ -27,6 +27,12 @@ enum BackupRestoreFailureStage {
 typedef BackupRestoreFailureInjector =
     Future<void> Function(BackupRestoreFailureStage stage);
 
+/// Optional work that a versioned extension can append to the existing
+/// restore transaction.  Backup-v8 uses this seam for the schema-v17 graph;
+/// it is intentionally not exposed to ordinary callers through a second
+/// transaction.
+typedef BackupAdditionalMutation = Future<void> Function(AppDatabase db);
+
 /// Canonical Versioned Backup Schema (Version 7).
 ///
 /// Provides a unified, production-safe DTO and serializer for all user-owned
@@ -3098,7 +3104,16 @@ class BackupData {
   /// replacing seeded target records, inserts records within one single [db.transaction],
   /// and updates SharedPreferences with automatic compensation/reversion on any failure.
   Future<void> restoreToDatabase(AppDatabase db, [SharedPreferences? prefs]) =>
-      _restoreToDatabase(db, prefs, null);
+      _restoreToDatabase(db, prefs, null, null);
+
+  /// Internal extension seam for a newer versioned graph.  It keeps the
+  /// extension inside this restore's transaction and preference compensation
+  /// protocol without changing the v5-v7 public call shape.
+  Future<void> restoreToDatabaseWithAdditionalMutation(
+    AppDatabase db, {
+    SharedPreferences? prefs,
+    required BackupAdditionalMutation additionalMutation,
+  }) => _restoreToDatabase(db, prefs, null, additionalMutation);
 
   /// Test-only entry point for the stage-aware B03 fixture harness. Production
   /// callers use [restoreToDatabase], leaving the injector absent.
@@ -3106,12 +3121,14 @@ class BackupData {
     AppDatabase db, {
     SharedPreferences? prefs,
     required BackupRestoreFailureInjector failureInjector,
-  }) => _restoreToDatabase(db, prefs, failureInjector);
+    BackupAdditionalMutation? additionalMutation,
+  }) => _restoreToDatabase(db, prefs, failureInjector, additionalMutation);
 
   Future<void> _restoreToDatabase(
     AppDatabase db,
     SharedPreferences? prefs,
     BackupRestoreFailureInjector? failureInjector,
+    BackupAdditionalMutation? additionalMutation,
   ) async {
     // 1. Prevalidation of relationship graph
     final validSessionIds = workoutSessions.map((s) => s.id).toSet();
@@ -3661,6 +3678,10 @@ class BackupData {
           await db.importLegacyCompatibilityDataForRestore();
         }
 
+        if (additionalMutation != null) {
+          await additionalMutation(db);
+        }
+
         if (failureInjector != null) {
           await failureInjector(
             BackupRestoreFailureStage.beforeTransactionCommit,
@@ -4066,9 +4087,9 @@ class BackupEnvelope {
     }
 
     final version = (json['version'] as num?)?.toInt();
-    if (version == null || version < 3 || version > BackupData.currentVersion) {
+    if (version == null || version < 3 || version > 8) {
       throw FormatException(
-        'Unsupported backup envelope version ${json['version']} (latest supported is ${BackupData.currentVersion}).',
+        'Unsupported backup envelope version ${json['version']} (latest supported is 8).',
       );
     }
 
