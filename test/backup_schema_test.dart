@@ -375,13 +375,13 @@ void main() {
       expect(
         () => BackupEnvelope.fromJson({
           'format_identifier': 'INDIFIT_BACKUP_ENVELOPE',
-          'version': 8,
+          'version': 9,
         }),
         throwsA(
           isA<FormatException>().having(
             (e) => e.message,
             'message',
-            contains('Unsupported backup envelope version 8'),
+            contains('Unsupported backup envelope version 9'),
           ),
         ),
       );
