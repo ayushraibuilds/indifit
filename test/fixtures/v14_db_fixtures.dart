@@ -58,6 +58,7 @@ class V14DbFixtures {
     return AppDatabase.executor(
       NativeDatabase(file),
       v15MigrationFailureInjector: v15MigrationFailureInjector,
+      schemaVersionOverride: 15,
     );
   }
 
