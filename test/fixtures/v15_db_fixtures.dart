@@ -20,7 +20,10 @@ class V15DbFixtures {
     String filename,
   ) async {
     final file = File('${directory.path}/$filename');
-    final initial = AppDatabase.executor(NativeDatabase(file));
+    final initial = AppDatabase.executor(
+      NativeDatabase(file),
+      schemaVersionOverride: 16,
+    );
     try {
       await initial.customSelect('SELECT 1').get();
     } finally {
@@ -52,6 +55,7 @@ class V15DbFixtures {
     return AppDatabase.executor(
       NativeDatabase(file),
       v16MigrationFailureInjector: v16MigrationFailureInjector,
+      schemaVersionOverride: 16,
     );
   }
 

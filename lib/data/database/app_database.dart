@@ -12,6 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/fixtures/b02_muscle_catalog.dart';
 import '../../core/fixtures/equipment_fixtures.dart';
 import '../../core/fixtures/exercise_identity_fixtures.dart';
+import '../../core/fixtures/food_identity_manifest.dart';
+import '../../core/nutrients.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../models/b02_execution_models.dart';
@@ -21,6 +23,7 @@ import 'tables/b02_activity_tables.dart';
 import 'tables/food_tables.dart';
 import 'tables/health_tables.dart';
 import 'tables/hydration_tables.dart';
+import 'tables/nutrition_tables.dart';
 import 'tables/settings_tables.dart';
 import 'tables/training_program_tables.dart';
 import 'tables/user_tables.dart';
@@ -45,6 +48,19 @@ enum V16MigrationFailureStage {
 
 typedef V16MigrationFailureStageInjector =
     Future<void> Function(V16MigrationFailureStage stage);
+
+/// Test-only boundaries for the v16 -> v17 migration.
+///
+/// Drift does not expose a callback after SQLite COMMIT, so the final boundary
+/// is intentionally the supported pre-commit seam.
+enum V17MigrationFailureStage {
+  validation,
+  ddlAndDataMutation,
+  beforeTransactionCommit,
+}
+
+typedef V17MigrationFailureStageInjector =
+    Future<void> Function(V17MigrationFailureStage stage);
 
 @DriftDatabase(
   tables: [
@@ -96,6 +112,31 @@ typedef V16MigrationFailureStageInjector =
     PerformedRestPeriods,
     Muscles,
     ExerciseMuscleMappings,
+    NutritionFoods,
+    NutritionFoodAliases,
+    NutritionFoodPreparations,
+    NutritionLegacyFoodMappings,
+    NutritionNutrientDefinitions,
+    NutritionFoodNutrientFacts,
+    NutritionQuantityConversions,
+    NutritionHouseholdMeasures,
+    NutritionVesselCalibrations,
+    NutritionRecipes,
+    NutritionRecipeVersions,
+    NutritionRecipeIngredients,
+    NutritionUserCorrections,
+    NutritionEstimates,
+    NutritionEstimateNutrients,
+    NutritionThalis,
+    NutritionThaliItems,
+    NutritionConsumptionSnapshots,
+    NutritionSnapshotItems,
+    NutritionSnapshotNutrients,
+    NutritionFoodConstraintEvidence,
+    NutritionConstraintDefinitions,
+    NutritionUserConstraints,
+    NutritionSnapshotConstraintResults,
+    NutritionSnapshotConstraintResultEvidence,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -103,17 +144,22 @@ class AppDatabase extends _$AppDatabase {
     : v15MigrationFailureInjector = null,
       v16MigrationFailureInjector = null,
       v16MigrationFailureStageInjector = null,
+      v17MigrationFailureStageInjector = null,
+      schemaVersionOverride = null,
       super(_openConnection());
-  AppDatabase.memory()
+  AppDatabase.memory({this.schemaVersionOverride})
     : v15MigrationFailureInjector = null,
       v16MigrationFailureInjector = null,
       v16MigrationFailureStageInjector = null,
+      v17MigrationFailureStageInjector = null,
       super(NativeDatabase.memory());
   AppDatabase.executor(
     super.executor, {
     this.v15MigrationFailureInjector,
     this.v16MigrationFailureInjector,
     this.v16MigrationFailureStageInjector,
+    this.v17MigrationFailureStageInjector,
+    this.schemaVersionOverride,
   });
 
   /// Test-only hook used to prove the v14 -> v15 upgrade rolls back as one
@@ -129,10 +175,19 @@ class AppDatabase extends _$AppDatabase {
   /// validation, transaction ownership, or schema versioning.
   final V16MigrationFailureStageInjector? v16MigrationFailureStageInjector;
 
-  /// Schema v16 adds the B02 activity-session table graph while retaining the
+  /// Typed test-only seam for proving each supported v16 -> v17 boundary.
+  final V17MigrationFailureStageInjector? v17MigrationFailureStageInjector;
+
+  /// Test-only read boundary for the immutable schema-v16 fixture. It allows
+  /// the baseline harness to inspect the file without triggering the v17
+  /// migration; production instances always use the current version.
+  final int? schemaVersionOverride;
+
+  /// Schema v17 retains the complete v16 graph and adds the B03 nutrition
+  /// persistence boundary.
   /// B01 program, occurrence, routine, set, and draft compatibility fields.
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => schemaVersionOverride ?? 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -206,11 +261,27 @@ class AppDatabase extends _$AppDatabase {
       if (from < 16) {
         await _migrateV15ToV16(m);
       }
+      if (from < 17 && to >= 17) {
+        await _migrateV16ToV17(m);
+      }
     },
 
     onCreate: (m) async {
       await m.createAll();
+      if (schemaVersionOverride == 16) {
+        await _dropV17GraphForLegacyFixture();
+        await _createV16IndexesAndTriggers();
+        await _ensureTrainingPlanSettings();
+        await seedFoodsFromAsset();
+        await seedExercisesFromAsset();
+        await _seedReviewedMuscleCatalogIfPossible();
+        return;
+      }
+      final contracts = await _loadV17Contracts();
       await _createV16IndexesAndTriggers();
+      await _createV17Indexes();
+      await _seedV17NutrientRegistry(contracts.registry);
+      await _seedV17FoodIdentity(contracts.manifest);
       await _ensureTrainingPlanSettings();
       await seedFoodsFromAsset();
       await seedExercisesFromAsset();
@@ -571,6 +642,281 @@ class AppDatabase extends _$AppDatabase {
       final injectedFailure = v16MigrationFailureInjector;
       if (injectedFailure != null) await injectedFailure();
     });
+  }
+
+  Future<void> _migrateV16ToV17(Migrator m) async {
+    final stageInjector = v17MigrationFailureStageInjector;
+    final contracts = await _loadV17Contracts();
+    if (stageInjector != null) {
+      await stageInjector(V17MigrationFailureStage.validation);
+    }
+
+    await transaction(() async {
+      // Parent tables are created before dependants. The recipe pointer is
+      // intentionally not a database FK, avoiding a mutable FK cycle with
+      // immutable recipe versions; repository validation owns that pointer.
+      await m.createTable(nutritionFoods);
+      await m.createTable(nutritionNutrientDefinitions);
+      await m.createTable(nutritionConstraintDefinitions);
+      await m.createTable(nutritionHouseholdMeasures);
+      await m.createTable(nutritionRecipes);
+      await m.createTable(nutritionThalis);
+      await m.createTable(nutritionConsumptionSnapshots);
+
+      await m.createTable(nutritionFoodAliases);
+      await m.createTable(nutritionFoodPreparations);
+      await m.createTable(nutritionLegacyFoodMappings);
+      await m.createTable(nutritionFoodNutrientFacts);
+      await m.createTable(nutritionQuantityConversions);
+      await m.createTable(nutritionVesselCalibrations);
+      await m.createTable(nutritionRecipeVersions);
+      await m.createTable(nutritionUserCorrections);
+      await m.createTable(nutritionEstimates);
+      await m.createTable(nutritionThaliItems);
+      await m.createTable(nutritionSnapshotItems);
+      await m.createTable(nutritionUserConstraints);
+
+      await m.createTable(nutritionEstimateNutrients);
+      await m.createTable(nutritionRecipeIngredients);
+      await m.createTable(nutritionSnapshotNutrients);
+      await m.createTable(nutritionFoodConstraintEvidence);
+      await m.createTable(nutritionSnapshotConstraintResults);
+      await m.createTable(nutritionSnapshotConstraintResultEvidence);
+
+      await _createV17Indexes();
+      await _seedV17NutrientRegistry(contracts.registry);
+      await _seedV17FoodIdentity(contracts.manifest);
+
+      if (stageInjector != null) {
+        await stageInjector(V17MigrationFailureStage.ddlAndDataMutation);
+        await stageInjector(V17MigrationFailureStage.beforeTransactionCommit);
+      }
+    });
+  }
+
+  /// Validates both release contracts before a v17 graph can be created or
+  /// seeded. This is validation only: migration deliberately does not create
+  /// canonical food rows from legacy display names.
+  Future<({NutrientRegistry registry, FoodIdentityManifest manifest})>
+  _loadV17Contracts() async {
+    final registryJson = jsonDecode(
+      await _loadV17AssetText('assets/data/nutrient_registry.json'),
+    );
+    final manifestJson = jsonDecode(
+      await _loadV17AssetText(kFoodIdentityManifestPath),
+    );
+    final registry = NutrientRegistry.fromJson(registryJson);
+    final manifest = FoodIdentityManifest.fromJson(manifestJson);
+    return (registry: registry, manifest: manifest);
+  }
+
+  Future<String> _loadV17AssetText(String path) async {
+    final file = File(path);
+    if (file.existsSync()) return file.readAsString();
+    return rootBundle.loadString(path);
+  }
+
+  Future<void> _seedV17NutrientRegistry(NutrientRegistry registry) async {
+    final existing = await select(nutritionNutrientDefinitions).get();
+    if (existing.isNotEmpty) return;
+    await batch((batch) {
+      batch.insertAll(nutritionNutrientDefinitions, [
+        for (var index = 0; index < registry.definitions.length; index++)
+          NutritionNutrientDefinitionsCompanion.insert(
+            id: registry.definitions[index].id,
+            key: registry.definitions[index].machineId,
+            displayName: registry.definitions[index].displayName,
+            unit: registry.definitions[index].unit.stableId,
+            kind: registry.definitions[index].category.stableId,
+            sortOrder: index,
+            version: registry.version,
+          ),
+      ]);
+    });
+  }
+
+  Future<void> _seedV17FoodIdentity(FoodIdentityManifest manifest) async {
+    if ((await select(nutritionFoods).get()).isEmpty) {
+      final pending = manifest.catalogueEntries.toList()
+        ..sort((a, b) => a.id.compareTo(b.id));
+      final inserted = <String>{};
+      while (pending.isNotEmpty) {
+        final ready = pending
+            .where(
+              (entry) =>
+                  entry.parentId == null || inserted.contains(entry.parentId),
+            )
+            .toList();
+        if (ready.isEmpty) {
+          throw StateError(
+            'Food identity manifest contains an unresolvable parent graph.',
+          );
+        }
+        await batch((batch) {
+          batch.insertAll(nutritionFoods, [
+            for (final entry in ready)
+              NutritionFoodsCompanion.insert(
+                id: entry.id,
+                kind: entry.kind.name,
+                displayName: entry.displayName,
+                locale: entry.locale,
+                sourceType: entry.provenance.kind,
+                sourceRef: Value(entry.provenance.key),
+                sourceVersion: Value(entry.provenance.revision),
+                region: Value(entry.region),
+                lifecycle: entry.deprecated ? 'deprecated' : 'active',
+                variantOfFoodId: Value(entry.parentId),
+              ),
+          ]);
+        });
+        inserted.addAll(ready.map((entry) => entry.id));
+        pending.removeWhere((entry) => inserted.contains(entry.id));
+      }
+    }
+
+    if ((await select(nutritionFoodAliases).get()).isEmpty) {
+      await batch((batch) {
+        batch.insertAll(nutritionFoodAliases, [
+          for (final alias in manifest.aliases)
+            NutritionFoodAliasesCompanion.insert(
+              id: alias.id,
+              foodId: Value(alias.targetId),
+              alias: alias.value,
+              normalizedAlias: alias.normalized,
+              locale: 'und',
+              source: '${alias.provenance.kind}:${alias.reviewState.name}',
+            ),
+        ]);
+      });
+    }
+
+    if ((await select(nutritionLegacyFoodMappings).get()).isEmpty) {
+      final legacyRows = await select(foodItems).get();
+      final customLegacyIds = legacyRows
+          .where((row) => row.isCustom)
+          .map((row) => row.id)
+          .toSet();
+      final existingLegacyIds = legacyRows.map((row) => row.id).toSet();
+      final mappings = manifest.legacyMappings
+          .where(
+            (mapping) =>
+                mapping.legacyLocalId != null &&
+                existingLegacyIds.contains(mapping.legacyLocalId) &&
+                !customLegacyIds.contains(mapping.legacyLocalId),
+          )
+          .toList(growable: false);
+      await batch((batch) {
+        batch.insertAll(nutritionLegacyFoodMappings, [
+          for (final mapping in mappings)
+            NutritionLegacyFoodMappingsCompanion.insert(
+              legacyFoodItemId: Value(mapping.legacyLocalId!),
+              foodId: Value(mapping.targetId),
+              mappingStatus: switch (mapping.reviewState) {
+                FoodIdentityReviewState.reviewed => 'reviewed',
+                FoodIdentityReviewState.ambiguous => 'ambiguous',
+                FoodIdentityReviewState.unresolved => 'unresolved',
+                _ => 'legacy',
+              },
+              evidence: mapping.evidence,
+            ),
+        ]);
+      });
+    }
+  }
+
+  /// Test-only cleanup for constructing a genuine schema-v16 fixture with the
+  /// current generated table list. Production databases never set the
+  /// override and therefore never execute this path.
+  Future<void> _dropV17GraphForLegacyFixture() async {
+    const triggerNames = [
+      'nutrition_vessel_volume_only_insert',
+      'nutrition_vessel_volume_only_update',
+      'nutrition_recipe_current_version_insert',
+      'nutrition_recipe_current_version_update',
+    ];
+    for (final trigger in triggerNames) {
+      await customStatement('DROP TRIGGER IF EXISTS $trigger');
+    }
+    const tables = [
+      'nutrition_snapshot_constraint_result_evidence',
+      'nutrition_snapshot_constraint_results',
+      'nutrition_user_constraints',
+      'nutrition_constraint_definitions',
+      'nutrition_food_constraint_evidence',
+      'nutrition_snapshot_nutrients',
+      'nutrition_snapshot_items',
+      'nutrition_consumption_snapshots',
+      'nutrition_thali_items',
+      'nutrition_thalis',
+      'nutrition_estimate_nutrients',
+      'nutrition_estimates',
+      'nutrition_user_corrections',
+      'nutrition_recipe_ingredients',
+      'nutrition_recipe_versions',
+      'nutrition_recipes',
+      'nutrition_vessel_calibrations',
+      'nutrition_household_measures',
+      'nutrition_quantity_conversions',
+      'nutrition_food_nutrient_facts',
+      'nutrition_nutrient_definitions',
+      'nutrition_legacy_food_mappings',
+      'nutrition_food_preparations',
+      'nutrition_food_aliases',
+      'nutrition_foods',
+    ];
+    for (final table in tables) {
+      await customStatement('DROP TABLE IF EXISTS $table');
+    }
+  }
+
+  Future<void> _createV17Indexes() async {
+    const statements = [
+      'CREATE INDEX IF NOT EXISTS nutrition_foods_kind_lifecycle_idx ON nutrition_foods(kind, lifecycle)',
+      'CREATE INDEX IF NOT EXISTS nutrition_foods_source_idx ON nutrition_foods(source_type, source_ref)',
+      'CREATE INDEX IF NOT EXISTS nutrition_foods_variant_idx ON nutrition_foods(variant_of_food_id)',
+      'CREATE INDEX IF NOT EXISTS nutrition_food_aliases_food_idx ON nutrition_food_aliases(food_id)',
+      'CREATE INDEX IF NOT EXISTS nutrition_food_aliases_normalized_idx ON nutrition_food_aliases(normalized_alias, locale)',
+      'CREATE INDEX IF NOT EXISTS nutrition_food_preparations_food_idx ON nutrition_food_preparations(food_id, state)',
+      'CREATE INDEX IF NOT EXISTS nutrition_legacy_food_mappings_food_idx ON nutrition_legacy_food_mappings(food_id, mapping_status)',
+      'CREATE INDEX IF NOT EXISTS nutrition_food_nutrient_facts_current_idx ON nutrition_food_nutrient_facts(food_id, is_current)',
+      'CREATE INDEX IF NOT EXISTS nutrition_food_nutrient_facts_nutrient_idx ON nutrition_food_nutrient_facts(nutrient_id)',
+      'CREATE INDEX IF NOT EXISTS nutrition_quantity_conversions_food_idx ON nutrition_quantity_conversions(food_id, source_unit, target_unit)',
+      'CREATE INDEX IF NOT EXISTS nutrition_vessel_calibrations_user_idx ON nutrition_vessel_calibrations(user_id, label)',
+      'CREATE INDEX IF NOT EXISTS nutrition_recipe_versions_recipe_idx ON nutrition_recipe_versions(recipe_id, status)',
+      'CREATE INDEX IF NOT EXISTS nutrition_recipe_ingredients_food_idx ON nutrition_recipe_ingredients(food_id)',
+      'CREATE INDEX IF NOT EXISTS nutrition_estimates_user_idx ON nutrition_estimates(user_id, created_at)',
+      'CREATE INDEX IF NOT EXISTS nutrition_estimate_nutrients_nutrient_idx ON nutrition_estimate_nutrients(nutrient_id)',
+      'CREATE INDEX IF NOT EXISTS nutrition_thali_items_food_idx ON nutrition_thali_items(food_id)',
+      'CREATE INDEX IF NOT EXISTS nutrition_snapshots_user_time_idx ON nutrition_consumption_snapshots(user_id, logged_at)',
+      'CREATE INDEX IF NOT EXISTS nutrition_snapshot_items_food_idx ON nutrition_snapshot_items(food_id)',
+      'CREATE INDEX IF NOT EXISTS nutrition_snapshot_nutrients_nutrient_idx ON nutrition_snapshot_nutrients(nutrient_id)',
+      'CREATE INDEX IF NOT EXISTS nutrition_food_constraint_evidence_food_idx ON nutrition_food_constraint_evidence(food_id, constraint_key)',
+      'CREATE INDEX IF NOT EXISTS nutrition_user_constraints_user_idx ON nutrition_user_constraints(user_id, effective_from)',
+      'CREATE INDEX IF NOT EXISTS nutrition_snapshot_constraint_results_snapshot_idx ON nutrition_snapshot_constraint_results(snapshot_id, result)',
+      'CREATE INDEX IF NOT EXISTS nutrition_snapshot_constraint_evidence_result_idx ON nutrition_snapshot_constraint_result_evidence(result_id)',
+      'CREATE INDEX IF NOT EXISTS nutrition_snapshot_constraint_evidence_food_idx ON nutrition_snapshot_constraint_result_evidence(food_id)',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_vessel_volume_only_insert
+         BEFORE INSERT ON nutrition_vessel_calibrations
+         WHEN (SELECT dimension FROM nutrition_household_measures WHERE id = NEW.measure_id) <> 'volume'
+         BEGIN SELECT RAISE(ABORT, 'Vessel calibration requires a volume measure'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_vessel_volume_only_update
+         BEFORE UPDATE OF measure_id ON nutrition_vessel_calibrations
+         WHEN (SELECT dimension FROM nutrition_household_measures WHERE id = NEW.measure_id) <> 'volume'
+         BEGIN SELECT RAISE(ABORT, 'Vessel calibration requires a volume measure'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_recipe_current_version_insert
+         BEFORE INSERT ON nutrition_recipes
+         WHEN NEW.current_version_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_recipe_versions WHERE id = NEW.current_version_id AND recipe_id = NEW.id)
+         BEGIN SELECT RAISE(ABORT, 'Recipe current version must belong to the recipe'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_recipe_current_version_update
+         BEFORE UPDATE OF current_version_id ON nutrition_recipes
+         WHEN NEW.current_version_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_recipe_versions WHERE id = NEW.current_version_id AND recipe_id = NEW.id)
+         BEGIN SELECT RAISE(ABORT, 'Recipe current version must belong to the recipe'); END''',
+    ];
+    for (final statement in statements) {
+      await customStatement(statement);
+    }
   }
 
   Future<bool> _tableHasColumn(String tableName, String columnName) async {

@@ -130,7 +130,7 @@ void main() {
     test(
       'creates all approved v16 tables, indexes, FKs, and typed defaults',
       () async {
-        final db = AppDatabase.memory();
+        final db = AppDatabase.memory(schemaVersionOverride: 16);
         addTearDown(db.close);
 
         expect(db.schemaVersion, 16);

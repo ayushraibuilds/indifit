@@ -28635,6 +28635,17930 @@ class ExerciseMuscleMappingsCompanion
   }
 }
 
+class $NutritionFoodsTable extends NutritionFoods
+    with TableInfo<$NutritionFoodsTable, NutritionFood> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionFoodsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localeMeta = const VerificationMeta('locale');
+  @override
+  late final GeneratedColumn<String> locale = GeneratedColumn<String>(
+    'locale',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceTypeMeta = const VerificationMeta(
+    'sourceType',
+  );
+  @override
+  late final GeneratedColumn<String> sourceType = GeneratedColumn<String>(
+    'source_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceRefMeta = const VerificationMeta(
+    'sourceRef',
+  );
+  @override
+  late final GeneratedColumn<String> sourceRef = GeneratedColumn<String>(
+    'source_ref',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceVersionMeta = const VerificationMeta(
+    'sourceVersion',
+  );
+  @override
+  late final GeneratedColumn<String> sourceVersion = GeneratedColumn<String>(
+    'source_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _brandMeta = const VerificationMeta('brand');
+  @override
+  late final GeneratedColumn<String> brand = GeneratedColumn<String>(
+    'brand',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _regionMeta = const VerificationMeta('region');
+  @override
+  late final GeneratedColumn<String> region = GeneratedColumn<String>(
+    'region',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lifecycleMeta = const VerificationMeta(
+    'lifecycle',
+  );
+  @override
+  late final GeneratedColumn<String> lifecycle = GeneratedColumn<String>(
+    'lifecycle',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _variantOfFoodIdMeta = const VerificationMeta(
+    'variantOfFoodId',
+  );
+  @override
+  late final GeneratedColumn<String> variantOfFoodId = GeneratedColumn<String>(
+    'variant_of_food_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _legacyFoodItemIdMeta = const VerificationMeta(
+    'legacyFoodItemId',
+  );
+  @override
+  late final GeneratedColumn<int> legacyFoodItemId = GeneratedColumn<int>(
+    'legacy_food_item_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    kind,
+    displayName,
+    locale,
+    sourceType,
+    sourceRef,
+    sourceVersion,
+    brand,
+    region,
+    lifecycle,
+    variantOfFoodId,
+    legacyFoodItemId,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_foods';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionFood> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('locale')) {
+      context.handle(
+        _localeMeta,
+        locale.isAcceptableOrUnknown(data['locale']!, _localeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localeMeta);
+    }
+    if (data.containsKey('source_type')) {
+      context.handle(
+        _sourceTypeMeta,
+        sourceType.isAcceptableOrUnknown(data['source_type']!, _sourceTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceTypeMeta);
+    }
+    if (data.containsKey('source_ref')) {
+      context.handle(
+        _sourceRefMeta,
+        sourceRef.isAcceptableOrUnknown(data['source_ref']!, _sourceRefMeta),
+      );
+    }
+    if (data.containsKey('source_version')) {
+      context.handle(
+        _sourceVersionMeta,
+        sourceVersion.isAcceptableOrUnknown(
+          data['source_version']!,
+          _sourceVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('brand')) {
+      context.handle(
+        _brandMeta,
+        brand.isAcceptableOrUnknown(data['brand']!, _brandMeta),
+      );
+    }
+    if (data.containsKey('region')) {
+      context.handle(
+        _regionMeta,
+        region.isAcceptableOrUnknown(data['region']!, _regionMeta),
+      );
+    }
+    if (data.containsKey('lifecycle')) {
+      context.handle(
+        _lifecycleMeta,
+        lifecycle.isAcceptableOrUnknown(data['lifecycle']!, _lifecycleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lifecycleMeta);
+    }
+    if (data.containsKey('variant_of_food_id')) {
+      context.handle(
+        _variantOfFoodIdMeta,
+        variantOfFoodId.isAcceptableOrUnknown(
+          data['variant_of_food_id']!,
+          _variantOfFoodIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('legacy_food_item_id')) {
+      context.handle(
+        _legacyFoodItemIdMeta,
+        legacyFoodItemId.isAcceptableOrUnknown(
+          data['legacy_food_item_id']!,
+          _legacyFoodItemIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {sourceType, sourceRef, sourceVersion},
+    {legacyFoodItemId},
+  ];
+  @override
+  NutritionFood map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionFood(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      )!,
+      locale: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locale'],
+      )!,
+      sourceType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_type'],
+      )!,
+      sourceRef: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_ref'],
+      ),
+      sourceVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_version'],
+      ),
+      brand: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}brand'],
+      ),
+      region: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}region'],
+      ),
+      lifecycle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lifecycle'],
+      )!,
+      variantOfFoodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variant_of_food_id'],
+      ),
+      legacyFoodItemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}legacy_food_item_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionFoodsTable createAlias(String alias) {
+    return $NutritionFoodsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionFood extends DataClass implements Insertable<NutritionFood> {
+  final String id;
+  final String kind;
+  final String displayName;
+  final String locale;
+  final String sourceType;
+  final String? sourceRef;
+  final String? sourceVersion;
+  final String? brand;
+  final String? region;
+  final String lifecycle;
+  final String? variantOfFoodId;
+  final int? legacyFoodItemId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionFood({
+    required this.id,
+    required this.kind,
+    required this.displayName,
+    required this.locale,
+    required this.sourceType,
+    this.sourceRef,
+    this.sourceVersion,
+    this.brand,
+    this.region,
+    required this.lifecycle,
+    this.variantOfFoodId,
+    this.legacyFoodItemId,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['kind'] = Variable<String>(kind);
+    map['display_name'] = Variable<String>(displayName);
+    map['locale'] = Variable<String>(locale);
+    map['source_type'] = Variable<String>(sourceType);
+    if (!nullToAbsent || sourceRef != null) {
+      map['source_ref'] = Variable<String>(sourceRef);
+    }
+    if (!nullToAbsent || sourceVersion != null) {
+      map['source_version'] = Variable<String>(sourceVersion);
+    }
+    if (!nullToAbsent || brand != null) {
+      map['brand'] = Variable<String>(brand);
+    }
+    if (!nullToAbsent || region != null) {
+      map['region'] = Variable<String>(region);
+    }
+    map['lifecycle'] = Variable<String>(lifecycle);
+    if (!nullToAbsent || variantOfFoodId != null) {
+      map['variant_of_food_id'] = Variable<String>(variantOfFoodId);
+    }
+    if (!nullToAbsent || legacyFoodItemId != null) {
+      map['legacy_food_item_id'] = Variable<int>(legacyFoodItemId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionFoodsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionFoodsCompanion(
+      id: Value(id),
+      kind: Value(kind),
+      displayName: Value(displayName),
+      locale: Value(locale),
+      sourceType: Value(sourceType),
+      sourceRef: sourceRef == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceRef),
+      sourceVersion: sourceVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceVersion),
+      brand: brand == null && nullToAbsent
+          ? const Value.absent()
+          : Value(brand),
+      region: region == null && nullToAbsent
+          ? const Value.absent()
+          : Value(region),
+      lifecycle: Value(lifecycle),
+      variantOfFoodId: variantOfFoodId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(variantOfFoodId),
+      legacyFoodItemId: legacyFoodItemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(legacyFoodItemId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionFood.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionFood(
+      id: serializer.fromJson<String>(json['id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      locale: serializer.fromJson<String>(json['locale']),
+      sourceType: serializer.fromJson<String>(json['sourceType']),
+      sourceRef: serializer.fromJson<String?>(json['sourceRef']),
+      sourceVersion: serializer.fromJson<String?>(json['sourceVersion']),
+      brand: serializer.fromJson<String?>(json['brand']),
+      region: serializer.fromJson<String?>(json['region']),
+      lifecycle: serializer.fromJson<String>(json['lifecycle']),
+      variantOfFoodId: serializer.fromJson<String?>(json['variantOfFoodId']),
+      legacyFoodItemId: serializer.fromJson<int?>(json['legacyFoodItemId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'kind': serializer.toJson<String>(kind),
+      'displayName': serializer.toJson<String>(displayName),
+      'locale': serializer.toJson<String>(locale),
+      'sourceType': serializer.toJson<String>(sourceType),
+      'sourceRef': serializer.toJson<String?>(sourceRef),
+      'sourceVersion': serializer.toJson<String?>(sourceVersion),
+      'brand': serializer.toJson<String?>(brand),
+      'region': serializer.toJson<String?>(region),
+      'lifecycle': serializer.toJson<String>(lifecycle),
+      'variantOfFoodId': serializer.toJson<String?>(variantOfFoodId),
+      'legacyFoodItemId': serializer.toJson<int?>(legacyFoodItemId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionFood copyWith({
+    String? id,
+    String? kind,
+    String? displayName,
+    String? locale,
+    String? sourceType,
+    Value<String?> sourceRef = const Value.absent(),
+    Value<String?> sourceVersion = const Value.absent(),
+    Value<String?> brand = const Value.absent(),
+    Value<String?> region = const Value.absent(),
+    String? lifecycle,
+    Value<String?> variantOfFoodId = const Value.absent(),
+    Value<int?> legacyFoodItemId = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionFood(
+    id: id ?? this.id,
+    kind: kind ?? this.kind,
+    displayName: displayName ?? this.displayName,
+    locale: locale ?? this.locale,
+    sourceType: sourceType ?? this.sourceType,
+    sourceRef: sourceRef.present ? sourceRef.value : this.sourceRef,
+    sourceVersion: sourceVersion.present
+        ? sourceVersion.value
+        : this.sourceVersion,
+    brand: brand.present ? brand.value : this.brand,
+    region: region.present ? region.value : this.region,
+    lifecycle: lifecycle ?? this.lifecycle,
+    variantOfFoodId: variantOfFoodId.present
+        ? variantOfFoodId.value
+        : this.variantOfFoodId,
+    legacyFoodItemId: legacyFoodItemId.present
+        ? legacyFoodItemId.value
+        : this.legacyFoodItemId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionFood copyWithCompanion(NutritionFoodsCompanion data) {
+    return NutritionFood(
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      locale: data.locale.present ? data.locale.value : this.locale,
+      sourceType: data.sourceType.present
+          ? data.sourceType.value
+          : this.sourceType,
+      sourceRef: data.sourceRef.present ? data.sourceRef.value : this.sourceRef,
+      sourceVersion: data.sourceVersion.present
+          ? data.sourceVersion.value
+          : this.sourceVersion,
+      brand: data.brand.present ? data.brand.value : this.brand,
+      region: data.region.present ? data.region.value : this.region,
+      lifecycle: data.lifecycle.present ? data.lifecycle.value : this.lifecycle,
+      variantOfFoodId: data.variantOfFoodId.present
+          ? data.variantOfFoodId.value
+          : this.variantOfFoodId,
+      legacyFoodItemId: data.legacyFoodItemId.present
+          ? data.legacyFoodItemId.value
+          : this.legacyFoodItemId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionFood(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('displayName: $displayName, ')
+          ..write('locale: $locale, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceRef: $sourceRef, ')
+          ..write('sourceVersion: $sourceVersion, ')
+          ..write('brand: $brand, ')
+          ..write('region: $region, ')
+          ..write('lifecycle: $lifecycle, ')
+          ..write('variantOfFoodId: $variantOfFoodId, ')
+          ..write('legacyFoodItemId: $legacyFoodItemId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    kind,
+    displayName,
+    locale,
+    sourceType,
+    sourceRef,
+    sourceVersion,
+    brand,
+    region,
+    lifecycle,
+    variantOfFoodId,
+    legacyFoodItemId,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionFood &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.displayName == this.displayName &&
+          other.locale == this.locale &&
+          other.sourceType == this.sourceType &&
+          other.sourceRef == this.sourceRef &&
+          other.sourceVersion == this.sourceVersion &&
+          other.brand == this.brand &&
+          other.region == this.region &&
+          other.lifecycle == this.lifecycle &&
+          other.variantOfFoodId == this.variantOfFoodId &&
+          other.legacyFoodItemId == this.legacyFoodItemId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionFoodsCompanion extends UpdateCompanion<NutritionFood> {
+  final Value<String> id;
+  final Value<String> kind;
+  final Value<String> displayName;
+  final Value<String> locale;
+  final Value<String> sourceType;
+  final Value<String?> sourceRef;
+  final Value<String?> sourceVersion;
+  final Value<String?> brand;
+  final Value<String?> region;
+  final Value<String> lifecycle;
+  final Value<String?> variantOfFoodId;
+  final Value<int?> legacyFoodItemId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionFoodsCompanion({
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.locale = const Value.absent(),
+    this.sourceType = const Value.absent(),
+    this.sourceRef = const Value.absent(),
+    this.sourceVersion = const Value.absent(),
+    this.brand = const Value.absent(),
+    this.region = const Value.absent(),
+    this.lifecycle = const Value.absent(),
+    this.variantOfFoodId = const Value.absent(),
+    this.legacyFoodItemId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionFoodsCompanion.insert({
+    required String id,
+    required String kind,
+    required String displayName,
+    required String locale,
+    required String sourceType,
+    this.sourceRef = const Value.absent(),
+    this.sourceVersion = const Value.absent(),
+    this.brand = const Value.absent(),
+    this.region = const Value.absent(),
+    required String lifecycle,
+    this.variantOfFoodId = const Value.absent(),
+    this.legacyFoodItemId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       kind = Value(kind),
+       displayName = Value(displayName),
+       locale = Value(locale),
+       sourceType = Value(sourceType),
+       lifecycle = Value(lifecycle);
+  static Insertable<NutritionFood> custom({
+    Expression<String>? id,
+    Expression<String>? kind,
+    Expression<String>? displayName,
+    Expression<String>? locale,
+    Expression<String>? sourceType,
+    Expression<String>? sourceRef,
+    Expression<String>? sourceVersion,
+    Expression<String>? brand,
+    Expression<String>? region,
+    Expression<String>? lifecycle,
+    Expression<String>? variantOfFoodId,
+    Expression<int>? legacyFoodItemId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (displayName != null) 'display_name': displayName,
+      if (locale != null) 'locale': locale,
+      if (sourceType != null) 'source_type': sourceType,
+      if (sourceRef != null) 'source_ref': sourceRef,
+      if (sourceVersion != null) 'source_version': sourceVersion,
+      if (brand != null) 'brand': brand,
+      if (region != null) 'region': region,
+      if (lifecycle != null) 'lifecycle': lifecycle,
+      if (variantOfFoodId != null) 'variant_of_food_id': variantOfFoodId,
+      if (legacyFoodItemId != null) 'legacy_food_item_id': legacyFoodItemId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionFoodsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? kind,
+    Value<String>? displayName,
+    Value<String>? locale,
+    Value<String>? sourceType,
+    Value<String?>? sourceRef,
+    Value<String?>? sourceVersion,
+    Value<String?>? brand,
+    Value<String?>? region,
+    Value<String>? lifecycle,
+    Value<String?>? variantOfFoodId,
+    Value<int?>? legacyFoodItemId,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionFoodsCompanion(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      displayName: displayName ?? this.displayName,
+      locale: locale ?? this.locale,
+      sourceType: sourceType ?? this.sourceType,
+      sourceRef: sourceRef ?? this.sourceRef,
+      sourceVersion: sourceVersion ?? this.sourceVersion,
+      brand: brand ?? this.brand,
+      region: region ?? this.region,
+      lifecycle: lifecycle ?? this.lifecycle,
+      variantOfFoodId: variantOfFoodId ?? this.variantOfFoodId,
+      legacyFoodItemId: legacyFoodItemId ?? this.legacyFoodItemId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (locale.present) {
+      map['locale'] = Variable<String>(locale.value);
+    }
+    if (sourceType.present) {
+      map['source_type'] = Variable<String>(sourceType.value);
+    }
+    if (sourceRef.present) {
+      map['source_ref'] = Variable<String>(sourceRef.value);
+    }
+    if (sourceVersion.present) {
+      map['source_version'] = Variable<String>(sourceVersion.value);
+    }
+    if (brand.present) {
+      map['brand'] = Variable<String>(brand.value);
+    }
+    if (region.present) {
+      map['region'] = Variable<String>(region.value);
+    }
+    if (lifecycle.present) {
+      map['lifecycle'] = Variable<String>(lifecycle.value);
+    }
+    if (variantOfFoodId.present) {
+      map['variant_of_food_id'] = Variable<String>(variantOfFoodId.value);
+    }
+    if (legacyFoodItemId.present) {
+      map['legacy_food_item_id'] = Variable<int>(legacyFoodItemId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionFoodsCompanion(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('displayName: $displayName, ')
+          ..write('locale: $locale, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceRef: $sourceRef, ')
+          ..write('sourceVersion: $sourceVersion, ')
+          ..write('brand: $brand, ')
+          ..write('region: $region, ')
+          ..write('lifecycle: $lifecycle, ')
+          ..write('variantOfFoodId: $variantOfFoodId, ')
+          ..write('legacyFoodItemId: $legacyFoodItemId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionFoodAliasesTable extends NutritionFoodAliases
+    with TableInfo<$NutritionFoodAliasesTable, NutritionFoodAliase> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionFoodAliasesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _foodIdMeta = const VerificationMeta('foodId');
+  @override
+  late final GeneratedColumn<String> foodId = GeneratedColumn<String>(
+    'food_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _aliasMeta = const VerificationMeta('alias');
+  @override
+  late final GeneratedColumn<String> alias = GeneratedColumn<String>(
+    'alias',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _normalizedAliasMeta = const VerificationMeta(
+    'normalizedAlias',
+  );
+  @override
+  late final GeneratedColumn<String> normalizedAlias = GeneratedColumn<String>(
+    'normalized_alias',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localeMeta = const VerificationMeta('locale');
+  @override
+  late final GeneratedColumn<String> locale = GeneratedColumn<String>(
+    'locale',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    foodId,
+    alias,
+    normalizedAlias,
+    locale,
+    source,
+    confidence,
+    isActive,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_food_aliases';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionFoodAliase> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('food_id')) {
+      context.handle(
+        _foodIdMeta,
+        foodId.isAcceptableOrUnknown(data['food_id']!, _foodIdMeta),
+      );
+    }
+    if (data.containsKey('alias')) {
+      context.handle(
+        _aliasMeta,
+        alias.isAcceptableOrUnknown(data['alias']!, _aliasMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_aliasMeta);
+    }
+    if (data.containsKey('normalized_alias')) {
+      context.handle(
+        _normalizedAliasMeta,
+        normalizedAlias.isAcceptableOrUnknown(
+          data['normalized_alias']!,
+          _normalizedAliasMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_normalizedAliasMeta);
+    }
+    if (data.containsKey('locale')) {
+      context.handle(
+        _localeMeta,
+        locale.isAcceptableOrUnknown(data['locale']!, _localeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localeMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {normalizedAlias, locale},
+  ];
+  @override
+  NutritionFoodAliase map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionFoodAliase(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      foodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}food_id'],
+      ),
+      alias: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}alias'],
+      )!,
+      normalizedAlias: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}normalized_alias'],
+      )!,
+      locale: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locale'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      ),
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionFoodAliasesTable createAlias(String alias) {
+    return $NutritionFoodAliasesTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionFoodAliase extends DataClass
+    implements Insertable<NutritionFoodAliase> {
+  final String id;
+  final String? foodId;
+  final String alias;
+  final String normalizedAlias;
+  final String locale;
+  final String source;
+  final double? confidence;
+  final bool isActive;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionFoodAliase({
+    required this.id,
+    this.foodId,
+    required this.alias,
+    required this.normalizedAlias,
+    required this.locale,
+    required this.source,
+    this.confidence,
+    required this.isActive,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || foodId != null) {
+      map['food_id'] = Variable<String>(foodId);
+    }
+    map['alias'] = Variable<String>(alias);
+    map['normalized_alias'] = Variable<String>(normalizedAlias);
+    map['locale'] = Variable<String>(locale);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || confidence != null) {
+      map['confidence'] = Variable<double>(confidence);
+    }
+    map['is_active'] = Variable<bool>(isActive);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionFoodAliasesCompanion toCompanion(bool nullToAbsent) {
+    return NutritionFoodAliasesCompanion(
+      id: Value(id),
+      foodId: foodId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foodId),
+      alias: Value(alias),
+      normalizedAlias: Value(normalizedAlias),
+      locale: Value(locale),
+      source: Value(source),
+      confidence: confidence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confidence),
+      isActive: Value(isActive),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionFoodAliase.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionFoodAliase(
+      id: serializer.fromJson<String>(json['id']),
+      foodId: serializer.fromJson<String?>(json['foodId']),
+      alias: serializer.fromJson<String>(json['alias']),
+      normalizedAlias: serializer.fromJson<String>(json['normalizedAlias']),
+      locale: serializer.fromJson<String>(json['locale']),
+      source: serializer.fromJson<String>(json['source']),
+      confidence: serializer.fromJson<double?>(json['confidence']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'foodId': serializer.toJson<String?>(foodId),
+      'alias': serializer.toJson<String>(alias),
+      'normalizedAlias': serializer.toJson<String>(normalizedAlias),
+      'locale': serializer.toJson<String>(locale),
+      'source': serializer.toJson<String>(source),
+      'confidence': serializer.toJson<double?>(confidence),
+      'isActive': serializer.toJson<bool>(isActive),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionFoodAliase copyWith({
+    String? id,
+    Value<String?> foodId = const Value.absent(),
+    String? alias,
+    String? normalizedAlias,
+    String? locale,
+    String? source,
+    Value<double?> confidence = const Value.absent(),
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionFoodAliase(
+    id: id ?? this.id,
+    foodId: foodId.present ? foodId.value : this.foodId,
+    alias: alias ?? this.alias,
+    normalizedAlias: normalizedAlias ?? this.normalizedAlias,
+    locale: locale ?? this.locale,
+    source: source ?? this.source,
+    confidence: confidence.present ? confidence.value : this.confidence,
+    isActive: isActive ?? this.isActive,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionFoodAliase copyWithCompanion(NutritionFoodAliasesCompanion data) {
+    return NutritionFoodAliase(
+      id: data.id.present ? data.id.value : this.id,
+      foodId: data.foodId.present ? data.foodId.value : this.foodId,
+      alias: data.alias.present ? data.alias.value : this.alias,
+      normalizedAlias: data.normalizedAlias.present
+          ? data.normalizedAlias.value
+          : this.normalizedAlias,
+      locale: data.locale.present ? data.locale.value : this.locale,
+      source: data.source.present ? data.source.value : this.source,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionFoodAliase(')
+          ..write('id: $id, ')
+          ..write('foodId: $foodId, ')
+          ..write('alias: $alias, ')
+          ..write('normalizedAlias: $normalizedAlias, ')
+          ..write('locale: $locale, ')
+          ..write('source: $source, ')
+          ..write('confidence: $confidence, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    foodId,
+    alias,
+    normalizedAlias,
+    locale,
+    source,
+    confidence,
+    isActive,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionFoodAliase &&
+          other.id == this.id &&
+          other.foodId == this.foodId &&
+          other.alias == this.alias &&
+          other.normalizedAlias == this.normalizedAlias &&
+          other.locale == this.locale &&
+          other.source == this.source &&
+          other.confidence == this.confidence &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionFoodAliasesCompanion
+    extends UpdateCompanion<NutritionFoodAliase> {
+  final Value<String> id;
+  final Value<String?> foodId;
+  final Value<String> alias;
+  final Value<String> normalizedAlias;
+  final Value<String> locale;
+  final Value<String> source;
+  final Value<double?> confidence;
+  final Value<bool> isActive;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionFoodAliasesCompanion({
+    this.id = const Value.absent(),
+    this.foodId = const Value.absent(),
+    this.alias = const Value.absent(),
+    this.normalizedAlias = const Value.absent(),
+    this.locale = const Value.absent(),
+    this.source = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionFoodAliasesCompanion.insert({
+    required String id,
+    this.foodId = const Value.absent(),
+    required String alias,
+    required String normalizedAlias,
+    required String locale,
+    required String source,
+    this.confidence = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       alias = Value(alias),
+       normalizedAlias = Value(normalizedAlias),
+       locale = Value(locale),
+       source = Value(source);
+  static Insertable<NutritionFoodAliase> custom({
+    Expression<String>? id,
+    Expression<String>? foodId,
+    Expression<String>? alias,
+    Expression<String>? normalizedAlias,
+    Expression<String>? locale,
+    Expression<String>? source,
+    Expression<double>? confidence,
+    Expression<bool>? isActive,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (foodId != null) 'food_id': foodId,
+      if (alias != null) 'alias': alias,
+      if (normalizedAlias != null) 'normalized_alias': normalizedAlias,
+      if (locale != null) 'locale': locale,
+      if (source != null) 'source': source,
+      if (confidence != null) 'confidence': confidence,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionFoodAliasesCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? foodId,
+    Value<String>? alias,
+    Value<String>? normalizedAlias,
+    Value<String>? locale,
+    Value<String>? source,
+    Value<double?>? confidence,
+    Value<bool>? isActive,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionFoodAliasesCompanion(
+      id: id ?? this.id,
+      foodId: foodId ?? this.foodId,
+      alias: alias ?? this.alias,
+      normalizedAlias: normalizedAlias ?? this.normalizedAlias,
+      locale: locale ?? this.locale,
+      source: source ?? this.source,
+      confidence: confidence ?? this.confidence,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (foodId.present) {
+      map['food_id'] = Variable<String>(foodId.value);
+    }
+    if (alias.present) {
+      map['alias'] = Variable<String>(alias.value);
+    }
+    if (normalizedAlias.present) {
+      map['normalized_alias'] = Variable<String>(normalizedAlias.value);
+    }
+    if (locale.present) {
+      map['locale'] = Variable<String>(locale.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionFoodAliasesCompanion(')
+          ..write('id: $id, ')
+          ..write('foodId: $foodId, ')
+          ..write('alias: $alias, ')
+          ..write('normalizedAlias: $normalizedAlias, ')
+          ..write('locale: $locale, ')
+          ..write('source: $source, ')
+          ..write('confidence: $confidence, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionFoodPreparationsTable extends NutritionFoodPreparations
+    with TableInfo<$NutritionFoodPreparationsTable, NutritionFoodPreparation> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionFoodPreparationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _foodIdMeta = const VerificationMeta('foodId');
+  @override
+  late final GeneratedColumn<String> foodId = GeneratedColumn<String>(
+    'food_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _methodMeta = const VerificationMeta('method');
+  @override
+  late final GeneratedColumn<String> method = GeneratedColumn<String>(
+    'method',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _oilContextMeta = const VerificationMeta(
+    'oilContext',
+  );
+  @override
+  late final GeneratedColumn<String> oilContext = GeneratedColumn<String>(
+    'oil_context',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _regionMeta = const VerificationMeta('region');
+  @override
+  late final GeneratedColumn<String> region = GeneratedColumn<String>(
+    'region',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<String> version = GeneratedColumn<String>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    foodId,
+    state,
+    method,
+    oilContext,
+    region,
+    source,
+    version,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_food_preparations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionFoodPreparation> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('food_id')) {
+      context.handle(
+        _foodIdMeta,
+        foodId.isAcceptableOrUnknown(data['food_id']!, _foodIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_foodIdMeta);
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stateMeta);
+    }
+    if (data.containsKey('method')) {
+      context.handle(
+        _methodMeta,
+        method.isAcceptableOrUnknown(data['method']!, _methodMeta),
+      );
+    }
+    if (data.containsKey('oil_context')) {
+      context.handle(
+        _oilContextMeta,
+        oilContext.isAcceptableOrUnknown(data['oil_context']!, _oilContextMeta),
+      );
+    }
+    if (data.containsKey('region')) {
+      context.handle(
+        _regionMeta,
+        region.isAcceptableOrUnknown(data['region']!, _regionMeta),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {foodId, state, method, oilContext, region, version},
+  ];
+  @override
+  NutritionFoodPreparation map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionFoodPreparation(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      foodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}food_id'],
+      )!,
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      )!,
+      method: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}method'],
+      ),
+      oilContext: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}oil_context'],
+      ),
+      region: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}region'],
+      ),
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}version'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionFoodPreparationsTable createAlias(String alias) {
+    return $NutritionFoodPreparationsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionFoodPreparation extends DataClass
+    implements Insertable<NutritionFoodPreparation> {
+  final String id;
+  final String foodId;
+  final String state;
+  final String? method;
+  final String? oilContext;
+  final String? region;
+  final String source;
+  final String version;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionFoodPreparation({
+    required this.id,
+    required this.foodId,
+    required this.state,
+    this.method,
+    this.oilContext,
+    this.region,
+    required this.source,
+    required this.version,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['food_id'] = Variable<String>(foodId);
+    map['state'] = Variable<String>(state);
+    if (!nullToAbsent || method != null) {
+      map['method'] = Variable<String>(method);
+    }
+    if (!nullToAbsent || oilContext != null) {
+      map['oil_context'] = Variable<String>(oilContext);
+    }
+    if (!nullToAbsent || region != null) {
+      map['region'] = Variable<String>(region);
+    }
+    map['source'] = Variable<String>(source);
+    map['version'] = Variable<String>(version);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionFoodPreparationsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionFoodPreparationsCompanion(
+      id: Value(id),
+      foodId: Value(foodId),
+      state: Value(state),
+      method: method == null && nullToAbsent
+          ? const Value.absent()
+          : Value(method),
+      oilContext: oilContext == null && nullToAbsent
+          ? const Value.absent()
+          : Value(oilContext),
+      region: region == null && nullToAbsent
+          ? const Value.absent()
+          : Value(region),
+      source: Value(source),
+      version: Value(version),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionFoodPreparation.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionFoodPreparation(
+      id: serializer.fromJson<String>(json['id']),
+      foodId: serializer.fromJson<String>(json['foodId']),
+      state: serializer.fromJson<String>(json['state']),
+      method: serializer.fromJson<String?>(json['method']),
+      oilContext: serializer.fromJson<String?>(json['oilContext']),
+      region: serializer.fromJson<String?>(json['region']),
+      source: serializer.fromJson<String>(json['source']),
+      version: serializer.fromJson<String>(json['version']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'foodId': serializer.toJson<String>(foodId),
+      'state': serializer.toJson<String>(state),
+      'method': serializer.toJson<String?>(method),
+      'oilContext': serializer.toJson<String?>(oilContext),
+      'region': serializer.toJson<String?>(region),
+      'source': serializer.toJson<String>(source),
+      'version': serializer.toJson<String>(version),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionFoodPreparation copyWith({
+    String? id,
+    String? foodId,
+    String? state,
+    Value<String?> method = const Value.absent(),
+    Value<String?> oilContext = const Value.absent(),
+    Value<String?> region = const Value.absent(),
+    String? source,
+    String? version,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionFoodPreparation(
+    id: id ?? this.id,
+    foodId: foodId ?? this.foodId,
+    state: state ?? this.state,
+    method: method.present ? method.value : this.method,
+    oilContext: oilContext.present ? oilContext.value : this.oilContext,
+    region: region.present ? region.value : this.region,
+    source: source ?? this.source,
+    version: version ?? this.version,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionFoodPreparation copyWithCompanion(
+    NutritionFoodPreparationsCompanion data,
+  ) {
+    return NutritionFoodPreparation(
+      id: data.id.present ? data.id.value : this.id,
+      foodId: data.foodId.present ? data.foodId.value : this.foodId,
+      state: data.state.present ? data.state.value : this.state,
+      method: data.method.present ? data.method.value : this.method,
+      oilContext: data.oilContext.present
+          ? data.oilContext.value
+          : this.oilContext,
+      region: data.region.present ? data.region.value : this.region,
+      source: data.source.present ? data.source.value : this.source,
+      version: data.version.present ? data.version.value : this.version,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionFoodPreparation(')
+          ..write('id: $id, ')
+          ..write('foodId: $foodId, ')
+          ..write('state: $state, ')
+          ..write('method: $method, ')
+          ..write('oilContext: $oilContext, ')
+          ..write('region: $region, ')
+          ..write('source: $source, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    foodId,
+    state,
+    method,
+    oilContext,
+    region,
+    source,
+    version,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionFoodPreparation &&
+          other.id == this.id &&
+          other.foodId == this.foodId &&
+          other.state == this.state &&
+          other.method == this.method &&
+          other.oilContext == this.oilContext &&
+          other.region == this.region &&
+          other.source == this.source &&
+          other.version == this.version &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionFoodPreparationsCompanion
+    extends UpdateCompanion<NutritionFoodPreparation> {
+  final Value<String> id;
+  final Value<String> foodId;
+  final Value<String> state;
+  final Value<String?> method;
+  final Value<String?> oilContext;
+  final Value<String?> region;
+  final Value<String> source;
+  final Value<String> version;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionFoodPreparationsCompanion({
+    this.id = const Value.absent(),
+    this.foodId = const Value.absent(),
+    this.state = const Value.absent(),
+    this.method = const Value.absent(),
+    this.oilContext = const Value.absent(),
+    this.region = const Value.absent(),
+    this.source = const Value.absent(),
+    this.version = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionFoodPreparationsCompanion.insert({
+    required String id,
+    required String foodId,
+    required String state,
+    this.method = const Value.absent(),
+    this.oilContext = const Value.absent(),
+    this.region = const Value.absent(),
+    required String source,
+    required String version,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       foodId = Value(foodId),
+       state = Value(state),
+       source = Value(source),
+       version = Value(version);
+  static Insertable<NutritionFoodPreparation> custom({
+    Expression<String>? id,
+    Expression<String>? foodId,
+    Expression<String>? state,
+    Expression<String>? method,
+    Expression<String>? oilContext,
+    Expression<String>? region,
+    Expression<String>? source,
+    Expression<String>? version,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (foodId != null) 'food_id': foodId,
+      if (state != null) 'state': state,
+      if (method != null) 'method': method,
+      if (oilContext != null) 'oil_context': oilContext,
+      if (region != null) 'region': region,
+      if (source != null) 'source': source,
+      if (version != null) 'version': version,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionFoodPreparationsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? foodId,
+    Value<String>? state,
+    Value<String?>? method,
+    Value<String?>? oilContext,
+    Value<String?>? region,
+    Value<String>? source,
+    Value<String>? version,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionFoodPreparationsCompanion(
+      id: id ?? this.id,
+      foodId: foodId ?? this.foodId,
+      state: state ?? this.state,
+      method: method ?? this.method,
+      oilContext: oilContext ?? this.oilContext,
+      region: region ?? this.region,
+      source: source ?? this.source,
+      version: version ?? this.version,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (foodId.present) {
+      map['food_id'] = Variable<String>(foodId.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (method.present) {
+      map['method'] = Variable<String>(method.value);
+    }
+    if (oilContext.present) {
+      map['oil_context'] = Variable<String>(oilContext.value);
+    }
+    if (region.present) {
+      map['region'] = Variable<String>(region.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<String>(version.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionFoodPreparationsCompanion(')
+          ..write('id: $id, ')
+          ..write('foodId: $foodId, ')
+          ..write('state: $state, ')
+          ..write('method: $method, ')
+          ..write('oilContext: $oilContext, ')
+          ..write('region: $region, ')
+          ..write('source: $source, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionLegacyFoodMappingsTable extends NutritionLegacyFoodMappings
+    with
+        TableInfo<
+          $NutritionLegacyFoodMappingsTable,
+          NutritionLegacyFoodMapping
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionLegacyFoodMappingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _legacyFoodItemIdMeta = const VerificationMeta(
+    'legacyFoodItemId',
+  );
+  @override
+  late final GeneratedColumn<int> legacyFoodItemId = GeneratedColumn<int>(
+    'legacy_food_item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _foodIdMeta = const VerificationMeta('foodId');
+  @override
+  late final GeneratedColumn<String> foodId = GeneratedColumn<String>(
+    'food_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _mappingStatusMeta = const VerificationMeta(
+    'mappingStatus',
+  );
+  @override
+  late final GeneratedColumn<String> mappingStatus = GeneratedColumn<String>(
+    'mapping_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _evidenceMeta = const VerificationMeta(
+    'evidence',
+  );
+  @override
+  late final GeneratedColumn<String> evidence = GeneratedColumn<String>(
+    'evidence',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mappedAtMeta = const VerificationMeta(
+    'mappedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> mappedAt = GeneratedColumn<DateTime>(
+    'mapped_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    legacyFoodItemId,
+    foodId,
+    mappingStatus,
+    evidence,
+    mappedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_legacy_food_mappings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionLegacyFoodMapping> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('legacy_food_item_id')) {
+      context.handle(
+        _legacyFoodItemIdMeta,
+        legacyFoodItemId.isAcceptableOrUnknown(
+          data['legacy_food_item_id']!,
+          _legacyFoodItemIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('food_id')) {
+      context.handle(
+        _foodIdMeta,
+        foodId.isAcceptableOrUnknown(data['food_id']!, _foodIdMeta),
+      );
+    }
+    if (data.containsKey('mapping_status')) {
+      context.handle(
+        _mappingStatusMeta,
+        mappingStatus.isAcceptableOrUnknown(
+          data['mapping_status']!,
+          _mappingStatusMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_mappingStatusMeta);
+    }
+    if (data.containsKey('evidence')) {
+      context.handle(
+        _evidenceMeta,
+        evidence.isAcceptableOrUnknown(data['evidence']!, _evidenceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_evidenceMeta);
+    }
+    if (data.containsKey('mapped_at')) {
+      context.handle(
+        _mappedAtMeta,
+        mappedAt.isAcceptableOrUnknown(data['mapped_at']!, _mappedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {legacyFoodItemId};
+  @override
+  NutritionLegacyFoodMapping map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionLegacyFoodMapping(
+      legacyFoodItemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}legacy_food_item_id'],
+      )!,
+      foodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}food_id'],
+      ),
+      mappingStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mapping_status'],
+      )!,
+      evidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evidence'],
+      )!,
+      mappedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}mapped_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionLegacyFoodMappingsTable createAlias(String alias) {
+    return $NutritionLegacyFoodMappingsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionLegacyFoodMapping extends DataClass
+    implements Insertable<NutritionLegacyFoodMapping> {
+  final int legacyFoodItemId;
+  final String? foodId;
+  final String mappingStatus;
+  final String evidence;
+  final DateTime mappedAt;
+  const NutritionLegacyFoodMapping({
+    required this.legacyFoodItemId,
+    this.foodId,
+    required this.mappingStatus,
+    required this.evidence,
+    required this.mappedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['legacy_food_item_id'] = Variable<int>(legacyFoodItemId);
+    if (!nullToAbsent || foodId != null) {
+      map['food_id'] = Variable<String>(foodId);
+    }
+    map['mapping_status'] = Variable<String>(mappingStatus);
+    map['evidence'] = Variable<String>(evidence);
+    map['mapped_at'] = Variable<DateTime>(mappedAt);
+    return map;
+  }
+
+  NutritionLegacyFoodMappingsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionLegacyFoodMappingsCompanion(
+      legacyFoodItemId: Value(legacyFoodItemId),
+      foodId: foodId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foodId),
+      mappingStatus: Value(mappingStatus),
+      evidence: Value(evidence),
+      mappedAt: Value(mappedAt),
+    );
+  }
+
+  factory NutritionLegacyFoodMapping.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionLegacyFoodMapping(
+      legacyFoodItemId: serializer.fromJson<int>(json['legacyFoodItemId']),
+      foodId: serializer.fromJson<String?>(json['foodId']),
+      mappingStatus: serializer.fromJson<String>(json['mappingStatus']),
+      evidence: serializer.fromJson<String>(json['evidence']),
+      mappedAt: serializer.fromJson<DateTime>(json['mappedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'legacyFoodItemId': serializer.toJson<int>(legacyFoodItemId),
+      'foodId': serializer.toJson<String?>(foodId),
+      'mappingStatus': serializer.toJson<String>(mappingStatus),
+      'evidence': serializer.toJson<String>(evidence),
+      'mappedAt': serializer.toJson<DateTime>(mappedAt),
+    };
+  }
+
+  NutritionLegacyFoodMapping copyWith({
+    int? legacyFoodItemId,
+    Value<String?> foodId = const Value.absent(),
+    String? mappingStatus,
+    String? evidence,
+    DateTime? mappedAt,
+  }) => NutritionLegacyFoodMapping(
+    legacyFoodItemId: legacyFoodItemId ?? this.legacyFoodItemId,
+    foodId: foodId.present ? foodId.value : this.foodId,
+    mappingStatus: mappingStatus ?? this.mappingStatus,
+    evidence: evidence ?? this.evidence,
+    mappedAt: mappedAt ?? this.mappedAt,
+  );
+  NutritionLegacyFoodMapping copyWithCompanion(
+    NutritionLegacyFoodMappingsCompanion data,
+  ) {
+    return NutritionLegacyFoodMapping(
+      legacyFoodItemId: data.legacyFoodItemId.present
+          ? data.legacyFoodItemId.value
+          : this.legacyFoodItemId,
+      foodId: data.foodId.present ? data.foodId.value : this.foodId,
+      mappingStatus: data.mappingStatus.present
+          ? data.mappingStatus.value
+          : this.mappingStatus,
+      evidence: data.evidence.present ? data.evidence.value : this.evidence,
+      mappedAt: data.mappedAt.present ? data.mappedAt.value : this.mappedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionLegacyFoodMapping(')
+          ..write('legacyFoodItemId: $legacyFoodItemId, ')
+          ..write('foodId: $foodId, ')
+          ..write('mappingStatus: $mappingStatus, ')
+          ..write('evidence: $evidence, ')
+          ..write('mappedAt: $mappedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(legacyFoodItemId, foodId, mappingStatus, evidence, mappedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionLegacyFoodMapping &&
+          other.legacyFoodItemId == this.legacyFoodItemId &&
+          other.foodId == this.foodId &&
+          other.mappingStatus == this.mappingStatus &&
+          other.evidence == this.evidence &&
+          other.mappedAt == this.mappedAt);
+}
+
+class NutritionLegacyFoodMappingsCompanion
+    extends UpdateCompanion<NutritionLegacyFoodMapping> {
+  final Value<int> legacyFoodItemId;
+  final Value<String?> foodId;
+  final Value<String> mappingStatus;
+  final Value<String> evidence;
+  final Value<DateTime> mappedAt;
+  const NutritionLegacyFoodMappingsCompanion({
+    this.legacyFoodItemId = const Value.absent(),
+    this.foodId = const Value.absent(),
+    this.mappingStatus = const Value.absent(),
+    this.evidence = const Value.absent(),
+    this.mappedAt = const Value.absent(),
+  });
+  NutritionLegacyFoodMappingsCompanion.insert({
+    this.legacyFoodItemId = const Value.absent(),
+    this.foodId = const Value.absent(),
+    required String mappingStatus,
+    required String evidence,
+    this.mappedAt = const Value.absent(),
+  }) : mappingStatus = Value(mappingStatus),
+       evidence = Value(evidence);
+  static Insertable<NutritionLegacyFoodMapping> custom({
+    Expression<int>? legacyFoodItemId,
+    Expression<String>? foodId,
+    Expression<String>? mappingStatus,
+    Expression<String>? evidence,
+    Expression<DateTime>? mappedAt,
+  }) {
+    return RawValuesInsertable({
+      if (legacyFoodItemId != null) 'legacy_food_item_id': legacyFoodItemId,
+      if (foodId != null) 'food_id': foodId,
+      if (mappingStatus != null) 'mapping_status': mappingStatus,
+      if (evidence != null) 'evidence': evidence,
+      if (mappedAt != null) 'mapped_at': mappedAt,
+    });
+  }
+
+  NutritionLegacyFoodMappingsCompanion copyWith({
+    Value<int>? legacyFoodItemId,
+    Value<String?>? foodId,
+    Value<String>? mappingStatus,
+    Value<String>? evidence,
+    Value<DateTime>? mappedAt,
+  }) {
+    return NutritionLegacyFoodMappingsCompanion(
+      legacyFoodItemId: legacyFoodItemId ?? this.legacyFoodItemId,
+      foodId: foodId ?? this.foodId,
+      mappingStatus: mappingStatus ?? this.mappingStatus,
+      evidence: evidence ?? this.evidence,
+      mappedAt: mappedAt ?? this.mappedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (legacyFoodItemId.present) {
+      map['legacy_food_item_id'] = Variable<int>(legacyFoodItemId.value);
+    }
+    if (foodId.present) {
+      map['food_id'] = Variable<String>(foodId.value);
+    }
+    if (mappingStatus.present) {
+      map['mapping_status'] = Variable<String>(mappingStatus.value);
+    }
+    if (evidence.present) {
+      map['evidence'] = Variable<String>(evidence.value);
+    }
+    if (mappedAt.present) {
+      map['mapped_at'] = Variable<DateTime>(mappedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionLegacyFoodMappingsCompanion(')
+          ..write('legacyFoodItemId: $legacyFoodItemId, ')
+          ..write('foodId: $foodId, ')
+          ..write('mappingStatus: $mappingStatus, ')
+          ..write('evidence: $evidence, ')
+          ..write('mappedAt: $mappedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionNutrientDefinitionsTable extends NutritionNutrientDefinitions
+    with
+        TableInfo<
+          $NutritionNutrientDefinitionsTable,
+          NutritionNutrientDefinition
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionNutrientDefinitionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    key,
+    displayName,
+    unit,
+    kind,
+    sortOrder,
+    version,
+    isActive,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_nutrient_definitions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionNutrientDefinition> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_unitMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sortOrderMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionMeta);
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {key, version},
+  ];
+  @override
+  NutritionNutrientDefinition map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionNutrientDefinition(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      )!,
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionNutrientDefinitionsTable createAlias(String alias) {
+    return $NutritionNutrientDefinitionsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionNutrientDefinition extends DataClass
+    implements Insertable<NutritionNutrientDefinition> {
+  final String id;
+  final String key;
+  final String displayName;
+  final String unit;
+  final String kind;
+  final int sortOrder;
+  final int version;
+  final bool isActive;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionNutrientDefinition({
+    required this.id,
+    required this.key,
+    required this.displayName,
+    required this.unit,
+    required this.kind,
+    required this.sortOrder,
+    required this.version,
+    required this.isActive,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['key'] = Variable<String>(key);
+    map['display_name'] = Variable<String>(displayName);
+    map['unit'] = Variable<String>(unit);
+    map['kind'] = Variable<String>(kind);
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['version'] = Variable<int>(version);
+    map['is_active'] = Variable<bool>(isActive);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionNutrientDefinitionsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionNutrientDefinitionsCompanion(
+      id: Value(id),
+      key: Value(key),
+      displayName: Value(displayName),
+      unit: Value(unit),
+      kind: Value(kind),
+      sortOrder: Value(sortOrder),
+      version: Value(version),
+      isActive: Value(isActive),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionNutrientDefinition.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionNutrientDefinition(
+      id: serializer.fromJson<String>(json['id']),
+      key: serializer.fromJson<String>(json['key']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      unit: serializer.fromJson<String>(json['unit']),
+      kind: serializer.fromJson<String>(json['kind']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      version: serializer.fromJson<int>(json['version']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'key': serializer.toJson<String>(key),
+      'displayName': serializer.toJson<String>(displayName),
+      'unit': serializer.toJson<String>(unit),
+      'kind': serializer.toJson<String>(kind),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'version': serializer.toJson<int>(version),
+      'isActive': serializer.toJson<bool>(isActive),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionNutrientDefinition copyWith({
+    String? id,
+    String? key,
+    String? displayName,
+    String? unit,
+    String? kind,
+    int? sortOrder,
+    int? version,
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionNutrientDefinition(
+    id: id ?? this.id,
+    key: key ?? this.key,
+    displayName: displayName ?? this.displayName,
+    unit: unit ?? this.unit,
+    kind: kind ?? this.kind,
+    sortOrder: sortOrder ?? this.sortOrder,
+    version: version ?? this.version,
+    isActive: isActive ?? this.isActive,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionNutrientDefinition copyWithCompanion(
+    NutritionNutrientDefinitionsCompanion data,
+  ) {
+    return NutritionNutrientDefinition(
+      id: data.id.present ? data.id.value : this.id,
+      key: data.key.present ? data.key.value : this.key,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      version: data.version.present ? data.version.value : this.version,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionNutrientDefinition(')
+          ..write('id: $id, ')
+          ..write('key: $key, ')
+          ..write('displayName: $displayName, ')
+          ..write('unit: $unit, ')
+          ..write('kind: $kind, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('version: $version, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    key,
+    displayName,
+    unit,
+    kind,
+    sortOrder,
+    version,
+    isActive,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionNutrientDefinition &&
+          other.id == this.id &&
+          other.key == this.key &&
+          other.displayName == this.displayName &&
+          other.unit == this.unit &&
+          other.kind == this.kind &&
+          other.sortOrder == this.sortOrder &&
+          other.version == this.version &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionNutrientDefinitionsCompanion
+    extends UpdateCompanion<NutritionNutrientDefinition> {
+  final Value<String> id;
+  final Value<String> key;
+  final Value<String> displayName;
+  final Value<String> unit;
+  final Value<String> kind;
+  final Value<int> sortOrder;
+  final Value<int> version;
+  final Value<bool> isActive;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionNutrientDefinitionsCompanion({
+    this.id = const Value.absent(),
+    this.key = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.version = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionNutrientDefinitionsCompanion.insert({
+    required String id,
+    required String key,
+    required String displayName,
+    required String unit,
+    required String kind,
+    required int sortOrder,
+    required int version,
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       key = Value(key),
+       displayName = Value(displayName),
+       unit = Value(unit),
+       kind = Value(kind),
+       sortOrder = Value(sortOrder),
+       version = Value(version);
+  static Insertable<NutritionNutrientDefinition> custom({
+    Expression<String>? id,
+    Expression<String>? key,
+    Expression<String>? displayName,
+    Expression<String>? unit,
+    Expression<String>? kind,
+    Expression<int>? sortOrder,
+    Expression<int>? version,
+    Expression<bool>? isActive,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (key != null) 'key': key,
+      if (displayName != null) 'display_name': displayName,
+      if (unit != null) 'unit': unit,
+      if (kind != null) 'kind': kind,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (version != null) 'version': version,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionNutrientDefinitionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? key,
+    Value<String>? displayName,
+    Value<String>? unit,
+    Value<String>? kind,
+    Value<int>? sortOrder,
+    Value<int>? version,
+    Value<bool>? isActive,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionNutrientDefinitionsCompanion(
+      id: id ?? this.id,
+      key: key ?? this.key,
+      displayName: displayName ?? this.displayName,
+      unit: unit ?? this.unit,
+      kind: kind ?? this.kind,
+      sortOrder: sortOrder ?? this.sortOrder,
+      version: version ?? this.version,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionNutrientDefinitionsCompanion(')
+          ..write('id: $id, ')
+          ..write('key: $key, ')
+          ..write('displayName: $displayName, ')
+          ..write('unit: $unit, ')
+          ..write('kind: $kind, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('version: $version, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionFoodNutrientFactsTable extends NutritionFoodNutrientFacts
+    with
+        TableInfo<$NutritionFoodNutrientFactsTable, NutritionFoodNutrientFact> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionFoodNutrientFactsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _foodIdMeta = const VerificationMeta('foodId');
+  @override
+  late final GeneratedColumn<String> foodId = GeneratedColumn<String>(
+    'food_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _nutrientIdMeta = const VerificationMeta(
+    'nutrientId',
+  );
+  @override
+  late final GeneratedColumn<String> nutrientId = GeneratedColumn<String>(
+    'nutrient_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_nutrient_definitions (id)',
+    ),
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+    'amount',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceRefMeta = const VerificationMeta(
+    'sourceRef',
+  );
+  @override
+  late final GeneratedColumn<String> sourceRef = GeneratedColumn<String>(
+    'source_ref',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _factVersionMeta = const VerificationMeta(
+    'factVersion',
+  );
+  @override
+  late final GeneratedColumn<int> factVersion = GeneratedColumn<int>(
+    'fact_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _basisMeta = const VerificationMeta('basis');
+  @override
+  late final GeneratedColumn<String> basis = GeneratedColumn<String>(
+    'basis',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _basisQuantityMeta = const VerificationMeta(
+    'basisQuantity',
+  );
+  @override
+  late final GeneratedColumn<double> basisQuantity = GeneratedColumn<double>(
+    'basis_quantity',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _basisUnitMeta = const VerificationMeta(
+    'basisUnit',
+  );
+  @override
+  late final GeneratedColumn<String> basisUnit = GeneratedColumn<String>(
+    'basis_unit',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _preparationIdMeta = const VerificationMeta(
+    'preparationId',
+  );
+  @override
+  late final GeneratedColumn<String> preparationId = GeneratedColumn<String>(
+    'preparation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_food_preparations (id)',
+    ),
+  );
+  static const VerificationMeta _isCurrentMeta = const VerificationMeta(
+    'isCurrent',
+  );
+  @override
+  late final GeneratedColumn<bool> isCurrent = GeneratedColumn<bool>(
+    'is_current',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_current" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    foodId,
+    nutrientId,
+    amount,
+    lower,
+    upper,
+    status,
+    source,
+    sourceRef,
+    confidence,
+    factVersion,
+    basis,
+    basisQuantity,
+    basisUnit,
+    preparationId,
+    isCurrent,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_food_nutrient_facts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionFoodNutrientFact> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('food_id')) {
+      context.handle(
+        _foodIdMeta,
+        foodId.isAcceptableOrUnknown(data['food_id']!, _foodIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_foodIdMeta);
+    }
+    if (data.containsKey('nutrient_id')) {
+      context.handle(
+        _nutrientIdMeta,
+        nutrientId.isAcceptableOrUnknown(data['nutrient_id']!, _nutrientIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nutrientIdMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('source_ref')) {
+      context.handle(
+        _sourceRefMeta,
+        sourceRef.isAcceptableOrUnknown(data['source_ref']!, _sourceRefMeta),
+      );
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    }
+    if (data.containsKey('fact_version')) {
+      context.handle(
+        _factVersionMeta,
+        factVersion.isAcceptableOrUnknown(
+          data['fact_version']!,
+          _factVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_factVersionMeta);
+    }
+    if (data.containsKey('basis')) {
+      context.handle(
+        _basisMeta,
+        basis.isAcceptableOrUnknown(data['basis']!, _basisMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_basisMeta);
+    }
+    if (data.containsKey('basis_quantity')) {
+      context.handle(
+        _basisQuantityMeta,
+        basisQuantity.isAcceptableOrUnknown(
+          data['basis_quantity']!,
+          _basisQuantityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('basis_unit')) {
+      context.handle(
+        _basisUnitMeta,
+        basisUnit.isAcceptableOrUnknown(data['basis_unit']!, _basisUnitMeta),
+      );
+    }
+    if (data.containsKey('preparation_id')) {
+      context.handle(
+        _preparationIdMeta,
+        preparationId.isAcceptableOrUnknown(
+          data['preparation_id']!,
+          _preparationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_current')) {
+      context.handle(
+        _isCurrentMeta,
+        isCurrent.isAcceptableOrUnknown(data['is_current']!, _isCurrentMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {foodId, nutrientId, factVersion},
+  ];
+  @override
+  NutritionFoodNutrientFact map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionFoodNutrientFact(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      foodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}food_id'],
+      )!,
+      nutrientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nutrient_id'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}amount'],
+      ),
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      sourceRef: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_ref'],
+      ),
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      ),
+      factVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fact_version'],
+      )!,
+      basis: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}basis'],
+      )!,
+      basisQuantity: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}basis_quantity'],
+      ),
+      basisUnit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}basis_unit'],
+      ),
+      preparationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}preparation_id'],
+      ),
+      isCurrent: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_current'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionFoodNutrientFactsTable createAlias(String alias) {
+    return $NutritionFoodNutrientFactsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionFoodNutrientFact extends DataClass
+    implements Insertable<NutritionFoodNutrientFact> {
+  final String id;
+  final String foodId;
+  final String nutrientId;
+  final double? amount;
+  final double? lower;
+  final double? upper;
+  final String status;
+  final String source;
+  final String? sourceRef;
+  final double? confidence;
+  final int factVersion;
+  final String basis;
+  final double? basisQuantity;
+  final String? basisUnit;
+  final String? preparationId;
+  final bool isCurrent;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionFoodNutrientFact({
+    required this.id,
+    required this.foodId,
+    required this.nutrientId,
+    this.amount,
+    this.lower,
+    this.upper,
+    required this.status,
+    required this.source,
+    this.sourceRef,
+    this.confidence,
+    required this.factVersion,
+    required this.basis,
+    this.basisQuantity,
+    this.basisUnit,
+    this.preparationId,
+    required this.isCurrent,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['food_id'] = Variable<String>(foodId);
+    map['nutrient_id'] = Variable<String>(nutrientId);
+    if (!nullToAbsent || amount != null) {
+      map['amount'] = Variable<double>(amount);
+    }
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    map['status'] = Variable<String>(status);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || sourceRef != null) {
+      map['source_ref'] = Variable<String>(sourceRef);
+    }
+    if (!nullToAbsent || confidence != null) {
+      map['confidence'] = Variable<double>(confidence);
+    }
+    map['fact_version'] = Variable<int>(factVersion);
+    map['basis'] = Variable<String>(basis);
+    if (!nullToAbsent || basisQuantity != null) {
+      map['basis_quantity'] = Variable<double>(basisQuantity);
+    }
+    if (!nullToAbsent || basisUnit != null) {
+      map['basis_unit'] = Variable<String>(basisUnit);
+    }
+    if (!nullToAbsent || preparationId != null) {
+      map['preparation_id'] = Variable<String>(preparationId);
+    }
+    map['is_current'] = Variable<bool>(isCurrent);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionFoodNutrientFactsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionFoodNutrientFactsCompanion(
+      id: Value(id),
+      foodId: Value(foodId),
+      nutrientId: Value(nutrientId),
+      amount: amount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amount),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      status: Value(status),
+      source: Value(source),
+      sourceRef: sourceRef == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceRef),
+      confidence: confidence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confidence),
+      factVersion: Value(factVersion),
+      basis: Value(basis),
+      basisQuantity: basisQuantity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(basisQuantity),
+      basisUnit: basisUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(basisUnit),
+      preparationId: preparationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(preparationId),
+      isCurrent: Value(isCurrent),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionFoodNutrientFact.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionFoodNutrientFact(
+      id: serializer.fromJson<String>(json['id']),
+      foodId: serializer.fromJson<String>(json['foodId']),
+      nutrientId: serializer.fromJson<String>(json['nutrientId']),
+      amount: serializer.fromJson<double?>(json['amount']),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      status: serializer.fromJson<String>(json['status']),
+      source: serializer.fromJson<String>(json['source']),
+      sourceRef: serializer.fromJson<String?>(json['sourceRef']),
+      confidence: serializer.fromJson<double?>(json['confidence']),
+      factVersion: serializer.fromJson<int>(json['factVersion']),
+      basis: serializer.fromJson<String>(json['basis']),
+      basisQuantity: serializer.fromJson<double?>(json['basisQuantity']),
+      basisUnit: serializer.fromJson<String?>(json['basisUnit']),
+      preparationId: serializer.fromJson<String?>(json['preparationId']),
+      isCurrent: serializer.fromJson<bool>(json['isCurrent']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'foodId': serializer.toJson<String>(foodId),
+      'nutrientId': serializer.toJson<String>(nutrientId),
+      'amount': serializer.toJson<double?>(amount),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'status': serializer.toJson<String>(status),
+      'source': serializer.toJson<String>(source),
+      'sourceRef': serializer.toJson<String?>(sourceRef),
+      'confidence': serializer.toJson<double?>(confidence),
+      'factVersion': serializer.toJson<int>(factVersion),
+      'basis': serializer.toJson<String>(basis),
+      'basisQuantity': serializer.toJson<double?>(basisQuantity),
+      'basisUnit': serializer.toJson<String?>(basisUnit),
+      'preparationId': serializer.toJson<String?>(preparationId),
+      'isCurrent': serializer.toJson<bool>(isCurrent),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionFoodNutrientFact copyWith({
+    String? id,
+    String? foodId,
+    String? nutrientId,
+    Value<double?> amount = const Value.absent(),
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    String? status,
+    String? source,
+    Value<String?> sourceRef = const Value.absent(),
+    Value<double?> confidence = const Value.absent(),
+    int? factVersion,
+    String? basis,
+    Value<double?> basisQuantity = const Value.absent(),
+    Value<String?> basisUnit = const Value.absent(),
+    Value<String?> preparationId = const Value.absent(),
+    bool? isCurrent,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionFoodNutrientFact(
+    id: id ?? this.id,
+    foodId: foodId ?? this.foodId,
+    nutrientId: nutrientId ?? this.nutrientId,
+    amount: amount.present ? amount.value : this.amount,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    status: status ?? this.status,
+    source: source ?? this.source,
+    sourceRef: sourceRef.present ? sourceRef.value : this.sourceRef,
+    confidence: confidence.present ? confidence.value : this.confidence,
+    factVersion: factVersion ?? this.factVersion,
+    basis: basis ?? this.basis,
+    basisQuantity: basisQuantity.present
+        ? basisQuantity.value
+        : this.basisQuantity,
+    basisUnit: basisUnit.present ? basisUnit.value : this.basisUnit,
+    preparationId: preparationId.present
+        ? preparationId.value
+        : this.preparationId,
+    isCurrent: isCurrent ?? this.isCurrent,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionFoodNutrientFact copyWithCompanion(
+    NutritionFoodNutrientFactsCompanion data,
+  ) {
+    return NutritionFoodNutrientFact(
+      id: data.id.present ? data.id.value : this.id,
+      foodId: data.foodId.present ? data.foodId.value : this.foodId,
+      nutrientId: data.nutrientId.present
+          ? data.nutrientId.value
+          : this.nutrientId,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      status: data.status.present ? data.status.value : this.status,
+      source: data.source.present ? data.source.value : this.source,
+      sourceRef: data.sourceRef.present ? data.sourceRef.value : this.sourceRef,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
+      factVersion: data.factVersion.present
+          ? data.factVersion.value
+          : this.factVersion,
+      basis: data.basis.present ? data.basis.value : this.basis,
+      basisQuantity: data.basisQuantity.present
+          ? data.basisQuantity.value
+          : this.basisQuantity,
+      basisUnit: data.basisUnit.present ? data.basisUnit.value : this.basisUnit,
+      preparationId: data.preparationId.present
+          ? data.preparationId.value
+          : this.preparationId,
+      isCurrent: data.isCurrent.present ? data.isCurrent.value : this.isCurrent,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionFoodNutrientFact(')
+          ..write('id: $id, ')
+          ..write('foodId: $foodId, ')
+          ..write('nutrientId: $nutrientId, ')
+          ..write('amount: $amount, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('status: $status, ')
+          ..write('source: $source, ')
+          ..write('sourceRef: $sourceRef, ')
+          ..write('confidence: $confidence, ')
+          ..write('factVersion: $factVersion, ')
+          ..write('basis: $basis, ')
+          ..write('basisQuantity: $basisQuantity, ')
+          ..write('basisUnit: $basisUnit, ')
+          ..write('preparationId: $preparationId, ')
+          ..write('isCurrent: $isCurrent, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    foodId,
+    nutrientId,
+    amount,
+    lower,
+    upper,
+    status,
+    source,
+    sourceRef,
+    confidence,
+    factVersion,
+    basis,
+    basisQuantity,
+    basisUnit,
+    preparationId,
+    isCurrent,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionFoodNutrientFact &&
+          other.id == this.id &&
+          other.foodId == this.foodId &&
+          other.nutrientId == this.nutrientId &&
+          other.amount == this.amount &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.status == this.status &&
+          other.source == this.source &&
+          other.sourceRef == this.sourceRef &&
+          other.confidence == this.confidence &&
+          other.factVersion == this.factVersion &&
+          other.basis == this.basis &&
+          other.basisQuantity == this.basisQuantity &&
+          other.basisUnit == this.basisUnit &&
+          other.preparationId == this.preparationId &&
+          other.isCurrent == this.isCurrent &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionFoodNutrientFactsCompanion
+    extends UpdateCompanion<NutritionFoodNutrientFact> {
+  final Value<String> id;
+  final Value<String> foodId;
+  final Value<String> nutrientId;
+  final Value<double?> amount;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String> status;
+  final Value<String> source;
+  final Value<String?> sourceRef;
+  final Value<double?> confidence;
+  final Value<int> factVersion;
+  final Value<String> basis;
+  final Value<double?> basisQuantity;
+  final Value<String?> basisUnit;
+  final Value<String?> preparationId;
+  final Value<bool> isCurrent;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionFoodNutrientFactsCompanion({
+    this.id = const Value.absent(),
+    this.foodId = const Value.absent(),
+    this.nutrientId = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.status = const Value.absent(),
+    this.source = const Value.absent(),
+    this.sourceRef = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.factVersion = const Value.absent(),
+    this.basis = const Value.absent(),
+    this.basisQuantity = const Value.absent(),
+    this.basisUnit = const Value.absent(),
+    this.preparationId = const Value.absent(),
+    this.isCurrent = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionFoodNutrientFactsCompanion.insert({
+    required String id,
+    required String foodId,
+    required String nutrientId,
+    this.amount = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    required String status,
+    required String source,
+    this.sourceRef = const Value.absent(),
+    this.confidence = const Value.absent(),
+    required int factVersion,
+    required String basis,
+    this.basisQuantity = const Value.absent(),
+    this.basisUnit = const Value.absent(),
+    this.preparationId = const Value.absent(),
+    this.isCurrent = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       foodId = Value(foodId),
+       nutrientId = Value(nutrientId),
+       status = Value(status),
+       source = Value(source),
+       factVersion = Value(factVersion),
+       basis = Value(basis);
+  static Insertable<NutritionFoodNutrientFact> custom({
+    Expression<String>? id,
+    Expression<String>? foodId,
+    Expression<String>? nutrientId,
+    Expression<double>? amount,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? status,
+    Expression<String>? source,
+    Expression<String>? sourceRef,
+    Expression<double>? confidence,
+    Expression<int>? factVersion,
+    Expression<String>? basis,
+    Expression<double>? basisQuantity,
+    Expression<String>? basisUnit,
+    Expression<String>? preparationId,
+    Expression<bool>? isCurrent,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (foodId != null) 'food_id': foodId,
+      if (nutrientId != null) 'nutrient_id': nutrientId,
+      if (amount != null) 'amount': amount,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (status != null) 'status': status,
+      if (source != null) 'source': source,
+      if (sourceRef != null) 'source_ref': sourceRef,
+      if (confidence != null) 'confidence': confidence,
+      if (factVersion != null) 'fact_version': factVersion,
+      if (basis != null) 'basis': basis,
+      if (basisQuantity != null) 'basis_quantity': basisQuantity,
+      if (basisUnit != null) 'basis_unit': basisUnit,
+      if (preparationId != null) 'preparation_id': preparationId,
+      if (isCurrent != null) 'is_current': isCurrent,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionFoodNutrientFactsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? foodId,
+    Value<String>? nutrientId,
+    Value<double?>? amount,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String>? status,
+    Value<String>? source,
+    Value<String?>? sourceRef,
+    Value<double?>? confidence,
+    Value<int>? factVersion,
+    Value<String>? basis,
+    Value<double?>? basisQuantity,
+    Value<String?>? basisUnit,
+    Value<String?>? preparationId,
+    Value<bool>? isCurrent,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionFoodNutrientFactsCompanion(
+      id: id ?? this.id,
+      foodId: foodId ?? this.foodId,
+      nutrientId: nutrientId ?? this.nutrientId,
+      amount: amount ?? this.amount,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      status: status ?? this.status,
+      source: source ?? this.source,
+      sourceRef: sourceRef ?? this.sourceRef,
+      confidence: confidence ?? this.confidence,
+      factVersion: factVersion ?? this.factVersion,
+      basis: basis ?? this.basis,
+      basisQuantity: basisQuantity ?? this.basisQuantity,
+      basisUnit: basisUnit ?? this.basisUnit,
+      preparationId: preparationId ?? this.preparationId,
+      isCurrent: isCurrent ?? this.isCurrent,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (foodId.present) {
+      map['food_id'] = Variable<String>(foodId.value);
+    }
+    if (nutrientId.present) {
+      map['nutrient_id'] = Variable<String>(nutrientId.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (sourceRef.present) {
+      map['source_ref'] = Variable<String>(sourceRef.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
+    if (factVersion.present) {
+      map['fact_version'] = Variable<int>(factVersion.value);
+    }
+    if (basis.present) {
+      map['basis'] = Variable<String>(basis.value);
+    }
+    if (basisQuantity.present) {
+      map['basis_quantity'] = Variable<double>(basisQuantity.value);
+    }
+    if (basisUnit.present) {
+      map['basis_unit'] = Variable<String>(basisUnit.value);
+    }
+    if (preparationId.present) {
+      map['preparation_id'] = Variable<String>(preparationId.value);
+    }
+    if (isCurrent.present) {
+      map['is_current'] = Variable<bool>(isCurrent.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionFoodNutrientFactsCompanion(')
+          ..write('id: $id, ')
+          ..write('foodId: $foodId, ')
+          ..write('nutrientId: $nutrientId, ')
+          ..write('amount: $amount, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('status: $status, ')
+          ..write('source: $source, ')
+          ..write('sourceRef: $sourceRef, ')
+          ..write('confidence: $confidence, ')
+          ..write('factVersion: $factVersion, ')
+          ..write('basis: $basis, ')
+          ..write('basisQuantity: $basisQuantity, ')
+          ..write('basisUnit: $basisUnit, ')
+          ..write('preparationId: $preparationId, ')
+          ..write('isCurrent: $isCurrent, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionQuantityConversionsTable extends NutritionQuantityConversions
+    with
+        TableInfo<
+          $NutritionQuantityConversionsTable,
+          NutritionQuantityConversion
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionQuantityConversionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _foodIdMeta = const VerificationMeta('foodId');
+  @override
+  late final GeneratedColumn<String> foodId = GeneratedColumn<String>(
+    'food_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _preparationIdMeta = const VerificationMeta(
+    'preparationId',
+  );
+  @override
+  late final GeneratedColumn<String> preparationId = GeneratedColumn<String>(
+    'preparation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_food_preparations (id)',
+    ),
+  );
+  static const VerificationMeta _sourceUnitMeta = const VerificationMeta(
+    'sourceUnit',
+  );
+  @override
+  late final GeneratedColumn<String> sourceUnit = GeneratedColumn<String>(
+    'source_unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetUnitMeta = const VerificationMeta(
+    'targetUnit',
+  );
+  @override
+  late final GeneratedColumn<String> targetUnit = GeneratedColumn<String>(
+    'target_unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _factorMeta = const VerificationMeta('factor');
+  @override
+  late final GeneratedColumn<double> factor = GeneratedColumn<double>(
+    'factor',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _methodMeta = const VerificationMeta('method');
+  @override
+  late final GeneratedColumn<String> method = GeneratedColumn<String>(
+    'method',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ruleVersionMeta = const VerificationMeta(
+    'ruleVersion',
+  );
+  @override
+  late final GeneratedColumn<String> ruleVersion = GeneratedColumn<String>(
+    'rule_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ownerScopeMeta = const VerificationMeta(
+    'ownerScope',
+  );
+  @override
+  late final GeneratedColumn<String> ownerScope = GeneratedColumn<String>(
+    'owner_scope',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    foodId,
+    preparationId,
+    sourceUnit,
+    targetUnit,
+    factor,
+    lower,
+    upper,
+    method,
+    source,
+    confidence,
+    ruleVersion,
+    ownerScope,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_quantity_conversions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionQuantityConversion> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('food_id')) {
+      context.handle(
+        _foodIdMeta,
+        foodId.isAcceptableOrUnknown(data['food_id']!, _foodIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_foodIdMeta);
+    }
+    if (data.containsKey('preparation_id')) {
+      context.handle(
+        _preparationIdMeta,
+        preparationId.isAcceptableOrUnknown(
+          data['preparation_id']!,
+          _preparationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_unit')) {
+      context.handle(
+        _sourceUnitMeta,
+        sourceUnit.isAcceptableOrUnknown(data['source_unit']!, _sourceUnitMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceUnitMeta);
+    }
+    if (data.containsKey('target_unit')) {
+      context.handle(
+        _targetUnitMeta,
+        targetUnit.isAcceptableOrUnknown(data['target_unit']!, _targetUnitMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_targetUnitMeta);
+    }
+    if (data.containsKey('factor')) {
+      context.handle(
+        _factorMeta,
+        factor.isAcceptableOrUnknown(data['factor']!, _factorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_factorMeta);
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('method')) {
+      context.handle(
+        _methodMeta,
+        method.isAcceptableOrUnknown(data['method']!, _methodMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_methodMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    }
+    if (data.containsKey('rule_version')) {
+      context.handle(
+        _ruleVersionMeta,
+        ruleVersion.isAcceptableOrUnknown(
+          data['rule_version']!,
+          _ruleVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_ruleVersionMeta);
+    }
+    if (data.containsKey('owner_scope')) {
+      context.handle(
+        _ownerScopeMeta,
+        ownerScope.isAcceptableOrUnknown(data['owner_scope']!, _ownerScopeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerScopeMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {foodId, preparationId, sourceUnit, targetUnit, ruleVersion},
+  ];
+  @override
+  NutritionQuantityConversion map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionQuantityConversion(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      foodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}food_id'],
+      )!,
+      preparationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}preparation_id'],
+      ),
+      sourceUnit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_unit'],
+      )!,
+      targetUnit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_unit'],
+      )!,
+      factor: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}factor'],
+      )!,
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      method: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}method'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      ),
+      ruleVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rule_version'],
+      )!,
+      ownerScope: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_scope'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionQuantityConversionsTable createAlias(String alias) {
+    return $NutritionQuantityConversionsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionQuantityConversion extends DataClass
+    implements Insertable<NutritionQuantityConversion> {
+  final String id;
+  final String foodId;
+  final String? preparationId;
+  final String sourceUnit;
+  final String targetUnit;
+  final double factor;
+  final double? lower;
+  final double? upper;
+  final String method;
+  final String source;
+  final double? confidence;
+  final String ruleVersion;
+  final String ownerScope;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionQuantityConversion({
+    required this.id,
+    required this.foodId,
+    this.preparationId,
+    required this.sourceUnit,
+    required this.targetUnit,
+    required this.factor,
+    this.lower,
+    this.upper,
+    required this.method,
+    required this.source,
+    this.confidence,
+    required this.ruleVersion,
+    required this.ownerScope,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['food_id'] = Variable<String>(foodId);
+    if (!nullToAbsent || preparationId != null) {
+      map['preparation_id'] = Variable<String>(preparationId);
+    }
+    map['source_unit'] = Variable<String>(sourceUnit);
+    map['target_unit'] = Variable<String>(targetUnit);
+    map['factor'] = Variable<double>(factor);
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    map['method'] = Variable<String>(method);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || confidence != null) {
+      map['confidence'] = Variable<double>(confidence);
+    }
+    map['rule_version'] = Variable<String>(ruleVersion);
+    map['owner_scope'] = Variable<String>(ownerScope);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionQuantityConversionsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionQuantityConversionsCompanion(
+      id: Value(id),
+      foodId: Value(foodId),
+      preparationId: preparationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(preparationId),
+      sourceUnit: Value(sourceUnit),
+      targetUnit: Value(targetUnit),
+      factor: Value(factor),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      method: Value(method),
+      source: Value(source),
+      confidence: confidence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confidence),
+      ruleVersion: Value(ruleVersion),
+      ownerScope: Value(ownerScope),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionQuantityConversion.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionQuantityConversion(
+      id: serializer.fromJson<String>(json['id']),
+      foodId: serializer.fromJson<String>(json['foodId']),
+      preparationId: serializer.fromJson<String?>(json['preparationId']),
+      sourceUnit: serializer.fromJson<String>(json['sourceUnit']),
+      targetUnit: serializer.fromJson<String>(json['targetUnit']),
+      factor: serializer.fromJson<double>(json['factor']),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      method: serializer.fromJson<String>(json['method']),
+      source: serializer.fromJson<String>(json['source']),
+      confidence: serializer.fromJson<double?>(json['confidence']),
+      ruleVersion: serializer.fromJson<String>(json['ruleVersion']),
+      ownerScope: serializer.fromJson<String>(json['ownerScope']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'foodId': serializer.toJson<String>(foodId),
+      'preparationId': serializer.toJson<String?>(preparationId),
+      'sourceUnit': serializer.toJson<String>(sourceUnit),
+      'targetUnit': serializer.toJson<String>(targetUnit),
+      'factor': serializer.toJson<double>(factor),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'method': serializer.toJson<String>(method),
+      'source': serializer.toJson<String>(source),
+      'confidence': serializer.toJson<double?>(confidence),
+      'ruleVersion': serializer.toJson<String>(ruleVersion),
+      'ownerScope': serializer.toJson<String>(ownerScope),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionQuantityConversion copyWith({
+    String? id,
+    String? foodId,
+    Value<String?> preparationId = const Value.absent(),
+    String? sourceUnit,
+    String? targetUnit,
+    double? factor,
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    String? method,
+    String? source,
+    Value<double?> confidence = const Value.absent(),
+    String? ruleVersion,
+    String? ownerScope,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionQuantityConversion(
+    id: id ?? this.id,
+    foodId: foodId ?? this.foodId,
+    preparationId: preparationId.present
+        ? preparationId.value
+        : this.preparationId,
+    sourceUnit: sourceUnit ?? this.sourceUnit,
+    targetUnit: targetUnit ?? this.targetUnit,
+    factor: factor ?? this.factor,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    method: method ?? this.method,
+    source: source ?? this.source,
+    confidence: confidence.present ? confidence.value : this.confidence,
+    ruleVersion: ruleVersion ?? this.ruleVersion,
+    ownerScope: ownerScope ?? this.ownerScope,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionQuantityConversion copyWithCompanion(
+    NutritionQuantityConversionsCompanion data,
+  ) {
+    return NutritionQuantityConversion(
+      id: data.id.present ? data.id.value : this.id,
+      foodId: data.foodId.present ? data.foodId.value : this.foodId,
+      preparationId: data.preparationId.present
+          ? data.preparationId.value
+          : this.preparationId,
+      sourceUnit: data.sourceUnit.present
+          ? data.sourceUnit.value
+          : this.sourceUnit,
+      targetUnit: data.targetUnit.present
+          ? data.targetUnit.value
+          : this.targetUnit,
+      factor: data.factor.present ? data.factor.value : this.factor,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      method: data.method.present ? data.method.value : this.method,
+      source: data.source.present ? data.source.value : this.source,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
+      ruleVersion: data.ruleVersion.present
+          ? data.ruleVersion.value
+          : this.ruleVersion,
+      ownerScope: data.ownerScope.present
+          ? data.ownerScope.value
+          : this.ownerScope,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionQuantityConversion(')
+          ..write('id: $id, ')
+          ..write('foodId: $foodId, ')
+          ..write('preparationId: $preparationId, ')
+          ..write('sourceUnit: $sourceUnit, ')
+          ..write('targetUnit: $targetUnit, ')
+          ..write('factor: $factor, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('method: $method, ')
+          ..write('source: $source, ')
+          ..write('confidence: $confidence, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('ownerScope: $ownerScope, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    foodId,
+    preparationId,
+    sourceUnit,
+    targetUnit,
+    factor,
+    lower,
+    upper,
+    method,
+    source,
+    confidence,
+    ruleVersion,
+    ownerScope,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionQuantityConversion &&
+          other.id == this.id &&
+          other.foodId == this.foodId &&
+          other.preparationId == this.preparationId &&
+          other.sourceUnit == this.sourceUnit &&
+          other.targetUnit == this.targetUnit &&
+          other.factor == this.factor &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.method == this.method &&
+          other.source == this.source &&
+          other.confidence == this.confidence &&
+          other.ruleVersion == this.ruleVersion &&
+          other.ownerScope == this.ownerScope &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionQuantityConversionsCompanion
+    extends UpdateCompanion<NutritionQuantityConversion> {
+  final Value<String> id;
+  final Value<String> foodId;
+  final Value<String?> preparationId;
+  final Value<String> sourceUnit;
+  final Value<String> targetUnit;
+  final Value<double> factor;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String> method;
+  final Value<String> source;
+  final Value<double?> confidence;
+  final Value<String> ruleVersion;
+  final Value<String> ownerScope;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionQuantityConversionsCompanion({
+    this.id = const Value.absent(),
+    this.foodId = const Value.absent(),
+    this.preparationId = const Value.absent(),
+    this.sourceUnit = const Value.absent(),
+    this.targetUnit = const Value.absent(),
+    this.factor = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.method = const Value.absent(),
+    this.source = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.ruleVersion = const Value.absent(),
+    this.ownerScope = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionQuantityConversionsCompanion.insert({
+    required String id,
+    required String foodId,
+    this.preparationId = const Value.absent(),
+    required String sourceUnit,
+    required String targetUnit,
+    required double factor,
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    required String method,
+    required String source,
+    this.confidence = const Value.absent(),
+    required String ruleVersion,
+    required String ownerScope,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       foodId = Value(foodId),
+       sourceUnit = Value(sourceUnit),
+       targetUnit = Value(targetUnit),
+       factor = Value(factor),
+       method = Value(method),
+       source = Value(source),
+       ruleVersion = Value(ruleVersion),
+       ownerScope = Value(ownerScope);
+  static Insertable<NutritionQuantityConversion> custom({
+    Expression<String>? id,
+    Expression<String>? foodId,
+    Expression<String>? preparationId,
+    Expression<String>? sourceUnit,
+    Expression<String>? targetUnit,
+    Expression<double>? factor,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? method,
+    Expression<String>? source,
+    Expression<double>? confidence,
+    Expression<String>? ruleVersion,
+    Expression<String>? ownerScope,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (foodId != null) 'food_id': foodId,
+      if (preparationId != null) 'preparation_id': preparationId,
+      if (sourceUnit != null) 'source_unit': sourceUnit,
+      if (targetUnit != null) 'target_unit': targetUnit,
+      if (factor != null) 'factor': factor,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (method != null) 'method': method,
+      if (source != null) 'source': source,
+      if (confidence != null) 'confidence': confidence,
+      if (ruleVersion != null) 'rule_version': ruleVersion,
+      if (ownerScope != null) 'owner_scope': ownerScope,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionQuantityConversionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? foodId,
+    Value<String?>? preparationId,
+    Value<String>? sourceUnit,
+    Value<String>? targetUnit,
+    Value<double>? factor,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String>? method,
+    Value<String>? source,
+    Value<double?>? confidence,
+    Value<String>? ruleVersion,
+    Value<String>? ownerScope,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionQuantityConversionsCompanion(
+      id: id ?? this.id,
+      foodId: foodId ?? this.foodId,
+      preparationId: preparationId ?? this.preparationId,
+      sourceUnit: sourceUnit ?? this.sourceUnit,
+      targetUnit: targetUnit ?? this.targetUnit,
+      factor: factor ?? this.factor,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      method: method ?? this.method,
+      source: source ?? this.source,
+      confidence: confidence ?? this.confidence,
+      ruleVersion: ruleVersion ?? this.ruleVersion,
+      ownerScope: ownerScope ?? this.ownerScope,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (foodId.present) {
+      map['food_id'] = Variable<String>(foodId.value);
+    }
+    if (preparationId.present) {
+      map['preparation_id'] = Variable<String>(preparationId.value);
+    }
+    if (sourceUnit.present) {
+      map['source_unit'] = Variable<String>(sourceUnit.value);
+    }
+    if (targetUnit.present) {
+      map['target_unit'] = Variable<String>(targetUnit.value);
+    }
+    if (factor.present) {
+      map['factor'] = Variable<double>(factor.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (method.present) {
+      map['method'] = Variable<String>(method.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
+    if (ruleVersion.present) {
+      map['rule_version'] = Variable<String>(ruleVersion.value);
+    }
+    if (ownerScope.present) {
+      map['owner_scope'] = Variable<String>(ownerScope.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionQuantityConversionsCompanion(')
+          ..write('id: $id, ')
+          ..write('foodId: $foodId, ')
+          ..write('preparationId: $preparationId, ')
+          ..write('sourceUnit: $sourceUnit, ')
+          ..write('targetUnit: $targetUnit, ')
+          ..write('factor: $factor, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('method: $method, ')
+          ..write('source: $source, ')
+          ..write('confidence: $confidence, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('ownerScope: $ownerScope, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionHouseholdMeasuresTable extends NutritionHouseholdMeasures
+    with
+        TableInfo<$NutritionHouseholdMeasuresTable, NutritionHouseholdMeasure> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionHouseholdMeasuresTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dimensionMeta = const VerificationMeta(
+    'dimension',
+  );
+  @override
+  late final GeneratedColumn<String> dimension = GeneratedColumn<String>(
+    'dimension',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _baseUnitMeta = const VerificationMeta(
+    'baseUnit',
+  );
+  @override
+  late final GeneratedColumn<String> baseUnit = GeneratedColumn<String>(
+    'base_unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nominalValueMeta = const VerificationMeta(
+    'nominalValue',
+  );
+  @override
+  late final GeneratedColumn<double> nominalValue = GeneratedColumn<double>(
+    'nominal_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _localeMeta = const VerificationMeta('locale');
+  @override
+  late final GeneratedColumn<String> locale = GeneratedColumn<String>(
+    'locale',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    key,
+    displayName,
+    dimension,
+    baseUnit,
+    nominalValue,
+    lower,
+    upper,
+    locale,
+    version,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_household_measures';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionHouseholdMeasure> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('dimension')) {
+      context.handle(
+        _dimensionMeta,
+        dimension.isAcceptableOrUnknown(data['dimension']!, _dimensionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dimensionMeta);
+    }
+    if (data.containsKey('base_unit')) {
+      context.handle(
+        _baseUnitMeta,
+        baseUnit.isAcceptableOrUnknown(data['base_unit']!, _baseUnitMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_baseUnitMeta);
+    }
+    if (data.containsKey('nominal_value')) {
+      context.handle(
+        _nominalValueMeta,
+        nominalValue.isAcceptableOrUnknown(
+          data['nominal_value']!,
+          _nominalValueMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_nominalValueMeta);
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('locale')) {
+      context.handle(
+        _localeMeta,
+        locale.isAcceptableOrUnknown(data['locale']!, _localeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localeMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {key, locale, version},
+  ];
+  @override
+  NutritionHouseholdMeasure map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionHouseholdMeasure(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      )!,
+      dimension: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dimension'],
+      )!,
+      baseUnit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}base_unit'],
+      )!,
+      nominalValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}nominal_value'],
+      )!,
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      locale: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locale'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionHouseholdMeasuresTable createAlias(String alias) {
+    return $NutritionHouseholdMeasuresTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionHouseholdMeasure extends DataClass
+    implements Insertable<NutritionHouseholdMeasure> {
+  final String id;
+  final String key;
+  final String displayName;
+  final String dimension;
+  final String baseUnit;
+  final double nominalValue;
+  final double? lower;
+  final double? upper;
+  final String locale;
+  final int version;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionHouseholdMeasure({
+    required this.id,
+    required this.key,
+    required this.displayName,
+    required this.dimension,
+    required this.baseUnit,
+    required this.nominalValue,
+    this.lower,
+    this.upper,
+    required this.locale,
+    required this.version,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['key'] = Variable<String>(key);
+    map['display_name'] = Variable<String>(displayName);
+    map['dimension'] = Variable<String>(dimension);
+    map['base_unit'] = Variable<String>(baseUnit);
+    map['nominal_value'] = Variable<double>(nominalValue);
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    map['locale'] = Variable<String>(locale);
+    map['version'] = Variable<int>(version);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionHouseholdMeasuresCompanion toCompanion(bool nullToAbsent) {
+    return NutritionHouseholdMeasuresCompanion(
+      id: Value(id),
+      key: Value(key),
+      displayName: Value(displayName),
+      dimension: Value(dimension),
+      baseUnit: Value(baseUnit),
+      nominalValue: Value(nominalValue),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      locale: Value(locale),
+      version: Value(version),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionHouseholdMeasure.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionHouseholdMeasure(
+      id: serializer.fromJson<String>(json['id']),
+      key: serializer.fromJson<String>(json['key']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      dimension: serializer.fromJson<String>(json['dimension']),
+      baseUnit: serializer.fromJson<String>(json['baseUnit']),
+      nominalValue: serializer.fromJson<double>(json['nominalValue']),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      locale: serializer.fromJson<String>(json['locale']),
+      version: serializer.fromJson<int>(json['version']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'key': serializer.toJson<String>(key),
+      'displayName': serializer.toJson<String>(displayName),
+      'dimension': serializer.toJson<String>(dimension),
+      'baseUnit': serializer.toJson<String>(baseUnit),
+      'nominalValue': serializer.toJson<double>(nominalValue),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'locale': serializer.toJson<String>(locale),
+      'version': serializer.toJson<int>(version),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionHouseholdMeasure copyWith({
+    String? id,
+    String? key,
+    String? displayName,
+    String? dimension,
+    String? baseUnit,
+    double? nominalValue,
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    String? locale,
+    int? version,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionHouseholdMeasure(
+    id: id ?? this.id,
+    key: key ?? this.key,
+    displayName: displayName ?? this.displayName,
+    dimension: dimension ?? this.dimension,
+    baseUnit: baseUnit ?? this.baseUnit,
+    nominalValue: nominalValue ?? this.nominalValue,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    locale: locale ?? this.locale,
+    version: version ?? this.version,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionHouseholdMeasure copyWithCompanion(
+    NutritionHouseholdMeasuresCompanion data,
+  ) {
+    return NutritionHouseholdMeasure(
+      id: data.id.present ? data.id.value : this.id,
+      key: data.key.present ? data.key.value : this.key,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      dimension: data.dimension.present ? data.dimension.value : this.dimension,
+      baseUnit: data.baseUnit.present ? data.baseUnit.value : this.baseUnit,
+      nominalValue: data.nominalValue.present
+          ? data.nominalValue.value
+          : this.nominalValue,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      locale: data.locale.present ? data.locale.value : this.locale,
+      version: data.version.present ? data.version.value : this.version,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionHouseholdMeasure(')
+          ..write('id: $id, ')
+          ..write('key: $key, ')
+          ..write('displayName: $displayName, ')
+          ..write('dimension: $dimension, ')
+          ..write('baseUnit: $baseUnit, ')
+          ..write('nominalValue: $nominalValue, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('locale: $locale, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    key,
+    displayName,
+    dimension,
+    baseUnit,
+    nominalValue,
+    lower,
+    upper,
+    locale,
+    version,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionHouseholdMeasure &&
+          other.id == this.id &&
+          other.key == this.key &&
+          other.displayName == this.displayName &&
+          other.dimension == this.dimension &&
+          other.baseUnit == this.baseUnit &&
+          other.nominalValue == this.nominalValue &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.locale == this.locale &&
+          other.version == this.version &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionHouseholdMeasuresCompanion
+    extends UpdateCompanion<NutritionHouseholdMeasure> {
+  final Value<String> id;
+  final Value<String> key;
+  final Value<String> displayName;
+  final Value<String> dimension;
+  final Value<String> baseUnit;
+  final Value<double> nominalValue;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String> locale;
+  final Value<int> version;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionHouseholdMeasuresCompanion({
+    this.id = const Value.absent(),
+    this.key = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.dimension = const Value.absent(),
+    this.baseUnit = const Value.absent(),
+    this.nominalValue = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.locale = const Value.absent(),
+    this.version = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionHouseholdMeasuresCompanion.insert({
+    required String id,
+    required String key,
+    required String displayName,
+    required String dimension,
+    required String baseUnit,
+    required double nominalValue,
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    required String locale,
+    required int version,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       key = Value(key),
+       displayName = Value(displayName),
+       dimension = Value(dimension),
+       baseUnit = Value(baseUnit),
+       nominalValue = Value(nominalValue),
+       locale = Value(locale),
+       version = Value(version);
+  static Insertable<NutritionHouseholdMeasure> custom({
+    Expression<String>? id,
+    Expression<String>? key,
+    Expression<String>? displayName,
+    Expression<String>? dimension,
+    Expression<String>? baseUnit,
+    Expression<double>? nominalValue,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? locale,
+    Expression<int>? version,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (key != null) 'key': key,
+      if (displayName != null) 'display_name': displayName,
+      if (dimension != null) 'dimension': dimension,
+      if (baseUnit != null) 'base_unit': baseUnit,
+      if (nominalValue != null) 'nominal_value': nominalValue,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (locale != null) 'locale': locale,
+      if (version != null) 'version': version,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionHouseholdMeasuresCompanion copyWith({
+    Value<String>? id,
+    Value<String>? key,
+    Value<String>? displayName,
+    Value<String>? dimension,
+    Value<String>? baseUnit,
+    Value<double>? nominalValue,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String>? locale,
+    Value<int>? version,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionHouseholdMeasuresCompanion(
+      id: id ?? this.id,
+      key: key ?? this.key,
+      displayName: displayName ?? this.displayName,
+      dimension: dimension ?? this.dimension,
+      baseUnit: baseUnit ?? this.baseUnit,
+      nominalValue: nominalValue ?? this.nominalValue,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      locale: locale ?? this.locale,
+      version: version ?? this.version,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (dimension.present) {
+      map['dimension'] = Variable<String>(dimension.value);
+    }
+    if (baseUnit.present) {
+      map['base_unit'] = Variable<String>(baseUnit.value);
+    }
+    if (nominalValue.present) {
+      map['nominal_value'] = Variable<double>(nominalValue.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (locale.present) {
+      map['locale'] = Variable<String>(locale.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionHouseholdMeasuresCompanion(')
+          ..write('id: $id, ')
+          ..write('key: $key, ')
+          ..write('displayName: $displayName, ')
+          ..write('dimension: $dimension, ')
+          ..write('baseUnit: $baseUnit, ')
+          ..write('nominalValue: $nominalValue, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('locale: $locale, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionVesselCalibrationsTable extends NutritionVesselCalibrations
+    with
+        TableInfo<
+          $NutritionVesselCalibrationsTable,
+          NutritionVesselCalibration
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionVesselCalibrationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _measureIdMeta = const VerificationMeta(
+    'measureId',
+  );
+  @override
+  late final GeneratedColumn<String> measureId = GeneratedColumn<String>(
+    'measure_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_household_measures (id)',
+    ),
+  );
+  static const VerificationMeta _volumeMlMeta = const VerificationMeta(
+    'volumeMl',
+  );
+  @override
+  late final GeneratedColumn<double> volumeMl = GeneratedColumn<double>(
+    'volume_ml',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _methodMeta = const VerificationMeta('method');
+  @override
+  late final GeneratedColumn<String> method = GeneratedColumn<String>(
+    'method',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _foodIdMeta = const VerificationMeta('foodId');
+  @override
+  late final GeneratedColumn<String> foodId = GeneratedColumn<String>(
+    'food_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _preparationIdMeta = const VerificationMeta(
+    'preparationId',
+  );
+  @override
+  late final GeneratedColumn<String> preparationId = GeneratedColumn<String>(
+    'preparation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_food_preparations (id)',
+    ),
+  );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    label,
+    measureId,
+    volumeMl,
+    lower,
+    upper,
+    method,
+    foodId,
+    preparationId,
+    confidence,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_vessel_calibrations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionVesselCalibration> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_labelMeta);
+    }
+    if (data.containsKey('measure_id')) {
+      context.handle(
+        _measureIdMeta,
+        measureId.isAcceptableOrUnknown(data['measure_id']!, _measureIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_measureIdMeta);
+    }
+    if (data.containsKey('volume_ml')) {
+      context.handle(
+        _volumeMlMeta,
+        volumeMl.isAcceptableOrUnknown(data['volume_ml']!, _volumeMlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_volumeMlMeta);
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('method')) {
+      context.handle(
+        _methodMeta,
+        method.isAcceptableOrUnknown(data['method']!, _methodMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_methodMeta);
+    }
+    if (data.containsKey('food_id')) {
+      context.handle(
+        _foodIdMeta,
+        foodId.isAcceptableOrUnknown(data['food_id']!, _foodIdMeta),
+      );
+    }
+    if (data.containsKey('preparation_id')) {
+      context.handle(
+        _preparationIdMeta,
+        preparationId.isAcceptableOrUnknown(
+          data['preparation_id']!,
+          _preparationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, label},
+  ];
+  @override
+  NutritionVesselCalibration map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionVesselCalibration(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      )!,
+      measureId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}measure_id'],
+      )!,
+      volumeMl: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}volume_ml'],
+      )!,
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      method: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}method'],
+      )!,
+      foodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}food_id'],
+      ),
+      preparationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}preparation_id'],
+      ),
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionVesselCalibrationsTable createAlias(String alias) {
+    return $NutritionVesselCalibrationsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionVesselCalibration extends DataClass
+    implements Insertable<NutritionVesselCalibration> {
+  final String id;
+  final String userId;
+  final String label;
+  final String measureId;
+  final double volumeMl;
+  final double? lower;
+  final double? upper;
+  final String method;
+  final String? foodId;
+  final String? preparationId;
+  final double? confidence;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionVesselCalibration({
+    required this.id,
+    required this.userId,
+    required this.label,
+    required this.measureId,
+    required this.volumeMl,
+    this.lower,
+    this.upper,
+    required this.method,
+    this.foodId,
+    this.preparationId,
+    this.confidence,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['label'] = Variable<String>(label);
+    map['measure_id'] = Variable<String>(measureId);
+    map['volume_ml'] = Variable<double>(volumeMl);
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    map['method'] = Variable<String>(method);
+    if (!nullToAbsent || foodId != null) {
+      map['food_id'] = Variable<String>(foodId);
+    }
+    if (!nullToAbsent || preparationId != null) {
+      map['preparation_id'] = Variable<String>(preparationId);
+    }
+    if (!nullToAbsent || confidence != null) {
+      map['confidence'] = Variable<double>(confidence);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionVesselCalibrationsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionVesselCalibrationsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      label: Value(label),
+      measureId: Value(measureId),
+      volumeMl: Value(volumeMl),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      method: Value(method),
+      foodId: foodId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foodId),
+      preparationId: preparationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(preparationId),
+      confidence: confidence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confidence),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionVesselCalibration.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionVesselCalibration(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      label: serializer.fromJson<String>(json['label']),
+      measureId: serializer.fromJson<String>(json['measureId']),
+      volumeMl: serializer.fromJson<double>(json['volumeMl']),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      method: serializer.fromJson<String>(json['method']),
+      foodId: serializer.fromJson<String?>(json['foodId']),
+      preparationId: serializer.fromJson<String?>(json['preparationId']),
+      confidence: serializer.fromJson<double?>(json['confidence']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'label': serializer.toJson<String>(label),
+      'measureId': serializer.toJson<String>(measureId),
+      'volumeMl': serializer.toJson<double>(volumeMl),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'method': serializer.toJson<String>(method),
+      'foodId': serializer.toJson<String?>(foodId),
+      'preparationId': serializer.toJson<String?>(preparationId),
+      'confidence': serializer.toJson<double?>(confidence),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionVesselCalibration copyWith({
+    String? id,
+    String? userId,
+    String? label,
+    String? measureId,
+    double? volumeMl,
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    String? method,
+    Value<String?> foodId = const Value.absent(),
+    Value<String?> preparationId = const Value.absent(),
+    Value<double?> confidence = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionVesselCalibration(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    label: label ?? this.label,
+    measureId: measureId ?? this.measureId,
+    volumeMl: volumeMl ?? this.volumeMl,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    method: method ?? this.method,
+    foodId: foodId.present ? foodId.value : this.foodId,
+    preparationId: preparationId.present
+        ? preparationId.value
+        : this.preparationId,
+    confidence: confidence.present ? confidence.value : this.confidence,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionVesselCalibration copyWithCompanion(
+    NutritionVesselCalibrationsCompanion data,
+  ) {
+    return NutritionVesselCalibration(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      label: data.label.present ? data.label.value : this.label,
+      measureId: data.measureId.present ? data.measureId.value : this.measureId,
+      volumeMl: data.volumeMl.present ? data.volumeMl.value : this.volumeMl,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      method: data.method.present ? data.method.value : this.method,
+      foodId: data.foodId.present ? data.foodId.value : this.foodId,
+      preparationId: data.preparationId.present
+          ? data.preparationId.value
+          : this.preparationId,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionVesselCalibration(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('label: $label, ')
+          ..write('measureId: $measureId, ')
+          ..write('volumeMl: $volumeMl, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('method: $method, ')
+          ..write('foodId: $foodId, ')
+          ..write('preparationId: $preparationId, ')
+          ..write('confidence: $confidence, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    label,
+    measureId,
+    volumeMl,
+    lower,
+    upper,
+    method,
+    foodId,
+    preparationId,
+    confidence,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionVesselCalibration &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.label == this.label &&
+          other.measureId == this.measureId &&
+          other.volumeMl == this.volumeMl &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.method == this.method &&
+          other.foodId == this.foodId &&
+          other.preparationId == this.preparationId &&
+          other.confidence == this.confidence &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionVesselCalibrationsCompanion
+    extends UpdateCompanion<NutritionVesselCalibration> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> label;
+  final Value<String> measureId;
+  final Value<double> volumeMl;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String> method;
+  final Value<String?> foodId;
+  final Value<String?> preparationId;
+  final Value<double?> confidence;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionVesselCalibrationsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.label = const Value.absent(),
+    this.measureId = const Value.absent(),
+    this.volumeMl = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.method = const Value.absent(),
+    this.foodId = const Value.absent(),
+    this.preparationId = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionVesselCalibrationsCompanion.insert({
+    required String id,
+    required String userId,
+    required String label,
+    required String measureId,
+    required double volumeMl,
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    required String method,
+    this.foodId = const Value.absent(),
+    this.preparationId = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       label = Value(label),
+       measureId = Value(measureId),
+       volumeMl = Value(volumeMl),
+       method = Value(method);
+  static Insertable<NutritionVesselCalibration> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? label,
+    Expression<String>? measureId,
+    Expression<double>? volumeMl,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? method,
+    Expression<String>? foodId,
+    Expression<String>? preparationId,
+    Expression<double>? confidence,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (label != null) 'label': label,
+      if (measureId != null) 'measure_id': measureId,
+      if (volumeMl != null) 'volume_ml': volumeMl,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (method != null) 'method': method,
+      if (foodId != null) 'food_id': foodId,
+      if (preparationId != null) 'preparation_id': preparationId,
+      if (confidence != null) 'confidence': confidence,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionVesselCalibrationsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? label,
+    Value<String>? measureId,
+    Value<double>? volumeMl,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String>? method,
+    Value<String?>? foodId,
+    Value<String?>? preparationId,
+    Value<double?>? confidence,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionVesselCalibrationsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      label: label ?? this.label,
+      measureId: measureId ?? this.measureId,
+      volumeMl: volumeMl ?? this.volumeMl,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      method: method ?? this.method,
+      foodId: foodId ?? this.foodId,
+      preparationId: preparationId ?? this.preparationId,
+      confidence: confidence ?? this.confidence,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (measureId.present) {
+      map['measure_id'] = Variable<String>(measureId.value);
+    }
+    if (volumeMl.present) {
+      map['volume_ml'] = Variable<double>(volumeMl.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (method.present) {
+      map['method'] = Variable<String>(method.value);
+    }
+    if (foodId.present) {
+      map['food_id'] = Variable<String>(foodId.value);
+    }
+    if (preparationId.present) {
+      map['preparation_id'] = Variable<String>(preparationId.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionVesselCalibrationsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('label: $label, ')
+          ..write('measureId: $measureId, ')
+          ..write('volumeMl: $volumeMl, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('method: $method, ')
+          ..write('foodId: $foodId, ')
+          ..write('preparationId: $preparationId, ')
+          ..write('confidence: $confidence, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionRecipesTable extends NutritionRecipes
+    with TableInfo<$NutritionRecipesTable, NutritionRecipe> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionRecipesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lifecycleMeta = const VerificationMeta(
+    'lifecycle',
+  );
+  @override
+  late final GeneratedColumn<String> lifecycle = GeneratedColumn<String>(
+    'lifecycle',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _currentVersionIdMeta = const VerificationMeta(
+    'currentVersionId',
+  );
+  @override
+  late final GeneratedColumn<String> currentVersionId = GeneratedColumn<String>(
+    'current_version_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    name,
+    description,
+    lifecycle,
+    currentVersionId,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_recipes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionRecipe> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lifecycle')) {
+      context.handle(
+        _lifecycleMeta,
+        lifecycle.isAcceptableOrUnknown(data['lifecycle']!, _lifecycleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lifecycleMeta);
+    }
+    if (data.containsKey('current_version_id')) {
+      context.handle(
+        _currentVersionIdMeta,
+        currentVersionId.isAcceptableOrUnknown(
+          data['current_version_id']!,
+          _currentVersionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NutritionRecipe map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionRecipe(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      lifecycle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lifecycle'],
+      )!,
+      currentVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}current_version_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionRecipesTable createAlias(String alias) {
+    return $NutritionRecipesTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionRecipe extends DataClass implements Insertable<NutritionRecipe> {
+  final String id;
+  final String userId;
+  final String name;
+  final String? description;
+  final String lifecycle;
+  final String? currentVersionId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionRecipe({
+    required this.id,
+    required this.userId,
+    required this.name,
+    this.description,
+    required this.lifecycle,
+    this.currentVersionId,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['lifecycle'] = Variable<String>(lifecycle);
+    if (!nullToAbsent || currentVersionId != null) {
+      map['current_version_id'] = Variable<String>(currentVersionId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionRecipesCompanion toCompanion(bool nullToAbsent) {
+    return NutritionRecipesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      name: Value(name),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      lifecycle: Value(lifecycle),
+      currentVersionId: currentVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(currentVersionId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionRecipe.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionRecipe(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String?>(json['description']),
+      lifecycle: serializer.fromJson<String>(json['lifecycle']),
+      currentVersionId: serializer.fromJson<String?>(json['currentVersionId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String?>(description),
+      'lifecycle': serializer.toJson<String>(lifecycle),
+      'currentVersionId': serializer.toJson<String?>(currentVersionId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionRecipe copyWith({
+    String? id,
+    String? userId,
+    String? name,
+    Value<String?> description = const Value.absent(),
+    String? lifecycle,
+    Value<String?> currentVersionId = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionRecipe(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    name: name ?? this.name,
+    description: description.present ? description.value : this.description,
+    lifecycle: lifecycle ?? this.lifecycle,
+    currentVersionId: currentVersionId.present
+        ? currentVersionId.value
+        : this.currentVersionId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionRecipe copyWithCompanion(NutritionRecipesCompanion data) {
+    return NutritionRecipe(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      name: data.name.present ? data.name.value : this.name,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      lifecycle: data.lifecycle.present ? data.lifecycle.value : this.lifecycle,
+      currentVersionId: data.currentVersionId.present
+          ? data.currentVersionId.value
+          : this.currentVersionId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionRecipe(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('lifecycle: $lifecycle, ')
+          ..write('currentVersionId: $currentVersionId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    name,
+    description,
+    lifecycle,
+    currentVersionId,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionRecipe &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.name == this.name &&
+          other.description == this.description &&
+          other.lifecycle == this.lifecycle &&
+          other.currentVersionId == this.currentVersionId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionRecipesCompanion extends UpdateCompanion<NutritionRecipe> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> name;
+  final Value<String?> description;
+  final Value<String> lifecycle;
+  final Value<String?> currentVersionId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionRecipesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.lifecycle = const Value.absent(),
+    this.currentVersionId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionRecipesCompanion.insert({
+    required String id,
+    required String userId,
+    required String name,
+    this.description = const Value.absent(),
+    required String lifecycle,
+    this.currentVersionId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       name = Value(name),
+       lifecycle = Value(lifecycle);
+  static Insertable<NutritionRecipe> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? name,
+    Expression<String>? description,
+    Expression<String>? lifecycle,
+    Expression<String>? currentVersionId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (lifecycle != null) 'lifecycle': lifecycle,
+      if (currentVersionId != null) 'current_version_id': currentVersionId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionRecipesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? name,
+    Value<String?>? description,
+    Value<String>? lifecycle,
+    Value<String?>? currentVersionId,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionRecipesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      lifecycle: lifecycle ?? this.lifecycle,
+      currentVersionId: currentVersionId ?? this.currentVersionId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (lifecycle.present) {
+      map['lifecycle'] = Variable<String>(lifecycle.value);
+    }
+    if (currentVersionId.present) {
+      map['current_version_id'] = Variable<String>(currentVersionId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionRecipesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('lifecycle: $lifecycle, ')
+          ..write('currentVersionId: $currentVersionId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionRecipeVersionsTable extends NutritionRecipeVersions
+    with TableInfo<$NutritionRecipeVersionsTable, NutritionRecipeVersion> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionRecipeVersionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recipeIdMeta = const VerificationMeta(
+    'recipeId',
+  );
+  @override
+  late final GeneratedColumn<String> recipeId = GeneratedColumn<String>(
+    'recipe_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_recipes (id)',
+    ),
+  );
+  static const VerificationMeta _versionNumberMeta = const VerificationMeta(
+    'versionNumber',
+  );
+  @override
+  late final GeneratedColumn<int> versionNumber = GeneratedColumn<int>(
+    'version_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _yieldQuantityMeta = const VerificationMeta(
+    'yieldQuantity',
+  );
+  @override
+  late final GeneratedColumn<double> yieldQuantity = GeneratedColumn<double>(
+    'yield_quantity',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _yieldUnitMeta = const VerificationMeta(
+    'yieldUnit',
+  );
+  @override
+  late final GeneratedColumn<String> yieldUnit = GeneratedColumn<String>(
+    'yield_unit',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _servingQuantityMeta = const VerificationMeta(
+    'servingQuantity',
+  );
+  @override
+  late final GeneratedColumn<double> servingQuantity = GeneratedColumn<double>(
+    'serving_quantity',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _calcRuleVersionMeta = const VerificationMeta(
+    'calcRuleVersion',
+  );
+  @override
+  late final GeneratedColumn<String> calcRuleVersion = GeneratedColumn<String>(
+    'calc_rule_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    recipeId,
+    versionNumber,
+    status,
+    yieldQuantity,
+    yieldUnit,
+    servingQuantity,
+    calcRuleVersion,
+    source,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_recipe_versions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionRecipeVersion> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('recipe_id')) {
+      context.handle(
+        _recipeIdMeta,
+        recipeId.isAcceptableOrUnknown(data['recipe_id']!, _recipeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recipeIdMeta);
+    }
+    if (data.containsKey('version_number')) {
+      context.handle(
+        _versionNumberMeta,
+        versionNumber.isAcceptableOrUnknown(
+          data['version_number']!,
+          _versionNumberMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_versionNumberMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('yield_quantity')) {
+      context.handle(
+        _yieldQuantityMeta,
+        yieldQuantity.isAcceptableOrUnknown(
+          data['yield_quantity']!,
+          _yieldQuantityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('yield_unit')) {
+      context.handle(
+        _yieldUnitMeta,
+        yieldUnit.isAcceptableOrUnknown(data['yield_unit']!, _yieldUnitMeta),
+      );
+    }
+    if (data.containsKey('serving_quantity')) {
+      context.handle(
+        _servingQuantityMeta,
+        servingQuantity.isAcceptableOrUnknown(
+          data['serving_quantity']!,
+          _servingQuantityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('calc_rule_version')) {
+      context.handle(
+        _calcRuleVersionMeta,
+        calcRuleVersion.isAcceptableOrUnknown(
+          data['calc_rule_version']!,
+          _calcRuleVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_calcRuleVersionMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {recipeId, versionNumber},
+  ];
+  @override
+  NutritionRecipeVersion map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionRecipeVersion(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      recipeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipe_id'],
+      )!,
+      versionNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version_number'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      yieldQuantity: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}yield_quantity'],
+      ),
+      yieldUnit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}yield_unit'],
+      ),
+      servingQuantity: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}serving_quantity'],
+      ),
+      calcRuleVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}calc_rule_version'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionRecipeVersionsTable createAlias(String alias) {
+    return $NutritionRecipeVersionsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionRecipeVersion extends DataClass
+    implements Insertable<NutritionRecipeVersion> {
+  final String id;
+  final String recipeId;
+  final int versionNumber;
+  final String status;
+  final double? yieldQuantity;
+  final String? yieldUnit;
+  final double? servingQuantity;
+  final String calcRuleVersion;
+  final String source;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionRecipeVersion({
+    required this.id,
+    required this.recipeId,
+    required this.versionNumber,
+    required this.status,
+    this.yieldQuantity,
+    this.yieldUnit,
+    this.servingQuantity,
+    required this.calcRuleVersion,
+    required this.source,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['recipe_id'] = Variable<String>(recipeId);
+    map['version_number'] = Variable<int>(versionNumber);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || yieldQuantity != null) {
+      map['yield_quantity'] = Variable<double>(yieldQuantity);
+    }
+    if (!nullToAbsent || yieldUnit != null) {
+      map['yield_unit'] = Variable<String>(yieldUnit);
+    }
+    if (!nullToAbsent || servingQuantity != null) {
+      map['serving_quantity'] = Variable<double>(servingQuantity);
+    }
+    map['calc_rule_version'] = Variable<String>(calcRuleVersion);
+    map['source'] = Variable<String>(source);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionRecipeVersionsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionRecipeVersionsCompanion(
+      id: Value(id),
+      recipeId: Value(recipeId),
+      versionNumber: Value(versionNumber),
+      status: Value(status),
+      yieldQuantity: yieldQuantity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(yieldQuantity),
+      yieldUnit: yieldUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(yieldUnit),
+      servingQuantity: servingQuantity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(servingQuantity),
+      calcRuleVersion: Value(calcRuleVersion),
+      source: Value(source),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionRecipeVersion.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionRecipeVersion(
+      id: serializer.fromJson<String>(json['id']),
+      recipeId: serializer.fromJson<String>(json['recipeId']),
+      versionNumber: serializer.fromJson<int>(json['versionNumber']),
+      status: serializer.fromJson<String>(json['status']),
+      yieldQuantity: serializer.fromJson<double?>(json['yieldQuantity']),
+      yieldUnit: serializer.fromJson<String?>(json['yieldUnit']),
+      servingQuantity: serializer.fromJson<double?>(json['servingQuantity']),
+      calcRuleVersion: serializer.fromJson<String>(json['calcRuleVersion']),
+      source: serializer.fromJson<String>(json['source']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'recipeId': serializer.toJson<String>(recipeId),
+      'versionNumber': serializer.toJson<int>(versionNumber),
+      'status': serializer.toJson<String>(status),
+      'yieldQuantity': serializer.toJson<double?>(yieldQuantity),
+      'yieldUnit': serializer.toJson<String?>(yieldUnit),
+      'servingQuantity': serializer.toJson<double?>(servingQuantity),
+      'calcRuleVersion': serializer.toJson<String>(calcRuleVersion),
+      'source': serializer.toJson<String>(source),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionRecipeVersion copyWith({
+    String? id,
+    String? recipeId,
+    int? versionNumber,
+    String? status,
+    Value<double?> yieldQuantity = const Value.absent(),
+    Value<String?> yieldUnit = const Value.absent(),
+    Value<double?> servingQuantity = const Value.absent(),
+    String? calcRuleVersion,
+    String? source,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionRecipeVersion(
+    id: id ?? this.id,
+    recipeId: recipeId ?? this.recipeId,
+    versionNumber: versionNumber ?? this.versionNumber,
+    status: status ?? this.status,
+    yieldQuantity: yieldQuantity.present
+        ? yieldQuantity.value
+        : this.yieldQuantity,
+    yieldUnit: yieldUnit.present ? yieldUnit.value : this.yieldUnit,
+    servingQuantity: servingQuantity.present
+        ? servingQuantity.value
+        : this.servingQuantity,
+    calcRuleVersion: calcRuleVersion ?? this.calcRuleVersion,
+    source: source ?? this.source,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionRecipeVersion copyWithCompanion(
+    NutritionRecipeVersionsCompanion data,
+  ) {
+    return NutritionRecipeVersion(
+      id: data.id.present ? data.id.value : this.id,
+      recipeId: data.recipeId.present ? data.recipeId.value : this.recipeId,
+      versionNumber: data.versionNumber.present
+          ? data.versionNumber.value
+          : this.versionNumber,
+      status: data.status.present ? data.status.value : this.status,
+      yieldQuantity: data.yieldQuantity.present
+          ? data.yieldQuantity.value
+          : this.yieldQuantity,
+      yieldUnit: data.yieldUnit.present ? data.yieldUnit.value : this.yieldUnit,
+      servingQuantity: data.servingQuantity.present
+          ? data.servingQuantity.value
+          : this.servingQuantity,
+      calcRuleVersion: data.calcRuleVersion.present
+          ? data.calcRuleVersion.value
+          : this.calcRuleVersion,
+      source: data.source.present ? data.source.value : this.source,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionRecipeVersion(')
+          ..write('id: $id, ')
+          ..write('recipeId: $recipeId, ')
+          ..write('versionNumber: $versionNumber, ')
+          ..write('status: $status, ')
+          ..write('yieldQuantity: $yieldQuantity, ')
+          ..write('yieldUnit: $yieldUnit, ')
+          ..write('servingQuantity: $servingQuantity, ')
+          ..write('calcRuleVersion: $calcRuleVersion, ')
+          ..write('source: $source, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    recipeId,
+    versionNumber,
+    status,
+    yieldQuantity,
+    yieldUnit,
+    servingQuantity,
+    calcRuleVersion,
+    source,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionRecipeVersion &&
+          other.id == this.id &&
+          other.recipeId == this.recipeId &&
+          other.versionNumber == this.versionNumber &&
+          other.status == this.status &&
+          other.yieldQuantity == this.yieldQuantity &&
+          other.yieldUnit == this.yieldUnit &&
+          other.servingQuantity == this.servingQuantity &&
+          other.calcRuleVersion == this.calcRuleVersion &&
+          other.source == this.source &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionRecipeVersionsCompanion
+    extends UpdateCompanion<NutritionRecipeVersion> {
+  final Value<String> id;
+  final Value<String> recipeId;
+  final Value<int> versionNumber;
+  final Value<String> status;
+  final Value<double?> yieldQuantity;
+  final Value<String?> yieldUnit;
+  final Value<double?> servingQuantity;
+  final Value<String> calcRuleVersion;
+  final Value<String> source;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionRecipeVersionsCompanion({
+    this.id = const Value.absent(),
+    this.recipeId = const Value.absent(),
+    this.versionNumber = const Value.absent(),
+    this.status = const Value.absent(),
+    this.yieldQuantity = const Value.absent(),
+    this.yieldUnit = const Value.absent(),
+    this.servingQuantity = const Value.absent(),
+    this.calcRuleVersion = const Value.absent(),
+    this.source = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionRecipeVersionsCompanion.insert({
+    required String id,
+    required String recipeId,
+    required int versionNumber,
+    required String status,
+    this.yieldQuantity = const Value.absent(),
+    this.yieldUnit = const Value.absent(),
+    this.servingQuantity = const Value.absent(),
+    required String calcRuleVersion,
+    required String source,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       recipeId = Value(recipeId),
+       versionNumber = Value(versionNumber),
+       status = Value(status),
+       calcRuleVersion = Value(calcRuleVersion),
+       source = Value(source);
+  static Insertable<NutritionRecipeVersion> custom({
+    Expression<String>? id,
+    Expression<String>? recipeId,
+    Expression<int>? versionNumber,
+    Expression<String>? status,
+    Expression<double>? yieldQuantity,
+    Expression<String>? yieldUnit,
+    Expression<double>? servingQuantity,
+    Expression<String>? calcRuleVersion,
+    Expression<String>? source,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (recipeId != null) 'recipe_id': recipeId,
+      if (versionNumber != null) 'version_number': versionNumber,
+      if (status != null) 'status': status,
+      if (yieldQuantity != null) 'yield_quantity': yieldQuantity,
+      if (yieldUnit != null) 'yield_unit': yieldUnit,
+      if (servingQuantity != null) 'serving_quantity': servingQuantity,
+      if (calcRuleVersion != null) 'calc_rule_version': calcRuleVersion,
+      if (source != null) 'source': source,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionRecipeVersionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? recipeId,
+    Value<int>? versionNumber,
+    Value<String>? status,
+    Value<double?>? yieldQuantity,
+    Value<String?>? yieldUnit,
+    Value<double?>? servingQuantity,
+    Value<String>? calcRuleVersion,
+    Value<String>? source,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionRecipeVersionsCompanion(
+      id: id ?? this.id,
+      recipeId: recipeId ?? this.recipeId,
+      versionNumber: versionNumber ?? this.versionNumber,
+      status: status ?? this.status,
+      yieldQuantity: yieldQuantity ?? this.yieldQuantity,
+      yieldUnit: yieldUnit ?? this.yieldUnit,
+      servingQuantity: servingQuantity ?? this.servingQuantity,
+      calcRuleVersion: calcRuleVersion ?? this.calcRuleVersion,
+      source: source ?? this.source,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (recipeId.present) {
+      map['recipe_id'] = Variable<String>(recipeId.value);
+    }
+    if (versionNumber.present) {
+      map['version_number'] = Variable<int>(versionNumber.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (yieldQuantity.present) {
+      map['yield_quantity'] = Variable<double>(yieldQuantity.value);
+    }
+    if (yieldUnit.present) {
+      map['yield_unit'] = Variable<String>(yieldUnit.value);
+    }
+    if (servingQuantity.present) {
+      map['serving_quantity'] = Variable<double>(servingQuantity.value);
+    }
+    if (calcRuleVersion.present) {
+      map['calc_rule_version'] = Variable<String>(calcRuleVersion.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionRecipeVersionsCompanion(')
+          ..write('id: $id, ')
+          ..write('recipeId: $recipeId, ')
+          ..write('versionNumber: $versionNumber, ')
+          ..write('status: $status, ')
+          ..write('yieldQuantity: $yieldQuantity, ')
+          ..write('yieldUnit: $yieldUnit, ')
+          ..write('servingQuantity: $servingQuantity, ')
+          ..write('calcRuleVersion: $calcRuleVersion, ')
+          ..write('source: $source, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionRecipeIngredientsTable extends NutritionRecipeIngredients
+    with
+        TableInfo<$NutritionRecipeIngredientsTable, NutritionRecipeIngredient> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionRecipeIngredientsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recipeVersionIdMeta = const VerificationMeta(
+    'recipeVersionId',
+  );
+  @override
+  late final GeneratedColumn<String> recipeVersionId = GeneratedColumn<String>(
+    'recipe_version_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_recipe_versions (id)',
+    ),
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _foodIdMeta = const VerificationMeta('foodId');
+  @override
+  late final GeneratedColumn<String> foodId = GeneratedColumn<String>(
+    'food_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _preparationIdMeta = const VerificationMeta(
+    'preparationId',
+  );
+  @override
+  late final GeneratedColumn<String> preparationId = GeneratedColumn<String>(
+    'preparation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_food_preparations (id)',
+    ),
+  );
+  static const VerificationMeta _quantityValueMeta = const VerificationMeta(
+    'quantityValue',
+  );
+  @override
+  late final GeneratedColumn<double> quantityValue = GeneratedColumn<double>(
+    'quantity_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _quantityDimensionMeta = const VerificationMeta(
+    'quantityDimension',
+  );
+  @override
+  late final GeneratedColumn<String> quantityDimension =
+      GeneratedColumn<String>(
+        'quantity_dimension',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _quantityUnitMeta = const VerificationMeta(
+    'quantityUnit',
+  );
+  @override
+  late final GeneratedColumn<String> quantityUnit = GeneratedColumn<String>(
+    'quantity_unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _measureIdMeta = const VerificationMeta(
+    'measureId',
+  );
+  @override
+  late final GeneratedColumn<String> measureId = GeneratedColumn<String>(
+    'measure_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_household_measures (id)',
+    ),
+  );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    recipeVersionId,
+    position,
+    foodId,
+    preparationId,
+    quantityValue,
+    quantityDimension,
+    quantityUnit,
+    measureId,
+    lower,
+    upper,
+    notes,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_recipe_ingredients';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionRecipeIngredient> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('recipe_version_id')) {
+      context.handle(
+        _recipeVersionIdMeta,
+        recipeVersionId.isAcceptableOrUnknown(
+          data['recipe_version_id']!,
+          _recipeVersionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recipeVersionIdMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    if (data.containsKey('food_id')) {
+      context.handle(
+        _foodIdMeta,
+        foodId.isAcceptableOrUnknown(data['food_id']!, _foodIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_foodIdMeta);
+    }
+    if (data.containsKey('preparation_id')) {
+      context.handle(
+        _preparationIdMeta,
+        preparationId.isAcceptableOrUnknown(
+          data['preparation_id']!,
+          _preparationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('quantity_value')) {
+      context.handle(
+        _quantityValueMeta,
+        quantityValue.isAcceptableOrUnknown(
+          data['quantity_value']!,
+          _quantityValueMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_quantityValueMeta);
+    }
+    if (data.containsKey('quantity_dimension')) {
+      context.handle(
+        _quantityDimensionMeta,
+        quantityDimension.isAcceptableOrUnknown(
+          data['quantity_dimension']!,
+          _quantityDimensionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_quantityDimensionMeta);
+    }
+    if (data.containsKey('quantity_unit')) {
+      context.handle(
+        _quantityUnitMeta,
+        quantityUnit.isAcceptableOrUnknown(
+          data['quantity_unit']!,
+          _quantityUnitMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_quantityUnitMeta);
+    }
+    if (data.containsKey('measure_id')) {
+      context.handle(
+        _measureIdMeta,
+        measureId.isAcceptableOrUnknown(data['measure_id']!, _measureIdMeta),
+      );
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {recipeVersionId, position},
+  ];
+  @override
+  NutritionRecipeIngredient map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionRecipeIngredient(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      recipeVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipe_version_id'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      foodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}food_id'],
+      )!,
+      preparationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}preparation_id'],
+      ),
+      quantityValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}quantity_value'],
+      )!,
+      quantityDimension: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quantity_dimension'],
+      )!,
+      quantityUnit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quantity_unit'],
+      )!,
+      measureId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}measure_id'],
+      ),
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionRecipeIngredientsTable createAlias(String alias) {
+    return $NutritionRecipeIngredientsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionRecipeIngredient extends DataClass
+    implements Insertable<NutritionRecipeIngredient> {
+  final String id;
+  final String recipeVersionId;
+  final int position;
+  final String foodId;
+  final String? preparationId;
+  final double quantityValue;
+  final String quantityDimension;
+  final String quantityUnit;
+  final String? measureId;
+  final double? lower;
+  final double? upper;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionRecipeIngredient({
+    required this.id,
+    required this.recipeVersionId,
+    required this.position,
+    required this.foodId,
+    this.preparationId,
+    required this.quantityValue,
+    required this.quantityDimension,
+    required this.quantityUnit,
+    this.measureId,
+    this.lower,
+    this.upper,
+    this.notes,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['recipe_version_id'] = Variable<String>(recipeVersionId);
+    map['position'] = Variable<int>(position);
+    map['food_id'] = Variable<String>(foodId);
+    if (!nullToAbsent || preparationId != null) {
+      map['preparation_id'] = Variable<String>(preparationId);
+    }
+    map['quantity_value'] = Variable<double>(quantityValue);
+    map['quantity_dimension'] = Variable<String>(quantityDimension);
+    map['quantity_unit'] = Variable<String>(quantityUnit);
+    if (!nullToAbsent || measureId != null) {
+      map['measure_id'] = Variable<String>(measureId);
+    }
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionRecipeIngredientsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionRecipeIngredientsCompanion(
+      id: Value(id),
+      recipeVersionId: Value(recipeVersionId),
+      position: Value(position),
+      foodId: Value(foodId),
+      preparationId: preparationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(preparationId),
+      quantityValue: Value(quantityValue),
+      quantityDimension: Value(quantityDimension),
+      quantityUnit: Value(quantityUnit),
+      measureId: measureId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(measureId),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionRecipeIngredient.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionRecipeIngredient(
+      id: serializer.fromJson<String>(json['id']),
+      recipeVersionId: serializer.fromJson<String>(json['recipeVersionId']),
+      position: serializer.fromJson<int>(json['position']),
+      foodId: serializer.fromJson<String>(json['foodId']),
+      preparationId: serializer.fromJson<String?>(json['preparationId']),
+      quantityValue: serializer.fromJson<double>(json['quantityValue']),
+      quantityDimension: serializer.fromJson<String>(json['quantityDimension']),
+      quantityUnit: serializer.fromJson<String>(json['quantityUnit']),
+      measureId: serializer.fromJson<String?>(json['measureId']),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'recipeVersionId': serializer.toJson<String>(recipeVersionId),
+      'position': serializer.toJson<int>(position),
+      'foodId': serializer.toJson<String>(foodId),
+      'preparationId': serializer.toJson<String?>(preparationId),
+      'quantityValue': serializer.toJson<double>(quantityValue),
+      'quantityDimension': serializer.toJson<String>(quantityDimension),
+      'quantityUnit': serializer.toJson<String>(quantityUnit),
+      'measureId': serializer.toJson<String?>(measureId),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionRecipeIngredient copyWith({
+    String? id,
+    String? recipeVersionId,
+    int? position,
+    String? foodId,
+    Value<String?> preparationId = const Value.absent(),
+    double? quantityValue,
+    String? quantityDimension,
+    String? quantityUnit,
+    Value<String?> measureId = const Value.absent(),
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionRecipeIngredient(
+    id: id ?? this.id,
+    recipeVersionId: recipeVersionId ?? this.recipeVersionId,
+    position: position ?? this.position,
+    foodId: foodId ?? this.foodId,
+    preparationId: preparationId.present
+        ? preparationId.value
+        : this.preparationId,
+    quantityValue: quantityValue ?? this.quantityValue,
+    quantityDimension: quantityDimension ?? this.quantityDimension,
+    quantityUnit: quantityUnit ?? this.quantityUnit,
+    measureId: measureId.present ? measureId.value : this.measureId,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    notes: notes.present ? notes.value : this.notes,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionRecipeIngredient copyWithCompanion(
+    NutritionRecipeIngredientsCompanion data,
+  ) {
+    return NutritionRecipeIngredient(
+      id: data.id.present ? data.id.value : this.id,
+      recipeVersionId: data.recipeVersionId.present
+          ? data.recipeVersionId.value
+          : this.recipeVersionId,
+      position: data.position.present ? data.position.value : this.position,
+      foodId: data.foodId.present ? data.foodId.value : this.foodId,
+      preparationId: data.preparationId.present
+          ? data.preparationId.value
+          : this.preparationId,
+      quantityValue: data.quantityValue.present
+          ? data.quantityValue.value
+          : this.quantityValue,
+      quantityDimension: data.quantityDimension.present
+          ? data.quantityDimension.value
+          : this.quantityDimension,
+      quantityUnit: data.quantityUnit.present
+          ? data.quantityUnit.value
+          : this.quantityUnit,
+      measureId: data.measureId.present ? data.measureId.value : this.measureId,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionRecipeIngredient(')
+          ..write('id: $id, ')
+          ..write('recipeVersionId: $recipeVersionId, ')
+          ..write('position: $position, ')
+          ..write('foodId: $foodId, ')
+          ..write('preparationId: $preparationId, ')
+          ..write('quantityValue: $quantityValue, ')
+          ..write('quantityDimension: $quantityDimension, ')
+          ..write('quantityUnit: $quantityUnit, ')
+          ..write('measureId: $measureId, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    recipeVersionId,
+    position,
+    foodId,
+    preparationId,
+    quantityValue,
+    quantityDimension,
+    quantityUnit,
+    measureId,
+    lower,
+    upper,
+    notes,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionRecipeIngredient &&
+          other.id == this.id &&
+          other.recipeVersionId == this.recipeVersionId &&
+          other.position == this.position &&
+          other.foodId == this.foodId &&
+          other.preparationId == this.preparationId &&
+          other.quantityValue == this.quantityValue &&
+          other.quantityDimension == this.quantityDimension &&
+          other.quantityUnit == this.quantityUnit &&
+          other.measureId == this.measureId &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionRecipeIngredientsCompanion
+    extends UpdateCompanion<NutritionRecipeIngredient> {
+  final Value<String> id;
+  final Value<String> recipeVersionId;
+  final Value<int> position;
+  final Value<String> foodId;
+  final Value<String?> preparationId;
+  final Value<double> quantityValue;
+  final Value<String> quantityDimension;
+  final Value<String> quantityUnit;
+  final Value<String?> measureId;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionRecipeIngredientsCompanion({
+    this.id = const Value.absent(),
+    this.recipeVersionId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.foodId = const Value.absent(),
+    this.preparationId = const Value.absent(),
+    this.quantityValue = const Value.absent(),
+    this.quantityDimension = const Value.absent(),
+    this.quantityUnit = const Value.absent(),
+    this.measureId = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionRecipeIngredientsCompanion.insert({
+    required String id,
+    required String recipeVersionId,
+    required int position,
+    required String foodId,
+    this.preparationId = const Value.absent(),
+    required double quantityValue,
+    required String quantityDimension,
+    required String quantityUnit,
+    this.measureId = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       recipeVersionId = Value(recipeVersionId),
+       position = Value(position),
+       foodId = Value(foodId),
+       quantityValue = Value(quantityValue),
+       quantityDimension = Value(quantityDimension),
+       quantityUnit = Value(quantityUnit);
+  static Insertable<NutritionRecipeIngredient> custom({
+    Expression<String>? id,
+    Expression<String>? recipeVersionId,
+    Expression<int>? position,
+    Expression<String>? foodId,
+    Expression<String>? preparationId,
+    Expression<double>? quantityValue,
+    Expression<String>? quantityDimension,
+    Expression<String>? quantityUnit,
+    Expression<String>? measureId,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (recipeVersionId != null) 'recipe_version_id': recipeVersionId,
+      if (position != null) 'position': position,
+      if (foodId != null) 'food_id': foodId,
+      if (preparationId != null) 'preparation_id': preparationId,
+      if (quantityValue != null) 'quantity_value': quantityValue,
+      if (quantityDimension != null) 'quantity_dimension': quantityDimension,
+      if (quantityUnit != null) 'quantity_unit': quantityUnit,
+      if (measureId != null) 'measure_id': measureId,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionRecipeIngredientsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? recipeVersionId,
+    Value<int>? position,
+    Value<String>? foodId,
+    Value<String?>? preparationId,
+    Value<double>? quantityValue,
+    Value<String>? quantityDimension,
+    Value<String>? quantityUnit,
+    Value<String?>? measureId,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String?>? notes,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionRecipeIngredientsCompanion(
+      id: id ?? this.id,
+      recipeVersionId: recipeVersionId ?? this.recipeVersionId,
+      position: position ?? this.position,
+      foodId: foodId ?? this.foodId,
+      preparationId: preparationId ?? this.preparationId,
+      quantityValue: quantityValue ?? this.quantityValue,
+      quantityDimension: quantityDimension ?? this.quantityDimension,
+      quantityUnit: quantityUnit ?? this.quantityUnit,
+      measureId: measureId ?? this.measureId,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (recipeVersionId.present) {
+      map['recipe_version_id'] = Variable<String>(recipeVersionId.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (foodId.present) {
+      map['food_id'] = Variable<String>(foodId.value);
+    }
+    if (preparationId.present) {
+      map['preparation_id'] = Variable<String>(preparationId.value);
+    }
+    if (quantityValue.present) {
+      map['quantity_value'] = Variable<double>(quantityValue.value);
+    }
+    if (quantityDimension.present) {
+      map['quantity_dimension'] = Variable<String>(quantityDimension.value);
+    }
+    if (quantityUnit.present) {
+      map['quantity_unit'] = Variable<String>(quantityUnit.value);
+    }
+    if (measureId.present) {
+      map['measure_id'] = Variable<String>(measureId.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionRecipeIngredientsCompanion(')
+          ..write('id: $id, ')
+          ..write('recipeVersionId: $recipeVersionId, ')
+          ..write('position: $position, ')
+          ..write('foodId: $foodId, ')
+          ..write('preparationId: $preparationId, ')
+          ..write('quantityValue: $quantityValue, ')
+          ..write('quantityDimension: $quantityDimension, ')
+          ..write('quantityUnit: $quantityUnit, ')
+          ..write('measureId: $measureId, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionUserCorrectionsTable extends NutritionUserCorrections
+    with TableInfo<$NutritionUserCorrectionsTable, NutritionUserCorrection> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionUserCorrectionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetTypeMeta = const VerificationMeta(
+    'targetType',
+  );
+  @override
+  late final GeneratedColumn<String> targetType = GeneratedColumn<String>(
+    'target_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetIdMeta = const VerificationMeta(
+    'targetId',
+  );
+  @override
+  late final GeneratedColumn<String> targetId = GeneratedColumn<String>(
+    'target_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fieldMeta = const VerificationMeta('field');
+  @override
+  late final GeneratedColumn<String> field = GeneratedColumn<String>(
+    'field',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _oldValueMeta = const VerificationMeta(
+    'oldValue',
+  );
+  @override
+  late final GeneratedColumn<String> oldValue = GeneratedColumn<String>(
+    'old_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _newValueMeta = const VerificationMeta(
+    'newValue',
+  );
+  @override
+  late final GeneratedColumn<String> newValue = GeneratedColumn<String>(
+    'new_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
+  @override
+  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
+    'reason',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    targetType,
+    targetId,
+    field,
+    oldValue,
+    newValue,
+    reason,
+    source,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_user_corrections';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionUserCorrection> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('target_type')) {
+      context.handle(
+        _targetTypeMeta,
+        targetType.isAcceptableOrUnknown(data['target_type']!, _targetTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_targetTypeMeta);
+    }
+    if (data.containsKey('target_id')) {
+      context.handle(
+        _targetIdMeta,
+        targetId.isAcceptableOrUnknown(data['target_id']!, _targetIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_targetIdMeta);
+    }
+    if (data.containsKey('field')) {
+      context.handle(
+        _fieldMeta,
+        field.isAcceptableOrUnknown(data['field']!, _fieldMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fieldMeta);
+    }
+    if (data.containsKey('old_value')) {
+      context.handle(
+        _oldValueMeta,
+        oldValue.isAcceptableOrUnknown(data['old_value']!, _oldValueMeta),
+      );
+    }
+    if (data.containsKey('new_value')) {
+      context.handle(
+        _newValueMeta,
+        newValue.isAcceptableOrUnknown(data['new_value']!, _newValueMeta),
+      );
+    }
+    if (data.containsKey('reason')) {
+      context.handle(
+        _reasonMeta,
+        reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reasonMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NutritionUserCorrection map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionUserCorrection(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      targetType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_type'],
+      )!,
+      targetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_id'],
+      )!,
+      field: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}field'],
+      )!,
+      oldValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}old_value'],
+      ),
+      newValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}new_value'],
+      ),
+      reason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionUserCorrectionsTable createAlias(String alias) {
+    return $NutritionUserCorrectionsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionUserCorrection extends DataClass
+    implements Insertable<NutritionUserCorrection> {
+  final String id;
+  final String userId;
+  final String targetType;
+  final String targetId;
+  final String field;
+  final String? oldValue;
+  final String? newValue;
+  final String reason;
+  final String source;
+  final DateTime createdAt;
+  const NutritionUserCorrection({
+    required this.id,
+    required this.userId,
+    required this.targetType,
+    required this.targetId,
+    required this.field,
+    this.oldValue,
+    this.newValue,
+    required this.reason,
+    required this.source,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['target_type'] = Variable<String>(targetType);
+    map['target_id'] = Variable<String>(targetId);
+    map['field'] = Variable<String>(field);
+    if (!nullToAbsent || oldValue != null) {
+      map['old_value'] = Variable<String>(oldValue);
+    }
+    if (!nullToAbsent || newValue != null) {
+      map['new_value'] = Variable<String>(newValue);
+    }
+    map['reason'] = Variable<String>(reason);
+    map['source'] = Variable<String>(source);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  NutritionUserCorrectionsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionUserCorrectionsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      targetType: Value(targetType),
+      targetId: Value(targetId),
+      field: Value(field),
+      oldValue: oldValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(oldValue),
+      newValue: newValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(newValue),
+      reason: Value(reason),
+      source: Value(source),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory NutritionUserCorrection.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionUserCorrection(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      targetType: serializer.fromJson<String>(json['targetType']),
+      targetId: serializer.fromJson<String>(json['targetId']),
+      field: serializer.fromJson<String>(json['field']),
+      oldValue: serializer.fromJson<String?>(json['oldValue']),
+      newValue: serializer.fromJson<String?>(json['newValue']),
+      reason: serializer.fromJson<String>(json['reason']),
+      source: serializer.fromJson<String>(json['source']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'targetType': serializer.toJson<String>(targetType),
+      'targetId': serializer.toJson<String>(targetId),
+      'field': serializer.toJson<String>(field),
+      'oldValue': serializer.toJson<String?>(oldValue),
+      'newValue': serializer.toJson<String?>(newValue),
+      'reason': serializer.toJson<String>(reason),
+      'source': serializer.toJson<String>(source),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  NutritionUserCorrection copyWith({
+    String? id,
+    String? userId,
+    String? targetType,
+    String? targetId,
+    String? field,
+    Value<String?> oldValue = const Value.absent(),
+    Value<String?> newValue = const Value.absent(),
+    String? reason,
+    String? source,
+    DateTime? createdAt,
+  }) => NutritionUserCorrection(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    targetType: targetType ?? this.targetType,
+    targetId: targetId ?? this.targetId,
+    field: field ?? this.field,
+    oldValue: oldValue.present ? oldValue.value : this.oldValue,
+    newValue: newValue.present ? newValue.value : this.newValue,
+    reason: reason ?? this.reason,
+    source: source ?? this.source,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  NutritionUserCorrection copyWithCompanion(
+    NutritionUserCorrectionsCompanion data,
+  ) {
+    return NutritionUserCorrection(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      targetType: data.targetType.present
+          ? data.targetType.value
+          : this.targetType,
+      targetId: data.targetId.present ? data.targetId.value : this.targetId,
+      field: data.field.present ? data.field.value : this.field,
+      oldValue: data.oldValue.present ? data.oldValue.value : this.oldValue,
+      newValue: data.newValue.present ? data.newValue.value : this.newValue,
+      reason: data.reason.present ? data.reason.value : this.reason,
+      source: data.source.present ? data.source.value : this.source,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionUserCorrection(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('targetType: $targetType, ')
+          ..write('targetId: $targetId, ')
+          ..write('field: $field, ')
+          ..write('oldValue: $oldValue, ')
+          ..write('newValue: $newValue, ')
+          ..write('reason: $reason, ')
+          ..write('source: $source, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    targetType,
+    targetId,
+    field,
+    oldValue,
+    newValue,
+    reason,
+    source,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionUserCorrection &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.targetType == this.targetType &&
+          other.targetId == this.targetId &&
+          other.field == this.field &&
+          other.oldValue == this.oldValue &&
+          other.newValue == this.newValue &&
+          other.reason == this.reason &&
+          other.source == this.source &&
+          other.createdAt == this.createdAt);
+}
+
+class NutritionUserCorrectionsCompanion
+    extends UpdateCompanion<NutritionUserCorrection> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> targetType;
+  final Value<String> targetId;
+  final Value<String> field;
+  final Value<String?> oldValue;
+  final Value<String?> newValue;
+  final Value<String> reason;
+  final Value<String> source;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const NutritionUserCorrectionsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.targetType = const Value.absent(),
+    this.targetId = const Value.absent(),
+    this.field = const Value.absent(),
+    this.oldValue = const Value.absent(),
+    this.newValue = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.source = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionUserCorrectionsCompanion.insert({
+    required String id,
+    required String userId,
+    required String targetType,
+    required String targetId,
+    required String field,
+    this.oldValue = const Value.absent(),
+    this.newValue = const Value.absent(),
+    required String reason,
+    required String source,
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       targetType = Value(targetType),
+       targetId = Value(targetId),
+       field = Value(field),
+       reason = Value(reason),
+       source = Value(source);
+  static Insertable<NutritionUserCorrection> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? targetType,
+    Expression<String>? targetId,
+    Expression<String>? field,
+    Expression<String>? oldValue,
+    Expression<String>? newValue,
+    Expression<String>? reason,
+    Expression<String>? source,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (targetType != null) 'target_type': targetType,
+      if (targetId != null) 'target_id': targetId,
+      if (field != null) 'field': field,
+      if (oldValue != null) 'old_value': oldValue,
+      if (newValue != null) 'new_value': newValue,
+      if (reason != null) 'reason': reason,
+      if (source != null) 'source': source,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionUserCorrectionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? targetType,
+    Value<String>? targetId,
+    Value<String>? field,
+    Value<String?>? oldValue,
+    Value<String?>? newValue,
+    Value<String>? reason,
+    Value<String>? source,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionUserCorrectionsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      targetType: targetType ?? this.targetType,
+      targetId: targetId ?? this.targetId,
+      field: field ?? this.field,
+      oldValue: oldValue ?? this.oldValue,
+      newValue: newValue ?? this.newValue,
+      reason: reason ?? this.reason,
+      source: source ?? this.source,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (targetType.present) {
+      map['target_type'] = Variable<String>(targetType.value);
+    }
+    if (targetId.present) {
+      map['target_id'] = Variable<String>(targetId.value);
+    }
+    if (field.present) {
+      map['field'] = Variable<String>(field.value);
+    }
+    if (oldValue.present) {
+      map['old_value'] = Variable<String>(oldValue.value);
+    }
+    if (newValue.present) {
+      map['new_value'] = Variable<String>(newValue.value);
+    }
+    if (reason.present) {
+      map['reason'] = Variable<String>(reason.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionUserCorrectionsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('targetType: $targetType, ')
+          ..write('targetId: $targetId, ')
+          ..write('field: $field, ')
+          ..write('oldValue: $oldValue, ')
+          ..write('newValue: $newValue, ')
+          ..write('reason: $reason, ')
+          ..write('source: $source, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionEstimatesTable extends NutritionEstimates
+    with TableInfo<$NutritionEstimatesTable, NutritionEstimate> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionEstimatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _providerMeta = const VerificationMeta(
+    'provider',
+  );
+  @override
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+    'provider',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _modelMeta = const VerificationMeta('model');
+  @override
+  late final GeneratedColumn<String> model = GeneratedColumn<String>(
+    'model',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ruleVersionMeta = const VerificationMeta(
+    'ruleVersion',
+  );
+  @override
+  late final GeneratedColumn<String> ruleVersion = GeneratedColumn<String>(
+    'rule_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _inputHashMeta = const VerificationMeta(
+    'inputHash',
+  );
+  @override
+  late final GeneratedColumn<String> inputHash = GeneratedColumn<String>(
+    'input_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _assumptionsMeta = const VerificationMeta(
+    'assumptions',
+  );
+  @override
+  late final GeneratedColumn<String> assumptions = GeneratedColumn<String>(
+    'assumptions',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _supersedesIdMeta = const VerificationMeta(
+    'supersedesId',
+  );
+  @override
+  late final GeneratedColumn<String> supersedesId = GeneratedColumn<String>(
+    'supersedes_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_estimates (id)',
+    ),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    source,
+    provider,
+    model,
+    ruleVersion,
+    inputHash,
+    assumptions,
+    confidence,
+    lower,
+    upper,
+    status,
+    supersedesId,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_estimates';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionEstimate> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('provider')) {
+      context.handle(
+        _providerMeta,
+        provider.isAcceptableOrUnknown(data['provider']!, _providerMeta),
+      );
+    }
+    if (data.containsKey('model')) {
+      context.handle(
+        _modelMeta,
+        model.isAcceptableOrUnknown(data['model']!, _modelMeta),
+      );
+    }
+    if (data.containsKey('rule_version')) {
+      context.handle(
+        _ruleVersionMeta,
+        ruleVersion.isAcceptableOrUnknown(
+          data['rule_version']!,
+          _ruleVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('input_hash')) {
+      context.handle(
+        _inputHashMeta,
+        inputHash.isAcceptableOrUnknown(data['input_hash']!, _inputHashMeta),
+      );
+    }
+    if (data.containsKey('assumptions')) {
+      context.handle(
+        _assumptionsMeta,
+        assumptions.isAcceptableOrUnknown(
+          data['assumptions']!,
+          _assumptionsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('supersedes_id')) {
+      context.handle(
+        _supersedesIdMeta,
+        supersedesId.isAcceptableOrUnknown(
+          data['supersedes_id']!,
+          _supersedesIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NutritionEstimate map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionEstimate(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      provider: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider'],
+      ),
+      model: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model'],
+      ),
+      ruleVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rule_version'],
+      ),
+      inputHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}input_hash'],
+      ),
+      assumptions: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}assumptions'],
+      ),
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      ),
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      supersedesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supersedes_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionEstimatesTable createAlias(String alias) {
+    return $NutritionEstimatesTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionEstimate extends DataClass
+    implements Insertable<NutritionEstimate> {
+  final String id;
+  final String userId;
+  final String source;
+  final String? provider;
+  final String? model;
+  final String? ruleVersion;
+  final String? inputHash;
+  final String? assumptions;
+  final double? confidence;
+  final double? lower;
+  final double? upper;
+  final String status;
+  final String? supersedesId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionEstimate({
+    required this.id,
+    required this.userId,
+    required this.source,
+    this.provider,
+    this.model,
+    this.ruleVersion,
+    this.inputHash,
+    this.assumptions,
+    this.confidence,
+    this.lower,
+    this.upper,
+    required this.status,
+    this.supersedesId,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || provider != null) {
+      map['provider'] = Variable<String>(provider);
+    }
+    if (!nullToAbsent || model != null) {
+      map['model'] = Variable<String>(model);
+    }
+    if (!nullToAbsent || ruleVersion != null) {
+      map['rule_version'] = Variable<String>(ruleVersion);
+    }
+    if (!nullToAbsent || inputHash != null) {
+      map['input_hash'] = Variable<String>(inputHash);
+    }
+    if (!nullToAbsent || assumptions != null) {
+      map['assumptions'] = Variable<String>(assumptions);
+    }
+    if (!nullToAbsent || confidence != null) {
+      map['confidence'] = Variable<double>(confidence);
+    }
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || supersedesId != null) {
+      map['supersedes_id'] = Variable<String>(supersedesId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionEstimatesCompanion toCompanion(bool nullToAbsent) {
+    return NutritionEstimatesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      source: Value(source),
+      provider: provider == null && nullToAbsent
+          ? const Value.absent()
+          : Value(provider),
+      model: model == null && nullToAbsent
+          ? const Value.absent()
+          : Value(model),
+      ruleVersion: ruleVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ruleVersion),
+      inputHash: inputHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inputHash),
+      assumptions: assumptions == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assumptions),
+      confidence: confidence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confidence),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      status: Value(status),
+      supersedesId: supersedesId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersedesId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionEstimate.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionEstimate(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      source: serializer.fromJson<String>(json['source']),
+      provider: serializer.fromJson<String?>(json['provider']),
+      model: serializer.fromJson<String?>(json['model']),
+      ruleVersion: serializer.fromJson<String?>(json['ruleVersion']),
+      inputHash: serializer.fromJson<String?>(json['inputHash']),
+      assumptions: serializer.fromJson<String?>(json['assumptions']),
+      confidence: serializer.fromJson<double?>(json['confidence']),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      status: serializer.fromJson<String>(json['status']),
+      supersedesId: serializer.fromJson<String?>(json['supersedesId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'source': serializer.toJson<String>(source),
+      'provider': serializer.toJson<String?>(provider),
+      'model': serializer.toJson<String?>(model),
+      'ruleVersion': serializer.toJson<String?>(ruleVersion),
+      'inputHash': serializer.toJson<String?>(inputHash),
+      'assumptions': serializer.toJson<String?>(assumptions),
+      'confidence': serializer.toJson<double?>(confidence),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'status': serializer.toJson<String>(status),
+      'supersedesId': serializer.toJson<String?>(supersedesId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionEstimate copyWith({
+    String? id,
+    String? userId,
+    String? source,
+    Value<String?> provider = const Value.absent(),
+    Value<String?> model = const Value.absent(),
+    Value<String?> ruleVersion = const Value.absent(),
+    Value<String?> inputHash = const Value.absent(),
+    Value<String?> assumptions = const Value.absent(),
+    Value<double?> confidence = const Value.absent(),
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    String? status,
+    Value<String?> supersedesId = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionEstimate(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    source: source ?? this.source,
+    provider: provider.present ? provider.value : this.provider,
+    model: model.present ? model.value : this.model,
+    ruleVersion: ruleVersion.present ? ruleVersion.value : this.ruleVersion,
+    inputHash: inputHash.present ? inputHash.value : this.inputHash,
+    assumptions: assumptions.present ? assumptions.value : this.assumptions,
+    confidence: confidence.present ? confidence.value : this.confidence,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    status: status ?? this.status,
+    supersedesId: supersedesId.present ? supersedesId.value : this.supersedesId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionEstimate copyWithCompanion(NutritionEstimatesCompanion data) {
+    return NutritionEstimate(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      source: data.source.present ? data.source.value : this.source,
+      provider: data.provider.present ? data.provider.value : this.provider,
+      model: data.model.present ? data.model.value : this.model,
+      ruleVersion: data.ruleVersion.present
+          ? data.ruleVersion.value
+          : this.ruleVersion,
+      inputHash: data.inputHash.present ? data.inputHash.value : this.inputHash,
+      assumptions: data.assumptions.present
+          ? data.assumptions.value
+          : this.assumptions,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      status: data.status.present ? data.status.value : this.status,
+      supersedesId: data.supersedesId.present
+          ? data.supersedesId.value
+          : this.supersedesId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionEstimate(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('source: $source, ')
+          ..write('provider: $provider, ')
+          ..write('model: $model, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('inputHash: $inputHash, ')
+          ..write('assumptions: $assumptions, ')
+          ..write('confidence: $confidence, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('status: $status, ')
+          ..write('supersedesId: $supersedesId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    source,
+    provider,
+    model,
+    ruleVersion,
+    inputHash,
+    assumptions,
+    confidence,
+    lower,
+    upper,
+    status,
+    supersedesId,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionEstimate &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.source == this.source &&
+          other.provider == this.provider &&
+          other.model == this.model &&
+          other.ruleVersion == this.ruleVersion &&
+          other.inputHash == this.inputHash &&
+          other.assumptions == this.assumptions &&
+          other.confidence == this.confidence &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.status == this.status &&
+          other.supersedesId == this.supersedesId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionEstimatesCompanion extends UpdateCompanion<NutritionEstimate> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> source;
+  final Value<String?> provider;
+  final Value<String?> model;
+  final Value<String?> ruleVersion;
+  final Value<String?> inputHash;
+  final Value<String?> assumptions;
+  final Value<double?> confidence;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String> status;
+  final Value<String?> supersedesId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionEstimatesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.source = const Value.absent(),
+    this.provider = const Value.absent(),
+    this.model = const Value.absent(),
+    this.ruleVersion = const Value.absent(),
+    this.inputHash = const Value.absent(),
+    this.assumptions = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.status = const Value.absent(),
+    this.supersedesId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionEstimatesCompanion.insert({
+    required String id,
+    required String userId,
+    required String source,
+    this.provider = const Value.absent(),
+    this.model = const Value.absent(),
+    this.ruleVersion = const Value.absent(),
+    this.inputHash = const Value.absent(),
+    this.assumptions = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    required String status,
+    this.supersedesId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       source = Value(source),
+       status = Value(status);
+  static Insertable<NutritionEstimate> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? source,
+    Expression<String>? provider,
+    Expression<String>? model,
+    Expression<String>? ruleVersion,
+    Expression<String>? inputHash,
+    Expression<String>? assumptions,
+    Expression<double>? confidence,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? status,
+    Expression<String>? supersedesId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (source != null) 'source': source,
+      if (provider != null) 'provider': provider,
+      if (model != null) 'model': model,
+      if (ruleVersion != null) 'rule_version': ruleVersion,
+      if (inputHash != null) 'input_hash': inputHash,
+      if (assumptions != null) 'assumptions': assumptions,
+      if (confidence != null) 'confidence': confidence,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (status != null) 'status': status,
+      if (supersedesId != null) 'supersedes_id': supersedesId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionEstimatesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? source,
+    Value<String?>? provider,
+    Value<String?>? model,
+    Value<String?>? ruleVersion,
+    Value<String?>? inputHash,
+    Value<String?>? assumptions,
+    Value<double?>? confidence,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String>? status,
+    Value<String?>? supersedesId,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionEstimatesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      source: source ?? this.source,
+      provider: provider ?? this.provider,
+      model: model ?? this.model,
+      ruleVersion: ruleVersion ?? this.ruleVersion,
+      inputHash: inputHash ?? this.inputHash,
+      assumptions: assumptions ?? this.assumptions,
+      confidence: confidence ?? this.confidence,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      status: status ?? this.status,
+      supersedesId: supersedesId ?? this.supersedesId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
+    }
+    if (model.present) {
+      map['model'] = Variable<String>(model.value);
+    }
+    if (ruleVersion.present) {
+      map['rule_version'] = Variable<String>(ruleVersion.value);
+    }
+    if (inputHash.present) {
+      map['input_hash'] = Variable<String>(inputHash.value);
+    }
+    if (assumptions.present) {
+      map['assumptions'] = Variable<String>(assumptions.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (supersedesId.present) {
+      map['supersedes_id'] = Variable<String>(supersedesId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionEstimatesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('source: $source, ')
+          ..write('provider: $provider, ')
+          ..write('model: $model, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('inputHash: $inputHash, ')
+          ..write('assumptions: $assumptions, ')
+          ..write('confidence: $confidence, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('status: $status, ')
+          ..write('supersedesId: $supersedesId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionEstimateNutrientsTable extends NutritionEstimateNutrients
+    with
+        TableInfo<$NutritionEstimateNutrientsTable, NutritionEstimateNutrient> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionEstimateNutrientsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estimateIdMeta = const VerificationMeta(
+    'estimateId',
+  );
+  @override
+  late final GeneratedColumn<String> estimateId = GeneratedColumn<String>(
+    'estimate_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_estimates (id)',
+    ),
+  );
+  static const VerificationMeta _nutrientIdMeta = const VerificationMeta(
+    'nutrientId',
+  );
+  @override
+  late final GeneratedColumn<String> nutrientId = GeneratedColumn<String>(
+    'nutrient_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_nutrient_definitions (id)',
+    ),
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+    'amount',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    estimateId,
+    nutrientId,
+    amount,
+    lower,
+    upper,
+    status,
+    unit,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_estimate_nutrients';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionEstimateNutrient> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('estimate_id')) {
+      context.handle(
+        _estimateIdMeta,
+        estimateId.isAcceptableOrUnknown(data['estimate_id']!, _estimateIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_estimateIdMeta);
+    }
+    if (data.containsKey('nutrient_id')) {
+      context.handle(
+        _nutrientIdMeta,
+        nutrientId.isAcceptableOrUnknown(data['nutrient_id']!, _nutrientIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nutrientIdMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_unitMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {estimateId, nutrientId},
+  ];
+  @override
+  NutritionEstimateNutrient map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionEstimateNutrient(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      estimateId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estimate_id'],
+      )!,
+      nutrientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nutrient_id'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}amount'],
+      ),
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionEstimateNutrientsTable createAlias(String alias) {
+    return $NutritionEstimateNutrientsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionEstimateNutrient extends DataClass
+    implements Insertable<NutritionEstimateNutrient> {
+  final String id;
+  final String estimateId;
+  final String nutrientId;
+  final double? amount;
+  final double? lower;
+  final double? upper;
+  final String status;
+  final String unit;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionEstimateNutrient({
+    required this.id,
+    required this.estimateId,
+    required this.nutrientId,
+    this.amount,
+    this.lower,
+    this.upper,
+    required this.status,
+    required this.unit,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['estimate_id'] = Variable<String>(estimateId);
+    map['nutrient_id'] = Variable<String>(nutrientId);
+    if (!nullToAbsent || amount != null) {
+      map['amount'] = Variable<double>(amount);
+    }
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    map['status'] = Variable<String>(status);
+    map['unit'] = Variable<String>(unit);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionEstimateNutrientsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionEstimateNutrientsCompanion(
+      id: Value(id),
+      estimateId: Value(estimateId),
+      nutrientId: Value(nutrientId),
+      amount: amount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amount),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      status: Value(status),
+      unit: Value(unit),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionEstimateNutrient.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionEstimateNutrient(
+      id: serializer.fromJson<String>(json['id']),
+      estimateId: serializer.fromJson<String>(json['estimateId']),
+      nutrientId: serializer.fromJson<String>(json['nutrientId']),
+      amount: serializer.fromJson<double?>(json['amount']),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      status: serializer.fromJson<String>(json['status']),
+      unit: serializer.fromJson<String>(json['unit']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'estimateId': serializer.toJson<String>(estimateId),
+      'nutrientId': serializer.toJson<String>(nutrientId),
+      'amount': serializer.toJson<double?>(amount),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'status': serializer.toJson<String>(status),
+      'unit': serializer.toJson<String>(unit),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionEstimateNutrient copyWith({
+    String? id,
+    String? estimateId,
+    String? nutrientId,
+    Value<double?> amount = const Value.absent(),
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    String? status,
+    String? unit,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionEstimateNutrient(
+    id: id ?? this.id,
+    estimateId: estimateId ?? this.estimateId,
+    nutrientId: nutrientId ?? this.nutrientId,
+    amount: amount.present ? amount.value : this.amount,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    status: status ?? this.status,
+    unit: unit ?? this.unit,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionEstimateNutrient copyWithCompanion(
+    NutritionEstimateNutrientsCompanion data,
+  ) {
+    return NutritionEstimateNutrient(
+      id: data.id.present ? data.id.value : this.id,
+      estimateId: data.estimateId.present
+          ? data.estimateId.value
+          : this.estimateId,
+      nutrientId: data.nutrientId.present
+          ? data.nutrientId.value
+          : this.nutrientId,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      status: data.status.present ? data.status.value : this.status,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionEstimateNutrient(')
+          ..write('id: $id, ')
+          ..write('estimateId: $estimateId, ')
+          ..write('nutrientId: $nutrientId, ')
+          ..write('amount: $amount, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('status: $status, ')
+          ..write('unit: $unit, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    estimateId,
+    nutrientId,
+    amount,
+    lower,
+    upper,
+    status,
+    unit,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionEstimateNutrient &&
+          other.id == this.id &&
+          other.estimateId == this.estimateId &&
+          other.nutrientId == this.nutrientId &&
+          other.amount == this.amount &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.status == this.status &&
+          other.unit == this.unit &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionEstimateNutrientsCompanion
+    extends UpdateCompanion<NutritionEstimateNutrient> {
+  final Value<String> id;
+  final Value<String> estimateId;
+  final Value<String> nutrientId;
+  final Value<double?> amount;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String> status;
+  final Value<String> unit;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionEstimateNutrientsCompanion({
+    this.id = const Value.absent(),
+    this.estimateId = const Value.absent(),
+    this.nutrientId = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.status = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionEstimateNutrientsCompanion.insert({
+    required String id,
+    required String estimateId,
+    required String nutrientId,
+    this.amount = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    required String status,
+    required String unit,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       estimateId = Value(estimateId),
+       nutrientId = Value(nutrientId),
+       status = Value(status),
+       unit = Value(unit);
+  static Insertable<NutritionEstimateNutrient> custom({
+    Expression<String>? id,
+    Expression<String>? estimateId,
+    Expression<String>? nutrientId,
+    Expression<double>? amount,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? status,
+    Expression<String>? unit,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (estimateId != null) 'estimate_id': estimateId,
+      if (nutrientId != null) 'nutrient_id': nutrientId,
+      if (amount != null) 'amount': amount,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (status != null) 'status': status,
+      if (unit != null) 'unit': unit,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionEstimateNutrientsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? estimateId,
+    Value<String>? nutrientId,
+    Value<double?>? amount,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String>? status,
+    Value<String>? unit,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionEstimateNutrientsCompanion(
+      id: id ?? this.id,
+      estimateId: estimateId ?? this.estimateId,
+      nutrientId: nutrientId ?? this.nutrientId,
+      amount: amount ?? this.amount,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      status: status ?? this.status,
+      unit: unit ?? this.unit,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (estimateId.present) {
+      map['estimate_id'] = Variable<String>(estimateId.value);
+    }
+    if (nutrientId.present) {
+      map['nutrient_id'] = Variable<String>(nutrientId.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionEstimateNutrientsCompanion(')
+          ..write('id: $id, ')
+          ..write('estimateId: $estimateId, ')
+          ..write('nutrientId: $nutrientId, ')
+          ..write('amount: $amount, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('status: $status, ')
+          ..write('unit: $unit, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionThalisTable extends NutritionThalis
+    with TableInfo<$NutritionThalisTable, NutritionThali> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionThalisTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lifecycleMeta = const VerificationMeta(
+    'lifecycle',
+  );
+  @override
+  late final GeneratedColumn<String> lifecycle = GeneratedColumn<String>(
+    'lifecycle',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _currentVersionMeta = const VerificationMeta(
+    'currentVersion',
+  );
+  @override
+  late final GeneratedColumn<int> currentVersion = GeneratedColumn<int>(
+    'current_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    name,
+    description,
+    lifecycle,
+    currentVersion,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_thalis';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionThali> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lifecycle')) {
+      context.handle(
+        _lifecycleMeta,
+        lifecycle.isAcceptableOrUnknown(data['lifecycle']!, _lifecycleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lifecycleMeta);
+    }
+    if (data.containsKey('current_version')) {
+      context.handle(
+        _currentVersionMeta,
+        currentVersion.isAcceptableOrUnknown(
+          data['current_version']!,
+          _currentVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_currentVersionMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NutritionThali map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionThali(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      lifecycle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lifecycle'],
+      )!,
+      currentVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}current_version'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionThalisTable createAlias(String alias) {
+    return $NutritionThalisTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionThali extends DataClass implements Insertable<NutritionThali> {
+  final String id;
+  final String userId;
+  final String name;
+  final String? description;
+  final String lifecycle;
+  final int currentVersion;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionThali({
+    required this.id,
+    required this.userId,
+    required this.name,
+    this.description,
+    required this.lifecycle,
+    required this.currentVersion,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['lifecycle'] = Variable<String>(lifecycle);
+    map['current_version'] = Variable<int>(currentVersion);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionThalisCompanion toCompanion(bool nullToAbsent) {
+    return NutritionThalisCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      name: Value(name),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      lifecycle: Value(lifecycle),
+      currentVersion: Value(currentVersion),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionThali.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionThali(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String?>(json['description']),
+      lifecycle: serializer.fromJson<String>(json['lifecycle']),
+      currentVersion: serializer.fromJson<int>(json['currentVersion']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String?>(description),
+      'lifecycle': serializer.toJson<String>(lifecycle),
+      'currentVersion': serializer.toJson<int>(currentVersion),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionThali copyWith({
+    String? id,
+    String? userId,
+    String? name,
+    Value<String?> description = const Value.absent(),
+    String? lifecycle,
+    int? currentVersion,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionThali(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    name: name ?? this.name,
+    description: description.present ? description.value : this.description,
+    lifecycle: lifecycle ?? this.lifecycle,
+    currentVersion: currentVersion ?? this.currentVersion,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionThali copyWithCompanion(NutritionThalisCompanion data) {
+    return NutritionThali(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      name: data.name.present ? data.name.value : this.name,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      lifecycle: data.lifecycle.present ? data.lifecycle.value : this.lifecycle,
+      currentVersion: data.currentVersion.present
+          ? data.currentVersion.value
+          : this.currentVersion,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionThali(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('lifecycle: $lifecycle, ')
+          ..write('currentVersion: $currentVersion, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    name,
+    description,
+    lifecycle,
+    currentVersion,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionThali &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.name == this.name &&
+          other.description == this.description &&
+          other.lifecycle == this.lifecycle &&
+          other.currentVersion == this.currentVersion &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionThalisCompanion extends UpdateCompanion<NutritionThali> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> name;
+  final Value<String?> description;
+  final Value<String> lifecycle;
+  final Value<int> currentVersion;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionThalisCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.lifecycle = const Value.absent(),
+    this.currentVersion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionThalisCompanion.insert({
+    required String id,
+    required String userId,
+    required String name,
+    this.description = const Value.absent(),
+    required String lifecycle,
+    required int currentVersion,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       name = Value(name),
+       lifecycle = Value(lifecycle),
+       currentVersion = Value(currentVersion);
+  static Insertable<NutritionThali> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? name,
+    Expression<String>? description,
+    Expression<String>? lifecycle,
+    Expression<int>? currentVersion,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (lifecycle != null) 'lifecycle': lifecycle,
+      if (currentVersion != null) 'current_version': currentVersion,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionThalisCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? name,
+    Value<String?>? description,
+    Value<String>? lifecycle,
+    Value<int>? currentVersion,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionThalisCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      lifecycle: lifecycle ?? this.lifecycle,
+      currentVersion: currentVersion ?? this.currentVersion,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (lifecycle.present) {
+      map['lifecycle'] = Variable<String>(lifecycle.value);
+    }
+    if (currentVersion.present) {
+      map['current_version'] = Variable<int>(currentVersion.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionThalisCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('lifecycle: $lifecycle, ')
+          ..write('currentVersion: $currentVersion, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionThaliItemsTable extends NutritionThaliItems
+    with TableInfo<$NutritionThaliItemsTable, NutritionThaliItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionThaliItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _thaliIdMeta = const VerificationMeta(
+    'thaliId',
+  );
+  @override
+  late final GeneratedColumn<String> thaliId = GeneratedColumn<String>(
+    'thali_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_thalis (id)',
+    ),
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _foodIdMeta = const VerificationMeta('foodId');
+  @override
+  late final GeneratedColumn<String> foodId = GeneratedColumn<String>(
+    'food_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _recipeVersionIdMeta = const VerificationMeta(
+    'recipeVersionId',
+  );
+  @override
+  late final GeneratedColumn<String> recipeVersionId = GeneratedColumn<String>(
+    'recipe_version_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_recipe_versions (id)',
+    ),
+  );
+  static const VerificationMeta _quantityValueMeta = const VerificationMeta(
+    'quantityValue',
+  );
+  @override
+  late final GeneratedColumn<double> quantityValue = GeneratedColumn<double>(
+    'quantity_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _quantityDimensionMeta = const VerificationMeta(
+    'quantityDimension',
+  );
+  @override
+  late final GeneratedColumn<String> quantityDimension =
+      GeneratedColumn<String>(
+        'quantity_dimension',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _quantityUnitMeta = const VerificationMeta(
+    'quantityUnit',
+  );
+  @override
+  late final GeneratedColumn<String> quantityUnit = GeneratedColumn<String>(
+    'quantity_unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _measureIdMeta = const VerificationMeta(
+    'measureId',
+  );
+  @override
+  late final GeneratedColumn<String> measureId = GeneratedColumn<String>(
+    'measure_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_household_measures (id)',
+    ),
+  );
+  static const VerificationMeta _optionalMeta = const VerificationMeta(
+    'optional',
+  );
+  @override
+  late final GeneratedColumn<bool> optional = GeneratedColumn<bool>(
+    'optional',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("optional" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    thaliId,
+    position,
+    foodId,
+    recipeVersionId,
+    quantityValue,
+    quantityDimension,
+    quantityUnit,
+    measureId,
+    optional,
+    notes,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_thali_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionThaliItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('thali_id')) {
+      context.handle(
+        _thaliIdMeta,
+        thaliId.isAcceptableOrUnknown(data['thali_id']!, _thaliIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_thaliIdMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    if (data.containsKey('food_id')) {
+      context.handle(
+        _foodIdMeta,
+        foodId.isAcceptableOrUnknown(data['food_id']!, _foodIdMeta),
+      );
+    }
+    if (data.containsKey('recipe_version_id')) {
+      context.handle(
+        _recipeVersionIdMeta,
+        recipeVersionId.isAcceptableOrUnknown(
+          data['recipe_version_id']!,
+          _recipeVersionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('quantity_value')) {
+      context.handle(
+        _quantityValueMeta,
+        quantityValue.isAcceptableOrUnknown(
+          data['quantity_value']!,
+          _quantityValueMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_quantityValueMeta);
+    }
+    if (data.containsKey('quantity_dimension')) {
+      context.handle(
+        _quantityDimensionMeta,
+        quantityDimension.isAcceptableOrUnknown(
+          data['quantity_dimension']!,
+          _quantityDimensionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_quantityDimensionMeta);
+    }
+    if (data.containsKey('quantity_unit')) {
+      context.handle(
+        _quantityUnitMeta,
+        quantityUnit.isAcceptableOrUnknown(
+          data['quantity_unit']!,
+          _quantityUnitMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_quantityUnitMeta);
+    }
+    if (data.containsKey('measure_id')) {
+      context.handle(
+        _measureIdMeta,
+        measureId.isAcceptableOrUnknown(data['measure_id']!, _measureIdMeta),
+      );
+    }
+    if (data.containsKey('optional')) {
+      context.handle(
+        _optionalMeta,
+        optional.isAcceptableOrUnknown(data['optional']!, _optionalMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {thaliId, position},
+  ];
+  @override
+  NutritionThaliItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionThaliItem(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      thaliId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thali_id'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      foodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}food_id'],
+      ),
+      recipeVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipe_version_id'],
+      ),
+      quantityValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}quantity_value'],
+      )!,
+      quantityDimension: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quantity_dimension'],
+      )!,
+      quantityUnit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quantity_unit'],
+      )!,
+      measureId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}measure_id'],
+      ),
+      optional: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}optional'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionThaliItemsTable createAlias(String alias) {
+    return $NutritionThaliItemsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionThaliItem extends DataClass
+    implements Insertable<NutritionThaliItem> {
+  final String id;
+  final String thaliId;
+  final int position;
+  final String? foodId;
+  final String? recipeVersionId;
+  final double quantityValue;
+  final String quantityDimension;
+  final String quantityUnit;
+  final String? measureId;
+  final bool optional;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionThaliItem({
+    required this.id,
+    required this.thaliId,
+    required this.position,
+    this.foodId,
+    this.recipeVersionId,
+    required this.quantityValue,
+    required this.quantityDimension,
+    required this.quantityUnit,
+    this.measureId,
+    required this.optional,
+    this.notes,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['thali_id'] = Variable<String>(thaliId);
+    map['position'] = Variable<int>(position);
+    if (!nullToAbsent || foodId != null) {
+      map['food_id'] = Variable<String>(foodId);
+    }
+    if (!nullToAbsent || recipeVersionId != null) {
+      map['recipe_version_id'] = Variable<String>(recipeVersionId);
+    }
+    map['quantity_value'] = Variable<double>(quantityValue);
+    map['quantity_dimension'] = Variable<String>(quantityDimension);
+    map['quantity_unit'] = Variable<String>(quantityUnit);
+    if (!nullToAbsent || measureId != null) {
+      map['measure_id'] = Variable<String>(measureId);
+    }
+    map['optional'] = Variable<bool>(optional);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionThaliItemsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionThaliItemsCompanion(
+      id: Value(id),
+      thaliId: Value(thaliId),
+      position: Value(position),
+      foodId: foodId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foodId),
+      recipeVersionId: recipeVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recipeVersionId),
+      quantityValue: Value(quantityValue),
+      quantityDimension: Value(quantityDimension),
+      quantityUnit: Value(quantityUnit),
+      measureId: measureId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(measureId),
+      optional: Value(optional),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionThaliItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionThaliItem(
+      id: serializer.fromJson<String>(json['id']),
+      thaliId: serializer.fromJson<String>(json['thaliId']),
+      position: serializer.fromJson<int>(json['position']),
+      foodId: serializer.fromJson<String?>(json['foodId']),
+      recipeVersionId: serializer.fromJson<String?>(json['recipeVersionId']),
+      quantityValue: serializer.fromJson<double>(json['quantityValue']),
+      quantityDimension: serializer.fromJson<String>(json['quantityDimension']),
+      quantityUnit: serializer.fromJson<String>(json['quantityUnit']),
+      measureId: serializer.fromJson<String?>(json['measureId']),
+      optional: serializer.fromJson<bool>(json['optional']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'thaliId': serializer.toJson<String>(thaliId),
+      'position': serializer.toJson<int>(position),
+      'foodId': serializer.toJson<String?>(foodId),
+      'recipeVersionId': serializer.toJson<String?>(recipeVersionId),
+      'quantityValue': serializer.toJson<double>(quantityValue),
+      'quantityDimension': serializer.toJson<String>(quantityDimension),
+      'quantityUnit': serializer.toJson<String>(quantityUnit),
+      'measureId': serializer.toJson<String?>(measureId),
+      'optional': serializer.toJson<bool>(optional),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionThaliItem copyWith({
+    String? id,
+    String? thaliId,
+    int? position,
+    Value<String?> foodId = const Value.absent(),
+    Value<String?> recipeVersionId = const Value.absent(),
+    double? quantityValue,
+    String? quantityDimension,
+    String? quantityUnit,
+    Value<String?> measureId = const Value.absent(),
+    bool? optional,
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionThaliItem(
+    id: id ?? this.id,
+    thaliId: thaliId ?? this.thaliId,
+    position: position ?? this.position,
+    foodId: foodId.present ? foodId.value : this.foodId,
+    recipeVersionId: recipeVersionId.present
+        ? recipeVersionId.value
+        : this.recipeVersionId,
+    quantityValue: quantityValue ?? this.quantityValue,
+    quantityDimension: quantityDimension ?? this.quantityDimension,
+    quantityUnit: quantityUnit ?? this.quantityUnit,
+    measureId: measureId.present ? measureId.value : this.measureId,
+    optional: optional ?? this.optional,
+    notes: notes.present ? notes.value : this.notes,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionThaliItem copyWithCompanion(NutritionThaliItemsCompanion data) {
+    return NutritionThaliItem(
+      id: data.id.present ? data.id.value : this.id,
+      thaliId: data.thaliId.present ? data.thaliId.value : this.thaliId,
+      position: data.position.present ? data.position.value : this.position,
+      foodId: data.foodId.present ? data.foodId.value : this.foodId,
+      recipeVersionId: data.recipeVersionId.present
+          ? data.recipeVersionId.value
+          : this.recipeVersionId,
+      quantityValue: data.quantityValue.present
+          ? data.quantityValue.value
+          : this.quantityValue,
+      quantityDimension: data.quantityDimension.present
+          ? data.quantityDimension.value
+          : this.quantityDimension,
+      quantityUnit: data.quantityUnit.present
+          ? data.quantityUnit.value
+          : this.quantityUnit,
+      measureId: data.measureId.present ? data.measureId.value : this.measureId,
+      optional: data.optional.present ? data.optional.value : this.optional,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionThaliItem(')
+          ..write('id: $id, ')
+          ..write('thaliId: $thaliId, ')
+          ..write('position: $position, ')
+          ..write('foodId: $foodId, ')
+          ..write('recipeVersionId: $recipeVersionId, ')
+          ..write('quantityValue: $quantityValue, ')
+          ..write('quantityDimension: $quantityDimension, ')
+          ..write('quantityUnit: $quantityUnit, ')
+          ..write('measureId: $measureId, ')
+          ..write('optional: $optional, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    thaliId,
+    position,
+    foodId,
+    recipeVersionId,
+    quantityValue,
+    quantityDimension,
+    quantityUnit,
+    measureId,
+    optional,
+    notes,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionThaliItem &&
+          other.id == this.id &&
+          other.thaliId == this.thaliId &&
+          other.position == this.position &&
+          other.foodId == this.foodId &&
+          other.recipeVersionId == this.recipeVersionId &&
+          other.quantityValue == this.quantityValue &&
+          other.quantityDimension == this.quantityDimension &&
+          other.quantityUnit == this.quantityUnit &&
+          other.measureId == this.measureId &&
+          other.optional == this.optional &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionThaliItemsCompanion extends UpdateCompanion<NutritionThaliItem> {
+  final Value<String> id;
+  final Value<String> thaliId;
+  final Value<int> position;
+  final Value<String?> foodId;
+  final Value<String?> recipeVersionId;
+  final Value<double> quantityValue;
+  final Value<String> quantityDimension;
+  final Value<String> quantityUnit;
+  final Value<String?> measureId;
+  final Value<bool> optional;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionThaliItemsCompanion({
+    this.id = const Value.absent(),
+    this.thaliId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.foodId = const Value.absent(),
+    this.recipeVersionId = const Value.absent(),
+    this.quantityValue = const Value.absent(),
+    this.quantityDimension = const Value.absent(),
+    this.quantityUnit = const Value.absent(),
+    this.measureId = const Value.absent(),
+    this.optional = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionThaliItemsCompanion.insert({
+    required String id,
+    required String thaliId,
+    required int position,
+    this.foodId = const Value.absent(),
+    this.recipeVersionId = const Value.absent(),
+    required double quantityValue,
+    required String quantityDimension,
+    required String quantityUnit,
+    this.measureId = const Value.absent(),
+    this.optional = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       thaliId = Value(thaliId),
+       position = Value(position),
+       quantityValue = Value(quantityValue),
+       quantityDimension = Value(quantityDimension),
+       quantityUnit = Value(quantityUnit);
+  static Insertable<NutritionThaliItem> custom({
+    Expression<String>? id,
+    Expression<String>? thaliId,
+    Expression<int>? position,
+    Expression<String>? foodId,
+    Expression<String>? recipeVersionId,
+    Expression<double>? quantityValue,
+    Expression<String>? quantityDimension,
+    Expression<String>? quantityUnit,
+    Expression<String>? measureId,
+    Expression<bool>? optional,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (thaliId != null) 'thali_id': thaliId,
+      if (position != null) 'position': position,
+      if (foodId != null) 'food_id': foodId,
+      if (recipeVersionId != null) 'recipe_version_id': recipeVersionId,
+      if (quantityValue != null) 'quantity_value': quantityValue,
+      if (quantityDimension != null) 'quantity_dimension': quantityDimension,
+      if (quantityUnit != null) 'quantity_unit': quantityUnit,
+      if (measureId != null) 'measure_id': measureId,
+      if (optional != null) 'optional': optional,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionThaliItemsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? thaliId,
+    Value<int>? position,
+    Value<String?>? foodId,
+    Value<String?>? recipeVersionId,
+    Value<double>? quantityValue,
+    Value<String>? quantityDimension,
+    Value<String>? quantityUnit,
+    Value<String?>? measureId,
+    Value<bool>? optional,
+    Value<String?>? notes,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionThaliItemsCompanion(
+      id: id ?? this.id,
+      thaliId: thaliId ?? this.thaliId,
+      position: position ?? this.position,
+      foodId: foodId ?? this.foodId,
+      recipeVersionId: recipeVersionId ?? this.recipeVersionId,
+      quantityValue: quantityValue ?? this.quantityValue,
+      quantityDimension: quantityDimension ?? this.quantityDimension,
+      quantityUnit: quantityUnit ?? this.quantityUnit,
+      measureId: measureId ?? this.measureId,
+      optional: optional ?? this.optional,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (thaliId.present) {
+      map['thali_id'] = Variable<String>(thaliId.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (foodId.present) {
+      map['food_id'] = Variable<String>(foodId.value);
+    }
+    if (recipeVersionId.present) {
+      map['recipe_version_id'] = Variable<String>(recipeVersionId.value);
+    }
+    if (quantityValue.present) {
+      map['quantity_value'] = Variable<double>(quantityValue.value);
+    }
+    if (quantityDimension.present) {
+      map['quantity_dimension'] = Variable<String>(quantityDimension.value);
+    }
+    if (quantityUnit.present) {
+      map['quantity_unit'] = Variable<String>(quantityUnit.value);
+    }
+    if (measureId.present) {
+      map['measure_id'] = Variable<String>(measureId.value);
+    }
+    if (optional.present) {
+      map['optional'] = Variable<bool>(optional.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionThaliItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('thaliId: $thaliId, ')
+          ..write('position: $position, ')
+          ..write('foodId: $foodId, ')
+          ..write('recipeVersionId: $recipeVersionId, ')
+          ..write('quantityValue: $quantityValue, ')
+          ..write('quantityDimension: $quantityDimension, ')
+          ..write('quantityUnit: $quantityUnit, ')
+          ..write('measureId: $measureId, ')
+          ..write('optional: $optional, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionConsumptionSnapshotsTable extends NutritionConsumptionSnapshots
+    with
+        TableInfo<
+          $NutritionConsumptionSnapshotsTable,
+          NutritionConsumptionSnapshot
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionConsumptionSnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _loggedAtMeta = const VerificationMeta(
+    'loggedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> loggedAt = GeneratedColumn<DateTime>(
+    'logged_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mealCategoryMeta = const VerificationMeta(
+    'mealCategory',
+  );
+  @override
+  late final GeneratedColumn<String> mealCategory = GeneratedColumn<String>(
+    'meal_category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mealGroupIdMeta = const VerificationMeta(
+    'mealGroupId',
+  );
+  @override
+  late final GeneratedColumn<String> mealGroupId = GeneratedColumn<String>(
+    'meal_group_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceTypeMeta = const VerificationMeta(
+    'sourceType',
+  );
+  @override
+  late final GeneratedColumn<String> sourceType = GeneratedColumn<String>(
+    'source_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recipeVersionIdMeta = const VerificationMeta(
+    'recipeVersionId',
+  );
+  @override
+  late final GeneratedColumn<String> recipeVersionId = GeneratedColumn<String>(
+    'recipe_version_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_recipe_versions (id)',
+    ),
+  );
+  static const VerificationMeta _thaliIdMeta = const VerificationMeta(
+    'thaliId',
+  );
+  @override
+  late final GeneratedColumn<String> thaliId = GeneratedColumn<String>(
+    'thali_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_thalis (id)',
+    ),
+  );
+  static const VerificationMeta _calculatorVersionMeta = const VerificationMeta(
+    'calculatorVersion',
+  );
+  @override
+  late final GeneratedColumn<String> calculatorVersion =
+      GeneratedColumn<String>(
+        'calculator_version',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _completenessMeta = const VerificationMeta(
+    'completeness',
+  );
+  @override
+  late final GeneratedColumn<String> completeness = GeneratedColumn<String>(
+    'completeness',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estimateStatusMeta = const VerificationMeta(
+    'estimateStatus',
+  );
+  @override
+  late final GeneratedColumn<String> estimateStatus = GeneratedColumn<String>(
+    'estimate_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localDateMeta = const VerificationMeta(
+    'localDate',
+  );
+  @override
+  late final GeneratedColumn<String> localDate = GeneratedColumn<String>(
+    'local_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _timezoneIdMeta = const VerificationMeta(
+    'timezoneId',
+  );
+  @override
+  late final GeneratedColumn<String> timezoneId = GeneratedColumn<String>(
+    'timezone_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lineageMeta = const VerificationMeta(
+    'lineage',
+  );
+  @override
+  late final GeneratedColumn<String> lineage = GeneratedColumn<String>(
+    'lineage',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    loggedAt,
+    mealCategory,
+    mealGroupId,
+    sourceType,
+    recipeVersionId,
+    thaliId,
+    calculatorVersion,
+    completeness,
+    estimateStatus,
+    localDate,
+    timezoneId,
+    lineage,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_consumption_snapshots';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionConsumptionSnapshot> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('logged_at')) {
+      context.handle(
+        _loggedAtMeta,
+        loggedAt.isAcceptableOrUnknown(data['logged_at']!, _loggedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_loggedAtMeta);
+    }
+    if (data.containsKey('meal_category')) {
+      context.handle(
+        _mealCategoryMeta,
+        mealCategory.isAcceptableOrUnknown(
+          data['meal_category']!,
+          _mealCategoryMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_mealCategoryMeta);
+    }
+    if (data.containsKey('meal_group_id')) {
+      context.handle(
+        _mealGroupIdMeta,
+        mealGroupId.isAcceptableOrUnknown(
+          data['meal_group_id']!,
+          _mealGroupIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_type')) {
+      context.handle(
+        _sourceTypeMeta,
+        sourceType.isAcceptableOrUnknown(data['source_type']!, _sourceTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceTypeMeta);
+    }
+    if (data.containsKey('recipe_version_id')) {
+      context.handle(
+        _recipeVersionIdMeta,
+        recipeVersionId.isAcceptableOrUnknown(
+          data['recipe_version_id']!,
+          _recipeVersionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('thali_id')) {
+      context.handle(
+        _thaliIdMeta,
+        thaliId.isAcceptableOrUnknown(data['thali_id']!, _thaliIdMeta),
+      );
+    }
+    if (data.containsKey('calculator_version')) {
+      context.handle(
+        _calculatorVersionMeta,
+        calculatorVersion.isAcceptableOrUnknown(
+          data['calculator_version']!,
+          _calculatorVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_calculatorVersionMeta);
+    }
+    if (data.containsKey('completeness')) {
+      context.handle(
+        _completenessMeta,
+        completeness.isAcceptableOrUnknown(
+          data['completeness']!,
+          _completenessMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_completenessMeta);
+    }
+    if (data.containsKey('estimate_status')) {
+      context.handle(
+        _estimateStatusMeta,
+        estimateStatus.isAcceptableOrUnknown(
+          data['estimate_status']!,
+          _estimateStatusMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_estimateStatusMeta);
+    }
+    if (data.containsKey('local_date')) {
+      context.handle(
+        _localDateMeta,
+        localDate.isAcceptableOrUnknown(data['local_date']!, _localDateMeta),
+      );
+    }
+    if (data.containsKey('timezone_id')) {
+      context.handle(
+        _timezoneIdMeta,
+        timezoneId.isAcceptableOrUnknown(data['timezone_id']!, _timezoneIdMeta),
+      );
+    }
+    if (data.containsKey('lineage')) {
+      context.handle(
+        _lineageMeta,
+        lineage.isAcceptableOrUnknown(data['lineage']!, _lineageMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NutritionConsumptionSnapshot map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionConsumptionSnapshot(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      loggedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}logged_at'],
+      )!,
+      mealCategory: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}meal_category'],
+      )!,
+      mealGroupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}meal_group_id'],
+      ),
+      sourceType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_type'],
+      )!,
+      recipeVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipe_version_id'],
+      ),
+      thaliId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thali_id'],
+      ),
+      calculatorVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}calculator_version'],
+      )!,
+      completeness: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}completeness'],
+      )!,
+      estimateStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estimate_status'],
+      )!,
+      localDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_date'],
+      ),
+      timezoneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}timezone_id'],
+      ),
+      lineage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lineage'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionConsumptionSnapshotsTable createAlias(String alias) {
+    return $NutritionConsumptionSnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionConsumptionSnapshot extends DataClass
+    implements Insertable<NutritionConsumptionSnapshot> {
+  final String id;
+  final String userId;
+  final DateTime loggedAt;
+  final String mealCategory;
+  final String? mealGroupId;
+  final String sourceType;
+  final String? recipeVersionId;
+  final String? thaliId;
+  final String calculatorVersion;
+  final String completeness;
+  final String estimateStatus;
+  final String? localDate;
+  final String? timezoneId;
+  final String? lineage;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionConsumptionSnapshot({
+    required this.id,
+    required this.userId,
+    required this.loggedAt,
+    required this.mealCategory,
+    this.mealGroupId,
+    required this.sourceType,
+    this.recipeVersionId,
+    this.thaliId,
+    required this.calculatorVersion,
+    required this.completeness,
+    required this.estimateStatus,
+    this.localDate,
+    this.timezoneId,
+    this.lineage,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['logged_at'] = Variable<DateTime>(loggedAt);
+    map['meal_category'] = Variable<String>(mealCategory);
+    if (!nullToAbsent || mealGroupId != null) {
+      map['meal_group_id'] = Variable<String>(mealGroupId);
+    }
+    map['source_type'] = Variable<String>(sourceType);
+    if (!nullToAbsent || recipeVersionId != null) {
+      map['recipe_version_id'] = Variable<String>(recipeVersionId);
+    }
+    if (!nullToAbsent || thaliId != null) {
+      map['thali_id'] = Variable<String>(thaliId);
+    }
+    map['calculator_version'] = Variable<String>(calculatorVersion);
+    map['completeness'] = Variable<String>(completeness);
+    map['estimate_status'] = Variable<String>(estimateStatus);
+    if (!nullToAbsent || localDate != null) {
+      map['local_date'] = Variable<String>(localDate);
+    }
+    if (!nullToAbsent || timezoneId != null) {
+      map['timezone_id'] = Variable<String>(timezoneId);
+    }
+    if (!nullToAbsent || lineage != null) {
+      map['lineage'] = Variable<String>(lineage);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionConsumptionSnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionConsumptionSnapshotsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      loggedAt: Value(loggedAt),
+      mealCategory: Value(mealCategory),
+      mealGroupId: mealGroupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mealGroupId),
+      sourceType: Value(sourceType),
+      recipeVersionId: recipeVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recipeVersionId),
+      thaliId: thaliId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thaliId),
+      calculatorVersion: Value(calculatorVersion),
+      completeness: Value(completeness),
+      estimateStatus: Value(estimateStatus),
+      localDate: localDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localDate),
+      timezoneId: timezoneId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timezoneId),
+      lineage: lineage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lineage),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionConsumptionSnapshot.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionConsumptionSnapshot(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      loggedAt: serializer.fromJson<DateTime>(json['loggedAt']),
+      mealCategory: serializer.fromJson<String>(json['mealCategory']),
+      mealGroupId: serializer.fromJson<String?>(json['mealGroupId']),
+      sourceType: serializer.fromJson<String>(json['sourceType']),
+      recipeVersionId: serializer.fromJson<String?>(json['recipeVersionId']),
+      thaliId: serializer.fromJson<String?>(json['thaliId']),
+      calculatorVersion: serializer.fromJson<String>(json['calculatorVersion']),
+      completeness: serializer.fromJson<String>(json['completeness']),
+      estimateStatus: serializer.fromJson<String>(json['estimateStatus']),
+      localDate: serializer.fromJson<String?>(json['localDate']),
+      timezoneId: serializer.fromJson<String?>(json['timezoneId']),
+      lineage: serializer.fromJson<String?>(json['lineage']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'loggedAt': serializer.toJson<DateTime>(loggedAt),
+      'mealCategory': serializer.toJson<String>(mealCategory),
+      'mealGroupId': serializer.toJson<String?>(mealGroupId),
+      'sourceType': serializer.toJson<String>(sourceType),
+      'recipeVersionId': serializer.toJson<String?>(recipeVersionId),
+      'thaliId': serializer.toJson<String?>(thaliId),
+      'calculatorVersion': serializer.toJson<String>(calculatorVersion),
+      'completeness': serializer.toJson<String>(completeness),
+      'estimateStatus': serializer.toJson<String>(estimateStatus),
+      'localDate': serializer.toJson<String?>(localDate),
+      'timezoneId': serializer.toJson<String?>(timezoneId),
+      'lineage': serializer.toJson<String?>(lineage),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionConsumptionSnapshot copyWith({
+    String? id,
+    String? userId,
+    DateTime? loggedAt,
+    String? mealCategory,
+    Value<String?> mealGroupId = const Value.absent(),
+    String? sourceType,
+    Value<String?> recipeVersionId = const Value.absent(),
+    Value<String?> thaliId = const Value.absent(),
+    String? calculatorVersion,
+    String? completeness,
+    String? estimateStatus,
+    Value<String?> localDate = const Value.absent(),
+    Value<String?> timezoneId = const Value.absent(),
+    Value<String?> lineage = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionConsumptionSnapshot(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    loggedAt: loggedAt ?? this.loggedAt,
+    mealCategory: mealCategory ?? this.mealCategory,
+    mealGroupId: mealGroupId.present ? mealGroupId.value : this.mealGroupId,
+    sourceType: sourceType ?? this.sourceType,
+    recipeVersionId: recipeVersionId.present
+        ? recipeVersionId.value
+        : this.recipeVersionId,
+    thaliId: thaliId.present ? thaliId.value : this.thaliId,
+    calculatorVersion: calculatorVersion ?? this.calculatorVersion,
+    completeness: completeness ?? this.completeness,
+    estimateStatus: estimateStatus ?? this.estimateStatus,
+    localDate: localDate.present ? localDate.value : this.localDate,
+    timezoneId: timezoneId.present ? timezoneId.value : this.timezoneId,
+    lineage: lineage.present ? lineage.value : this.lineage,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionConsumptionSnapshot copyWithCompanion(
+    NutritionConsumptionSnapshotsCompanion data,
+  ) {
+    return NutritionConsumptionSnapshot(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      loggedAt: data.loggedAt.present ? data.loggedAt.value : this.loggedAt,
+      mealCategory: data.mealCategory.present
+          ? data.mealCategory.value
+          : this.mealCategory,
+      mealGroupId: data.mealGroupId.present
+          ? data.mealGroupId.value
+          : this.mealGroupId,
+      sourceType: data.sourceType.present
+          ? data.sourceType.value
+          : this.sourceType,
+      recipeVersionId: data.recipeVersionId.present
+          ? data.recipeVersionId.value
+          : this.recipeVersionId,
+      thaliId: data.thaliId.present ? data.thaliId.value : this.thaliId,
+      calculatorVersion: data.calculatorVersion.present
+          ? data.calculatorVersion.value
+          : this.calculatorVersion,
+      completeness: data.completeness.present
+          ? data.completeness.value
+          : this.completeness,
+      estimateStatus: data.estimateStatus.present
+          ? data.estimateStatus.value
+          : this.estimateStatus,
+      localDate: data.localDate.present ? data.localDate.value : this.localDate,
+      timezoneId: data.timezoneId.present
+          ? data.timezoneId.value
+          : this.timezoneId,
+      lineage: data.lineage.present ? data.lineage.value : this.lineage,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionConsumptionSnapshot(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('loggedAt: $loggedAt, ')
+          ..write('mealCategory: $mealCategory, ')
+          ..write('mealGroupId: $mealGroupId, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('recipeVersionId: $recipeVersionId, ')
+          ..write('thaliId: $thaliId, ')
+          ..write('calculatorVersion: $calculatorVersion, ')
+          ..write('completeness: $completeness, ')
+          ..write('estimateStatus: $estimateStatus, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('lineage: $lineage, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    loggedAt,
+    mealCategory,
+    mealGroupId,
+    sourceType,
+    recipeVersionId,
+    thaliId,
+    calculatorVersion,
+    completeness,
+    estimateStatus,
+    localDate,
+    timezoneId,
+    lineage,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionConsumptionSnapshot &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.loggedAt == this.loggedAt &&
+          other.mealCategory == this.mealCategory &&
+          other.mealGroupId == this.mealGroupId &&
+          other.sourceType == this.sourceType &&
+          other.recipeVersionId == this.recipeVersionId &&
+          other.thaliId == this.thaliId &&
+          other.calculatorVersion == this.calculatorVersion &&
+          other.completeness == this.completeness &&
+          other.estimateStatus == this.estimateStatus &&
+          other.localDate == this.localDate &&
+          other.timezoneId == this.timezoneId &&
+          other.lineage == this.lineage &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionConsumptionSnapshotsCompanion
+    extends UpdateCompanion<NutritionConsumptionSnapshot> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<DateTime> loggedAt;
+  final Value<String> mealCategory;
+  final Value<String?> mealGroupId;
+  final Value<String> sourceType;
+  final Value<String?> recipeVersionId;
+  final Value<String?> thaliId;
+  final Value<String> calculatorVersion;
+  final Value<String> completeness;
+  final Value<String> estimateStatus;
+  final Value<String?> localDate;
+  final Value<String?> timezoneId;
+  final Value<String?> lineage;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionConsumptionSnapshotsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.loggedAt = const Value.absent(),
+    this.mealCategory = const Value.absent(),
+    this.mealGroupId = const Value.absent(),
+    this.sourceType = const Value.absent(),
+    this.recipeVersionId = const Value.absent(),
+    this.thaliId = const Value.absent(),
+    this.calculatorVersion = const Value.absent(),
+    this.completeness = const Value.absent(),
+    this.estimateStatus = const Value.absent(),
+    this.localDate = const Value.absent(),
+    this.timezoneId = const Value.absent(),
+    this.lineage = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionConsumptionSnapshotsCompanion.insert({
+    required String id,
+    required String userId,
+    required DateTime loggedAt,
+    required String mealCategory,
+    this.mealGroupId = const Value.absent(),
+    required String sourceType,
+    this.recipeVersionId = const Value.absent(),
+    this.thaliId = const Value.absent(),
+    required String calculatorVersion,
+    required String completeness,
+    required String estimateStatus,
+    this.localDate = const Value.absent(),
+    this.timezoneId = const Value.absent(),
+    this.lineage = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       loggedAt = Value(loggedAt),
+       mealCategory = Value(mealCategory),
+       sourceType = Value(sourceType),
+       calculatorVersion = Value(calculatorVersion),
+       completeness = Value(completeness),
+       estimateStatus = Value(estimateStatus);
+  static Insertable<NutritionConsumptionSnapshot> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<DateTime>? loggedAt,
+    Expression<String>? mealCategory,
+    Expression<String>? mealGroupId,
+    Expression<String>? sourceType,
+    Expression<String>? recipeVersionId,
+    Expression<String>? thaliId,
+    Expression<String>? calculatorVersion,
+    Expression<String>? completeness,
+    Expression<String>? estimateStatus,
+    Expression<String>? localDate,
+    Expression<String>? timezoneId,
+    Expression<String>? lineage,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (loggedAt != null) 'logged_at': loggedAt,
+      if (mealCategory != null) 'meal_category': mealCategory,
+      if (mealGroupId != null) 'meal_group_id': mealGroupId,
+      if (sourceType != null) 'source_type': sourceType,
+      if (recipeVersionId != null) 'recipe_version_id': recipeVersionId,
+      if (thaliId != null) 'thali_id': thaliId,
+      if (calculatorVersion != null) 'calculator_version': calculatorVersion,
+      if (completeness != null) 'completeness': completeness,
+      if (estimateStatus != null) 'estimate_status': estimateStatus,
+      if (localDate != null) 'local_date': localDate,
+      if (timezoneId != null) 'timezone_id': timezoneId,
+      if (lineage != null) 'lineage': lineage,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionConsumptionSnapshotsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<DateTime>? loggedAt,
+    Value<String>? mealCategory,
+    Value<String?>? mealGroupId,
+    Value<String>? sourceType,
+    Value<String?>? recipeVersionId,
+    Value<String?>? thaliId,
+    Value<String>? calculatorVersion,
+    Value<String>? completeness,
+    Value<String>? estimateStatus,
+    Value<String?>? localDate,
+    Value<String?>? timezoneId,
+    Value<String?>? lineage,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionConsumptionSnapshotsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      loggedAt: loggedAt ?? this.loggedAt,
+      mealCategory: mealCategory ?? this.mealCategory,
+      mealGroupId: mealGroupId ?? this.mealGroupId,
+      sourceType: sourceType ?? this.sourceType,
+      recipeVersionId: recipeVersionId ?? this.recipeVersionId,
+      thaliId: thaliId ?? this.thaliId,
+      calculatorVersion: calculatorVersion ?? this.calculatorVersion,
+      completeness: completeness ?? this.completeness,
+      estimateStatus: estimateStatus ?? this.estimateStatus,
+      localDate: localDate ?? this.localDate,
+      timezoneId: timezoneId ?? this.timezoneId,
+      lineage: lineage ?? this.lineage,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (loggedAt.present) {
+      map['logged_at'] = Variable<DateTime>(loggedAt.value);
+    }
+    if (mealCategory.present) {
+      map['meal_category'] = Variable<String>(mealCategory.value);
+    }
+    if (mealGroupId.present) {
+      map['meal_group_id'] = Variable<String>(mealGroupId.value);
+    }
+    if (sourceType.present) {
+      map['source_type'] = Variable<String>(sourceType.value);
+    }
+    if (recipeVersionId.present) {
+      map['recipe_version_id'] = Variable<String>(recipeVersionId.value);
+    }
+    if (thaliId.present) {
+      map['thali_id'] = Variable<String>(thaliId.value);
+    }
+    if (calculatorVersion.present) {
+      map['calculator_version'] = Variable<String>(calculatorVersion.value);
+    }
+    if (completeness.present) {
+      map['completeness'] = Variable<String>(completeness.value);
+    }
+    if (estimateStatus.present) {
+      map['estimate_status'] = Variable<String>(estimateStatus.value);
+    }
+    if (localDate.present) {
+      map['local_date'] = Variable<String>(localDate.value);
+    }
+    if (timezoneId.present) {
+      map['timezone_id'] = Variable<String>(timezoneId.value);
+    }
+    if (lineage.present) {
+      map['lineage'] = Variable<String>(lineage.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionConsumptionSnapshotsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('loggedAt: $loggedAt, ')
+          ..write('mealCategory: $mealCategory, ')
+          ..write('mealGroupId: $mealGroupId, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('recipeVersionId: $recipeVersionId, ')
+          ..write('thaliId: $thaliId, ')
+          ..write('calculatorVersion: $calculatorVersion, ')
+          ..write('completeness: $completeness, ')
+          ..write('estimateStatus: $estimateStatus, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('lineage: $lineage, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionSnapshotItemsTable extends NutritionSnapshotItems
+    with TableInfo<$NutritionSnapshotItemsTable, NutritionSnapshotItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionSnapshotItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _snapshotIdMeta = const VerificationMeta(
+    'snapshotId',
+  );
+  @override
+  late final GeneratedColumn<String> snapshotId = GeneratedColumn<String>(
+    'snapshot_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_consumption_snapshots (id)',
+    ),
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _foodIdMeta = const VerificationMeta('foodId');
+  @override
+  late final GeneratedColumn<String> foodId = GeneratedColumn<String>(
+    'food_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _preparationIdMeta = const VerificationMeta(
+    'preparationId',
+  );
+  @override
+  late final GeneratedColumn<String> preparationId = GeneratedColumn<String>(
+    'preparation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_food_preparations (id)',
+    ),
+  );
+  static const VerificationMeta _recipeVersionIdMeta = const VerificationMeta(
+    'recipeVersionId',
+  );
+  @override
+  late final GeneratedColumn<String> recipeVersionId = GeneratedColumn<String>(
+    'recipe_version_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_recipe_versions (id)',
+    ),
+  );
+  static const VerificationMeta _quantityValueMeta = const VerificationMeta(
+    'quantityValue',
+  );
+  @override
+  late final GeneratedColumn<double> quantityValue = GeneratedColumn<double>(
+    'quantity_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _quantityDimensionMeta = const VerificationMeta(
+    'quantityDimension',
+  );
+  @override
+  late final GeneratedColumn<String> quantityDimension =
+      GeneratedColumn<String>(
+        'quantity_dimension',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _quantityUnitMeta = const VerificationMeta(
+    'quantityUnit',
+  );
+  @override
+  late final GeneratedColumn<String> quantityUnit = GeneratedColumn<String>(
+    'quantity_unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _quantityContextIdMeta = const VerificationMeta(
+    'quantityContextId',
+  );
+  @override
+  late final GeneratedColumn<String> quantityContextId =
+      GeneratedColumn<String>(
+        'quantity_context_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceRefMeta = const VerificationMeta(
+    'sourceRef',
+  );
+  @override
+  late final GeneratedColumn<String> sourceRef = GeneratedColumn<String>(
+    'source_ref',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _basisMeta = const VerificationMeta('basis');
+  @override
+  late final GeneratedColumn<String> basis = GeneratedColumn<String>(
+    'basis',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _conversionVersionMeta = const VerificationMeta(
+    'conversionVersion',
+  );
+  @override
+  late final GeneratedColumn<String> conversionVersion =
+      GeneratedColumn<String>(
+        'conversion_version',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _calculationVersionMeta =
+      const VerificationMeta('calculationVersion');
+  @override
+  late final GeneratedColumn<String> calculationVersion =
+      GeneratedColumn<String>(
+        'calculation_version',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    snapshotId,
+    position,
+    foodId,
+    preparationId,
+    recipeVersionId,
+    quantityValue,
+    quantityDimension,
+    quantityUnit,
+    quantityContextId,
+    lower,
+    upper,
+    sourceRef,
+    basis,
+    conversionVersion,
+    calculationVersion,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_snapshot_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionSnapshotItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('snapshot_id')) {
+      context.handle(
+        _snapshotIdMeta,
+        snapshotId.isAcceptableOrUnknown(data['snapshot_id']!, _snapshotIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_snapshotIdMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    if (data.containsKey('food_id')) {
+      context.handle(
+        _foodIdMeta,
+        foodId.isAcceptableOrUnknown(data['food_id']!, _foodIdMeta),
+      );
+    }
+    if (data.containsKey('preparation_id')) {
+      context.handle(
+        _preparationIdMeta,
+        preparationId.isAcceptableOrUnknown(
+          data['preparation_id']!,
+          _preparationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recipe_version_id')) {
+      context.handle(
+        _recipeVersionIdMeta,
+        recipeVersionId.isAcceptableOrUnknown(
+          data['recipe_version_id']!,
+          _recipeVersionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('quantity_value')) {
+      context.handle(
+        _quantityValueMeta,
+        quantityValue.isAcceptableOrUnknown(
+          data['quantity_value']!,
+          _quantityValueMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_quantityValueMeta);
+    }
+    if (data.containsKey('quantity_dimension')) {
+      context.handle(
+        _quantityDimensionMeta,
+        quantityDimension.isAcceptableOrUnknown(
+          data['quantity_dimension']!,
+          _quantityDimensionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_quantityDimensionMeta);
+    }
+    if (data.containsKey('quantity_unit')) {
+      context.handle(
+        _quantityUnitMeta,
+        quantityUnit.isAcceptableOrUnknown(
+          data['quantity_unit']!,
+          _quantityUnitMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_quantityUnitMeta);
+    }
+    if (data.containsKey('quantity_context_id')) {
+      context.handle(
+        _quantityContextIdMeta,
+        quantityContextId.isAcceptableOrUnknown(
+          data['quantity_context_id']!,
+          _quantityContextIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('source_ref')) {
+      context.handle(
+        _sourceRefMeta,
+        sourceRef.isAcceptableOrUnknown(data['source_ref']!, _sourceRefMeta),
+      );
+    }
+    if (data.containsKey('basis')) {
+      context.handle(
+        _basisMeta,
+        basis.isAcceptableOrUnknown(data['basis']!, _basisMeta),
+      );
+    }
+    if (data.containsKey('conversion_version')) {
+      context.handle(
+        _conversionVersionMeta,
+        conversionVersion.isAcceptableOrUnknown(
+          data['conversion_version']!,
+          _conversionVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('calculation_version')) {
+      context.handle(
+        _calculationVersionMeta,
+        calculationVersion.isAcceptableOrUnknown(
+          data['calculation_version']!,
+          _calculationVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {snapshotId, position},
+  ];
+  @override
+  NutritionSnapshotItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionSnapshotItem(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      snapshotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}snapshot_id'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      foodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}food_id'],
+      ),
+      preparationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}preparation_id'],
+      ),
+      recipeVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipe_version_id'],
+      ),
+      quantityValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}quantity_value'],
+      )!,
+      quantityDimension: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quantity_dimension'],
+      )!,
+      quantityUnit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quantity_unit'],
+      )!,
+      quantityContextId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quantity_context_id'],
+      ),
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      sourceRef: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_ref'],
+      ),
+      basis: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}basis'],
+      ),
+      conversionVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversion_version'],
+      ),
+      calculationVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}calculation_version'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionSnapshotItemsTable createAlias(String alias) {
+    return $NutritionSnapshotItemsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionSnapshotItem extends DataClass
+    implements Insertable<NutritionSnapshotItem> {
+  final String id;
+  final String snapshotId;
+  final int position;
+  final String? foodId;
+  final String? preparationId;
+  final String? recipeVersionId;
+  final double quantityValue;
+  final String quantityDimension;
+  final String quantityUnit;
+  final String? quantityContextId;
+  final double? lower;
+  final double? upper;
+  final String? sourceRef;
+  final String? basis;
+  final String? conversionVersion;
+  final String? calculationVersion;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionSnapshotItem({
+    required this.id,
+    required this.snapshotId,
+    required this.position,
+    this.foodId,
+    this.preparationId,
+    this.recipeVersionId,
+    required this.quantityValue,
+    required this.quantityDimension,
+    required this.quantityUnit,
+    this.quantityContextId,
+    this.lower,
+    this.upper,
+    this.sourceRef,
+    this.basis,
+    this.conversionVersion,
+    this.calculationVersion,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['snapshot_id'] = Variable<String>(snapshotId);
+    map['position'] = Variable<int>(position);
+    if (!nullToAbsent || foodId != null) {
+      map['food_id'] = Variable<String>(foodId);
+    }
+    if (!nullToAbsent || preparationId != null) {
+      map['preparation_id'] = Variable<String>(preparationId);
+    }
+    if (!nullToAbsent || recipeVersionId != null) {
+      map['recipe_version_id'] = Variable<String>(recipeVersionId);
+    }
+    map['quantity_value'] = Variable<double>(quantityValue);
+    map['quantity_dimension'] = Variable<String>(quantityDimension);
+    map['quantity_unit'] = Variable<String>(quantityUnit);
+    if (!nullToAbsent || quantityContextId != null) {
+      map['quantity_context_id'] = Variable<String>(quantityContextId);
+    }
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    if (!nullToAbsent || sourceRef != null) {
+      map['source_ref'] = Variable<String>(sourceRef);
+    }
+    if (!nullToAbsent || basis != null) {
+      map['basis'] = Variable<String>(basis);
+    }
+    if (!nullToAbsent || conversionVersion != null) {
+      map['conversion_version'] = Variable<String>(conversionVersion);
+    }
+    if (!nullToAbsent || calculationVersion != null) {
+      map['calculation_version'] = Variable<String>(calculationVersion);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionSnapshotItemsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionSnapshotItemsCompanion(
+      id: Value(id),
+      snapshotId: Value(snapshotId),
+      position: Value(position),
+      foodId: foodId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foodId),
+      preparationId: preparationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(preparationId),
+      recipeVersionId: recipeVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recipeVersionId),
+      quantityValue: Value(quantityValue),
+      quantityDimension: Value(quantityDimension),
+      quantityUnit: Value(quantityUnit),
+      quantityContextId: quantityContextId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(quantityContextId),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      sourceRef: sourceRef == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceRef),
+      basis: basis == null && nullToAbsent
+          ? const Value.absent()
+          : Value(basis),
+      conversionVersion: conversionVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conversionVersion),
+      calculationVersion: calculationVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(calculationVersion),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionSnapshotItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionSnapshotItem(
+      id: serializer.fromJson<String>(json['id']),
+      snapshotId: serializer.fromJson<String>(json['snapshotId']),
+      position: serializer.fromJson<int>(json['position']),
+      foodId: serializer.fromJson<String?>(json['foodId']),
+      preparationId: serializer.fromJson<String?>(json['preparationId']),
+      recipeVersionId: serializer.fromJson<String?>(json['recipeVersionId']),
+      quantityValue: serializer.fromJson<double>(json['quantityValue']),
+      quantityDimension: serializer.fromJson<String>(json['quantityDimension']),
+      quantityUnit: serializer.fromJson<String>(json['quantityUnit']),
+      quantityContextId: serializer.fromJson<String?>(
+        json['quantityContextId'],
+      ),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      sourceRef: serializer.fromJson<String?>(json['sourceRef']),
+      basis: serializer.fromJson<String?>(json['basis']),
+      conversionVersion: serializer.fromJson<String?>(
+        json['conversionVersion'],
+      ),
+      calculationVersion: serializer.fromJson<String?>(
+        json['calculationVersion'],
+      ),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'snapshotId': serializer.toJson<String>(snapshotId),
+      'position': serializer.toJson<int>(position),
+      'foodId': serializer.toJson<String?>(foodId),
+      'preparationId': serializer.toJson<String?>(preparationId),
+      'recipeVersionId': serializer.toJson<String?>(recipeVersionId),
+      'quantityValue': serializer.toJson<double>(quantityValue),
+      'quantityDimension': serializer.toJson<String>(quantityDimension),
+      'quantityUnit': serializer.toJson<String>(quantityUnit),
+      'quantityContextId': serializer.toJson<String?>(quantityContextId),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'sourceRef': serializer.toJson<String?>(sourceRef),
+      'basis': serializer.toJson<String?>(basis),
+      'conversionVersion': serializer.toJson<String?>(conversionVersion),
+      'calculationVersion': serializer.toJson<String?>(calculationVersion),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionSnapshotItem copyWith({
+    String? id,
+    String? snapshotId,
+    int? position,
+    Value<String?> foodId = const Value.absent(),
+    Value<String?> preparationId = const Value.absent(),
+    Value<String?> recipeVersionId = const Value.absent(),
+    double? quantityValue,
+    String? quantityDimension,
+    String? quantityUnit,
+    Value<String?> quantityContextId = const Value.absent(),
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    Value<String?> sourceRef = const Value.absent(),
+    Value<String?> basis = const Value.absent(),
+    Value<String?> conversionVersion = const Value.absent(),
+    Value<String?> calculationVersion = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionSnapshotItem(
+    id: id ?? this.id,
+    snapshotId: snapshotId ?? this.snapshotId,
+    position: position ?? this.position,
+    foodId: foodId.present ? foodId.value : this.foodId,
+    preparationId: preparationId.present
+        ? preparationId.value
+        : this.preparationId,
+    recipeVersionId: recipeVersionId.present
+        ? recipeVersionId.value
+        : this.recipeVersionId,
+    quantityValue: quantityValue ?? this.quantityValue,
+    quantityDimension: quantityDimension ?? this.quantityDimension,
+    quantityUnit: quantityUnit ?? this.quantityUnit,
+    quantityContextId: quantityContextId.present
+        ? quantityContextId.value
+        : this.quantityContextId,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    sourceRef: sourceRef.present ? sourceRef.value : this.sourceRef,
+    basis: basis.present ? basis.value : this.basis,
+    conversionVersion: conversionVersion.present
+        ? conversionVersion.value
+        : this.conversionVersion,
+    calculationVersion: calculationVersion.present
+        ? calculationVersion.value
+        : this.calculationVersion,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionSnapshotItem copyWithCompanion(
+    NutritionSnapshotItemsCompanion data,
+  ) {
+    return NutritionSnapshotItem(
+      id: data.id.present ? data.id.value : this.id,
+      snapshotId: data.snapshotId.present
+          ? data.snapshotId.value
+          : this.snapshotId,
+      position: data.position.present ? data.position.value : this.position,
+      foodId: data.foodId.present ? data.foodId.value : this.foodId,
+      preparationId: data.preparationId.present
+          ? data.preparationId.value
+          : this.preparationId,
+      recipeVersionId: data.recipeVersionId.present
+          ? data.recipeVersionId.value
+          : this.recipeVersionId,
+      quantityValue: data.quantityValue.present
+          ? data.quantityValue.value
+          : this.quantityValue,
+      quantityDimension: data.quantityDimension.present
+          ? data.quantityDimension.value
+          : this.quantityDimension,
+      quantityUnit: data.quantityUnit.present
+          ? data.quantityUnit.value
+          : this.quantityUnit,
+      quantityContextId: data.quantityContextId.present
+          ? data.quantityContextId.value
+          : this.quantityContextId,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      sourceRef: data.sourceRef.present ? data.sourceRef.value : this.sourceRef,
+      basis: data.basis.present ? data.basis.value : this.basis,
+      conversionVersion: data.conversionVersion.present
+          ? data.conversionVersion.value
+          : this.conversionVersion,
+      calculationVersion: data.calculationVersion.present
+          ? data.calculationVersion.value
+          : this.calculationVersion,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionSnapshotItem(')
+          ..write('id: $id, ')
+          ..write('snapshotId: $snapshotId, ')
+          ..write('position: $position, ')
+          ..write('foodId: $foodId, ')
+          ..write('preparationId: $preparationId, ')
+          ..write('recipeVersionId: $recipeVersionId, ')
+          ..write('quantityValue: $quantityValue, ')
+          ..write('quantityDimension: $quantityDimension, ')
+          ..write('quantityUnit: $quantityUnit, ')
+          ..write('quantityContextId: $quantityContextId, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('sourceRef: $sourceRef, ')
+          ..write('basis: $basis, ')
+          ..write('conversionVersion: $conversionVersion, ')
+          ..write('calculationVersion: $calculationVersion, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    snapshotId,
+    position,
+    foodId,
+    preparationId,
+    recipeVersionId,
+    quantityValue,
+    quantityDimension,
+    quantityUnit,
+    quantityContextId,
+    lower,
+    upper,
+    sourceRef,
+    basis,
+    conversionVersion,
+    calculationVersion,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionSnapshotItem &&
+          other.id == this.id &&
+          other.snapshotId == this.snapshotId &&
+          other.position == this.position &&
+          other.foodId == this.foodId &&
+          other.preparationId == this.preparationId &&
+          other.recipeVersionId == this.recipeVersionId &&
+          other.quantityValue == this.quantityValue &&
+          other.quantityDimension == this.quantityDimension &&
+          other.quantityUnit == this.quantityUnit &&
+          other.quantityContextId == this.quantityContextId &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.sourceRef == this.sourceRef &&
+          other.basis == this.basis &&
+          other.conversionVersion == this.conversionVersion &&
+          other.calculationVersion == this.calculationVersion &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionSnapshotItemsCompanion
+    extends UpdateCompanion<NutritionSnapshotItem> {
+  final Value<String> id;
+  final Value<String> snapshotId;
+  final Value<int> position;
+  final Value<String?> foodId;
+  final Value<String?> preparationId;
+  final Value<String?> recipeVersionId;
+  final Value<double> quantityValue;
+  final Value<String> quantityDimension;
+  final Value<String> quantityUnit;
+  final Value<String?> quantityContextId;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String?> sourceRef;
+  final Value<String?> basis;
+  final Value<String?> conversionVersion;
+  final Value<String?> calculationVersion;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionSnapshotItemsCompanion({
+    this.id = const Value.absent(),
+    this.snapshotId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.foodId = const Value.absent(),
+    this.preparationId = const Value.absent(),
+    this.recipeVersionId = const Value.absent(),
+    this.quantityValue = const Value.absent(),
+    this.quantityDimension = const Value.absent(),
+    this.quantityUnit = const Value.absent(),
+    this.quantityContextId = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.sourceRef = const Value.absent(),
+    this.basis = const Value.absent(),
+    this.conversionVersion = const Value.absent(),
+    this.calculationVersion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionSnapshotItemsCompanion.insert({
+    required String id,
+    required String snapshotId,
+    required int position,
+    this.foodId = const Value.absent(),
+    this.preparationId = const Value.absent(),
+    this.recipeVersionId = const Value.absent(),
+    required double quantityValue,
+    required String quantityDimension,
+    required String quantityUnit,
+    this.quantityContextId = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.sourceRef = const Value.absent(),
+    this.basis = const Value.absent(),
+    this.conversionVersion = const Value.absent(),
+    this.calculationVersion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       snapshotId = Value(snapshotId),
+       position = Value(position),
+       quantityValue = Value(quantityValue),
+       quantityDimension = Value(quantityDimension),
+       quantityUnit = Value(quantityUnit);
+  static Insertable<NutritionSnapshotItem> custom({
+    Expression<String>? id,
+    Expression<String>? snapshotId,
+    Expression<int>? position,
+    Expression<String>? foodId,
+    Expression<String>? preparationId,
+    Expression<String>? recipeVersionId,
+    Expression<double>? quantityValue,
+    Expression<String>? quantityDimension,
+    Expression<String>? quantityUnit,
+    Expression<String>? quantityContextId,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? sourceRef,
+    Expression<String>? basis,
+    Expression<String>? conversionVersion,
+    Expression<String>? calculationVersion,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (snapshotId != null) 'snapshot_id': snapshotId,
+      if (position != null) 'position': position,
+      if (foodId != null) 'food_id': foodId,
+      if (preparationId != null) 'preparation_id': preparationId,
+      if (recipeVersionId != null) 'recipe_version_id': recipeVersionId,
+      if (quantityValue != null) 'quantity_value': quantityValue,
+      if (quantityDimension != null) 'quantity_dimension': quantityDimension,
+      if (quantityUnit != null) 'quantity_unit': quantityUnit,
+      if (quantityContextId != null) 'quantity_context_id': quantityContextId,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (sourceRef != null) 'source_ref': sourceRef,
+      if (basis != null) 'basis': basis,
+      if (conversionVersion != null) 'conversion_version': conversionVersion,
+      if (calculationVersion != null) 'calculation_version': calculationVersion,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionSnapshotItemsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? snapshotId,
+    Value<int>? position,
+    Value<String?>? foodId,
+    Value<String?>? preparationId,
+    Value<String?>? recipeVersionId,
+    Value<double>? quantityValue,
+    Value<String>? quantityDimension,
+    Value<String>? quantityUnit,
+    Value<String?>? quantityContextId,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String?>? sourceRef,
+    Value<String?>? basis,
+    Value<String?>? conversionVersion,
+    Value<String?>? calculationVersion,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionSnapshotItemsCompanion(
+      id: id ?? this.id,
+      snapshotId: snapshotId ?? this.snapshotId,
+      position: position ?? this.position,
+      foodId: foodId ?? this.foodId,
+      preparationId: preparationId ?? this.preparationId,
+      recipeVersionId: recipeVersionId ?? this.recipeVersionId,
+      quantityValue: quantityValue ?? this.quantityValue,
+      quantityDimension: quantityDimension ?? this.quantityDimension,
+      quantityUnit: quantityUnit ?? this.quantityUnit,
+      quantityContextId: quantityContextId ?? this.quantityContextId,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      sourceRef: sourceRef ?? this.sourceRef,
+      basis: basis ?? this.basis,
+      conversionVersion: conversionVersion ?? this.conversionVersion,
+      calculationVersion: calculationVersion ?? this.calculationVersion,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (snapshotId.present) {
+      map['snapshot_id'] = Variable<String>(snapshotId.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (foodId.present) {
+      map['food_id'] = Variable<String>(foodId.value);
+    }
+    if (preparationId.present) {
+      map['preparation_id'] = Variable<String>(preparationId.value);
+    }
+    if (recipeVersionId.present) {
+      map['recipe_version_id'] = Variable<String>(recipeVersionId.value);
+    }
+    if (quantityValue.present) {
+      map['quantity_value'] = Variable<double>(quantityValue.value);
+    }
+    if (quantityDimension.present) {
+      map['quantity_dimension'] = Variable<String>(quantityDimension.value);
+    }
+    if (quantityUnit.present) {
+      map['quantity_unit'] = Variable<String>(quantityUnit.value);
+    }
+    if (quantityContextId.present) {
+      map['quantity_context_id'] = Variable<String>(quantityContextId.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (sourceRef.present) {
+      map['source_ref'] = Variable<String>(sourceRef.value);
+    }
+    if (basis.present) {
+      map['basis'] = Variable<String>(basis.value);
+    }
+    if (conversionVersion.present) {
+      map['conversion_version'] = Variable<String>(conversionVersion.value);
+    }
+    if (calculationVersion.present) {
+      map['calculation_version'] = Variable<String>(calculationVersion.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionSnapshotItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('snapshotId: $snapshotId, ')
+          ..write('position: $position, ')
+          ..write('foodId: $foodId, ')
+          ..write('preparationId: $preparationId, ')
+          ..write('recipeVersionId: $recipeVersionId, ')
+          ..write('quantityValue: $quantityValue, ')
+          ..write('quantityDimension: $quantityDimension, ')
+          ..write('quantityUnit: $quantityUnit, ')
+          ..write('quantityContextId: $quantityContextId, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('sourceRef: $sourceRef, ')
+          ..write('basis: $basis, ')
+          ..write('conversionVersion: $conversionVersion, ')
+          ..write('calculationVersion: $calculationVersion, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionSnapshotNutrientsTable extends NutritionSnapshotNutrients
+    with
+        TableInfo<$NutritionSnapshotNutrientsTable, NutritionSnapshotNutrient> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionSnapshotNutrientsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _snapshotIdMeta = const VerificationMeta(
+    'snapshotId',
+  );
+  @override
+  late final GeneratedColumn<String> snapshotId = GeneratedColumn<String>(
+    'snapshot_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_consumption_snapshots (id)',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_snapshot_items (id)',
+    ),
+  );
+  static const VerificationMeta _nutrientIdMeta = const VerificationMeta(
+    'nutrientId',
+  );
+  @override
+  late final GeneratedColumn<String> nutrientId = GeneratedColumn<String>(
+    'nutrient_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_nutrient_definitions (id)',
+    ),
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+    'amount',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceVersionMeta = const VerificationMeta(
+    'sourceVersion',
+  );
+  @override
+  late final GeneratedColumn<String> sourceVersion = GeneratedColumn<String>(
+    'source_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _basisMeta = const VerificationMeta('basis');
+  @override
+  late final GeneratedColumn<String> basis = GeneratedColumn<String>(
+    'basis',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _factVersionMeta = const VerificationMeta(
+    'factVersion',
+  );
+  @override
+  late final GeneratedColumn<String> factVersion = GeneratedColumn<String>(
+    'fact_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lineageMeta = const VerificationMeta(
+    'lineage',
+  );
+  @override
+  late final GeneratedColumn<String> lineage = GeneratedColumn<String>(
+    'lineage',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    snapshotId,
+    itemId,
+    nutrientId,
+    amount,
+    lower,
+    upper,
+    status,
+    unit,
+    sourceVersion,
+    basis,
+    factVersion,
+    lineage,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_snapshot_nutrients';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionSnapshotNutrient> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('snapshot_id')) {
+      context.handle(
+        _snapshotIdMeta,
+        snapshotId.isAcceptableOrUnknown(data['snapshot_id']!, _snapshotIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_snapshotIdMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    }
+    if (data.containsKey('nutrient_id')) {
+      context.handle(
+        _nutrientIdMeta,
+        nutrientId.isAcceptableOrUnknown(data['nutrient_id']!, _nutrientIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nutrientIdMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_unitMeta);
+    }
+    if (data.containsKey('source_version')) {
+      context.handle(
+        _sourceVersionMeta,
+        sourceVersion.isAcceptableOrUnknown(
+          data['source_version']!,
+          _sourceVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceVersionMeta);
+    }
+    if (data.containsKey('basis')) {
+      context.handle(
+        _basisMeta,
+        basis.isAcceptableOrUnknown(data['basis']!, _basisMeta),
+      );
+    }
+    if (data.containsKey('fact_version')) {
+      context.handle(
+        _factVersionMeta,
+        factVersion.isAcceptableOrUnknown(
+          data['fact_version']!,
+          _factVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lineage')) {
+      context.handle(
+        _lineageMeta,
+        lineage.isAcceptableOrUnknown(data['lineage']!, _lineageMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {snapshotId, itemId, nutrientId},
+  ];
+  @override
+  NutritionSnapshotNutrient map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionSnapshotNutrient(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      snapshotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}snapshot_id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      ),
+      nutrientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nutrient_id'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}amount'],
+      ),
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      )!,
+      sourceVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_version'],
+      )!,
+      basis: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}basis'],
+      ),
+      factVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fact_version'],
+      ),
+      lineage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lineage'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionSnapshotNutrientsTable createAlias(String alias) {
+    return $NutritionSnapshotNutrientsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionSnapshotNutrient extends DataClass
+    implements Insertable<NutritionSnapshotNutrient> {
+  final String id;
+  final String snapshotId;
+  final String? itemId;
+  final String nutrientId;
+  final double? amount;
+  final double? lower;
+  final double? upper;
+  final String status;
+  final String unit;
+  final String sourceVersion;
+  final String? basis;
+  final String? factVersion;
+  final String? lineage;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionSnapshotNutrient({
+    required this.id,
+    required this.snapshotId,
+    this.itemId,
+    required this.nutrientId,
+    this.amount,
+    this.lower,
+    this.upper,
+    required this.status,
+    required this.unit,
+    required this.sourceVersion,
+    this.basis,
+    this.factVersion,
+    this.lineage,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['snapshot_id'] = Variable<String>(snapshotId);
+    if (!nullToAbsent || itemId != null) {
+      map['item_id'] = Variable<String>(itemId);
+    }
+    map['nutrient_id'] = Variable<String>(nutrientId);
+    if (!nullToAbsent || amount != null) {
+      map['amount'] = Variable<double>(amount);
+    }
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    map['status'] = Variable<String>(status);
+    map['unit'] = Variable<String>(unit);
+    map['source_version'] = Variable<String>(sourceVersion);
+    if (!nullToAbsent || basis != null) {
+      map['basis'] = Variable<String>(basis);
+    }
+    if (!nullToAbsent || factVersion != null) {
+      map['fact_version'] = Variable<String>(factVersion);
+    }
+    if (!nullToAbsent || lineage != null) {
+      map['lineage'] = Variable<String>(lineage);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionSnapshotNutrientsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionSnapshotNutrientsCompanion(
+      id: Value(id),
+      snapshotId: Value(snapshotId),
+      itemId: itemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(itemId),
+      nutrientId: Value(nutrientId),
+      amount: amount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amount),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      status: Value(status),
+      unit: Value(unit),
+      sourceVersion: Value(sourceVersion),
+      basis: basis == null && nullToAbsent
+          ? const Value.absent()
+          : Value(basis),
+      factVersion: factVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(factVersion),
+      lineage: lineage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lineage),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionSnapshotNutrient.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionSnapshotNutrient(
+      id: serializer.fromJson<String>(json['id']),
+      snapshotId: serializer.fromJson<String>(json['snapshotId']),
+      itemId: serializer.fromJson<String?>(json['itemId']),
+      nutrientId: serializer.fromJson<String>(json['nutrientId']),
+      amount: serializer.fromJson<double?>(json['amount']),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      status: serializer.fromJson<String>(json['status']),
+      unit: serializer.fromJson<String>(json['unit']),
+      sourceVersion: serializer.fromJson<String>(json['sourceVersion']),
+      basis: serializer.fromJson<String?>(json['basis']),
+      factVersion: serializer.fromJson<String?>(json['factVersion']),
+      lineage: serializer.fromJson<String?>(json['lineage']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'snapshotId': serializer.toJson<String>(snapshotId),
+      'itemId': serializer.toJson<String?>(itemId),
+      'nutrientId': serializer.toJson<String>(nutrientId),
+      'amount': serializer.toJson<double?>(amount),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'status': serializer.toJson<String>(status),
+      'unit': serializer.toJson<String>(unit),
+      'sourceVersion': serializer.toJson<String>(sourceVersion),
+      'basis': serializer.toJson<String?>(basis),
+      'factVersion': serializer.toJson<String?>(factVersion),
+      'lineage': serializer.toJson<String?>(lineage),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionSnapshotNutrient copyWith({
+    String? id,
+    String? snapshotId,
+    Value<String?> itemId = const Value.absent(),
+    String? nutrientId,
+    Value<double?> amount = const Value.absent(),
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    String? status,
+    String? unit,
+    String? sourceVersion,
+    Value<String?> basis = const Value.absent(),
+    Value<String?> factVersion = const Value.absent(),
+    Value<String?> lineage = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionSnapshotNutrient(
+    id: id ?? this.id,
+    snapshotId: snapshotId ?? this.snapshotId,
+    itemId: itemId.present ? itemId.value : this.itemId,
+    nutrientId: nutrientId ?? this.nutrientId,
+    amount: amount.present ? amount.value : this.amount,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    status: status ?? this.status,
+    unit: unit ?? this.unit,
+    sourceVersion: sourceVersion ?? this.sourceVersion,
+    basis: basis.present ? basis.value : this.basis,
+    factVersion: factVersion.present ? factVersion.value : this.factVersion,
+    lineage: lineage.present ? lineage.value : this.lineage,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionSnapshotNutrient copyWithCompanion(
+    NutritionSnapshotNutrientsCompanion data,
+  ) {
+    return NutritionSnapshotNutrient(
+      id: data.id.present ? data.id.value : this.id,
+      snapshotId: data.snapshotId.present
+          ? data.snapshotId.value
+          : this.snapshotId,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      nutrientId: data.nutrientId.present
+          ? data.nutrientId.value
+          : this.nutrientId,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      status: data.status.present ? data.status.value : this.status,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      sourceVersion: data.sourceVersion.present
+          ? data.sourceVersion.value
+          : this.sourceVersion,
+      basis: data.basis.present ? data.basis.value : this.basis,
+      factVersion: data.factVersion.present
+          ? data.factVersion.value
+          : this.factVersion,
+      lineage: data.lineage.present ? data.lineage.value : this.lineage,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionSnapshotNutrient(')
+          ..write('id: $id, ')
+          ..write('snapshotId: $snapshotId, ')
+          ..write('itemId: $itemId, ')
+          ..write('nutrientId: $nutrientId, ')
+          ..write('amount: $amount, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('status: $status, ')
+          ..write('unit: $unit, ')
+          ..write('sourceVersion: $sourceVersion, ')
+          ..write('basis: $basis, ')
+          ..write('factVersion: $factVersion, ')
+          ..write('lineage: $lineage, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    snapshotId,
+    itemId,
+    nutrientId,
+    amount,
+    lower,
+    upper,
+    status,
+    unit,
+    sourceVersion,
+    basis,
+    factVersion,
+    lineage,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionSnapshotNutrient &&
+          other.id == this.id &&
+          other.snapshotId == this.snapshotId &&
+          other.itemId == this.itemId &&
+          other.nutrientId == this.nutrientId &&
+          other.amount == this.amount &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.status == this.status &&
+          other.unit == this.unit &&
+          other.sourceVersion == this.sourceVersion &&
+          other.basis == this.basis &&
+          other.factVersion == this.factVersion &&
+          other.lineage == this.lineage &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionSnapshotNutrientsCompanion
+    extends UpdateCompanion<NutritionSnapshotNutrient> {
+  final Value<String> id;
+  final Value<String> snapshotId;
+  final Value<String?> itemId;
+  final Value<String> nutrientId;
+  final Value<double?> amount;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String> status;
+  final Value<String> unit;
+  final Value<String> sourceVersion;
+  final Value<String?> basis;
+  final Value<String?> factVersion;
+  final Value<String?> lineage;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionSnapshotNutrientsCompanion({
+    this.id = const Value.absent(),
+    this.snapshotId = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.nutrientId = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.status = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.sourceVersion = const Value.absent(),
+    this.basis = const Value.absent(),
+    this.factVersion = const Value.absent(),
+    this.lineage = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionSnapshotNutrientsCompanion.insert({
+    required String id,
+    required String snapshotId,
+    this.itemId = const Value.absent(),
+    required String nutrientId,
+    this.amount = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    required String status,
+    required String unit,
+    required String sourceVersion,
+    this.basis = const Value.absent(),
+    this.factVersion = const Value.absent(),
+    this.lineage = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       snapshotId = Value(snapshotId),
+       nutrientId = Value(nutrientId),
+       status = Value(status),
+       unit = Value(unit),
+       sourceVersion = Value(sourceVersion);
+  static Insertable<NutritionSnapshotNutrient> custom({
+    Expression<String>? id,
+    Expression<String>? snapshotId,
+    Expression<String>? itemId,
+    Expression<String>? nutrientId,
+    Expression<double>? amount,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? status,
+    Expression<String>? unit,
+    Expression<String>? sourceVersion,
+    Expression<String>? basis,
+    Expression<String>? factVersion,
+    Expression<String>? lineage,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (snapshotId != null) 'snapshot_id': snapshotId,
+      if (itemId != null) 'item_id': itemId,
+      if (nutrientId != null) 'nutrient_id': nutrientId,
+      if (amount != null) 'amount': amount,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (status != null) 'status': status,
+      if (unit != null) 'unit': unit,
+      if (sourceVersion != null) 'source_version': sourceVersion,
+      if (basis != null) 'basis': basis,
+      if (factVersion != null) 'fact_version': factVersion,
+      if (lineage != null) 'lineage': lineage,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionSnapshotNutrientsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? snapshotId,
+    Value<String?>? itemId,
+    Value<String>? nutrientId,
+    Value<double?>? amount,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String>? status,
+    Value<String>? unit,
+    Value<String>? sourceVersion,
+    Value<String?>? basis,
+    Value<String?>? factVersion,
+    Value<String?>? lineage,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionSnapshotNutrientsCompanion(
+      id: id ?? this.id,
+      snapshotId: snapshotId ?? this.snapshotId,
+      itemId: itemId ?? this.itemId,
+      nutrientId: nutrientId ?? this.nutrientId,
+      amount: amount ?? this.amount,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      status: status ?? this.status,
+      unit: unit ?? this.unit,
+      sourceVersion: sourceVersion ?? this.sourceVersion,
+      basis: basis ?? this.basis,
+      factVersion: factVersion ?? this.factVersion,
+      lineage: lineage ?? this.lineage,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (snapshotId.present) {
+      map['snapshot_id'] = Variable<String>(snapshotId.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (nutrientId.present) {
+      map['nutrient_id'] = Variable<String>(nutrientId.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (sourceVersion.present) {
+      map['source_version'] = Variable<String>(sourceVersion.value);
+    }
+    if (basis.present) {
+      map['basis'] = Variable<String>(basis.value);
+    }
+    if (factVersion.present) {
+      map['fact_version'] = Variable<String>(factVersion.value);
+    }
+    if (lineage.present) {
+      map['lineage'] = Variable<String>(lineage.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionSnapshotNutrientsCompanion(')
+          ..write('id: $id, ')
+          ..write('snapshotId: $snapshotId, ')
+          ..write('itemId: $itemId, ')
+          ..write('nutrientId: $nutrientId, ')
+          ..write('amount: $amount, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('status: $status, ')
+          ..write('unit: $unit, ')
+          ..write('sourceVersion: $sourceVersion, ')
+          ..write('basis: $basis, ')
+          ..write('factVersion: $factVersion, ')
+          ..write('lineage: $lineage, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionFoodConstraintEvidenceTable
+    extends NutritionFoodConstraintEvidence
+    with
+        TableInfo<
+          $NutritionFoodConstraintEvidenceTable,
+          NutritionFoodConstraintEvidenceData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionFoodConstraintEvidenceTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _foodIdMeta = const VerificationMeta('foodId');
+  @override
+  late final GeneratedColumn<String> foodId = GeneratedColumn<String>(
+    'food_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _constraintKeyMeta = const VerificationMeta(
+    'constraintKey',
+  );
+  @override
+  late final GeneratedColumn<String> constraintKey = GeneratedColumn<String>(
+    'constraint_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _evidenceSourceMeta = const VerificationMeta(
+    'evidenceSource',
+  );
+  @override
+  late final GeneratedColumn<String> evidenceSource = GeneratedColumn<String>(
+    'evidence_source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    foodId,
+    constraintKey,
+    status,
+    evidenceSource,
+    confidence,
+    notes,
+    version,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_food_constraint_evidence';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionFoodConstraintEvidenceData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('food_id')) {
+      context.handle(
+        _foodIdMeta,
+        foodId.isAcceptableOrUnknown(data['food_id']!, _foodIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_foodIdMeta);
+    }
+    if (data.containsKey('constraint_key')) {
+      context.handle(
+        _constraintKeyMeta,
+        constraintKey.isAcceptableOrUnknown(
+          data['constraint_key']!,
+          _constraintKeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_constraintKeyMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('evidence_source')) {
+      context.handle(
+        _evidenceSourceMeta,
+        evidenceSource.isAcceptableOrUnknown(
+          data['evidence_source']!,
+          _evidenceSourceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_evidenceSourceMeta);
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {foodId, constraintKey, version},
+  ];
+  @override
+  NutritionFoodConstraintEvidenceData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionFoodConstraintEvidenceData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      foodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}food_id'],
+      )!,
+      constraintKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}constraint_key'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      evidenceSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evidence_source'],
+      )!,
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionFoodConstraintEvidenceTable createAlias(String alias) {
+    return $NutritionFoodConstraintEvidenceTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionFoodConstraintEvidenceData extends DataClass
+    implements Insertable<NutritionFoodConstraintEvidenceData> {
+  final String id;
+  final String foodId;
+  final String constraintKey;
+  final String status;
+  final String evidenceSource;
+  final double? confidence;
+  final String? notes;
+  final int version;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionFoodConstraintEvidenceData({
+    required this.id,
+    required this.foodId,
+    required this.constraintKey,
+    required this.status,
+    required this.evidenceSource,
+    this.confidence,
+    this.notes,
+    required this.version,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['food_id'] = Variable<String>(foodId);
+    map['constraint_key'] = Variable<String>(constraintKey);
+    map['status'] = Variable<String>(status);
+    map['evidence_source'] = Variable<String>(evidenceSource);
+    if (!nullToAbsent || confidence != null) {
+      map['confidence'] = Variable<double>(confidence);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['version'] = Variable<int>(version);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionFoodConstraintEvidenceCompanion toCompanion(bool nullToAbsent) {
+    return NutritionFoodConstraintEvidenceCompanion(
+      id: Value(id),
+      foodId: Value(foodId),
+      constraintKey: Value(constraintKey),
+      status: Value(status),
+      evidenceSource: Value(evidenceSource),
+      confidence: confidence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confidence),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      version: Value(version),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionFoodConstraintEvidenceData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionFoodConstraintEvidenceData(
+      id: serializer.fromJson<String>(json['id']),
+      foodId: serializer.fromJson<String>(json['foodId']),
+      constraintKey: serializer.fromJson<String>(json['constraintKey']),
+      status: serializer.fromJson<String>(json['status']),
+      evidenceSource: serializer.fromJson<String>(json['evidenceSource']),
+      confidence: serializer.fromJson<double?>(json['confidence']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      version: serializer.fromJson<int>(json['version']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'foodId': serializer.toJson<String>(foodId),
+      'constraintKey': serializer.toJson<String>(constraintKey),
+      'status': serializer.toJson<String>(status),
+      'evidenceSource': serializer.toJson<String>(evidenceSource),
+      'confidence': serializer.toJson<double?>(confidence),
+      'notes': serializer.toJson<String?>(notes),
+      'version': serializer.toJson<int>(version),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionFoodConstraintEvidenceData copyWith({
+    String? id,
+    String? foodId,
+    String? constraintKey,
+    String? status,
+    String? evidenceSource,
+    Value<double?> confidence = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    int? version,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionFoodConstraintEvidenceData(
+    id: id ?? this.id,
+    foodId: foodId ?? this.foodId,
+    constraintKey: constraintKey ?? this.constraintKey,
+    status: status ?? this.status,
+    evidenceSource: evidenceSource ?? this.evidenceSource,
+    confidence: confidence.present ? confidence.value : this.confidence,
+    notes: notes.present ? notes.value : this.notes,
+    version: version ?? this.version,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionFoodConstraintEvidenceData copyWithCompanion(
+    NutritionFoodConstraintEvidenceCompanion data,
+  ) {
+    return NutritionFoodConstraintEvidenceData(
+      id: data.id.present ? data.id.value : this.id,
+      foodId: data.foodId.present ? data.foodId.value : this.foodId,
+      constraintKey: data.constraintKey.present
+          ? data.constraintKey.value
+          : this.constraintKey,
+      status: data.status.present ? data.status.value : this.status,
+      evidenceSource: data.evidenceSource.present
+          ? data.evidenceSource.value
+          : this.evidenceSource,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      version: data.version.present ? data.version.value : this.version,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionFoodConstraintEvidenceData(')
+          ..write('id: $id, ')
+          ..write('foodId: $foodId, ')
+          ..write('constraintKey: $constraintKey, ')
+          ..write('status: $status, ')
+          ..write('evidenceSource: $evidenceSource, ')
+          ..write('confidence: $confidence, ')
+          ..write('notes: $notes, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    foodId,
+    constraintKey,
+    status,
+    evidenceSource,
+    confidence,
+    notes,
+    version,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionFoodConstraintEvidenceData &&
+          other.id == this.id &&
+          other.foodId == this.foodId &&
+          other.constraintKey == this.constraintKey &&
+          other.status == this.status &&
+          other.evidenceSource == this.evidenceSource &&
+          other.confidence == this.confidence &&
+          other.notes == this.notes &&
+          other.version == this.version &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionFoodConstraintEvidenceCompanion
+    extends UpdateCompanion<NutritionFoodConstraintEvidenceData> {
+  final Value<String> id;
+  final Value<String> foodId;
+  final Value<String> constraintKey;
+  final Value<String> status;
+  final Value<String> evidenceSource;
+  final Value<double?> confidence;
+  final Value<String?> notes;
+  final Value<int> version;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionFoodConstraintEvidenceCompanion({
+    this.id = const Value.absent(),
+    this.foodId = const Value.absent(),
+    this.constraintKey = const Value.absent(),
+    this.status = const Value.absent(),
+    this.evidenceSource = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.version = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionFoodConstraintEvidenceCompanion.insert({
+    required String id,
+    required String foodId,
+    required String constraintKey,
+    required String status,
+    required String evidenceSource,
+    this.confidence = const Value.absent(),
+    this.notes = const Value.absent(),
+    required int version,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       foodId = Value(foodId),
+       constraintKey = Value(constraintKey),
+       status = Value(status),
+       evidenceSource = Value(evidenceSource),
+       version = Value(version);
+  static Insertable<NutritionFoodConstraintEvidenceData> custom({
+    Expression<String>? id,
+    Expression<String>? foodId,
+    Expression<String>? constraintKey,
+    Expression<String>? status,
+    Expression<String>? evidenceSource,
+    Expression<double>? confidence,
+    Expression<String>? notes,
+    Expression<int>? version,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (foodId != null) 'food_id': foodId,
+      if (constraintKey != null) 'constraint_key': constraintKey,
+      if (status != null) 'status': status,
+      if (evidenceSource != null) 'evidence_source': evidenceSource,
+      if (confidence != null) 'confidence': confidence,
+      if (notes != null) 'notes': notes,
+      if (version != null) 'version': version,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionFoodConstraintEvidenceCompanion copyWith({
+    Value<String>? id,
+    Value<String>? foodId,
+    Value<String>? constraintKey,
+    Value<String>? status,
+    Value<String>? evidenceSource,
+    Value<double?>? confidence,
+    Value<String?>? notes,
+    Value<int>? version,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionFoodConstraintEvidenceCompanion(
+      id: id ?? this.id,
+      foodId: foodId ?? this.foodId,
+      constraintKey: constraintKey ?? this.constraintKey,
+      status: status ?? this.status,
+      evidenceSource: evidenceSource ?? this.evidenceSource,
+      confidence: confidence ?? this.confidence,
+      notes: notes ?? this.notes,
+      version: version ?? this.version,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (foodId.present) {
+      map['food_id'] = Variable<String>(foodId.value);
+    }
+    if (constraintKey.present) {
+      map['constraint_key'] = Variable<String>(constraintKey.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (evidenceSource.present) {
+      map['evidence_source'] = Variable<String>(evidenceSource.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionFoodConstraintEvidenceCompanion(')
+          ..write('id: $id, ')
+          ..write('foodId: $foodId, ')
+          ..write('constraintKey: $constraintKey, ')
+          ..write('status: $status, ')
+          ..write('evidenceSource: $evidenceSource, ')
+          ..write('confidence: $confidence, ')
+          ..write('notes: $notes, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionConstraintDefinitionsTable
+    extends NutritionConstraintDefinitions
+    with
+        TableInfo<
+          $NutritionConstraintDefinitionsTable,
+          NutritionConstraintDefinition
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionConstraintDefinitionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _severitySupportedMeta = const VerificationMeta(
+    'severitySupported',
+  );
+  @override
+  late final GeneratedColumn<bool> severitySupported = GeneratedColumn<bool>(
+    'severity_supported',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("severity_supported" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _crossContactSupportedMeta =
+      const VerificationMeta('crossContactSupported');
+  @override
+  late final GeneratedColumn<bool> crossContactSupported =
+      GeneratedColumn<bool>(
+        'cross_contact_supported',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("cross_contact_supported" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    key,
+    type,
+    displayName,
+    severitySupported,
+    crossContactSupported,
+    version,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_constraint_definitions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionConstraintDefinition> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('severity_supported')) {
+      context.handle(
+        _severitySupportedMeta,
+        severitySupported.isAcceptableOrUnknown(
+          data['severity_supported']!,
+          _severitySupportedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cross_contact_supported')) {
+      context.handle(
+        _crossContactSupportedMeta,
+        crossContactSupported.isAcceptableOrUnknown(
+          data['cross_contact_supported']!,
+          _crossContactSupportedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {key, version},
+  ];
+  @override
+  NutritionConstraintDefinition map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionConstraintDefinition(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      )!,
+      severitySupported: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}severity_supported'],
+      )!,
+      crossContactSupported: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}cross_contact_supported'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionConstraintDefinitionsTable createAlias(String alias) {
+    return $NutritionConstraintDefinitionsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionConstraintDefinition extends DataClass
+    implements Insertable<NutritionConstraintDefinition> {
+  final String id;
+  final String key;
+  final String type;
+  final String displayName;
+  final bool severitySupported;
+  final bool crossContactSupported;
+  final int version;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionConstraintDefinition({
+    required this.id,
+    required this.key,
+    required this.type,
+    required this.displayName,
+    required this.severitySupported,
+    required this.crossContactSupported,
+    required this.version,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['key'] = Variable<String>(key);
+    map['type'] = Variable<String>(type);
+    map['display_name'] = Variable<String>(displayName);
+    map['severity_supported'] = Variable<bool>(severitySupported);
+    map['cross_contact_supported'] = Variable<bool>(crossContactSupported);
+    map['version'] = Variable<int>(version);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionConstraintDefinitionsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionConstraintDefinitionsCompanion(
+      id: Value(id),
+      key: Value(key),
+      type: Value(type),
+      displayName: Value(displayName),
+      severitySupported: Value(severitySupported),
+      crossContactSupported: Value(crossContactSupported),
+      version: Value(version),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionConstraintDefinition.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionConstraintDefinition(
+      id: serializer.fromJson<String>(json['id']),
+      key: serializer.fromJson<String>(json['key']),
+      type: serializer.fromJson<String>(json['type']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      severitySupported: serializer.fromJson<bool>(json['severitySupported']),
+      crossContactSupported: serializer.fromJson<bool>(
+        json['crossContactSupported'],
+      ),
+      version: serializer.fromJson<int>(json['version']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'key': serializer.toJson<String>(key),
+      'type': serializer.toJson<String>(type),
+      'displayName': serializer.toJson<String>(displayName),
+      'severitySupported': serializer.toJson<bool>(severitySupported),
+      'crossContactSupported': serializer.toJson<bool>(crossContactSupported),
+      'version': serializer.toJson<int>(version),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionConstraintDefinition copyWith({
+    String? id,
+    String? key,
+    String? type,
+    String? displayName,
+    bool? severitySupported,
+    bool? crossContactSupported,
+    int? version,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionConstraintDefinition(
+    id: id ?? this.id,
+    key: key ?? this.key,
+    type: type ?? this.type,
+    displayName: displayName ?? this.displayName,
+    severitySupported: severitySupported ?? this.severitySupported,
+    crossContactSupported: crossContactSupported ?? this.crossContactSupported,
+    version: version ?? this.version,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionConstraintDefinition copyWithCompanion(
+    NutritionConstraintDefinitionsCompanion data,
+  ) {
+    return NutritionConstraintDefinition(
+      id: data.id.present ? data.id.value : this.id,
+      key: data.key.present ? data.key.value : this.key,
+      type: data.type.present ? data.type.value : this.type,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      severitySupported: data.severitySupported.present
+          ? data.severitySupported.value
+          : this.severitySupported,
+      crossContactSupported: data.crossContactSupported.present
+          ? data.crossContactSupported.value
+          : this.crossContactSupported,
+      version: data.version.present ? data.version.value : this.version,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionConstraintDefinition(')
+          ..write('id: $id, ')
+          ..write('key: $key, ')
+          ..write('type: $type, ')
+          ..write('displayName: $displayName, ')
+          ..write('severitySupported: $severitySupported, ')
+          ..write('crossContactSupported: $crossContactSupported, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    key,
+    type,
+    displayName,
+    severitySupported,
+    crossContactSupported,
+    version,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionConstraintDefinition &&
+          other.id == this.id &&
+          other.key == this.key &&
+          other.type == this.type &&
+          other.displayName == this.displayName &&
+          other.severitySupported == this.severitySupported &&
+          other.crossContactSupported == this.crossContactSupported &&
+          other.version == this.version &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionConstraintDefinitionsCompanion
+    extends UpdateCompanion<NutritionConstraintDefinition> {
+  final Value<String> id;
+  final Value<String> key;
+  final Value<String> type;
+  final Value<String> displayName;
+  final Value<bool> severitySupported;
+  final Value<bool> crossContactSupported;
+  final Value<int> version;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionConstraintDefinitionsCompanion({
+    this.id = const Value.absent(),
+    this.key = const Value.absent(),
+    this.type = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.severitySupported = const Value.absent(),
+    this.crossContactSupported = const Value.absent(),
+    this.version = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionConstraintDefinitionsCompanion.insert({
+    required String id,
+    required String key,
+    required String type,
+    required String displayName,
+    this.severitySupported = const Value.absent(),
+    this.crossContactSupported = const Value.absent(),
+    required int version,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       key = Value(key),
+       type = Value(type),
+       displayName = Value(displayName),
+       version = Value(version);
+  static Insertable<NutritionConstraintDefinition> custom({
+    Expression<String>? id,
+    Expression<String>? key,
+    Expression<String>? type,
+    Expression<String>? displayName,
+    Expression<bool>? severitySupported,
+    Expression<bool>? crossContactSupported,
+    Expression<int>? version,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (key != null) 'key': key,
+      if (type != null) 'type': type,
+      if (displayName != null) 'display_name': displayName,
+      if (severitySupported != null) 'severity_supported': severitySupported,
+      if (crossContactSupported != null)
+        'cross_contact_supported': crossContactSupported,
+      if (version != null) 'version': version,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionConstraintDefinitionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? key,
+    Value<String>? type,
+    Value<String>? displayName,
+    Value<bool>? severitySupported,
+    Value<bool>? crossContactSupported,
+    Value<int>? version,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionConstraintDefinitionsCompanion(
+      id: id ?? this.id,
+      key: key ?? this.key,
+      type: type ?? this.type,
+      displayName: displayName ?? this.displayName,
+      severitySupported: severitySupported ?? this.severitySupported,
+      crossContactSupported:
+          crossContactSupported ?? this.crossContactSupported,
+      version: version ?? this.version,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (severitySupported.present) {
+      map['severity_supported'] = Variable<bool>(severitySupported.value);
+    }
+    if (crossContactSupported.present) {
+      map['cross_contact_supported'] = Variable<bool>(
+        crossContactSupported.value,
+      );
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionConstraintDefinitionsCompanion(')
+          ..write('id: $id, ')
+          ..write('key: $key, ')
+          ..write('type: $type, ')
+          ..write('displayName: $displayName, ')
+          ..write('severitySupported: $severitySupported, ')
+          ..write('crossContactSupported: $crossContactSupported, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionUserConstraintsTable extends NutritionUserConstraints
+    with TableInfo<$NutritionUserConstraintsTable, NutritionUserConstraint> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionUserConstraintsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _definitionIdMeta = const VerificationMeta(
+    'definitionId',
+  );
+  @override
+  late final GeneratedColumn<String> definitionId = GeneratedColumn<String>(
+    'definition_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_constraint_definitions (id)',
+    ),
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _strictnessMeta = const VerificationMeta(
+    'strictness',
+  );
+  @override
+  late final GeneratedColumn<String> strictness = GeneratedColumn<String>(
+    'strictness',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _severityMeta = const VerificationMeta(
+    'severity',
+  );
+  @override
+  late final GeneratedColumn<String> severity = GeneratedColumn<String>(
+    'severity',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _crossContactMeta = const VerificationMeta(
+    'crossContact',
+  );
+  @override
+  late final GeneratedColumn<bool> crossContact = GeneratedColumn<bool>(
+    'cross_contact',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("cross_contact" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _effectiveFromMeta = const VerificationMeta(
+    'effectiveFrom',
+  );
+  @override
+  late final GeneratedColumn<DateTime> effectiveFrom =
+      GeneratedColumn<DateTime>(
+        'effective_from',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _effectiveToMeta = const VerificationMeta(
+    'effectiveTo',
+  );
+  @override
+  late final GeneratedColumn<DateTime> effectiveTo = GeneratedColumn<DateTime>(
+    'effective_to',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    definitionId,
+    value,
+    strictness,
+    severity,
+    crossContact,
+    effectiveFrom,
+    effectiveTo,
+    source,
+    notes,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_user_constraints';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionUserConstraint> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('definition_id')) {
+      context.handle(
+        _definitionIdMeta,
+        definitionId.isAcceptableOrUnknown(
+          data['definition_id']!,
+          _definitionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_definitionIdMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    if (data.containsKey('strictness')) {
+      context.handle(
+        _strictnessMeta,
+        strictness.isAcceptableOrUnknown(data['strictness']!, _strictnessMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_strictnessMeta);
+    }
+    if (data.containsKey('severity')) {
+      context.handle(
+        _severityMeta,
+        severity.isAcceptableOrUnknown(data['severity']!, _severityMeta),
+      );
+    }
+    if (data.containsKey('cross_contact')) {
+      context.handle(
+        _crossContactMeta,
+        crossContact.isAcceptableOrUnknown(
+          data['cross_contact']!,
+          _crossContactMeta,
+        ),
+      );
+    }
+    if (data.containsKey('effective_from')) {
+      context.handle(
+        _effectiveFromMeta,
+        effectiveFrom.isAcceptableOrUnknown(
+          data['effective_from']!,
+          _effectiveFromMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_effectiveFromMeta);
+    }
+    if (data.containsKey('effective_to')) {
+      context.handle(
+        _effectiveToMeta,
+        effectiveTo.isAcceptableOrUnknown(
+          data['effective_to']!,
+          _effectiveToMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NutritionUserConstraint map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionUserConstraint(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      definitionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}definition_id'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value'],
+      )!,
+      strictness: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}strictness'],
+      )!,
+      severity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}severity'],
+      ),
+      crossContact: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}cross_contact'],
+      )!,
+      effectiveFrom: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}effective_from'],
+      )!,
+      effectiveTo: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}effective_to'],
+      ),
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionUserConstraintsTable createAlias(String alias) {
+    return $NutritionUserConstraintsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionUserConstraint extends DataClass
+    implements Insertable<NutritionUserConstraint> {
+  final String id;
+  final String userId;
+  final String definitionId;
+  final String value;
+  final String strictness;
+  final String? severity;
+  final bool crossContact;
+  final DateTime effectiveFrom;
+  final DateTime? effectiveTo;
+  final String source;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionUserConstraint({
+    required this.id,
+    required this.userId,
+    required this.definitionId,
+    required this.value,
+    required this.strictness,
+    this.severity,
+    required this.crossContact,
+    required this.effectiveFrom,
+    this.effectiveTo,
+    required this.source,
+    this.notes,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['definition_id'] = Variable<String>(definitionId);
+    map['value'] = Variable<String>(value);
+    map['strictness'] = Variable<String>(strictness);
+    if (!nullToAbsent || severity != null) {
+      map['severity'] = Variable<String>(severity);
+    }
+    map['cross_contact'] = Variable<bool>(crossContact);
+    map['effective_from'] = Variable<DateTime>(effectiveFrom);
+    if (!nullToAbsent || effectiveTo != null) {
+      map['effective_to'] = Variable<DateTime>(effectiveTo);
+    }
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionUserConstraintsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionUserConstraintsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      definitionId: Value(definitionId),
+      value: Value(value),
+      strictness: Value(strictness),
+      severity: severity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(severity),
+      crossContact: Value(crossContact),
+      effectiveFrom: Value(effectiveFrom),
+      effectiveTo: effectiveTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(effectiveTo),
+      source: Value(source),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionUserConstraint.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionUserConstraint(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      definitionId: serializer.fromJson<String>(json['definitionId']),
+      value: serializer.fromJson<String>(json['value']),
+      strictness: serializer.fromJson<String>(json['strictness']),
+      severity: serializer.fromJson<String?>(json['severity']),
+      crossContact: serializer.fromJson<bool>(json['crossContact']),
+      effectiveFrom: serializer.fromJson<DateTime>(json['effectiveFrom']),
+      effectiveTo: serializer.fromJson<DateTime?>(json['effectiveTo']),
+      source: serializer.fromJson<String>(json['source']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'definitionId': serializer.toJson<String>(definitionId),
+      'value': serializer.toJson<String>(value),
+      'strictness': serializer.toJson<String>(strictness),
+      'severity': serializer.toJson<String?>(severity),
+      'crossContact': serializer.toJson<bool>(crossContact),
+      'effectiveFrom': serializer.toJson<DateTime>(effectiveFrom),
+      'effectiveTo': serializer.toJson<DateTime?>(effectiveTo),
+      'source': serializer.toJson<String>(source),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionUserConstraint copyWith({
+    String? id,
+    String? userId,
+    String? definitionId,
+    String? value,
+    String? strictness,
+    Value<String?> severity = const Value.absent(),
+    bool? crossContact,
+    DateTime? effectiveFrom,
+    Value<DateTime?> effectiveTo = const Value.absent(),
+    String? source,
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionUserConstraint(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    definitionId: definitionId ?? this.definitionId,
+    value: value ?? this.value,
+    strictness: strictness ?? this.strictness,
+    severity: severity.present ? severity.value : this.severity,
+    crossContact: crossContact ?? this.crossContact,
+    effectiveFrom: effectiveFrom ?? this.effectiveFrom,
+    effectiveTo: effectiveTo.present ? effectiveTo.value : this.effectiveTo,
+    source: source ?? this.source,
+    notes: notes.present ? notes.value : this.notes,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionUserConstraint copyWithCompanion(
+    NutritionUserConstraintsCompanion data,
+  ) {
+    return NutritionUserConstraint(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      definitionId: data.definitionId.present
+          ? data.definitionId.value
+          : this.definitionId,
+      value: data.value.present ? data.value.value : this.value,
+      strictness: data.strictness.present
+          ? data.strictness.value
+          : this.strictness,
+      severity: data.severity.present ? data.severity.value : this.severity,
+      crossContact: data.crossContact.present
+          ? data.crossContact.value
+          : this.crossContact,
+      effectiveFrom: data.effectiveFrom.present
+          ? data.effectiveFrom.value
+          : this.effectiveFrom,
+      effectiveTo: data.effectiveTo.present
+          ? data.effectiveTo.value
+          : this.effectiveTo,
+      source: data.source.present ? data.source.value : this.source,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionUserConstraint(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('definitionId: $definitionId, ')
+          ..write('value: $value, ')
+          ..write('strictness: $strictness, ')
+          ..write('severity: $severity, ')
+          ..write('crossContact: $crossContact, ')
+          ..write('effectiveFrom: $effectiveFrom, ')
+          ..write('effectiveTo: $effectiveTo, ')
+          ..write('source: $source, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    definitionId,
+    value,
+    strictness,
+    severity,
+    crossContact,
+    effectiveFrom,
+    effectiveTo,
+    source,
+    notes,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionUserConstraint &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.definitionId == this.definitionId &&
+          other.value == this.value &&
+          other.strictness == this.strictness &&
+          other.severity == this.severity &&
+          other.crossContact == this.crossContact &&
+          other.effectiveFrom == this.effectiveFrom &&
+          other.effectiveTo == this.effectiveTo &&
+          other.source == this.source &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionUserConstraintsCompanion
+    extends UpdateCompanion<NutritionUserConstraint> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> definitionId;
+  final Value<String> value;
+  final Value<String> strictness;
+  final Value<String?> severity;
+  final Value<bool> crossContact;
+  final Value<DateTime> effectiveFrom;
+  final Value<DateTime?> effectiveTo;
+  final Value<String> source;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionUserConstraintsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.definitionId = const Value.absent(),
+    this.value = const Value.absent(),
+    this.strictness = const Value.absent(),
+    this.severity = const Value.absent(),
+    this.crossContact = const Value.absent(),
+    this.effectiveFrom = const Value.absent(),
+    this.effectiveTo = const Value.absent(),
+    this.source = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionUserConstraintsCompanion.insert({
+    required String id,
+    required String userId,
+    required String definitionId,
+    required String value,
+    required String strictness,
+    this.severity = const Value.absent(),
+    this.crossContact = const Value.absent(),
+    required DateTime effectiveFrom,
+    this.effectiveTo = const Value.absent(),
+    required String source,
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       definitionId = Value(definitionId),
+       value = Value(value),
+       strictness = Value(strictness),
+       effectiveFrom = Value(effectiveFrom),
+       source = Value(source);
+  static Insertable<NutritionUserConstraint> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? definitionId,
+    Expression<String>? value,
+    Expression<String>? strictness,
+    Expression<String>? severity,
+    Expression<bool>? crossContact,
+    Expression<DateTime>? effectiveFrom,
+    Expression<DateTime>? effectiveTo,
+    Expression<String>? source,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (definitionId != null) 'definition_id': definitionId,
+      if (value != null) 'value': value,
+      if (strictness != null) 'strictness': strictness,
+      if (severity != null) 'severity': severity,
+      if (crossContact != null) 'cross_contact': crossContact,
+      if (effectiveFrom != null) 'effective_from': effectiveFrom,
+      if (effectiveTo != null) 'effective_to': effectiveTo,
+      if (source != null) 'source': source,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionUserConstraintsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? definitionId,
+    Value<String>? value,
+    Value<String>? strictness,
+    Value<String?>? severity,
+    Value<bool>? crossContact,
+    Value<DateTime>? effectiveFrom,
+    Value<DateTime?>? effectiveTo,
+    Value<String>? source,
+    Value<String?>? notes,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionUserConstraintsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      definitionId: definitionId ?? this.definitionId,
+      value: value ?? this.value,
+      strictness: strictness ?? this.strictness,
+      severity: severity ?? this.severity,
+      crossContact: crossContact ?? this.crossContact,
+      effectiveFrom: effectiveFrom ?? this.effectiveFrom,
+      effectiveTo: effectiveTo ?? this.effectiveTo,
+      source: source ?? this.source,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (definitionId.present) {
+      map['definition_id'] = Variable<String>(definitionId.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (strictness.present) {
+      map['strictness'] = Variable<String>(strictness.value);
+    }
+    if (severity.present) {
+      map['severity'] = Variable<String>(severity.value);
+    }
+    if (crossContact.present) {
+      map['cross_contact'] = Variable<bool>(crossContact.value);
+    }
+    if (effectiveFrom.present) {
+      map['effective_from'] = Variable<DateTime>(effectiveFrom.value);
+    }
+    if (effectiveTo.present) {
+      map['effective_to'] = Variable<DateTime>(effectiveTo.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionUserConstraintsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('definitionId: $definitionId, ')
+          ..write('value: $value, ')
+          ..write('strictness: $strictness, ')
+          ..write('severity: $severity, ')
+          ..write('crossContact: $crossContact, ')
+          ..write('effectiveFrom: $effectiveFrom, ')
+          ..write('effectiveTo: $effectiveTo, ')
+          ..write('source: $source, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionSnapshotConstraintResultsTable
+    extends NutritionSnapshotConstraintResults
+    with
+        TableInfo<
+          $NutritionSnapshotConstraintResultsTable,
+          NutritionSnapshotConstraintResult
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionSnapshotConstraintResultsTable(
+    this.attachedDatabase, [
+    this._alias,
+  ]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _snapshotIdMeta = const VerificationMeta(
+    'snapshotId',
+  );
+  @override
+  late final GeneratedColumn<String> snapshotId = GeneratedColumn<String>(
+    'snapshot_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_consumption_snapshots (id)',
+    ),
+  );
+  static const VerificationMeta _constraintIdMeta = const VerificationMeta(
+    'constraintId',
+  );
+  @override
+  late final GeneratedColumn<String> constraintId = GeneratedColumn<String>(
+    'constraint_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_user_constraints (id)',
+    ),
+  );
+  static const VerificationMeta _resultMeta = const VerificationMeta('result');
+  @override
+  late final GeneratedColumn<String> result = GeneratedColumn<String>(
+    'result',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ruleVersionMeta = const VerificationMeta(
+    'ruleVersion',
+  );
+  @override
+  late final GeneratedColumn<String> ruleVersion = GeneratedColumn<String>(
+    'rule_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _evaluatedAtMeta = const VerificationMeta(
+    'evaluatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> evaluatedAt = GeneratedColumn<DateTime>(
+    'evaluated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    snapshotId,
+    constraintId,
+    result,
+    ruleVersion,
+    evaluatedAt,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_snapshot_constraint_results';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionSnapshotConstraintResult> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('snapshot_id')) {
+      context.handle(
+        _snapshotIdMeta,
+        snapshotId.isAcceptableOrUnknown(data['snapshot_id']!, _snapshotIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_snapshotIdMeta);
+    }
+    if (data.containsKey('constraint_id')) {
+      context.handle(
+        _constraintIdMeta,
+        constraintId.isAcceptableOrUnknown(
+          data['constraint_id']!,
+          _constraintIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_constraintIdMeta);
+    }
+    if (data.containsKey('result')) {
+      context.handle(
+        _resultMeta,
+        result.isAcceptableOrUnknown(data['result']!, _resultMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_resultMeta);
+    }
+    if (data.containsKey('rule_version')) {
+      context.handle(
+        _ruleVersionMeta,
+        ruleVersion.isAcceptableOrUnknown(
+          data['rule_version']!,
+          _ruleVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_ruleVersionMeta);
+    }
+    if (data.containsKey('evaluated_at')) {
+      context.handle(
+        _evaluatedAtMeta,
+        evaluatedAt.isAcceptableOrUnknown(
+          data['evaluated_at']!,
+          _evaluatedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_evaluatedAtMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {snapshotId, constraintId},
+  ];
+  @override
+  NutritionSnapshotConstraintResult map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionSnapshotConstraintResult(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      snapshotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}snapshot_id'],
+      )!,
+      constraintId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}constraint_id'],
+      )!,
+      result: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}result'],
+      )!,
+      ruleVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rule_version'],
+      )!,
+      evaluatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}evaluated_at'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionSnapshotConstraintResultsTable createAlias(String alias) {
+    return $NutritionSnapshotConstraintResultsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionSnapshotConstraintResult extends DataClass
+    implements Insertable<NutritionSnapshotConstraintResult> {
+  final String id;
+  final String snapshotId;
+  final String constraintId;
+  final String result;
+  final String ruleVersion;
+  final DateTime evaluatedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const NutritionSnapshotConstraintResult({
+    required this.id,
+    required this.snapshotId,
+    required this.constraintId,
+    required this.result,
+    required this.ruleVersion,
+    required this.evaluatedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['snapshot_id'] = Variable<String>(snapshotId);
+    map['constraint_id'] = Variable<String>(constraintId);
+    map['result'] = Variable<String>(result);
+    map['rule_version'] = Variable<String>(ruleVersion);
+    map['evaluated_at'] = Variable<DateTime>(evaluatedAt);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  NutritionSnapshotConstraintResultsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionSnapshotConstraintResultsCompanion(
+      id: Value(id),
+      snapshotId: Value(snapshotId),
+      constraintId: Value(constraintId),
+      result: Value(result),
+      ruleVersion: Value(ruleVersion),
+      evaluatedAt: Value(evaluatedAt),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NutritionSnapshotConstraintResult.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionSnapshotConstraintResult(
+      id: serializer.fromJson<String>(json['id']),
+      snapshotId: serializer.fromJson<String>(json['snapshotId']),
+      constraintId: serializer.fromJson<String>(json['constraintId']),
+      result: serializer.fromJson<String>(json['result']),
+      ruleVersion: serializer.fromJson<String>(json['ruleVersion']),
+      evaluatedAt: serializer.fromJson<DateTime>(json['evaluatedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'snapshotId': serializer.toJson<String>(snapshotId),
+      'constraintId': serializer.toJson<String>(constraintId),
+      'result': serializer.toJson<String>(result),
+      'ruleVersion': serializer.toJson<String>(ruleVersion),
+      'evaluatedAt': serializer.toJson<DateTime>(evaluatedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  NutritionSnapshotConstraintResult copyWith({
+    String? id,
+    String? snapshotId,
+    String? constraintId,
+    String? result,
+    String? ruleVersion,
+    DateTime? evaluatedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => NutritionSnapshotConstraintResult(
+    id: id ?? this.id,
+    snapshotId: snapshotId ?? this.snapshotId,
+    constraintId: constraintId ?? this.constraintId,
+    result: result ?? this.result,
+    ruleVersion: ruleVersion ?? this.ruleVersion,
+    evaluatedAt: evaluatedAt ?? this.evaluatedAt,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  NutritionSnapshotConstraintResult copyWithCompanion(
+    NutritionSnapshotConstraintResultsCompanion data,
+  ) {
+    return NutritionSnapshotConstraintResult(
+      id: data.id.present ? data.id.value : this.id,
+      snapshotId: data.snapshotId.present
+          ? data.snapshotId.value
+          : this.snapshotId,
+      constraintId: data.constraintId.present
+          ? data.constraintId.value
+          : this.constraintId,
+      result: data.result.present ? data.result.value : this.result,
+      ruleVersion: data.ruleVersion.present
+          ? data.ruleVersion.value
+          : this.ruleVersion,
+      evaluatedAt: data.evaluatedAt.present
+          ? data.evaluatedAt.value
+          : this.evaluatedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionSnapshotConstraintResult(')
+          ..write('id: $id, ')
+          ..write('snapshotId: $snapshotId, ')
+          ..write('constraintId: $constraintId, ')
+          ..write('result: $result, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('evaluatedAt: $evaluatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    snapshotId,
+    constraintId,
+    result,
+    ruleVersion,
+    evaluatedAt,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionSnapshotConstraintResult &&
+          other.id == this.id &&
+          other.snapshotId == this.snapshotId &&
+          other.constraintId == this.constraintId &&
+          other.result == this.result &&
+          other.ruleVersion == this.ruleVersion &&
+          other.evaluatedAt == this.evaluatedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NutritionSnapshotConstraintResultsCompanion
+    extends UpdateCompanion<NutritionSnapshotConstraintResult> {
+  final Value<String> id;
+  final Value<String> snapshotId;
+  final Value<String> constraintId;
+  final Value<String> result;
+  final Value<String> ruleVersion;
+  final Value<DateTime> evaluatedAt;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const NutritionSnapshotConstraintResultsCompanion({
+    this.id = const Value.absent(),
+    this.snapshotId = const Value.absent(),
+    this.constraintId = const Value.absent(),
+    this.result = const Value.absent(),
+    this.ruleVersion = const Value.absent(),
+    this.evaluatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionSnapshotConstraintResultsCompanion.insert({
+    required String id,
+    required String snapshotId,
+    required String constraintId,
+    required String result,
+    required String ruleVersion,
+    required DateTime evaluatedAt,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       snapshotId = Value(snapshotId),
+       constraintId = Value(constraintId),
+       result = Value(result),
+       ruleVersion = Value(ruleVersion),
+       evaluatedAt = Value(evaluatedAt);
+  static Insertable<NutritionSnapshotConstraintResult> custom({
+    Expression<String>? id,
+    Expression<String>? snapshotId,
+    Expression<String>? constraintId,
+    Expression<String>? result,
+    Expression<String>? ruleVersion,
+    Expression<DateTime>? evaluatedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (snapshotId != null) 'snapshot_id': snapshotId,
+      if (constraintId != null) 'constraint_id': constraintId,
+      if (result != null) 'result': result,
+      if (ruleVersion != null) 'rule_version': ruleVersion,
+      if (evaluatedAt != null) 'evaluated_at': evaluatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionSnapshotConstraintResultsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? snapshotId,
+    Value<String>? constraintId,
+    Value<String>? result,
+    Value<String>? ruleVersion,
+    Value<DateTime>? evaluatedAt,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionSnapshotConstraintResultsCompanion(
+      id: id ?? this.id,
+      snapshotId: snapshotId ?? this.snapshotId,
+      constraintId: constraintId ?? this.constraintId,
+      result: result ?? this.result,
+      ruleVersion: ruleVersion ?? this.ruleVersion,
+      evaluatedAt: evaluatedAt ?? this.evaluatedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (snapshotId.present) {
+      map['snapshot_id'] = Variable<String>(snapshotId.value);
+    }
+    if (constraintId.present) {
+      map['constraint_id'] = Variable<String>(constraintId.value);
+    }
+    if (result.present) {
+      map['result'] = Variable<String>(result.value);
+    }
+    if (ruleVersion.present) {
+      map['rule_version'] = Variable<String>(ruleVersion.value);
+    }
+    if (evaluatedAt.present) {
+      map['evaluated_at'] = Variable<DateTime>(evaluatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionSnapshotConstraintResultsCompanion(')
+          ..write('id: $id, ')
+          ..write('snapshotId: $snapshotId, ')
+          ..write('constraintId: $constraintId, ')
+          ..write('result: $result, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('evaluatedAt: $evaluatedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionSnapshotConstraintResultEvidenceTable
+    extends NutritionSnapshotConstraintResultEvidence
+    with
+        TableInfo<
+          $NutritionSnapshotConstraintResultEvidenceTable,
+          NutritionSnapshotConstraintResultEvidenceData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionSnapshotConstraintResultEvidenceTable(
+    this.attachedDatabase, [
+    this._alias,
+  ]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _resultIdMeta = const VerificationMeta(
+    'resultId',
+  );
+  @override
+  late final GeneratedColumn<String> resultId = GeneratedColumn<String>(
+    'result_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_snapshot_constraint_results (id)',
+    ),
+  );
+  static const VerificationMeta _foodIdMeta = const VerificationMeta('foodId');
+  @override
+  late final GeneratedColumn<String> foodId = GeneratedColumn<String>(
+    'food_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_foods (id)',
+    ),
+  );
+  static const VerificationMeta _snapshotItemIdMeta = const VerificationMeta(
+    'snapshotItemId',
+  );
+  @override
+  late final GeneratedColumn<String> snapshotItemId = GeneratedColumn<String>(
+    'snapshot_item_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_snapshot_items (id)',
+    ),
+  );
+  static const VerificationMeta _evidenceKindMeta = const VerificationMeta(
+    'evidenceKind',
+  );
+  @override
+  late final GeneratedColumn<String> evidenceKind = GeneratedColumn<String>(
+    'evidence_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<String> version = GeneratedColumn<String>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    resultId,
+    foodId,
+    snapshotItemId,
+    evidenceKind,
+    status,
+    source,
+    version,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_snapshot_constraint_result_evidence';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionSnapshotConstraintResultEvidenceData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('result_id')) {
+      context.handle(
+        _resultIdMeta,
+        resultId.isAcceptableOrUnknown(data['result_id']!, _resultIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_resultIdMeta);
+    }
+    if (data.containsKey('food_id')) {
+      context.handle(
+        _foodIdMeta,
+        foodId.isAcceptableOrUnknown(data['food_id']!, _foodIdMeta),
+      );
+    }
+    if (data.containsKey('snapshot_item_id')) {
+      context.handle(
+        _snapshotItemIdMeta,
+        snapshotItemId.isAcceptableOrUnknown(
+          data['snapshot_item_id']!,
+          _snapshotItemIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('evidence_kind')) {
+      context.handle(
+        _evidenceKindMeta,
+        evidenceKind.isAcceptableOrUnknown(
+          data['evidence_kind']!,
+          _evidenceKindMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_evidenceKindMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versionMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NutritionSnapshotConstraintResultEvidenceData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionSnapshotConstraintResultEvidenceData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      resultId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}result_id'],
+      )!,
+      foodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}food_id'],
+      ),
+      snapshotItemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}snapshot_item_id'],
+      ),
+      evidenceKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evidence_kind'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}version'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionSnapshotConstraintResultEvidenceTable createAlias(String alias) {
+    return $NutritionSnapshotConstraintResultEvidenceTable(
+      attachedDatabase,
+      alias,
+    );
+  }
+}
+
+class NutritionSnapshotConstraintResultEvidenceData extends DataClass
+    implements Insertable<NutritionSnapshotConstraintResultEvidenceData> {
+  final String id;
+  final String resultId;
+  final String? foodId;
+  final String? snapshotItemId;
+  final String evidenceKind;
+  final String status;
+  final String source;
+  final String version;
+  final DateTime createdAt;
+  const NutritionSnapshotConstraintResultEvidenceData({
+    required this.id,
+    required this.resultId,
+    this.foodId,
+    this.snapshotItemId,
+    required this.evidenceKind,
+    required this.status,
+    required this.source,
+    required this.version,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['result_id'] = Variable<String>(resultId);
+    if (!nullToAbsent || foodId != null) {
+      map['food_id'] = Variable<String>(foodId);
+    }
+    if (!nullToAbsent || snapshotItemId != null) {
+      map['snapshot_item_id'] = Variable<String>(snapshotItemId);
+    }
+    map['evidence_kind'] = Variable<String>(evidenceKind);
+    map['status'] = Variable<String>(status);
+    map['source'] = Variable<String>(source);
+    map['version'] = Variable<String>(version);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  NutritionSnapshotConstraintResultEvidenceCompanion toCompanion(
+    bool nullToAbsent,
+  ) {
+    return NutritionSnapshotConstraintResultEvidenceCompanion(
+      id: Value(id),
+      resultId: Value(resultId),
+      foodId: foodId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foodId),
+      snapshotItemId: snapshotItemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(snapshotItemId),
+      evidenceKind: Value(evidenceKind),
+      status: Value(status),
+      source: Value(source),
+      version: Value(version),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory NutritionSnapshotConstraintResultEvidenceData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionSnapshotConstraintResultEvidenceData(
+      id: serializer.fromJson<String>(json['id']),
+      resultId: serializer.fromJson<String>(json['resultId']),
+      foodId: serializer.fromJson<String?>(json['foodId']),
+      snapshotItemId: serializer.fromJson<String?>(json['snapshotItemId']),
+      evidenceKind: serializer.fromJson<String>(json['evidenceKind']),
+      status: serializer.fromJson<String>(json['status']),
+      source: serializer.fromJson<String>(json['source']),
+      version: serializer.fromJson<String>(json['version']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'resultId': serializer.toJson<String>(resultId),
+      'foodId': serializer.toJson<String?>(foodId),
+      'snapshotItemId': serializer.toJson<String?>(snapshotItemId),
+      'evidenceKind': serializer.toJson<String>(evidenceKind),
+      'status': serializer.toJson<String>(status),
+      'source': serializer.toJson<String>(source),
+      'version': serializer.toJson<String>(version),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  NutritionSnapshotConstraintResultEvidenceData copyWith({
+    String? id,
+    String? resultId,
+    Value<String?> foodId = const Value.absent(),
+    Value<String?> snapshotItemId = const Value.absent(),
+    String? evidenceKind,
+    String? status,
+    String? source,
+    String? version,
+    DateTime? createdAt,
+  }) => NutritionSnapshotConstraintResultEvidenceData(
+    id: id ?? this.id,
+    resultId: resultId ?? this.resultId,
+    foodId: foodId.present ? foodId.value : this.foodId,
+    snapshotItemId: snapshotItemId.present
+        ? snapshotItemId.value
+        : this.snapshotItemId,
+    evidenceKind: evidenceKind ?? this.evidenceKind,
+    status: status ?? this.status,
+    source: source ?? this.source,
+    version: version ?? this.version,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  NutritionSnapshotConstraintResultEvidenceData copyWithCompanion(
+    NutritionSnapshotConstraintResultEvidenceCompanion data,
+  ) {
+    return NutritionSnapshotConstraintResultEvidenceData(
+      id: data.id.present ? data.id.value : this.id,
+      resultId: data.resultId.present ? data.resultId.value : this.resultId,
+      foodId: data.foodId.present ? data.foodId.value : this.foodId,
+      snapshotItemId: data.snapshotItemId.present
+          ? data.snapshotItemId.value
+          : this.snapshotItemId,
+      evidenceKind: data.evidenceKind.present
+          ? data.evidenceKind.value
+          : this.evidenceKind,
+      status: data.status.present ? data.status.value : this.status,
+      source: data.source.present ? data.source.value : this.source,
+      version: data.version.present ? data.version.value : this.version,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionSnapshotConstraintResultEvidenceData(')
+          ..write('id: $id, ')
+          ..write('resultId: $resultId, ')
+          ..write('foodId: $foodId, ')
+          ..write('snapshotItemId: $snapshotItemId, ')
+          ..write('evidenceKind: $evidenceKind, ')
+          ..write('status: $status, ')
+          ..write('source: $source, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    resultId,
+    foodId,
+    snapshotItemId,
+    evidenceKind,
+    status,
+    source,
+    version,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionSnapshotConstraintResultEvidenceData &&
+          other.id == this.id &&
+          other.resultId == this.resultId &&
+          other.foodId == this.foodId &&
+          other.snapshotItemId == this.snapshotItemId &&
+          other.evidenceKind == this.evidenceKind &&
+          other.status == this.status &&
+          other.source == this.source &&
+          other.version == this.version &&
+          other.createdAt == this.createdAt);
+}
+
+class NutritionSnapshotConstraintResultEvidenceCompanion
+    extends UpdateCompanion<NutritionSnapshotConstraintResultEvidenceData> {
+  final Value<String> id;
+  final Value<String> resultId;
+  final Value<String?> foodId;
+  final Value<String?> snapshotItemId;
+  final Value<String> evidenceKind;
+  final Value<String> status;
+  final Value<String> source;
+  final Value<String> version;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const NutritionSnapshotConstraintResultEvidenceCompanion({
+    this.id = const Value.absent(),
+    this.resultId = const Value.absent(),
+    this.foodId = const Value.absent(),
+    this.snapshotItemId = const Value.absent(),
+    this.evidenceKind = const Value.absent(),
+    this.status = const Value.absent(),
+    this.source = const Value.absent(),
+    this.version = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionSnapshotConstraintResultEvidenceCompanion.insert({
+    required String id,
+    required String resultId,
+    this.foodId = const Value.absent(),
+    this.snapshotItemId = const Value.absent(),
+    required String evidenceKind,
+    required String status,
+    required String source,
+    required String version,
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       resultId = Value(resultId),
+       evidenceKind = Value(evidenceKind),
+       status = Value(status),
+       source = Value(source),
+       version = Value(version);
+  static Insertable<NutritionSnapshotConstraintResultEvidenceData> custom({
+    Expression<String>? id,
+    Expression<String>? resultId,
+    Expression<String>? foodId,
+    Expression<String>? snapshotItemId,
+    Expression<String>? evidenceKind,
+    Expression<String>? status,
+    Expression<String>? source,
+    Expression<String>? version,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (resultId != null) 'result_id': resultId,
+      if (foodId != null) 'food_id': foodId,
+      if (snapshotItemId != null) 'snapshot_item_id': snapshotItemId,
+      if (evidenceKind != null) 'evidence_kind': evidenceKind,
+      if (status != null) 'status': status,
+      if (source != null) 'source': source,
+      if (version != null) 'version': version,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionSnapshotConstraintResultEvidenceCompanion copyWith({
+    Value<String>? id,
+    Value<String>? resultId,
+    Value<String?>? foodId,
+    Value<String?>? snapshotItemId,
+    Value<String>? evidenceKind,
+    Value<String>? status,
+    Value<String>? source,
+    Value<String>? version,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return NutritionSnapshotConstraintResultEvidenceCompanion(
+      id: id ?? this.id,
+      resultId: resultId ?? this.resultId,
+      foodId: foodId ?? this.foodId,
+      snapshotItemId: snapshotItemId ?? this.snapshotItemId,
+      evidenceKind: evidenceKind ?? this.evidenceKind,
+      status: status ?? this.status,
+      source: source ?? this.source,
+      version: version ?? this.version,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (resultId.present) {
+      map['result_id'] = Variable<String>(resultId.value);
+    }
+    if (foodId.present) {
+      map['food_id'] = Variable<String>(foodId.value);
+    }
+    if (snapshotItemId.present) {
+      map['snapshot_item_id'] = Variable<String>(snapshotItemId.value);
+    }
+    if (evidenceKind.present) {
+      map['evidence_kind'] = Variable<String>(evidenceKind.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<String>(version.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionSnapshotConstraintResultEvidenceCompanion(')
+          ..write('id: $id, ')
+          ..write('resultId: $resultId, ')
+          ..write('foodId: $foodId, ')
+          ..write('snapshotItemId: $snapshotItemId, ')
+          ..write('evidenceKind: $evidenceKind, ')
+          ..write('status: $status, ')
+          ..write('source: $source, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -28727,6 +46651,60 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MusclesTable muscles = $MusclesTable(this);
   late final $ExerciseMuscleMappingsTable exerciseMuscleMappings =
       $ExerciseMuscleMappingsTable(this);
+  late final $NutritionFoodsTable nutritionFoods = $NutritionFoodsTable(this);
+  late final $NutritionFoodAliasesTable nutritionFoodAliases =
+      $NutritionFoodAliasesTable(this);
+  late final $NutritionFoodPreparationsTable nutritionFoodPreparations =
+      $NutritionFoodPreparationsTable(this);
+  late final $NutritionLegacyFoodMappingsTable nutritionLegacyFoodMappings =
+      $NutritionLegacyFoodMappingsTable(this);
+  late final $NutritionNutrientDefinitionsTable nutritionNutrientDefinitions =
+      $NutritionNutrientDefinitionsTable(this);
+  late final $NutritionFoodNutrientFactsTable nutritionFoodNutrientFacts =
+      $NutritionFoodNutrientFactsTable(this);
+  late final $NutritionQuantityConversionsTable nutritionQuantityConversions =
+      $NutritionQuantityConversionsTable(this);
+  late final $NutritionHouseholdMeasuresTable nutritionHouseholdMeasures =
+      $NutritionHouseholdMeasuresTable(this);
+  late final $NutritionVesselCalibrationsTable nutritionVesselCalibrations =
+      $NutritionVesselCalibrationsTable(this);
+  late final $NutritionRecipesTable nutritionRecipes = $NutritionRecipesTable(
+    this,
+  );
+  late final $NutritionRecipeVersionsTable nutritionRecipeVersions =
+      $NutritionRecipeVersionsTable(this);
+  late final $NutritionRecipeIngredientsTable nutritionRecipeIngredients =
+      $NutritionRecipeIngredientsTable(this);
+  late final $NutritionUserCorrectionsTable nutritionUserCorrections =
+      $NutritionUserCorrectionsTable(this);
+  late final $NutritionEstimatesTable nutritionEstimates =
+      $NutritionEstimatesTable(this);
+  late final $NutritionEstimateNutrientsTable nutritionEstimateNutrients =
+      $NutritionEstimateNutrientsTable(this);
+  late final $NutritionThalisTable nutritionThalis = $NutritionThalisTable(
+    this,
+  );
+  late final $NutritionThaliItemsTable nutritionThaliItems =
+      $NutritionThaliItemsTable(this);
+  late final $NutritionConsumptionSnapshotsTable nutritionConsumptionSnapshots =
+      $NutritionConsumptionSnapshotsTable(this);
+  late final $NutritionSnapshotItemsTable nutritionSnapshotItems =
+      $NutritionSnapshotItemsTable(this);
+  late final $NutritionSnapshotNutrientsTable nutritionSnapshotNutrients =
+      $NutritionSnapshotNutrientsTable(this);
+  late final $NutritionFoodConstraintEvidenceTable
+  nutritionFoodConstraintEvidence = $NutritionFoodConstraintEvidenceTable(this);
+  late final $NutritionConstraintDefinitionsTable
+  nutritionConstraintDefinitions = $NutritionConstraintDefinitionsTable(this);
+  late final $NutritionUserConstraintsTable nutritionUserConstraints =
+      $NutritionUserConstraintsTable(this);
+  late final $NutritionSnapshotConstraintResultsTable
+  nutritionSnapshotConstraintResults = $NutritionSnapshotConstraintResultsTable(
+    this,
+  );
+  late final $NutritionSnapshotConstraintResultEvidenceTable
+  nutritionSnapshotConstraintResultEvidence =
+      $NutritionSnapshotConstraintResultEvidenceTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -28780,6 +46758,31 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     performedRestPeriods,
     muscles,
     exerciseMuscleMappings,
+    nutritionFoods,
+    nutritionFoodAliases,
+    nutritionFoodPreparations,
+    nutritionLegacyFoodMappings,
+    nutritionNutrientDefinitions,
+    nutritionFoodNutrientFacts,
+    nutritionQuantityConversions,
+    nutritionHouseholdMeasures,
+    nutritionVesselCalibrations,
+    nutritionRecipes,
+    nutritionRecipeVersions,
+    nutritionRecipeIngredients,
+    nutritionUserCorrections,
+    nutritionEstimates,
+    nutritionEstimateNutrients,
+    nutritionThalis,
+    nutritionThaliItems,
+    nutritionConsumptionSnapshots,
+    nutritionSnapshotItems,
+    nutritionSnapshotNutrients,
+    nutritionFoodConstraintEvidence,
+    nutritionConstraintDefinitions,
+    nutritionUserConstraints,
+    nutritionSnapshotConstraintResults,
+    nutritionSnapshotConstraintResultEvidence,
   ];
 }
 
@@ -41698,6 +59701,8751 @@ class $$ExerciseMuscleMappingsTableOrderingComposer
   }
 }
 
+typedef $$NutritionFoodsTableCreateCompanionBuilder =
+    NutritionFoodsCompanion Function({
+      required String id,
+      required String kind,
+      required String displayName,
+      required String locale,
+      required String sourceType,
+      Value<String?> sourceRef,
+      Value<String?> sourceVersion,
+      Value<String?> brand,
+      Value<String?> region,
+      required String lifecycle,
+      Value<String?> variantOfFoodId,
+      Value<int?> legacyFoodItemId,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionFoodsTableUpdateCompanionBuilder =
+    NutritionFoodsCompanion Function({
+      Value<String> id,
+      Value<String> kind,
+      Value<String> displayName,
+      Value<String> locale,
+      Value<String> sourceType,
+      Value<String?> sourceRef,
+      Value<String?> sourceVersion,
+      Value<String?> brand,
+      Value<String?> region,
+      Value<String> lifecycle,
+      Value<String?> variantOfFoodId,
+      Value<int?> legacyFoodItemId,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionFoodsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionFoodsTable,
+          NutritionFood,
+          $$NutritionFoodsTableFilterComposer,
+          $$NutritionFoodsTableOrderingComposer,
+          $$NutritionFoodsTableCreateCompanionBuilder,
+          $$NutritionFoodsTableUpdateCompanionBuilder
+        > {
+  $$NutritionFoodsTableTableManager(
+    _$AppDatabase db,
+    $NutritionFoodsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionFoodsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionFoodsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> displayName = const Value.absent(),
+                Value<String> locale = const Value.absent(),
+                Value<String> sourceType = const Value.absent(),
+                Value<String?> sourceRef = const Value.absent(),
+                Value<String?> sourceVersion = const Value.absent(),
+                Value<String?> brand = const Value.absent(),
+                Value<String?> region = const Value.absent(),
+                Value<String> lifecycle = const Value.absent(),
+                Value<String?> variantOfFoodId = const Value.absent(),
+                Value<int?> legacyFoodItemId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionFoodsCompanion(
+                id: id,
+                kind: kind,
+                displayName: displayName,
+                locale: locale,
+                sourceType: sourceType,
+                sourceRef: sourceRef,
+                sourceVersion: sourceVersion,
+                brand: brand,
+                region: region,
+                lifecycle: lifecycle,
+                variantOfFoodId: variantOfFoodId,
+                legacyFoodItemId: legacyFoodItemId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String kind,
+                required String displayName,
+                required String locale,
+                required String sourceType,
+                Value<String?> sourceRef = const Value.absent(),
+                Value<String?> sourceVersion = const Value.absent(),
+                Value<String?> brand = const Value.absent(),
+                Value<String?> region = const Value.absent(),
+                required String lifecycle,
+                Value<String?> variantOfFoodId = const Value.absent(),
+                Value<int?> legacyFoodItemId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionFoodsCompanion.insert(
+                id: id,
+                kind: kind,
+                displayName: displayName,
+                locale: locale,
+                sourceType: sourceType,
+                sourceRef: sourceRef,
+                sourceVersion: sourceVersion,
+                brand: brand,
+                region: region,
+                lifecycle: lifecycle,
+                variantOfFoodId: variantOfFoodId,
+                legacyFoodItemId: legacyFoodItemId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionFoodsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionFoodsTable> {
+  $$NutritionFoodsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get kind => $state.composableBuilder(
+    column: $state.table.kind,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get displayName => $state.composableBuilder(
+    column: $state.table.displayName,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get locale => $state.composableBuilder(
+    column: $state.table.locale,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceType => $state.composableBuilder(
+    column: $state.table.sourceType,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceRef => $state.composableBuilder(
+    column: $state.table.sourceRef,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceVersion => $state.composableBuilder(
+    column: $state.table.sourceVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get brand => $state.composableBuilder(
+    column: $state.table.brand,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get region => $state.composableBuilder(
+    column: $state.table.region,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get lifecycle => $state.composableBuilder(
+    column: $state.table.lifecycle,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get legacyFoodItemId => $state.composableBuilder(
+    column: $state.table.legacyFoodItemId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableFilterComposer get variantOfFoodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.variantOfFoodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+
+  ComposableFilter nutritionFoodAliasesRefs(
+    ComposableFilter Function($$NutritionFoodAliasesTableFilterComposer f) f,
+  ) {
+    final $$NutritionFoodAliasesTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionFoodAliases,
+          getReferencedColumn: (t) => t.foodId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodAliasesTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodAliases,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionFoodPreparationsRefs(
+    ComposableFilter Function($$NutritionFoodPreparationsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionFoodPreparationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionFoodPreparations,
+          getReferencedColumn: (t) => t.foodId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodPreparationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodPreparations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionLegacyFoodMappingsRefs(
+    ComposableFilter Function(
+      $$NutritionLegacyFoodMappingsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionLegacyFoodMappingsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionLegacyFoodMappings,
+          getReferencedColumn: (t) => t.foodId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionLegacyFoodMappingsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionLegacyFoodMappings,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionFoodNutrientFactsRefs(
+    ComposableFilter Function($$NutritionFoodNutrientFactsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionFoodNutrientFactsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionFoodNutrientFacts,
+          getReferencedColumn: (t) => t.foodId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodNutrientFactsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodNutrientFacts,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionQuantityConversionsRefs(
+    ComposableFilter Function(
+      $$NutritionQuantityConversionsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionQuantityConversionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionQuantityConversions,
+          getReferencedColumn: (t) => t.foodId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionQuantityConversionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionQuantityConversions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionVesselCalibrationsRefs(
+    ComposableFilter Function(
+      $$NutritionVesselCalibrationsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionVesselCalibrationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionVesselCalibrations,
+          getReferencedColumn: (t) => t.foodId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionVesselCalibrationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionVesselCalibrations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionRecipeIngredientsRefs(
+    ComposableFilter Function($$NutritionRecipeIngredientsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionRecipeIngredientsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionRecipeIngredients,
+          getReferencedColumn: (t) => t.foodId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeIngredientsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeIngredients,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionThaliItemsRefs(
+    ComposableFilter Function($$NutritionThaliItemsTableFilterComposer f) f,
+  ) {
+    final $$NutritionThaliItemsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionThaliItems,
+          getReferencedColumn: (t) => t.foodId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionThaliItemsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionThaliItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionSnapshotItemsRefs(
+    ComposableFilter Function($$NutritionSnapshotItemsTableFilterComposer f) f,
+  ) {
+    final $$NutritionSnapshotItemsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionSnapshotItems,
+          getReferencedColumn: (t) => t.foodId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotItemsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionFoodConstraintEvidenceRefs(
+    ComposableFilter Function(
+      $$NutritionFoodConstraintEvidenceTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionFoodConstraintEvidenceTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionFoodConstraintEvidence,
+          getReferencedColumn: (t) => t.foodId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodConstraintEvidenceTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodConstraintEvidence,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionSnapshotConstraintResultEvidenceRefs(
+    ComposableFilter Function(
+      $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer
+    composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $state.db.nutritionSnapshotConstraintResultEvidence,
+      getReferencedColumn: (t) => t.foodId,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionSnapshotConstraintResultEvidence,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$NutritionFoodsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionFoodsTable> {
+  $$NutritionFoodsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get kind => $state.composableBuilder(
+    column: $state.table.kind,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get displayName => $state.composableBuilder(
+    column: $state.table.displayName,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get locale => $state.composableBuilder(
+    column: $state.table.locale,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceType => $state.composableBuilder(
+    column: $state.table.sourceType,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceRef => $state.composableBuilder(
+    column: $state.table.sourceRef,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceVersion => $state.composableBuilder(
+    column: $state.table.sourceVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get brand => $state.composableBuilder(
+    column: $state.table.brand,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get region => $state.composableBuilder(
+    column: $state.table.region,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get lifecycle => $state.composableBuilder(
+    column: $state.table.lifecycle,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get legacyFoodItemId => $state.composableBuilder(
+    column: $state.table.legacyFoodItemId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableOrderingComposer get variantOfFoodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.variantOfFoodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionFoodAliasesTableCreateCompanionBuilder =
+    NutritionFoodAliasesCompanion Function({
+      required String id,
+      Value<String?> foodId,
+      required String alias,
+      required String normalizedAlias,
+      required String locale,
+      required String source,
+      Value<double?> confidence,
+      Value<bool> isActive,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionFoodAliasesTableUpdateCompanionBuilder =
+    NutritionFoodAliasesCompanion Function({
+      Value<String> id,
+      Value<String?> foodId,
+      Value<String> alias,
+      Value<String> normalizedAlias,
+      Value<String> locale,
+      Value<String> source,
+      Value<double?> confidence,
+      Value<bool> isActive,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionFoodAliasesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionFoodAliasesTable,
+          NutritionFoodAliase,
+          $$NutritionFoodAliasesTableFilterComposer,
+          $$NutritionFoodAliasesTableOrderingComposer,
+          $$NutritionFoodAliasesTableCreateCompanionBuilder,
+          $$NutritionFoodAliasesTableUpdateCompanionBuilder
+        > {
+  $$NutritionFoodAliasesTableTableManager(
+    _$AppDatabase db,
+    $NutritionFoodAliasesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionFoodAliasesTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionFoodAliasesTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> foodId = const Value.absent(),
+                Value<String> alias = const Value.absent(),
+                Value<String> normalizedAlias = const Value.absent(),
+                Value<String> locale = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionFoodAliasesCompanion(
+                id: id,
+                foodId: foodId,
+                alias: alias,
+                normalizedAlias: normalizedAlias,
+                locale: locale,
+                source: source,
+                confidence: confidence,
+                isActive: isActive,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> foodId = const Value.absent(),
+                required String alias,
+                required String normalizedAlias,
+                required String locale,
+                required String source,
+                Value<double?> confidence = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionFoodAliasesCompanion.insert(
+                id: id,
+                foodId: foodId,
+                alias: alias,
+                normalizedAlias: normalizedAlias,
+                locale: locale,
+                source: source,
+                confidence: confidence,
+                isActive: isActive,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionFoodAliasesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionFoodAliasesTable> {
+  $$NutritionFoodAliasesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get alias => $state.composableBuilder(
+    column: $state.table.alias,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get normalizedAlias => $state.composableBuilder(
+    column: $state.table.normalizedAlias,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get locale => $state.composableBuilder(
+    column: $state.table.locale,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get isActive => $state.composableBuilder(
+    column: $state.table.isActive,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableFilterComposer get foodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.foodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$NutritionFoodAliasesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionFoodAliasesTable> {
+  $$NutritionFoodAliasesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get alias => $state.composableBuilder(
+    column: $state.table.alias,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get normalizedAlias => $state.composableBuilder(
+    column: $state.table.normalizedAlias,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get locale => $state.composableBuilder(
+    column: $state.table.locale,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get isActive => $state.composableBuilder(
+    column: $state.table.isActive,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableOrderingComposer get foodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.foodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionFoodPreparationsTableCreateCompanionBuilder =
+    NutritionFoodPreparationsCompanion Function({
+      required String id,
+      required String foodId,
+      required String state,
+      Value<String?> method,
+      Value<String?> oilContext,
+      Value<String?> region,
+      required String source,
+      required String version,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionFoodPreparationsTableUpdateCompanionBuilder =
+    NutritionFoodPreparationsCompanion Function({
+      Value<String> id,
+      Value<String> foodId,
+      Value<String> state,
+      Value<String?> method,
+      Value<String?> oilContext,
+      Value<String?> region,
+      Value<String> source,
+      Value<String> version,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionFoodPreparationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionFoodPreparationsTable,
+          NutritionFoodPreparation,
+          $$NutritionFoodPreparationsTableFilterComposer,
+          $$NutritionFoodPreparationsTableOrderingComposer,
+          $$NutritionFoodPreparationsTableCreateCompanionBuilder,
+          $$NutritionFoodPreparationsTableUpdateCompanionBuilder
+        > {
+  $$NutritionFoodPreparationsTableTableManager(
+    _$AppDatabase db,
+    $NutritionFoodPreparationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionFoodPreparationsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionFoodPreparationsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> foodId = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<String?> method = const Value.absent(),
+                Value<String?> oilContext = const Value.absent(),
+                Value<String?> region = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String> version = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionFoodPreparationsCompanion(
+                id: id,
+                foodId: foodId,
+                state: state,
+                method: method,
+                oilContext: oilContext,
+                region: region,
+                source: source,
+                version: version,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String foodId,
+                required String state,
+                Value<String?> method = const Value.absent(),
+                Value<String?> oilContext = const Value.absent(),
+                Value<String?> region = const Value.absent(),
+                required String source,
+                required String version,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionFoodPreparationsCompanion.insert(
+                id: id,
+                foodId: foodId,
+                state: state,
+                method: method,
+                oilContext: oilContext,
+                region: region,
+                source: source,
+                version: version,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionFoodPreparationsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionFoodPreparationsTable> {
+  $$NutritionFoodPreparationsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get state => $state.composableBuilder(
+    column: $state.table.state,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get method => $state.composableBuilder(
+    column: $state.table.method,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get oilContext => $state.composableBuilder(
+    column: $state.table.oilContext,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get region => $state.composableBuilder(
+    column: $state.table.region,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableFilterComposer get foodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.foodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+
+  ComposableFilter nutritionFoodNutrientFactsRefs(
+    ComposableFilter Function($$NutritionFoodNutrientFactsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionFoodNutrientFactsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionFoodNutrientFacts,
+          getReferencedColumn: (t) => t.preparationId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodNutrientFactsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodNutrientFacts,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionQuantityConversionsRefs(
+    ComposableFilter Function(
+      $$NutritionQuantityConversionsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionQuantityConversionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionQuantityConversions,
+          getReferencedColumn: (t) => t.preparationId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionQuantityConversionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionQuantityConversions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionVesselCalibrationsRefs(
+    ComposableFilter Function(
+      $$NutritionVesselCalibrationsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionVesselCalibrationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionVesselCalibrations,
+          getReferencedColumn: (t) => t.preparationId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionVesselCalibrationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionVesselCalibrations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionRecipeIngredientsRefs(
+    ComposableFilter Function($$NutritionRecipeIngredientsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionRecipeIngredientsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionRecipeIngredients,
+          getReferencedColumn: (t) => t.preparationId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeIngredientsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeIngredients,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionSnapshotItemsRefs(
+    ComposableFilter Function($$NutritionSnapshotItemsTableFilterComposer f) f,
+  ) {
+    final $$NutritionSnapshotItemsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionSnapshotItems,
+          getReferencedColumn: (t) => t.preparationId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotItemsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$NutritionFoodPreparationsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionFoodPreparationsTable> {
+  $$NutritionFoodPreparationsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get state => $state.composableBuilder(
+    column: $state.table.state,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get method => $state.composableBuilder(
+    column: $state.table.method,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get oilContext => $state.composableBuilder(
+    column: $state.table.oilContext,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get region => $state.composableBuilder(
+    column: $state.table.region,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableOrderingComposer get foodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.foodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionLegacyFoodMappingsTableCreateCompanionBuilder =
+    NutritionLegacyFoodMappingsCompanion Function({
+      Value<int> legacyFoodItemId,
+      Value<String?> foodId,
+      required String mappingStatus,
+      required String evidence,
+      Value<DateTime> mappedAt,
+    });
+typedef $$NutritionLegacyFoodMappingsTableUpdateCompanionBuilder =
+    NutritionLegacyFoodMappingsCompanion Function({
+      Value<int> legacyFoodItemId,
+      Value<String?> foodId,
+      Value<String> mappingStatus,
+      Value<String> evidence,
+      Value<DateTime> mappedAt,
+    });
+
+class $$NutritionLegacyFoodMappingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionLegacyFoodMappingsTable,
+          NutritionLegacyFoodMapping,
+          $$NutritionLegacyFoodMappingsTableFilterComposer,
+          $$NutritionLegacyFoodMappingsTableOrderingComposer,
+          $$NutritionLegacyFoodMappingsTableCreateCompanionBuilder,
+          $$NutritionLegacyFoodMappingsTableUpdateCompanionBuilder
+        > {
+  $$NutritionLegacyFoodMappingsTableTableManager(
+    _$AppDatabase db,
+    $NutritionLegacyFoodMappingsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionLegacyFoodMappingsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionLegacyFoodMappingsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<int> legacyFoodItemId = const Value.absent(),
+                Value<String?> foodId = const Value.absent(),
+                Value<String> mappingStatus = const Value.absent(),
+                Value<String> evidence = const Value.absent(),
+                Value<DateTime> mappedAt = const Value.absent(),
+              }) => NutritionLegacyFoodMappingsCompanion(
+                legacyFoodItemId: legacyFoodItemId,
+                foodId: foodId,
+                mappingStatus: mappingStatus,
+                evidence: evidence,
+                mappedAt: mappedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> legacyFoodItemId = const Value.absent(),
+                Value<String?> foodId = const Value.absent(),
+                required String mappingStatus,
+                required String evidence,
+                Value<DateTime> mappedAt = const Value.absent(),
+              }) => NutritionLegacyFoodMappingsCompanion.insert(
+                legacyFoodItemId: legacyFoodItemId,
+                foodId: foodId,
+                mappingStatus: mappingStatus,
+                evidence: evidence,
+                mappedAt: mappedAt,
+              ),
+        ),
+      );
+}
+
+class $$NutritionLegacyFoodMappingsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionLegacyFoodMappingsTable> {
+  $$NutritionLegacyFoodMappingsTableFilterComposer(super.$state);
+  ColumnFilters<int> get legacyFoodItemId => $state.composableBuilder(
+    column: $state.table.legacyFoodItemId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get mappingStatus => $state.composableBuilder(
+    column: $state.table.mappingStatus,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get evidence => $state.composableBuilder(
+    column: $state.table.evidence,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get mappedAt => $state.composableBuilder(
+    column: $state.table.mappedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableFilterComposer get foodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.foodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$NutritionLegacyFoodMappingsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionLegacyFoodMappingsTable> {
+  $$NutritionLegacyFoodMappingsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get legacyFoodItemId => $state.composableBuilder(
+    column: $state.table.legacyFoodItemId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get mappingStatus => $state.composableBuilder(
+    column: $state.table.mappingStatus,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get evidence => $state.composableBuilder(
+    column: $state.table.evidence,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get mappedAt => $state.composableBuilder(
+    column: $state.table.mappedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableOrderingComposer get foodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.foodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionNutrientDefinitionsTableCreateCompanionBuilder =
+    NutritionNutrientDefinitionsCompanion Function({
+      required String id,
+      required String key,
+      required String displayName,
+      required String unit,
+      required String kind,
+      required int sortOrder,
+      required int version,
+      Value<bool> isActive,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionNutrientDefinitionsTableUpdateCompanionBuilder =
+    NutritionNutrientDefinitionsCompanion Function({
+      Value<String> id,
+      Value<String> key,
+      Value<String> displayName,
+      Value<String> unit,
+      Value<String> kind,
+      Value<int> sortOrder,
+      Value<int> version,
+      Value<bool> isActive,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionNutrientDefinitionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionNutrientDefinitionsTable,
+          NutritionNutrientDefinition,
+          $$NutritionNutrientDefinitionsTableFilterComposer,
+          $$NutritionNutrientDefinitionsTableOrderingComposer,
+          $$NutritionNutrientDefinitionsTableCreateCompanionBuilder,
+          $$NutritionNutrientDefinitionsTableUpdateCompanionBuilder
+        > {
+  $$NutritionNutrientDefinitionsTableTableManager(
+    _$AppDatabase db,
+    $NutritionNutrientDefinitionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionNutrientDefinitionsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionNutrientDefinitionsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> key = const Value.absent(),
+                Value<String> displayName = const Value.absent(),
+                Value<String> unit = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionNutrientDefinitionsCompanion(
+                id: id,
+                key: key,
+                displayName: displayName,
+                unit: unit,
+                kind: kind,
+                sortOrder: sortOrder,
+                version: version,
+                isActive: isActive,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String key,
+                required String displayName,
+                required String unit,
+                required String kind,
+                required int sortOrder,
+                required int version,
+                Value<bool> isActive = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionNutrientDefinitionsCompanion.insert(
+                id: id,
+                key: key,
+                displayName: displayName,
+                unit: unit,
+                kind: kind,
+                sortOrder: sortOrder,
+                version: version,
+                isActive: isActive,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionNutrientDefinitionsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionNutrientDefinitionsTable> {
+  $$NutritionNutrientDefinitionsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get key => $state.composableBuilder(
+    column: $state.table.key,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get displayName => $state.composableBuilder(
+    column: $state.table.displayName,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get kind => $state.composableBuilder(
+    column: $state.table.kind,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get sortOrder => $state.composableBuilder(
+    column: $state.table.sortOrder,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get isActive => $state.composableBuilder(
+    column: $state.table.isActive,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ComposableFilter nutritionFoodNutrientFactsRefs(
+    ComposableFilter Function($$NutritionFoodNutrientFactsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionFoodNutrientFactsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionFoodNutrientFacts,
+          getReferencedColumn: (t) => t.nutrientId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodNutrientFactsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodNutrientFacts,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionEstimateNutrientsRefs(
+    ComposableFilter Function($$NutritionEstimateNutrientsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionEstimateNutrientsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionEstimateNutrients,
+          getReferencedColumn: (t) => t.nutrientId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionEstimateNutrientsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionEstimateNutrients,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionSnapshotNutrientsRefs(
+    ComposableFilter Function($$NutritionSnapshotNutrientsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionSnapshotNutrientsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionSnapshotNutrients,
+          getReferencedColumn: (t) => t.nutrientId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotNutrientsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotNutrients,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$NutritionNutrientDefinitionsTableOrderingComposer
+    extends
+        OrderingComposer<_$AppDatabase, $NutritionNutrientDefinitionsTable> {
+  $$NutritionNutrientDefinitionsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get key => $state.composableBuilder(
+    column: $state.table.key,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get displayName => $state.composableBuilder(
+    column: $state.table.displayName,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get kind => $state.composableBuilder(
+    column: $state.table.kind,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get sortOrder => $state.composableBuilder(
+    column: $state.table.sortOrder,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get isActive => $state.composableBuilder(
+    column: $state.table.isActive,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$NutritionFoodNutrientFactsTableCreateCompanionBuilder =
+    NutritionFoodNutrientFactsCompanion Function({
+      required String id,
+      required String foodId,
+      required String nutrientId,
+      Value<double?> amount,
+      Value<double?> lower,
+      Value<double?> upper,
+      required String status,
+      required String source,
+      Value<String?> sourceRef,
+      Value<double?> confidence,
+      required int factVersion,
+      required String basis,
+      Value<double?> basisQuantity,
+      Value<String?> basisUnit,
+      Value<String?> preparationId,
+      Value<bool> isCurrent,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionFoodNutrientFactsTableUpdateCompanionBuilder =
+    NutritionFoodNutrientFactsCompanion Function({
+      Value<String> id,
+      Value<String> foodId,
+      Value<String> nutrientId,
+      Value<double?> amount,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String> status,
+      Value<String> source,
+      Value<String?> sourceRef,
+      Value<double?> confidence,
+      Value<int> factVersion,
+      Value<String> basis,
+      Value<double?> basisQuantity,
+      Value<String?> basisUnit,
+      Value<String?> preparationId,
+      Value<bool> isCurrent,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionFoodNutrientFactsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionFoodNutrientFactsTable,
+          NutritionFoodNutrientFact,
+          $$NutritionFoodNutrientFactsTableFilterComposer,
+          $$NutritionFoodNutrientFactsTableOrderingComposer,
+          $$NutritionFoodNutrientFactsTableCreateCompanionBuilder,
+          $$NutritionFoodNutrientFactsTableUpdateCompanionBuilder
+        > {
+  $$NutritionFoodNutrientFactsTableTableManager(
+    _$AppDatabase db,
+    $NutritionFoodNutrientFactsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionFoodNutrientFactsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionFoodNutrientFactsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> foodId = const Value.absent(),
+                Value<String> nutrientId = const Value.absent(),
+                Value<double?> amount = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String?> sourceRef = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                Value<int> factVersion = const Value.absent(),
+                Value<String> basis = const Value.absent(),
+                Value<double?> basisQuantity = const Value.absent(),
+                Value<String?> basisUnit = const Value.absent(),
+                Value<String?> preparationId = const Value.absent(),
+                Value<bool> isCurrent = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionFoodNutrientFactsCompanion(
+                id: id,
+                foodId: foodId,
+                nutrientId: nutrientId,
+                amount: amount,
+                lower: lower,
+                upper: upper,
+                status: status,
+                source: source,
+                sourceRef: sourceRef,
+                confidence: confidence,
+                factVersion: factVersion,
+                basis: basis,
+                basisQuantity: basisQuantity,
+                basisUnit: basisUnit,
+                preparationId: preparationId,
+                isCurrent: isCurrent,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String foodId,
+                required String nutrientId,
+                Value<double?> amount = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                required String status,
+                required String source,
+                Value<String?> sourceRef = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                required int factVersion,
+                required String basis,
+                Value<double?> basisQuantity = const Value.absent(),
+                Value<String?> basisUnit = const Value.absent(),
+                Value<String?> preparationId = const Value.absent(),
+                Value<bool> isCurrent = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionFoodNutrientFactsCompanion.insert(
+                id: id,
+                foodId: foodId,
+                nutrientId: nutrientId,
+                amount: amount,
+                lower: lower,
+                upper: upper,
+                status: status,
+                source: source,
+                sourceRef: sourceRef,
+                confidence: confidence,
+                factVersion: factVersion,
+                basis: basis,
+                basisQuantity: basisQuantity,
+                basisUnit: basisUnit,
+                preparationId: preparationId,
+                isCurrent: isCurrent,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionFoodNutrientFactsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionFoodNutrientFactsTable> {
+  $$NutritionFoodNutrientFactsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get amount => $state.composableBuilder(
+    column: $state.table.amount,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceRef => $state.composableBuilder(
+    column: $state.table.sourceRef,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get factVersion => $state.composableBuilder(
+    column: $state.table.factVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get basis => $state.composableBuilder(
+    column: $state.table.basis,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get basisQuantity => $state.composableBuilder(
+    column: $state.table.basisQuantity,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get basisUnit => $state.composableBuilder(
+    column: $state.table.basisUnit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get isCurrent => $state.composableBuilder(
+    column: $state.table.isCurrent,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableFilterComposer get foodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.foodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+
+  $$NutritionNutrientDefinitionsTableFilterComposer get nutrientId {
+    final $$NutritionNutrientDefinitionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.nutrientId,
+          referencedTable: $state.db.nutritionNutrientDefinitions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionNutrientDefinitionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionNutrientDefinitions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodPreparationsTableFilterComposer get preparationId {
+    final $$NutritionFoodPreparationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.preparationId,
+          referencedTable: $state.db.nutritionFoodPreparations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodPreparationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodPreparations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$NutritionFoodNutrientFactsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionFoodNutrientFactsTable> {
+  $$NutritionFoodNutrientFactsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get amount => $state.composableBuilder(
+    column: $state.table.amount,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceRef => $state.composableBuilder(
+    column: $state.table.sourceRef,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get factVersion => $state.composableBuilder(
+    column: $state.table.factVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get basis => $state.composableBuilder(
+    column: $state.table.basis,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get basisQuantity => $state.composableBuilder(
+    column: $state.table.basisQuantity,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get basisUnit => $state.composableBuilder(
+    column: $state.table.basisUnit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get isCurrent => $state.composableBuilder(
+    column: $state.table.isCurrent,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableOrderingComposer get foodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.foodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionNutrientDefinitionsTableOrderingComposer get nutrientId {
+    final $$NutritionNutrientDefinitionsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.nutrientId,
+          referencedTable: $state.db.nutritionNutrientDefinitions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionNutrientDefinitionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionNutrientDefinitions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodPreparationsTableOrderingComposer get preparationId {
+    final $$NutritionFoodPreparationsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.preparationId,
+          referencedTable: $state.db.nutritionFoodPreparations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodPreparationsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodPreparations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionQuantityConversionsTableCreateCompanionBuilder =
+    NutritionQuantityConversionsCompanion Function({
+      required String id,
+      required String foodId,
+      Value<String?> preparationId,
+      required String sourceUnit,
+      required String targetUnit,
+      required double factor,
+      Value<double?> lower,
+      Value<double?> upper,
+      required String method,
+      required String source,
+      Value<double?> confidence,
+      required String ruleVersion,
+      required String ownerScope,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionQuantityConversionsTableUpdateCompanionBuilder =
+    NutritionQuantityConversionsCompanion Function({
+      Value<String> id,
+      Value<String> foodId,
+      Value<String?> preparationId,
+      Value<String> sourceUnit,
+      Value<String> targetUnit,
+      Value<double> factor,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String> method,
+      Value<String> source,
+      Value<double?> confidence,
+      Value<String> ruleVersion,
+      Value<String> ownerScope,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionQuantityConversionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionQuantityConversionsTable,
+          NutritionQuantityConversion,
+          $$NutritionQuantityConversionsTableFilterComposer,
+          $$NutritionQuantityConversionsTableOrderingComposer,
+          $$NutritionQuantityConversionsTableCreateCompanionBuilder,
+          $$NutritionQuantityConversionsTableUpdateCompanionBuilder
+        > {
+  $$NutritionQuantityConversionsTableTableManager(
+    _$AppDatabase db,
+    $NutritionQuantityConversionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionQuantityConversionsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionQuantityConversionsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> foodId = const Value.absent(),
+                Value<String?> preparationId = const Value.absent(),
+                Value<String> sourceUnit = const Value.absent(),
+                Value<String> targetUnit = const Value.absent(),
+                Value<double> factor = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String> method = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                Value<String> ruleVersion = const Value.absent(),
+                Value<String> ownerScope = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionQuantityConversionsCompanion(
+                id: id,
+                foodId: foodId,
+                preparationId: preparationId,
+                sourceUnit: sourceUnit,
+                targetUnit: targetUnit,
+                factor: factor,
+                lower: lower,
+                upper: upper,
+                method: method,
+                source: source,
+                confidence: confidence,
+                ruleVersion: ruleVersion,
+                ownerScope: ownerScope,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String foodId,
+                Value<String?> preparationId = const Value.absent(),
+                required String sourceUnit,
+                required String targetUnit,
+                required double factor,
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                required String method,
+                required String source,
+                Value<double?> confidence = const Value.absent(),
+                required String ruleVersion,
+                required String ownerScope,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionQuantityConversionsCompanion.insert(
+                id: id,
+                foodId: foodId,
+                preparationId: preparationId,
+                sourceUnit: sourceUnit,
+                targetUnit: targetUnit,
+                factor: factor,
+                lower: lower,
+                upper: upper,
+                method: method,
+                source: source,
+                confidence: confidence,
+                ruleVersion: ruleVersion,
+                ownerScope: ownerScope,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionQuantityConversionsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionQuantityConversionsTable> {
+  $$NutritionQuantityConversionsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceUnit => $state.composableBuilder(
+    column: $state.table.sourceUnit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get targetUnit => $state.composableBuilder(
+    column: $state.table.targetUnit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get factor => $state.composableBuilder(
+    column: $state.table.factor,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get method => $state.composableBuilder(
+    column: $state.table.method,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get ruleVersion => $state.composableBuilder(
+    column: $state.table.ruleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get ownerScope => $state.composableBuilder(
+    column: $state.table.ownerScope,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableFilterComposer get foodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.foodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+
+  $$NutritionFoodPreparationsTableFilterComposer get preparationId {
+    final $$NutritionFoodPreparationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.preparationId,
+          referencedTable: $state.db.nutritionFoodPreparations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodPreparationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodPreparations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$NutritionQuantityConversionsTableOrderingComposer
+    extends
+        OrderingComposer<_$AppDatabase, $NutritionQuantityConversionsTable> {
+  $$NutritionQuantityConversionsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceUnit => $state.composableBuilder(
+    column: $state.table.sourceUnit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get targetUnit => $state.composableBuilder(
+    column: $state.table.targetUnit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get factor => $state.composableBuilder(
+    column: $state.table.factor,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get method => $state.composableBuilder(
+    column: $state.table.method,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get ruleVersion => $state.composableBuilder(
+    column: $state.table.ruleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get ownerScope => $state.composableBuilder(
+    column: $state.table.ownerScope,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableOrderingComposer get foodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.foodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodPreparationsTableOrderingComposer get preparationId {
+    final $$NutritionFoodPreparationsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.preparationId,
+          referencedTable: $state.db.nutritionFoodPreparations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodPreparationsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodPreparations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionHouseholdMeasuresTableCreateCompanionBuilder =
+    NutritionHouseholdMeasuresCompanion Function({
+      required String id,
+      required String key,
+      required String displayName,
+      required String dimension,
+      required String baseUnit,
+      required double nominalValue,
+      Value<double?> lower,
+      Value<double?> upper,
+      required String locale,
+      required int version,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionHouseholdMeasuresTableUpdateCompanionBuilder =
+    NutritionHouseholdMeasuresCompanion Function({
+      Value<String> id,
+      Value<String> key,
+      Value<String> displayName,
+      Value<String> dimension,
+      Value<String> baseUnit,
+      Value<double> nominalValue,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String> locale,
+      Value<int> version,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionHouseholdMeasuresTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionHouseholdMeasuresTable,
+          NutritionHouseholdMeasure,
+          $$NutritionHouseholdMeasuresTableFilterComposer,
+          $$NutritionHouseholdMeasuresTableOrderingComposer,
+          $$NutritionHouseholdMeasuresTableCreateCompanionBuilder,
+          $$NutritionHouseholdMeasuresTableUpdateCompanionBuilder
+        > {
+  $$NutritionHouseholdMeasuresTableTableManager(
+    _$AppDatabase db,
+    $NutritionHouseholdMeasuresTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionHouseholdMeasuresTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionHouseholdMeasuresTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> key = const Value.absent(),
+                Value<String> displayName = const Value.absent(),
+                Value<String> dimension = const Value.absent(),
+                Value<String> baseUnit = const Value.absent(),
+                Value<double> nominalValue = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String> locale = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionHouseholdMeasuresCompanion(
+                id: id,
+                key: key,
+                displayName: displayName,
+                dimension: dimension,
+                baseUnit: baseUnit,
+                nominalValue: nominalValue,
+                lower: lower,
+                upper: upper,
+                locale: locale,
+                version: version,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String key,
+                required String displayName,
+                required String dimension,
+                required String baseUnit,
+                required double nominalValue,
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                required String locale,
+                required int version,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionHouseholdMeasuresCompanion.insert(
+                id: id,
+                key: key,
+                displayName: displayName,
+                dimension: dimension,
+                baseUnit: baseUnit,
+                nominalValue: nominalValue,
+                lower: lower,
+                upper: upper,
+                locale: locale,
+                version: version,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionHouseholdMeasuresTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionHouseholdMeasuresTable> {
+  $$NutritionHouseholdMeasuresTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get key => $state.composableBuilder(
+    column: $state.table.key,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get displayName => $state.composableBuilder(
+    column: $state.table.displayName,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get dimension => $state.composableBuilder(
+    column: $state.table.dimension,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get baseUnit => $state.composableBuilder(
+    column: $state.table.baseUnit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get nominalValue => $state.composableBuilder(
+    column: $state.table.nominalValue,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get locale => $state.composableBuilder(
+    column: $state.table.locale,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ComposableFilter nutritionVesselCalibrationsRefs(
+    ComposableFilter Function(
+      $$NutritionVesselCalibrationsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionVesselCalibrationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionVesselCalibrations,
+          getReferencedColumn: (t) => t.measureId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionVesselCalibrationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionVesselCalibrations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionRecipeIngredientsRefs(
+    ComposableFilter Function($$NutritionRecipeIngredientsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionRecipeIngredientsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionRecipeIngredients,
+          getReferencedColumn: (t) => t.measureId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeIngredientsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeIngredients,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionThaliItemsRefs(
+    ComposableFilter Function($$NutritionThaliItemsTableFilterComposer f) f,
+  ) {
+    final $$NutritionThaliItemsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionThaliItems,
+          getReferencedColumn: (t) => t.measureId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionThaliItemsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionThaliItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$NutritionHouseholdMeasuresTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionHouseholdMeasuresTable> {
+  $$NutritionHouseholdMeasuresTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get key => $state.composableBuilder(
+    column: $state.table.key,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get displayName => $state.composableBuilder(
+    column: $state.table.displayName,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get dimension => $state.composableBuilder(
+    column: $state.table.dimension,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get baseUnit => $state.composableBuilder(
+    column: $state.table.baseUnit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get nominalValue => $state.composableBuilder(
+    column: $state.table.nominalValue,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get locale => $state.composableBuilder(
+    column: $state.table.locale,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$NutritionVesselCalibrationsTableCreateCompanionBuilder =
+    NutritionVesselCalibrationsCompanion Function({
+      required String id,
+      required String userId,
+      required String label,
+      required String measureId,
+      required double volumeMl,
+      Value<double?> lower,
+      Value<double?> upper,
+      required String method,
+      Value<String?> foodId,
+      Value<String?> preparationId,
+      Value<double?> confidence,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionVesselCalibrationsTableUpdateCompanionBuilder =
+    NutritionVesselCalibrationsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> label,
+      Value<String> measureId,
+      Value<double> volumeMl,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String> method,
+      Value<String?> foodId,
+      Value<String?> preparationId,
+      Value<double?> confidence,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionVesselCalibrationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionVesselCalibrationsTable,
+          NutritionVesselCalibration,
+          $$NutritionVesselCalibrationsTableFilterComposer,
+          $$NutritionVesselCalibrationsTableOrderingComposer,
+          $$NutritionVesselCalibrationsTableCreateCompanionBuilder,
+          $$NutritionVesselCalibrationsTableUpdateCompanionBuilder
+        > {
+  $$NutritionVesselCalibrationsTableTableManager(
+    _$AppDatabase db,
+    $NutritionVesselCalibrationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionVesselCalibrationsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionVesselCalibrationsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> label = const Value.absent(),
+                Value<String> measureId = const Value.absent(),
+                Value<double> volumeMl = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String> method = const Value.absent(),
+                Value<String?> foodId = const Value.absent(),
+                Value<String?> preparationId = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionVesselCalibrationsCompanion(
+                id: id,
+                userId: userId,
+                label: label,
+                measureId: measureId,
+                volumeMl: volumeMl,
+                lower: lower,
+                upper: upper,
+                method: method,
+                foodId: foodId,
+                preparationId: preparationId,
+                confidence: confidence,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String label,
+                required String measureId,
+                required double volumeMl,
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                required String method,
+                Value<String?> foodId = const Value.absent(),
+                Value<String?> preparationId = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionVesselCalibrationsCompanion.insert(
+                id: id,
+                userId: userId,
+                label: label,
+                measureId: measureId,
+                volumeMl: volumeMl,
+                lower: lower,
+                upper: upper,
+                method: method,
+                foodId: foodId,
+                preparationId: preparationId,
+                confidence: confidence,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionVesselCalibrationsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionVesselCalibrationsTable> {
+  $$NutritionVesselCalibrationsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get label => $state.composableBuilder(
+    column: $state.table.label,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get volumeMl => $state.composableBuilder(
+    column: $state.table.volumeMl,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get method => $state.composableBuilder(
+    column: $state.table.method,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionHouseholdMeasuresTableFilterComposer get measureId {
+    final $$NutritionHouseholdMeasuresTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.measureId,
+          referencedTable: $state.db.nutritionHouseholdMeasures,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionHouseholdMeasuresTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionHouseholdMeasures,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodsTableFilterComposer get foodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.foodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+
+  $$NutritionFoodPreparationsTableFilterComposer get preparationId {
+    final $$NutritionFoodPreparationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.preparationId,
+          referencedTable: $state.db.nutritionFoodPreparations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodPreparationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodPreparations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$NutritionVesselCalibrationsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionVesselCalibrationsTable> {
+  $$NutritionVesselCalibrationsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get label => $state.composableBuilder(
+    column: $state.table.label,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get volumeMl => $state.composableBuilder(
+    column: $state.table.volumeMl,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get method => $state.composableBuilder(
+    column: $state.table.method,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionHouseholdMeasuresTableOrderingComposer get measureId {
+    final $$NutritionHouseholdMeasuresTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.measureId,
+          referencedTable: $state.db.nutritionHouseholdMeasures,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionHouseholdMeasuresTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionHouseholdMeasures,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodsTableOrderingComposer get foodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.foodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodPreparationsTableOrderingComposer get preparationId {
+    final $$NutritionFoodPreparationsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.preparationId,
+          referencedTable: $state.db.nutritionFoodPreparations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodPreparationsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodPreparations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionRecipesTableCreateCompanionBuilder =
+    NutritionRecipesCompanion Function({
+      required String id,
+      required String userId,
+      required String name,
+      Value<String?> description,
+      required String lifecycle,
+      Value<String?> currentVersionId,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionRecipesTableUpdateCompanionBuilder =
+    NutritionRecipesCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> name,
+      Value<String?> description,
+      Value<String> lifecycle,
+      Value<String?> currentVersionId,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionRecipesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionRecipesTable,
+          NutritionRecipe,
+          $$NutritionRecipesTableFilterComposer,
+          $$NutritionRecipesTableOrderingComposer,
+          $$NutritionRecipesTableCreateCompanionBuilder,
+          $$NutritionRecipesTableUpdateCompanionBuilder
+        > {
+  $$NutritionRecipesTableTableManager(
+    _$AppDatabase db,
+    $NutritionRecipesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionRecipesTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionRecipesTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<String> lifecycle = const Value.absent(),
+                Value<String?> currentVersionId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionRecipesCompanion(
+                id: id,
+                userId: userId,
+                name: name,
+                description: description,
+                lifecycle: lifecycle,
+                currentVersionId: currentVersionId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String name,
+                Value<String?> description = const Value.absent(),
+                required String lifecycle,
+                Value<String?> currentVersionId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionRecipesCompanion.insert(
+                id: id,
+                userId: userId,
+                name: name,
+                description: description,
+                lifecycle: lifecycle,
+                currentVersionId: currentVersionId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionRecipesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionRecipesTable> {
+  $$NutritionRecipesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get name => $state.composableBuilder(
+    column: $state.table.name,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get description => $state.composableBuilder(
+    column: $state.table.description,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get lifecycle => $state.composableBuilder(
+    column: $state.table.lifecycle,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get currentVersionId => $state.composableBuilder(
+    column: $state.table.currentVersionId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ComposableFilter nutritionRecipeVersionsRefs(
+    ComposableFilter Function($$NutritionRecipeVersionsTableFilterComposer f) f,
+  ) {
+    final $$NutritionRecipeVersionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionRecipeVersions,
+          getReferencedColumn: (t) => t.recipeId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeVersionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$NutritionRecipesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionRecipesTable> {
+  $$NutritionRecipesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get name => $state.composableBuilder(
+    column: $state.table.name,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get description => $state.composableBuilder(
+    column: $state.table.description,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get lifecycle => $state.composableBuilder(
+    column: $state.table.lifecycle,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get currentVersionId => $state.composableBuilder(
+    column: $state.table.currentVersionId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$NutritionRecipeVersionsTableCreateCompanionBuilder =
+    NutritionRecipeVersionsCompanion Function({
+      required String id,
+      required String recipeId,
+      required int versionNumber,
+      required String status,
+      Value<double?> yieldQuantity,
+      Value<String?> yieldUnit,
+      Value<double?> servingQuantity,
+      required String calcRuleVersion,
+      required String source,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionRecipeVersionsTableUpdateCompanionBuilder =
+    NutritionRecipeVersionsCompanion Function({
+      Value<String> id,
+      Value<String> recipeId,
+      Value<int> versionNumber,
+      Value<String> status,
+      Value<double?> yieldQuantity,
+      Value<String?> yieldUnit,
+      Value<double?> servingQuantity,
+      Value<String> calcRuleVersion,
+      Value<String> source,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionRecipeVersionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionRecipeVersionsTable,
+          NutritionRecipeVersion,
+          $$NutritionRecipeVersionsTableFilterComposer,
+          $$NutritionRecipeVersionsTableOrderingComposer,
+          $$NutritionRecipeVersionsTableCreateCompanionBuilder,
+          $$NutritionRecipeVersionsTableUpdateCompanionBuilder
+        > {
+  $$NutritionRecipeVersionsTableTableManager(
+    _$AppDatabase db,
+    $NutritionRecipeVersionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionRecipeVersionsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionRecipeVersionsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> recipeId = const Value.absent(),
+                Value<int> versionNumber = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<double?> yieldQuantity = const Value.absent(),
+                Value<String?> yieldUnit = const Value.absent(),
+                Value<double?> servingQuantity = const Value.absent(),
+                Value<String> calcRuleVersion = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionRecipeVersionsCompanion(
+                id: id,
+                recipeId: recipeId,
+                versionNumber: versionNumber,
+                status: status,
+                yieldQuantity: yieldQuantity,
+                yieldUnit: yieldUnit,
+                servingQuantity: servingQuantity,
+                calcRuleVersion: calcRuleVersion,
+                source: source,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String recipeId,
+                required int versionNumber,
+                required String status,
+                Value<double?> yieldQuantity = const Value.absent(),
+                Value<String?> yieldUnit = const Value.absent(),
+                Value<double?> servingQuantity = const Value.absent(),
+                required String calcRuleVersion,
+                required String source,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionRecipeVersionsCompanion.insert(
+                id: id,
+                recipeId: recipeId,
+                versionNumber: versionNumber,
+                status: status,
+                yieldQuantity: yieldQuantity,
+                yieldUnit: yieldUnit,
+                servingQuantity: servingQuantity,
+                calcRuleVersion: calcRuleVersion,
+                source: source,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionRecipeVersionsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionRecipeVersionsTable> {
+  $$NutritionRecipeVersionsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get versionNumber => $state.composableBuilder(
+    column: $state.table.versionNumber,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get yieldQuantity => $state.composableBuilder(
+    column: $state.table.yieldQuantity,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get yieldUnit => $state.composableBuilder(
+    column: $state.table.yieldUnit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get servingQuantity => $state.composableBuilder(
+    column: $state.table.servingQuantity,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get calcRuleVersion => $state.composableBuilder(
+    column: $state.table.calcRuleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionRecipesTableFilterComposer get recipeId {
+    final $$NutritionRecipesTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recipeId,
+          referencedTable: $state.db.nutritionRecipes,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipesTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipes,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  ComposableFilter nutritionRecipeIngredientsRefs(
+    ComposableFilter Function($$NutritionRecipeIngredientsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionRecipeIngredientsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionRecipeIngredients,
+          getReferencedColumn: (t) => t.recipeVersionId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeIngredientsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeIngredients,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionThaliItemsRefs(
+    ComposableFilter Function($$NutritionThaliItemsTableFilterComposer f) f,
+  ) {
+    final $$NutritionThaliItemsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionThaliItems,
+          getReferencedColumn: (t) => t.recipeVersionId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionThaliItemsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionThaliItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionConsumptionSnapshotsRefs(
+    ComposableFilter Function(
+      $$NutritionConsumptionSnapshotsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionConsumptionSnapshotsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionConsumptionSnapshots,
+          getReferencedColumn: (t) => t.recipeVersionId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionConsumptionSnapshotsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionConsumptionSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionSnapshotItemsRefs(
+    ComposableFilter Function($$NutritionSnapshotItemsTableFilterComposer f) f,
+  ) {
+    final $$NutritionSnapshotItemsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionSnapshotItems,
+          getReferencedColumn: (t) => t.recipeVersionId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotItemsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$NutritionRecipeVersionsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionRecipeVersionsTable> {
+  $$NutritionRecipeVersionsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get versionNumber => $state.composableBuilder(
+    column: $state.table.versionNumber,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get yieldQuantity => $state.composableBuilder(
+    column: $state.table.yieldQuantity,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get yieldUnit => $state.composableBuilder(
+    column: $state.table.yieldUnit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get servingQuantity => $state.composableBuilder(
+    column: $state.table.servingQuantity,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get calcRuleVersion => $state.composableBuilder(
+    column: $state.table.calcRuleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionRecipesTableOrderingComposer get recipeId {
+    final $$NutritionRecipesTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recipeId,
+          referencedTable: $state.db.nutritionRecipes,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipesTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipes,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionRecipeIngredientsTableCreateCompanionBuilder =
+    NutritionRecipeIngredientsCompanion Function({
+      required String id,
+      required String recipeVersionId,
+      required int position,
+      required String foodId,
+      Value<String?> preparationId,
+      required double quantityValue,
+      required String quantityDimension,
+      required String quantityUnit,
+      Value<String?> measureId,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionRecipeIngredientsTableUpdateCompanionBuilder =
+    NutritionRecipeIngredientsCompanion Function({
+      Value<String> id,
+      Value<String> recipeVersionId,
+      Value<int> position,
+      Value<String> foodId,
+      Value<String?> preparationId,
+      Value<double> quantityValue,
+      Value<String> quantityDimension,
+      Value<String> quantityUnit,
+      Value<String?> measureId,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionRecipeIngredientsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionRecipeIngredientsTable,
+          NutritionRecipeIngredient,
+          $$NutritionRecipeIngredientsTableFilterComposer,
+          $$NutritionRecipeIngredientsTableOrderingComposer,
+          $$NutritionRecipeIngredientsTableCreateCompanionBuilder,
+          $$NutritionRecipeIngredientsTableUpdateCompanionBuilder
+        > {
+  $$NutritionRecipeIngredientsTableTableManager(
+    _$AppDatabase db,
+    $NutritionRecipeIngredientsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionRecipeIngredientsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionRecipeIngredientsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> recipeVersionId = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<String> foodId = const Value.absent(),
+                Value<String?> preparationId = const Value.absent(),
+                Value<double> quantityValue = const Value.absent(),
+                Value<String> quantityDimension = const Value.absent(),
+                Value<String> quantityUnit = const Value.absent(),
+                Value<String?> measureId = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionRecipeIngredientsCompanion(
+                id: id,
+                recipeVersionId: recipeVersionId,
+                position: position,
+                foodId: foodId,
+                preparationId: preparationId,
+                quantityValue: quantityValue,
+                quantityDimension: quantityDimension,
+                quantityUnit: quantityUnit,
+                measureId: measureId,
+                lower: lower,
+                upper: upper,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String recipeVersionId,
+                required int position,
+                required String foodId,
+                Value<String?> preparationId = const Value.absent(),
+                required double quantityValue,
+                required String quantityDimension,
+                required String quantityUnit,
+                Value<String?> measureId = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionRecipeIngredientsCompanion.insert(
+                id: id,
+                recipeVersionId: recipeVersionId,
+                position: position,
+                foodId: foodId,
+                preparationId: preparationId,
+                quantityValue: quantityValue,
+                quantityDimension: quantityDimension,
+                quantityUnit: quantityUnit,
+                measureId: measureId,
+                lower: lower,
+                upper: upper,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionRecipeIngredientsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionRecipeIngredientsTable> {
+  $$NutritionRecipeIngredientsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get position => $state.composableBuilder(
+    column: $state.table.position,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get quantityValue => $state.composableBuilder(
+    column: $state.table.quantityValue,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get quantityDimension => $state.composableBuilder(
+    column: $state.table.quantityDimension,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get quantityUnit => $state.composableBuilder(
+    column: $state.table.quantityUnit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get notes => $state.composableBuilder(
+    column: $state.table.notes,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionRecipeVersionsTableFilterComposer get recipeVersionId {
+    final $$NutritionRecipeVersionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recipeVersionId,
+          referencedTable: $state.db.nutritionRecipeVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeVersionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodsTableFilterComposer get foodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.foodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+
+  $$NutritionFoodPreparationsTableFilterComposer get preparationId {
+    final $$NutritionFoodPreparationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.preparationId,
+          referencedTable: $state.db.nutritionFoodPreparations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodPreparationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodPreparations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionHouseholdMeasuresTableFilterComposer get measureId {
+    final $$NutritionHouseholdMeasuresTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.measureId,
+          referencedTable: $state.db.nutritionHouseholdMeasures,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionHouseholdMeasuresTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionHouseholdMeasures,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$NutritionRecipeIngredientsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionRecipeIngredientsTable> {
+  $$NutritionRecipeIngredientsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get position => $state.composableBuilder(
+    column: $state.table.position,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get quantityValue => $state.composableBuilder(
+    column: $state.table.quantityValue,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get quantityDimension => $state.composableBuilder(
+    column: $state.table.quantityDimension,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get quantityUnit => $state.composableBuilder(
+    column: $state.table.quantityUnit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get notes => $state.composableBuilder(
+    column: $state.table.notes,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionRecipeVersionsTableOrderingComposer get recipeVersionId {
+    final $$NutritionRecipeVersionsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recipeVersionId,
+          referencedTable: $state.db.nutritionRecipeVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeVersionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodsTableOrderingComposer get foodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.foodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodPreparationsTableOrderingComposer get preparationId {
+    final $$NutritionFoodPreparationsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.preparationId,
+          referencedTable: $state.db.nutritionFoodPreparations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodPreparationsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodPreparations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionHouseholdMeasuresTableOrderingComposer get measureId {
+    final $$NutritionHouseholdMeasuresTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.measureId,
+          referencedTable: $state.db.nutritionHouseholdMeasures,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionHouseholdMeasuresTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionHouseholdMeasures,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionUserCorrectionsTableCreateCompanionBuilder =
+    NutritionUserCorrectionsCompanion Function({
+      required String id,
+      required String userId,
+      required String targetType,
+      required String targetId,
+      required String field,
+      Value<String?> oldValue,
+      Value<String?> newValue,
+      required String reason,
+      required String source,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionUserCorrectionsTableUpdateCompanionBuilder =
+    NutritionUserCorrectionsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> targetType,
+      Value<String> targetId,
+      Value<String> field,
+      Value<String?> oldValue,
+      Value<String?> newValue,
+      Value<String> reason,
+      Value<String> source,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionUserCorrectionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionUserCorrectionsTable,
+          NutritionUserCorrection,
+          $$NutritionUserCorrectionsTableFilterComposer,
+          $$NutritionUserCorrectionsTableOrderingComposer,
+          $$NutritionUserCorrectionsTableCreateCompanionBuilder,
+          $$NutritionUserCorrectionsTableUpdateCompanionBuilder
+        > {
+  $$NutritionUserCorrectionsTableTableManager(
+    _$AppDatabase db,
+    $NutritionUserCorrectionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionUserCorrectionsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionUserCorrectionsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> targetType = const Value.absent(),
+                Value<String> targetId = const Value.absent(),
+                Value<String> field = const Value.absent(),
+                Value<String?> oldValue = const Value.absent(),
+                Value<String?> newValue = const Value.absent(),
+                Value<String> reason = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionUserCorrectionsCompanion(
+                id: id,
+                userId: userId,
+                targetType: targetType,
+                targetId: targetId,
+                field: field,
+                oldValue: oldValue,
+                newValue: newValue,
+                reason: reason,
+                source: source,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String targetType,
+                required String targetId,
+                required String field,
+                Value<String?> oldValue = const Value.absent(),
+                Value<String?> newValue = const Value.absent(),
+                required String reason,
+                required String source,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionUserCorrectionsCompanion.insert(
+                id: id,
+                userId: userId,
+                targetType: targetType,
+                targetId: targetId,
+                field: field,
+                oldValue: oldValue,
+                newValue: newValue,
+                reason: reason,
+                source: source,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionUserCorrectionsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionUserCorrectionsTable> {
+  $$NutritionUserCorrectionsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get targetType => $state.composableBuilder(
+    column: $state.table.targetType,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get targetId => $state.composableBuilder(
+    column: $state.table.targetId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get field => $state.composableBuilder(
+    column: $state.table.field,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get oldValue => $state.composableBuilder(
+    column: $state.table.oldValue,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get newValue => $state.composableBuilder(
+    column: $state.table.newValue,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get reason => $state.composableBuilder(
+    column: $state.table.reason,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+}
+
+class $$NutritionUserCorrectionsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionUserCorrectionsTable> {
+  $$NutritionUserCorrectionsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get targetType => $state.composableBuilder(
+    column: $state.table.targetType,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get targetId => $state.composableBuilder(
+    column: $state.table.targetId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get field => $state.composableBuilder(
+    column: $state.table.field,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get oldValue => $state.composableBuilder(
+    column: $state.table.oldValue,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get newValue => $state.composableBuilder(
+    column: $state.table.newValue,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get reason => $state.composableBuilder(
+    column: $state.table.reason,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$NutritionEstimatesTableCreateCompanionBuilder =
+    NutritionEstimatesCompanion Function({
+      required String id,
+      required String userId,
+      required String source,
+      Value<String?> provider,
+      Value<String?> model,
+      Value<String?> ruleVersion,
+      Value<String?> inputHash,
+      Value<String?> assumptions,
+      Value<double?> confidence,
+      Value<double?> lower,
+      Value<double?> upper,
+      required String status,
+      Value<String?> supersedesId,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionEstimatesTableUpdateCompanionBuilder =
+    NutritionEstimatesCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> source,
+      Value<String?> provider,
+      Value<String?> model,
+      Value<String?> ruleVersion,
+      Value<String?> inputHash,
+      Value<String?> assumptions,
+      Value<double?> confidence,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String> status,
+      Value<String?> supersedesId,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionEstimatesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionEstimatesTable,
+          NutritionEstimate,
+          $$NutritionEstimatesTableFilterComposer,
+          $$NutritionEstimatesTableOrderingComposer,
+          $$NutritionEstimatesTableCreateCompanionBuilder,
+          $$NutritionEstimatesTableUpdateCompanionBuilder
+        > {
+  $$NutritionEstimatesTableTableManager(
+    _$AppDatabase db,
+    $NutritionEstimatesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionEstimatesTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionEstimatesTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String?> provider = const Value.absent(),
+                Value<String?> model = const Value.absent(),
+                Value<String?> ruleVersion = const Value.absent(),
+                Value<String?> inputHash = const Value.absent(),
+                Value<String?> assumptions = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> supersedesId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionEstimatesCompanion(
+                id: id,
+                userId: userId,
+                source: source,
+                provider: provider,
+                model: model,
+                ruleVersion: ruleVersion,
+                inputHash: inputHash,
+                assumptions: assumptions,
+                confidence: confidence,
+                lower: lower,
+                upper: upper,
+                status: status,
+                supersedesId: supersedesId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String source,
+                Value<String?> provider = const Value.absent(),
+                Value<String?> model = const Value.absent(),
+                Value<String?> ruleVersion = const Value.absent(),
+                Value<String?> inputHash = const Value.absent(),
+                Value<String?> assumptions = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                required String status,
+                Value<String?> supersedesId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionEstimatesCompanion.insert(
+                id: id,
+                userId: userId,
+                source: source,
+                provider: provider,
+                model: model,
+                ruleVersion: ruleVersion,
+                inputHash: inputHash,
+                assumptions: assumptions,
+                confidence: confidence,
+                lower: lower,
+                upper: upper,
+                status: status,
+                supersedesId: supersedesId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionEstimatesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionEstimatesTable> {
+  $$NutritionEstimatesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get provider => $state.composableBuilder(
+    column: $state.table.provider,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get model => $state.composableBuilder(
+    column: $state.table.model,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get ruleVersion => $state.composableBuilder(
+    column: $state.table.ruleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get inputHash => $state.composableBuilder(
+    column: $state.table.inputHash,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get assumptions => $state.composableBuilder(
+    column: $state.table.assumptions,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionEstimatesTableFilterComposer get supersedesId {
+    final $$NutritionEstimatesTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.supersedesId,
+          referencedTable: $state.db.nutritionEstimates,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionEstimatesTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionEstimates,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  ComposableFilter nutritionEstimateNutrientsRefs(
+    ComposableFilter Function($$NutritionEstimateNutrientsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionEstimateNutrientsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionEstimateNutrients,
+          getReferencedColumn: (t) => t.estimateId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionEstimateNutrientsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionEstimateNutrients,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$NutritionEstimatesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionEstimatesTable> {
+  $$NutritionEstimatesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get provider => $state.composableBuilder(
+    column: $state.table.provider,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get model => $state.composableBuilder(
+    column: $state.table.model,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get ruleVersion => $state.composableBuilder(
+    column: $state.table.ruleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get inputHash => $state.composableBuilder(
+    column: $state.table.inputHash,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get assumptions => $state.composableBuilder(
+    column: $state.table.assumptions,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionEstimatesTableOrderingComposer get supersedesId {
+    final $$NutritionEstimatesTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.supersedesId,
+          referencedTable: $state.db.nutritionEstimates,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionEstimatesTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionEstimates,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionEstimateNutrientsTableCreateCompanionBuilder =
+    NutritionEstimateNutrientsCompanion Function({
+      required String id,
+      required String estimateId,
+      required String nutrientId,
+      Value<double?> amount,
+      Value<double?> lower,
+      Value<double?> upper,
+      required String status,
+      required String unit,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionEstimateNutrientsTableUpdateCompanionBuilder =
+    NutritionEstimateNutrientsCompanion Function({
+      Value<String> id,
+      Value<String> estimateId,
+      Value<String> nutrientId,
+      Value<double?> amount,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String> status,
+      Value<String> unit,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionEstimateNutrientsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionEstimateNutrientsTable,
+          NutritionEstimateNutrient,
+          $$NutritionEstimateNutrientsTableFilterComposer,
+          $$NutritionEstimateNutrientsTableOrderingComposer,
+          $$NutritionEstimateNutrientsTableCreateCompanionBuilder,
+          $$NutritionEstimateNutrientsTableUpdateCompanionBuilder
+        > {
+  $$NutritionEstimateNutrientsTableTableManager(
+    _$AppDatabase db,
+    $NutritionEstimateNutrientsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionEstimateNutrientsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionEstimateNutrientsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> estimateId = const Value.absent(),
+                Value<String> nutrientId = const Value.absent(),
+                Value<double?> amount = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> unit = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionEstimateNutrientsCompanion(
+                id: id,
+                estimateId: estimateId,
+                nutrientId: nutrientId,
+                amount: amount,
+                lower: lower,
+                upper: upper,
+                status: status,
+                unit: unit,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String estimateId,
+                required String nutrientId,
+                Value<double?> amount = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                required String status,
+                required String unit,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionEstimateNutrientsCompanion.insert(
+                id: id,
+                estimateId: estimateId,
+                nutrientId: nutrientId,
+                amount: amount,
+                lower: lower,
+                upper: upper,
+                status: status,
+                unit: unit,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionEstimateNutrientsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionEstimateNutrientsTable> {
+  $$NutritionEstimateNutrientsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get amount => $state.composableBuilder(
+    column: $state.table.amount,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionEstimatesTableFilterComposer get estimateId {
+    final $$NutritionEstimatesTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.estimateId,
+          referencedTable: $state.db.nutritionEstimates,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionEstimatesTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionEstimates,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionNutrientDefinitionsTableFilterComposer get nutrientId {
+    final $$NutritionNutrientDefinitionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.nutrientId,
+          referencedTable: $state.db.nutritionNutrientDefinitions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionNutrientDefinitionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionNutrientDefinitions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$NutritionEstimateNutrientsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionEstimateNutrientsTable> {
+  $$NutritionEstimateNutrientsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get amount => $state.composableBuilder(
+    column: $state.table.amount,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionEstimatesTableOrderingComposer get estimateId {
+    final $$NutritionEstimatesTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.estimateId,
+          referencedTable: $state.db.nutritionEstimates,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionEstimatesTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionEstimates,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionNutrientDefinitionsTableOrderingComposer get nutrientId {
+    final $$NutritionNutrientDefinitionsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.nutrientId,
+          referencedTable: $state.db.nutritionNutrientDefinitions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionNutrientDefinitionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionNutrientDefinitions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionThalisTableCreateCompanionBuilder =
+    NutritionThalisCompanion Function({
+      required String id,
+      required String userId,
+      required String name,
+      Value<String?> description,
+      required String lifecycle,
+      required int currentVersion,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionThalisTableUpdateCompanionBuilder =
+    NutritionThalisCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> name,
+      Value<String?> description,
+      Value<String> lifecycle,
+      Value<int> currentVersion,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionThalisTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionThalisTable,
+          NutritionThali,
+          $$NutritionThalisTableFilterComposer,
+          $$NutritionThalisTableOrderingComposer,
+          $$NutritionThalisTableCreateCompanionBuilder,
+          $$NutritionThalisTableUpdateCompanionBuilder
+        > {
+  $$NutritionThalisTableTableManager(
+    _$AppDatabase db,
+    $NutritionThalisTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionThalisTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionThalisTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<String> lifecycle = const Value.absent(),
+                Value<int> currentVersion = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionThalisCompanion(
+                id: id,
+                userId: userId,
+                name: name,
+                description: description,
+                lifecycle: lifecycle,
+                currentVersion: currentVersion,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String name,
+                Value<String?> description = const Value.absent(),
+                required String lifecycle,
+                required int currentVersion,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionThalisCompanion.insert(
+                id: id,
+                userId: userId,
+                name: name,
+                description: description,
+                lifecycle: lifecycle,
+                currentVersion: currentVersion,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionThalisTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionThalisTable> {
+  $$NutritionThalisTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get name => $state.composableBuilder(
+    column: $state.table.name,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get description => $state.composableBuilder(
+    column: $state.table.description,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get lifecycle => $state.composableBuilder(
+    column: $state.table.lifecycle,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get currentVersion => $state.composableBuilder(
+    column: $state.table.currentVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ComposableFilter nutritionThaliItemsRefs(
+    ComposableFilter Function($$NutritionThaliItemsTableFilterComposer f) f,
+  ) {
+    final $$NutritionThaliItemsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionThaliItems,
+          getReferencedColumn: (t) => t.thaliId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionThaliItemsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionThaliItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionConsumptionSnapshotsRefs(
+    ComposableFilter Function(
+      $$NutritionConsumptionSnapshotsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionConsumptionSnapshotsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionConsumptionSnapshots,
+          getReferencedColumn: (t) => t.thaliId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionConsumptionSnapshotsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionConsumptionSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$NutritionThalisTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionThalisTable> {
+  $$NutritionThalisTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get name => $state.composableBuilder(
+    column: $state.table.name,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get description => $state.composableBuilder(
+    column: $state.table.description,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get lifecycle => $state.composableBuilder(
+    column: $state.table.lifecycle,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get currentVersion => $state.composableBuilder(
+    column: $state.table.currentVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$NutritionThaliItemsTableCreateCompanionBuilder =
+    NutritionThaliItemsCompanion Function({
+      required String id,
+      required String thaliId,
+      required int position,
+      Value<String?> foodId,
+      Value<String?> recipeVersionId,
+      required double quantityValue,
+      required String quantityDimension,
+      required String quantityUnit,
+      Value<String?> measureId,
+      Value<bool> optional,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionThaliItemsTableUpdateCompanionBuilder =
+    NutritionThaliItemsCompanion Function({
+      Value<String> id,
+      Value<String> thaliId,
+      Value<int> position,
+      Value<String?> foodId,
+      Value<String?> recipeVersionId,
+      Value<double> quantityValue,
+      Value<String> quantityDimension,
+      Value<String> quantityUnit,
+      Value<String?> measureId,
+      Value<bool> optional,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionThaliItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionThaliItemsTable,
+          NutritionThaliItem,
+          $$NutritionThaliItemsTableFilterComposer,
+          $$NutritionThaliItemsTableOrderingComposer,
+          $$NutritionThaliItemsTableCreateCompanionBuilder,
+          $$NutritionThaliItemsTableUpdateCompanionBuilder
+        > {
+  $$NutritionThaliItemsTableTableManager(
+    _$AppDatabase db,
+    $NutritionThaliItemsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionThaliItemsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionThaliItemsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> thaliId = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<String?> foodId = const Value.absent(),
+                Value<String?> recipeVersionId = const Value.absent(),
+                Value<double> quantityValue = const Value.absent(),
+                Value<String> quantityDimension = const Value.absent(),
+                Value<String> quantityUnit = const Value.absent(),
+                Value<String?> measureId = const Value.absent(),
+                Value<bool> optional = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionThaliItemsCompanion(
+                id: id,
+                thaliId: thaliId,
+                position: position,
+                foodId: foodId,
+                recipeVersionId: recipeVersionId,
+                quantityValue: quantityValue,
+                quantityDimension: quantityDimension,
+                quantityUnit: quantityUnit,
+                measureId: measureId,
+                optional: optional,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String thaliId,
+                required int position,
+                Value<String?> foodId = const Value.absent(),
+                Value<String?> recipeVersionId = const Value.absent(),
+                required double quantityValue,
+                required String quantityDimension,
+                required String quantityUnit,
+                Value<String?> measureId = const Value.absent(),
+                Value<bool> optional = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionThaliItemsCompanion.insert(
+                id: id,
+                thaliId: thaliId,
+                position: position,
+                foodId: foodId,
+                recipeVersionId: recipeVersionId,
+                quantityValue: quantityValue,
+                quantityDimension: quantityDimension,
+                quantityUnit: quantityUnit,
+                measureId: measureId,
+                optional: optional,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionThaliItemsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionThaliItemsTable> {
+  $$NutritionThaliItemsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get position => $state.composableBuilder(
+    column: $state.table.position,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get quantityValue => $state.composableBuilder(
+    column: $state.table.quantityValue,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get quantityDimension => $state.composableBuilder(
+    column: $state.table.quantityDimension,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get quantityUnit => $state.composableBuilder(
+    column: $state.table.quantityUnit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get optional => $state.composableBuilder(
+    column: $state.table.optional,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get notes => $state.composableBuilder(
+    column: $state.table.notes,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionThalisTableFilterComposer get thaliId {
+    final $$NutritionThalisTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.thaliId,
+          referencedTable: $state.db.nutritionThalis,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionThalisTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionThalis,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodsTableFilterComposer get foodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.foodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+
+  $$NutritionRecipeVersionsTableFilterComposer get recipeVersionId {
+    final $$NutritionRecipeVersionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recipeVersionId,
+          referencedTable: $state.db.nutritionRecipeVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeVersionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionHouseholdMeasuresTableFilterComposer get measureId {
+    final $$NutritionHouseholdMeasuresTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.measureId,
+          referencedTable: $state.db.nutritionHouseholdMeasures,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionHouseholdMeasuresTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionHouseholdMeasures,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$NutritionThaliItemsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionThaliItemsTable> {
+  $$NutritionThaliItemsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get position => $state.composableBuilder(
+    column: $state.table.position,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get quantityValue => $state.composableBuilder(
+    column: $state.table.quantityValue,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get quantityDimension => $state.composableBuilder(
+    column: $state.table.quantityDimension,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get quantityUnit => $state.composableBuilder(
+    column: $state.table.quantityUnit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get optional => $state.composableBuilder(
+    column: $state.table.optional,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get notes => $state.composableBuilder(
+    column: $state.table.notes,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionThalisTableOrderingComposer get thaliId {
+    final $$NutritionThalisTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.thaliId,
+          referencedTable: $state.db.nutritionThalis,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionThalisTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionThalis,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodsTableOrderingComposer get foodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.foodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionRecipeVersionsTableOrderingComposer get recipeVersionId {
+    final $$NutritionRecipeVersionsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recipeVersionId,
+          referencedTable: $state.db.nutritionRecipeVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeVersionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionHouseholdMeasuresTableOrderingComposer get measureId {
+    final $$NutritionHouseholdMeasuresTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.measureId,
+          referencedTable: $state.db.nutritionHouseholdMeasures,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionHouseholdMeasuresTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionHouseholdMeasures,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionConsumptionSnapshotsTableCreateCompanionBuilder =
+    NutritionConsumptionSnapshotsCompanion Function({
+      required String id,
+      required String userId,
+      required DateTime loggedAt,
+      required String mealCategory,
+      Value<String?> mealGroupId,
+      required String sourceType,
+      Value<String?> recipeVersionId,
+      Value<String?> thaliId,
+      required String calculatorVersion,
+      required String completeness,
+      required String estimateStatus,
+      Value<String?> localDate,
+      Value<String?> timezoneId,
+      Value<String?> lineage,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionConsumptionSnapshotsTableUpdateCompanionBuilder =
+    NutritionConsumptionSnapshotsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<DateTime> loggedAt,
+      Value<String> mealCategory,
+      Value<String?> mealGroupId,
+      Value<String> sourceType,
+      Value<String?> recipeVersionId,
+      Value<String?> thaliId,
+      Value<String> calculatorVersion,
+      Value<String> completeness,
+      Value<String> estimateStatus,
+      Value<String?> localDate,
+      Value<String?> timezoneId,
+      Value<String?> lineage,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionConsumptionSnapshotsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionConsumptionSnapshotsTable,
+          NutritionConsumptionSnapshot,
+          $$NutritionConsumptionSnapshotsTableFilterComposer,
+          $$NutritionConsumptionSnapshotsTableOrderingComposer,
+          $$NutritionConsumptionSnapshotsTableCreateCompanionBuilder,
+          $$NutritionConsumptionSnapshotsTableUpdateCompanionBuilder
+        > {
+  $$NutritionConsumptionSnapshotsTableTableManager(
+    _$AppDatabase db,
+    $NutritionConsumptionSnapshotsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionConsumptionSnapshotsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer:
+              $$NutritionConsumptionSnapshotsTableOrderingComposer(
+                ComposerState(db, table),
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<DateTime> loggedAt = const Value.absent(),
+                Value<String> mealCategory = const Value.absent(),
+                Value<String?> mealGroupId = const Value.absent(),
+                Value<String> sourceType = const Value.absent(),
+                Value<String?> recipeVersionId = const Value.absent(),
+                Value<String?> thaliId = const Value.absent(),
+                Value<String> calculatorVersion = const Value.absent(),
+                Value<String> completeness = const Value.absent(),
+                Value<String> estimateStatus = const Value.absent(),
+                Value<String?> localDate = const Value.absent(),
+                Value<String?> timezoneId = const Value.absent(),
+                Value<String?> lineage = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionConsumptionSnapshotsCompanion(
+                id: id,
+                userId: userId,
+                loggedAt: loggedAt,
+                mealCategory: mealCategory,
+                mealGroupId: mealGroupId,
+                sourceType: sourceType,
+                recipeVersionId: recipeVersionId,
+                thaliId: thaliId,
+                calculatorVersion: calculatorVersion,
+                completeness: completeness,
+                estimateStatus: estimateStatus,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                lineage: lineage,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required DateTime loggedAt,
+                required String mealCategory,
+                Value<String?> mealGroupId = const Value.absent(),
+                required String sourceType,
+                Value<String?> recipeVersionId = const Value.absent(),
+                Value<String?> thaliId = const Value.absent(),
+                required String calculatorVersion,
+                required String completeness,
+                required String estimateStatus,
+                Value<String?> localDate = const Value.absent(),
+                Value<String?> timezoneId = const Value.absent(),
+                Value<String?> lineage = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionConsumptionSnapshotsCompanion.insert(
+                id: id,
+                userId: userId,
+                loggedAt: loggedAt,
+                mealCategory: mealCategory,
+                mealGroupId: mealGroupId,
+                sourceType: sourceType,
+                recipeVersionId: recipeVersionId,
+                thaliId: thaliId,
+                calculatorVersion: calculatorVersion,
+                completeness: completeness,
+                estimateStatus: estimateStatus,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                lineage: lineage,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionConsumptionSnapshotsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionConsumptionSnapshotsTable> {
+  $$NutritionConsumptionSnapshotsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get loggedAt => $state.composableBuilder(
+    column: $state.table.loggedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get mealCategory => $state.composableBuilder(
+    column: $state.table.mealCategory,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get mealGroupId => $state.composableBuilder(
+    column: $state.table.mealGroupId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceType => $state.composableBuilder(
+    column: $state.table.sourceType,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get calculatorVersion => $state.composableBuilder(
+    column: $state.table.calculatorVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get completeness => $state.composableBuilder(
+    column: $state.table.completeness,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get estimateStatus => $state.composableBuilder(
+    column: $state.table.estimateStatus,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get lineage => $state.composableBuilder(
+    column: $state.table.lineage,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionRecipeVersionsTableFilterComposer get recipeVersionId {
+    final $$NutritionRecipeVersionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recipeVersionId,
+          referencedTable: $state.db.nutritionRecipeVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeVersionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionThalisTableFilterComposer get thaliId {
+    final $$NutritionThalisTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.thaliId,
+          referencedTable: $state.db.nutritionThalis,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionThalisTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionThalis,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  ComposableFilter nutritionSnapshotItemsRefs(
+    ComposableFilter Function($$NutritionSnapshotItemsTableFilterComposer f) f,
+  ) {
+    final $$NutritionSnapshotItemsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionSnapshotItems,
+          getReferencedColumn: (t) => t.snapshotId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotItemsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionSnapshotNutrientsRefs(
+    ComposableFilter Function($$NutritionSnapshotNutrientsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionSnapshotNutrientsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionSnapshotNutrients,
+          getReferencedColumn: (t) => t.snapshotId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotNutrientsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotNutrients,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionSnapshotConstraintResultsRefs(
+    ComposableFilter Function(
+      $$NutritionSnapshotConstraintResultsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionSnapshotConstraintResultsTableFilterComposer composer =
+        $state.composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionSnapshotConstraintResults,
+          getReferencedColumn: (t) => t.snapshotId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotConstraintResultsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotConstraintResults,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$NutritionConsumptionSnapshotsTableOrderingComposer
+    extends
+        OrderingComposer<_$AppDatabase, $NutritionConsumptionSnapshotsTable> {
+  $$NutritionConsumptionSnapshotsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get loggedAt => $state.composableBuilder(
+    column: $state.table.loggedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get mealCategory => $state.composableBuilder(
+    column: $state.table.mealCategory,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get mealGroupId => $state.composableBuilder(
+    column: $state.table.mealGroupId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceType => $state.composableBuilder(
+    column: $state.table.sourceType,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get calculatorVersion => $state.composableBuilder(
+    column: $state.table.calculatorVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get completeness => $state.composableBuilder(
+    column: $state.table.completeness,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get estimateStatus => $state.composableBuilder(
+    column: $state.table.estimateStatus,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get lineage => $state.composableBuilder(
+    column: $state.table.lineage,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionRecipeVersionsTableOrderingComposer get recipeVersionId {
+    final $$NutritionRecipeVersionsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recipeVersionId,
+          referencedTable: $state.db.nutritionRecipeVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeVersionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionThalisTableOrderingComposer get thaliId {
+    final $$NutritionThalisTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.thaliId,
+          referencedTable: $state.db.nutritionThalis,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionThalisTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionThalis,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionSnapshotItemsTableCreateCompanionBuilder =
+    NutritionSnapshotItemsCompanion Function({
+      required String id,
+      required String snapshotId,
+      required int position,
+      Value<String?> foodId,
+      Value<String?> preparationId,
+      Value<String?> recipeVersionId,
+      required double quantityValue,
+      required String quantityDimension,
+      required String quantityUnit,
+      Value<String?> quantityContextId,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String?> sourceRef,
+      Value<String?> basis,
+      Value<String?> conversionVersion,
+      Value<String?> calculationVersion,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionSnapshotItemsTableUpdateCompanionBuilder =
+    NutritionSnapshotItemsCompanion Function({
+      Value<String> id,
+      Value<String> snapshotId,
+      Value<int> position,
+      Value<String?> foodId,
+      Value<String?> preparationId,
+      Value<String?> recipeVersionId,
+      Value<double> quantityValue,
+      Value<String> quantityDimension,
+      Value<String> quantityUnit,
+      Value<String?> quantityContextId,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String?> sourceRef,
+      Value<String?> basis,
+      Value<String?> conversionVersion,
+      Value<String?> calculationVersion,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionSnapshotItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionSnapshotItemsTable,
+          NutritionSnapshotItem,
+          $$NutritionSnapshotItemsTableFilterComposer,
+          $$NutritionSnapshotItemsTableOrderingComposer,
+          $$NutritionSnapshotItemsTableCreateCompanionBuilder,
+          $$NutritionSnapshotItemsTableUpdateCompanionBuilder
+        > {
+  $$NutritionSnapshotItemsTableTableManager(
+    _$AppDatabase db,
+    $NutritionSnapshotItemsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionSnapshotItemsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionSnapshotItemsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> snapshotId = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<String?> foodId = const Value.absent(),
+                Value<String?> preparationId = const Value.absent(),
+                Value<String?> recipeVersionId = const Value.absent(),
+                Value<double> quantityValue = const Value.absent(),
+                Value<String> quantityDimension = const Value.absent(),
+                Value<String> quantityUnit = const Value.absent(),
+                Value<String?> quantityContextId = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String?> sourceRef = const Value.absent(),
+                Value<String?> basis = const Value.absent(),
+                Value<String?> conversionVersion = const Value.absent(),
+                Value<String?> calculationVersion = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionSnapshotItemsCompanion(
+                id: id,
+                snapshotId: snapshotId,
+                position: position,
+                foodId: foodId,
+                preparationId: preparationId,
+                recipeVersionId: recipeVersionId,
+                quantityValue: quantityValue,
+                quantityDimension: quantityDimension,
+                quantityUnit: quantityUnit,
+                quantityContextId: quantityContextId,
+                lower: lower,
+                upper: upper,
+                sourceRef: sourceRef,
+                basis: basis,
+                conversionVersion: conversionVersion,
+                calculationVersion: calculationVersion,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String snapshotId,
+                required int position,
+                Value<String?> foodId = const Value.absent(),
+                Value<String?> preparationId = const Value.absent(),
+                Value<String?> recipeVersionId = const Value.absent(),
+                required double quantityValue,
+                required String quantityDimension,
+                required String quantityUnit,
+                Value<String?> quantityContextId = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String?> sourceRef = const Value.absent(),
+                Value<String?> basis = const Value.absent(),
+                Value<String?> conversionVersion = const Value.absent(),
+                Value<String?> calculationVersion = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionSnapshotItemsCompanion.insert(
+                id: id,
+                snapshotId: snapshotId,
+                position: position,
+                foodId: foodId,
+                preparationId: preparationId,
+                recipeVersionId: recipeVersionId,
+                quantityValue: quantityValue,
+                quantityDimension: quantityDimension,
+                quantityUnit: quantityUnit,
+                quantityContextId: quantityContextId,
+                lower: lower,
+                upper: upper,
+                sourceRef: sourceRef,
+                basis: basis,
+                conversionVersion: conversionVersion,
+                calculationVersion: calculationVersion,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionSnapshotItemsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionSnapshotItemsTable> {
+  $$NutritionSnapshotItemsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get position => $state.composableBuilder(
+    column: $state.table.position,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get quantityValue => $state.composableBuilder(
+    column: $state.table.quantityValue,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get quantityDimension => $state.composableBuilder(
+    column: $state.table.quantityDimension,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get quantityUnit => $state.composableBuilder(
+    column: $state.table.quantityUnit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get quantityContextId => $state.composableBuilder(
+    column: $state.table.quantityContextId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceRef => $state.composableBuilder(
+    column: $state.table.sourceRef,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get basis => $state.composableBuilder(
+    column: $state.table.basis,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get conversionVersion => $state.composableBuilder(
+    column: $state.table.conversionVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get calculationVersion => $state.composableBuilder(
+    column: $state.table.calculationVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionConsumptionSnapshotsTableFilterComposer get snapshotId {
+    final $$NutritionConsumptionSnapshotsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.snapshotId,
+          referencedTable: $state.db.nutritionConsumptionSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionConsumptionSnapshotsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionConsumptionSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodsTableFilterComposer get foodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.foodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+
+  $$NutritionFoodPreparationsTableFilterComposer get preparationId {
+    final $$NutritionFoodPreparationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.preparationId,
+          referencedTable: $state.db.nutritionFoodPreparations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodPreparationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodPreparations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionRecipeVersionsTableFilterComposer get recipeVersionId {
+    final $$NutritionRecipeVersionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recipeVersionId,
+          referencedTable: $state.db.nutritionRecipeVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeVersionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  ComposableFilter nutritionSnapshotNutrientsRefs(
+    ComposableFilter Function($$NutritionSnapshotNutrientsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionSnapshotNutrientsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionSnapshotNutrients,
+          getReferencedColumn: (t) => t.itemId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotNutrientsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotNutrients,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter nutritionSnapshotConstraintResultEvidenceRefs(
+    ComposableFilter Function(
+      $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer
+    composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $state.db.nutritionSnapshotConstraintResultEvidence,
+      getReferencedColumn: (t) => t.snapshotItemId,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionSnapshotConstraintResultEvidence,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$NutritionSnapshotItemsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionSnapshotItemsTable> {
+  $$NutritionSnapshotItemsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get position => $state.composableBuilder(
+    column: $state.table.position,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get quantityValue => $state.composableBuilder(
+    column: $state.table.quantityValue,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get quantityDimension => $state.composableBuilder(
+    column: $state.table.quantityDimension,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get quantityUnit => $state.composableBuilder(
+    column: $state.table.quantityUnit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get quantityContextId => $state.composableBuilder(
+    column: $state.table.quantityContextId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceRef => $state.composableBuilder(
+    column: $state.table.sourceRef,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get basis => $state.composableBuilder(
+    column: $state.table.basis,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get conversionVersion => $state.composableBuilder(
+    column: $state.table.conversionVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get calculationVersion => $state.composableBuilder(
+    column: $state.table.calculationVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionConsumptionSnapshotsTableOrderingComposer get snapshotId {
+    final $$NutritionConsumptionSnapshotsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.snapshotId,
+          referencedTable: $state.db.nutritionConsumptionSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionConsumptionSnapshotsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionConsumptionSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodsTableOrderingComposer get foodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.foodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodPreparationsTableOrderingComposer get preparationId {
+    final $$NutritionFoodPreparationsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.preparationId,
+          referencedTable: $state.db.nutritionFoodPreparations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodPreparationsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoodPreparations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionRecipeVersionsTableOrderingComposer get recipeVersionId {
+    final $$NutritionRecipeVersionsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recipeVersionId,
+          referencedTable: $state.db.nutritionRecipeVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionRecipeVersionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionRecipeVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionSnapshotNutrientsTableCreateCompanionBuilder =
+    NutritionSnapshotNutrientsCompanion Function({
+      required String id,
+      required String snapshotId,
+      Value<String?> itemId,
+      required String nutrientId,
+      Value<double?> amount,
+      Value<double?> lower,
+      Value<double?> upper,
+      required String status,
+      required String unit,
+      required String sourceVersion,
+      Value<String?> basis,
+      Value<String?> factVersion,
+      Value<String?> lineage,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionSnapshotNutrientsTableUpdateCompanionBuilder =
+    NutritionSnapshotNutrientsCompanion Function({
+      Value<String> id,
+      Value<String> snapshotId,
+      Value<String?> itemId,
+      Value<String> nutrientId,
+      Value<double?> amount,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String> status,
+      Value<String> unit,
+      Value<String> sourceVersion,
+      Value<String?> basis,
+      Value<String?> factVersion,
+      Value<String?> lineage,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionSnapshotNutrientsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionSnapshotNutrientsTable,
+          NutritionSnapshotNutrient,
+          $$NutritionSnapshotNutrientsTableFilterComposer,
+          $$NutritionSnapshotNutrientsTableOrderingComposer,
+          $$NutritionSnapshotNutrientsTableCreateCompanionBuilder,
+          $$NutritionSnapshotNutrientsTableUpdateCompanionBuilder
+        > {
+  $$NutritionSnapshotNutrientsTableTableManager(
+    _$AppDatabase db,
+    $NutritionSnapshotNutrientsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionSnapshotNutrientsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionSnapshotNutrientsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> snapshotId = const Value.absent(),
+                Value<String?> itemId = const Value.absent(),
+                Value<String> nutrientId = const Value.absent(),
+                Value<double?> amount = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> unit = const Value.absent(),
+                Value<String> sourceVersion = const Value.absent(),
+                Value<String?> basis = const Value.absent(),
+                Value<String?> factVersion = const Value.absent(),
+                Value<String?> lineage = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionSnapshotNutrientsCompanion(
+                id: id,
+                snapshotId: snapshotId,
+                itemId: itemId,
+                nutrientId: nutrientId,
+                amount: amount,
+                lower: lower,
+                upper: upper,
+                status: status,
+                unit: unit,
+                sourceVersion: sourceVersion,
+                basis: basis,
+                factVersion: factVersion,
+                lineage: lineage,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String snapshotId,
+                Value<String?> itemId = const Value.absent(),
+                required String nutrientId,
+                Value<double?> amount = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                required String status,
+                required String unit,
+                required String sourceVersion,
+                Value<String?> basis = const Value.absent(),
+                Value<String?> factVersion = const Value.absent(),
+                Value<String?> lineage = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionSnapshotNutrientsCompanion.insert(
+                id: id,
+                snapshotId: snapshotId,
+                itemId: itemId,
+                nutrientId: nutrientId,
+                amount: amount,
+                lower: lower,
+                upper: upper,
+                status: status,
+                unit: unit,
+                sourceVersion: sourceVersion,
+                basis: basis,
+                factVersion: factVersion,
+                lineage: lineage,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionSnapshotNutrientsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionSnapshotNutrientsTable> {
+  $$NutritionSnapshotNutrientsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get amount => $state.composableBuilder(
+    column: $state.table.amount,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceVersion => $state.composableBuilder(
+    column: $state.table.sourceVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get basis => $state.composableBuilder(
+    column: $state.table.basis,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get factVersion => $state.composableBuilder(
+    column: $state.table.factVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get lineage => $state.composableBuilder(
+    column: $state.table.lineage,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionConsumptionSnapshotsTableFilterComposer get snapshotId {
+    final $$NutritionConsumptionSnapshotsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.snapshotId,
+          referencedTable: $state.db.nutritionConsumptionSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionConsumptionSnapshotsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionConsumptionSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionSnapshotItemsTableFilterComposer get itemId {
+    final $$NutritionSnapshotItemsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.itemId,
+          referencedTable: $state.db.nutritionSnapshotItems,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotItemsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionNutrientDefinitionsTableFilterComposer get nutrientId {
+    final $$NutritionNutrientDefinitionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.nutrientId,
+          referencedTable: $state.db.nutritionNutrientDefinitions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionNutrientDefinitionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionNutrientDefinitions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$NutritionSnapshotNutrientsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionSnapshotNutrientsTable> {
+  $$NutritionSnapshotNutrientsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get amount => $state.composableBuilder(
+    column: $state.table.amount,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceVersion => $state.composableBuilder(
+    column: $state.table.sourceVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get basis => $state.composableBuilder(
+    column: $state.table.basis,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get factVersion => $state.composableBuilder(
+    column: $state.table.factVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get lineage => $state.composableBuilder(
+    column: $state.table.lineage,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionConsumptionSnapshotsTableOrderingComposer get snapshotId {
+    final $$NutritionConsumptionSnapshotsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.snapshotId,
+          referencedTable: $state.db.nutritionConsumptionSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionConsumptionSnapshotsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionConsumptionSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionSnapshotItemsTableOrderingComposer get itemId {
+    final $$NutritionSnapshotItemsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.itemId,
+          referencedTable: $state.db.nutritionSnapshotItems,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotItemsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionNutrientDefinitionsTableOrderingComposer get nutrientId {
+    final $$NutritionNutrientDefinitionsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.nutrientId,
+          referencedTable: $state.db.nutritionNutrientDefinitions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionNutrientDefinitionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionNutrientDefinitions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionFoodConstraintEvidenceTableCreateCompanionBuilder =
+    NutritionFoodConstraintEvidenceCompanion Function({
+      required String id,
+      required String foodId,
+      required String constraintKey,
+      required String status,
+      required String evidenceSource,
+      Value<double?> confidence,
+      Value<String?> notes,
+      required int version,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionFoodConstraintEvidenceTableUpdateCompanionBuilder =
+    NutritionFoodConstraintEvidenceCompanion Function({
+      Value<String> id,
+      Value<String> foodId,
+      Value<String> constraintKey,
+      Value<String> status,
+      Value<String> evidenceSource,
+      Value<double?> confidence,
+      Value<String?> notes,
+      Value<int> version,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionFoodConstraintEvidenceTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionFoodConstraintEvidenceTable,
+          NutritionFoodConstraintEvidenceData,
+          $$NutritionFoodConstraintEvidenceTableFilterComposer,
+          $$NutritionFoodConstraintEvidenceTableOrderingComposer,
+          $$NutritionFoodConstraintEvidenceTableCreateCompanionBuilder,
+          $$NutritionFoodConstraintEvidenceTableUpdateCompanionBuilder
+        > {
+  $$NutritionFoodConstraintEvidenceTableTableManager(
+    _$AppDatabase db,
+    $NutritionFoodConstraintEvidenceTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$NutritionFoodConstraintEvidenceTableFilterComposer(
+                ComposerState(db, table),
+              ),
+          orderingComposer:
+              $$NutritionFoodConstraintEvidenceTableOrderingComposer(
+                ComposerState(db, table),
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> foodId = const Value.absent(),
+                Value<String> constraintKey = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> evidenceSource = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionFoodConstraintEvidenceCompanion(
+                id: id,
+                foodId: foodId,
+                constraintKey: constraintKey,
+                status: status,
+                evidenceSource: evidenceSource,
+                confidence: confidence,
+                notes: notes,
+                version: version,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String foodId,
+                required String constraintKey,
+                required String status,
+                required String evidenceSource,
+                Value<double?> confidence = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                required int version,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionFoodConstraintEvidenceCompanion.insert(
+                id: id,
+                foodId: foodId,
+                constraintKey: constraintKey,
+                status: status,
+                evidenceSource: evidenceSource,
+                confidence: confidence,
+                notes: notes,
+                version: version,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionFoodConstraintEvidenceTableFilterComposer
+    extends
+        FilterComposer<_$AppDatabase, $NutritionFoodConstraintEvidenceTable> {
+  $$NutritionFoodConstraintEvidenceTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get constraintKey => $state.composableBuilder(
+    column: $state.table.constraintKey,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get evidenceSource => $state.composableBuilder(
+    column: $state.table.evidenceSource,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get notes => $state.composableBuilder(
+    column: $state.table.notes,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableFilterComposer get foodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.foodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$NutritionFoodConstraintEvidenceTableOrderingComposer
+    extends
+        OrderingComposer<_$AppDatabase, $NutritionFoodConstraintEvidenceTable> {
+  $$NutritionFoodConstraintEvidenceTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get constraintKey => $state.composableBuilder(
+    column: $state.table.constraintKey,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get evidenceSource => $state.composableBuilder(
+    column: $state.table.evidenceSource,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get notes => $state.composableBuilder(
+    column: $state.table.notes,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionFoodsTableOrderingComposer get foodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.foodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionConstraintDefinitionsTableCreateCompanionBuilder =
+    NutritionConstraintDefinitionsCompanion Function({
+      required String id,
+      required String key,
+      required String type,
+      required String displayName,
+      Value<bool> severitySupported,
+      Value<bool> crossContactSupported,
+      required int version,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionConstraintDefinitionsTableUpdateCompanionBuilder =
+    NutritionConstraintDefinitionsCompanion Function({
+      Value<String> id,
+      Value<String> key,
+      Value<String> type,
+      Value<String> displayName,
+      Value<bool> severitySupported,
+      Value<bool> crossContactSupported,
+      Value<int> version,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionConstraintDefinitionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionConstraintDefinitionsTable,
+          NutritionConstraintDefinition,
+          $$NutritionConstraintDefinitionsTableFilterComposer,
+          $$NutritionConstraintDefinitionsTableOrderingComposer,
+          $$NutritionConstraintDefinitionsTableCreateCompanionBuilder,
+          $$NutritionConstraintDefinitionsTableUpdateCompanionBuilder
+        > {
+  $$NutritionConstraintDefinitionsTableTableManager(
+    _$AppDatabase db,
+    $NutritionConstraintDefinitionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$NutritionConstraintDefinitionsTableFilterComposer(
+                ComposerState(db, table),
+              ),
+          orderingComposer:
+              $$NutritionConstraintDefinitionsTableOrderingComposer(
+                ComposerState(db, table),
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> key = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> displayName = const Value.absent(),
+                Value<bool> severitySupported = const Value.absent(),
+                Value<bool> crossContactSupported = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionConstraintDefinitionsCompanion(
+                id: id,
+                key: key,
+                type: type,
+                displayName: displayName,
+                severitySupported: severitySupported,
+                crossContactSupported: crossContactSupported,
+                version: version,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String key,
+                required String type,
+                required String displayName,
+                Value<bool> severitySupported = const Value.absent(),
+                Value<bool> crossContactSupported = const Value.absent(),
+                required int version,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionConstraintDefinitionsCompanion.insert(
+                id: id,
+                key: key,
+                type: type,
+                displayName: displayName,
+                severitySupported: severitySupported,
+                crossContactSupported: crossContactSupported,
+                version: version,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionConstraintDefinitionsTableFilterComposer
+    extends
+        FilterComposer<_$AppDatabase, $NutritionConstraintDefinitionsTable> {
+  $$NutritionConstraintDefinitionsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get key => $state.composableBuilder(
+    column: $state.table.key,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get type => $state.composableBuilder(
+    column: $state.table.type,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get displayName => $state.composableBuilder(
+    column: $state.table.displayName,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get severitySupported => $state.composableBuilder(
+    column: $state.table.severitySupported,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get crossContactSupported => $state.composableBuilder(
+    column: $state.table.crossContactSupported,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ComposableFilter nutritionUserConstraintsRefs(
+    ComposableFilter Function($$NutritionUserConstraintsTableFilterComposer f)
+    f,
+  ) {
+    final $$NutritionUserConstraintsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionUserConstraints,
+          getReferencedColumn: (t) => t.definitionId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionUserConstraintsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionUserConstraints,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$NutritionConstraintDefinitionsTableOrderingComposer
+    extends
+        OrderingComposer<_$AppDatabase, $NutritionConstraintDefinitionsTable> {
+  $$NutritionConstraintDefinitionsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get key => $state.composableBuilder(
+    column: $state.table.key,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get type => $state.composableBuilder(
+    column: $state.table.type,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get displayName => $state.composableBuilder(
+    column: $state.table.displayName,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get severitySupported => $state.composableBuilder(
+    column: $state.table.severitySupported,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get crossContactSupported => $state.composableBuilder(
+    column: $state.table.crossContactSupported,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$NutritionUserConstraintsTableCreateCompanionBuilder =
+    NutritionUserConstraintsCompanion Function({
+      required String id,
+      required String userId,
+      required String definitionId,
+      required String value,
+      required String strictness,
+      Value<String?> severity,
+      Value<bool> crossContact,
+      required DateTime effectiveFrom,
+      Value<DateTime?> effectiveTo,
+      required String source,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionUserConstraintsTableUpdateCompanionBuilder =
+    NutritionUserConstraintsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> definitionId,
+      Value<String> value,
+      Value<String> strictness,
+      Value<String?> severity,
+      Value<bool> crossContact,
+      Value<DateTime> effectiveFrom,
+      Value<DateTime?> effectiveTo,
+      Value<String> source,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionUserConstraintsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionUserConstraintsTable,
+          NutritionUserConstraint,
+          $$NutritionUserConstraintsTableFilterComposer,
+          $$NutritionUserConstraintsTableOrderingComposer,
+          $$NutritionUserConstraintsTableCreateCompanionBuilder,
+          $$NutritionUserConstraintsTableUpdateCompanionBuilder
+        > {
+  $$NutritionUserConstraintsTableTableManager(
+    _$AppDatabase db,
+    $NutritionUserConstraintsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionUserConstraintsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionUserConstraintsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> definitionId = const Value.absent(),
+                Value<String> value = const Value.absent(),
+                Value<String> strictness = const Value.absent(),
+                Value<String?> severity = const Value.absent(),
+                Value<bool> crossContact = const Value.absent(),
+                Value<DateTime> effectiveFrom = const Value.absent(),
+                Value<DateTime?> effectiveTo = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionUserConstraintsCompanion(
+                id: id,
+                userId: userId,
+                definitionId: definitionId,
+                value: value,
+                strictness: strictness,
+                severity: severity,
+                crossContact: crossContact,
+                effectiveFrom: effectiveFrom,
+                effectiveTo: effectiveTo,
+                source: source,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String definitionId,
+                required String value,
+                required String strictness,
+                Value<String?> severity = const Value.absent(),
+                Value<bool> crossContact = const Value.absent(),
+                required DateTime effectiveFrom,
+                Value<DateTime?> effectiveTo = const Value.absent(),
+                required String source,
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionUserConstraintsCompanion.insert(
+                id: id,
+                userId: userId,
+                definitionId: definitionId,
+                value: value,
+                strictness: strictness,
+                severity: severity,
+                crossContact: crossContact,
+                effectiveFrom: effectiveFrom,
+                effectiveTo: effectiveTo,
+                source: source,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionUserConstraintsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionUserConstraintsTable> {
+  $$NutritionUserConstraintsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get value => $state.composableBuilder(
+    column: $state.table.value,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get strictness => $state.composableBuilder(
+    column: $state.table.strictness,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get severity => $state.composableBuilder(
+    column: $state.table.severity,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get crossContact => $state.composableBuilder(
+    column: $state.table.crossContact,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get effectiveFrom => $state.composableBuilder(
+    column: $state.table.effectiveFrom,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get effectiveTo => $state.composableBuilder(
+    column: $state.table.effectiveTo,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get notes => $state.composableBuilder(
+    column: $state.table.notes,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionConstraintDefinitionsTableFilterComposer get definitionId {
+    final $$NutritionConstraintDefinitionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.definitionId,
+          referencedTable: $state.db.nutritionConstraintDefinitions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionConstraintDefinitionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionConstraintDefinitions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  ComposableFilter nutritionSnapshotConstraintResultsRefs(
+    ComposableFilter Function(
+      $$NutritionSnapshotConstraintResultsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionSnapshotConstraintResultsTableFilterComposer composer =
+        $state.composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.nutritionSnapshotConstraintResults,
+          getReferencedColumn: (t) => t.constraintId,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotConstraintResultsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotConstraintResults,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$NutritionUserConstraintsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionUserConstraintsTable> {
+  $$NutritionUserConstraintsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get value => $state.composableBuilder(
+    column: $state.table.value,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get strictness => $state.composableBuilder(
+    column: $state.table.strictness,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get severity => $state.composableBuilder(
+    column: $state.table.severity,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get crossContact => $state.composableBuilder(
+    column: $state.table.crossContact,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get effectiveFrom => $state.composableBuilder(
+    column: $state.table.effectiveFrom,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get effectiveTo => $state.composableBuilder(
+    column: $state.table.effectiveTo,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get notes => $state.composableBuilder(
+    column: $state.table.notes,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionConstraintDefinitionsTableOrderingComposer get definitionId {
+    final $$NutritionConstraintDefinitionsTableOrderingComposer composer =
+        $state.composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.definitionId,
+          referencedTable: $state.db.nutritionConstraintDefinitions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionConstraintDefinitionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionConstraintDefinitions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionSnapshotConstraintResultsTableCreateCompanionBuilder =
+    NutritionSnapshotConstraintResultsCompanion Function({
+      required String id,
+      required String snapshotId,
+      required String constraintId,
+      required String result,
+      required String ruleVersion,
+      required DateTime evaluatedAt,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionSnapshotConstraintResultsTableUpdateCompanionBuilder =
+    NutritionSnapshotConstraintResultsCompanion Function({
+      Value<String> id,
+      Value<String> snapshotId,
+      Value<String> constraintId,
+      Value<String> result,
+      Value<String> ruleVersion,
+      Value<DateTime> evaluatedAt,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionSnapshotConstraintResultsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionSnapshotConstraintResultsTable,
+          NutritionSnapshotConstraintResult,
+          $$NutritionSnapshotConstraintResultsTableFilterComposer,
+          $$NutritionSnapshotConstraintResultsTableOrderingComposer,
+          $$NutritionSnapshotConstraintResultsTableCreateCompanionBuilder,
+          $$NutritionSnapshotConstraintResultsTableUpdateCompanionBuilder
+        > {
+  $$NutritionSnapshotConstraintResultsTableTableManager(
+    _$AppDatabase db,
+    $NutritionSnapshotConstraintResultsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$NutritionSnapshotConstraintResultsTableFilterComposer(
+                ComposerState(db, table),
+              ),
+          orderingComposer:
+              $$NutritionSnapshotConstraintResultsTableOrderingComposer(
+                ComposerState(db, table),
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> snapshotId = const Value.absent(),
+                Value<String> constraintId = const Value.absent(),
+                Value<String> result = const Value.absent(),
+                Value<String> ruleVersion = const Value.absent(),
+                Value<DateTime> evaluatedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionSnapshotConstraintResultsCompanion(
+                id: id,
+                snapshotId: snapshotId,
+                constraintId: constraintId,
+                result: result,
+                ruleVersion: ruleVersion,
+                evaluatedAt: evaluatedAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String snapshotId,
+                required String constraintId,
+                required String result,
+                required String ruleVersion,
+                required DateTime evaluatedAt,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionSnapshotConstraintResultsCompanion.insert(
+                id: id,
+                snapshotId: snapshotId,
+                constraintId: constraintId,
+                result: result,
+                ruleVersion: ruleVersion,
+                evaluatedAt: evaluatedAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionSnapshotConstraintResultsTableFilterComposer
+    extends
+        FilterComposer<
+          _$AppDatabase,
+          $NutritionSnapshotConstraintResultsTable
+        > {
+  $$NutritionSnapshotConstraintResultsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get result => $state.composableBuilder(
+    column: $state.table.result,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get ruleVersion => $state.composableBuilder(
+    column: $state.table.ruleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get evaluatedAt => $state.composableBuilder(
+    column: $state.table.evaluatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionConsumptionSnapshotsTableFilterComposer get snapshotId {
+    final $$NutritionConsumptionSnapshotsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.snapshotId,
+          referencedTable: $state.db.nutritionConsumptionSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionConsumptionSnapshotsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionConsumptionSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionUserConstraintsTableFilterComposer get constraintId {
+    final $$NutritionUserConstraintsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.constraintId,
+          referencedTable: $state.db.nutritionUserConstraints,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionUserConstraintsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionUserConstraints,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  ComposableFilter nutritionSnapshotConstraintResultEvidenceRefs(
+    ComposableFilter Function(
+      $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer
+    composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $state.db.nutritionSnapshotConstraintResultEvidence,
+      getReferencedColumn: (t) => t.resultId,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionSnapshotConstraintResultEvidence,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$NutritionSnapshotConstraintResultsTableOrderingComposer
+    extends
+        OrderingComposer<
+          _$AppDatabase,
+          $NutritionSnapshotConstraintResultsTable
+        > {
+  $$NutritionSnapshotConstraintResultsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get result => $state.composableBuilder(
+    column: $state.table.result,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get ruleVersion => $state.composableBuilder(
+    column: $state.table.ruleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get evaluatedAt => $state.composableBuilder(
+    column: $state.table.evaluatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+    column: $state.table.updatedAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionConsumptionSnapshotsTableOrderingComposer get snapshotId {
+    final $$NutritionConsumptionSnapshotsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.snapshotId,
+          referencedTable: $state.db.nutritionConsumptionSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionConsumptionSnapshotsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionConsumptionSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionUserConstraintsTableOrderingComposer get constraintId {
+    final $$NutritionUserConstraintsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.constraintId,
+          referencedTable: $state.db.nutritionUserConstraints,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionUserConstraintsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionUserConstraints,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionSnapshotConstraintResultEvidenceTableCreateCompanionBuilder =
+    NutritionSnapshotConstraintResultEvidenceCompanion Function({
+      required String id,
+      required String resultId,
+      Value<String?> foodId,
+      Value<String?> snapshotItemId,
+      required String evidenceKind,
+      required String status,
+      required String source,
+      required String version,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$NutritionSnapshotConstraintResultEvidenceTableUpdateCompanionBuilder =
+    NutritionSnapshotConstraintResultEvidenceCompanion Function({
+      Value<String> id,
+      Value<String> resultId,
+      Value<String?> foodId,
+      Value<String?> snapshotItemId,
+      Value<String> evidenceKind,
+      Value<String> status,
+      Value<String> source,
+      Value<String> version,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$NutritionSnapshotConstraintResultEvidenceTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionSnapshotConstraintResultEvidenceTable,
+          NutritionSnapshotConstraintResultEvidenceData,
+          $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer,
+          $$NutritionSnapshotConstraintResultEvidenceTableOrderingComposer,
+          $$NutritionSnapshotConstraintResultEvidenceTableCreateCompanionBuilder,
+          $$NutritionSnapshotConstraintResultEvidenceTableUpdateCompanionBuilder
+        > {
+  $$NutritionSnapshotConstraintResultEvidenceTableTableManager(
+    _$AppDatabase db,
+    $NutritionSnapshotConstraintResultEvidenceTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer(
+                ComposerState(db, table),
+              ),
+          orderingComposer:
+              $$NutritionSnapshotConstraintResultEvidenceTableOrderingComposer(
+                ComposerState(db, table),
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> resultId = const Value.absent(),
+                Value<String?> foodId = const Value.absent(),
+                Value<String?> snapshotItemId = const Value.absent(),
+                Value<String> evidenceKind = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String> version = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionSnapshotConstraintResultEvidenceCompanion(
+                id: id,
+                resultId: resultId,
+                foodId: foodId,
+                snapshotItemId: snapshotItemId,
+                evidenceKind: evidenceKind,
+                status: status,
+                source: source,
+                version: version,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String resultId,
+                Value<String?> foodId = const Value.absent(),
+                Value<String?> snapshotItemId = const Value.absent(),
+                required String evidenceKind,
+                required String status,
+                required String source,
+                required String version,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionSnapshotConstraintResultEvidenceCompanion.insert(
+                id: id,
+                resultId: resultId,
+                foodId: foodId,
+                snapshotItemId: snapshotItemId,
+                evidenceKind: evidenceKind,
+                status: status,
+                source: source,
+                version: version,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer
+    extends
+        FilterComposer<
+          _$AppDatabase,
+          $NutritionSnapshotConstraintResultEvidenceTable
+        > {
+  $$NutritionSnapshotConstraintResultEvidenceTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get evidenceKind => $state.composableBuilder(
+    column: $state.table.evidenceKind,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionSnapshotConstraintResultsTableFilterComposer get resultId {
+    final $$NutritionSnapshotConstraintResultsTableFilterComposer composer =
+        $state.composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.resultId,
+          referencedTable: $state.db.nutritionSnapshotConstraintResults,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotConstraintResultsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotConstraintResults,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodsTableFilterComposer get foodId {
+    final $$NutritionFoodsTableFilterComposer composer = $state.composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.foodId,
+      referencedTable: $state.db.nutritionFoods,
+      getReferencedColumn: (t) => t.id,
+      builder: (joinBuilder, parentComposers) =>
+          $$NutritionFoodsTableFilterComposer(
+            ComposerState(
+              $state.db,
+              $state.db.nutritionFoods,
+              joinBuilder,
+              parentComposers,
+            ),
+          ),
+    );
+    return composer;
+  }
+
+  $$NutritionSnapshotItemsTableFilterComposer get snapshotItemId {
+    final $$NutritionSnapshotItemsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.snapshotItemId,
+          referencedTable: $state.db.nutritionSnapshotItems,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotItemsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$NutritionSnapshotConstraintResultEvidenceTableOrderingComposer
+    extends
+        OrderingComposer<
+          _$AppDatabase,
+          $NutritionSnapshotConstraintResultEvidenceTable
+        > {
+  $$NutritionSnapshotConstraintResultEvidenceTableOrderingComposer(
+    super.$state,
+  );
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get evidenceKind => $state.composableBuilder(
+    column: $state.table.evidenceKind,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get version => $state.composableBuilder(
+    column: $state.table.version,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+    column: $state.table.createdAt,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionSnapshotConstraintResultsTableOrderingComposer get resultId {
+    final $$NutritionSnapshotConstraintResultsTableOrderingComposer composer =
+        $state.composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.resultId,
+          referencedTable: $state.db.nutritionSnapshotConstraintResults,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotConstraintResultsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotConstraintResults,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionFoodsTableOrderingComposer get foodId {
+    final $$NutritionFoodsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.foodId,
+          referencedTable: $state.db.nutritionFoods,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionFoodsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionFoods,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$NutritionSnapshotItemsTableOrderingComposer get snapshotItemId {
+    final $$NutritionSnapshotItemsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.snapshotItemId,
+          referencedTable: $state.db.nutritionSnapshotItems,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionSnapshotItemsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionSnapshotItems,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -41826,5 +68574,126 @@ class $AppDatabaseManager {
       $$ExerciseMuscleMappingsTableTableManager(
         _db,
         _db.exerciseMuscleMappings,
+      );
+  $$NutritionFoodsTableTableManager get nutritionFoods =>
+      $$NutritionFoodsTableTableManager(_db, _db.nutritionFoods);
+  $$NutritionFoodAliasesTableTableManager get nutritionFoodAliases =>
+      $$NutritionFoodAliasesTableTableManager(_db, _db.nutritionFoodAliases);
+  $$NutritionFoodPreparationsTableTableManager get nutritionFoodPreparations =>
+      $$NutritionFoodPreparationsTableTableManager(
+        _db,
+        _db.nutritionFoodPreparations,
+      );
+  $$NutritionLegacyFoodMappingsTableTableManager
+  get nutritionLegacyFoodMappings =>
+      $$NutritionLegacyFoodMappingsTableTableManager(
+        _db,
+        _db.nutritionLegacyFoodMappings,
+      );
+  $$NutritionNutrientDefinitionsTableTableManager
+  get nutritionNutrientDefinitions =>
+      $$NutritionNutrientDefinitionsTableTableManager(
+        _db,
+        _db.nutritionNutrientDefinitions,
+      );
+  $$NutritionFoodNutrientFactsTableTableManager
+  get nutritionFoodNutrientFacts =>
+      $$NutritionFoodNutrientFactsTableTableManager(
+        _db,
+        _db.nutritionFoodNutrientFacts,
+      );
+  $$NutritionQuantityConversionsTableTableManager
+  get nutritionQuantityConversions =>
+      $$NutritionQuantityConversionsTableTableManager(
+        _db,
+        _db.nutritionQuantityConversions,
+      );
+  $$NutritionHouseholdMeasuresTableTableManager
+  get nutritionHouseholdMeasures =>
+      $$NutritionHouseholdMeasuresTableTableManager(
+        _db,
+        _db.nutritionHouseholdMeasures,
+      );
+  $$NutritionVesselCalibrationsTableTableManager
+  get nutritionVesselCalibrations =>
+      $$NutritionVesselCalibrationsTableTableManager(
+        _db,
+        _db.nutritionVesselCalibrations,
+      );
+  $$NutritionRecipesTableTableManager get nutritionRecipes =>
+      $$NutritionRecipesTableTableManager(_db, _db.nutritionRecipes);
+  $$NutritionRecipeVersionsTableTableManager get nutritionRecipeVersions =>
+      $$NutritionRecipeVersionsTableTableManager(
+        _db,
+        _db.nutritionRecipeVersions,
+      );
+  $$NutritionRecipeIngredientsTableTableManager
+  get nutritionRecipeIngredients =>
+      $$NutritionRecipeIngredientsTableTableManager(
+        _db,
+        _db.nutritionRecipeIngredients,
+      );
+  $$NutritionUserCorrectionsTableTableManager get nutritionUserCorrections =>
+      $$NutritionUserCorrectionsTableTableManager(
+        _db,
+        _db.nutritionUserCorrections,
+      );
+  $$NutritionEstimatesTableTableManager get nutritionEstimates =>
+      $$NutritionEstimatesTableTableManager(_db, _db.nutritionEstimates);
+  $$NutritionEstimateNutrientsTableTableManager
+  get nutritionEstimateNutrients =>
+      $$NutritionEstimateNutrientsTableTableManager(
+        _db,
+        _db.nutritionEstimateNutrients,
+      );
+  $$NutritionThalisTableTableManager get nutritionThalis =>
+      $$NutritionThalisTableTableManager(_db, _db.nutritionThalis);
+  $$NutritionThaliItemsTableTableManager get nutritionThaliItems =>
+      $$NutritionThaliItemsTableTableManager(_db, _db.nutritionThaliItems);
+  $$NutritionConsumptionSnapshotsTableTableManager
+  get nutritionConsumptionSnapshots =>
+      $$NutritionConsumptionSnapshotsTableTableManager(
+        _db,
+        _db.nutritionConsumptionSnapshots,
+      );
+  $$NutritionSnapshotItemsTableTableManager get nutritionSnapshotItems =>
+      $$NutritionSnapshotItemsTableTableManager(
+        _db,
+        _db.nutritionSnapshotItems,
+      );
+  $$NutritionSnapshotNutrientsTableTableManager
+  get nutritionSnapshotNutrients =>
+      $$NutritionSnapshotNutrientsTableTableManager(
+        _db,
+        _db.nutritionSnapshotNutrients,
+      );
+  $$NutritionFoodConstraintEvidenceTableTableManager
+  get nutritionFoodConstraintEvidence =>
+      $$NutritionFoodConstraintEvidenceTableTableManager(
+        _db,
+        _db.nutritionFoodConstraintEvidence,
+      );
+  $$NutritionConstraintDefinitionsTableTableManager
+  get nutritionConstraintDefinitions =>
+      $$NutritionConstraintDefinitionsTableTableManager(
+        _db,
+        _db.nutritionConstraintDefinitions,
+      );
+  $$NutritionUserConstraintsTableTableManager get nutritionUserConstraints =>
+      $$NutritionUserConstraintsTableTableManager(
+        _db,
+        _db.nutritionUserConstraints,
+      );
+  $$NutritionSnapshotConstraintResultsTableTableManager
+  get nutritionSnapshotConstraintResults =>
+      $$NutritionSnapshotConstraintResultsTableTableManager(
+        _db,
+        _db.nutritionSnapshotConstraintResults,
+      );
+  $$NutritionSnapshotConstraintResultEvidenceTableTableManager
+  get nutritionSnapshotConstraintResultEvidence =>
+      $$NutritionSnapshotConstraintResultEvidenceTableTableManager(
+        _db,
+        _db.nutritionSnapshotConstraintResultEvidence,
       );
 }

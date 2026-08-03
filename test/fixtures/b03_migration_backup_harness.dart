@@ -49,8 +49,10 @@ class B03V16Fixture {
     );
   }
 
-  static AppDatabase open(File file) =>
-      AppDatabase.executor(NativeDatabase(file));
+  static AppDatabase open(File file) => AppDatabase.executor(
+    NativeDatabase(file),
+    schemaVersionOverride: schemaVersion,
+  );
 
   static int readUserVersion(File file) {
     final db = sqlite.sqlite3.open(file.path, mode: sqlite.OpenMode.readOnly);
@@ -779,6 +781,22 @@ class B03StageAwareFailureHarness {
     }
   }
 
+  Future<void> onNutritionMigrationStage(V17MigrationFailureStage stage) async {
+    final mapped = switch (stage) {
+      V17MigrationFailureStage.validation =>
+        B03FailureStage.migrationValidation,
+      V17MigrationFailureStage.ddlAndDataMutation =>
+        B03FailureStage.migrationDdlAndDataMutation,
+      V17MigrationFailureStage.beforeTransactionCommit =>
+        B03FailureStage.migrationFinalTransaction,
+    };
+    reachedStages.add(mapped);
+    if (enabled && mapped == selectedStage) {
+      injected = true;
+      throw B03InjectedFailure(mapped);
+    }
+  }
+
   Future<void> onBackupStage(BackupRestoreFailureStage stage) async {
     final mapped = switch (stage) {
       BackupRestoreFailureStage.relationshipPrevalidation =>
@@ -803,6 +821,7 @@ class B03StageAwareFailureHarness {
     return AppDatabase.executor(
       NativeDatabase(source),
       v16MigrationFailureStageInjector: onMigrationStage,
+      schemaVersionOverride: B03V16Fixture.schemaVersion,
     );
   }
 
@@ -832,6 +851,13 @@ class B03StageAwareFailureHarness {
         await B03RestoreFailureHarness.removeDatabaseFailure(db);
       }
     }
+  }
+
+  AppDatabase openNutritionMigrating(File source) {
+    return AppDatabase.executor(
+      NativeDatabase(source),
+      v17MigrationFailureStageInjector: onNutritionMigrationStage,
+    );
   }
 }
 

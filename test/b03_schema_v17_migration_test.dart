@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:drift/drift.dart' hide isNull;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/data/database/app_database.dart';
 
 import 'fixtures/b03_migration_backup_harness.dart';
 import 'fixtures/v15_db_fixtures.dart';
@@ -333,6 +336,185 @@ void main() {
         }
       },
     );
+  });
+
+  group('B03-06A schema-v17 boundary', () {
+    test('upgrades the real complete v16 file transactionally', () async {
+      final file = await B03V16Fixture.copyCompleteTo(
+        tempDir,
+        filename: 'migration.db',
+      );
+      final beforeDb = B03V16Fixture.open(file);
+      final before = await B03LogicalSnapshot.capture(beforeDb);
+      await beforeDb.close();
+
+      final db = AppDatabase.executor(NativeDatabase(file));
+      try {
+        await db.customSelect('SELECT 1').get();
+        expect(B03V16Fixture.readUserVersion(file), 17);
+        expect(db.schemaVersion, 17);
+        final after = await B03LogicalSnapshot.capture(db);
+        before.assertLogicallyEquals(after);
+        expect(await db.select(db.nutritionFoods).get(), hasLength(598));
+        expect(await db.select(db.nutritionFoodAliases).get(), hasLength(15));
+        final reviewedMapping = await (db.select(
+          db.nutritionLegacyFoodMappings,
+        )..where((row) => row.legacyFoodItemId.equals(1))).getSingle();
+        expect(reviewedMapping.foodId, 'food-seed-0564');
+        expect(
+          await (db.select(
+            db.nutritionLegacyFoodMappings,
+          )..where((row) => row.legacyFoodItemId.equals(574))).get(),
+          isEmpty,
+          reason: 'custom legacy food identity must not map to catalogue food',
+        );
+        expect(
+          await db.select(db.nutritionNutrientDefinitions).get(),
+          hasLength(18),
+        );
+        expect(await db.select(db.nutritionFoodNutrientFacts).get(), isEmpty);
+        expect(await db.select(db.nutritionRecipes).get(), isEmpty);
+        expect(await db.select(db.nutritionRecipeVersions).get(), isEmpty);
+        expect(await db.select(db.nutritionRecipeIngredients).get(), isEmpty);
+        expect(
+          await db.select(db.nutritionConsumptionSnapshots).get(),
+          isEmpty,
+        );
+        expect(await db.select(db.nutritionSnapshotItems).get(), isEmpty);
+        expect(await db.select(db.nutritionSnapshotNutrients).get(), isEmpty);
+        expect(
+          await db.customSelect('PRAGMA foreign_key_check').get(),
+          isEmpty,
+        );
+      } finally {
+        await db.close();
+      }
+    });
+
+    test('fresh v17 creation exposes the complete approved graph', () async {
+      final db = AppDatabase.memory();
+      try {
+        expect(db.schemaVersion, 17);
+        final tables = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'nutrition_%' ORDER BY name",
+            )
+            .get();
+        expect(tables, hasLength(25));
+        expect(
+          await db.select(db.nutritionNutrientDefinitions).get(),
+          hasLength(18),
+        );
+        expect(
+          await db.customSelect('PRAGMA foreign_key_check').get(),
+          isEmpty,
+        );
+      } finally {
+        await db.close();
+      }
+    });
+
+    test('each supported v17 migration stage rolls back and retries', () async {
+      const stages = [
+        B03FailureStage.migrationValidation,
+        B03FailureStage.migrationDdlAndDataMutation,
+        B03FailureStage.migrationFinalTransaction,
+      ];
+
+      for (final stage in stages) {
+        final file = await B03V16Fixture.copyCompleteTo(
+          tempDir,
+          filename: 'failure-${stage.name}.db',
+        );
+        final harness = B03StageAwareFailureHarness(stage);
+        final failing = harness.openNutritionMigrating(file);
+        try {
+          await failing.customSelect('SELECT 1').get();
+          fail('Expected v17 migration failure at $stage.');
+        } on B03InjectedFailure catch (error) {
+          expect(error.stage, stage);
+        }
+        await failing.close();
+
+        expect(harness.injected, isTrue);
+        expect(harness.reachedStages, contains(stage));
+        expect(B03V16Fixture.readUserVersion(file), 16);
+
+        final legacy = B03V16Fixture.open(file);
+        try {
+          expect(await legacy.customSelect('SELECT 1').get(), isNotEmpty);
+        } finally {
+          await legacy.close();
+        }
+
+        harness.disable();
+        final retry = harness.openNutritionMigrating(file);
+        try {
+          await retry.customSelect('SELECT 1').get();
+          expect(B03V16Fixture.readUserVersion(file), 17);
+          expect(
+            await retry.customSelect('PRAGMA foreign_key_check').get(),
+            isEmpty,
+          );
+        } finally {
+          await retry.close();
+        }
+      }
+    });
+
+    test('v17 constraints reject invalid durable relationships', () async {
+      final db = AppDatabase.memory();
+      try {
+        await db
+            .into(db.nutritionFoods)
+            .insert(
+              NutritionFoodsCompanion.insert(
+                id: 'nutrition-test-food',
+                kind: 'canonical',
+                displayName: 'Test food',
+                locale: 'en-IN',
+                sourceType: 'bundled_asset',
+                lifecycle: 'active',
+              ),
+            );
+        await expectLater(
+          db
+              .into(db.nutritionFoods)
+              .insert(
+                NutritionFoodsCompanion.insert(
+                  id: 'invalid-food',
+                  kind: 'not-a-kind',
+                  displayName: 'Invalid',
+                  locale: 'en-IN',
+                  sourceType: 'bundled_asset',
+                  lifecycle: 'active',
+                ),
+              ),
+          throwsA(isA<Exception>()),
+        );
+        await expectLater(
+          db
+              .into(db.nutritionFoodNutrientFacts)
+              .insert(
+                NutritionFoodNutrientFactsCompanion.insert(
+                  id: 'invalid-fact',
+                  foodId: 'nutrition-test-food',
+                  nutrientId: 'protein',
+                  status: 'known',
+                  source: 'legacy',
+                  factVersion: 1,
+                  basis: 'per_100_grams',
+                  basisQuantity: const Value(100),
+                  basisUnit: const Value('gram'),
+                  amount: const Value(-1),
+                ),
+              ),
+          throwsA(isA<Exception>()),
+        );
+      } finally {
+        await db.close();
+      }
+    });
   });
 }
 
