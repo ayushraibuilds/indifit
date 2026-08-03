@@ -532,13 +532,14 @@ class NutritionCalculationService {
           unresolvedInputs.add('${ingredient.id}:$nutrientId');
         }
         _validateFact(fact, request.registry);
+        final aggregationFact = _factForAggregation(fact);
         contributions.add(
           NutrientContribution(
-            fact: fact,
+            fact: aggregationFact,
             // An absolute fact explicitly means that the upstream boundary
             // has already normalized it for this ingredient. Non-absolute
             // facts are scaled by the typed ingredient quantity below.
-            quantity: fact.basis.kind == NutrientBasisKind.absolute
+            quantity: aggregationFact.basis.kind == NutrientBasisKind.absolute
                 ? null
                 : ingredient.quantity,
           ),
@@ -787,6 +788,29 @@ class NutritionCalculationService {
     } on NutrientError catch (error) {
       throw _fromNutrientError(error);
     }
+  }
+
+  /// Missing and not-applicable facts carry no numeric value to scale.
+  /// Normalize only their aggregation basis so an unresolved fact remains
+  /// incomplete instead of becoming a false unit/basis failure. The original
+  /// fact, including its source basis, remains in the lineage above.
+  NutrientFact _factForAggregation(NutrientFact fact) {
+    if (fact.hasNumericValue ||
+        (fact.status != NutrientFactStatus.missing &&
+            fact.status != NutrientFactStatus.notApplicable)) {
+      return fact;
+    }
+    return NutrientFact(
+      nutrientId: fact.nutrientId,
+      unit: fact.unit,
+      status: fact.status,
+      basis: NutrientBasis(NutrientBasisKind.absolute),
+      source: fact.source,
+      sourceReference: fact.sourceReference,
+      confidence: fact.confidence,
+      factVersion: fact.factVersion,
+      coverageIncomplete: fact.coverageIncomplete,
+    );
   }
 
   NutrientAggregationResult _aggregate({

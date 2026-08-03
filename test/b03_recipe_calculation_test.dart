@@ -255,6 +255,35 @@ void main() {
       expect(result.unresolvedInputs, contains('line-unknown:protein'));
     });
 
+    test('unknown facts do not fail on an incompatible source basis', () {
+      final result = calculate(
+        [
+          calculationIngredient(
+            id: 'line-unknown',
+            foodId: 'food-liquid',
+            quantity: millilitres('100'),
+            facts: {
+              'protein': NutrientFact.missing(
+                nutrientId: 'protein',
+                unit: NutrientUnit.gram,
+                basis: NutrientBasis(NutrientBasisKind.per100Grams),
+                source: NutrientSourceType.importedProvider,
+                factVersion: 'provider-v1',
+              ),
+            },
+          ),
+        ],
+        requestedNutrientIds: {'protein'},
+      );
+
+      expect(result.facts['protein']!.status, NutrientFactStatus.missing);
+      expect(result.completeness.state, NutrientCompletenessState.unknown);
+      expect(
+        result.lineage.ingredients.single.nutrientFacts['protein']!.basis.kind,
+        NutrientBasisKind.per100Grams,
+      );
+    });
+
     test('missing nutrient IDs are returned for the requested set', () {
       final result = calculate(
         [
