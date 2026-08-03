@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -36,36 +37,14 @@ class NutritionConsumptionRepository {
   Future<NutritionConsumptionSnapshot> finalizeConsumption(
     NutritionConsumptionFinalizeRequest request,
   ) async {
-    late final _PreparedConsumption prepared;
-    try {
-      prepared = await _prepare(request);
-    } on NutritionConsumptionError {
-      rethrow;
-    } on QuantityError catch (error) {
-      throw NutritionConsumptionValidationError(
-        'invalid_quantity',
-        error.message,
-        cause: error,
-      );
-    } on NutrientError catch (error) {
-      throw NutritionConsumptionValidationError(
-        'invalid_calculation_result',
-        error.message,
-        cause: error,
-      );
-    }
     final id = _resolvedConsumptionId(request);
-    final now = _nowUtc().toUtc();
+    final requestFingerprint = request.contentFingerprint;
 
     try {
       return await _db.transaction(() async {
         final existingById = await _findById(id);
         if (existingById != null) {
-          return _reuseOrConflict(
-            existingById,
-            request,
-            prepared.contentFingerprint,
-          );
+          return _reuseOrConflict(existingById, request, requestFingerprint);
         }
 
         if (request.commandId != null) {
@@ -77,10 +56,44 @@ class NutritionConsumptionRepository {
             return _reuseOrConflict(
               existingByCommand,
               request,
-              prepared.contentFingerprint,
+              requestFingerprint,
             );
           }
         }
+
+        if (request.correctionId != null) {
+          final existingByCorrection = await _findByCorrectionId(
+            request.userId,
+            request.correctionId!,
+          );
+          if (existingByCorrection != null) {
+            return _reuseOrConflict(
+              existingByCorrection,
+              request,
+              requestFingerprint,
+            );
+          }
+        }
+
+        late final _PreparedConsumption prepared;
+        try {
+          prepared = await _prepare(request);
+        } on NutritionConsumptionError {
+          rethrow;
+        } on QuantityError catch (error) {
+          throw NutritionConsumptionValidationError(
+            'invalid_quantity',
+            error.message,
+            cause: error,
+          );
+        } on NutrientError catch (error) {
+          throw NutritionConsumptionValidationError(
+            'invalid_calculation_result',
+            error.message,
+            cause: error,
+          );
+        }
+        final now = _nowUtc().toUtc();
 
         final existingItemRows =
             await (_db.select(_db.nutritionSnapshotItems)..where(
@@ -96,7 +109,24 @@ class NutritionConsumptionRepository {
           );
         }
 
-        if (request.supersedesSnapshotId != null) {
+        if (request.supersedesSnapshotId == null) {
+          if (request.correctionId != null ||
+              request.correctionReason != null) {
+            throw const NutritionConsumptionValidationError(
+              'incomplete_correction',
+              'Correction metadata requires a predecessor snapshot.',
+            );
+          }
+        } else {
+          if (request.correctionId == null ||
+              request.correctionReason == null ||
+              request.correctionId!.trim().isEmpty ||
+              request.correctionReason!.trim().isEmpty) {
+            throw const NutritionConsumptionValidationError(
+              'incomplete_correction',
+              'Corrections require a non-blank ID and reason.',
+            );
+          }
           final predecessor = await _findById(request.supersedesSnapshotId!);
           if (predecessor == null || predecessor.userId != request.userId) {
             throw const NutritionConsumptionValidationError(
@@ -110,11 +140,10 @@ class NutritionConsumptionRepository {
               'A consumption event cannot supersede itself.',
             );
           }
-          if (request.correctionId == null ||
-              request.correctionReason == null) {
+          if (await _hasSuccessor(request.userId, predecessor.id)) {
             throw const NutritionConsumptionValidationError(
-              'incomplete_correction',
-              'Corrections require an ID and reason.',
+              'correction_predecessor_already_superseded',
+              'A finalized event can have only one correction successor.',
             );
           }
         }
@@ -168,7 +197,9 @@ class NutritionConsumptionRepository {
                     item.input.quantity.dimension,
                   ),
                   quantityUnit: _databaseUnitId(item.input.quantity.unit),
-                  quantityContextId: Value(item.input.id),
+                  quantityContextId: Value(
+                    _quantityContextId(item.input.quantity),
+                  ),
                   sourceRef: Value(item.input.sourceReference),
                   basis: const Value('absolute'),
                   calculationVersion: Value(
@@ -270,10 +301,20 @@ class NutritionConsumptionRepository {
       userId: userId,
       localDate: localDate,
     );
-    final superseded = snapshots
-        .map((snapshot) => snapshot.lineage.supersedesSnapshotId)
-        .whereType<String>()
-        .toSet();
+    // A correction may be finalized on a different local date than the
+    // original event. Resolve supersession across the user's full immutable
+    // snapshot history before selecting the day's active events.
+    final allRows = await (_db.select(
+      _db.nutritionConsumptionSnapshots,
+    )..where((table) => table.userId.equals(userId))).get();
+    final superseded = <String>{};
+    for (final row in allRows) {
+      final raw = row.lineage;
+      if (raw == null) continue;
+      final lineage = _parsePersistedLineage(raw);
+      final predecessor = lineage.supersedesSnapshotId;
+      if (predecessor != null) superseded.add(predecessor);
+    }
     final active = snapshots
         .where((snapshot) => !superseded.contains(snapshot.id))
         .toList(growable: false);
@@ -355,6 +396,7 @@ class NutritionConsumptionRepository {
         NutritionQuantityService.validatePositiveConsumedQuantity(
           item.quantity,
         );
+        _asDouble(item.quantity.amount);
       } on QuantityError catch (error) {
         _invalid('invalid_quantity', error.message, error);
       }
@@ -366,6 +408,12 @@ class NutritionConsumptionRepository {
         _invalid(
           'invalid_consumed_item_identity',
           'Each item must identify exactly one food or recipe version.',
+        );
+      }
+      if (item.sourceType.isEmpty) {
+        _invalid(
+          'missing_item_source_type',
+          'Each item requires a source type.',
         );
       }
       if (hasRecipe) recipeIds.add(item.recipeVersionId!);
@@ -381,6 +429,14 @@ class NutritionConsumptionRepository {
           'Item calculation versions must match the snapshot calculator version.',
         );
       }
+      for (final entry in item.calculation.facts.entries) {
+        if (entry.key != entry.value.nutrientId) {
+          _invalid(
+            'invalid_calculation_result',
+            'Nutrient fact map keys must match nutrient identities.',
+          );
+        }
+      }
       requested.addAll(item.calculation.completeness.requestedNutrientIds);
       late final Map<String, NutrientFact> facts;
       try {
@@ -391,7 +447,11 @@ class NutritionConsumptionRepository {
       for (final fact in facts.values) {
         try {
           fact.validateAgainst(_registry);
+          _asNullableDouble(fact.point);
+          _asNullableDouble(fact.lower);
+          _asNullableDouble(fact.upper);
         } catch (error) {
+          if (error is NutritionConsumptionError) rethrow;
           _invalid(
             'invalid_nutrient_fact',
             'Snapshot nutrient evidence is invalid.',
@@ -439,6 +499,9 @@ class NutritionConsumptionRepository {
           'A recipe-version snapshot must include the referenced recipe item.',
         );
       }
+    }
+    if (request.thaliId != null) {
+      await _validateThaliOwnership(request.thaliId!, request.userId);
     }
     if (request.thaliId != null && recipeVersionId != null) {
       _invalid(
@@ -535,6 +598,24 @@ class NutritionConsumptionRepository {
         'Recipe version is not owned by the requesting user.',
       );
     }
+    if (version.status == 'draft') {
+      _invalid(
+        'mutable_recipe_version',
+        'Consumption snapshots require a published or archived recipe version.',
+      );
+    }
+  }
+
+  Future<void> _validateThaliOwnership(String thaliId, String userId) async {
+    final thali = await (_db.select(
+      _db.nutritionThalis,
+    )..where((table) => table.id.equals(thaliId))).getSingleOrNull();
+    if (thali == null) {
+      _invalid('missing_thali', 'Thali $thaliId was not found.');
+    }
+    if (thali.userId != userId) {
+      _invalid('thali_ownership', 'Thali is not owned by the requesting user.');
+    }
   }
 
   Future<void> _validateFoodReferences(
@@ -575,10 +656,23 @@ class NutritionConsumptionRepository {
     String userId,
   ) async {
     for (final item in items) {
-      final measure = item.evidence['measure'];
-      if (measure is Map) {
-        final measureId = measure['measure_id'];
-        if (measureId is String) {
+      if (item.evidence.containsKey('measure')) {
+        final rawMeasure = item.evidence['measure'];
+        if (rawMeasure is! Map) {
+          _invalid(
+            'invalid_measure_evidence',
+            'Measure evidence must be a structured object.',
+          );
+        }
+        final measure = Map<String, dynamic>.from(rawMeasure);
+        final measureId = measure['measure_id'] ?? measure['id'];
+        if (measureId != null) {
+          if (measureId is! String || measureId.trim().isEmpty) {
+            _invalid(
+              'invalid_measure_evidence',
+              'A measure identity must be a non-blank portable ID.',
+            );
+          }
           final row = await (_db.select(
             _db.nutritionHouseholdMeasures,
           )..where((table) => table.id.equals(measureId))).getSingleOrNull();
@@ -588,9 +682,23 @@ class NutritionConsumptionRepository {
               'Measure $measureId was not found.',
             );
           }
+          final definitionVersion = measure['definition_version'];
+          if (definitionVersion != null &&
+              (definitionVersion is! int || definitionVersion != row.version)) {
+            _invalid(
+              'measure_definition_version_mismatch',
+              'Snapshot measure evidence does not match the stored definition version.',
+            );
+          }
         }
         final calibrationId = measure['calibration_id'];
-        if (calibrationId is String) {
+        if (calibrationId != null) {
+          if (calibrationId is! String || calibrationId.trim().isEmpty) {
+            _invalid(
+              'invalid_measure_evidence',
+              'A calibration identity must be a non-blank portable ID.',
+            );
+          }
           final calibration =
               await (_db.select(_db.nutritionVesselCalibrations)
                     ..where((table) => table.id.equals(calibrationId)))
@@ -609,7 +717,7 @@ class NutritionConsumptionRepository {
             _invalid('missing_vessel', 'Calibration vessel is missing.');
           }
           final expectedVersion = measure['calibration_version'];
-          if (expectedVersion is int &&
+          if (expectedVersion is! int ||
               expectedVersion != calibration.version) {
             _invalid(
               'calibration_version_mismatch',
@@ -618,9 +726,23 @@ class NutritionConsumptionRepository {
           }
         }
       }
-      final transformation = item.evidence['transformation'];
-      if (transformation is Map) {
+      if (item.evidence.containsKey('transformation')) {
+        final rawTransformation = item.evidence['transformation'];
+        if (rawTransformation is! Map) {
+          _invalid(
+            'invalid_transformation_evidence',
+            'Transformation evidence must be a structured object.',
+          );
+        }
+        final transformation = Map<String, dynamic>.from(rawTransformation);
         final transformationId = transformation['id'];
+        if (transformationId != null &&
+            (transformationId is! String || transformationId.trim().isEmpty)) {
+          _invalid(
+            'invalid_transformation_evidence',
+            'A transformation identity must be a non-blank portable ID.',
+          );
+        }
         if (transformationId is String && transformationId != 'none') {
           final row =
               await (_db.select(_db.nutritionQuantityConversions)
@@ -632,9 +754,18 @@ class NutritionConsumptionRepository {
               'Transformation $transformationId was not found.',
             );
           }
+          if (row.foodId != item.foodId ||
+              row.preparationId != item.preparationId) {
+            _invalid(
+              'transformation_identity_mismatch',
+              'Transformation evidence does not belong to the consumed food and preparation.',
+            );
+          }
           final expectedVersion =
               transformation['rule_version'] ?? transformation['version'];
-          if (expectedVersion is String && expectedVersion != row.ruleVersion) {
+          if (expectedVersion is! String ||
+              expectedVersion.trim().isEmpty ||
+              expectedVersion != row.ruleVersion) {
             _invalid(
               'transformation_version_mismatch',
               'Snapshot transformation evidence does not match the stored version.',
@@ -652,6 +783,37 @@ class NutritionConsumptionRepository {
     return row == null ? null : _readSnapshot(row.id, row.userId);
   }
 
+  Future<NutritionConsumptionSnapshot?> _findByCorrectionId(
+    String userId,
+    String correctionId,
+  ) async {
+    final rows = await (_db.select(
+      _db.nutritionConsumptionSnapshots,
+    )..where((table) => table.userId.equals(userId))).get();
+    for (final row in rows) {
+      final raw = row.lineage;
+      if (raw == null) continue;
+      final lineage = _parsePersistedLineage(raw);
+      if (lineage.correctionId == correctionId) {
+        return _readSnapshot(row.id, userId);
+      }
+    }
+    return null;
+  }
+
+  Future<bool> _hasSuccessor(String userId, String predecessorId) async {
+    final rows = await (_db.select(
+      _db.nutritionConsumptionSnapshots,
+    )..where((table) => table.userId.equals(userId))).get();
+    for (final row in rows) {
+      final raw = row.lineage;
+      if (raw == null) continue;
+      final lineage = _parsePersistedLineage(raw);
+      if (lineage.supersedesSnapshotId == predecessorId) return true;
+    }
+    return false;
+  }
+
   Future<NutritionConsumptionSnapshot?> _findByCommand(
     String userId,
     String commandId,
@@ -662,22 +824,75 @@ class NutritionConsumptionRepository {
     for (final row in rows) {
       final raw = row.lineage;
       if (raw == null) continue;
-      try {
-        final lineage = NutritionConsumptionLineage.fromJson(jsonDecode(raw));
-        if (lineage.commandId == commandId) {
-          return _readSnapshot(row.id, userId);
-        }
-      } on NutritionConsumptionError {
-        rethrow;
-      } catch (error) {
-        throw NutritionConsumptionPersistenceError(
-          'invalid_persisted_lineage',
-          'A persisted snapshot lineage envelope is malformed.',
-          cause: error,
-        );
+      final lineage = _parsePersistedLineage(raw);
+      if (lineage.commandId == commandId) {
+        return _readSnapshot(row.id, userId);
       }
     }
     return null;
+  }
+
+  NutritionConsumptionLineage _parsePersistedLineage(String raw) {
+    try {
+      return NutritionConsumptionLineage.fromJson(jsonDecode(raw));
+    } catch (error) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_persisted_lineage',
+        'A persisted snapshot lineage envelope is malformed.',
+        cause: error,
+      );
+    }
+  }
+
+  dynamic _readPersistedJson(String raw, String kind, String ownerId) {
+    try {
+      return jsonDecode(raw);
+    } catch (error) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_${kind}_lineage',
+        'Persisted $kind lineage for $ownerId is not valid JSON.',
+        cause: error,
+      );
+    }
+  }
+
+  NutrientFact _readPersistedFact(Object? raw, String itemId) {
+    try {
+      return NutrientFact.fromJson(raw, _registry);
+    } catch (error) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_nutrient_lineage',
+        'Persisted nutrient evidence for item $itemId is malformed.',
+        cause: error,
+      );
+    }
+  }
+
+  Quantity _readPersistedQuantity(Object? raw, String itemId) {
+    try {
+      if (raw is! Map) {
+        throw const FormatException('quantity must be an object');
+      }
+      return Quantity.fromJson(Map<String, dynamic>.from(raw));
+    } catch (error) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_snapshot_quantity',
+        'Persisted quantity evidence for item $itemId is malformed.',
+        cause: error,
+      );
+    }
+  }
+
+  String? _optionalLineageString(Map raw, String key) {
+    final value = raw[key];
+    if (value == null) return null;
+    if (value is! String || value.trim().isEmpty) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_snapshot_lineage',
+        'Persisted snapshot lineage field $key is malformed.',
+      );
+    }
+    return value;
   }
 
   NutritionConsumptionSnapshot _reuseOrConflict(
@@ -717,9 +932,13 @@ class NutritionConsumptionRepository {
         'A finalized snapshot must have a lineage envelope.',
       );
     }
-    final lineage = NutritionConsumptionLineage.fromJson(
-      jsonDecode(lineageRaw),
-    );
+    final lineage = _parsePersistedLineage(lineageRaw);
+    if (lineage.evidence['totals'] is! Map) {
+      throw const NutritionConsumptionPersistenceError(
+        'missing_snapshot_totals',
+        'Snapshot lineage must preserve the calculated result evidence.',
+      );
+    }
     final evidenceItems = lineage.evidence['items'];
     if (evidenceItems is! Map) {
       throw const NutritionConsumptionPersistenceError(
@@ -738,6 +957,29 @@ class NutritionConsumptionRepository {
         'A persisted snapshot cannot be read without items.',
       );
     }
+    final itemIds = itemRows.map((row) => row.id).toSet();
+    if (itemIds.length != itemRows.length) {
+      throw const NutritionConsumptionPersistenceError(
+        'duplicate_consumed_item_id',
+        'Persisted snapshot item IDs must be unique.',
+      );
+    }
+    final positions = itemRows.map((row) => row.position).toList()..sort();
+    if (!_sameInts(positions, List<int>.generate(itemRows.length, (i) => i))) {
+      throw const NutritionConsumptionPersistenceError(
+        'invalid_item_position',
+        'Persisted snapshot item positions must be contiguous from zero.',
+      );
+    }
+    final evidenceItemKeys = evidenceItems.keys.toList(growable: false);
+    if (evidenceItemKeys.any((key) => key is! String) ||
+        evidenceItemKeys.length != itemIds.length ||
+        !itemIds.containsAll(evidenceItemKeys.cast<String>())) {
+      throw const NutritionConsumptionPersistenceError(
+        'snapshot_item_lineage_mismatch',
+        'Snapshot item lineage contains a different item set than the graph.',
+      );
+    }
     final nutrientRows =
         await (_db.select(_db.nutritionSnapshotNutrients)
               ..where((table) => table.snapshotId.equals(id))
@@ -747,12 +989,19 @@ class NutritionConsumptionRepository {
               ]))
             .get();
     final factsByItem = <String, Map<String, NutrientFact>>{};
+    final calculationFingerprintByItem = <String, String>{};
     for (final row in nutrientRows) {
       final itemId = row.itemId;
       if (itemId == null) {
         throw const NutritionConsumptionPersistenceError(
           'invalid_nutrient_owner',
           'Snapshot nutrient rows must belong to an item.',
+        );
+      }
+      if (!itemIds.contains(itemId)) {
+        throw const NutritionConsumptionPersistenceError(
+          'cross_snapshot_nutrient_owner',
+          'Snapshot nutrient rows must belong to an item in this snapshot.',
         );
       }
       final raw = row.lineage;
@@ -762,47 +1011,111 @@ class NutritionConsumptionRepository {
           'Snapshot nutrient rows must preserve exact nutrient facts.',
         );
       }
-      final factEnvelope = jsonDecode(raw);
-      if (factEnvelope is! Map || factEnvelope['fact'] == null) {
+      final factEnvelope = _readPersistedJson(raw, 'nutrient', itemId);
+      if (factEnvelope is! Map ||
+          factEnvelope['fact'] == null ||
+          factEnvelope['item_id'] != itemId ||
+          factEnvelope['calculation_fingerprint'] is! String ||
+          (factEnvelope['calculation_fingerprint'] as String).trim().isEmpty) {
         throw const NutritionConsumptionPersistenceError(
           'invalid_nutrient_lineage',
           'Snapshot nutrient lineage is malformed.',
         );
       }
-      final fact = NutrientFact.fromJson(factEnvelope['fact'], _registry);
+      final fact = _readPersistedFact(factEnvelope['fact'], itemId);
       if (row.nutrientId != fact.nutrientId ||
           row.status != fact.status.stableId ||
           row.unit != fact.unit.stableId ||
-          row.factVersion != fact.factVersion) {
+          row.factVersion != fact.factVersion ||
+          row.basis != fact.basis.kind.stableId ||
+          !_persistedAmountMatches(fact.point, row.amount) ||
+          !_persistedAmountMatches(fact.lower, row.lower) ||
+          !_persistedAmountMatches(fact.upper, row.upper)) {
         throw const NutritionConsumptionPersistenceError(
           'nutrient_row_mismatch',
           'Snapshot nutrient projection disagrees with its immutable fact.',
         );
       }
-      factsByItem.putIfAbsent(itemId, () => {})[fact.nutrientId] = fact;
+      final itemFacts = factsByItem.putIfAbsent(itemId, () => {});
+      if (itemFacts.containsKey(fact.nutrientId)) {
+        throw const NutritionConsumptionPersistenceError(
+          'duplicate_snapshot_nutrient',
+          'A snapshot item cannot contain duplicate nutrient rows.',
+        );
+      }
+      itemFacts[fact.nutrientId] = fact;
+      final fingerprint = factEnvelope['calculation_fingerprint'] as String;
+      final previousFingerprint = calculationFingerprintByItem[itemId];
+      if (previousFingerprint != null && previousFingerprint != fingerprint) {
+        throw const NutritionConsumptionPersistenceError(
+          'calculation_lineage_mismatch',
+          'Snapshot nutrient rows disagree about the item calculation fingerprint.',
+        );
+      }
+      calculationFingerprintByItem[itemId] = fingerprint;
+    }
+    for (final itemId in itemIds) {
+      if ((factsByItem[itemId] ?? const {}).isEmpty) {
+        throw const NutritionConsumptionPersistenceError(
+          'missing_snapshot_nutrients',
+          'Every persisted snapshot item must preserve nutrient rows.',
+        );
+      }
     }
     final snapshotItems = <NutritionConsumptionSnapshotItem>[];
     for (final row in itemRows) {
       final raw = evidenceItems[row.id];
-      if (raw is! Map || raw['quantity'] is! Map) {
+      if (raw is! Map ||
+          raw['id'] != row.id ||
+          raw['position'] != row.position ||
+          raw['quantity'] is! Map ||
+          raw['calculation'] is! Map ||
+          raw['evidence'] is! Map) {
         throw NutritionConsumptionPersistenceError(
           'missing_item_lineage',
-          'Snapshot item ${row.id} has no typed quantity evidence.',
+          'Snapshot item ${row.id} has incomplete immutable evidence.',
         );
       }
-      final quantity = Quantity.fromJson(
-        Map<String, dynamic>.from(raw['quantity'] as Map),
+      final quantity = _readPersistedQuantity(raw['quantity'], row.id);
+      final calculationFingerprint = _validatePersistedCalculation(
+        raw['calculation'],
+        itemId: row.id,
+        headerCalculatorVersion: header.calculatorVersion,
+        persistedFacts: factsByItem[row.id]!,
       );
+      if (calculationFingerprintByItem[row.id] != calculationFingerprint) {
+        throw NutritionConsumptionPersistenceError(
+          'calculation_lineage_mismatch',
+          'Snapshot item ${row.id} has inconsistent calculation lineage.',
+        );
+      }
+      if (row.quantityValue != _quantityProjection(quantity.amount) ||
+          row.quantityDimension != _dimensionId(quantity.dimension) ||
+          row.quantityUnit != _databaseUnitId(quantity.unit) ||
+          row.quantityContextId != _quantityContextId(quantity) ||
+          row.basis != 'absolute' ||
+          row.calculationVersion != header.calculatorVersion ||
+          row.foodId != _optionalLineageString(raw, 'food_id') ||
+          row.recipeVersionId !=
+              _optionalLineageString(raw, 'recipe_version_id') ||
+          row.preparationId != _optionalLineageString(raw, 'preparation_id') ||
+          row.sourceRef != _optionalLineageString(raw, 'source_reference')) {
+        throw NutritionConsumptionPersistenceError(
+          'snapshot_projection_mismatch',
+          'Snapshot item projection disagrees with its immutable lineage.',
+        );
+      }
       snapshotItems.add(
         NutritionConsumptionSnapshotItem(
           id: row.id,
           position: row.position,
-          sourceType: raw['source_type'] as String? ?? header.sourceType,
+          sourceType:
+              _optionalLineageString(raw, 'source_type') ?? header.sourceType,
           foodId: row.foodId,
           recipeVersionId: row.recipeVersionId,
           preparationId: row.preparationId,
-          sourceReference: raw['source_reference'] as String?,
-          displayLabel: raw['display_label'] as String?,
+          sourceReference: _optionalLineageString(raw, 'source_reference'),
+          displayLabel: _optionalLineageString(raw, 'display_label'),
           quantity: quantity,
           facts: Map.unmodifiable(factsByItem[row.id] ?? const {}),
         ),
@@ -816,6 +1129,30 @@ class NutritionConsumptionRepository {
       ),
       requestedNutrientIds: requested.toSet(),
     );
+    final expectedCompleteness = _readCompleteness(lineage);
+    if (!_sameCompleteness(expectedCompleteness, totals.completeness) ||
+        header.completeness != totals.completeness.state.name ||
+        lineage.evidence['calculator_version'] != header.calculatorVersion ||
+        lineage.evidence['nutrient_registry_version'] != _registry.version) {
+      throw const NutritionConsumptionPersistenceError(
+        'snapshot_result_mismatch',
+        'Snapshot header, lineage, and nutrient rows disagree.',
+      );
+    }
+    _validatePersistedTotals(lineage.evidence['totals'], totals);
+    final itemRecipeIds = itemRows
+        .map((row) => row.recipeVersionId)
+        .whereType<String>()
+        .toSet();
+    final derivedRecipeId = itemRecipeIds.length == 1
+        ? itemRecipeIds.single
+        : null;
+    if (itemRecipeIds.length > 1 || header.recipeVersionId != derivedRecipeId) {
+      throw const NutritionConsumptionPersistenceError(
+        'recipe_version_mismatch',
+        'Snapshot header and item recipe ancestry disagree.',
+      );
+    }
     return NutritionConsumptionSnapshot(
       id: header.id,
       userId: header.userId,
@@ -844,15 +1181,162 @@ class NutritionConsumptionRepository {
         'Snapshot completeness evidence is missing.',
       );
     }
-    return NutrientCompleteness.fromJson(raw);
+    try {
+      return NutrientCompleteness.fromJson(raw);
+    } catch (error) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_completeness',
+        'Snapshot completeness evidence is malformed.',
+        cause: error,
+      );
+    }
   }
+
+  String _validatePersistedCalculation(
+    Object? raw, {
+    required String itemId,
+    required String headerCalculatorVersion,
+    required Map<String, NutrientFact> persistedFacts,
+  }) {
+    if (raw is! Map ||
+        raw['calculator_version'] is! String ||
+        (raw['calculator_version'] as String).trim().isEmpty ||
+        raw['nutrient_registry_version'] is! int ||
+        raw['calculation_fingerprint'] is! String ||
+        (raw['calculation_fingerprint'] as String).trim().isEmpty ||
+        raw['facts'] is! Map ||
+        raw['completeness'] is! Map ||
+        raw['lineage'] is! Map) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_calculation_lineage',
+        'Persisted calculation evidence for item $itemId is malformed.',
+      );
+    }
+    final calculatorVersion = raw['calculator_version'] as String;
+    if (calculatorVersion != headerCalculatorVersion ||
+        raw['nutrient_registry_version'] != _registry.version) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_calculation_lineage',
+        'Persisted calculation evidence for item $itemId uses an unsupported version.',
+      );
+    }
+    try {
+      NutrientCompleteness.fromJson(raw['completeness']);
+    } catch (error) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_calculation_lineage',
+        'Persisted completeness evidence for item $itemId is malformed.',
+        cause: error,
+      );
+    }
+    final rawFacts = raw['facts'] as Map;
+    final rawFactKeys = rawFacts.keys.toList(growable: false);
+    if (rawFactKeys.any((key) => key is! String)) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_calculation_lineage',
+        'Persisted calculation facts for item $itemId have invalid IDs.',
+      );
+    }
+    for (final key in rawFactKeys.cast<String>()) {
+      final fact = _readPersistedFact(rawFacts[key], itemId);
+      if (fact.nutrientId != key ||
+          fact.basis.kind != NutrientBasisKind.absolute ||
+          !_sameFact(fact, persistedFacts[key])) {
+        throw NutritionConsumptionPersistenceError(
+          'calculation_lineage_mismatch',
+          'Persisted calculation facts for item $itemId disagree with nutrient rows.',
+        );
+      }
+    }
+    return raw['calculation_fingerprint'] as String;
+  }
+
+  void _validatePersistedTotals(
+    Object? raw,
+    NutrientAggregationResult expected,
+  ) {
+    if (raw is! Map || raw['facts'] is! Map) {
+      throw const NutritionConsumptionPersistenceError(
+        'invalid_snapshot_totals',
+        'Persisted snapshot totals are malformed.',
+      );
+    }
+    final rawFacts = raw['facts'] as Map;
+    final keys = rawFacts.keys.toList(growable: false);
+    if (keys.any((key) => key is! String) ||
+        keys.length != expected.facts.length ||
+        !expected.facts.keys.toSet().containsAll(keys.cast<String>())) {
+      throw const NutritionConsumptionPersistenceError(
+        'snapshot_result_mismatch',
+        'Persisted snapshot totals contain a different nutrient set.',
+      );
+    }
+    for (final key in keys.cast<String>()) {
+      final fact = _readPersistedFact(rawFacts[key], 'totals');
+      if (fact.basis.kind != NutrientBasisKind.absolute ||
+          !_sameFact(fact, expected.facts[key])) {
+        throw const NutritionConsumptionPersistenceError(
+          'snapshot_result_mismatch',
+          'Persisted snapshot totals disagree with nutrient rows.',
+        );
+      }
+    }
+  }
+
+  static bool _sameCompleteness(
+    NutrientCompleteness left,
+    NutrientCompleteness right,
+  ) =>
+      left.state == right.state &&
+      _sameStrings(left.requestedNutrientIds, right.requestedNutrientIds) &&
+      _sameStrings(left.availableNutrientIds, right.availableNutrientIds) &&
+      _sameStrings(left.missingNutrientIds, right.missingNutrientIds) &&
+      _sameStrings(left.estimatedNutrientIds, right.estimatedNutrientIds) &&
+      _sameStrings(
+        left.notApplicableNutrientIds,
+        right.notApplicableNutrientIds,
+      ) &&
+      _sameStrings(
+        left.partiallyKnownNutrientIds,
+        right.partiallyKnownNutrientIds,
+      );
+
+  static bool _sameStrings(Iterable<String> left, Iterable<String> right) {
+    final leftList = left.toList();
+    final rightList = right.toList();
+    if (leftList.length != rightList.length) return false;
+    for (var index = 0; index < leftList.length; index++) {
+      if (leftList[index] != rightList[index]) return false;
+    }
+    return true;
+  }
+
+  static bool _sameFact(NutrientFact? left, NutrientFact? right) {
+    if (left == null || right == null) return left == right;
+    return jsonEncode(_canonicalSnapshotJson(left.toJson())) ==
+        jsonEncode(_canonicalSnapshotJson(right.toJson()));
+  }
+
+  static bool _persistedAmountMatches(
+    NutrientAmount? amount,
+    double? persisted,
+  ) {
+    if (amount == null) return persisted == null;
+    if (persisted == null || !persisted.isFinite) return false;
+    return double.parse(amount.value.toString()) == persisted;
+  }
+
+  static double _quantityProjection(QuantityAmount amount) =>
+      double.parse(amount.toString());
 
   String _resolvedConsumptionId(NutritionConsumptionFinalizeRequest request) {
     final supplied = request.consumptionId?.trim();
     if (supplied != null && supplied.isNotEmpty) return supplied;
     final command = request.commandId?.trim();
     if (command != null && command.isNotEmpty) {
-      return 'consumption-${request.contentFingerprint.substring(0, 32)}';
+      final key = jsonEncode([request.userId.trim(), command]);
+      final digest = sha256.convert(utf8.encode(key)).toString();
+      return 'consumption-${digest.substring(0, 32)}';
     }
     return _uuid.v4();
   }
@@ -877,11 +1361,45 @@ class NutritionConsumptionRepository {
         : 'estimated';
   }
 
-  static double _asDouble(QuantityAmount amount) =>
-      double.parse(amount.toString());
+  static double _asDouble(QuantityAmount amount) {
+    final value = double.parse(amount.toString());
+    if (!value.isFinite || !_roundTripsExactly(amount, value)) {
+      throw const NutritionConsumptionValidationError(
+        'precision_overflow',
+        'A persisted quantity cannot be represented exactly by the database numeric projection.',
+      );
+    }
+    return value;
+  }
 
-  static double? _asNullableDouble(NutrientAmount? amount) =>
-      amount == null ? null : double.parse(amount.value.toString());
+  static double? _asNullableDouble(NutrientAmount? amount) {
+    if (amount == null) return null;
+    final value = double.parse(amount.value.toString());
+    if (!value.isFinite || !_roundTripsExactly(amount.value, value)) {
+      throw const NutritionConsumptionValidationError(
+        'precision_overflow',
+        'A persisted nutrient value cannot be represented exactly by the database numeric projection.',
+      );
+    }
+    return value;
+  }
+
+  static bool _roundTripsExactly(QuantityAmount amount, double value) {
+    try {
+      return QuantityAmount.fromNum(value) == amount;
+    } on QuantityError {
+      return false;
+    }
+  }
+
+  static String? _quantityContextId(Quantity quantity) {
+    final context = quantity.context;
+    return context.householdMeasure?.calibrationId ??
+        context.conversion?.vesselCalibrationId ??
+        context.conversion?.yieldTransformationId ??
+        context.conversion?.servingDefinitionId ??
+        context.servingDefinition?.id;
+  }
 
   static String _dimensionId(QuantityDimension dimension) =>
       switch (dimension) {
@@ -950,4 +1468,17 @@ extension<T> on Iterable<T> {
     }
     return value;
   }
+}
+
+dynamic _canonicalSnapshotJson(Object? value) {
+  if (value is Map) {
+    final keys = value.keys.map((key) => key.toString()).toList()..sort();
+    return <String, dynamic>{
+      for (final key in keys) key: _canonicalSnapshotJson(value[key]),
+    };
+  }
+  if (value is Iterable) {
+    return value.map(_canonicalSnapshotJson).toList(growable: false);
+  }
+  return value;
 }

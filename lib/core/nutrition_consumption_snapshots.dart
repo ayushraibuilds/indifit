@@ -56,23 +56,53 @@ class NutritionConsumptionLineage {
 
   NutritionConsumptionLineage({
     required this.contentFingerprint,
-    this.commandId,
-    this.supersedesSnapshotId,
-    this.correctionId,
-    this.correctionReason,
+    String? commandId,
+    String? supersedesSnapshotId,
+    String? correctionId,
+    String? correctionReason,
     Map<String, dynamic> evidence = const {},
-  }) : evidence = _immutableJsonMap(evidence) {
+  }) : commandId = commandId?.trim(),
+       supersedesSnapshotId = supersedesSnapshotId?.trim(),
+       correctionId = correctionId?.trim(),
+       correctionReason = correctionReason?.trim(),
+       evidence = _immutableJsonMap(evidence) {
     if (contentFingerprint.trim().isEmpty) {
       throw const NutritionConsumptionValidationError(
         'missing_lineage_fingerprint',
         'A calculation/content fingerprint is required.',
       );
     }
-    if (commandId != null && commandId!.trim().isEmpty) {
+    if (commandId != null && commandId.trim().isEmpty) {
       throw const NutritionConsumptionValidationError(
         'invalid_command_id',
         'A command ID cannot be blank.',
       );
+    }
+    if (supersedesSnapshotId != null && supersedesSnapshotId.isEmpty) {
+      throw const NutritionConsumptionValidationError(
+        'invalid_correction_predecessor',
+        'A correction predecessor ID cannot be blank.',
+      );
+    }
+    if (correctionId != null && correctionId.isEmpty) {
+      throw const NutritionConsumptionValidationError(
+        'invalid_correction_id',
+        'A correction ID cannot be blank.',
+      );
+    }
+    if (correctionReason != null && correctionReason.isEmpty) {
+      throw const NutritionConsumptionValidationError(
+        'invalid_correction_reason',
+        'A correction reason cannot be blank.',
+      );
+    }
+    for (final entry in this.evidence.entries) {
+      if (entry.key.trim().isEmpty) {
+        throw const NutritionConsumptionValidationError(
+          'invalid_lineage',
+          'Lineage evidence keys cannot be blank.',
+        );
+      }
     }
   }
 
@@ -152,6 +182,14 @@ class NutritionConsumptionCalculationSnapshot {
         'Calculator version and fingerprint are required.',
       );
     }
+    for (final entry in this.facts.entries) {
+      if (entry.key != entry.value.nutrientId) {
+        throw const NutritionConsumptionValidationError(
+          'invalid_calculation_result',
+          'Nutrient fact map keys must match nutrient identities.',
+        );
+      }
+    }
     for (final fact in this.facts.values) {
       if (fact.basis.kind != NutrientBasisKind.absolute) {
         throw const NutritionConsumptionValidationError(
@@ -225,18 +263,25 @@ class NutritionConsumptionItemInput {
   final Map<String, dynamic> evidence;
 
   NutritionConsumptionItemInput({
-    required this.id,
+    required String id,
     required this.position,
-    required this.sourceType,
-    this.foodId,
-    this.recipeVersionId,
-    this.preparationId,
-    this.sourceReference,
-    this.displayLabel,
+    required String sourceType,
+    String? foodId,
+    String? recipeVersionId,
+    String? preparationId,
+    String? sourceReference,
+    String? displayLabel,
     required this.quantity,
     required this.calculation,
     Map<String, dynamic> evidence = const {},
-  }) : evidence = _immutableJsonMap(evidence);
+  }) : id = id.trim(),
+       sourceType = sourceType.trim(),
+       foodId = _trimOptional(foodId),
+       recipeVersionId = _trimOptional(recipeVersionId),
+       preparationId = _trimOptional(preparationId),
+       sourceReference = _trimOptional(sourceReference),
+       displayLabel = _trimOptional(displayLabel),
+       evidence = _immutableJsonMap(evidence);
 
   Map<String, dynamic> toLineageJson() => {
     'id': id,
@@ -273,26 +318,40 @@ class NutritionConsumptionFinalizeRequest {
   final String? correctionReason;
 
   NutritionConsumptionFinalizeRequest({
-    required this.userId,
-    this.consumptionId,
-    this.commandId,
+    required String userId,
+    String? consumptionId,
+    String? commandId,
     required DateTime loggedAtUtc,
-    required this.mealCategory,
-    this.mealGroupId,
-    required this.sourceType,
-    this.recipeVersionId,
-    this.thaliId,
-    this.localDate,
-    this.timezoneId,
-    required this.calculatorVersion,
+    required String mealCategory,
+    String? mealGroupId,
+    required String sourceType,
+    String? recipeVersionId,
+    String? thaliId,
+    String? localDate,
+    String? timezoneId,
+    required String calculatorVersion,
     required Iterable<NutritionConsumptionItemInput> items,
     Map<String, dynamic> evidence = const {},
-    this.supersedesSnapshotId,
-    this.correctionId,
-    this.correctionReason,
-  }) : loggedAtUtc = loggedAtUtc.toUtc(),
+    String? supersedesSnapshotId,
+    String? correctionId,
+    String? correctionReason,
+  }) : userId = userId.trim(),
+       consumptionId = consumptionId?.trim(),
+       commandId = commandId?.trim(),
+       loggedAtUtc = loggedAtUtc.toUtc(),
+       mealCategory = mealCategory.trim(),
+       mealGroupId = _trimOptional(mealGroupId),
+       sourceType = sourceType.trim(),
+       recipeVersionId = _trimOptional(recipeVersionId),
+       thaliId = _trimOptional(thaliId),
+       localDate = _trimOptional(localDate),
+       timezoneId = _trimOptional(timezoneId),
+       calculatorVersion = calculatorVersion.trim(),
        items = List.unmodifiable(items),
-       evidence = _immutableJsonMap(evidence);
+       evidence = _immutableJsonMap(evidence),
+       supersedesSnapshotId = _trimOptional(supersedesSnapshotId),
+       correctionId = correctionId?.trim(),
+       correctionReason = correctionReason?.trim();
 
   Map<String, dynamic> canonicalContentJson() => {
     'user_id': userId,
@@ -414,4 +473,22 @@ dynamic _canonicalizeJson(Object? value) {
 }
 
 Map<String, dynamic> _immutableJsonMap(Map<String, dynamic> value) =>
-    Map.unmodifiable(jsonDecode(jsonEncode(value)) as Map<String, dynamic>);
+    _deepImmutableJson(jsonDecode(jsonEncode(value))) as Map<String, dynamic>;
+
+dynamic _deepImmutableJson(Object? value) {
+  if (value is Map) {
+    return Map<String, dynamic>.unmodifiable({
+      for (final entry in value.entries)
+        entry.key.toString(): _deepImmutableJson(entry.value),
+    });
+  }
+  if (value is Iterable) {
+    return List.unmodifiable(value.map(_deepImmutableJson));
+  }
+  return value;
+}
+
+String? _trimOptional(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}

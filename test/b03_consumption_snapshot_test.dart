@@ -71,7 +71,7 @@ void main() {
           consumptionId: 'consumption-1',
           commandId: 'command-1',
           evidence: {
-            'measure': {'id': 'katori-v1', 'calibration_id': 'cal-1'},
+            'measure': {'calibration_id': 'cal-1', 'calibration_version': 1},
             'transformation': {'id': 'none', 'version': 'not_applied'},
           },
         ),
@@ -124,12 +124,12 @@ void main() {
         facts: {'protein': _known('protein', '10')},
         requested: const ['protein'],
       ),
-      consumptionId: 'consumption-1',
       commandId: 'command-1',
     );
     final first = await repository.finalizeConsumption(request);
     final retry = await repository.finalizeConsumption(request);
     expect(retry.id, first.id);
+    expect(first.id, startsWith('consumption-'));
     expect(
       await db.select(db.nutritionConsumptionSnapshots).get(),
       hasLength(1),
@@ -154,6 +154,102 @@ void main() {
         ),
       ),
     );
+  });
+
+  test(
+    'idempotent retry does not re-resolve mutable evidence after commit',
+    () async {
+      await _insertFood(db, 'food-1', 'Food');
+      await db
+          .into(db.nutritionHouseholdMeasures)
+          .insert(
+            NutritionHouseholdMeasuresCompanion.insert(
+              id: 'measure-1',
+              key: 'test_cup',
+              displayName: 'Test cup',
+              dimension: 'volume',
+              baseUnit: 'millilitre',
+              nominalValue: 240,
+              locale: 'en-IN',
+              version: 1,
+            ),
+          );
+      final repository = NutritionConsumptionRepository(
+        db: db,
+        registry: registry,
+      );
+      final request = _request(
+        calculation: _calculation(
+          registry,
+          facts: {'protein': _known('protein', '10')},
+          requested: const ['protein'],
+        ),
+        consumptionId: 'mutable-evidence-consumption',
+        commandId: 'mutable-evidence-command',
+        evidence: {
+          'measure': {'measure_id': 'measure-1', 'definition_version': 1},
+        },
+      );
+      final first = await repository.finalizeConsumption(request);
+      await (db.delete(db.nutritionHouseholdMeasures)).go();
+
+      final retry = await repository.finalizeConsumption(request);
+      expect(retry.id, first.id);
+      expect(
+        await db.select(db.nutritionConsumptionSnapshots).get(),
+        hasLength(1),
+      );
+    },
+  );
+
+  test('rejects an item identity that schema-v17 cannot persist', () async {
+    final repository = NutritionConsumptionRepository(
+      db: db,
+      registry: registry,
+    );
+    await expectLater(
+      repository.finalizeConsumption(
+        NutritionConsumptionFinalizeRequest(
+          userId: 'user-1',
+          consumptionId: 'source-only-consumption',
+          loggedAtUtc: DateTime.utc(2026, 8, 4, 10),
+          mealCategory: 'lunch',
+          sourceType: 'estimate',
+          calculatorVersion: 'snapshot-test-v1',
+          items: [
+            NutritionConsumptionItemInput(
+              id: 'source-only-item',
+              position: 0,
+              sourceType: 'estimate',
+              sourceReference: 'estimate-1',
+              quantity: Quantity.fromDecimal(
+                amount: '1',
+                unit: QuantityUnit.serving,
+                context: const QuantityContext(
+                  servingDefinition: ServingDefinitionReference(
+                    id: 'estimate-serving',
+                    revision: '1',
+                  ),
+                ),
+              ),
+              calculation: _calculation(
+                registry,
+                facts: {'protein': _known('protein', '5')},
+                requested: const ['protein'],
+              ),
+            ),
+          ],
+        ),
+      ),
+      throwsA(
+        isA<NutritionConsumptionValidationError>().having(
+          (error) => error.code,
+          'code',
+          'invalid_consumed_item_identity',
+        ),
+      ),
+    );
+    expect(await db.select(db.nutritionConsumptionSnapshots).get(), isEmpty);
   });
 
   test(
@@ -229,6 +325,81 @@ void main() {
       expect(snapshot.totals.facts['protein']!.point!.value.toString(), '25');
     },
   );
+
+  test('rejects a mutable draft recipe version', () async {
+    await db
+        .into(db.nutritionRecipes)
+        .insert(
+          NutritionRecipesCompanion.insert(
+            id: 'draft-recipe',
+            userId: 'user-1',
+            name: 'Draft recipe',
+            lifecycle: 'active',
+          ),
+        );
+    await db
+        .into(db.nutritionRecipeVersions)
+        .insert(
+          NutritionRecipeVersionsCompanion.insert(
+            id: 'draft-recipe-version',
+            recipeId: 'draft-recipe',
+            versionNumber: 1,
+            status: 'draft',
+            calcRuleVersion: 'snapshot-test-v1',
+            source: '{}',
+          ),
+        );
+    final repository = NutritionConsumptionRepository(
+      db: db,
+      registry: registry,
+    );
+    await expectLater(
+      repository.finalizeConsumption(
+        NutritionConsumptionFinalizeRequest(
+          userId: 'user-1',
+          consumptionId: 'draft-consumption',
+          loggedAtUtc: DateTime.utc(2026, 8, 4, 10),
+          mealCategory: 'lunch',
+          sourceType: 'recipe_version',
+          recipeVersionId: 'draft-recipe-version',
+          localDate: '2026-08-04',
+          timezoneId: 'Asia/Kolkata',
+          calculatorVersion: 'snapshot-test-v1',
+          items: [
+            NutritionConsumptionItemInput(
+              id: 'draft-item',
+              position: 0,
+              sourceType: 'recipe_version',
+              recipeVersionId: 'draft-recipe-version',
+              quantity: Quantity.fromDecimal(
+                amount: '1',
+                unit: QuantityUnit.serving,
+                context: const QuantityContext(
+                  servingDefinition: ServingDefinitionReference(
+                    id: 'draft-serving',
+                    revision: '1',
+                  ),
+                ),
+              ),
+              calculation: _calculation(
+                registry,
+                facts: {'protein': _known('protein', '5')},
+                requested: const ['protein'],
+              ),
+            ),
+          ],
+        ),
+      ),
+      throwsA(
+        isA<NutritionConsumptionValidationError>().having(
+          (error) => error.code,
+          'code',
+          'mutable_recipe_version',
+        ),
+      ),
+    );
+    expect(await db.select(db.nutritionConsumptionSnapshots).get(), isEmpty);
+  });
 
   test('failed finalization rolls back the complete graph', () async {
     await _insertFood(db, 'food-1', 'Food');
@@ -313,6 +484,229 @@ void main() {
     },
   );
 
+  test(
+    'corrections remain exclusive when the successor is on another local date',
+    () async {
+      await _insertFood(db, 'food-1', 'Food');
+      final repository = NutritionConsumptionRepository(
+        db: db,
+        registry: registry,
+      );
+      final original = await repository.finalizeConsumption(
+        _request(
+          calculation: _calculation(
+            registry,
+            facts: {'protein': _known('protein', '10')},
+            requested: const ['protein'],
+          ),
+          consumptionId: 'original-cross-date',
+          commandId: 'original-cross-date-command',
+          itemId: 'cross-date-item-1',
+        ),
+      );
+      await repository.finalizeConsumption(
+        _request(
+          calculation: _calculation(
+            registry,
+            facts: {'protein': _known('protein', '12')},
+            requested: const ['protein'],
+          ),
+          consumptionId: 'successor-cross-date',
+          commandId: 'successor-cross-date-command',
+          itemId: 'cross-date-item-2',
+          localDate: '2026-08-05',
+          supersedesSnapshotId: original.id,
+          correctionId: 'cross-date-correction',
+          correctionReason: 'Corrected on the following day',
+        ),
+      );
+
+      final originalDay = await repository.dailyTotals(
+        userId: 'user-1',
+        localDate: '2026-08-04',
+      );
+      final successorDay = await repository.dailyTotals(
+        userId: 'user-1',
+        localDate: '2026-08-05',
+      );
+      expect(originalDay.snapshotIds, isEmpty);
+      expect(successorDay.snapshotIds, ['successor-cross-date']);
+      expect(
+        successorDay.totals.facts['protein']!.point!.value.toString(),
+        '12',
+      );
+    },
+  );
+
+  test('a finalized event cannot have two correction successors', () async {
+    await _insertFood(db, 'food-1', 'Food');
+    final repository = NutritionConsumptionRepository(
+      db: db,
+      registry: registry,
+    );
+    final original = await repository.finalizeConsumption(
+      _request(
+        calculation: _calculation(
+          registry,
+          facts: {'protein': _known('protein', '10')},
+          requested: const ['protein'],
+        ),
+        consumptionId: 'branch-original',
+        commandId: 'branch-original-command',
+        itemId: 'branch-item-1',
+      ),
+    );
+    await repository.finalizeConsumption(
+      _request(
+        calculation: _calculation(
+          registry,
+          facts: {'protein': _known('protein', '11')},
+          requested: const ['protein'],
+        ),
+        consumptionId: 'branch-successor-1',
+        commandId: 'branch-successor-command-1',
+        itemId: 'branch-item-2',
+        supersedesSnapshotId: original.id,
+        correctionId: 'branch-correction-1',
+        correctionReason: 'First correction',
+      ),
+    );
+    await expectLater(
+      repository.finalizeConsumption(
+        _request(
+          calculation: _calculation(
+            registry,
+            facts: {'protein': _known('protein', '12')},
+            requested: const ['protein'],
+          ),
+          consumptionId: 'branch-successor-2',
+          commandId: 'branch-successor-command-2',
+          itemId: 'branch-item-3',
+          supersedesSnapshotId: original.id,
+          correctionId: 'branch-correction-2',
+          correctionReason: 'Second correction',
+        ),
+      ),
+      throwsA(
+        isA<NutritionConsumptionValidationError>().having(
+          (error) => error.code,
+          'code',
+          'correction_predecessor_already_superseded',
+        ),
+      ),
+    );
+  });
+
+  test(
+    'backup validation rejects a nutrient attached across snapshots',
+    () async {
+      await _insertFood(db, 'food-1', 'Food');
+      final repository = NutritionConsumptionRepository(
+        db: db,
+        registry: registry,
+      );
+      await repository.finalizeConsumption(
+        _request(
+          calculation: _calculation(
+            registry,
+            facts: {'protein': _known('protein', '10')},
+            requested: const ['protein'],
+          ),
+          consumptionId: 'backup-snapshot-1',
+          commandId: 'backup-command-1',
+        ),
+      );
+      await repository.finalizeConsumption(
+        _request(
+          calculation: _calculation(
+            registry,
+            facts: {'protein': _known('protein', '11')},
+            requested: const ['protein'],
+          ),
+          consumptionId: 'backup-snapshot-2',
+          commandId: 'backup-command-2',
+          itemId: 'backup-item-2',
+        ),
+      );
+      final graph = await NutritionBackupGraph.capture(db);
+      final tables = <String, List<Map<String, dynamic>>>{
+        for (final entry in graph.tables.entries)
+          entry.key: [
+            for (final row in entry.value) Map<String, dynamic>.from(row),
+          ],
+      };
+      final nutrientRows = tables['nutrition_snapshot_nutrients']!;
+      final snapshotRows = tables['nutrition_consumption_snapshots']!;
+      nutrientRows.first['snapshot_id'] = snapshotRows.last['id'];
+      expect(
+        () => NutritionBackupGraph.fromJson(
+          NutritionBackupGraph(
+            graphVersion: graph.graphVersion,
+            manifestVersion: graph.manifestVersion,
+            nutrientRegistryVersion: graph.nutrientRegistryVersion,
+            tables: tables,
+          ).toJson(),
+        ),
+        throwsA(
+          isA<BackupV8ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'cross_snapshot_nutrient_owner',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'historical reads and Backup-v8 reject drifted nutrient projections',
+    () async {
+      await _insertFood(db, 'food-1', 'Food');
+      final repository = NutritionConsumptionRepository(
+        db: db,
+        registry: registry,
+      );
+      await repository.finalizeConsumption(
+        _request(
+          calculation: _calculation(
+            registry,
+            facts: {'protein': _known('protein', '10')},
+            requested: const ['protein'],
+          ),
+          consumptionId: 'projection-integrity',
+          commandId: 'projection-integrity-command',
+        ),
+      );
+      await (db.update(
+        db.nutritionSnapshotNutrients,
+      )).write(const NutritionSnapshotNutrientsCompanion(amount: Value(999)));
+      await expectLater(
+        repository.getSnapshot(
+          userId: 'user-1',
+          consumptionId: 'projection-integrity',
+        ),
+        throwsA(
+          isA<NutritionConsumptionPersistenceError>().having(
+            (error) => error.code,
+            'code',
+            'nutrient_row_mismatch',
+          ),
+        ),
+      );
+      final graph = await NutritionBackupGraph.capture(db);
+      expect(
+        () => NutritionBackupGraph.fromJson(graph.toJson()),
+        throwsA(
+          isA<BackupV8ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'nutrient_projection_mismatch',
+          ),
+        ),
+      );
+    },
+  );
+
   test('Backup-v8 captures and restores the snapshot graph', () async {
     await _insertFood(db, 'food-1', 'Food');
     final repository = NutritionConsumptionRepository(
@@ -358,13 +752,15 @@ void main() {
 
 NutritionConsumptionFinalizeRequest _request({
   required NutritionConsumptionCalculationSnapshot calculation,
-  required String consumptionId,
+  String? consumptionId,
   String? commandId,
   Map<String, dynamic> evidence = const {},
   String? supersedesSnapshotId,
   String? correctionId,
   String? correctionReason,
   String itemId = 'item-1',
+  String localDate = '2026-08-04',
+  String timezoneId = 'Asia/Kolkata',
 }) => NutritionConsumptionFinalizeRequest(
   userId: 'user-1',
   consumptionId: consumptionId,
@@ -372,8 +768,8 @@ NutritionConsumptionFinalizeRequest _request({
   loggedAtUtc: DateTime.utc(2026, 8, 4, 10),
   mealCategory: 'lunch',
   sourceType: 'direct_food',
-  localDate: '2026-08-04',
-  timezoneId: 'Asia/Kolkata',
+  localDate: localDate,
+  timezoneId: timezoneId,
   calculatorVersion: 'snapshot-test-v1',
   evidence: evidence,
   supersedesSnapshotId: supersedesSnapshotId,
