@@ -120,6 +120,7 @@ typedef V17MigrationFailureStageInjector =
     NutritionFoodNutrientFacts,
     NutritionQuantityConversions,
     NutritionHouseholdMeasures,
+    NutritionPersonalVessels,
     NutritionVesselCalibrations,
     NutritionRecipes,
     NutritionRecipeVersions,
@@ -289,6 +290,9 @@ class AppDatabase extends _$AppDatabase {
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON;');
+      if (schemaVersionOverride != 16) {
+        await _ensurePreReleaseV17VesselGraph();
+      }
     },
   );
 
@@ -659,6 +663,7 @@ class AppDatabase extends _$AppDatabase {
       await m.createTable(nutritionNutrientDefinitions);
       await m.createTable(nutritionConstraintDefinitions);
       await m.createTable(nutritionHouseholdMeasures);
+      await m.createTable(nutritionPersonalVessels);
       await m.createTable(nutritionRecipes);
       await m.createTable(nutritionThalis);
       await m.createTable(nutritionConsumptionSnapshots);
@@ -831,6 +836,10 @@ class AppDatabase extends _$AppDatabase {
     const triggerNames = [
       'nutrition_vessel_volume_only_insert',
       'nutrition_vessel_volume_only_update',
+      'nutrition_vessel_calibration_same_vessel_insert',
+      'nutrition_vessel_calibration_same_vessel_update',
+      'nutrition_vessel_calibration_single_successor_insert',
+      'nutrition_vessel_calibration_single_successor_update',
       'nutrition_recipe_current_version_insert',
       'nutrition_recipe_current_version_update',
     ];
@@ -855,6 +864,7 @@ class AppDatabase extends _$AppDatabase {
       'nutrition_recipe_versions',
       'nutrition_recipes',
       'nutrition_vessel_calibrations',
+      'nutrition_personal_vessels',
       'nutrition_household_measures',
       'nutrition_quantity_conversions',
       'nutrition_food_nutrient_facts',
@@ -881,7 +891,9 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS nutrition_food_nutrient_facts_current_idx ON nutrition_food_nutrient_facts(food_id, is_current)',
       'CREATE INDEX IF NOT EXISTS nutrition_food_nutrient_facts_nutrient_idx ON nutrition_food_nutrient_facts(nutrient_id)',
       'CREATE INDEX IF NOT EXISTS nutrition_quantity_conversions_food_idx ON nutrition_quantity_conversions(food_id, source_unit, target_unit)',
-      'CREATE INDEX IF NOT EXISTS nutrition_vessel_calibrations_user_idx ON nutrition_vessel_calibrations(user_id, label)',
+      'CREATE INDEX IF NOT EXISTS nutrition_personal_vessels_user_idx ON nutrition_personal_vessels(user_id, archived_at)',
+      'CREATE INDEX IF NOT EXISTS nutrition_vessel_calibrations_vessel_idx ON nutrition_vessel_calibrations(vessel_id, version)',
+      'CREATE INDEX IF NOT EXISTS nutrition_vessel_calibrations_supersedes_idx ON nutrition_vessel_calibrations(supersedes_calibration_id)',
       'CREATE INDEX IF NOT EXISTS nutrition_recipe_versions_recipe_idx ON nutrition_recipe_versions(recipe_id, status)',
       'CREATE INDEX IF NOT EXISTS nutrition_recipe_ingredients_food_idx ON nutrition_recipe_ingredients(food_id)',
       'CREATE INDEX IF NOT EXISTS nutrition_estimates_user_idx ON nutrition_estimates(user_id, created_at)',
@@ -895,14 +907,31 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS nutrition_snapshot_constraint_results_snapshot_idx ON nutrition_snapshot_constraint_results(snapshot_id, result)',
       'CREATE INDEX IF NOT EXISTS nutrition_snapshot_constraint_evidence_result_idx ON nutrition_snapshot_constraint_result_evidence(result_id)',
       'CREATE INDEX IF NOT EXISTS nutrition_snapshot_constraint_evidence_food_idx ON nutrition_snapshot_constraint_result_evidence(food_id)',
-      '''CREATE TRIGGER IF NOT EXISTS nutrition_vessel_volume_only_insert
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_vessel_calibration_same_vessel_insert
          BEFORE INSERT ON nutrition_vessel_calibrations
-         WHEN (SELECT dimension FROM nutrition_household_measures WHERE id = NEW.measure_id) <> 'volume'
-         BEGIN SELECT RAISE(ABORT, 'Vessel calibration requires a volume measure'); END''',
-      '''CREATE TRIGGER IF NOT EXISTS nutrition_vessel_volume_only_update
-         BEFORE UPDATE OF measure_id ON nutrition_vessel_calibrations
-         WHEN (SELECT dimension FROM nutrition_household_measures WHERE id = NEW.measure_id) <> 'volume'
-         BEGIN SELECT RAISE(ABORT, 'Vessel calibration requires a volume measure'); END''',
+         WHEN NEW.supersedes_calibration_id IS NOT NULL AND
+           (SELECT vessel_id FROM nutrition_vessel_calibrations
+            WHERE id = NEW.supersedes_calibration_id) <> NEW.vessel_id
+         BEGIN SELECT RAISE(ABORT, 'Calibration ancestry must remain within one vessel'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_vessel_calibration_same_vessel_update
+         BEFORE UPDATE OF vessel_id, supersedes_calibration_id ON nutrition_vessel_calibrations
+         WHEN NEW.supersedes_calibration_id IS NOT NULL AND
+           (SELECT vessel_id FROM nutrition_vessel_calibrations
+            WHERE id = NEW.supersedes_calibration_id) <> NEW.vessel_id
+         BEGIN SELECT RAISE(ABORT, 'Calibration ancestry must remain within one vessel'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_vessel_calibration_single_successor_insert
+         BEFORE INSERT ON nutrition_vessel_calibrations
+         WHEN NEW.supersedes_calibration_id IS NOT NULL AND EXISTS
+           (SELECT 1 FROM nutrition_vessel_calibrations
+            WHERE supersedes_calibration_id = NEW.supersedes_calibration_id)
+         BEGIN SELECT RAISE(ABORT, 'A calibration may have only one successor'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_vessel_calibration_single_successor_update
+         BEFORE UPDATE OF supersedes_calibration_id ON nutrition_vessel_calibrations
+         WHEN NEW.supersedes_calibration_id IS NOT NULL AND EXISTS
+           (SELECT 1 FROM nutrition_vessel_calibrations
+            WHERE supersedes_calibration_id = NEW.supersedes_calibration_id
+              AND id <> NEW.id)
+         BEGIN SELECT RAISE(ABORT, 'A calibration may have only one successor'); END''',
       '''CREATE TRIGGER IF NOT EXISTS nutrition_recipe_current_version_insert
          BEFORE INSERT ON nutrition_recipes
          WHEN NEW.current_version_id IS NOT NULL AND NOT EXISTS
@@ -917,6 +946,124 @@ class AppDatabase extends _$AppDatabase {
     for (final statement in statements) {
       await customStatement(statement);
     }
+  }
+
+  /// Converts the pre-release v17 calibration-only shape into the corrected
+  /// v17 vessel graph without changing the public schema version. The first
+  /// v17 implementation was never released, so this is a deterministic
+  /// compatibility repair for local databases created from that definition.
+  Future<void> _ensurePreReleaseV17VesselGraph() async {
+    final hasPersonalVessels = await _tableExists('nutrition_personal_vessels');
+    final hasCalibrations = await _tableExists('nutrition_vessel_calibrations');
+    if (hasPersonalVessels) {
+      if (!hasCalibrations ||
+          await _tableHasColumn('nutrition_vessel_calibrations', 'vessel_id')) {
+        return;
+      }
+      throw StateError(
+        'Pre-release v17 vessel graph is partially upgraded and cannot be repaired safely.',
+      );
+    }
+    if (!hasCalibrations) return;
+
+    final hasLegacyFoodColumn = await _tableHasColumn(
+      'nutrition_vessel_calibrations',
+      'food_id',
+    );
+    final hasLegacyPreparationColumn = await _tableHasColumn(
+      'nutrition_vessel_calibrations',
+      'preparation_id',
+    );
+    if (hasLegacyFoodColumn && hasLegacyPreparationColumn) {
+      final contextual = await customSelect('''
+        SELECT 1
+        FROM nutrition_vessel_calibrations
+        WHERE food_id IS NOT NULL OR preparation_id IS NOT NULL
+        LIMIT 1
+      ''').get();
+      if (contextual.isNotEmpty) {
+        throw StateError(
+          'Pre-release vessel calibrations contain food-specific context and cannot be converted to the volume-only v17 contract.',
+        );
+      }
+    }
+
+    await transaction(() async {
+      await customStatement(
+        'DROP TRIGGER IF EXISTS nutrition_vessel_volume_only_insert',
+      );
+      await customStatement(
+        'DROP TRIGGER IF EXISTS nutrition_vessel_volume_only_update',
+      );
+      await customStatement('''
+        CREATE TABLE nutrition_personal_vessels (
+          id TEXT NOT NULL PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          display_name TEXT NOT NULL,
+          vessel_type TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          archived_at INTEGER,
+          CHECK (length(trim(id)) > 0),
+          CHECK (length(trim(user_id)) > 0),
+          CHECK (length(trim(display_name)) > 0)
+        )
+      ''');
+      await customStatement(
+        'ALTER TABLE nutrition_vessel_calibrations RENAME TO nutrition_vessel_calibrations_pre_v17',
+      );
+      await customStatement('''
+        CREATE TABLE nutrition_vessel_calibrations (
+          id TEXT NOT NULL PRIMARY KEY,
+          vessel_id TEXT NOT NULL REFERENCES nutrition_personal_vessels(id),
+          volume_amount REAL NOT NULL,
+          volume_unit TEXT NOT NULL,
+          lower REAL,
+          upper REAL,
+          method TEXT NOT NULL,
+          confidence REAL,
+          supersedes_calibration_id TEXT REFERENCES nutrition_vessel_calibrations(id),
+          version INTEGER NOT NULL,
+          notes TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          UNIQUE (vessel_id, version),
+          CHECK (length(trim(id)) > 0),
+          CHECK (volume_amount > 0),
+          CHECK (volume_unit IN ('millilitre', 'litre')),
+          CHECK (lower IS NULL OR lower > 0),
+          CHECK (upper IS NULL OR upper > 0),
+          CHECK (lower IS NULL OR upper IS NULL OR lower <= upper),
+          CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1)),
+          CHECK (version >= 1),
+          CHECK (supersedes_calibration_id IS NULL OR supersedes_calibration_id <> id)
+        )
+      ''');
+      await customStatement('''
+        INSERT INTO nutrition_personal_vessels
+          (id, user_id, display_name, vessel_type, created_at, updated_at, archived_at)
+        SELECT 'vessel:' || id, user_id, label, NULL, created_at, updated_at, NULL
+        FROM nutrition_vessel_calibrations_pre_v17
+      ''');
+      await customStatement('''
+        INSERT INTO nutrition_vessel_calibrations
+          (id, vessel_id, volume_amount, volume_unit, lower, upper, method,
+           confidence, supersedes_calibration_id, version, notes, created_at, updated_at)
+        SELECT id, 'vessel:' || id, volume_ml, 'millilitre', lower, upper, method,
+               confidence, NULL, 1, NULL, created_at, updated_at
+        FROM nutrition_vessel_calibrations_pre_v17
+      ''');
+      await customStatement('DROP TABLE nutrition_vessel_calibrations_pre_v17');
+    });
+    await _createV17Indexes();
+  }
+
+  Future<bool> _tableExists(String tableName) async {
+    final rows = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      variables: [Variable<String>(tableName)],
+    ).get();
+    return rows.isNotEmpty;
   }
 
   Future<bool> _tableHasColumn(String tableName, String columnName) async {

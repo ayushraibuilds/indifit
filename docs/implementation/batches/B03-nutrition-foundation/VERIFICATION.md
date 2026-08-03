@@ -171,6 +171,20 @@ verdict must be revisited.
 - Protein distribution is descriptive; measured/curated leucine is display-only and thresholds/heuristics are deferred.
 - User identity aliases are allowed only as scoped corrections; unrestricted user-created allergen/conflict rules are not allowed.
 
+### Pre-release dependency-contract remediation
+
+B03-10 was initially blocked because the first merged v17/v8 definitions stored
+only a calibration row and could not represent portable vessel identity,
+duplicate display names, rename-safe ownership, or retained calibration
+supersession. Because schema v17 and Backup v8 have not shipped to users, the
+contract is amended in place rather than version-bumped. Schema v17 now owns a
+separate `nutrition_personal_vessels` table and versioned, same-vessel
+`nutrition_vessel_calibrations` ancestry. Backup v8 exports and restores both
+graphs transactionally. Existing pre-release calibration rows are converted
+one-for-one using `vessel:<calibration-id>` as their deterministic portable
+vessel ID; no labels are merged and food-specific calibration context is
+rejected rather than inferred.
+
 ### Ordinary product questions resolved by the gate
 
 | Question | Automatically accepted B03 default | Consequence |

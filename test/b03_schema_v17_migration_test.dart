@@ -400,7 +400,7 @@ void main() {
               "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'nutrition_%' ORDER BY name",
             )
             .get();
-        expect(tables, hasLength(25));
+        expect(tables, hasLength(26));
         expect(
           await db.select(db.nutritionNutrientDefinitions).get(),
           hasLength(18),
@@ -413,6 +413,100 @@ void main() {
         await db.close();
       }
     });
+
+    test(
+      'repairs pre-release v17 calibration rows into one vessel per calibration',
+      () async {
+        final file = File('${tempDir.path}/pre-release-v17-vessel.db');
+        final original = AppDatabase.executor(NativeDatabase(file));
+        await original.customStatement(
+          'DROP TRIGGER IF EXISTS nutrition_vessel_calibration_same_vessel_insert',
+        );
+        await original.customStatement(
+          'DROP TRIGGER IF EXISTS nutrition_vessel_calibration_same_vessel_update',
+        );
+        await original.customStatement(
+          'DROP TRIGGER IF EXISTS nutrition_vessel_calibration_single_successor_insert',
+        );
+        await original.customStatement(
+          'DROP TRIGGER IF EXISTS nutrition_vessel_calibration_single_successor_update',
+        );
+        await original.customStatement(
+          'DROP TABLE nutrition_vessel_calibrations',
+        );
+        await original.customStatement('DROP TABLE nutrition_personal_vessels');
+        await original.customStatement('''
+          CREATE TABLE nutrition_vessel_calibrations (
+            id TEXT NOT NULL PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            label TEXT NOT NULL,
+            measure_id TEXT NOT NULL,
+            volume_ml REAL NOT NULL,
+            lower REAL,
+            upper REAL,
+            method TEXT NOT NULL,
+            food_id TEXT,
+            preparation_id TEXT,
+            confidence REAL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            UNIQUE (user_id, label)
+          )
+        ''');
+        await original.customStatement('''
+          INSERT INTO nutrition_vessel_calibrations
+            (id, user_id, label, measure_id, volume_ml, method, created_at, updated_at)
+          VALUES
+            ('legacy-cal-1', 'legacy-user', 'Cup', 'measure-cup', 180, 'water_fill', 100, 200),
+            ('legacy-cal-2', 'legacy-user', 'Bowl', 'measure-bowl', 300, 'water_fill', 300, 400)
+        ''');
+        await original.close();
+
+        final repaired = AppDatabase.executor(NativeDatabase(file));
+        try {
+          final vessels = await repaired
+              .select(repaired.nutritionPersonalVessels)
+              .get();
+          expect(vessels, hasLength(2));
+          expect(
+            vessels.map((row) => row.id),
+            containsAll(['vessel:legacy-cal-1', 'vessel:legacy-cal-2']),
+          );
+          expect(
+            vessels.map((row) => row.displayName),
+            containsAll(['Cup', 'Bowl']),
+          );
+          final calibrations = await repaired
+              .select(repaired.nutritionVesselCalibrations)
+              .get();
+          expect(calibrations, hasLength(2));
+          expect(
+            calibrations
+                .singleWhere((row) => row.id == 'legacy-cal-1')
+                .volumeAmount,
+            180,
+          );
+          expect(
+            calibrations
+                .singleWhere((row) => row.id == 'legacy-cal-1')
+                .volumeUnit,
+            'millilitre',
+          );
+          expect(
+            calibrations.every(
+              (row) => row.version == 1 && row.supersedesCalibrationId == null,
+            ),
+            isTrue,
+          );
+          expect(
+            await repaired.customSelect('PRAGMA foreign_key_check').get(),
+            isEmpty,
+          );
+        } finally {
+          await repaired.close();
+        }
+      },
+    );
 
     test('each supported v17 migration stage rolls back and retries', () async {
       const stages = [

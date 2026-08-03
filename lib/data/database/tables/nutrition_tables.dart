@@ -266,20 +266,39 @@ class NutritionHouseholdMeasures extends Table {
   ];
 }
 
-class NutritionVesselCalibrations extends Table {
+class NutritionPersonalVessels extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();
-  TextColumn get label => text()();
-  TextColumn get measureId =>
-      text().references(NutritionHouseholdMeasures, #id)();
-  RealColumn get volumeMl => real()();
+  TextColumn get displayName => text()();
+  TextColumn get vesselType => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get archivedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (length(trim(user_id)) > 0)',
+    'CHECK (length(trim(display_name)) > 0)',
+  ];
+}
+
+class NutritionVesselCalibrations extends Table {
+  TextColumn get id => text()();
+  TextColumn get vesselId => text().references(NutritionPersonalVessels, #id)();
+  RealColumn get volumeAmount => real()();
+  TextColumn get volumeUnit => text()();
   RealColumn get lower => real().nullable()();
   RealColumn get upper => real().nullable()();
   TextColumn get method => text()();
-  TextColumn get foodId => text().nullable().references(NutritionFoods, #id)();
-  TextColumn get preparationId =>
-      text().nullable().references(NutritionFoodPreparations, #id)();
   RealColumn get confidence => real().nullable()();
+  TextColumn get supersedesCalibrationId =>
+      text().nullable().references(NutritionVesselCalibrations, #id)();
+  IntColumn get version => integer()();
+  TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -288,16 +307,20 @@ class NutritionVesselCalibrations extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {userId, label},
+    {vesselId, version},
   ];
 
   @override
   List<String> get customConstraints => [
-    'CHECK (volume_ml > 0)',
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (volume_amount > 0)',
+    "CHECK (volume_unit IN ('millilitre', 'litre'))",
     'CHECK (lower IS NULL OR lower > 0)',
     'CHECK (upper IS NULL OR upper > 0)',
     'CHECK (lower IS NULL OR upper IS NULL OR lower <= upper)',
     'CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1))',
+    'CHECK (version >= 1)',
+    'CHECK (supersedes_calibration_id IS NULL OR supersedes_calibration_id <> id)',
   ];
 }
 
