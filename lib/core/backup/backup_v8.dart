@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/database/app_database.dart';
@@ -342,6 +344,10 @@ class NutritionBackupGraph {
         (await db.select(db.nutritionFoodPreparations).get())
             .map((row) => row.id)
             .toSet();
+    final targetPreparationOwners = {
+      for (final row in await db.select(db.nutritionFoodPreparations).get())
+        row.id: row.foodId,
+    };
     final targetNutrients =
         (await db.select(db.nutritionNutrientDefinitions).get())
             .map((row) => row.id)
@@ -367,6 +373,11 @@ class NutritionBackupGraph {
       'nutrition_food_preparations',
       targetPreparations,
     );
+    final preparationOwners = <String, String>{
+      ...targetPreparationOwners,
+      for (final row in _rows('nutrition_food_preparations'))
+        row['id'] as String: row['food_id'] as String,
+    };
     final nutrients = targetNutrients;
     final measures = known('nutrition_household_measures', const {});
     final recipes = exported['nutrition_recipes'] ?? const <String>{};
@@ -404,7 +415,19 @@ class NutritionBackupGraph {
           row['preparation_id'],
           'conversion preparation_id',
         );
+        if (preparationOwners[row['preparation_id']] != row['food_id']) {
+          throw BackupV8ValidationException(
+            'conversion_preparation_mismatch',
+            'Backup-v8 conversion preparation does not belong to its source food.',
+          );
+        }
       }
+      _validateTransformationTarget(
+        row,
+        foods: foods,
+        preparations: preparations,
+        preparationOwners: preparationOwners,
+      );
     }
     for (final row in _rows('nutrition_vessel_calibrations')) {
       _requireRef(measures, row['measure_id'], 'vessel measure_id');
@@ -519,6 +542,198 @@ class NutritionBackupGraph {
     for (final row in _rows('nutrition_snapshot_constraint_result_evidence')) {
       if (row['food_id'] != null) {
         _requireRef(foods, row['food_id'], 'constraint evidence food_id');
+      }
+    }
+    _validateRecipeVersionGraph();
+  }
+
+  void _validateRecipeVersionGraph() {
+    final recipes = {
+      for (final row in _rows('nutrition_recipes')) row['id'] as String: row,
+    };
+    final versions = {
+      for (final row in _rows('nutrition_recipe_versions'))
+        row['id'] as String: row,
+    };
+
+    for (final row in versions.values) {
+      final versionNumber = row['version_number'];
+      if (versionNumber is! int || versionNumber < 1) {
+        throw BackupV8ValidationException(
+          'invalid_recipe_version_number',
+          'Backup-v8 recipe version numbers must be positive integers.',
+        );
+      }
+      final recipeId = row['recipe_id'];
+      if (recipeId is! String || !recipes.containsKey(recipeId)) {
+        throw BackupV8ValidationException(
+          'missing_reference',
+          'Backup-v8 recipe version references a missing recipe.',
+        );
+      }
+      final rawSource = row['source'];
+      // Older v8 payloads store the legacy provenance value directly (for
+      // example, `user_entered`). Only the structured T07 envelope carries
+      // recipe-graph ancestry that this validator can inspect.
+      if (rawSource is String && !rawSource.trimLeft().startsWith('{')) {
+        continue;
+      }
+      late final Map<String, dynamic> source;
+      try {
+        if (rawSource is! String) {
+          throw const FormatException('Recipe source is not text.');
+        }
+        final decoded = jsonDecode(rawSource);
+        if (decoded is! Map) {
+          throw const FormatException('Recipe source is not an object.');
+        }
+        source = Map<String, dynamic>.from(decoded);
+      } on Object catch (error) {
+        throw BackupV8ValidationException(
+          'malformed_recipe_source',
+          'Backup-v8 recipe source is malformed: $error',
+        );
+      }
+      if (source['contract_version'] != 1 ||
+          source['kind'] is! String ||
+          !{
+            'user_authored',
+            'duplicated',
+            'substituted',
+            'imported',
+            'unknown',
+          }.contains(source['kind'])) {
+        throw BackupV8ValidationException(
+          'unsupported_recipe_source',
+          'Backup-v8 recipe source uses an unsupported contract or kind.',
+        );
+      }
+      for (final field in const [
+        'parent_version_id',
+        'copied_from_version_id',
+        'external_reference',
+        'serving_definition_id',
+        'serving_definition_revision',
+        'serving_definition_source',
+        'note',
+      ]) {
+        final value = source[field];
+        if (value != null && value is! String) {
+          throw BackupV8ValidationException(
+            'malformed_recipe_source',
+            'Backup-v8 recipe source field $field is malformed.',
+          );
+        }
+      }
+      final parentId = source['parent_version_id'] as String?;
+      if (parentId != null) {
+        final parent = versions[parentId];
+        final parentVersionNumber = parent?['version_number'];
+        if (parent == null ||
+            parent['recipe_id'] != recipeId ||
+            parentVersionNumber is! int ||
+            parentVersionNumber >= versionNumber) {
+          throw BackupV8ValidationException(
+            'invalid_recipe_ancestry',
+            'Backup-v8 recipe version ancestry must point to an earlier version of the same recipe.',
+          );
+        }
+      }
+      final copiedFromId = source['copied_from_version_id'] as String?;
+      if (copiedFromId != null && !versions.containsKey(copiedFromId)) {
+        throw BackupV8ValidationException(
+          'missing_reference',
+          'Backup-v8 copied recipe provenance references a missing version.',
+        );
+      }
+    }
+
+    for (final row in recipes.values) {
+      final currentId = row['current_version_id'];
+      if (currentId == null) continue;
+      final current = versions[currentId];
+      if (current == null ||
+          current['recipe_id'] != row['id'] ||
+          current['status'] != 'published') {
+        throw BackupV8ValidationException(
+          'invalid_current_version',
+          'Backup-v8 recipe current version must be a published version owned by the recipe.',
+        );
+      }
+    }
+  }
+
+  /// Quantity-conversion rows keep the target preparation in their typed
+  /// provenance envelope because v17 stores the source food/preparation as
+  /// relational columns. Validate that envelope against the target graph
+  /// before restore so a malformed target cannot bypass foreign-key checks.
+  void _validateTransformationTarget(
+    Map<String, dynamic> row, {
+    required Set<String> foods,
+    required Set<String> preparations,
+    required Map<String, String> preparationOwners,
+  }) {
+    final rawSource = row['source'];
+    late final Map<String, dynamic> metadata;
+    try {
+      if (rawSource is! String) {
+        throw const FormatException('Transformation provenance is not text.');
+      }
+      final decoded = jsonDecode(rawSource);
+      if (decoded is! Map) {
+        throw const FormatException(
+          'Transformation provenance is not an object.',
+        );
+      }
+      metadata = Map<String, dynamic>.from(decoded);
+    } on Object catch (error) {
+      throw BackupV8ValidationException(
+        'malformed_conversion_provenance',
+        'Backup-v8 conversion provenance is malformed: $error',
+      );
+    }
+    if (metadata['contract_version'] != 1) {
+      throw BackupV8ValidationException(
+        'unsupported_conversion_provenance',
+        'Backup-v8 conversion provenance uses an unsupported contract.',
+      );
+    }
+    final sourceFoodId = metadata['source_food_id'];
+    final sourcePreparationId = metadata['source_preparation_id'];
+    final targetFoodId = metadata['target_food_id'];
+    final targetPreparationId = metadata['target_preparation_id'];
+    if (sourceFoodId != row['food_id'] ||
+        sourcePreparationId != row['preparation_id']) {
+      throw BackupV8ValidationException(
+        'conversion_source_mismatch',
+        'Backup-v8 conversion provenance does not match its relational source.',
+      );
+    }
+    if (targetFoodId is! String || targetFoodId.trim().isEmpty) {
+      throw BackupV8ValidationException(
+        'missing_conversion_target',
+        'Backup-v8 conversion provenance requires a target food identity.',
+      );
+    }
+    _requireRef(foods, targetFoodId, 'conversion target food_id');
+    if (targetPreparationId != null) {
+      if (targetPreparationId is! String ||
+          targetPreparationId.trim().isEmpty) {
+        throw BackupV8ValidationException(
+          'invalid_conversion_target_preparation',
+          'Backup-v8 conversion target preparation identity is malformed.',
+        );
+      }
+      _requireRef(
+        preparations,
+        targetPreparationId,
+        'conversion target preparation_id',
+      );
+      if (preparationOwners[targetPreparationId] != targetFoodId) {
+        throw BackupV8ValidationException(
+          'conversion_target_preparation_mismatch',
+          'Backup-v8 conversion target preparation does not belong to its target food.',
+        );
       }
     }
   }
