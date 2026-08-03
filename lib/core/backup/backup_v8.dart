@@ -332,6 +332,9 @@ class NutritionBackupGraph {
     _validateUniqueRows();
     _topologicallySorted([..._rows('nutrition_foods')], 'variant_of_food_id');
     _topologicallySorted([..._rows('nutrition_estimates')], 'supersedes_id');
+    _topologicallySorted([
+      ..._rows('nutrition_vessel_calibrations'),
+    ], 'supersedes_calibration_id');
     _validateRelationships();
   }
 
@@ -380,6 +383,7 @@ class NutritionBackupGraph {
     };
     final nutrients = targetNutrients;
     final measures = known('nutrition_household_measures', const {});
+    final vessels = exported['nutrition_personal_vessels'] ?? const <String>{};
     final recipes = exported['nutrition_recipes'] ?? const <String>{};
     final versions = exported['nutrition_recipe_versions'] ?? const <String>{};
     final constraints = targetConstraints;
@@ -429,19 +433,20 @@ class NutritionBackupGraph {
         preparationOwners: preparationOwners,
       );
     }
+    for (final row in _rows('nutrition_personal_vessels')) {
+      _validateVesselOwner(row);
+    }
     for (final row in _rows('nutrition_vessel_calibrations')) {
-      _requireRef(measures, row['measure_id'], 'vessel measure_id');
-      if (row['food_id'] != null) {
-        _requireRef(foods, row['food_id'], 'vessel food_id');
-      }
-      if (row['preparation_id'] != null) {
+      _requireRef(vessels, row['vessel_id'], 'calibration vessel_id');
+      if (row['supersedes_calibration_id'] != null) {
         _requireRef(
-          preparations,
-          row['preparation_id'],
-          'vessel preparation_id',
+          _ids('nutrition_vessel_calibrations'),
+          row['supersedes_calibration_id'],
+          'calibration supersedes_calibration_id',
         );
       }
     }
+    _validateVesselGraph();
     for (final row in _rows('nutrition_recipe_versions')) {
       _requireRef(recipes, row['recipe_id'], 'recipe version recipe_id');
     }
@@ -790,6 +795,9 @@ class NutritionBackupGraph {
     if (table == 'nutrition_estimates') {
       return _topologicallySorted(rows, 'supersedes_id');
     }
+    if (table == 'nutrition_vessel_calibrations') {
+      return _topologicallySorted(rows, 'supersedes_calibration_id');
+    }
     return rows;
   }
 
@@ -868,6 +876,22 @@ class NutritionBackupGraph {
     final estimates = _ids('nutrition_estimates');
     final results = _ids('nutrition_snapshot_constraint_results');
     final constraints = _ids('nutrition_user_constraints');
+    final vessels = _ids('nutrition_personal_vessels');
+    final calibrations = _ids('nutrition_vessel_calibrations');
+    for (final row in _rows('nutrition_personal_vessels')) {
+      _validateVesselOwner(row);
+    }
+    for (final row in _rows('nutrition_vessel_calibrations')) {
+      _requireRef(vessels, row['vessel_id'], 'calibration vessel_id');
+      if (row['supersedes_calibration_id'] != null) {
+        _requireRef(
+          calibrations,
+          row['supersedes_calibration_id'],
+          'calibration supersedes_calibration_id',
+        );
+      }
+    }
+    _validateVesselGraph();
     for (final row in _rows('nutrition_food_preparations')) {
       if (row['food_id'] is String && foods.contains(row['food_id'])) continue;
       // A preparation may belong to a bundled canonical food resolved from the
@@ -985,6 +1009,114 @@ class NutritionBackupGraph {
     }
   }
 
+  void _validateVesselOwner(Map<String, dynamic> row) {
+    final id = row['id'];
+    final userId = row['user_id'];
+    final displayName = row['display_name'];
+    if (id is! String || id.trim().isEmpty) {
+      throw BackupV8ValidationException(
+        'invalid_vessel_id',
+        'Backup-v8 vessel IDs must be non-empty portable strings.',
+      );
+    }
+    if (userId is! String || userId.trim().isEmpty) {
+      throw BackupV8ValidationException(
+        'invalid_vessel_owner',
+        'Backup-v8 vessels require a non-empty owner ID.',
+      );
+    }
+    if (displayName is! String || displayName.trim().isEmpty) {
+      throw BackupV8ValidationException(
+        'invalid_vessel_name',
+        'Backup-v8 vessels require a non-empty display name.',
+      );
+    }
+    final archivedAt = row['archived_at'];
+    if (archivedAt != null && archivedAt is! String && archivedAt is! num) {
+      throw BackupV8ValidationException(
+        'invalid_vessel_archive_state',
+        'Backup-v8 vessel archived_at must be a timestamp or null.',
+      );
+    }
+  }
+
+  void _validateVesselGraph() {
+    final vessels = {
+      for (final row in _rows('nutrition_personal_vessels'))
+        row['id'] as String: row,
+    };
+    final calibrations = {
+      for (final row in _rows('nutrition_vessel_calibrations'))
+        row['id'] as String: row,
+    };
+    final childrenByParent = <String, List<String>>{};
+    final calibrationsByVessel = <String, List<Map<String, dynamic>>>{};
+    for (final row in calibrations.values) {
+      final vesselId = row['vessel_id'];
+      final version = row['version'];
+      if (vesselId is! String || !vessels.containsKey(vesselId)) {
+        throw BackupV8ValidationException(
+          'missing_reference',
+          'Backup-v8 calibration references a missing vessel.',
+        );
+      }
+      if (version is! int || version < 1) {
+        throw BackupV8ValidationException(
+          'invalid_calibration_version',
+          'Backup-v8 calibration versions must be positive integers.',
+        );
+      }
+      calibrationsByVessel.putIfAbsent(vesselId, () => []).add(row);
+      final parentId = row['supersedes_calibration_id'];
+      if (parentId == null) continue;
+      final parent = calibrations[parentId];
+      if (parent == null) {
+        throw BackupV8ValidationException(
+          'missing_reference',
+          'Backup-v8 calibration supersession references a missing calibration.',
+        );
+      }
+      if (parent['vessel_id'] != vesselId) {
+        throw BackupV8ValidationException(
+          'cross_vessel_ancestry',
+          'Backup-v8 calibration ancestry cannot cross vessels.',
+        );
+      }
+      if (parent['version'] is! int ||
+          version != (parent['version'] as int) + 1) {
+        throw BackupV8ValidationException(
+          'invalid_calibration_ancestry',
+          'Backup-v8 calibration versions must increment from their predecessor.',
+        );
+      }
+      childrenByParent
+          .putIfAbsent(parentId as String, () => [])
+          .add(row['id'] as String);
+    }
+    for (final children in childrenByParent.values) {
+      if (children.length > 1) {
+        throw BackupV8ValidationException(
+          'multiple_current_calibrations',
+          'Backup-v8 calibration ancestry may have only one successor per record.',
+        );
+      }
+    }
+    for (final entry in calibrationsByVessel.entries) {
+      final roots = entry.value.where(
+        (row) => row['supersedes_calibration_id'] == null,
+      );
+      final terminals = entry.value.where(
+        (row) => !childrenByParent.containsKey(row['id']),
+      );
+      if (roots.length != 1 || terminals.length != 1) {
+        throw BackupV8ValidationException(
+          'invalid_calibration_graph',
+          'Each vessel calibration graph must have one root and one current terminal.',
+        );
+      }
+    }
+  }
+
   static void _validateRow(String table, Map<String, dynamic> row) {
     final amountColumns = const [
       'amount',
@@ -992,7 +1124,7 @@ class NutritionBackupGraph {
       'upper',
       'factor',
       'nominal_value',
-      'volume_ml',
+      'volume_amount',
       'quantity_value',
       'basis_quantity',
     ];
@@ -1042,7 +1174,7 @@ class NutritionBackupGraph {
     for (final column in const [
       'factor',
       'nominal_value',
-      'volume_ml',
+      'volume_amount',
       'basis_quantity',
     ]) {
       if (row[column] is num && (row[column] as num) <= 0) {
@@ -1150,6 +1282,9 @@ class NutritionBackupGraph {
       'nutrition_quantity_conversions': {
         'owner_scope': {'catalogue', 'user'},
       },
+      'nutrition_vessel_calibrations': {
+        'volume_unit': {'millilitre', 'litre'},
+      },
       'nutrition_food_constraint_evidence': {
         'status': {'confirmed', 'possible', 'not_indicated', 'unknown'},
       },
@@ -1251,6 +1386,7 @@ class NutritionBackupGraph {
       'DELETE FROM nutrition_recipes',
       'DELETE FROM nutrition_user_corrections',
       'DELETE FROM nutrition_vessel_calibrations',
+      'DELETE FROM nutrition_personal_vessels',
       'DELETE FROM nutrition_quantity_conversions WHERE owner_scope = \'user\'',
       'DELETE FROM nutrition_food_nutrient_facts WHERE source IN (\'user_entered\', \'imported_provider\', \'ai_estimate\') OR food_id IN (SELECT id FROM nutrition_foods WHERE kind IN (\'userCreated\', \'imported\', \'aiEstimate\'))',
       'DELETE FROM nutrition_food_constraint_evidence WHERE food_id IN (SELECT id FROM nutrition_foods WHERE kind IN (\'userCreated\', \'imported\', \'aiEstimate\')) OR evidence_source IN (\'user\', \'user_entered\', \'user_override\', \'imported_provider\')',
@@ -1275,6 +1411,7 @@ class NutritionBackupGraph {
 
   static String _rowKey(Map<String, dynamic> row) => [
     row['id'],
+    row['vessel_id'],
     row['food_id'],
     row['recipe_version_id'],
     row['snapshot_id'],
@@ -1395,6 +1532,7 @@ const _dateColumns = {
   'mapped_at',
   'effective_from',
   'effective_to',
+  'archived_at',
   'evaluated_at',
 };
 
@@ -1544,19 +1682,31 @@ final Map<String, _NutritionTableSpec> _specs = {
     ],
     orderBy: 'id',
   ),
-  'nutrition_vessel_calibrations': _NutritionTableSpec(
+  'nutrition_personal_vessels': _NutritionTableSpec(
     columns: const [
       'id',
       'user_id',
-      'label',
-      'measure_id',
-      'volume_ml',
+      'display_name',
+      'vessel_type',
+      'created_at',
+      'updated_at',
+      'archived_at',
+    ],
+    orderBy: 'id',
+  ),
+  'nutrition_vessel_calibrations': _NutritionTableSpec(
+    columns: const [
+      'id',
+      'vessel_id',
+      'volume_amount',
+      'volume_unit',
       'lower',
       'upper',
       'method',
-      'food_id',
-      'preparation_id',
       'confidence',
+      'supersedes_calibration_id',
+      'version',
+      'notes',
       'created_at',
       'updated_at',
     ],
@@ -1845,6 +1995,7 @@ const _restoreOrder = [
   'nutrition_food_aliases',
   'nutrition_food_preparations',
   'nutrition_household_measures',
+  'nutrition_personal_vessels',
   'nutrition_vessel_calibrations',
   'nutrition_quantity_conversions',
   'nutrition_food_nutrient_facts',
@@ -1886,7 +2037,7 @@ const _uniqueColumns = <String, List<List<String>>>{
     ['key', 'locale', 'version'],
   ],
   'nutrition_vessel_calibrations': [
-    ['user_id', 'label'],
+    ['vessel_id', 'version'],
   ],
   'nutrition_recipe_versions': [
     ['recipe_id', 'version_number'],

@@ -88,6 +88,34 @@ void main() {
         await target.select(target.nutritionRecipeIngredients).get(),
         hasLength(1),
       );
+      final vessels = await target
+          .select(target.nutritionPersonalVessels)
+          .get();
+      expect(vessels, hasLength(2));
+      expect(
+        vessels.where((row) => row.displayName == 'Duplicate cup'),
+        hasLength(2),
+      );
+      expect(
+        vessels.singleWhere((row) => row.id == 'v8-vessel-b').archivedAt,
+        isNotNull,
+      );
+      final calibrations = await target
+          .select(target.nutritionVesselCalibrations)
+          .get();
+      expect(calibrations, hasLength(2));
+      expect(
+        calibrations
+            .singleWhere((row) => row.id == 'v8-calibration-2')
+            .supersedesCalibrationId,
+        'v8-calibration-1',
+      );
+      expect(
+        calibrations
+            .singleWhere((row) => row.id == 'v8-calibration-2')
+            .volumeUnit,
+        'millilitre',
+      );
       expect(
         (await target.select(target.nutritionFoods).get()).where(
           (row) => row.id == 'a-v8-child',
@@ -208,6 +236,59 @@ void main() {
       );
     },
   );
+
+  test('v8 rejects orphan and cross-vessel calibration ancestry', () async {
+    final source = AppDatabase.memory();
+    addTearDown(source.close);
+    await _populateNutritionGraph(source);
+    final valid = await BackupV8Data.createFromDatabase(source);
+
+    final orphan =
+        jsonDecode(jsonEncode(valid.toJson())) as Map<String, dynamic>;
+    final orphanTables =
+        (orphan['nutrition_graph'] as Map<String, dynamic>)['tables']
+            as Map<String, dynamic>;
+    final orphanCalibration =
+        (orphanTables['nutrition_vessel_calibrations'] as List).singleWhere(
+              (row) =>
+                  (row as Map<String, dynamic>)['id'] == 'v8-calibration-2',
+            )
+            as Map<String, dynamic>;
+    orphanCalibration['vessel_id'] = 'missing-vessel';
+    expect(
+      () => BackupV8Data.fromJson(orphan),
+      throwsA(
+        isA<BackupV8ValidationException>().having(
+          (error) => error.code,
+          'code',
+          'missing_reference',
+        ),
+      ),
+    );
+
+    final crossVessel =
+        jsonDecode(jsonEncode(valid.toJson())) as Map<String, dynamic>;
+    final crossTables =
+        (crossVessel['nutrition_graph'] as Map<String, dynamic>)['tables']
+            as Map<String, dynamic>;
+    final crossCalibration =
+        (crossTables['nutrition_vessel_calibrations'] as List).singleWhere(
+              (row) =>
+                  (row as Map<String, dynamic>)['id'] == 'v8-calibration-2',
+            )
+            as Map<String, dynamic>;
+    crossCalibration['vessel_id'] = 'v8-vessel-b';
+    expect(
+      () => BackupV8Data.fromJson(crossVessel),
+      throwsA(
+        isA<BackupV8ValidationException>().having(
+          (error) => error.code,
+          'code',
+          'cross_vessel_ancestry',
+        ),
+      ),
+    );
+  });
 
   test('v5, v6 and v7 imports remain legacy-only', () async {
     final source = AppDatabase.memory();
@@ -362,6 +443,50 @@ Future<void> _populateNutritionGraph(AppDatabase db) async {
           nominalValue: 240,
           locale: 'en-IN',
           version: 1,
+        ),
+      );
+  await db
+      .into(db.nutritionPersonalVessels)
+      .insert(
+        NutritionPersonalVesselsCompanion.insert(
+          id: 'v8-vessel-a',
+          userId: 'v8-user',
+          displayName: 'Duplicate cup',
+        ),
+      );
+  await db
+      .into(db.nutritionPersonalVessels)
+      .insert(
+        NutritionPersonalVesselsCompanion.insert(
+          id: 'v8-vessel-b',
+          userId: 'v8-user',
+          displayName: 'Duplicate cup',
+          archivedAt: Value(DateTime.utc(2026, 8, 3)),
+        ),
+      );
+  await db
+      .into(db.nutritionVesselCalibrations)
+      .insert(
+        NutritionVesselCalibrationsCompanion.insert(
+          id: 'v8-calibration-1',
+          vesselId: 'v8-vessel-a',
+          volumeAmount: 180,
+          volumeUnit: 'millilitre',
+          method: 'water_fill',
+          version: 1,
+        ),
+      );
+  await db
+      .into(db.nutritionVesselCalibrations)
+      .insert(
+        NutritionVesselCalibrationsCompanion.insert(
+          id: 'v8-calibration-2',
+          vesselId: 'v8-vessel-a',
+          volumeAmount: 200,
+          volumeUnit: 'millilitre',
+          method: 'water_fill',
+          supersedesCalibrationId: const Value('v8-calibration-1'),
+          version: 2,
         ),
       );
   final nutrient =
