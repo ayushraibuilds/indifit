@@ -31,6 +31,21 @@ part 'app_database.g.dart';
 // B02 schema v16 retains the complete B01 graph and adds typed activity
 // storage. B02-02 deliberately does not write or infer any B02 execution row.
 
+/// Test-only boundaries for the v15 -> v16 migration.
+///
+/// [beforeTransactionCommit] is the last supported injectable boundary. Drift
+/// does not expose a callback after the underlying SQLite COMMIT, so the
+/// harness deliberately describes this as a pre-commit boundary rather than
+/// claiming post-commit coverage.
+enum V16MigrationFailureStage {
+  validation,
+  ddlAndDataMutation,
+  beforeTransactionCommit,
+}
+
+typedef V16MigrationFailureStageInjector =
+    Future<void> Function(V16MigrationFailureStage stage);
+
 @DriftDatabase(
   tables: [
     FoodItems,
@@ -87,15 +102,18 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase()
     : v15MigrationFailureInjector = null,
       v16MigrationFailureInjector = null,
+      v16MigrationFailureStageInjector = null,
       super(_openConnection());
   AppDatabase.memory()
     : v15MigrationFailureInjector = null,
       v16MigrationFailureInjector = null,
+      v16MigrationFailureStageInjector = null,
       super(NativeDatabase.memory());
   AppDatabase.executor(
     super.executor, {
     this.v15MigrationFailureInjector,
     this.v16MigrationFailureInjector,
+    this.v16MigrationFailureStageInjector,
   });
 
   /// Test-only hook used to prove the v14 -> v15 upgrade rolls back as one
@@ -105,6 +123,11 @@ class AppDatabase extends _$AppDatabase {
   /// Test-only hook used to prove the v15 -> v16 upgrade rolls back its DDL
   /// and compatibility backfill as one transaction.
   final Future<void> Function()? v16MigrationFailureInjector;
+
+  /// Typed test-only seam for proving each supported v15 -> v16 boundary.
+  /// Production callers leave this null; it does not alter migration
+  /// validation, transaction ownership, or schema versioning.
+  final V16MigrationFailureStageInjector? v16MigrationFailureStageInjector;
 
   /// Schema v16 adds the B02 activity-session table graph while retaining the
   /// B01 program, occurrence, routine, set, and draft compatibility fields.
@@ -443,6 +466,11 @@ class AppDatabase extends _$AppDatabase {
   /// transaction covers every v16 DDL statement, the only permitted backfill
   /// (`legacy` activity headers), and migration test injection.
   Future<void> _migrateV15ToV16(Migrator m) async {
+    final stageInjector = v16MigrationFailureStageInjector;
+    if (stageInjector != null) {
+      await stageInjector(V16MigrationFailureStage.validation);
+    }
+
     await transaction(() async {
       // A direct v14 -> v16 upgrade first creates the B01 tables using the
       // current declarations. Check physical columns so it neither attempts a
@@ -534,6 +562,11 @@ class AppDatabase extends _$AppDatabase {
       // legacy-only file therefore receives no fabricated taxonomy/mapping
       // rows, while a canonical catalog is seeded atomically.
       await _seedReviewedMuscleCatalogIfPossible();
+
+      if (stageInjector != null) {
+        await stageInjector(V16MigrationFailureStage.ddlAndDataMutation);
+        await stageInjector(V16MigrationFailureStage.beforeTransactionCommit);
+      }
 
       final injectedFailure = v16MigrationFailureInjector;
       if (injectedFailure != null) await injectedFailure();

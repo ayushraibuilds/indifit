@@ -1,0 +1,785 @@
+{
+  "version": 7,
+  "timestamp": "2026-01-15T08:30:00.000Z",
+  "schema_version": 16,
+  "user_profile": {
+    "id": 9001,
+    "age": 31,
+    "height": 178.0,
+    "weight": 76.5,
+    "sex": "unspecified",
+    "activity_level": "moderate",
+    "goal": "maintain",
+    "diet_preference": "balanced",
+    "calorie_goal": 2350,
+    "protein_goal": 150.0,
+    "carbs_goal": 260.0,
+    "fat_goal": 70.0,
+    "name": "Fixture User",
+    "equipment_access": "full_gym",
+    "injuries_limitations": "",
+    "updated_at": "2026-01-15T14:00:00.000"
+  },
+  "user_settings": [
+    {
+      "key": "fixture_nutrition_mode",
+      "value": "legacy-compatible",
+      "updated_at": "2026-01-15T14:00:00.000"
+    }
+  ],
+  "user_preferences": {
+    "water_logged": 4,
+    "user_streak_count": 12,
+    "pref_remind_workout": true,
+    "prefQuietHoursEnabled": false
+  },
+  "food_items": [
+    {
+      "id": 574,
+      "name": "Fixture Custom Lentil Bowl",
+      "name_hindi": "Fixture Dal Bowl",
+      "calories": 412,
+      "protein_g": 21.5,
+      "carbs_g": 54.0,
+      "fat_g": 11.0,
+      "fiber_g": null,
+      "serving_size": 1.0,
+      "serving_unit": "bowl",
+      "category": "custom",
+      "is_custom": true,
+      "brand": "Fixture Kitchen",
+      "region_pack": null
+    }
+  ],
+  "food_logs": [
+    {
+      "id": 7001,
+      "food_item_id": 574,
+      "name": "Fixture Custom Lentil Bowl",
+      "calories": 412,
+      "protein_g": 21.5,
+      "carbs_g": 54.0,
+      "fat_g": 11.0,
+      "serving_logged": 1.0,
+      "serving_unit": "bowl",
+      "meal_type": "lunch",
+      "logged_at": "2026-01-15T14:00:00.000",
+      "is_synced": false,
+      "meal_group_id": "fixture-meal-group-lunch",
+      "uuid": "fixture-food-log-custom-7001"
+    },
+    {
+      "id": 7002,
+      "food_item_id": 1,
+      "name": "Fixture Seeded Breakfast Food",
+      "calories": 118,
+      "protein_g": 4.2,
+      "carbs_g": 20.0,
+      "fat_g": 2.1,
+      "serving_logged": 0.5,
+      "serving_unit": "serving",
+      "meal_type": "breakfast",
+      "logged_at": "2026-01-16T14:00:00.000",
+      "is_synced": true,
+      "meal_group_id": null,
+      "uuid": "fixture-food-log-seeded-7002"
+    },
+    {
+      "id": 7003,
+      "food_item_id": null,
+      "name": "Fixture Imported Estimate Without Identity",
+      "calories": 275,
+      "protein_g": 12.0,
+      "carbs_g": 31.0,
+      "fat_g": 9.0,
+      "serving_logged": 1.0,
+      "serving_unit": "unknown portion",
+      "meal_type": "dinner",
+      "logged_at": "2026-01-17T14:00:00.000",
+      "is_synced": false,
+      "meal_group_id": null,
+      "uuid": "fixture-food-log-imported-7003"
+    }
+  ],
+  "meal_templates": [
+    {
+      "id": 3001,
+      "name": "Fixture Two-Day Meal Template",
+      "default_meal_type": "breakfast",
+      "created_at": "2026-01-15T14:00:00.000"
+    }
+  ],
+  "meal_template_items": [
+    {
+      "id": 3002,
+      "template_id": 3001,
+      "name": "Fixture Template Item",
+      "calories": 300,
+      "protein_g": 18.0,
+      "carbs_g": 35.0,
+      "fat_g": 8.0,
+      "serving_logged": 1.0,
+      "serving_unit": "serving"
+    }
+  ],
+  "custom_exercises": [
+    {
+      "id": 9002,
+      "stable_id": "fixture-custom-exercise-v16",
+      "name": "Fixture Custom Movement",
+      "muscle_groups": "Unknown",
+      "equipment": "Fixture",
+      "difficulty": "Beginner",
+      "form_cues": "",
+      "common_mistakes": "",
+      "youtube_id": null,
+      "is_custom": true
+    }
+  ],
+  "workout_sessions": [
+    {
+      "id": 4101,
+      "name": "Fixture Strength Session",
+      "total_volume": 1200.0,
+      "duration_seconds": 1800,
+      "estimated_calories": 180,
+      "completed_at": "2026-01-15T15:00:00.000",
+      "is_synced": false,
+      "uuid": "fixture-workout-session-4101",
+      "scheduled_occurrence_id": null,
+      "execution_snapshot_json": null,
+      "execution_timezone_id": null,
+      "completion_kind": null,
+      "activity_type": "strength",
+      "activity_schema_version": 1
+    },
+    {
+      "id": 4102,
+      "name": "Fixture Imported Run",
+      "total_volume": 0.0,
+      "duration_seconds": 1500,
+      "estimated_calories": 210,
+      "completed_at": "2026-01-18T14:00:00.000",
+      "is_synced": true,
+      "uuid": "fixture-workout-session-4102",
+      "scheduled_occurrence_id": null,
+      "execution_snapshot_json": null,
+      "execution_timezone_id": null,
+      "completion_kind": null,
+      "activity_type": "running",
+      "activity_schema_version": 1
+    },
+    {
+      "id": 4103,
+      "name": "Fixture Mobility Session",
+      "total_volume": 0.0,
+      "duration_seconds": 900,
+      "estimated_calories": 45,
+      "completed_at": "2026-01-19T14:00:00.000",
+      "is_synced": false,
+      "uuid": "fixture-workout-session-mobility-v16",
+      "scheduled_occurrence_id": null,
+      "execution_snapshot_json": null,
+      "execution_timezone_id": null,
+      "completion_kind": null,
+      "activity_type": "mobility",
+      "activity_schema_version": 1
+    }
+  ],
+  "workout_sets": [
+    {
+      "id": 4201,
+      "session_id": 4101,
+      "exercise_name": "Flat Barbell Bench Press",
+      "weight": 60.0,
+      "reps": 8,
+      "set_number": 1,
+      "is_pr": false,
+      "rpe": 8,
+      "is_warmup": false,
+      "set_notes": null,
+      "uuid": "fixture-workout-set-4201",
+      "set_type": "working",
+      "duration_seconds": null,
+      "distance_km": null,
+      "incline_percentage": null,
+      "exercise_id": "089ec703-a25e-5b12-a39a-78b17ee33742"
+    }
+  ],
+  "workout_routines": [
+    {
+      "id": 5101,
+      "name": "Fixture Legacy Routine",
+      "goal": "strength",
+      "notes": "Local-ID remapping source",
+      "created_at": "+058010-06-14T09:30:00.000"
+    }
+  ],
+  "routine_days": [
+    {
+      "id": 5102,
+      "routine_id": 5101,
+      "day_of_week": 1,
+      "name": "Fixture Day 1",
+      "is_rest_day": false
+    }
+  ],
+  "routine_exercises": [
+    {
+      "id": 5103,
+      "day_id": 5102,
+      "exercise_name": "Flat Barbell Bench Press",
+      "sets": 3,
+      "reps_range": "8-10",
+      "order_index": 0
+    }
+  ],
+  "workout_drafts": [
+    {
+      "id": 4501,
+      "routine_name": "Fixture Legacy Routine",
+      "current_exercise_index": 0,
+      "current_set_index": 1,
+      "elapsed_seconds": 600,
+      "logged_sets_json": "[{\"exercise\":\"Fixture Custom Movement\",\"reps\":6}]",
+      "updated_at": "2026-01-15T16:00:00.000",
+      "scheduled_occurrence_id": null,
+      "execution_snapshot_json": null,
+      "draft_schema_version": 1,
+      "activity_type": "legacy",
+      "execution_state_json": null
+    }
+  ],
+  "body_measurements": [
+    {
+      "id": 5203,
+      "weight": 76.5,
+      "waist": 82.0,
+      "chest": 100.0,
+      "arms": 34.0,
+      "recorded_at": "+058010-06-14T09:30:00.000",
+      "is_synced": false
+    }
+  ],
+  "daily_hydrations": [
+    {
+      "id": 5202,
+      "date_string": "2026-01-15",
+      "total_ml": 1800,
+      "goal_ml": 2500,
+      "updated_at": "+058010-06-14T09:30:00.000"
+    }
+  ],
+  "health_provenances": [
+    {
+      "id": 4301,
+      "provider": "health_connect",
+      "external_id": "fixture-health-external-4301",
+      "source_name": "Fixture Health Provider",
+      "imported_at": "2026-01-18T15:00:00.000",
+      "local_session_id": 4102,
+      "fingerprint": "fixture-health-fingerprint-4301"
+    }
+  ],
+  "achievement_unlocks": [
+    {
+      "id": 5201,
+      "achievement_id": "fixture-achievement-v16",
+      "unlocked_at": "+058010-06-14T09:30:00.000"
+    }
+  ],
+  "programs": [
+    {
+      "id": "fixture-program-v16",
+      "name": "Fixture B02 Program",
+      "goal": "strength",
+      "notes": "Complete immutable B01/B02 baseline graph",
+      "createdAtUtc": 1768465800000000,
+      "archivedAtUtc": null
+    }
+  ],
+  "program_versions": [
+    {
+      "id": "fixture-program-version-v16",
+      "programId": "fixture-program-v16",
+      "versionNumber": 1,
+      "status": "published",
+      "origin": "legacyImport",
+      "sourceVersionId": null,
+      "createdAtUtc": 1768465800000000,
+      "publishedAtUtc": 1768465800000000,
+      "archivedAtUtc": null
+    }
+  ],
+  "program_blocks": [
+    {
+      "id": "fixture-program-block-v16",
+      "programVersionId": "fixture-program-version-v16",
+      "ordinal": 0,
+      "name": "Fixture Block",
+      "description": "One reviewed block for migration and restore coverage"
+    }
+  ],
+  "program_weeks": [
+    {
+      "id": "fixture-program-week-v16",
+      "programVersionId": "fixture-program-version-v16",
+      "programBlockId": "fixture-program-block-v16",
+      "ordinalInBlock": 0,
+      "programWeekOrdinal": 1,
+      "name": "Fixture Week 1",
+      "isDeload": false
+    }
+  ],
+  "session_templates": [
+    {
+      "id": "fixture-session-template-v16",
+      "programWeekId": "fixture-program-week-v16",
+      "ordinal": 0,
+      "name": "Fixture Push Session",
+      "plannedWeekday": 1,
+      "plannedStartMinute": 480,
+      "notes": "Synthetic B02 execution source",
+      "activityType": "strength",
+      "defaultRestSeconds": 120
+    }
+  ],
+  "exercise_prescriptions": [
+    {
+      "id": "fixture-exercise-prescription-v16",
+      "sessionTemplateId": "fixture-session-template-v16",
+      "ordinal": 0,
+      "exerciseId": "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "exerciseNameSnapshot": "Flat Barbell Bench Press",
+      "plannedSets": 3,
+      "repsRange": "8-10"
+    },
+    {
+      "id": "fixture-exercise-prescription-v16-2",
+      "sessionTemplateId": "fixture-session-template-v16",
+      "ordinal": 1,
+      "exerciseId": "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "exerciseNameSnapshot": "Flat Barbell Bench Press",
+      "plannedSets": 3,
+      "repsRange": "10-12"
+    }
+  ],
+  "scheduled_session_occurrences": [
+    {
+      "id": "fixture-occurrence-v16",
+      "programVersionId": "fixture-program-version-v16",
+      "sessionTemplateId": "fixture-session-template-v16",
+      "programBlockOrdinal": 0,
+      "programWeekOrdinal": 1,
+      "sessionOrdinal": 0,
+      "repeatOrdinal": 0,
+      "originalLocalDate": "2026-01-15",
+      "originalTimezoneId": "Asia/Kolkata",
+      "effectiveLocalDate": "2026-01-15",
+      "effectiveTimezoneId": "Asia/Kolkata",
+      "status": "completed",
+      "progressionDisposition": "satisfied",
+      "skipMode": null,
+      "repeatPurpose": null,
+      "repeatedFromOccurrenceId": null,
+      "executionSnapshotJson": "{\"source\":\"fixture\",\"session\":\"fixture-workout-session-4101\"}",
+      "startedAtUtc": 1768465800000000,
+      "terminalAtUtc": 1770265800000000,
+      "createdAtUtc": 1768465800000000
+    }
+  ],
+  "occurrence_events": [
+    {
+      "id": "fixture-occurrence-event-v16",
+      "occurrenceId": "fixture-occurrence-v16",
+      "commandId": "fixture-command-v16",
+      "eventType": "complete",
+      "fromStatus": "inProgress",
+      "toStatus": "completed",
+      "beforeLocalDate": null,
+      "beforeTimezoneId": null,
+      "afterLocalDate": "2026-01-15",
+      "afterTimezoneId": "Asia/Kolkata",
+      "reason": "fixture completion",
+      "metadataJson": "{\"fixture\":true}",
+      "occurredAtUtc": 1770265800000000
+    }
+  ],
+  "training_plan_settings": [
+    {
+      "id": 1,
+      "activeProgramVersionId": "fixture-program-version-v16",
+      "activeSinceLocalDate": "2026-01-15",
+      "activeSinceTimezoneId": "Asia/Kolkata",
+      "defaultEquipmentProfileId": "fixture-equipment-profile-v16",
+      "updatedAtUtc": 1768465800000000
+    }
+  ],
+  "equipment_profiles": [
+    {
+      "id": "fixture-equipment-profile-v16",
+      "name": "Fixture Home Gym",
+      "defaultWeightIncrementKg": 2.5,
+      "legacyAccessCode": "fixture-home-gym",
+      "note": "Synthetic equipment profile",
+      "archivedAtUtc": null,
+      "createdAtUtc": 1768465800000000,
+      "updatedAtUtc": 1768465800000000
+    }
+  ],
+  "equipment_profile_items": [
+    {
+      "id": "fixture-equipment-item-v16",
+      "equipmentProfileId": "fixture-equipment-profile-v16",
+      "equipmentCode": "barbell",
+      "isAvailable": true,
+      "weightIncrementKg": 2.5
+    }
+  ],
+  "travel_contexts": [
+    {
+      "id": "fixture-travel-context-v16",
+      "startLocalDate": "2026-01-16",
+      "endLocalDate": "2026-01-17",
+      "timezoneId": "Asia/Kolkata",
+      "equipmentProfileId": "fixture-equipment-profile-v16",
+      "status": "active",
+      "note": "Fixture travel override",
+      "createdAtUtc": 1768465800000000,
+      "endedAtUtc": null
+    }
+  ],
+  "travel_context_occurrences": [
+    {
+      "travelContextId": "fixture-travel-context-v16",
+      "occurrenceId": "fixture-occurrence-v16",
+      "confirmedAtUtc": 1768465800001000
+    }
+  ],
+  "exercise_user_preferences": [
+    {
+      "id": "fixture-exercise-preference-v16",
+      "identityKey": "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "exerciseId": "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "exerciseNameFallback": "Flat Barbell Bench Press",
+      "generalNote": "Fixture preference",
+      "warmupPreference": "automatic",
+      "warmupSetCount": 2,
+      "customRestSeconds": 150,
+      "createdAtUtc": 1768465800000000,
+      "updatedAtUtc": 1768465800000000
+    }
+  ],
+  "exercise_setup_values": [
+    {
+      "id": "fixture-setup-value-v16",
+      "exerciseUserPreferenceId": "fixture-exercise-preference-v16",
+      "ordinal": 0,
+      "label": "bench_angle",
+      "value": "30"
+    }
+  ],
+  "exercise_personal_cues": [
+    {
+      "id": "fixture-personal-cue-v16",
+      "exerciseUserPreferenceId": "fixture-exercise-preference-v16",
+      "ordinal": 0,
+      "cueText": "Fixture controlled eccentric"
+    }
+  ],
+  "legacy_routine_program_mappings": [
+    {
+      "legacyRoutineId": 5101,
+      "programId": "fixture-program-v16",
+      "programVersionId": "fixture-program-version-v16",
+      "importedAtUtc": 1768465800000000
+    }
+  ],
+  "exercise_groups": [
+    {
+      "id": "fixture-exercise-group-v16",
+      "sessionTemplateId": "fixture-session-template-v16",
+      "ordinal": 0,
+      "groupType": "superset",
+      "roundCount": 2,
+      "restAfterRoundSeconds": 90,
+      "label": "Fixture Superset"
+    }
+  ],
+  "exercise_group_members": [
+    {
+      "id": "fixture-group-member-v16-1",
+      "exerciseGroupId": "fixture-exercise-group-v16",
+      "exercisePrescriptionId": "fixture-exercise-prescription-v16",
+      "ordinal": 0,
+      "transitionRestSeconds": 15
+    },
+    {
+      "id": "fixture-group-member-v16-2",
+      "exerciseGroupId": "fixture-exercise-group-v16",
+      "exercisePrescriptionId": "fixture-exercise-prescription-v16-2",
+      "ordinal": 1,
+      "transitionRestSeconds": 15
+    }
+  ],
+  "strength_set_prescriptions": [
+    {
+      "id": "fixture-strength-prescription-v16",
+      "exercisePrescriptionId": "fixture-exercise-prescription-v16",
+      "ordinal": 0,
+      "targetLoadKg": 60.0,
+      "loadBasis": "totalExternal",
+      "targetRepsMin": 8,
+      "targetRepsMax": 10,
+      "targetRpe": 8,
+      "restSeconds": 120,
+      "effortMode": "standard",
+      "tempoEccentricSeconds": 3,
+      "tempoBottomPauseSeconds": 1,
+      "tempoConcentricSeconds": 1,
+      "tempoLockoutPauseSeconds": 0,
+      "pausedRepPosition": "bottom",
+      "pausedRepSeconds": 1,
+      "assistanceMode": null,
+      "assistanceKg": null,
+      "techniquePlanJson": "{\"technique\":\"standard\"}"
+    },
+    {
+      "id": "fixture-strength-prescription-v16-2",
+      "exercisePrescriptionId": "fixture-exercise-prescription-v16-2",
+      "ordinal": 0,
+      "targetLoadKg": 50.0,
+      "loadBasis": "totalExternal",
+      "targetRepsMin": 10,
+      "targetRepsMax": 12,
+      "targetRpe": 7,
+      "restSeconds": 90,
+      "effortMode": "standard",
+      "tempoEccentricSeconds": null,
+      "tempoBottomPauseSeconds": null,
+      "tempoConcentricSeconds": null,
+      "tempoLockoutPauseSeconds": null,
+      "pausedRepPosition": null,
+      "pausedRepSeconds": null,
+      "assistanceMode": null,
+      "assistanceKg": null,
+      "techniquePlanJson": null
+    }
+  ],
+  "cardio_session_details": [
+    {
+      "sessionId": 4102,
+      "distanceMetres": 5000,
+      "observedPaceSecondsPerKm": 300.0,
+      "observedSpeedKph": null,
+      "inclinePercentage": null,
+      "elevationMetres": null,
+      "averageHeartRate": 148,
+      "perceivedExertion": 7,
+      "isIntervalWorkout": false,
+      "inputMode": null
+    }
+  ],
+  "cardio_intervals": [
+    {
+      "id": "fixture-cardio-interval-v16",
+      "cardioSessionId": 4102,
+      "ordinal": 0,
+      "segmentType": "work",
+      "durationSeconds": 600,
+      "distanceMetres": 2000,
+      "targetPaceSecondsPerKm": 300.0,
+      "actualPaceSecondsPerKm": 295.0,
+      "targetIntensity": "steady",
+      "actualIntensity": "steady",
+      "averageHeartRate": 150
+    }
+  ],
+  "mobility_session_details": [
+    {
+      "sessionId": 4103,
+      "practiceType": "mobility",
+      "style": "joint-flow",
+      "intensity": "low",
+      "focusNote": "Fixture hip mobility",
+      "averageHeartRate": 92
+    }
+  ],
+  "performed_exercise_groups": [
+    {
+      "id": "fixture-performed-group-v16",
+      "sessionId": 4101,
+      "sourceExerciseGroupId": "fixture-exercise-group-v16",
+      "groupTypeSnapshot": "superset",
+      "labelSnapshot": "Fixture Superset",
+      "ordinal": 0,
+      "plannedRounds": 2,
+      "completedRounds": 2,
+      "status": "completed"
+    }
+  ],
+  "performed_exercises": [
+    {
+      "id": "fixture-performed-exercise-v16",
+      "sessionId": 4101,
+      "performedExerciseGroupId": "fixture-performed-group-v16",
+      "sourceExercisePrescriptionId": "fixture-exercise-prescription-v16",
+      "groupMemberOrdinal": 0,
+      "groupRoundOrdinal": 0,
+      "ordinal": 0,
+      "expectedExerciseId": "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "expectedExerciseNameSnapshot": "Flat Barbell Bench Press",
+      "actualExerciseId": "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "actualExerciseNameSnapshot": "Flat Barbell Bench Press",
+      "status": "completed",
+      "substitutionReason": null
+    }
+  ],
+  "exercise_target_recommendations": [
+    {
+      "id": "fixture-recommendation-v16",
+      "performedExerciseId": "fixture-performed-exercise-v16",
+      "ruleVersion": "fixture-rule-v1",
+      "confidence": "medium",
+      "completenessJson": "{\"load\":true}",
+      "recommendedLoadKg": 62.5,
+      "loadBasis": "totalExternal",
+      "targetRepsMin": 8,
+      "targetRepsMax": 10,
+      "targetRpe": 8,
+      "incrementKg": 2.5,
+      "evidenceCutoffUtc": 1768465800000000,
+      "comparatorCount": 1,
+      "rationaleCodesJson": "[\"fixture\"]",
+      "wasOverridden": false
+    }
+  ],
+  "performed_sets": [
+    {
+      "id": "fixture-performed-set-v16",
+      "performedExerciseId": "fixture-performed-exercise-v16",
+      "ordinal": 0,
+      "role": "working",
+      "targetLoadKg": 60.0,
+      "targetLoadBasis": "totalExternal",
+      "targetRepsMin": 8,
+      "targetRepsMax": 10,
+      "targetRpe": 8,
+      "actualLoadKg": 60.0,
+      "actualLoadBasis": "totalExternal",
+      "actualReps": 8,
+      "actualRpe": 8,
+      "effortMode": "standard",
+      "endedAtFailure": false,
+      "tempoEccentricSeconds": 3,
+      "tempoBottomPauseSeconds": 1,
+      "tempoConcentricSeconds": 1,
+      "tempoLockoutPauseSeconds": 0,
+      "pausedRepPosition": "bottom",
+      "pausedRepSeconds": 1,
+      "assistanceMode": null,
+      "assistanceKg": null,
+      "notes": "Fixture performed set"
+    }
+  ],
+  "performed_set_segments": [
+    {
+      "id": "fixture-performed-segment-v16",
+      "performedSetId": "fixture-performed-set-v16",
+      "ordinal": 0,
+      "reps": 8,
+      "externalLoadKg": 60.0,
+      "loadBasis": "totalExternal",
+      "assistanceKg": null,
+      "restBeforeSeconds": 120
+    }
+  ],
+  "performed_rest_periods": [
+    {
+      "id": "fixture-rest-period-v16",
+      "sessionId": 4101,
+      "performedSetId": "fixture-performed-set-v16",
+      "performedExerciseGroupId": "fixture-performed-group-v16",
+      "scope": "exerciseSet",
+      "recommendedSeconds": 120,
+      "selectedSeconds": 120,
+      "actualSeconds": 118,
+      "source": "prescription",
+      "startedAtUtc": 1768466800000000,
+      "endedAtUtc": 1768584800000000,
+      "endReason": "elapsed"
+    }
+  ],
+  "muscles": [
+    {
+      "id": "chest",
+      "displayName": "Chest",
+      "region": "torso",
+      "catalogVersion": 1,
+      "isActive": true
+    },
+    {
+      "id": "glute-maximus",
+      "displayName": "Gluteus Maximus",
+      "region": "hips",
+      "catalogVersion": 1,
+      "isActive": true
+    },
+    {
+      "id": "quadriceps",
+      "displayName": "Quadriceps",
+      "region": "legs",
+      "catalogVersion": 1,
+      "isActive": true
+    },
+    {
+      "id": "triceps",
+      "displayName": "Triceps",
+      "region": "arms",
+      "catalogVersion": 1,
+      "isActive": true
+    }
+  ],
+  "exercise_muscle_mappings": [
+    {
+      "id": "d3b5ab04-74f6-5155-9621-50238644eeda:glute-maximus:v1",
+      "exerciseId": "d3b5ab04-74f6-5155-9621-50238644eeda",
+      "muscleId": "glute-maximus",
+      "role": "secondary",
+      "contributionBasisPoints": 3000,
+      "mappingStatus": "reviewed",
+      "source": "reviewed-b02-v1",
+      "catalogVersion": 1
+    },
+    {
+      "id": "d3b5ab04-74f6-5155-9621-50238644eeda:quadriceps:v1",
+      "exerciseId": "d3b5ab04-74f6-5155-9621-50238644eeda",
+      "muscleId": "quadriceps",
+      "role": "primary",
+      "contributionBasisPoints": 7000,
+      "mappingStatus": "reviewed",
+      "source": "reviewed-b02-v1",
+      "catalogVersion": 1
+    },
+    {
+      "id": "089ec703-a25e-5b12-a39a-78b17ee33742:chest:v1",
+      "exerciseId": "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "muscleId": "chest",
+      "role": "primary",
+      "contributionBasisPoints": 7000,
+      "mappingStatus": "reviewed",
+      "source": "reviewed-b02-v1",
+      "catalogVersion": 1
+    },
+    {
+      "id": "089ec703-a25e-5b12-a39a-78b17ee33742:triceps:v1",
+      "exerciseId": "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "muscleId": "triceps",
+      "role": "secondary",
+      "contributionBasisPoints": 3000,
+      "mappingStatus": "reviewed",
+      "source": "reviewed-b02-v1",
+      "catalogVersion": 1
+    }
+  ]
+}

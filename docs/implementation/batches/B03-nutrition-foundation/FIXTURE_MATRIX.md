@@ -183,3 +183,62 @@ Deferred from B03-01: production schema/backup, food identity manifest
 creation, repository/resolver/calculator behavior, seed rewrite, recipe or
 thali implementation, AI integration, UI, migration, and any new catalogue
 nutrition values.
+
+## B03-02 immutable migration and backup baseline
+
+B03-02 freezes the accepted B02 starting point without changing production
+schema or backup versions. Tests copy these files to temporary paths; they do
+not regenerate them from current seed logic:
+
+| Fixture | Version | SHA-256 | Purpose |
+|---|---:|---|---|
+| `test/fixtures/data/b03_v16_legacy_baseline.db` | schema `16` | `27516799c7cfa9dba53a408c13a638fdb2be8bae32ee887fee2bf9f7ce147eb5` | Real on-disk legacy/custom/imported food-log and B02 baseline |
+| `test/fixtures/data/b03_backup_v7_legacy_baseline.json` | Backup `7`, schema `16` | `16e486faf0abba0f4b075a928eab25f3fe9e651e68687a6f66da14b944daa3ae` | Real v7 compatibility and restore baseline |
+| `test/fixtures/data/b03_v16_complete_graph.db` | schema `16` | `cee818f3502273e507d02670e3ecf084a3dd0528828e68e40d15cd88c645e550` | Complete non-empty B01/B02 relationship graph for durable-state comparison |
+| `test/fixtures/data/b03_backup_v7_complete_graph.json` | Backup `7`, schema `16` | `02dc06612a6798ceec21efdc3bc9617a58e9e99af87b765ce11992b1aa51890a` | Complete v7 graph restore and local-ID remapping baseline |
+
+The fixture IDs are `b03-v16-legacy-baseline-01` and
+`b03-backup-v7-legacy-baseline-01`; the complete graph fixtures are identified
+by their file names and checksums. The reusable harness captures durable
+logical snapshots, foreign-key violations, file hashes, and typed,
+stage-injected failures. No schema-v17 table, Backup-v8 field, B03 nutrition
+entity, or historical reinterpretation is present.
+
+### B03-02 remediation: supported failure boundaries and snapshot authority
+
+The stage harness uses typed `B03FailureStage` values and records every stage
+reached before injecting exactly one selected failure. The supported matrix is:
+
+| Boundary | Injectable point | Rollback claim |
+|---|---|---|
+| Migration validation | Before the v15→v16 transaction begins | Zero mutation; original v15 file remains readable |
+| Migration DDL/data mutation | After v16 DDL/backfill work inside the transaction | Full SQLite transaction rollback |
+| Migration final transaction | Immediately before the migration transaction commits | Full rollback at the last testable pre-commit boundary |
+| Backup relationship prevalidation | After v7 relationship validation and before preference/database mutation | Zero mutation |
+| Backup database mutation | After restore deletion begins inside the transaction | Full SQLite transaction rollback |
+| Preference write | After managed preference writes and before database mutation | Database remains unchanged; preferences compensated |
+| Preference restore | After one compensation write while handling a deterministic database fault | Database rollback and documented recoverable partial-compensation state |
+| Restore final transaction | Immediately before restore transaction commit | Full rollback at the last testable pre-commit boundary |
+
+SQLite/Drift does not expose a callback after the physical `COMMIT`. The two
+final-transaction rows intentionally document pre-commit coverage and do not
+claim impossible post-commit injection. Retry tests disable the selected seam
+and reuse the same fixture.
+
+`B03LogicalSnapshot.capture` covers all 48 durable schema-v16 tables present in
+the fixture, including the B01 program/occurrence graph, B02 session/set,
+cardio/mobility, health, draft, muscle, and exercise-muscle mapping tables.
+Rows are ordered by portable UUID/stable/source keys, compound relationship
+keys, or persistent sequence fields; `rowid` is never used. The reusable
+`logicallyEquals`/`assertLogicallyEquals` comparison omits only local integer
+primary keys and replaces local foreign keys with semantic parent tokens.
+Portable UUIDs, stable IDs, source identities, timestamps, values, unknown
+fields, and relationship structure remain asserted. Thus a restored custom
+food or session may receive a different local integer ID without producing a
+false failure, while a broken relationship does fail.
+
+The complete graph fixture contains non-empty rows for programs, occurrences,
+groups, prescriptions, cardio intervals, mobility, performed sets,
+legacy-routine relationships, hydration, achievements, preferences, and
+exercise-muscle mappings. The original legacy baseline remains byte-for-byte
+unchanged and is still used for compatibility-only assertions.
