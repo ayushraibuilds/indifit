@@ -23,6 +23,74 @@ void main() {
   });
 
   group('B03-02 real Backup-v7 fixture baseline', () {
+    test(
+      'stage-aware restore failures rollback and retry at every boundary',
+      () async {
+        const stages = [
+          B03FailureStage.backupRelationshipPrevalidation,
+          B03FailureStage.backupDatabaseMutation,
+          B03FailureStage.preferenceWrite,
+          B03FailureStage.preferenceRestore,
+          B03FailureStage.restoreFinalTransaction,
+        ];
+        final fixture = B03BackupV7Fixture.load();
+
+        for (final stage in stages) {
+          final target = AppDatabase.memory();
+          addTearDown(target.close);
+          SharedPreferences.setMockInitialValues({
+            'water_logged': 99,
+            'user_streak_count': 3,
+            'pref_remind_workout': false,
+            'prefQuietHoursEnabled': true,
+          });
+          final prefs = await SharedPreferences.getInstance();
+          final beforePreferences =
+              await B03RestoreFailureHarness.preferenceSnapshot(
+                prefs,
+                fixture.userPreferences.keys,
+              );
+          final before = await B03LogicalSnapshot.capture(target);
+          final harness = B03StageAwareFailureHarness(stage);
+
+          try {
+            await harness.restore(fixture, target, prefs);
+            fail('Expected restore failure at $stage.');
+          } on B03InjectedFailure catch (error) {
+            expect(error.stage, stage);
+          }
+          final afterFailure = await B03LogicalSnapshot.capture(target);
+          before.assertLogicallyEquals(afterFailure);
+          expect(harness.injected, isTrue);
+          expect(harness.reachedStages, contains(stage));
+          if (stage != B03FailureStage.preferenceRestore) {
+            expect(
+              await B03RestoreFailureHarness.preferenceSnapshot(
+                prefs,
+                fixture.userPreferences.keys,
+              ),
+              beforePreferences,
+            );
+          }
+          expect(
+            await target.customSelect('PRAGMA foreign_key_check').get(),
+            isEmpty,
+          );
+
+          harness.disable();
+          await harness.restore(fixture, target, prefs);
+          expect(await target.select(target.foodLogs).get(), hasLength(3));
+          for (final entry in fixture.userPreferences.entries) {
+            expect(prefs.get(entry.key), entry.value);
+          }
+          expect(
+            await target.customSelect('PRAGMA foreign_key_check').get(),
+            isEmpty,
+          );
+        }
+      },
+    );
+
     test('validates the immutable v7 fixture without B03-only sections', () {
       final backup = B03BackupV7Fixture.load();
       final file = File(B03BackupV7Fixture.fixturePath);
@@ -56,9 +124,7 @@ void main() {
     test(
       'restores food logs, custom identity, B02 data, and preferences',
       () async {
-        final source = AppDatabase.memory();
         final target = AppDatabase.memory();
-        addTearDown(source.close);
         addTearDown(target.close);
         final fixture = B03BackupV7Fixture.load();
 
@@ -69,7 +135,7 @@ void main() {
             .toList();
         expect(customFoods, hasLength(1));
         expect(customFoods.single.name, 'Fixture Custom Lentil Bowl');
-        expect(customFoods.single.id, 574);
+        expect(customFoods.single.id, greaterThan(0));
 
         final logs = await target.select(target.foodLogs).get();
         expect(logs, hasLength(3));
@@ -113,6 +179,15 @@ void main() {
           await target.customSelect('PRAGMA foreign_key_check').get(),
           isEmpty,
         );
+        final fixtureFile = await B03V16Fixture.copyTo(
+          tempDir,
+          filename: 'v16-logical-golden.db',
+        );
+        final source = B03V16Fixture.open(fixtureFile);
+        addTearDown(source.close);
+        final golden = await B03LogicalSnapshot.capture(source);
+        final restored = await B03LogicalSnapshot.capture(target);
+        golden.assertLogicallyEquals(restored);
         expect(source.schemaVersion, 16);
       },
     );

@@ -346,46 +346,290 @@ class B03BackupV7Fixture {
   }
 }
 
+enum B03FailureStage {
+  migrationValidation,
+  migrationDdlAndDataMutation,
+  migrationFinalTransaction,
+  backupRelationshipPrevalidation,
+  backupDatabaseMutation,
+  preferenceWrite,
+  preferenceRestore,
+  restoreFinalTransaction,
+}
+
+class B03InjectedFailure implements Exception {
+  final B03FailureStage stage;
+
+  const B03InjectedFailure(this.stage);
+
+  @override
+  String toString() => 'B03 injected failure at ${stage.name}';
+}
+
+/// A stage-aware adapter for the production test seams. It records every
+/// boundary reached, injects at exactly one selected boundary, and can then be
+/// disabled for a retry without rebuilding the fixture.
+class B03StageAwareFailureHarness {
+  final B03FailureStage selectedStage;
+  final List<B03FailureStage> reachedStages = [];
+  bool enabled = true;
+  bool injected = false;
+
+  B03StageAwareFailureHarness(this.selectedStage);
+
+  void disable() => enabled = false;
+
+  Future<void> onMigrationStage(V16MigrationFailureStage stage) async {
+    final mapped = switch (stage) {
+      V16MigrationFailureStage.validation =>
+        B03FailureStage.migrationValidation,
+      V16MigrationFailureStage.ddlAndDataMutation =>
+        B03FailureStage.migrationDdlAndDataMutation,
+      V16MigrationFailureStage.beforeTransactionCommit =>
+        B03FailureStage.migrationFinalTransaction,
+    };
+    reachedStages.add(mapped);
+    if (enabled && mapped == selectedStage) {
+      injected = true;
+      throw B03InjectedFailure(mapped);
+    }
+  }
+
+  Future<void> onBackupStage(BackupRestoreFailureStage stage) async {
+    final mapped = switch (stage) {
+      BackupRestoreFailureStage.relationshipPrevalidation =>
+        B03FailureStage.backupRelationshipPrevalidation,
+      BackupRestoreFailureStage.preferenceWrite =>
+        B03FailureStage.preferenceWrite,
+      BackupRestoreFailureStage.databaseMutation =>
+        B03FailureStage.backupDatabaseMutation,
+      BackupRestoreFailureStage.beforeTransactionCommit =>
+        B03FailureStage.restoreFinalTransaction,
+      BackupRestoreFailureStage.preferenceRestore =>
+        B03FailureStage.preferenceRestore,
+    };
+    reachedStages.add(mapped);
+    if (enabled && mapped == selectedStage) {
+      injected = true;
+      throw B03InjectedFailure(mapped);
+    }
+  }
+
+  AppDatabase openMigrating(File source) {
+    return AppDatabase.executor(
+      NativeDatabase(source),
+      v16MigrationFailureStageInjector: onMigrationStage,
+    );
+  }
+
+  Future<void> restore(
+    BackupData backup,
+    AppDatabase db, [
+    SharedPreferences? prefs,
+  ]) async {
+    // Preference restoration is only reachable while compensating for a
+    // database failure. The trigger is a deterministic setup fault; the
+    // selected typed failure is still the preference-restore boundary and is
+    // injected after one compensation write, leaving a documented partial
+    // compensation state that a retry can safely complete.
+    final needsCompensationFailure =
+        enabled && selectedStage == B03FailureStage.preferenceRestore;
+    if (needsCompensationFailure) {
+      await B03RestoreFailureHarness.installDatabaseFailure(db);
+    }
+    try {
+      await backup.restoreToDatabaseWithFailureInjector(
+        db,
+        prefs: prefs,
+        failureInjector: onBackupStage,
+      );
+    } finally {
+      if (needsCompensationFailure) {
+        await B03RestoreFailureHarness.removeDatabaseFailure(db);
+      }
+    }
+  }
+}
+
 class B03LogicalSnapshot {
   final Map<String, List<Map<String, dynamic>>> tables;
 
   const B03LogicalSnapshot(this.tables);
 
-  String get canonicalJson => jsonEncode(<String, dynamic>{
-    for (final table in tables.keys.toList()..sort())
-      table: tables[table]!
-          .map(
-            (row) => <String, dynamic>{
-              for (final key in row.keys.toList()..sort()) key: row[key],
-            },
-          )
-          .toList(),
-  });
+  /// Every physical durable table in the accepted schema-v16 graph. The list
+  /// is checked against sqlite_master so a missing table cannot silently make
+  /// a golden snapshot incomplete.
+  static const List<String> v16TableNames = [
+    'achievement_unlocks',
+    'body_measurements',
+    'cardio_intervals',
+    'cardio_session_details',
+    'daily_hydrations',
+    'equipment_profile_items',
+    'equipment_profiles',
+    'exercise_group_members',
+    'exercise_groups',
+    'exercise_muscle_mappings',
+    'exercise_personal_cues',
+    'exercise_prescriptions',
+    'exercise_setup_values',
+    'exercise_target_recommendations',
+    'exercise_user_preferences',
+    'exercises',
+    'food_items',
+    'food_logs',
+    'health_provenances',
+    'legacy_routine_program_mappings',
+    'meal_template_items',
+    'meal_templates',
+    'mobility_session_details',
+    'muscles',
+    'occurrence_events',
+    'performed_exercise_groups',
+    'performed_exercises',
+    'performed_rest_periods',
+    'performed_set_segments',
+    'performed_sets',
+    'program_blocks',
+    'program_versions',
+    'program_weeks',
+    'programs',
+    'routine_days',
+    'routine_exercises',
+    'scheduled_session_occurrences',
+    'session_templates',
+    'strength_set_prescriptions',
+    'training_plan_settings',
+    'travel_context_occurrences',
+    'travel_contexts',
+    'user_profiles',
+    'user_settings',
+    'workout_drafts',
+    'workout_routines',
+    'workout_sessions',
+    'workout_sets',
+  ];
+
+  static const Set<String> _localIntegerIdTables = {
+    'food_items',
+    'food_logs',
+    'exercises',
+    'workout_sessions',
+    'workout_sets',
+    'body_measurements',
+    'workout_routines',
+    'routine_days',
+    'routine_exercises',
+    'workout_drafts',
+    'user_profiles',
+    'meal_templates',
+    'meal_template_items',
+    'health_provenances',
+    'cardio_session_details',
+    'mobility_session_details',
+  };
+
+  static const Map<String, List<String>> _preferredOrder = {
+    'food_items': ['stable_id', 'name', 'brand', 'id'],
+    'food_logs': ['uuid', 'logged_at', 'meal_type', 'id'],
+    'exercises': ['stable_id', 'name', 'id'],
+    'workout_sessions': ['uuid', 'completed_at', 'id'],
+    'workout_sets': ['uuid', 'session_id', 'set_number', 'id'],
+    'health_provenances': ['provider', 'external_id', 'fingerprint', 'id'],
+    'muscles': ['id', 'catalog_version', 'display_name'],
+    'exercise_muscle_mappings': ['exercise_id', 'muscle_id', 'role', 'id'],
+  };
+
+  static const Map<String, String> _foreignKeyTargets = {
+    'food_item_id': 'food_items',
+    'session_id': 'workout_sessions',
+    'local_session_id': 'workout_sessions',
+    'routine_id': 'workout_routines',
+    'day_id': 'routine_days',
+    'template_id': 'meal_templates',
+    'program_id': 'programs',
+    'program_version_id': 'program_versions',
+    'program_block_id': 'program_blocks',
+    'program_week_id': 'program_weeks',
+    'session_template_id': 'session_templates',
+    'exercise_prescription_id': 'exercise_prescriptions',
+    'occurrence_id': 'scheduled_session_occurrences',
+    'scheduled_occurrence_id': 'scheduled_session_occurrences',
+    'repeated_from_occurrence_id': 'scheduled_session_occurrences',
+    'equipment_profile_id': 'equipment_profiles',
+    'default_equipment_profile_id': 'equipment_profiles',
+    'travel_context_id': 'travel_contexts',
+    'travel_context_occurrence_id': 'travel_context_occurrences',
+    'exercise_group_id': 'exercise_groups',
+    'exercise_id': 'exercises',
+    'muscle_id': 'muscles',
+    'cardio_session_id': 'cardio_session_details',
+    'performed_exercise_group_id': 'performed_exercise_groups',
+    'performed_exercise_id': 'performed_exercises',
+    'performed_set_id': 'performed_sets',
+    'active_program_version_id': 'program_versions',
+  };
+
+  String get canonicalJson => _encodeTables(tables);
+
+  /// A relationship-aware representation that omits only local integer IDs
+  /// and replaces their foreign keys with semantic parent tokens. Portable
+  /// UUIDs, stable IDs, source keys, values, timestamps, and unknown fields
+  /// remain part of the comparison.
+  String get logicalCanonicalJson => _encodeTables(_logicalTables());
 
   String get checksum => sha256.convert(utf8.encode(canonicalJson)).toString();
 
+  String get logicalChecksum =>
+      sha256.convert(utf8.encode(logicalCanonicalJson)).toString();
+
+  bool logicallyEquals(B03LogicalSnapshot other) =>
+      logicalCanonicalJson == other.logicalCanonicalJson;
+
+  void assertLogicallyEquals(B03LogicalSnapshot other) {
+    if (!logicallyEquals(other)) {
+      throw StateError(
+        'B03 durable logical snapshots differ: $logicalChecksum != '
+        '${other.logicalChecksum}',
+      );
+    }
+  }
+
   static Future<B03LogicalSnapshot> capture(AppDatabase db) async {
-    const tableNames = [
-      'food_items',
-      'food_logs',
-      'meal_templates',
-      'meal_template_items',
-      'user_profiles',
-      'user_settings',
-      'exercises',
-      'workout_sessions',
-      'workout_sets',
-      'cardio_session_details',
-      'health_provenances',
-      'workout_routines',
-      'routine_days',
-      'routine_exercises',
-      'workout_drafts',
-    ];
+    final physicalRows = await db.customSelect('''
+      SELECT name
+      FROM sqlite_master
+      WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
+      ORDER BY name
+    ''').get();
+    final physicalNames = physicalRows
+        .map((row) => row.data['name'] as String)
+        .toSet();
+    final missing = v16TableNames
+        .where((table) => !physicalNames.contains(table))
+        .toList();
+    if (missing.isNotEmpty) {
+      throw StateError('Incomplete schema-v16 snapshot; missing $missing.');
+    }
+
     final tables = <String, List<Map<String, dynamic>>>{};
-    for (final table in tableNames) {
+    for (final table in v16TableNames) {
+      final quotedTable = _quoteIdentifier(table);
+      final columns = await db
+          .customSelect('PRAGMA table_info($quotedTable)')
+          .get();
+      final columnNames = columns
+          .map((row) => row.data['name'] as String)
+          .toList();
+      final orderColumns = _orderColumns(table, columnNames);
+      final orderBy = orderColumns
+          .map((column) {
+            final quoted = _quoteIdentifier(column);
+            return '$quoted IS NULL, $quoted';
+          })
+          .join(', ');
       final rows = await db
-          .customSelect('SELECT * FROM $table ORDER BY rowid')
+          .customSelect('SELECT * FROM $quotedTable ORDER BY $orderBy')
           .get();
       tables[table] = rows
           .map((row) => Map<String, dynamic>.from(row.data))
@@ -393,6 +637,119 @@ class B03LogicalSnapshot {
     }
     return B03LogicalSnapshot(tables);
   }
+
+  static String _encodeTables(Map<String, List<Map<String, dynamic>>> source) {
+    return jsonEncode(<String, dynamic>{
+      for (final table in source.keys.toList()..sort())
+        table:
+            (List<Map<String, dynamic>>.from(
+                source[table]!,
+              )).map(_sortedRow).toList()
+              ..sort((a, b) => jsonEncode(a).compareTo(jsonEncode(b))),
+    });
+  }
+
+  static Map<String, dynamic> _sortedRow(Map<String, dynamic> row) => {
+    for (final key in row.keys.toList()..sort()) key: row[key],
+  };
+
+  Map<String, List<Map<String, dynamic>>> _logicalTables() {
+    final tokens = <String, Map<Object, String>>{};
+    for (final entry in tables.entries) {
+      tokens[entry.key] = {
+        for (final row in entry.value)
+          if (row.containsKey('id') && row['id'] != null)
+            row['id']!: _identityToken(entry.key, row),
+        for (final row in entry.value)
+          if (row['stable_id'] != null)
+            row['stable_id']!: _identityToken(entry.key, row),
+        for (final row in entry.value)
+          if (row['uuid'] != null) row['uuid']!: _identityToken(entry.key, row),
+      };
+    }
+
+    return {
+      for (final entry in tables.entries)
+        entry.key: [
+          for (final row in entry.value) _logicalRow(entry.key, row, tokens),
+        ],
+    };
+  }
+
+  Map<String, dynamic> _logicalRow(
+    String table,
+    Map<String, dynamic> row,
+    Map<String, Map<Object, String>> tokens,
+  ) {
+    final normalized = <String, dynamic>{};
+    for (final entry in row.entries) {
+      if (entry.key == 'id' && _localIntegerIdTables.contains(table)) {
+        continue;
+      }
+      final target = _foreignKeyTargets[entry.key];
+      if (target != null && entry.value != null) {
+        normalized[entry.key] =
+            '@$target:${_referenceToken(target, entry.value, tokens)}';
+      } else {
+        normalized[entry.key] = entry.value;
+      }
+    }
+    return normalized;
+  }
+
+  String _referenceToken(
+    String table,
+    Object value,
+    Map<String, Map<Object, String>> tokens,
+  ) {
+    if (table == 'cardio_session_details' ||
+        table == 'mobility_session_details') {
+      final detailExists = tables[table]?.any(
+        (row) => row['session_id'] == value,
+      );
+      if (detailExists == true) {
+        return _referenceToken('workout_sessions', value, tokens);
+      }
+    }
+    final token = tokens[table]?[value];
+    if (token != null) return token;
+    return 'unresolved:$value';
+  }
+
+  static String _identityToken(String table, Map<String, dynamic> row) {
+    for (final key in const [
+      'stable_id',
+      'uuid',
+      'external_id',
+      'fingerprint',
+    ]) {
+      final value = row[key];
+      if (value != null && value.toString().isNotEmpty) {
+        return '$table:$key:$value';
+      }
+    }
+    final identity = {
+      for (final entry in row.entries)
+        if (entry.key != 'id' && !entry.key.endsWith('_id'))
+          entry.key: entry.value,
+    };
+    return '$table:${jsonEncode(_sortedRow(identity))}';
+  }
+
+  static List<String> _orderColumns(String table, List<String> columns) {
+    final preferred = _preferredOrder[table] ?? const <String>[];
+    final selected = <String>[
+      for (final column in preferred)
+        if (columns.contains(column)) column,
+      for (final column in columns)
+        if (!preferred.contains(column) && column != 'id') column,
+      if (columns.contains('id')) 'id',
+    ];
+    return selected.toSet().toList();
+  }
+
+  static String _quoteIdentifier(String value) =>
+      '"${value.replaceAll('"', '""')}"';
 }
 
 class B03RestoreFailureHarness {

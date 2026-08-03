@@ -197,7 +197,39 @@ not regenerate them from current seed logic:
 
 The fixture IDs are `b03-v16-legacy-baseline-01` and
 `b03-backup-v7-legacy-baseline-01`. The reusable harness captures durable
-logical snapshots, foreign-key violations, file hashes, and trigger-injected
-restore failures. It also reuses the accepted B02 v15→v16 migration failure
-seam. No schema-v17 table, Backup-v8 field, B03 nutrition entity, or
-historical reinterpretation is present.
+logical snapshots, foreign-key violations, file hashes, and typed,
+stage-injected failures. No schema-v17 table, Backup-v8 field, B03 nutrition
+entity, or historical reinterpretation is present.
+
+### B03-02 remediation: supported failure boundaries and snapshot authority
+
+The stage harness uses typed `B03FailureStage` values and records every stage
+reached before injecting exactly one selected failure. The supported matrix is:
+
+| Boundary | Injectable point | Rollback claim |
+|---|---|---|
+| Migration validation | Before the v15→v16 transaction begins | Zero mutation; original v15 file remains readable |
+| Migration DDL/data mutation | After v16 DDL/backfill work inside the transaction | Full SQLite transaction rollback |
+| Migration final transaction | Immediately before the migration transaction commits | Full rollback at the last testable pre-commit boundary |
+| Backup relationship prevalidation | After v7 relationship validation and before preference/database mutation | Zero mutation |
+| Backup database mutation | After restore deletion begins inside the transaction | Full SQLite transaction rollback |
+| Preference write | After managed preference writes and before database mutation | Database remains unchanged; preferences compensated |
+| Preference restore | After one compensation write while handling a deterministic database fault | Database rollback and documented recoverable partial-compensation state |
+| Restore final transaction | Immediately before restore transaction commit | Full rollback at the last testable pre-commit boundary |
+
+SQLite/Drift does not expose a callback after the physical `COMMIT`. The two
+final-transaction rows intentionally document pre-commit coverage and do not
+claim impossible post-commit injection. Retry tests disable the selected seam
+and reuse the same fixture.
+
+`B03LogicalSnapshot.capture` covers all 48 durable schema-v16 tables present in
+the fixture, including the B01 program/occurrence graph, B02 session/set,
+cardio/mobility, health, draft, muscle, and exercise-muscle mapping tables.
+Rows are ordered by portable UUID/stable/source keys, compound relationship
+keys, or persistent sequence fields; `rowid` is never used. The reusable
+`logicallyEquals`/`assertLogicallyEquals` comparison omits only local integer
+primary keys and replaces local foreign keys with semantic parent tokens.
+Portable UUIDs, stable IDs, source identities, timestamps, values, unknown
+fields, and relationship structure remain asserted. Thus a restored custom
+food or session may receive a different local integer ID without producing a
+false failure, while a broken relationship does fail.

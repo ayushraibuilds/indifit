@@ -21,6 +21,54 @@ void main() {
 
   group('B03-02 real schema-v16 fixture baseline', () {
     test(
+      'stage-aware migration failures rollback and retry at every boundary',
+      () async {
+        const stages = [
+          B03FailureStage.migrationValidation,
+          B03FailureStage.migrationDdlAndDataMutation,
+          B03FailureStage.migrationFinalTransaction,
+        ];
+
+        for (final stage in stages) {
+          final source = await V15DbFixtures.createSourceDatabase(
+            tempDir,
+            'v15-${stage.name}.db',
+          );
+          final harness = B03StageAwareFailureHarness(stage);
+          final failing = harness.openMigrating(source);
+          try {
+            await failing.customSelect('SELECT 1').get();
+            fail('Expected migration failure at $stage.');
+          } on B03InjectedFailure catch (error) {
+            expect(error.stage, stage);
+          }
+          await failing.close();
+
+          expect(harness.injected, isTrue);
+          expect(harness.reachedStages, contains(stage));
+          expect(
+            V15DbFixtures.readUserVersion(source),
+            15,
+            reason: 'failed $stage must leave the original v15 file readable',
+          );
+
+          harness.disable();
+          final retry = harness.openMigrating(source);
+          try {
+            await retry.customSelect('SELECT 1').get();
+            expect(V15DbFixtures.readUserVersion(source), 16);
+            expect(
+              await retry.customSelect('PRAGMA foreign_key_check').get(),
+              isEmpty,
+            );
+          } finally {
+            await retry.close();
+          }
+        }
+      },
+    );
+
+    test(
       'opens an immutable on-disk v16 fixture with golden identity',
       () async {
         final file = await B03V16Fixture.copyTo(tempDir);
@@ -119,6 +167,20 @@ void main() {
 
         expect(firstSnapshot.canonicalJson, secondSnapshot.canonicalJson);
         expect(firstSnapshot.checksum, secondSnapshot.checksum);
+        expect(
+          firstSnapshot.tables.keys,
+          containsAll(B03LogicalSnapshot.v16TableNames),
+        );
+        expect(
+          firstSnapshot.tables,
+          hasLength(B03LogicalSnapshot.v16TableNames.length),
+        );
+        expect(firstSnapshot.logicalChecksum, secondSnapshot.logicalChecksum);
+        final reordered = B03LogicalSnapshot({
+          for (final entry in firstSnapshot.tables.entries)
+            entry.key: entry.value.reversed.toList(),
+        });
+        expect(reordered.logicalChecksum, firstSnapshot.logicalChecksum);
       },
     );
 
