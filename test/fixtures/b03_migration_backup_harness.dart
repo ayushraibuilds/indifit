@@ -17,8 +17,12 @@ class B03V16Fixture {
   static const String fixtureId = 'b03-v16-legacy-baseline-01';
   static const String fixturePath =
       'test/fixtures/data/b03_v16_legacy_baseline.db';
+  static const String completeFixturePath =
+      'test/fixtures/data/b03_v16_complete_graph.db';
   static const String checksum =
       '27516799c7cfa9dba53a408c13a638fdb2be8bae32ee887fee2bf9f7ce147eb5';
+  static const String completeChecksum =
+      'cee818f3502273e507d02670e3ecf084a3dd0528828e68e40d15cd88c645e550';
 
   static final DateTime timestamp = DateTime.utc(2026, 1, 15, 8, 30);
 
@@ -28,6 +32,21 @@ class B03V16Fixture {
       throw StateError('Missing checked-in B03 v16 fixture: $fixturePath');
     }
     return source.copy('${directory.path}/${filename ?? 'b03-v16-fixture.db'}');
+  }
+
+  static Future<File> copyCompleteTo(
+    Directory directory, {
+    String? filename,
+  }) async {
+    final source = File(completeFixturePath);
+    if (!source.existsSync()) {
+      throw StateError(
+        'Missing checked-in complete B03 v16 fixture: $completeFixturePath',
+      );
+    }
+    return source.copy(
+      '${directory.path}/${filename ?? 'b03-v16-complete-graph.db'}',
+    );
   }
 
   static AppDatabase open(File file) =>
@@ -292,6 +311,362 @@ class B03V16Fixture {
             activityType: const Value('legacy'),
           ),
         );
+
+    await _seedCompleteB01B02Graph(
+      db,
+      primaryExerciseId: seededExercise.stableId!,
+      primaryExerciseName: seededExercise.name,
+    );
+  }
+
+  /// Adds one complete, synthetic B01/B02 graph to the immutable baseline.
+  ///
+  /// This is deliberately fixture-owned data rather than production seed
+  /// data.  Every supported relational collection gets at least one durable
+  /// row so a later migration or Backup-v8 test proves preservation of actual
+  /// relationships instead of only proving that empty tables exist.
+  static Future<void> _seedCompleteB01B02Graph(
+    AppDatabase db, {
+    required String primaryExerciseId,
+    required String primaryExerciseName,
+  }) async {
+    String sqlValue(Object? value) {
+      if (value == null) return 'NULL';
+      if (value is num) return value.toString();
+      if (value is bool) return value ? '1' : '0';
+      return "'${value.toString().replaceAll("'", "''")}'";
+    }
+
+    final at = timestamp.millisecondsSinceEpoch;
+    final programId = 'fixture-program-v16';
+    final versionId = 'fixture-program-version-v16';
+    final blockId = 'fixture-program-block-v16';
+    final weekId = 'fixture-program-week-v16';
+    final templateId = 'fixture-session-template-v16';
+    final prescriptionId = 'fixture-exercise-prescription-v16';
+    final secondPrescriptionId = 'fixture-exercise-prescription-v16-2';
+    final groupId = 'fixture-exercise-group-v16';
+    final occurrenceId = 'fixture-occurrence-v16';
+    final routineId = 5101;
+    final routineDayId = 5102;
+
+    await db.customStatement('''
+      INSERT INTO programs
+        (id, name, goal, notes, created_at_utc)
+      VALUES
+        (${sqlValue(programId)}, 'Fixture B02 Program', 'strength',
+         'Complete immutable B01/B02 baseline graph', $at)
+    ''');
+    await db.customStatement('''
+      INSERT INTO program_versions
+        (id, program_id, version_number, status, origin, created_at_utc,
+         published_at_utc)
+      VALUES
+        (${sqlValue(versionId)}, ${sqlValue(programId)}, 1, 'published',
+         'legacyImport', $at, $at)
+    ''');
+    await db.customStatement('''
+      INSERT INTO program_blocks
+        (id, program_version_id, ordinal, name, description)
+      VALUES
+        (${sqlValue(blockId)}, ${sqlValue(versionId)}, 0, 'Fixture Block',
+         'One reviewed block for migration and restore coverage')
+    ''');
+    await db.customStatement('''
+      INSERT INTO program_weeks
+        (id, program_version_id, program_block_id, ordinal_in_block,
+         program_week_ordinal, name, is_deload)
+      VALUES
+        (${sqlValue(weekId)}, ${sqlValue(versionId)}, ${sqlValue(blockId)},
+         0, 1, 'Fixture Week 1', 0)
+    ''');
+    await db.customStatement('''
+      INSERT INTO session_templates
+        (id, program_week_id, ordinal, name, planned_weekday,
+         planned_start_minute, notes, activity_type, default_rest_seconds)
+      VALUES
+        (${sqlValue(templateId)}, ${sqlValue(weekId)}, 0, 'Fixture Push Session',
+         1, 480, 'Synthetic B02 execution source', 'strength', 120)
+    ''');
+    await db.customStatement('''
+      INSERT INTO exercise_prescriptions
+        (id, session_template_id, ordinal, exercise_id,
+         exercise_name_snapshot, planned_sets, reps_range)
+      VALUES
+        (${sqlValue(prescriptionId)}, ${sqlValue(templateId)}, 0,
+         ${sqlValue(primaryExerciseId)}, ${sqlValue(primaryExerciseName)}, 3,
+         '8-10')
+    ''');
+    await db.customStatement('''
+      INSERT INTO exercise_prescriptions
+        (id, session_template_id, ordinal, exercise_id,
+         exercise_name_snapshot, planned_sets, reps_range)
+      VALUES
+        (${sqlValue(secondPrescriptionId)}, ${sqlValue(templateId)}, 1,
+         ${sqlValue(primaryExerciseId)}, ${sqlValue(primaryExerciseName)}, 3,
+         '10-12')
+    ''');
+    await db.customStatement('''
+      INSERT INTO strength_set_prescriptions
+        (id, exercise_prescription_id, ordinal, target_load_kg, load_basis,
+         target_reps_min, target_reps_max, target_rpe, rest_seconds,
+         effort_mode, tempo_eccentric_seconds, tempo_bottom_pause_seconds,
+         tempo_concentric_seconds, tempo_lockout_pause_seconds,
+         paused_rep_position, paused_rep_seconds, technique_plan_json)
+      VALUES
+        ('fixture-strength-prescription-v16', ${sqlValue(prescriptionId)}, 0,
+         60, 'totalExternal', 8, 10, 8, 120, 'standard', 3, 1, 1, 0,
+         'bottom', 1, '{"technique":"standard"}')
+    ''');
+    await db.customStatement('''
+      INSERT INTO strength_set_prescriptions
+        (id, exercise_prescription_id, ordinal, target_load_kg, load_basis,
+         target_reps_min, target_reps_max, target_rpe, rest_seconds,
+         effort_mode, assistance_mode, assistance_kg)
+      VALUES
+        ('fixture-strength-prescription-v16-2',
+         ${sqlValue(secondPrescriptionId)}, 0, 50, 'totalExternal', 10, 12,
+         7, 90, 'standard', NULL, NULL)
+    ''');
+    await db.customStatement('''
+      INSERT INTO exercise_groups
+        (id, session_template_id, ordinal, group_type, round_count,
+         rest_after_round_seconds, label)
+      VALUES
+        (${sqlValue(groupId)}, ${sqlValue(templateId)}, 0, 'superset', 2, 90,
+         'Fixture Superset')
+    ''');
+    await db.customStatement('''
+      INSERT INTO exercise_group_members
+        (id, exercise_group_id, exercise_prescription_id, ordinal,
+         transition_rest_seconds)
+      VALUES
+        ('fixture-group-member-v16-1', ${sqlValue(groupId)},
+         ${sqlValue(prescriptionId)}, 0, 15),
+        ('fixture-group-member-v16-2', ${sqlValue(groupId)},
+         ${sqlValue(secondPrescriptionId)}, 1, 15)
+    ''');
+    await db.customStatement('''
+      INSERT INTO scheduled_session_occurrences
+        (id, program_version_id, session_template_id, program_block_ordinal,
+         program_week_ordinal, session_ordinal, original_local_date,
+         original_timezone_id, effective_local_date, effective_timezone_id,
+         status, progression_disposition, execution_snapshot_json,
+         started_at_utc, terminal_at_utc, created_at_utc)
+      VALUES
+        (${sqlValue(occurrenceId)}, ${sqlValue(versionId)},
+         ${sqlValue(templateId)}, 0, 1, 0, '2026-01-15', 'Asia/Kolkata',
+         '2026-01-15', 'Asia/Kolkata', 'completed', 'satisfied',
+         '{"source":"fixture","session":"fixture-workout-session-4101"}',
+         $at, ${at + 1800000000}, $at)
+    ''');
+    await db.customStatement('''
+      INSERT INTO occurrence_events
+        (id, occurrence_id, command_id, event_type, from_status, to_status,
+         after_local_date, after_timezone_id, reason, metadata_json,
+         occurred_at_utc)
+      VALUES
+        ('fixture-occurrence-event-v16', ${sqlValue(occurrenceId)},
+         'fixture-command-v16', 'complete', 'inProgress', 'completed',
+         '2026-01-15', 'Asia/Kolkata', 'fixture completion',
+         '{"fixture":true}', ${at + 1800000000})
+    ''');
+    await db.customStatement('''
+      INSERT INTO equipment_profiles
+        (id, name, default_weight_increment_kg, legacy_access_code, note,
+         created_at_utc, updated_at_utc)
+      VALUES
+        ('fixture-equipment-profile-v16', 'Fixture Home Gym', 2.5,
+         'fixture-home-gym', 'Synthetic equipment profile', $at, $at)
+    ''');
+    await db.customStatement('''
+      INSERT INTO equipment_profile_items
+        (id, equipment_profile_id, equipment_code, is_available,
+         weight_increment_kg)
+      VALUES
+        ('fixture-equipment-item-v16', 'fixture-equipment-profile-v16',
+         'barbell', 1, 2.5)
+    ''');
+    await db.customStatement('''
+      INSERT OR REPLACE INTO training_plan_settings
+        (id, active_program_version_id, active_since_local_date,
+         active_since_timezone_id, default_equipment_profile_id,
+         updated_at_utc)
+      VALUES
+        (1, ${sqlValue(versionId)}, '2026-01-15', 'Asia/Kolkata',
+         'fixture-equipment-profile-v16', $at)
+    ''');
+    await db.customStatement('''
+      INSERT INTO travel_contexts
+        (id, start_local_date, end_local_date, timezone_id,
+         equipment_profile_id, status, note, created_at_utc)
+      VALUES
+        ('fixture-travel-context-v16', '2026-01-16', '2026-01-17',
+         'Asia/Kolkata', 'fixture-equipment-profile-v16', 'active',
+         'Fixture travel override', $at)
+    ''');
+    await db.customStatement('''
+      INSERT INTO travel_context_occurrences
+        (travel_context_id, occurrence_id, confirmed_at_utc)
+      VALUES
+        ('fixture-travel-context-v16', ${sqlValue(occurrenceId)}, ${at + 1})
+    ''');
+    await db.customStatement('''
+      INSERT INTO exercise_user_preferences
+        (id, identity_key, exercise_id, exercise_name_fallback, general_note,
+         warmup_preference, warmup_set_count, custom_rest_seconds,
+         created_at_utc, updated_at_utc)
+      VALUES
+        ('fixture-exercise-preference-v16', ${sqlValue(primaryExerciseId)},
+         ${sqlValue(primaryExerciseId)}, ${sqlValue(primaryExerciseName)},
+         'Fixture preference', 'automatic', 2, 150, $at, $at)
+    ''');
+    await db.customStatement('''
+      INSERT INTO exercise_setup_values
+        (id, exercise_user_preference_id, ordinal, label, value)
+      VALUES
+        ('fixture-setup-value-v16', 'fixture-exercise-preference-v16', 0,
+         'bench_angle', '30')
+    ''');
+    await db.customStatement('''
+      INSERT INTO exercise_personal_cues
+        (id, exercise_user_preference_id, ordinal, cue_text)
+      VALUES
+        ('fixture-personal-cue-v16', 'fixture-exercise-preference-v16', 0,
+         'Fixture controlled eccentric')
+    ''');
+    await db.customStatement('''
+      INSERT INTO workout_routines
+        (id, name, goal, notes, created_at)
+      VALUES
+        ($routineId, 'Fixture Legacy Routine', 'strength',
+         'Local-ID remapping source', $at)
+    ''');
+    await db.customStatement('''
+      INSERT INTO routine_days
+        (id, routine_id, day_of_week, name, is_rest_day)
+      VALUES
+        ($routineDayId, $routineId, 1, 'Fixture Day 1', 0)
+    ''');
+    await db.customStatement('''
+      INSERT INTO routine_exercises
+        (id, day_id, exercise_name, sets, reps_range, order_index)
+      VALUES
+        (5103, $routineDayId, ${sqlValue(primaryExerciseName)}, 3, '8-10', 0)
+    ''');
+    await db.customStatement('''
+      INSERT INTO legacy_routine_program_mappings
+        (legacy_routine_id, program_id, program_version_id, imported_at_utc)
+      VALUES
+        ($routineId, ${sqlValue(programId)}, ${sqlValue(versionId)}, $at)
+    ''');
+    await db.customStatement('''
+      INSERT INTO achievement_unlocks (id, achievement_id, unlocked_at)
+      VALUES (5201, 'fixture-achievement-v16', $at)
+    ''');
+    await db.customStatement('''
+      INSERT INTO daily_hydrations
+        (id, date_string, total_ml, goal_ml, updated_at)
+      VALUES (5202, '2026-01-15', 1800, 2500, $at)
+    ''');
+    await db.customStatement('''
+      INSERT INTO body_measurements
+        (id, weight, waist, chest, arms, recorded_at, is_synced)
+      VALUES (5203, 76.5, 82, 100, 34, $at, 0)
+    ''');
+    await db.customStatement('''
+      INSERT INTO cardio_intervals
+        (id, cardio_session_id, ordinal, segment_type, duration_seconds,
+         distance_metres, target_pace_seconds_per_km, actual_pace_seconds_per_km,
+         target_intensity, actual_intensity, average_heart_rate)
+      VALUES
+        ('fixture-cardio-interval-v16', 4102, 0, 'work', 600, 2000, 300, 295,
+         'steady', 'steady', 150)
+    ''');
+    await db
+        .into(db.workoutSessions)
+        .insert(
+          WorkoutSessionsCompanion.insert(
+            id: const Value(4103),
+            name: 'Fixture Mobility Session',
+            totalVolume: 0,
+            durationSeconds: 900,
+            estimatedCalories: 45,
+            completedAt: Value(timestamp.add(const Duration(days: 4))),
+            uuid: const Value('fixture-workout-session-mobility-v16'),
+            activityType: const Value('mobility'),
+          ),
+        );
+    await db.customStatement('''
+      INSERT INTO mobility_session_details
+        (session_id, practice_type, style, intensity, focus_note,
+         average_heart_rate)
+      VALUES (4103, 'mobility', 'joint-flow', 'low', 'Fixture hip mobility', 92)
+    ''');
+    await db.customStatement('''
+      INSERT INTO performed_exercise_groups
+        (id, session_id, source_exercise_group_id, group_type_snapshot,
+         label_snapshot, ordinal, planned_rounds, completed_rounds, status)
+      VALUES
+        ('fixture-performed-group-v16', 4101, ${sqlValue(groupId)}, 'superset',
+         'Fixture Superset', 0, 2, 2, 'completed')
+    ''');
+    await db.customStatement('''
+      INSERT INTO performed_exercises
+        (id, session_id, performed_exercise_group_id,
+         source_exercise_prescription_id, group_member_ordinal,
+         group_round_ordinal, ordinal, expected_exercise_id,
+         expected_exercise_name_snapshot, actual_exercise_id,
+         actual_exercise_name_snapshot, status)
+      VALUES
+        ('fixture-performed-exercise-v16', 4101, 'fixture-performed-group-v16',
+         ${sqlValue(prescriptionId)}, 0, 0, 0, ${sqlValue(primaryExerciseId)},
+         ${sqlValue(primaryExerciseName)}, ${sqlValue(primaryExerciseId)},
+         ${sqlValue(primaryExerciseName)}, 'completed')
+    ''');
+    await db.customStatement('''
+      INSERT INTO exercise_target_recommendations
+        (id, performed_exercise_id, rule_version, confidence, completeness_json,
+         recommended_load_kg, load_basis, target_reps_min, target_reps_max,
+         target_rpe, increment_kg, evidence_cutoff_utc, comparator_count,
+         rationale_codes_json, was_overridden)
+      VALUES
+        ('fixture-recommendation-v16', 'fixture-performed-exercise-v16',
+         'fixture-rule-v1', 'medium', '{"load":true}', 62.5,
+         'totalExternal', 8, 10, 8, 2.5, $at, 1, '["fixture"]', 0)
+    ''');
+    await db.customStatement('''
+      INSERT INTO performed_sets
+        (id, performed_exercise_id, ordinal, role, target_load_kg,
+         target_load_basis, target_reps_min, target_reps_max, target_rpe,
+         actual_load_kg, actual_load_basis, actual_reps, actual_rpe,
+         effort_mode, ended_at_failure, tempo_eccentric_seconds,
+         tempo_bottom_pause_seconds, tempo_concentric_seconds,
+         tempo_lockout_pause_seconds, paused_rep_position, paused_rep_seconds,
+         notes)
+      VALUES
+        ('fixture-performed-set-v16', 'fixture-performed-exercise-v16', 0,
+         'working', 60, 'totalExternal', 8, 10, 8, 60, 'totalExternal', 8, 8,
+         'standard', 0, 3, 1, 1, 0, 'bottom', 1, 'Fixture performed set')
+    ''');
+    await db.customStatement('''
+      INSERT INTO performed_set_segments
+        (id, performed_set_id, ordinal, reps, external_load_kg, load_basis,
+         assistance_kg, rest_before_seconds)
+      VALUES
+        ('fixture-performed-segment-v16', 'fixture-performed-set-v16', 0, 8,
+         60, 'totalExternal', NULL, 120)
+    ''');
+    await db.customStatement('''
+      INSERT INTO performed_rest_periods
+        (id, session_id, performed_set_id, performed_exercise_group_id, scope,
+         recommended_seconds, selected_seconds, actual_seconds, source,
+         started_at_utc, ended_at_utc, end_reason)
+      VALUES
+        ('fixture-rest-period-v16', 4101, 'fixture-performed-set-v16',
+         'fixture-performed-group-v16', 'exerciseSet', 120, 120, 118,
+         'prescription', ${at + 1000000}, ${at + 119000000}, 'elapsed')
+    ''');
   }
 }
 
@@ -301,16 +676,25 @@ class B03BackupV7Fixture {
   static const String fixtureId = 'b03-backup-v7-legacy-baseline-01';
   static const String fixturePath =
       'test/fixtures/data/b03_backup_v7_legacy_baseline.json';
+  static const String completeFixturePath =
+      'test/fixtures/data/b03_backup_v7_complete_graph.json';
   static const String checksum =
       '16e486faf0abba0f4b075a928eab25f3fe9e651e68687a6f66da14b944daa3ae';
+  static const String completeChecksum =
+      '02dc06612a6798ceec21efdc3bc9617a58e9e99af87b765ce11992b1aa51890a';
   static const String timestamp = '2026-01-15T08:30:00.000Z';
 
   static BackupData load() {
-    final file = File(fixturePath);
+    return loadFromFile(File(fixturePath), fixturePath);
+  }
+
+  static BackupData loadComplete() {
+    return loadFromFile(File(completeFixturePath), completeFixturePath);
+  }
+
+  static BackupData loadFromFile(File file, String path) {
     if (!file.existsSync()) {
-      throw StateError(
-        'Missing checked-in B03 Backup-v7 fixture: $fixturePath',
-      );
+      throw StateError('Missing checked-in B03 Backup-v7 fixture: $path');
     }
     final decoded = jsonDecode(file.readAsStringSync());
     if (decoded is! Map) {
@@ -318,7 +702,7 @@ class B03BackupV7Fixture {
     }
     final backup = BackupData.fromJson(Map<String, dynamic>.from(decoded));
     if (backup.version != version || backup.schemaVersion != schemaVersion) {
-      throw StateError('B03 Backup-v7 fixture version drifted.');
+      throw StateError('B03 Backup-v7 fixture version drifted: $path');
     }
     return backup;
   }
@@ -511,6 +895,8 @@ class B03LogicalSnapshot {
   ];
 
   static const Set<String> _localIntegerIdTables = {
+    'achievement_unlocks',
+    'daily_hydrations',
     'food_items',
     'food_logs',
     'exercises',
@@ -527,6 +913,7 @@ class B03LogicalSnapshot {
     'health_provenances',
     'cardio_session_details',
     'mobility_session_details',
+    'training_plan_settings',
   };
 
   static const Map<String, List<String>> _preferredOrder = {
@@ -538,6 +925,25 @@ class B03LogicalSnapshot {
     'health_provenances': ['provider', 'external_id', 'fingerprint', 'id'],
     'muscles': ['id', 'catalog_version', 'display_name'],
     'exercise_muscle_mappings': ['exercise_id', 'muscle_id', 'role', 'id'],
+    'programs': ['id', 'created_at_utc'],
+    'program_versions': ['id', 'version_number'],
+    'program_blocks': ['program_version_id', 'ordinal', 'id'],
+    'program_weeks': ['program_version_id', 'program_week_ordinal', 'id'],
+    'session_templates': ['program_week_id', 'ordinal', 'id'],
+    'scheduled_session_occurrences': [
+      'effective_local_date',
+      'program_week_ordinal',
+      'session_ordinal',
+      'id',
+    ],
+    'occurrence_events': ['occurrence_id', 'occurred_at_utc', 'id'],
+    'exercise_groups': ['session_template_id', 'ordinal', 'id'],
+    'exercise_group_members': ['exercise_group_id', 'ordinal', 'id'],
+    'performed_exercise_groups': ['session_id', 'ordinal', 'id'],
+    'performed_exercises': ['session_id', 'ordinal', 'id'],
+    'performed_sets': ['performed_exercise_id', 'ordinal', 'id'],
+    'performed_set_segments': ['performed_set_id', 'ordinal', 'id'],
+    'performed_rest_periods': ['session_id', 'started_at_utc', 'id'],
   };
 
   static const Map<String, String> _foreignKeyTargets = {
@@ -562,12 +968,14 @@ class B03LogicalSnapshot {
     'travel_context_occurrence_id': 'travel_context_occurrences',
     'exercise_group_id': 'exercise_groups',
     'exercise_id': 'exercises',
+    'exercise_user_preference_id': 'exercise_user_preferences',
     'muscle_id': 'muscles',
     'cardio_session_id': 'cardio_session_details',
     'performed_exercise_group_id': 'performed_exercise_groups',
     'performed_exercise_id': 'performed_exercises',
     'performed_set_id': 'performed_sets',
     'active_program_version_id': 'program_versions',
+    'legacy_routine_id': 'workout_routines',
   };
 
   String get canonicalJson => _encodeTables(tables);
@@ -686,7 +1094,13 @@ class B03LogicalSnapshot {
       if (entry.key == 'id' && _localIntegerIdTables.contains(table)) {
         continue;
       }
-      final target = _foreignKeyTargets[entry.key];
+      final target =
+          _foreignKeyTargets[entry.key] ??
+          ((table == 'cardio_session_details' ||
+                      table == 'mobility_session_details') &&
+                  entry.key == 'session_id'
+              ? 'workout_sessions'
+              : null);
       if (target != null && entry.value != null) {
         normalized[entry.key] =
             '@$target:${_referenceToken(target, entry.value, tokens)}';

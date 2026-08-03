@@ -185,6 +185,122 @@ void main() {
     );
 
     test(
+      'complete graph fixture contains non-empty B01 and B02 relationships',
+      () async {
+        final file = await B03V16Fixture.copyCompleteTo(tempDir);
+        expect(B03V16Fixture.readUserVersion(file), 16);
+        expect(sha256File(file), B03V16Fixture.completeChecksum);
+
+        final db = B03V16Fixture.open(file);
+        try {
+          final snapshot = await B03LogicalSnapshot.capture(db);
+          const requiredNonEmptyTables = {
+            'food_items',
+            'food_logs',
+            'programs',
+            'program_versions',
+            'program_blocks',
+            'program_weeks',
+            'session_templates',
+            'exercise_prescriptions',
+            'scheduled_session_occurrences',
+            'occurrence_events',
+            'training_plan_settings',
+            'equipment_profiles',
+            'equipment_profile_items',
+            'travel_contexts',
+            'travel_context_occurrences',
+            'exercise_user_preferences',
+            'exercise_setup_values',
+            'exercise_personal_cues',
+            'muscles',
+            'exercise_muscle_mappings',
+            'health_provenances',
+            'workout_drafts',
+            'legacy_routine_program_mappings',
+            'exercise_groups',
+            'exercise_group_members',
+            'strength_set_prescriptions',
+            'cardio_intervals',
+            'mobility_session_details',
+            'performed_exercise_groups',
+            'performed_exercises',
+            'exercise_target_recommendations',
+            'performed_sets',
+            'performed_set_segments',
+            'performed_rest_periods',
+            'workout_routines',
+            'routine_days',
+            'routine_exercises',
+            'body_measurements',
+            'daily_hydrations',
+            'achievement_unlocks',
+          };
+          for (final table in requiredNonEmptyTables) {
+            expect(
+              snapshot.tables[table],
+              isNotEmpty,
+              reason: 'complete fixture must exercise $table',
+            );
+          }
+          expect(
+            await db.customSelect('PRAGMA foreign_key_check').get(),
+            isEmpty,
+          );
+        } finally {
+          await db.close();
+        }
+      },
+    );
+
+    test(
+      'logical comparison ignores remapped local IDs but preserves relationships',
+      () {
+        final source = B03LogicalSnapshot({
+          'workout_routines': [
+            {'id': 11, 'name': 'Fixture Routine', 'goal': 'strength'},
+          ],
+          'routine_days': [
+            {'id': 12, 'routine_id': 11, 'day_of_week': 1, 'name': 'Day 1'},
+          ],
+          'routine_exercises': [
+            {'id': 13, 'day_id': 12, 'exercise_name': 'Press', 'sets': 3},
+          ],
+          'achievement_unlocks': [
+            {'id': 14, 'achievement_id': 'fixture-achievement'},
+          ],
+          'daily_hydrations': [
+            {'id': 15, 'date_string': '2026-01-15', 'total_ml': 1800},
+          ],
+          'training_plan_settings': [
+            {'id': 1, 'active_program_version_id': 'version-1'},
+          ],
+        });
+        final restored = B03LogicalSnapshot({
+          'workout_routines': [
+            {'id': 101, 'name': 'Fixture Routine', 'goal': 'strength'},
+          ],
+          'routine_days': [
+            {'id': 102, 'routine_id': 101, 'day_of_week': 1, 'name': 'Day 1'},
+          ],
+          'routine_exercises': [
+            {'id': 103, 'day_id': 102, 'exercise_name': 'Press', 'sets': 3},
+          ],
+          'achievement_unlocks': [
+            {'id': 104, 'achievement_id': 'fixture-achievement'},
+          ],
+          'daily_hydrations': [
+            {'id': 105, 'date_string': '2026-01-15', 'total_ml': 1800},
+          ],
+          'training_plan_settings': [
+            {'id': 1, 'active_program_version_id': 'version-1'},
+          ],
+        });
+        source.assertLogicallyEquals(restored);
+      },
+    );
+
+    test(
       'B02 migration failure injector leaves the original file readable',
       () async {
         final source = await V15DbFixtures.createSourceDatabase(

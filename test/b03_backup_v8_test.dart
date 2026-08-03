@@ -192,6 +192,44 @@ void main() {
       },
     );
 
+    test('complete Backup-v7 graph restores with semantic equality', () async {
+      final fixture = B03BackupV7Fixture.loadComplete();
+      final fixtureFile = File(B03BackupV7Fixture.completeFixturePath);
+      expect(
+        sha256Text(fixtureFile.readAsStringSync()),
+        B03BackupV7Fixture.completeChecksum,
+      );
+      expect(fixture.version, 7);
+      expect(fixture.schemaVersion, 16);
+      expect(fixture.programs, isNotEmpty);
+      expect(fixture.scheduledSessionOccurrences, isNotEmpty);
+      expect(fixture.exerciseGroups, isNotEmpty);
+      expect(fixture.performedSets, isNotEmpty);
+      expect(fixture.cardioIntervals, isNotEmpty);
+      expect(fixture.mobilitySessionDetails, isNotEmpty);
+      expect(fixture.exerciseTargetRecommendations, isNotEmpty);
+      expect(fixture.achievementUnlocks, isNotEmpty);
+      expect(fixture.dailyHydrations, isNotEmpty);
+
+      final target = AppDatabase.memory();
+      addTearDown(target.close);
+      await fixture.restoreToDatabase(target);
+      expect(
+        await target.customSelect('PRAGMA foreign_key_check').get(),
+        isEmpty,
+      );
+
+      final sourceFile = await B03V16Fixture.copyCompleteTo(
+        tempDir,
+        filename: 'complete-v16-golden.db',
+      );
+      final source = B03V16Fixture.open(sourceFile);
+      addTearDown(source.close);
+      final golden = await B03LogicalSnapshot.capture(source);
+      final restored = await B03LogicalSnapshot.capture(target);
+      golden.assertLogicallyEquals(restored);
+    });
+
     test(
       'unsupported newer versions fail before any target mutation',
       () async {

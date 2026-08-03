@@ -3714,7 +3714,17 @@ class BackupData {
           );
     }
     for (final row in cardioIntervals) {
-      await db.into(db.cardioIntervals).insert(row.toCompanion(true));
+      await db
+          .into(db.cardioIntervals)
+          .insert(
+            row
+                .toCompanion(true)
+                .copyWith(
+                  cardioSessionId: Value(
+                    sessionIdMap[row.cardioSessionId] ?? row.cardioSessionId,
+                  ),
+                ),
+          );
     }
     for (final row in mobilitySessionDetails) {
       await db
