@@ -6,7 +6,7 @@ Manifest version: `1`
 Normalization contract: `case-and-unicode-whitespace-v1`
 Identity namespace: `global-durable-id-v1`
 
-Manifest SHA-256: `f5f727eef95baa84ae6d26dc94ff16e9f54069c6f25f160e138154f9b3a80ef1`
+Manifest SHA-256: `0fa8d39aa6c9299780e62494721b0023b13f793bacce8b28ee87fa8e4d5c58c1`
 
 This artifact records the reviewed identity boundary for the existing bundled
 nutrition assets. The JSON manifest is authoritative for portable IDs. The
@@ -19,7 +19,7 @@ identity authorities.
 |---|---:|
 | Bundled base asset rows | 573 |
 | Regional asset rows | 25 |
-| Reviewed catalogue entries | 598 |
+| Reviewed catalogue entries | 6 |
 | Total manifest entries, including one deprecated fixture identity | 599 |
 | Canonical catalogue entries | 297 |
 | Preparation variants | 165 |
@@ -38,10 +38,13 @@ identity authorities.
 | Ambiguous legacy/alias records | 10 |
 | Unresolved legacy/unknown records | 2 |
 | Deprecated identities | 1 |
-| Records requiring manual review at this gate | 0 |
+| Records requiring manual review at this gate | 592 |
 
-All 598 source rows have exactly one reviewed manifest entry and one explicit
-legacy/source mapping. The five exact normalized cross-source overlaps remain
+All 598 source rows have exactly one explicit manifest entry and one explicit
+legacy/source mapping. Six entries retain reviewed status because their
+approved alias evidence is checked in; the remaining 592 retain their stable
+identity and proposed kind/variant metadata but are manual-review suggestions
+only. The five exact normalized cross-source overlaps remain
 distinct identities:
 
 - `gujarati kadhi`
@@ -74,7 +77,8 @@ section rejects the complete manifest before it can be exposed.
 
 Every catalogue row also has an explicit source review record containing its
 target ID, kind, classification, variant relationship, review state, source
-fingerprint, and evidence reason. Missing review metadata produces an
+fingerprint, and evidence reason. Only the six entries with explicit
+`evidence_ref` values are reviewed. Missing review metadata produces an
 `unknown`/`manualReview` record in maintenance output; name, directory, brand,
 preparation, and regional heuristics cannot create a reviewed classification.
 Deprecated identities remain resolvable and retain their IDs.
@@ -119,9 +123,11 @@ legacy mappings. No historical food-log row is changed by this artifact.
 The following are intentionally not automatic aliases: generic dish names,
 names that require punctuation stripping, names that hide a preparation or
 brand distinction, restaurant/home-made estimates, and equal-name provider
-records. There are no catalogue rows marked `manualReview` in this checked-in
-v1 fixture because all 598 source classifications have explicit review
-records. A newly added source without that evidence is emitted as
+records. The checked-in v1 fixture has 592 catalogue rows marked `manualReview`
+because the repository does not contain per-record evidence for their
+classifications. Their stable IDs and proposed kinds remain visible for
+maintenance, but they cannot resolve as production identities. A newly added
+source without that evidence is emitted as
 `manualReview`/`unknown` and is included in the maintenance failure output.
 The explicit ambiguous and unresolved records remain visible for future
 Sol/food-catalogue review; they must not be resolved by fuzzy matching or by

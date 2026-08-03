@@ -244,6 +244,7 @@ class FoodIdentitySourceReview {
   final String? parentId;
   final String? familyId;
   final String reason;
+  final String? evidenceRef;
 
   const FoodIdentitySourceReview({
     required this.sourceKey,
@@ -256,6 +257,7 @@ class FoodIdentitySourceReview {
     required this.parentId,
     required this.familyId,
     required this.reason,
+    required this.evidenceRef,
   });
 
   factory FoodIdentitySourceReview.fromJson(Map<String, dynamic> json) {
@@ -270,6 +272,7 @@ class FoodIdentitySourceReview {
       parentId: _optionalString(json, 'parent_id'),
       familyId: _optionalString(json, 'family_id'),
       reason: _requiredString(json, 'reason'),
+      evidenceRef: _optionalString(json, 'evidence_ref'),
     );
   }
 
@@ -284,6 +287,7 @@ class FoodIdentitySourceReview {
     'parent_id': parentId,
     'family_id': familyId,
     'reason': reason,
+    'evidence_ref': evidenceRef,
   };
 }
 
@@ -1116,7 +1120,9 @@ class FoodIdentityManifest {
       );
     }
     if (sourceFingerprintToId.values.toSet().length != catalogue.length) {
-      throw StateError('Source fingerprints must resolve one-to-one to catalogue IDs.');
+      throw StateError(
+        'Source fingerprints must resolve one-to-one to catalogue IDs.',
+      );
     }
 
     final reviewTargets = <String>{};
@@ -1182,15 +1188,24 @@ class FoodIdentityManifest {
         );
       }
       if (review.reviewState == FoodIdentityReviewState.reviewed &&
-          review.reason.trim().isEmpty) {
+          (review.reason.trim().isEmpty ||
+              review.evidenceRef?.trim().isEmpty != false)) {
         throw StateError(
-          'Reviewed source ${review.sourceKey} must include evidence.',
+          'Reviewed source ${review.sourceKey} must include evidence and '
+          'evidence_ref.',
         );
       }
       if (review.reviewState == FoodIdentityReviewState.manualReview &&
           review.reason.trim().isEmpty) {
         throw StateError(
           'Manual-review source ${review.sourceKey} must include a reason.',
+        );
+      }
+      if (review.reviewState != FoodIdentityReviewState.reviewed &&
+          review.evidenceRef != null) {
+        throw StateError(
+          'Unreviewed source ${review.sourceKey} cannot carry reviewed '
+          'evidence metadata.',
         );
       }
       if (!entryIds.contains(review.targetId)) {
@@ -1403,6 +1418,7 @@ class FoodIdentityManifest {
         'reason': hasReview
             ? review['reason'] as String
             : 'No explicit reviewed source metadata; manual review required.',
+        'evidence_ref': hasReview ? review['evidence_ref'] : null,
       };
       generatedSourceReviews[row.sourceKey] = sourceReview;
       entries.add({

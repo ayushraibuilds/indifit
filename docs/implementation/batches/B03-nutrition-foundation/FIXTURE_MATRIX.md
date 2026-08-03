@@ -175,9 +175,11 @@ The checked-in `assets/data/nutrition_food_identity_manifest.json` is the
 runtime authority for the 598 bundled and regional catalogue rows. Manifest
 version `1` uses the `global-durable-id-v1` namespace and carries 598 explicit
 source-to-ID mappings, 598 source fingerprints, and 598 source review records.
-The current artifact contains 598 catalogue entries, 15 aliases, 600 legacy
-mappings, 8 fixture-only identities, 165 preparation variants, 25 regional
-variants, 108 serving-presentation variants, and 3 branded entries.
+Six catalogue rows have explicit evidence references and remain reviewed; 592
+rows are visible `manualReview` suggestions until per-record evidence is
+added. The current artifact contains 598 catalogue entries, 15 aliases, 600
+legacy mappings, 8 fixture-only identities, 165 preparation variants, 25
+regional variants, 108 serving-presentation variants, and 3 branded entries.
 
 Maintenance generation requires the reviewed source mapping. Existing IDs are
 selected by source key or by a fingerprint that excludes only the mutable
@@ -185,7 +187,9 @@ English display name; sorted position and insertion order are never identity
 inputs. An unmapped source row fails visibly. A newly mapped row requires an
 explicit portable ID and is emitted as `manualReview`/`unknown` unless a
 source-review record explicitly supplies its kind, variant relationship,
-classification, and evidence reason.
+classification, and evidence reason. Reviewed records additionally require a
+non-empty `evidence_ref`; unsubstantiated classifications cannot be exposed as
+reviewed production identity.
 
 The validator atomically rejects duplicate IDs across entries, canonical
 machine identifiers, aliases, legacy mappings, fixtures, fixture portable IDs,

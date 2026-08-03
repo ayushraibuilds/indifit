@@ -118,6 +118,42 @@ void main() {
       expect(resolver.resolve('Masala Dosai').isResolved, isTrue);
     });
 
+    test('reviewed source records require explicit evidence references', () {
+      final payload = manifestJson();
+      final sourceReviews =
+          (payload['source_reviews']! as Map<String, dynamic>);
+      final manualReview = sourceReviews.entries.firstWhere(
+        (item) =>
+            (item.value as Map<String, dynamic>)['review_state'] ==
+            'manualReview',
+      );
+      final review =
+          Map<String, dynamic>.from(manualReview.value as Map<String, dynamic>)
+            ..['review_state'] = 'reviewed'
+            ..['reason'] = 'reviewed without an evidence reference'
+            ..remove('evidence_ref');
+      sourceReviews[manualReview.key] = review;
+      final entries = (payload['entries']! as List).cast<dynamic>();
+      final target =
+          entries.firstWhere(
+                (item) =>
+                    (item as Map<String, dynamic>)['id'] == review['target_id'],
+              )
+              as Map<String, dynamic>;
+      target['review_state'] = 'reviewed';
+
+      expect(
+        () => FoodIdentityManifest.fromJson(payload),
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        manifest.sourceReviews.values.where(
+          (review) => review.reviewState == FoodIdentityReviewState.reviewed,
+        ),
+        hasLength(6),
+      );
+    });
+
     test('global durable identity collisions fail atomically', () {
       final fixtureCollision = manifestJson();
       final fixture =
@@ -450,7 +486,25 @@ void main() {
       expect(manifest.deprecatedCount, 1);
       expect(manifest.ambiguousCount, 10);
       expect(manifest.unresolvedCount, 2);
-      expect(manifest.manualReviewCount, 0);
+      expect(manifest.manualReviewCount, 592);
+      expect(
+        manifest.sourceReviews.values
+            .where(
+              (review) =>
+                  review.reviewState == FoodIdentityReviewState.reviewed,
+            )
+            .length,
+        6,
+      );
+      expect(
+        manifest.sourceReviews.values
+            .where(
+              (review) =>
+                  review.reviewState == FoodIdentityReviewState.reviewed,
+            )
+            .every((review) => review.evidenceRef != null),
+        isTrue,
+      );
     });
 
     test('checked-in manifest bytes have a stable golden checksum', () {
@@ -459,7 +513,7 @@ void main() {
           .toString();
       expect(
         checksum,
-        'f5f727eef95baa84ae6d26dc94ff16e9f54069c6f25f160e138154f9b3a80ef1',
+        '0fa8d39aa6c9299780e62494721b0023b13f793bacce8b28ee87fa8e4d5c58c1',
       );
     });
 
@@ -632,6 +686,29 @@ void main() {
           directory.deleteSync(recursive: true);
         }
       });
+
+      test(
+        'path, brand, preparation, and regional heuristics do not grant review',
+        () {
+          final heuristicSamples = [
+            entryNamed('Amul Fresh Paneer (Raw)'),
+            entryNamed('Basmati White Rice (Cooked)'),
+            manifest.entries.firstWhere(
+              (entry) =>
+                  entry.provenance.key.startsWith('asset:regional/') &&
+                  entry.kind == FoodIdentityKind.regionalVariant,
+            ),
+          ];
+          for (final entry in heuristicSamples) {
+            expect(entry.reviewState, FoodIdentityReviewState.manualReview);
+            expect(
+              manifest.sourceReviews[entry.provenance.key]!.evidenceRef,
+              isNull,
+            );
+            expect(resolver.resolve(entry.displayName).isUnresolved, isTrue);
+          }
+        },
+      );
     });
   });
 }

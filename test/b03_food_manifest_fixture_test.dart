@@ -166,7 +166,7 @@ void main() {
 
   group('B03-03 manifest-to-asset coverage', () {
     test(
-      'every base and regional source row has one reviewed manifest entry',
+      'every base and regional source row has one explicit manifest entry',
       () {
         final audit = B03FoodManifestAudit.loadFromAssetFilesSync();
         final manifest = FoodIdentityManifest.loadFromAssetFileSync();
@@ -181,7 +181,10 @@ void main() {
             reason: 'Missing manifest entry: $sourceKey',
           );
           expect(entry!.isCatalogue, isTrue);
-          expect(entry.reviewState, FoodIdentityReviewState.reviewed);
+          expect(
+            entry.reviewState,
+            manifest.sourceReviews[sourceKey]!.reviewState,
+          );
           final mapping = manifest.getLegacyMapping(sourceKey);
           expect(
             mapping,
