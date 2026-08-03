@@ -40,6 +40,34 @@ enum QuantityPreparationState { unspecified, raw, cooked }
 
 enum HouseholdResolutionState { unresolved, volumeResolved }
 
+/// User-entered quantity boundaries owned by [NutritionQuantityService].
+///
+/// These contexts are deliberately separate from [QuantityDimension]. A
+/// quantity keeps its typed unit and dimension while the caller chooses the
+/// domain rule that applies to user input.
+enum NutritionQuantityInputContext {
+  foodLogConsumed,
+  recipeIngredient,
+  servingCount,
+  userEnteredPortion,
+}
+
+extension NutritionQuantityInputContextLabels on NutritionQuantityInputContext {
+  String get stableId => switch (this) {
+    NutritionQuantityInputContext.foodLogConsumed => 'food_log_consumed',
+    NutritionQuantityInputContext.recipeIngredient => 'recipe_ingredient',
+    NutritionQuantityInputContext.servingCount => 'serving_count',
+    NutritionQuantityInputContext.userEnteredPortion => 'user_entered_portion',
+  };
+
+  String get displayLabel => switch (this) {
+    NutritionQuantityInputContext.foodLogConsumed => 'food-log quantity',
+    NutritionQuantityInputContext.recipeIngredient => 'recipe ingredient',
+    NutritionQuantityInputContext.servingCount => 'serving count',
+    NutritionQuantityInputContext.userEnteredPortion => 'user-entered portion',
+  };
+}
+
 /// A typed, recoverable quantity failure.
 sealed class QuantityError implements Exception {
   final String message;
@@ -100,6 +128,29 @@ class MalformedQuantityTextError extends QuantityError {
 
 class PrecisionOverflowError extends QuantityError {
   const PrecisionOverflowError(super.message);
+}
+
+/// A context-specific positive-input failure.
+///
+/// Core quantities intentionally allow zero for arithmetic and aggregation.
+/// This error is raised only when a caller applies a positive user-input
+/// boundary. The original typed amount, unit, and dimension are retained for
+/// recovery and accessible error reporting.
+class NonPositiveQuantityError extends QuantityError {
+  final NutritionQuantityInputContext context;
+  final QuantityAmount amount;
+  final QuantityUnit unit;
+  final QuantityDimension dimension;
+
+  NonPositiveQuantityError({
+    required this.context,
+    required this.amount,
+    required this.unit,
+    required this.dimension,
+  }) : super(
+         '${context.displayLabel} must be greater than zero; '
+         'received ${amount.toString()} ${QuantityUnitRegistry.definitionFor(unit).symbol}.',
+       );
 }
 
 /// An exact non-negative decimal value.
@@ -1001,6 +1052,65 @@ class Quantity implements Comparable<Quantity> {
       );
     }
   }
+}
+
+/// Pure quantity arithmetic and validation owned by the nutrition domain.
+///
+/// [Quantity] itself remains suitable for zero-valued accumulators, known-zero
+/// nutrient totals, subtraction that reaches zero, and empty aggregation.
+/// Callers that accept user-entered food quantities must apply one of these
+/// positive-input boundaries before persistence or calculation.
+class NutritionQuantityService {
+  NutritionQuantityService._();
+
+  /// Validates a quantity for a positive user-input context and returns the
+  /// same typed value unchanged on success.
+  static Quantity validatePositive(
+    Quantity quantity, {
+    required NutritionQuantityInputContext context,
+  }) {
+    if (quantity.isZero) {
+      throw NonPositiveQuantityError(
+        context: context,
+        amount: quantity.amount,
+        unit: quantity.unit,
+        dimension: quantity.dimension,
+      );
+    }
+    return quantity;
+  }
+
+  static Quantity validatePositiveConsumedFoodLogQuantity(Quantity quantity) =>
+      validatePositive(
+        quantity,
+        context: NutritionQuantityInputContext.foodLogConsumed,
+      );
+
+  static Quantity validatePositiveRecipeIngredientQuantity(Quantity quantity) =>
+      validatePositive(
+        quantity,
+        context: NutritionQuantityInputContext.recipeIngredient,
+      );
+
+  static Quantity validatePositiveServingCount(Quantity quantity) =>
+      validatePositive(
+        quantity,
+        context: NutritionQuantityInputContext.servingCount,
+      );
+
+  static Quantity validatePositiveUserEnteredPortion(Quantity quantity) =>
+      validatePositive(
+        quantity,
+        context: NutritionQuantityInputContext.userEnteredPortion,
+      );
+
+  /// Short alias for callers that already identify the food-log boundary.
+  static Quantity validatePositiveConsumedQuantity(Quantity quantity) =>
+      validatePositiveConsumedFoodLogQuantity(quantity);
+
+  /// Short alias for callers that already identify the recipe boundary.
+  static Quantity validatePositiveRecipeIngredient(Quantity quantity) =>
+      validatePositiveRecipeIngredientQuantity(quantity);
 }
 
 QuantityAmount _coerceScalar(Object scalar) {
