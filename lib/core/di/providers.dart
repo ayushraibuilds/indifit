@@ -11,6 +11,7 @@ import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/nutrition_recipe_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
 import '../../data/repositories/travel_repository.dart';
@@ -27,6 +28,10 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   ref.onDispose(() => db.close());
   return db;
 });
+
+final nutritionRecipeRepositoryProvider = Provider<NutritionRecipeRepository>(
+  (ref) => NutritionRecipeRepository(db: ref.watch(databaseProvider)),
+);
 
 final dioProvider = Provider<Dio>((ref) {
   // AppConfig.apiKey validates the build key and throws a deterministic StateError
