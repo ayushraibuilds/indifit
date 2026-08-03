@@ -19,6 +19,7 @@ import '../../data/repositories/travel_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../config/app_config.dart';
+import '../nutrition_calculation_service.dart';
 import '../privacy/privacy_policy.dart';
 import '../services/local_schedule_date_service.dart';
 
@@ -36,9 +37,14 @@ final nutritionRecipeRepositoryProvider = Provider<NutritionRecipeRepository>(
 
 final nutritionTransformationRepositoryProvider =
     Provider<NutritionTransformationRepository>(
-      (ref) => NutritionTransformationRepository(
-        db: ref.watch(databaseProvider),
-      ),
+      (ref) =>
+          NutritionTransformationRepository(db: ref.watch(databaseProvider)),
+    );
+
+/// The recipe calculator is pure and owns no repository or database state.
+final nutritionCalculationServiceProvider =
+    Provider<NutritionCalculationService>(
+      (_) => const NutritionCalculationService(),
     );
 
 final dioProvider = Provider<Dio>((ref) {
