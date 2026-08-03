@@ -149,4 +149,134 @@ void main() {
       }
     },
   );
+
+  test('constraint results use the accepted cautious taxonomy', () async {
+    final db = AppDatabase.memory();
+    addTearDown(db.close);
+
+    await db
+        .into(db.nutritionConsumptionSnapshots)
+        .insert(
+          NutritionConsumptionSnapshotsCompanion.insert(
+            id: 'snapshot-constraint-taxonomy',
+            userId: 'fixture-user',
+            loggedAt: DateTime.utc(2026, 1, 1),
+            mealCategory: 'lunch',
+            sourceType: 'manual',
+            calculatorVersion: 'fixture-v1',
+            completeness: 'unknown',
+            estimateStatus: 'none',
+          ),
+        );
+    await db
+        .into(db.nutritionFoods)
+        .insert(
+          NutritionFoodsCompanion.insert(
+            id: 'snapshot-taxonomy-food',
+            kind: 'canonical',
+            displayName: 'Snapshot taxonomy food',
+            locale: 'en-IN',
+            sourceType: 'fixture',
+            lifecycle: 'active',
+          ),
+        );
+    await db
+        .into(db.nutritionRecipes)
+        .insert(
+          NutritionRecipesCompanion.insert(
+            id: 'snapshot-taxonomy-recipe',
+            userId: 'fixture-user',
+            name: 'Snapshot taxonomy recipe',
+            lifecycle: 'active',
+          ),
+        );
+    await db
+        .into(db.nutritionRecipeVersions)
+        .insert(
+          NutritionRecipeVersionsCompanion.insert(
+            id: 'snapshot-taxonomy-recipe-v1',
+            recipeId: 'snapshot-taxonomy-recipe',
+            versionNumber: 1,
+            status: 'draft',
+            calcRuleVersion: 'fixture-v1',
+            source: 'fixture',
+          ),
+        );
+    await expectLater(
+      db
+          .into(db.nutritionSnapshotItems)
+          .insert(
+            NutritionSnapshotItemsCompanion.insert(
+              id: 'snapshot-item-both-references',
+              snapshotId: 'snapshot-constraint-taxonomy',
+              position: 0,
+              foodId: const Value('snapshot-taxonomy-food'),
+              recipeVersionId: const Value('snapshot-taxonomy-recipe-v1'),
+              quantityValue: 1,
+              quantityDimension: 'serving',
+              quantityUnit: 'serving',
+            ),
+          ),
+      throwsA(isA<Exception>()),
+    );
+    for (final result in const [
+      'confirmed_conflict',
+      'possible_conflict',
+      'no_known_conflict',
+      'insufficient_information',
+    ]) {
+      await db
+          .into(db.nutritionConstraintDefinitions)
+          .insert(
+            NutritionConstraintDefinitionsCompanion.insert(
+              id: 'constraint-$result',
+              key: 'fixture_constraint_$result',
+              type: 'allergy',
+              displayName: 'Fixture constraint $result',
+              version: 1,
+            ),
+          );
+      await db
+          .into(db.nutritionUserConstraints)
+          .insert(
+            NutritionUserConstraintsCompanion.insert(
+              id: 'user-constraint-$result',
+              userId: 'fixture-user',
+              definitionId: 'constraint-$result',
+              value: 'avoid',
+              strictness: 'avoid',
+              effectiveFrom: DateTime.utc(2026, 1, 1),
+              source: 'fixture',
+            ),
+          );
+      await db
+          .into(db.nutritionSnapshotConstraintResults)
+          .insert(
+            NutritionSnapshotConstraintResultsCompanion.insert(
+              id: 'result-$result',
+              snapshotId: 'snapshot-constraint-taxonomy',
+              constraintId: 'user-constraint-$result',
+              result: result,
+              ruleVersion: 'fixture-v1',
+              evaluatedAt: DateTime.utc(2026, 1, 1),
+            ),
+          );
+    }
+
+    await expectLater(
+      db
+          .into(db.nutritionSnapshotConstraintResults)
+          .insert(
+            NutritionSnapshotConstraintResultsCompanion.insert(
+              id: 'result-unsafe-shortcut',
+              snapshotId: 'snapshot-constraint-taxonomy',
+              constraintId: 'user-constraint-confirmed_conflict',
+              result: 'safe',
+              ruleVersion: 'fixture-v1',
+              evaluatedAt: DateTime.utc(2026, 1, 1),
+            ),
+          ),
+      throwsA(isA<Exception>()),
+    );
+  });
 }

@@ -555,6 +555,7 @@ class NutritionConsumptionSnapshots extends Table {
   List<String> get customConstraints => [
     "CHECK (completeness IN ('complete', 'partial', 'unknown', 'not_applicable', 'invalid'))",
     "CHECK (estimate_status IN ('none', 'estimated', 'mixed', 'unknown'))",
+    'CHECK ((recipe_version_id IS NULL) OR (thali_id IS NULL))',
   ];
 }
 
@@ -592,7 +593,7 @@ class NutritionSnapshotItems extends Table {
   @override
   List<String> get customConstraints => [
     'CHECK (position >= 0)',
-    'CHECK ((food_id IS NOT NULL) OR (recipe_version_id IS NOT NULL))',
+    'CHECK ((food_id IS NOT NULL) != (recipe_version_id IS NOT NULL))',
     'CHECK (quantity_value > 0)',
     "CHECK (quantity_dimension IN ('mass', 'volume', 'count', 'serving', 'household_reference'))",
     "CHECK (quantity_unit IN ('milligram', 'gram', 'kilogram', 'millilitre', 'litre', 'piece', 'serving', 'household_reference'))",
@@ -667,7 +668,7 @@ class NutritionFoodConstraintEvidence extends Table {
 
   @override
   List<String> get customConstraints => [
-    "CHECK (status IN ('present', 'absent', 'unknown', 'cross_contact'))",
+    "CHECK (status IN ('confirmed', 'possible', 'not_indicated', 'unknown'))",
     'CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1))',
     'CHECK (version >= 1)',
   ];
@@ -749,7 +750,7 @@ class NutritionSnapshotConstraintResults extends Table {
 
   @override
   List<String> get customConstraints => [
-    "CHECK (result IN ('safe', 'conflict', 'unknown', 'not_evaluated'))",
+    "CHECK (result IN ('confirmed_conflict', 'possible_conflict', 'no_known_conflict', 'insufficient_information'))",
   ];
 }
 
@@ -775,7 +776,7 @@ class NutritionSnapshotConstraintResultEvidence extends Table {
     'CHECK ((food_id IS NOT NULL) OR (snapshot_item_id IS NOT NULL))',
     "CHECK (evidence_kind IN ('food', 'ingredient', 'cross_contact', 'user_override'))",
     "CHECK ((evidence_kind = 'food' AND food_id IS NOT NULL) OR (evidence_kind <> 'food' AND snapshot_item_id IS NOT NULL))",
-    "CHECK (status IN ('present', 'absent', 'unknown', 'cross_contact'))",
+    "CHECK (status IN ('confirmed', 'possible', 'not_indicated', 'unknown'))",
     'CHECK (length(trim(source)) > 0)',
     'CHECK (length(trim(version)) > 0)',
   ];
