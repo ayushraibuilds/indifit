@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/database/app_database.dart';
+import '../nutrients.dart';
+import '../nutrition_consumption_snapshots.dart';
+import '../typed_quantities.dart';
 import 'backup_schema.dart';
 
 /// The schema-v17 nutrition graph is deliberately kept out of the v7 DTO.
@@ -336,6 +339,7 @@ class NutritionBackupGraph {
       ..._rows('nutrition_vessel_calibrations'),
     ], 'supersedes_calibration_id');
     _validateRelationships();
+    _validateSnapshotGraph();
   }
 
   Future<void> validateAgainstTarget(AppDatabase db) async {
@@ -745,6 +749,10 @@ class NutritionBackupGraph {
 
   Future<void> restoreInto(AppDatabase db) async {
     validateStructure();
+    await db.transaction(() => _restoreInto(db));
+  }
+
+  Future<void> _restoreInto(AppDatabase db) async {
     await _deleteOwnedRows(db);
     for (final table in _restoreOrder) {
       for (final row in _restoreRows(table)) {
@@ -940,11 +948,7 @@ class NutritionBackupGraph {
       );
     }
     for (final row in _rows('nutrition_snapshot_items')) {
-      _oneOf(
-        row['food_id'],
-        row['recipe_version_id'],
-        'snapshot item reference',
-      );
+      _validateSnapshotItemReference(row);
       _requireRef(snapshots, row['snapshot_id'], 'snapshot item snapshot_id');
     }
     for (final row in _rows('nutrition_snapshot_nutrients')) {
@@ -1007,6 +1011,633 @@ class NutritionBackupGraph {
         );
       }
     }
+  }
+
+  void _validateSnapshotGraph() {
+    final snapshotRows = <String, Map<String, dynamic>>{
+      for (final row in _rows('nutrition_consumption_snapshots'))
+        row['id'] as String: row,
+    };
+    final itemRows = <String, Map<String, dynamic>>{
+      for (final row in _rows('nutrition_snapshot_items'))
+        row['id'] as String: row,
+    };
+    final lineageBySnapshot = <String, NutritionConsumptionLineage>{};
+    // B03-06B shipped the schema-v17 tables before B03-11A owned the
+    // finalized snapshot contract. Such pre-11A rows may be present in a
+    // v8 graph without lineage or nutrient rows. They remain structurally
+    // restorable, but any row that opts into 11A lineage is validated as a
+    // complete immutable snapshot below.
+    final legacySnapshotIds = <String>{
+      for (final row in snapshotRows.values)
+        if (row['lineage'] == null) row['id'] as String,
+    };
+    final finalizedSnapshotIds = snapshotRows.keys
+        .where((id) => !legacySnapshotIds.contains(id))
+        .toSet();
+    final itemsBySnapshot = <String, List<Map<String, dynamic>>>{};
+    final successorByPredecessor = <String, String>{};
+    final correctionById = <String, String>{};
+    final commandById = <String, String>{};
+    final calculationFingerprintByItem = <String, String>{};
+
+    for (final row in _rows('nutrition_snapshot_items')) {
+      final snapshotId = row['snapshot_id'];
+      if (snapshotId is! String || !snapshotRows.containsKey(snapshotId)) {
+        throw BackupV8ValidationException(
+          'missing_reference',
+          'Snapshot item references a missing consumption snapshot.',
+        );
+      }
+      itemsBySnapshot.putIfAbsent(snapshotId, () => []).add(row);
+    }
+
+    for (final row in snapshotRows.values) {
+      final snapshotId = row['id'] as String;
+      final userId = row['user_id'];
+      if (userId is! String || userId.trim().isEmpty) {
+        throw BackupV8ValidationException(
+          'invalid_snapshot_owner',
+          'Consumption snapshots require a non-blank user ID.',
+        );
+      }
+      if (legacySnapshotIds.contains(snapshotId)) continue;
+      final lineage = _readSnapshotLineage(row['lineage'], snapshotId);
+      lineageBySnapshot[snapshotId] = lineage;
+      if (lineage.evidence['completeness'] is! Map ||
+          lineage.evidence['totals'] is! Map) {
+        throw BackupV8ValidationException(
+          'incomplete_snapshot_lineage',
+          'Consumption snapshot lineage must preserve completeness and totals.',
+        );
+      }
+      final evidenceItems = lineage.evidence['items'];
+      if (evidenceItems is! Map) {
+        throw BackupV8ValidationException(
+          'missing_snapshot_item_lineage',
+          'Consumption snapshot lineage must preserve item evidence.',
+        );
+      }
+      final calculatorVersion = row['calculator_version'];
+      final registryVersion = lineage.evidence['nutrient_registry_version'];
+      final completeness = lineage.evidence['completeness'] as Map?;
+      final totals = lineage.evidence['totals'] as Map?;
+      if (calculatorVersion is! String ||
+          calculatorVersion.trim().isEmpty ||
+          lineage.evidence['calculator_version'] != calculatorVersion ||
+          registryVersion != kNutrientRegistryVersion ||
+          completeness == null ||
+          completeness['state'] != row['completeness'] ||
+          totals == null ||
+          totals['facts'] is! Map) {
+        throw BackupV8ValidationException(
+          'snapshot_result_mismatch',
+          'Snapshot header and calculation lineage disagree.',
+        );
+      }
+      final rowsForSnapshot = itemsBySnapshot[snapshotId] ?? const [];
+      if (rowsForSnapshot.isEmpty) {
+        throw BackupV8ValidationException(
+          'empty_snapshot',
+          'A consumption snapshot must contain at least one item.',
+        );
+      }
+      final itemIds = <String>{};
+      final recipeIds = <String>{};
+      for (final item in rowsForSnapshot) {
+        final itemId = item['id'];
+        if (itemId is! String || !itemIds.add(itemId)) {
+          throw BackupV8ValidationException(
+            'duplicate_portable_id',
+            'Consumption snapshot item IDs must be unique.',
+          );
+        }
+        final evidence = evidenceItems[itemId];
+        if (evidence is! Map ||
+            evidence['quantity'] is! Map ||
+            evidence['calculation'] is! Map ||
+            evidence['evidence'] is! Map ||
+            evidence['source_type'] is! String ||
+            (evidence['source_type'] as String).trim().isEmpty) {
+          throw BackupV8ValidationException(
+            'missing_snapshot_item_lineage',
+            'Snapshot item $itemId is missing immutable calculation evidence.',
+          );
+        }
+        if (evidence['id'] != itemId ||
+            evidence['position'] != item['position']) {
+          throw BackupV8ValidationException(
+            'snapshot_item_projection_mismatch',
+            'Snapshot item projection disagrees with its immutable lineage.',
+          );
+        }
+        final quantity = _readSnapshotQuantity(evidence['quantity'], itemId);
+        final calculationFingerprint = _validateSnapshotCalculation(
+          evidence['calculation'],
+          itemId: itemId,
+          headerCalculatorVersion: calculatorVersion,
+        );
+        calculationFingerprintByItem[itemId] = calculationFingerprint;
+        if (item['quantity_value'] is! num ||
+            !_quantityProjectionMatches(
+              quantity.amount,
+              item['quantity_value'] as num,
+            ) ||
+            item['quantity_dimension'] != _quantityDimension(quantity) ||
+            item['quantity_unit'] != _quantityUnit(quantity) ||
+            item['quantity_context_id'] != _quantityContextId(quantity) ||
+            item['basis'] != 'absolute' ||
+            item['calculation_version'] != calculatorVersion ||
+            _optionalLineageValue(evidence, 'food_id') != item['food_id'] ||
+            _optionalLineageValue(evidence, 'recipe_version_id') !=
+                item['recipe_version_id'] ||
+            _optionalLineageValue(evidence, 'preparation_id') !=
+                item['preparation_id'] ||
+            _optionalLineageValue(evidence, 'source_reference') !=
+                item['source_ref']) {
+          throw BackupV8ValidationException(
+            'snapshot_quantity_projection_mismatch',
+            'Snapshot item projection disagrees with its typed lineage.',
+          );
+        }
+        _validateSnapshotItemSource(evidence, item);
+        if (item['recipe_version_id'] is String) {
+          recipeIds.add(item['recipe_version_id'] as String);
+        }
+      }
+      final evidenceKeys = evidenceItems.keys.toList(growable: false);
+      if (evidenceKeys.any((key) => key is! String)) {
+        throw BackupV8ValidationException(
+          'snapshot_item_lineage_mismatch',
+          'Snapshot item lineage keys must be portable item IDs.',
+        );
+      }
+      if (evidenceKeys.length != itemIds.length ||
+          !itemIds.containsAll(evidenceKeys.cast<String>())) {
+        throw BackupV8ValidationException(
+          'snapshot_item_lineage_mismatch',
+          'Snapshot item lineage contains a different item set than the graph.',
+        );
+      }
+      final expectedRecipeId = recipeIds.length == 1 ? recipeIds.single : null;
+      if (recipeIds.length > 1 ||
+          row['recipe_version_id'] != expectedRecipeId) {
+        throw BackupV8ValidationException(
+          'recipe_version_mismatch',
+          'Snapshot header and item recipe ancestry disagree.',
+        );
+      }
+
+      final predecessor = lineage.supersedesSnapshotId;
+      if (predecessor == null) {
+        if (lineage.correctionId != null || lineage.correctionReason != null) {
+          throw BackupV8ValidationException(
+            'invalid_correction_lineage',
+            'Correction metadata requires a predecessor snapshot.',
+          );
+        }
+      } else {
+        final parent = snapshotRows[predecessor];
+        if (parent == null ||
+            !finalizedSnapshotIds.contains(predecessor) ||
+            parent['user_id'] != userId) {
+          throw BackupV8ValidationException(
+            'invalid_correction_predecessor',
+            'Correction ancestry must reference an event owned by the same user.',
+          );
+        }
+        if (predecessor == snapshotId ||
+            lineage.correctionId == null ||
+            lineage.correctionReason == null) {
+          throw BackupV8ValidationException(
+            'invalid_correction_lineage',
+            'Correction ancestry is self-referential or incomplete.',
+          );
+        }
+        if (successorByPredecessor.containsKey(predecessor)) {
+          throw BackupV8ValidationException(
+            'branching_correction_lineage',
+            'A consumption snapshot cannot have multiple correction successors.',
+          );
+        }
+        successorByPredecessor[predecessor] = snapshotId;
+      }
+      final correctionId = lineage.correctionId;
+      final correctionKey = correctionId == null
+          ? null
+          : '$userId\u0000$correctionId';
+      if (correctionKey != null && correctionById.containsKey(correctionKey)) {
+        throw BackupV8ValidationException(
+          'duplicate_correction_id',
+          'Correction IDs must be unique within one user history.',
+        );
+      }
+      if (correctionKey != null) {
+        correctionById[correctionKey] = snapshotId;
+      }
+      final commandId = lineage.commandId;
+      final commandKey = commandId == null ? null : '$userId\u0000$commandId';
+      if (commandKey != null && commandById.containsKey(commandKey)) {
+        throw BackupV8ValidationException(
+          'duplicate_command_id',
+          'Command IDs must be unique within one user history.',
+        );
+      }
+      if (commandKey != null) commandById[commandKey] = snapshotId;
+    }
+
+    final nutrientRowsByItem = <String, int>{};
+    for (final row in _rows('nutrition_snapshot_nutrients')) {
+      final itemId = row['item_id'];
+      final snapshotId = row['snapshot_id'];
+      if (itemId is! String || snapshotId is! String) {
+        throw BackupV8ValidationException(
+          'invalid_nutrient_owner',
+          'Snapshot nutrient rows require an item and snapshot owner.',
+        );
+      }
+      final item = itemRows[itemId];
+      if (item == null || item['snapshot_id'] != snapshotId) {
+        throw BackupV8ValidationException(
+          'cross_snapshot_nutrient_owner',
+          'Snapshot nutrient rows must belong to an item in the same snapshot.',
+        );
+      }
+      final legacySnapshot = legacySnapshotIds.contains(snapshotId);
+      final rawLineage = row['lineage'];
+      if (legacySnapshot && rawLineage != null) {
+        throw BackupV8ValidationException(
+          'incomplete_snapshot_lineage',
+          'A pre-11A snapshot cannot contain partial immutable nutrient lineage.',
+        );
+      }
+      if (legacySnapshot) continue;
+      if (rawLineage is! String || rawLineage.trim().isEmpty) {
+        throw BackupV8ValidationException(
+          'missing_nutrient_lineage',
+          'Snapshot nutrient rows must preserve immutable fact lineage.',
+        );
+      }
+      dynamic decoded;
+      try {
+        decoded = jsonDecode(rawLineage);
+      } catch (error) {
+        throw BackupV8ValidationException(
+          'invalid_nutrient_lineage',
+          'Snapshot nutrient lineage is not valid JSON: $error',
+        );
+      }
+      if (decoded is! Map || decoded['fact'] is! Map) {
+        throw BackupV8ValidationException(
+          'invalid_nutrient_lineage',
+          'Snapshot nutrient lineage must contain a fact object.',
+        );
+      }
+      final fact = decoded['fact'] as Map;
+      final calculationFingerprint = decoded['calculation_fingerprint'];
+      if (calculationFingerprint is! String ||
+          calculationFingerprint != calculationFingerprintByItem[itemId]) {
+        throw BackupV8ValidationException(
+          'calculation_lineage_mismatch',
+          'Snapshot nutrient lineage disagrees with item calculation evidence.',
+        );
+      }
+      _validateSnapshotFactShape(fact, row);
+      final basis = fact['basis'];
+      if (fact['contract_version'] != kNutrientFactContractVersion ||
+          fact['nutrient_id'] != row['nutrient_id'] ||
+          fact['status'] != row['status'] ||
+          fact['unit'] != row['unit'] ||
+          fact['source'] != row['source_version'] ||
+          fact['fact_version'] != row['fact_version'] ||
+          basis is! Map ||
+          basis['kind'] != 'absolute' ||
+          basis['kind'] != row['basis'] ||
+          !_factAmountMatches(fact['point'], row['amount'], row['unit']) ||
+          !_factAmountMatches(fact['lower'], row['lower'], row['unit']) ||
+          !_factAmountMatches(fact['upper'], row['upper'], row['unit'])) {
+        throw BackupV8ValidationException(
+          'nutrient_projection_mismatch',
+          'Snapshot nutrient projection disagrees with its immutable fact.',
+        );
+      }
+      nutrientRowsByItem[itemId] = (nutrientRowsByItem[itemId] ?? 0) + 1;
+    }
+    final finalizedItemIds = {
+      for (final entry in itemsBySnapshot.entries)
+        if (finalizedSnapshotIds.contains(entry.key))
+          ...entry.value.map((row) => row['id'] as String),
+    };
+    for (final itemId in finalizedItemIds) {
+      if ((nutrientRowsByItem[itemId] ?? 0) == 0) {
+        throw BackupV8ValidationException(
+          'missing_snapshot_nutrients',
+          'Every finalized snapshot item must preserve nutrient rows.',
+        );
+      }
+    }
+
+    for (final snapshotId in finalizedSnapshotIds) {
+      final seen = <String>{};
+      String? cursor = snapshotId;
+      while (cursor != null) {
+        if (!seen.add(cursor)) {
+          throw BackupV8ValidationException(
+            'cyclic_correction_lineage',
+            'Consumption correction ancestry contains a cycle.',
+          );
+        }
+        cursor = lineageBySnapshot[cursor]?.supersedesSnapshotId;
+      }
+    }
+  }
+
+  NutritionConsumptionLineage _readSnapshotLineage(
+    Object? raw,
+    String snapshotId,
+  ) {
+    if (raw is! String || raw.trim().isEmpty) {
+      throw BackupV8ValidationException(
+        'missing_snapshot_lineage',
+        'Consumption snapshot $snapshotId requires a lineage envelope.',
+      );
+    }
+    try {
+      return NutritionConsumptionLineage.fromJson(jsonDecode(raw));
+    } catch (error) {
+      throw BackupV8ValidationException(
+        'invalid_snapshot_lineage',
+        'Consumption snapshot $snapshotId has invalid lineage: $error',
+      );
+    }
+  }
+
+  Quantity _readSnapshotQuantity(Object? raw, String itemId) {
+    try {
+      if (raw is! Map) {
+        throw const FormatException('quantity must be an object');
+      }
+      return Quantity.fromJson(Map<String, dynamic>.from(raw));
+    } catch (error) {
+      throw BackupV8ValidationException(
+        'invalid_snapshot_quantity',
+        'Snapshot item $itemId has invalid typed quantity: $error',
+      );
+    }
+  }
+
+  static String _quantityDimension(Quantity quantity) =>
+      quantity.dimension == QuantityDimension.householdReference
+      ? 'household_reference'
+      : quantity.dimension.name;
+
+  static String _quantityUnit(Quantity quantity) =>
+      quantity.unit == QuantityUnit.householdReference
+      ? 'household_reference'
+      : quantity.unit.name;
+
+  static String? _quantityContextId(Quantity quantity) {
+    final context = quantity.context;
+    return context.householdMeasure?.calibrationId ??
+        context.conversion?.vesselCalibrationId ??
+        context.conversion?.yieldTransformationId ??
+        context.conversion?.servingDefinitionId ??
+        context.servingDefinition?.id;
+  }
+
+  static Object? _optionalLineageValue(Map evidence, String key) =>
+      evidence.containsKey(key) ? evidence[key] : null;
+
+  static String _validateSnapshotCalculation(
+    Object? raw, {
+    required String itemId,
+    required String headerCalculatorVersion,
+  }) {
+    if (raw is! Map ||
+        raw['calculator_version'] is! String ||
+        (raw['calculator_version'] as String).trim().isEmpty ||
+        raw['nutrient_registry_version'] != kNutrientRegistryVersion ||
+        raw['calculation_fingerprint'] is! String ||
+        (raw['calculation_fingerprint'] as String).trim().isEmpty ||
+        raw['facts'] is! Map ||
+        raw['completeness'] is! Map ||
+        raw['lineage'] is! Map ||
+        raw['calculator_version'] != headerCalculatorVersion) {
+      throw BackupV8ValidationException(
+        'invalid_calculation_lineage',
+        'Snapshot item $itemId has malformed calculation evidence.',
+      );
+    }
+    try {
+      NutrientCompleteness.fromJson(raw['completeness']);
+    } catch (error) {
+      throw BackupV8ValidationException(
+        'invalid_calculation_lineage',
+        'Snapshot item $itemId has malformed completeness evidence: $error',
+      );
+    }
+    final facts = raw['facts'] as Map;
+    for (final entry in facts.entries) {
+      if (entry.key is! String || entry.value is! Map) {
+        throw BackupV8ValidationException(
+          'invalid_calculation_lineage',
+          'Snapshot item $itemId has malformed calculation facts.',
+        );
+      }
+      final fact = entry.value as Map;
+      _validateSnapshotFactShape(fact, null);
+      if (fact['nutrient_id'] != entry.key) {
+        throw BackupV8ValidationException(
+          'invalid_calculation_lineage',
+          'Snapshot item $itemId calculation fact IDs are inconsistent.',
+        );
+      }
+    }
+    return raw['calculation_fingerprint'] as String;
+  }
+
+  static void _validateSnapshotItemSource(
+    Map evidence,
+    Map<String, dynamic> item,
+  ) {
+    final foodId = evidence['food_id'];
+    final recipeVersionId = evidence['recipe_version_id'];
+    if ((foodId != null) == (recipeVersionId != null) ||
+        (foodId != null && foodId is! String) ||
+        (recipeVersionId != null && recipeVersionId is! String) ||
+        (foodId is String && foodId.trim().isEmpty) ||
+        (recipeVersionId is String && recipeVersionId.trim().isEmpty) ||
+        item['food_id'] != foodId ||
+        item['recipe_version_id'] != recipeVersionId) {
+      throw BackupV8ValidationException(
+        'snapshot_item_lineage_mismatch',
+        'Snapshot item identity disagrees with its immutable lineage.',
+      );
+    }
+  }
+
+  static void _validateSnapshotFactShape(
+    Map fact,
+    Map<String, dynamic>? projection,
+  ) {
+    final nutrientId = fact['nutrient_id'];
+    final unitId = fact['unit'];
+    final statusId = fact['status'];
+    final sourceId = fact['source'];
+    final confidenceId = fact['confidence'];
+    final factVersion = fact['fact_version'];
+    if (fact['contract_version'] != kNutrientFactContractVersion ||
+        nutrientId is! String ||
+        nutrientId.trim().isEmpty ||
+        unitId is! String ||
+        statusId is! String ||
+        sourceId is! String ||
+        confidenceId is! String ||
+        factVersion is! String ||
+        factVersion.trim().isEmpty ||
+        fact['coverage_incomplete'] is! bool) {
+      throw BackupV8ValidationException(
+        'invalid_nutrient_lineage',
+        'Snapshot nutrient fact metadata is malformed.',
+      );
+    }
+    late final NutrientUnit unit;
+    late final NutrientFactStatus status;
+    try {
+      unit = NutrientUnitContract.fromStableId(unitId);
+      status = NutrientFactStatusContract.fromStableId(statusId);
+      NutrientSourceContract.fromStableId(sourceId);
+      NutrientConfidenceContract.fromStableId(confidenceId);
+    } catch (error) {
+      throw BackupV8ValidationException(
+        'invalid_nutrient_lineage',
+        'Snapshot nutrient fact metadata is unsupported: $error',
+      );
+    }
+    final rawBasis = fact['basis'];
+    late final NutrientBasis basis;
+    try {
+      basis = NutrientBasis.fromJson(rawBasis);
+    } catch (error) {
+      throw BackupV8ValidationException(
+        'invalid_nutrient_lineage',
+        'Snapshot nutrient fact basis is malformed: $error',
+      );
+    }
+    if (basis.kind != NutrientBasisKind.absolute) {
+      throw BackupV8ValidationException(
+        'invalid_nutrient_lineage',
+        'Snapshot nutrient facts must use an absolute basis.',
+      );
+    }
+    NutrientAmount? readAmount(String key) {
+      if (!fact.containsKey(key) || fact[key] == null) return null;
+      try {
+        final amount = NutrientAmount.fromJson(fact[key]);
+        if (amount.unit != unit) throw const FormatException('unit mismatch');
+        return amount;
+      } catch (error) {
+        throw BackupV8ValidationException(
+          'invalid_nutrient_lineage',
+          'Snapshot nutrient fact $key is malformed: $error',
+        );
+      }
+    }
+
+    final point = readAmount('point');
+    final lower = readAmount('lower');
+    final upper = readAmount('upper');
+    final values = [point, lower, upper].whereType<NutrientAmount>().toList();
+    if ((status == NutrientFactStatus.missing ||
+            status == NutrientFactStatus.notApplicable) &&
+        values.isNotEmpty) {
+      throw BackupV8ValidationException(
+        'invalid_missing_fact',
+        'Missing nutrient facts cannot carry numeric values.',
+      );
+    }
+    if (status != NutrientFactStatus.missing &&
+        status != NutrientFactStatus.notApplicable &&
+        values.isEmpty) {
+      throw BackupV8ValidationException(
+        'invalid_nutrient_lineage',
+        'Numeric nutrient facts require a point or range.',
+      );
+    }
+    if (status == NutrientFactStatus.known && point == null) {
+      throw BackupV8ValidationException(
+        'invalid_nutrient_lineage',
+        'Known nutrient facts require a point value.',
+      );
+    }
+    if (status == NutrientFactStatus.knownZero &&
+        (point == null ||
+            !point.value.isZero ||
+            (lower != null && !lower.value.isZero) ||
+            (upper != null && !upper.value.isZero))) {
+      throw BackupV8ValidationException(
+        'invalid_nutrient_lineage',
+        'Known-zero nutrient facts must contain only zero values.',
+      );
+    }
+    if ((lower != null &&
+            point != null &&
+            lower.value.compareTo(point.value) > 0) ||
+        (point != null &&
+            upper != null &&
+            point.value.compareTo(upper.value) > 0) ||
+        (lower != null &&
+            upper != null &&
+            lower.value.compareTo(upper.value) > 0)) {
+      throw BackupV8ValidationException(
+        'invalid_range',
+        'Snapshot nutrient bounds must be ordered lower <= point <= upper.',
+      );
+    }
+    if (fact['source_reference'] != null &&
+        (fact['source_reference'] is! String ||
+            (fact['source_reference'] as String).trim().isEmpty)) {
+      throw BackupV8ValidationException(
+        'invalid_nutrient_lineage',
+        'Snapshot nutrient source references cannot be blank.',
+      );
+    }
+    if (projection != null &&
+        (!_factAmountMatches(fact['point'], projection['amount'], unitId) ||
+            !_factAmountMatches(fact['lower'], projection['lower'], unitId) ||
+            !_factAmountMatches(fact['upper'], projection['upper'], unitId))) {
+      throw BackupV8ValidationException(
+        'nutrient_projection_mismatch',
+        'Snapshot nutrient projection disagrees with its immutable fact.',
+      );
+    }
+  }
+
+  static bool _quantityProjectionMatches(
+    QuantityAmount amount,
+    num projection,
+  ) {
+    if (!projection.isFinite) return false;
+    return double.parse(amount.toString()) == projection.toDouble();
+  }
+
+  static bool _factAmountMatches(
+    Object? raw,
+    Object? projection,
+    Object? expectedUnit,
+  ) {
+    if (raw == null) return projection == null;
+    if (raw is! Map ||
+        raw['value'] is! String ||
+        raw['unit'] != expectedUnit ||
+        projection is! num) {
+      return false;
+    }
+    final value = double.tryParse(raw['value'] as String);
+    return value != null &&
+        value.isFinite &&
+        projection.isFinite &&
+        value == projection.toDouble();
   }
 
   void _validateVesselOwner(Map<String, dynamic> row) {
@@ -1476,6 +2107,17 @@ class NutritionBackupGraph {
     }
   }
 
+  static void _validateSnapshotItemReference(Map<String, dynamic> row) {
+    final foodId = row['food_id'];
+    final recipeVersionId = row['recipe_version_id'];
+    if ((foodId != null) == (recipeVersionId != null)) {
+      throw BackupV8ValidationException(
+        'invalid_one_of',
+        'Backup-v8 snapshot items must identify exactly one food or recipe version.',
+      );
+    }
+  }
+
   static void _atMostOne(Object? first, Object? second, String owner) {
     if (first != null && second != null) {
       throw BackupV8ValidationException(
@@ -1529,6 +2171,7 @@ Future<List<Map<String, dynamic>>> _readRows(
 const _dateColumns = {
   'created_at',
   'updated_at',
+  'logged_at',
   'mapped_at',
   'effective_from',
   'effective_to',
