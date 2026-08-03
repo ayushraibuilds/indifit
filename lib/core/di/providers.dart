@@ -11,6 +11,7 @@ import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/nutrition_household_measure_repository.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
 import '../../data/repositories/nutrition_transformation_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
@@ -39,6 +40,12 @@ final nutritionTransformationRepositoryProvider =
     Provider<NutritionTransformationRepository>(
       (ref) =>
           NutritionTransformationRepository(db: ref.watch(databaseProvider)),
+    );
+
+final nutritionHouseholdMeasureRepositoryProvider =
+    Provider<NutritionHouseholdMeasureRepository>(
+      (ref) =>
+          NutritionHouseholdMeasureRepository(db: ref.watch(databaseProvider)),
     );
 
 /// The recipe calculator is pure and owns no repository or database state.
