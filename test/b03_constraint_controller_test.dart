@@ -52,6 +52,26 @@ void main() {
       );
       expect(controller.currentState.constraints, hasLength(1));
 
+      final beforeUpdate = controller.currentState.constraints.single;
+      await controller.updateConstraint(
+        beforeUpdate.copyWith(
+          strictness: NutritionConstraintStrictness.warn,
+          notes: 'Review when evidence is incomplete.',
+        ),
+      );
+      expect(
+        controller.currentState.status,
+        NutritionConstraintManagementStatus.success,
+      );
+      expect(
+        controller.currentState.constraints.single.notes,
+        contains('Review'),
+      );
+      expect(
+        controller.currentState.constraints.single.createdAtUtc,
+        beforeUpdate.createdAtUtc,
+      );
+
       await controller.addConstraint(
         type: NutritionConstraintType.allergy,
         target: NutritionConstraintTarget(

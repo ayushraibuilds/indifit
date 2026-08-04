@@ -28,6 +28,7 @@ import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
 import '../../features/food_log/saved_recipe_log_controller.dart';
+import '../../features/settings/nutrition_constraint_review_controller.dart';
 import '../../features/settings/nutrition_constraints_controller.dart';
 import '../config/app_config.dart';
 import '../nutrients.dart';
@@ -67,6 +68,17 @@ final nutritionConstraintManagementControllerProvider =
       unawaited(controller.load());
       return controller;
     });
+
+final nutritionConstraintEvaluationReviewControllerProvider =
+    StateNotifierProvider.autoDispose<
+      NutritionConstraintEvaluationReviewController,
+      NutritionConstraintEvaluationReviewState
+    >(
+      (ref) => NutritionConstraintEvaluationReviewController(
+        repository: ref.watch(nutritionConstraintRepositoryProvider),
+        userId: kLocalNutritionUserScopeId,
+      ),
+    );
 
 final nutritionTransformationRepositoryProvider =
     Provider<NutritionTransformationRepository>(

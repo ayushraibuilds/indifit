@@ -156,6 +156,38 @@ class NutritionConstraintManagementController
     }
   }
 
+  Future<void> updateConstraint(NutritionUserConstraint constraint) async {
+    if (constraint.userId != _userId) {
+      _failure(
+        const NutritionConstraintValidationError(
+          'constraint_ownership',
+          'A dietary constraint can only be edited by its owner.',
+        ),
+      );
+      return;
+    }
+    state = state.copyWith(
+      status: NutritionConstraintManagementStatus.saving,
+      clearError: true,
+      clearMessage: true,
+    );
+    try {
+      final saved = await _repository.updateConstraint(constraint);
+      final next = [
+        for (final item in state.constraints)
+          if (item.id == saved.id) saved else item,
+      ];
+      state = state.copyWith(
+        status: NutritionConstraintManagementStatus.success,
+        constraints: next,
+        message: 'Constraint updated.',
+        clearError: true,
+      );
+    } catch (error) {
+      _failure(error);
+    }
+  }
+
   Future<void> retry() => load();
 
   void _failure(Object error) {

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/nutrition_constraints.dart';
 
@@ -73,6 +75,34 @@ void main() {
         ),
       ),
       throwsA(isA<NutritionConstraintValidationError>()),
+    );
+  });
+
+  test('user targets are bounded to the approved portable vocabulary', () {
+    expect(
+      () => _constraint(
+        id: 'constraint-unbounded',
+        type: NutritionConstraintType.allergy,
+        target: _target(
+          NutritionConstraintTargetType.allergen,
+          'invented-allergen',
+        ),
+      ),
+      throwsA(
+        isA<NutritionConstraintValidationError>().having(
+          (error) => error.code,
+          'code',
+          'unsupported_constraint_target',
+        ),
+      ),
+    );
+    expect(
+      () => _constraint(
+        id: 'constraint-religion',
+        type: NutritionConstraintType.religiousRestriction,
+        target: _target(NutritionConstraintTargetType.foodFamily, 'jain'),
+      ),
+      returnsNormally,
     );
   });
 
@@ -185,6 +215,43 @@ void main() {
         NutritionConstraintOutcome.noKnownConflict,
       );
       expect(noKnownConflict.outcome.stableId, isNot('safe'));
+
+      final roundTrip = NutritionConstraintEvaluationResult.fromJson(
+        confirmed.toJson(),
+      );
+      expect(roundTrip.fingerprint, confirmed.fingerprint);
+      final mismatchedSubject = Map<String, dynamic>.from(confirmed.toJson())
+        ..['subject_id'] = 'food-2';
+      expect(
+        () => NutritionConstraintEvaluationResult.fromJson(mismatchedSubject),
+        throwsA(
+          isA<NutritionConstraintValidationError>().having(
+            (error) => error.code,
+            'code',
+            'constraint_evaluation_subject_mismatch',
+          ),
+        ),
+      );
+      final missingDirectEvidenceIdentity =
+          jsonDecode(jsonEncode(confirmed.toJson())) as Map<String, dynamic>;
+      final evaluationRows =
+          (missingDirectEvidenceIdentity['evaluations'] as List)
+              .cast<Map<String, dynamic>>();
+      final evidenceRows = (evaluationRows.single['evidence'] as List)
+          .cast<Map<String, dynamic>>();
+      evidenceRows.single.remove('food_id');
+      expect(
+        () => NutritionConstraintEvaluationResult.fromJson(
+          missingDirectEvidenceIdentity,
+        ),
+        throwsA(
+          isA<NutritionConstraintValidationError>().having(
+            (error) => error.code,
+            'code',
+            'constraint_evidence_subject_mismatch',
+          ),
+        ),
+      );
     },
   );
 
@@ -200,6 +267,49 @@ void main() {
     );
     expect(result.outcome, NutritionConstraintOutcome.insufficientInformation);
     expect(result.missingEvidence, isNotEmpty);
+  });
+
+  test('an unevidenced recipe line prevents a no-known-conflict result', () {
+    final constraint = _constraint(
+      id: 'constraint-peanut-recipe',
+      type: NutritionConstraintType.allergy,
+      target: _target(NutritionConstraintTargetType.allergen, 'peanut'),
+    );
+    final reviewedLine = NutritionConstraintSubjectLine(
+      id: 'line-reviewed',
+      foodId: 'food-reviewed',
+      evidence: [
+        _evidence(
+          id: 'reviewed-absence',
+          subjectId: 'food-reviewed',
+          target: _target(NutritionConstraintTargetType.allergen, 'peanut'),
+          status: NutritionConstraintEvidenceStatus.notIndicated,
+          source: NutritionConstraintEvidenceSource.reviewedAllergenDeclaration,
+          ingredientLineage: 'line-reviewed',
+        ),
+      ],
+    );
+    final missingLine = NutritionConstraintSubjectLine(
+      id: 'line-missing',
+      foodId: 'food-missing',
+      evidence: const [],
+    );
+    final result = const NutritionConstraintEvaluator().evaluate(
+      subject: NutritionConstraintEvaluationInput(
+        userId: 'user-1',
+        subjectId: 'recipe-v1',
+        recipeVersionId: 'recipe-v1',
+        lines: [reviewedLine, missingLine],
+        evaluatedAtUtc: instant,
+      ),
+      constraints: [constraint],
+    );
+
+    expect(result.outcome, NutritionConstraintOutcome.insufficientInformation);
+    expect(
+      result.evaluations.single.missingEvidence,
+      contains('line-missing:composition'),
+    );
   });
 
   test('unknown composition evidence blocks a safety-looking result', () {

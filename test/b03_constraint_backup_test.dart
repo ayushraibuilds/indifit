@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/backup/backup_v8.dart';
 import 'package:indifit/core/nutrition_constraints.dart';
@@ -76,8 +79,65 @@ void main() {
         (await restored.listFoodEvidence('owned-food-1')).single.status,
         NutritionConstraintEvidenceStatus.possible,
       );
+
+      final untrustedConfirmed = await NutritionBackupGraph.capture(db);
+      final untrustedJson = untrustedConfirmed.toJson();
+      final untrustedTables = Map<String, dynamic>.from(
+        untrustedJson['tables'] as Map,
+      );
+      final untrustedEvidence = [
+        for (final row
+            in untrustedTables['nutrition_food_constraint_evidence'] as List)
+          Map<String, dynamic>.from(row as Map),
+      ];
+      untrustedEvidence.single['status'] = 'confirmed';
+      untrustedEvidence.single['evidence_source'] = 'ai_estimate';
+      untrustedTables['nutrition_food_constraint_evidence'] = untrustedEvidence;
+      final untrustedPayload = Map<String, dynamic>.from(untrustedJson)
+        ..['tables'] = untrustedTables;
+      expect(
+        () => NutritionBackupGraph.fromJson(untrustedPayload),
+        throwsA(
+          isA<BackupV8ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'invalid_constraint_evidence',
+          ),
+        ),
+      );
     },
   );
+
+  test('Backup-v8 rejects a user constraint whose target is absent', () async {
+    await repository.createUserConstraint(
+      userId: 'user-1',
+      id: 'food-target-constraint',
+      type: NutritionConstraintType.tasteDislike,
+      target: NutritionConstraintTarget(
+        type: NutritionConstraintTargetType.food,
+        id: 'owned-food-1',
+      ),
+    );
+    final graph = await NutritionBackupGraph.capture(db);
+    final json = graph.toJson();
+    final tables = Map<String, dynamic>.from(json['tables'] as Map);
+    final foods = [
+      for (final row in tables['nutrition_foods'] as List)
+        Map<String, dynamic>.from(row as Map),
+    ]..removeWhere((row) => row['id'] == 'owned-food-1');
+    tables['nutrition_foods'] = foods;
+    final malformed = Map<String, dynamic>.from(json)..['tables'] = tables;
+    expect(
+      () => NutritionBackupGraph.fromJson(malformed),
+      throwsA(
+        isA<BackupV8ValidationException>().having(
+          (error) => error.code,
+          'code',
+          'invalid_user_constraint',
+        ),
+      ),
+    );
+  });
 
   test(
     'Backup-v8 rejects malformed value envelopes and duplicate active constraints',
@@ -149,7 +209,21 @@ void main() {
       reason: 'Acknowledged uncertainty.',
       acknowledgedAtUtc: DateTime.utc(2026, 8, 4),
     );
-    await repository.recordAcknowledgement(acknowledgement);
+    await db
+        .into(db.nutritionUserCorrections)
+        .insert(
+          NutritionUserCorrectionsCompanion.insert(
+            id: acknowledgement.commandId,
+            userId: acknowledgement.userId,
+            targetType: 'nutrition_constraint_evaluation',
+            targetId: acknowledgement.evaluationFingerprint,
+            field: 'acknowledgement',
+            newValue: Value(jsonEncode(acknowledgement.toJson())),
+            reason: acknowledgement.reason,
+            source: 'user_entered',
+            createdAt: Value(acknowledgement.acknowledgedAtUtc),
+          ),
+        );
     final graph = await NutritionBackupGraph.capture(db);
     expect(
       () => NutritionBackupGraph.fromJson(graph.toJson()),

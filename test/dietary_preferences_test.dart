@@ -231,6 +231,11 @@ void main() {
       );
       expect(result.outcome, NutritionConstraintOutcome.confirmedConflict);
       expect(result.evaluations.single.affectedComponentIds, ['line-1']);
+      expect(result.evaluations.single.evidence.single.foodId, isNull);
+      expect(
+        result.evaluations.single.evidence.single.ingredientLineage,
+        'line-1',
+      );
 
       await db
           .into(db.nutritionRecipeVersions)
@@ -270,6 +275,7 @@ void main() {
           type: NutritionConstraintTargetType.allergen,
           id: 'peanut',
         ),
+        crossContact: true,
       );
       await constraints.recordFoodEvidence(
         foodId: 'food-1',
@@ -306,6 +312,20 @@ void main() {
         reason: 'I understand this is not a safety guarantee.',
         acknowledgedAtUtc: DateTime.utc(2026, 8, 4, 10),
       );
+      expect(
+        (await constraints.recordAcknowledgement(
+          acknowledgement,
+          evaluation: cleanEvaluation,
+        )).commandId,
+        acknowledgement.commandId,
+      );
+      expect(
+        (await constraints.recordAcknowledgement(
+          acknowledgement,
+          evaluation: cleanEvaluation,
+        )).commandId,
+        acknowledgement.commandId,
+      );
       final consumption = NutritionConsumptionRepository(
         db: db,
         registry: registry,
@@ -330,6 +350,12 @@ void main() {
         (await db.select(db.nutritionSnapshotConstraintResultEvidence).get())
             .map((row) => row.evidenceKind),
         contains('user_override'),
+      );
+      expect(
+        (await db.select(db.nutritionSnapshotConstraintResultEvidence).get())
+            .where((row) => row.evidenceKind == 'food')
+            .length,
+        1,
       );
 
       final retry = await consumption.finalizeConsumption(request);

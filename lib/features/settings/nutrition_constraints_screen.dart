@@ -24,6 +24,11 @@ class _NutritionConstraintsScreenState
     final busy =
         state.status == NutritionConstraintManagementStatus.saving ||
         state.status == NutritionConstraintManagementStatus.archiving;
+    final canAdd =
+        !busy &&
+        state.definitions.isNotEmpty &&
+        state.status != NutritionConstraintManagementStatus.loading &&
+        state.status != NutritionConstraintManagementStatus.failure;
 
     return Scaffold(
       appBar: AppBar(
@@ -37,7 +42,7 @@ class _NutritionConstraintsScreenState
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: busy ? null : () => _showAddDialog(state.definitions),
+        onPressed: canAdd ? () => _showAddDialog(state.definitions) : null,
         icon: const Icon(Icons.add),
         label: const Text('Add constraint'),
       ),
@@ -88,6 +93,9 @@ class _NutritionConstraintsScreenState
               for (final constraint in state.constraints)
                 _ConstraintCard(
                   constraint: constraint,
+                  onEdit: constraint.isActive && !busy
+                      ? () => _showEditDialog(constraint)
+                      : null,
                   onArchive: constraint.isActive && !busy
                       ? () => controller.archiveConstraint(constraint.id)
                       : null,
@@ -130,6 +138,31 @@ class _NutritionConstraintsScreenState
       ),
     );
   }
+
+  Future<void> _showEditDialog(NutritionUserConstraint constraint) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => _EditConstraintDialog(
+        constraint: constraint,
+        onSave: (updated) async {
+          final controller = ref.read(
+            nutritionConstraintManagementControllerProvider.notifier,
+          );
+          await controller.updateConstraint(updated);
+          if (controller.currentState.status ==
+              NutritionConstraintManagementStatus.failure) {
+            throw NutritionConstraintValidationError(
+              controller.currentState.errorCode ?? 'constraint_update_failed',
+              controller.currentState.message ??
+                  'Could not update the constraint.',
+            );
+          }
+          if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+        },
+      ),
+    );
+  }
 }
 
 class _DisclosureCard extends StatelessWidget {
@@ -153,9 +186,14 @@ class _DisclosureCard extends StatelessWidget {
 
 class _ConstraintCard extends StatelessWidget {
   final NutritionUserConstraint constraint;
+  final VoidCallback? onEdit;
   final VoidCallback? onArchive;
 
-  const _ConstraintCard({required this.constraint, required this.onArchive});
+  const _ConstraintCard({
+    required this.constraint,
+    required this.onEdit,
+    required this.onArchive,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -196,13 +234,25 @@ class _ConstraintCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text('Note: ${constraint.notes}'),
             ],
-            if (onArchive != null)
+            if (onEdit != null || onArchive != null)
               Align(
                 alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: onArchive,
-                  icon: const Icon(Icons.archive_outlined),
-                  label: const Text('Archive'),
+                child: Wrap(
+                  spacing: 8,
+                  children: [
+                    if (onEdit != null)
+                      TextButton.icon(
+                        onPressed: onEdit,
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Edit'),
+                      ),
+                    if (onArchive != null)
+                      TextButton.icon(
+                        onPressed: onArchive,
+                        icon: const Icon(Icons.archive_outlined),
+                        label: const Text('Archive'),
+                      ),
+                  ],
                 ),
               ),
           ],
@@ -235,6 +285,145 @@ class _EmptyState extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _EditConstraintDialog extends StatefulWidget {
+  final NutritionUserConstraint constraint;
+  final Future<void> Function(NutritionUserConstraint updated) onSave;
+
+  const _EditConstraintDialog({required this.constraint, required this.onSave});
+
+  @override
+  State<_EditConstraintDialog> createState() => _EditConstraintDialogState();
+}
+
+class _EditConstraintDialogState extends State<_EditConstraintDialog> {
+  late NutritionConstraintStrictness _strictness;
+  late bool _crossContact;
+  late final TextEditingController _notesController;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _strictness = widget.constraint.strictness;
+    _crossContact = widget.constraint.crossContact;
+    _notesController = TextEditingController(text: widget.constraint.notes);
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final definition = NutritionConstraintTaxonomy.definitionForId(
+      widget.constraint.definitionId,
+    );
+    return AlertDialog(
+      title: const Text('Edit dietary constraint'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(definition.displayName),
+            ),
+            const SizedBox(height: 8),
+            Semantics(
+              label:
+                  'Stable target identity ${widget.constraint.target.stableKey}',
+              child: Text(widget.constraint.target.stableKey),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<NutritionConstraintStrictness>(
+              initialValue: _strictness,
+              decoration: const InputDecoration(labelText: 'Handling'),
+              items: [
+                for (final value in NutritionConstraintStrictness.values)
+                  DropdownMenuItem(value: value, child: Text(value.stableId)),
+              ],
+              onChanged: _saving
+                  ? null
+                  : (value) {
+                      if (value != null) setState(() => _strictness = value);
+                    },
+            ),
+            if (definition.crossContactSupported)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _crossContact,
+                onChanged: _saving
+                    ? null
+                    : (value) => setState(() => _crossContact = value ?? false),
+                title: const Text('Include cross-contact handling'),
+              ),
+            TextField(
+              controller: _notesController,
+              enabled: !_saving,
+              decoration: const InputDecoration(labelText: 'Optional note'),
+              maxLines: 2,
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Semantics(liveRegion: true, child: Text(_error!)),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Save changes'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final notes = _notesController.text.trim();
+      await widget.onSave(
+        widget.constraint.copyWith(
+          strictness: _strictness,
+          crossContact: _crossContact,
+          notes: notes.isEmpty ? null : notes,
+          clearNotes: notes.isEmpty,
+        ),
+      );
+    } on NutritionConstraintError catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _error = 'Could not update the constraint. Try again.';
+      });
+    }
+  }
 }
 
 class _FailureState extends StatelessWidget {

@@ -808,18 +808,6 @@ class NutritionConsumptionRepository {
     required DateTime evaluatedAt,
   }) async {
     if (evaluation == null) return;
-    final ids = evaluation.evaluations
-        .map((item) => item.constraintId)
-        .toList();
-    final rows = <dynamic>[];
-    if (ids.isNotEmpty) {
-      rows.addAll(
-        await (_db.select(
-          _db.nutritionUserConstraints,
-        )..where((table) => table.id.isIn(ids))).get(),
-      );
-    }
-    final crossContactById = {for (final row in rows) row.id: row.crossContact};
     final recipeItems = items
         .where((item) => item.input.recipeVersionId != null)
         .toList(growable: false);
@@ -853,11 +841,11 @@ class NutritionConsumptionRepository {
             'Constraint evidence cannot be attached to a snapshot item.',
           );
         }
-        final evidenceKind = crossContactById[item.constraintId] == true
-            ? 'cross_contact'
-            : isRecipe
-            ? 'ingredient'
-            : 'food';
+        // The constraint's cross-contact flag is a user handling preference;
+        // it is not evidence that cross-contact occurred. Preserve the
+        // actual owner kind here so direct-food rows satisfy the schema and
+        // history never labels ordinary food evidence as cross-contact.
+        final evidenceKind = isRecipe ? 'ingredient' : 'food';
         await _db
             .into(_db.nutritionSnapshotConstraintResultEvidence)
             .insert(
@@ -1651,7 +1639,9 @@ class NutritionConsumptionRepository {
         final reference = entry.value;
         final isRecipe = evaluation.recipeVersionId != null;
         final expectedFoodId = reference.foodId ?? evaluation.foodId;
+        final expectedEvidenceKind = isRecipe ? 'ingredient' : 'food';
         if (persisted == null ||
+            persisted.evidenceKind != expectedEvidenceKind ||
             persisted.status != reference.status.stableId ||
             persisted.source != reference.source.stableId ||
             persisted.version != reference.version.toString() ||

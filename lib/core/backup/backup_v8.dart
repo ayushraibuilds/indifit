@@ -1091,11 +1091,35 @@ class NutritionBackupGraph {
 
   void _validateConstraintRows() {
     final activeKeys = <String>{};
+    final foodIds = {
+      for (final row in _rows('nutrition_foods'))
+        if (row['id'] is String) row['id'] as String,
+    };
+    final preparationIds = {
+      for (final row in _rows('nutrition_food_preparations'))
+        if (row['id'] is String) row['id'] as String,
+    };
     for (final row in _rows('nutrition_user_constraints')) {
       _validateUserConstraintRow(row);
       final value = _decodeConstraintValue(row['value']);
+      final target = NutritionConstraintTarget.fromJson(value['target']);
+      final definition = NutritionConstraintTaxonomy.definitionForId(
+        row['definition_id'] as String,
+      );
+      try {
+        _validateBackupUserTargetReference(
+          type: definition.type,
+          target: target,
+          foodIds: foodIds,
+          preparationIds: preparationIds,
+        );
+      } catch (error) {
+        throw BackupV8ValidationException(
+          'invalid_user_constraint',
+          'Backup-v8 user constraint target is unavailable: $error',
+        );
+      }
       if (value['active'] == true) {
-        final target = NutritionConstraintTarget.fromJson(value['target']);
         final key =
             '${row['user_id']}\u0000${row['definition_id']}\u0000${target.stableKey}';
         if (!activeKeys.add(key)) {
@@ -1115,15 +1139,26 @@ class NutritionBackupGraph {
         );
       }
       try {
-        NutritionConstraintTarget.fromStableKey(
+        final target = NutritionConstraintTarget.fromStableKey(
           row['constraint_key'] as String,
         );
-        NutritionConstraintEvidenceStatusContract.fromStableId(
+        _validateBackupEvidenceTargetReference(
+          target,
+          foodIds: foodIds,
+          preparationIds: preparationIds,
+        );
+        final status = NutritionConstraintEvidenceStatusContract.fromStableId(
           row['status'] as String,
         );
-        NutritionConstraintEvidenceSourceContract.fromStableId(
+        final source = NutritionConstraintEvidenceSourceContract.fromStableId(
           row['evidence_source'] as String,
         );
+        if (status == NutritionConstraintEvidenceStatus.confirmed &&
+            !source.mayClaimConfirmedPresence) {
+          throw const FormatException(
+            'estimated or untrusted evidence cannot be confirmed',
+          );
+        }
       } catch (error) {
         throw BackupV8ValidationException(
           'invalid_constraint_evidence',
@@ -1137,6 +1172,56 @@ class NutritionBackupGraph {
         );
       }
     }
+  }
+
+  static void _validateBackupUserTargetReference({
+    required NutritionConstraintType type,
+    required NutritionConstraintTarget target,
+    required Set<String> foodIds,
+    required Set<String> preparationIds,
+  }) {
+    NutritionConstraintTargetCatalog.validateForUserConstraint(
+      type: type,
+      target: target,
+    );
+    if (target.type == NutritionConstraintTargetType.food &&
+        !foodIds.contains(target.id)) {
+      throw const FormatException('food target is missing from the backup');
+    }
+    if (target.type == NutritionConstraintTargetType.ingredient &&
+        !NutritionConstraintTargetCatalog.isFixedTarget(target) &&
+        !foodIds.contains(target.id)) {
+      throw const FormatException(
+        'ingredient target is missing from the backup',
+      );
+    }
+    if (target.type == NutritionConstraintTargetType.preparation &&
+        !preparationIds.contains(target.id)) {
+      throw const FormatException(
+        'preparation target is missing from the backup',
+      );
+    }
+  }
+
+  static void _validateBackupEvidenceTargetReference(
+    NutritionConstraintTarget target, {
+    required Set<String> foodIds,
+    required Set<String> preparationIds,
+  }) {
+    if (target.type == NutritionConstraintTargetType.unknownOrUnsupported ||
+        NutritionConstraintTargetCatalog.isFixedTarget(target)) {
+      return;
+    }
+    if ((target.type == NutritionConstraintTargetType.food ||
+            target.type == NutritionConstraintTargetType.ingredient) &&
+        foodIds.contains(target.id)) {
+      return;
+    }
+    if (target.type == NutritionConstraintTargetType.preparation &&
+        preparationIds.contains(target.id)) {
+      return;
+    }
+    throw const FormatException('evidence target is missing from the backup');
   }
 
   static void _validateUserConstraintRow(Map<String, dynamic> row) {
@@ -1788,7 +1873,9 @@ class NutritionBackupGraph {
           final child =
               persisted['${row['id']}::evidence::$index::${reference.evidenceId}'];
           final isRecipe = evaluation.recipeVersionId != null;
+          final expectedEvidenceKind = isRecipe ? 'ingredient' : 'food';
           if (child == null ||
+              child['evidence_kind'] != expectedEvidenceKind ||
               child['status'] != reference.status.stableId ||
               child['source'] != reference.source.stableId ||
               child['version'] != reference.version.toString() ||

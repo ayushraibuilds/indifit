@@ -147,11 +147,10 @@ class NutritionConstraintTarget {
         'Constraint target IDs must be non-empty portable IDs.',
       );
     }
-    if (type == NutritionConstraintTargetType.food &&
-        RegExp(r'^\d+$').hasMatch(this.id)) {
+    if (RegExp(r'^\d+$').hasMatch(this.id)) {
       throw const NutritionConstraintValidationError(
         'local_id_not_portable',
-        'Database-local numeric food IDs are not portable constraint identity.',
+        'Database-local numeric IDs are not portable constraint identity.',
       );
     }
   }
@@ -197,6 +196,109 @@ class NutritionConstraintTarget {
 
   @override
   int get hashCode => stableKey.hashCode;
+}
+
+/// Portable target IDs that the B03 evaluator knows how to interpret without
+/// inventing a user-defined safety rule. Food, ingredient, and preparation
+/// targets may additionally be resolved against the reviewed local catalogue
+/// by the repository; the fixed IDs below are the non-catalogue vocabulary.
+class NutritionConstraintTargetCatalog {
+  NutritionConstraintTargetCatalog._();
+
+  static const int version = 1;
+
+  static const Map<NutritionConstraintTargetType, Set<String>> fixedIds = {
+    NutritionConstraintTargetType.foodFamily: {
+      'vegan',
+      'vegetarian',
+      'eggetarian',
+      'jain',
+      'halal',
+    },
+    NutritionConstraintTargetType.allergen: {
+      'milk',
+      'egg',
+      'peanut',
+      'tree_nut',
+      'soy',
+      'wheat',
+      'gluten',
+      'sesame',
+      'fish',
+      'shellfish',
+    },
+    NutritionConstraintTargetType.animalProduct: {
+      'meat',
+      'poultry',
+      'fish',
+      'shellfish',
+      'egg',
+      'milk',
+      'pork',
+      'beef',
+    },
+    NutritionConstraintTargetType.ingredient: {
+      'lactose',
+      'gluten',
+      'onion',
+      'garlic',
+      'salt',
+    },
+    NutritionConstraintTargetType.additive: {'alcohol'},
+    NutritionConstraintTargetType.region: {
+      'india',
+      'bengali',
+      'gujarati',
+      'maharashtrian',
+      'punjabi',
+      'south_indian',
+    },
+  };
+
+  static bool isFixedTarget(NutritionConstraintTarget target) =>
+      fixedIds[target.type]?.contains(target.id) ?? false;
+
+  /// Validates the part of a user target that is independent of the local
+  /// catalogue. The repository separately resolves dynamic food/preparation
+  /// identities before writing them.
+  static void validateForUserConstraint({
+    required NutritionConstraintType type,
+    required NutritionConstraintTarget target,
+  }) {
+    if (target.type == NutritionConstraintTargetType.unknownOrUnsupported) {
+      throw const NutritionConstraintValidationError(
+        'invalid_constraint_target',
+        'Unknown or unsupported targets cannot be saved as user constraints.',
+      );
+    }
+    if (type == NutritionConstraintType.religiousRestriction &&
+        (target.type != NutritionConstraintTargetType.foodFamily ||
+            !const {'jain', 'halal'}.contains(target.id))) {
+      throw const NutritionConstraintValidationError(
+        'unsupported_constraint_target',
+        'Religious restrictions must use an approved religious target.',
+      );
+    }
+    if (type == NutritionConstraintType.dietaryPattern &&
+        target.type == NutritionConstraintTargetType.foodFamily &&
+        !const {'vegan', 'vegetarian', 'eggetarian'}.contains(target.id)) {
+      throw const NutritionConstraintValidationError(
+        'unsupported_constraint_target',
+        'Dietary patterns must use an approved pattern target.',
+      );
+    }
+    if (target.type == NutritionConstraintTargetType.food ||
+        target.type == NutritionConstraintTargetType.ingredient ||
+        target.type == NutritionConstraintTargetType.preparation) {
+      return;
+    }
+    if (!isFixedTarget(target)) {
+      throw const NutritionConstraintValidationError(
+        'unsupported_constraint_target',
+        'The target is not part of the approved B03 dietary vocabulary.',
+      );
+    }
+  }
 }
 
 enum NutritionConstraintStrictness { avoid, warn, informational }
@@ -307,6 +409,14 @@ extension NutritionConstraintEvidenceSourceContract
       ),
     );
   }
+
+  bool get mayClaimConfirmedPresence => !const {
+    NutritionConstraintEvidenceSource.aiEstimate,
+    NutritionConstraintEvidenceSource.heuristic,
+    NutritionConstraintEvidenceSource.importedProvider,
+    NutritionConstraintEvidenceSource.legacy,
+    NutritionConstraintEvidenceSource.unknown,
+  }.contains(this);
 }
 
 enum NutritionConstraintOutcome {
@@ -625,6 +735,10 @@ class NutritionUserConstraint {
     final definition = NutritionConstraintTaxonomy.definitionForId(
       definitionId,
     );
+    NutritionConstraintTargetCatalog.validateForUserConstraint(
+      type: type,
+      target: target,
+    );
     if (target.type == NutritionConstraintTargetType.unknownOrUnsupported ||
         definition.type != type ||
         !definition.targetTypes.contains(target.type)) {
@@ -700,6 +814,7 @@ class NutritionUserConstraint {
     String? notes,
     bool clearNotes = false,
     bool? isActive,
+    DateTime? createdAtUtc,
     DateTime? updatedAtUtc,
   }) => NutritionUserConstraint(
     id: id,
@@ -715,7 +830,7 @@ class NutritionUserConstraint {
     source: source ?? this.source,
     notes: clearNotes ? null : notes ?? this.notes,
     isActive: isActive ?? this.isActive,
-    createdAtUtc: createdAtUtc,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
     updatedAtUtc: updatedAtUtc ?? DateTime.now().toUtc(),
   );
 }
@@ -763,13 +878,7 @@ class NutritionConstraintEvidence {
       );
     }
     if (status == NutritionConstraintEvidenceStatus.confirmed &&
-        const {
-          NutritionConstraintEvidenceSource.aiEstimate,
-          NutritionConstraintEvidenceSource.heuristic,
-          NutritionConstraintEvidenceSource.importedProvider,
-          NutritionConstraintEvidenceSource.legacy,
-          NutritionConstraintEvidenceSource.unknown,
-        }.contains(source)) {
+        !source.mayClaimConfirmedPresence) {
       throw const NutritionConstraintValidationError(
         'estimated_evidence_cannot_be_confirmed',
         'Estimated, imported, legacy, or unknown evidence cannot claim confirmed presence.',
@@ -784,6 +893,37 @@ class NutritionConstraintEvidence {
       }
     }
   }
+
+  NutritionConstraintEvidence copyWith({
+    String? subjectId,
+    NutritionConstraintTarget? target,
+    NutritionConstraintEvidenceStatus? status,
+    NutritionConstraintEvidenceSource? source,
+    double? confidence,
+    bool clearConfidence = false,
+    String? notes,
+    bool clearNotes = false,
+    String? sourceReference,
+    bool clearSourceReference = false,
+    String? ingredientLineage,
+    bool clearIngredientLineage = false,
+    int? version,
+  }) => NutritionConstraintEvidence(
+    id: id,
+    subjectId: subjectId ?? this.subjectId,
+    target: target ?? this.target,
+    status: status ?? this.status,
+    source: source ?? this.source,
+    confidence: clearConfidence ? null : confidence ?? this.confidence,
+    notes: clearNotes ? null : notes ?? this.notes,
+    sourceReference: clearSourceReference
+        ? null
+        : sourceReference ?? this.sourceReference,
+    ingredientLineage: clearIngredientLineage
+        ? null
+        : ingredientLineage ?? this.ingredientLineage,
+    version: version ?? this.version,
+  );
 
   bool get isKnownAbsence =>
       status == NutritionConstraintEvidenceStatus.notIndicated &&
@@ -852,8 +992,15 @@ class NutritionConstraintSubjectLine {
         'Recipe ingredient lines require stable line and food identity.',
       );
     }
+    final evidenceIds = <String>{};
     for (final item in this.evidence) {
       item.validate();
+      if (!evidenceIds.add(item.id)) {
+        throw const NutritionConstraintValidationError(
+          'duplicate_constraint_evidence',
+          'A recipe ingredient line cannot repeat an evidence identity.',
+        );
+      }
       if (item.subjectId != this.foodId && item.subjectId != this.id) {
         throw const NutritionConstraintValidationError(
           'evidence_subject_mismatch',
@@ -906,6 +1053,13 @@ class NutritionConstraintEvaluationInput {
         'Evaluation must identify exactly one direct food or recipe version.',
       );
     }
+    if ((foodId != null && subjectId != foodId) ||
+        (recipeVersionId != null && subjectId != recipeVersionId)) {
+      throw const NutritionConstraintValidationError(
+        'constraint_evaluation_subject_mismatch',
+        'Evaluation subject identity must match its direct food or recipe version.',
+      );
+    }
     if (foodId != null && lines.isNotEmpty) {
       throw const NutritionConstraintValidationError(
         'invalid_evaluation_subject',
@@ -917,6 +1071,32 @@ class NutritionConstraintEvaluationInput {
         'unknown_recipe_composition',
         'Recipe evaluation requires its immutable ingredient graph.',
       );
+    }
+    final lineIds = <String>{};
+    final evidenceIds = <String>{};
+    for (final line in lines) {
+      if (!lineIds.add(line.id)) {
+        throw const NutritionConstraintValidationError(
+          'duplicate_constraint_subject_line',
+          'Recipe evaluation ingredient line IDs must be unique.',
+        );
+      }
+      for (final item in line.evidence) {
+        if (!evidenceIds.add(item.id)) {
+          throw const NutritionConstraintValidationError(
+            'duplicate_constraint_evidence',
+            'Recipe evaluation evidence IDs must be unique.',
+          );
+        }
+      }
+    }
+    for (final item in evidence) {
+      if (!evidenceIds.add(item.id)) {
+        throw const NutritionConstraintValidationError(
+          'duplicate_constraint_evidence',
+          'Evaluation evidence IDs must be unique.',
+        );
+      }
     }
     for (final item in evidence) {
       item.validate();
@@ -942,16 +1122,53 @@ class NutritionConstraintEvidenceReference {
   final NutritionConstraintEvidenceSource source;
   final int version;
 
-  const NutritionConstraintEvidenceReference({
-    required this.evidenceId,
-    required this.subjectId,
-    required this.foodId,
-    required this.ingredientLineage,
-    required this.targetKey,
+  NutritionConstraintEvidenceReference({
+    required String evidenceId,
+    required String subjectId,
+    required String? foodId,
+    required String? ingredientLineage,
+    required String targetKey,
     required this.status,
     required this.source,
     required this.version,
-  });
+  }) : evidenceId = evidenceId.trim(),
+       subjectId = subjectId.trim(),
+       foodId = foodId?.trim(),
+       ingredientLineage = ingredientLineage?.trim(),
+       targetKey = targetKey.trim() {
+    if (this.evidenceId.isEmpty || this.subjectId.isEmpty) {
+      throw const NutritionConstraintValidationError(
+        'malformed_constraint_evidence_reference',
+        'Constraint evidence references require portable identity and subject.',
+      );
+    }
+    if (this.foodId != null && this.foodId!.isEmpty) {
+      throw const NutritionConstraintValidationError(
+        'malformed_constraint_evidence_reference',
+        'Constraint evidence food identity cannot be blank.',
+      );
+    }
+    if (this.ingredientLineage != null && this.ingredientLineage!.isEmpty) {
+      throw const NutritionConstraintValidationError(
+        'malformed_constraint_evidence_reference',
+        'Constraint evidence ingredient lineage cannot be blank.',
+      );
+    }
+    if (version < 1) {
+      throw const NutritionConstraintValidationError(
+        'malformed_constraint_evidence_reference',
+        'Constraint evidence versions must be positive integers.',
+      );
+    }
+    NutritionConstraintTarget.fromStableKey(this.targetKey);
+    if (status == NutritionConstraintEvidenceStatus.confirmed &&
+        !source.mayClaimConfirmedPresence) {
+      throw const NutritionConstraintValidationError(
+        'estimated_evidence_cannot_be_confirmed',
+        'Estimated, imported, legacy, or unknown evidence cannot claim confirmed presence.',
+      );
+    }
+  }
 
   Map<String, dynamic> toJson() => {
     'evidence_id': evidenceId,
@@ -994,18 +1211,22 @@ class NutritionConstraintEvidenceReference {
     }
     final targetKey = _requiredString(raw['target_key'], 'target_key');
     NutritionConstraintTarget.fromStableKey(targetKey);
+    final evidenceId = _requiredString(raw['evidence_id'], 'evidence_id');
+    final subjectId = _requiredString(raw['subject_id'], 'subject_id');
+    final status = NutritionConstraintEvidenceStatusContract.fromStableId(
+      _requiredString(raw['status'], 'status'),
+    );
+    final source = NutritionConstraintEvidenceSourceContract.fromStableId(
+      _requiredString(raw['source'], 'source'),
+    );
     return NutritionConstraintEvidenceReference(
-      evidenceId: _requiredString(raw['evidence_id'], 'evidence_id'),
-      subjectId: _requiredString(raw['subject_id'], 'subject_id'),
+      evidenceId: evidenceId,
+      subjectId: subjectId,
       foodId: foodId as String?,
       ingredientLineage: ingredientLineage as String?,
       targetKey: targetKey,
-      status: NutritionConstraintEvidenceStatusContract.fromStableId(
-        _requiredString(raw['status'], 'status'),
-      ),
-      source: NutritionConstraintEvidenceSourceContract.fromStableId(
-        _requiredString(raw['source'], 'source'),
-      ),
+      status: status,
+      source: source,
       version: version,
     );
   }
@@ -1022,17 +1243,46 @@ class NutritionConstraintEvaluation {
   final List<String> reasonCodes;
   final bool acknowledged;
 
-  const NutritionConstraintEvaluation({
-    required this.constraintId,
+  NutritionConstraintEvaluation({
+    required String constraintId,
     required this.type,
-    required this.targetKey,
+    required String targetKey,
     required this.outcome,
-    required this.evidence,
-    required this.affectedComponentIds,
-    required this.missingEvidence,
-    required this.reasonCodes,
+    required Iterable<NutritionConstraintEvidenceReference> evidence,
+    required Iterable<String> affectedComponentIds,
+    required Iterable<String> missingEvidence,
+    required Iterable<String> reasonCodes,
     this.acknowledged = false,
-  });
+  }) : constraintId = constraintId.trim(),
+       targetKey = targetKey.trim(),
+       evidence = _sortedEvidenceReferences(evidence),
+       affectedComponentIds = _sortedUnique(affectedComponentIds),
+       missingEvidence = _sortedUnique(missingEvidence),
+       reasonCodes = _sortedUnique(reasonCodes) {
+    if (this.constraintId.isEmpty) {
+      throw const NutritionConstraintValidationError(
+        'malformed_constraint_evaluation',
+        'Constraint evaluations require a portable constraint identity.',
+      );
+    }
+    final target = NutritionConstraintTarget.fromStableKey(this.targetKey);
+    final definition = NutritionConstraintTaxonomy.definitionForType(type);
+    if (!definition.targetTypes.contains(target.type)) {
+      throw const NutritionConstraintValidationError(
+        'constraint_evaluation_target_mismatch',
+        'Constraint evaluation target type does not match its taxonomy definition.',
+      );
+    }
+    final evidenceIds = <String>{};
+    for (final reference in this.evidence) {
+      if (!evidenceIds.add(reference.evidenceId)) {
+        throw const NutritionConstraintValidationError(
+          'duplicate_constraint_evidence',
+          'A constraint evaluation cannot repeat evidence identity.',
+        );
+      }
+    }
+  }
 
   Map<String, dynamic> toJson() => {
     'constraint_id': constraintId,
@@ -1079,7 +1329,7 @@ class NutritionConstraintEvaluation {
       ),
       missingEvidence: _stringList(raw['missing_evidence'], 'missing_evidence'),
       reasonCodes: _stringList(raw['reason_codes'], 'reason_codes'),
-      acknowledged: raw['acknowledged'] == true,
+      acknowledged: _requiredBool(raw['acknowledged'], 'acknowledged'),
     );
   }
 }
@@ -1116,7 +1366,7 @@ class NutritionConstraintEvaluationResult {
        foodId = _optional(foodId),
        recipeVersionId = _optional(recipeVersionId),
        evaluatedAtUtc = (evaluatedAtUtc ?? DateTime.utc(1970)).toUtc(),
-       evaluations = List.unmodifiable(evaluations),
+       evaluations = _sortedEvaluations(evaluations),
        missingEvidence = _sortedUnique(missingEvidence),
        provenanceSummary = _sortedUnique(provenanceSummary) {
     if (userId.isEmpty ||
@@ -1125,6 +1375,48 @@ class NutritionConstraintEvaluationResult {
       throw const NutritionConstraintValidationError(
         'invalid_evaluation_subject',
         'A dietary evaluation requires one direct food or recipe version.',
+      );
+    }
+    if ((foodId != null && subjectId != foodId) ||
+        (recipeVersionId != null && subjectId != recipeVersionId)) {
+      throw const NutritionConstraintValidationError(
+        'constraint_evaluation_subject_mismatch',
+        'Evaluation subject identity must match its direct food or recipe version.',
+      );
+    }
+    final constraintIds = <String>{};
+    for (final evaluation in this.evaluations) {
+      if (!constraintIds.add(evaluation.constraintId)) {
+        throw const NutritionConstraintValidationError(
+          'duplicate_constraint_evaluation',
+          'A dietary evaluation cannot contain duplicate constraint identities.',
+        );
+      }
+      for (final reference in evaluation.evidence) {
+        if (foodId != null &&
+            (reference.foodId != foodId || reference.subjectId != foodId)) {
+          throw const NutritionConstraintValidationError(
+            'constraint_evidence_subject_mismatch',
+            'Direct-food evidence must reference the evaluated food.',
+          );
+        }
+        if (recipeVersionId != null) {
+          if (reference.foodId != null || reference.ingredientLineage == null) {
+            throw const NutritionConstraintValidationError(
+              'constraint_evidence_lineage_mismatch',
+              'Recipe evidence must retain ingredient-line ancestry.',
+            );
+          }
+        }
+      }
+    }
+    if (_aggregateConstraintOutcomes(
+          this.evaluations.map((item) => item.outcome),
+        ) !=
+        outcome) {
+      throw const NutritionConstraintValidationError(
+        'constraint_evaluation_outcome_mismatch',
+        'Overall dietary evaluation does not match its per-constraint results.',
       );
     }
     if (ruleVersion != kNutritionConstraintRuleVersion ||
@@ -1185,10 +1477,10 @@ class NutritionConstraintEvaluationResult {
       );
     }
     final fingerprint = raw['fingerprint'];
-    if (fingerprint != null && fingerprint is! String) {
+    if (fingerprint is! String || fingerprint.trim().isEmpty) {
       throw const NutritionConstraintValidationError(
         'malformed_constraint_evaluation',
-        'Dietary evaluation fingerprint must be text.',
+        'Dietary evaluation fingerprint must be non-blank text.',
       );
     }
     final taxonomyVersion = raw['taxonomy_version'];
@@ -1198,13 +1490,7 @@ class NutritionConstraintEvaluationResult {
         'Dietary evaluation taxonomy version must be an integer.',
       );
     }
-    final evaluatedAt = raw['evaluated_at'];
-    if (evaluatedAt != null && evaluatedAt is! String) {
-      throw const NutritionConstraintValidationError(
-        'malformed_constraint_evaluation',
-        'Dietary evaluation timestamp must be text.',
-      );
-    }
+    final evaluatedAt = _requiredString(raw['evaluated_at'], 'evaluated_at');
     return NutritionConstraintEvaluationResult(
       userId: _requiredString(raw['user_id'], 'user_id'),
       subjectId: _requiredString(raw['subject_id'], 'subject_id'),
@@ -1224,10 +1510,8 @@ class NutritionConstraintEvaluationResult {
       ),
       ruleVersion: _requiredString(raw['rule_version'], 'rule_version'),
       taxonomyVersion: taxonomyVersion,
-      evaluatedAtUtc: evaluatedAt == null
-          ? DateTime.utc(1970)
-          : DateTime.parse(evaluatedAt).toUtc(),
-      fingerprint: fingerprint as String?,
+      evaluatedAtUtc: _parseEvaluationDate(evaluatedAt),
+      fingerprint: fingerprint,
     );
   }
 }
@@ -1288,6 +1572,15 @@ class NutritionConstraintAcknowledgement {
         'Constraint acknowledgements require a timestamp.',
       );
     }
+    late final DateTime acknowledgedAtUtc;
+    try {
+      acknowledgedAtUtc = DateTime.parse(acknowledgedAt).toUtc();
+    } catch (error) {
+      throw NutritionConstraintValidationError(
+        'malformed_constraint_acknowledgement',
+        'Constraint acknowledgement timestamp is invalid: $error',
+      );
+    }
     return NutritionConstraintAcknowledgement(
       commandId: _requiredString(raw['command_id'], 'command_id'),
       userId: _requiredString(raw['user_id'], 'user_id'),
@@ -1297,7 +1590,7 @@ class NutritionConstraintAcknowledgement {
       ),
       constraintId: _requiredString(raw['constraint_id'], 'constraint_id'),
       reason: _requiredString(raw['reason'], 'reason'),
-      acknowledgedAtUtc: DateTime.parse(acknowledgedAt).toUtc(),
+      acknowledgedAtUtc: acknowledgedAtUtc,
     );
   }
 }
@@ -1338,6 +1631,10 @@ class NutritionConstraintEvaluator {
       final components = <String>{};
       final missing = <String>{};
       final sources = <String>{};
+      final missingRecipeLines = subject.lines
+          .where((line) => line.evidence.isEmpty)
+          .map((line) => line.id)
+          .toList(growable: false);
       for (final item in _subjectEvidence(subject)) {
         if (_isUnknownComposition(item) ||
             _matches(constraint, item, subject)) {
@@ -1352,7 +1649,13 @@ class NutritionConstraintEvaluator {
           }
         }
       }
-      final outcome = _outcomeFor(relevant: relevant);
+      final outcome = _outcomeFor(
+        relevant: relevant,
+        hasUnknownComposition: missingRecipeLines.isNotEmpty,
+      );
+      for (final lineId in missingRecipeLines) {
+        missing.add('$lineId:composition');
+      }
       if (outcome == NutritionConstraintOutcome.insufficientInformation) {
         missing.add('${subject.subjectId}:${constraint.targetKey}');
       }
@@ -1365,14 +1668,24 @@ class NutritionConstraintEvaluator {
             'composition_or_evidence_unknown',
         },
       };
-      if (constraint.crossContact) {
+      if (constraint.crossContact &&
+          relevant.any(
+            (item) =>
+                item.status != NutritionConstraintEvidenceStatus.notIndicated,
+          )) {
         reasons.add('cross_contact_requested');
       }
       if (constraint.type == NutritionConstraintType.regionalPreference) {
         reasons.add('regional_preference_is_not_allergen_evidence');
       }
-      final sortedEvidence = relevant.map((item) => _reference(item)).toList()
-        ..sort((a, b) => a.evidenceId.compareTo(b.evidenceId));
+      final sortedEvidence =
+          relevant
+              .map(
+                (item) =>
+                    _reference(item, isRecipe: subject.recipeVersionId != null),
+              )
+              .toList()
+            ..sort((a, b) => a.evidenceId.compareTo(b.evidenceId));
       results.add(
         NutritionConstraintEvaluation(
           constraintId: constraint.id,
@@ -1418,6 +1731,7 @@ class NutritionConstraintEvaluator {
 
   NutritionConstraintOutcome _outcomeFor({
     required List<NutritionConstraintEvidence> relevant,
+    bool hasUnknownComposition = false,
   }) {
     if (relevant.any(
       (item) => item.status == NutritionConstraintEvidenceStatus.confirmed,
@@ -1432,6 +1746,9 @@ class NutritionConstraintEvaluator {
     if (relevant.any(
       (item) => item.status == NutritionConstraintEvidenceStatus.unknown,
     )) {
+      return NutritionConstraintOutcome.insufficientInformation;
+    }
+    if (hasUnknownComposition) {
       return NutritionConstraintOutcome.insufficientInformation;
     }
     if (relevant.any((item) => item.isKnownAbsence)) {
@@ -1532,11 +1849,12 @@ class NutritionConstraintEvaluator {
   }
 
   NutritionConstraintEvidenceReference _reference(
-    NutritionConstraintEvidence evidence,
-  ) => NutritionConstraintEvidenceReference(
+    NutritionConstraintEvidence evidence, {
+    required bool isRecipe,
+  }) => NutritionConstraintEvidenceReference(
     evidenceId: evidence.id,
     subjectId: evidence.subjectId,
-    foodId: evidence.subjectId,
+    foodId: isRecipe ? null : evidence.subjectId,
     ingredientLineage: evidence.ingredientLineage,
     targetKey: evidence.target.stableKey,
     status: evidence.status,
@@ -1570,6 +1888,63 @@ List<String> _sortedUnique(Iterable<String> values) {
   final result =
       values.where((value) => value.trim().isNotEmpty).toSet().toList()..sort();
   return List.unmodifiable(result);
+}
+
+List<NutritionConstraintEvidenceReference> _sortedEvidenceReferences(
+  Iterable<NutritionConstraintEvidenceReference> values,
+) {
+  final result = values.toList(growable: false)
+    ..sort((a, b) {
+      final byId = a.evidenceId.compareTo(b.evidenceId);
+      if (byId != 0) return byId;
+      return a.subjectId.compareTo(b.subjectId);
+    });
+  return List.unmodifiable(result);
+}
+
+List<NutritionConstraintEvaluation> _sortedEvaluations(
+  Iterable<NutritionConstraintEvaluation> values,
+) {
+  final result = values.toList(growable: false)
+    ..sort((a, b) => a.constraintId.compareTo(b.constraintId));
+  return List.unmodifiable(result);
+}
+
+NutritionConstraintOutcome _aggregateConstraintOutcomes(
+  Iterable<NutritionConstraintOutcome> outcomes,
+) {
+  final values = outcomes.toSet();
+  if (values.contains(NutritionConstraintOutcome.confirmedConflict)) {
+    return NutritionConstraintOutcome.confirmedConflict;
+  }
+  if (values.contains(NutritionConstraintOutcome.possibleConflict)) {
+    return NutritionConstraintOutcome.possibleConflict;
+  }
+  if (values.contains(NutritionConstraintOutcome.insufficientInformation)) {
+    return NutritionConstraintOutcome.insufficientInformation;
+  }
+  return NutritionConstraintOutcome.noKnownConflict;
+}
+
+bool _requiredBool(Object? value, String field) {
+  if (value is! bool) {
+    throw NutritionConstraintValidationError(
+      'malformed_constraint_evaluation',
+      'Dietary constraint field $field must be boolean.',
+    );
+  }
+  return value;
+}
+
+DateTime _parseEvaluationDate(String value) {
+  try {
+    return DateTime.parse(value).toUtc();
+  } catch (error) {
+    throw NutritionConstraintValidationError(
+      'malformed_constraint_evaluation',
+      'Dietary evaluation timestamp is invalid: $error',
+    );
+  }
 }
 
 String? _optional(String? value) {

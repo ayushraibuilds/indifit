@@ -99,6 +99,10 @@ class NutritionConstraintRepository {
     constraint.validate();
     await _ensureTaxonomy();
     await _validateDefinitionRow(constraint.definitionId, constraint.type);
+    await _validateUserTargetReference(
+      type: constraint.type,
+      target: constraint.target,
+    );
     return _db.transaction(() async {
       final sameId = await (_db.select(
         _db.nutritionUserConstraints,
@@ -191,6 +195,10 @@ class NutritionConstraintRepository {
     constraint.validate();
     await _ensureTaxonomy();
     await _validateDefinitionRow(constraint.definitionId, constraint.type);
+    await _validateUserTargetReference(
+      type: constraint.type,
+      target: constraint.target,
+    );
     return _db.transaction(() async {
       final existing = await (_db.select(
         _db.nutritionUserConstraints,
@@ -287,6 +295,7 @@ class NutritionConstraintRepository {
       );
     }
     evidence.validate();
+    await _validateEvidenceTargetReference(evidence.target);
     final food = await (_db.select(
       _db.nutritionFoods,
     )..where((table) => table.id.equals(owner))).getSingleOrNull();
@@ -437,7 +446,10 @@ class NutritionConstraintRepository {
             NutritionConstraintSubjectLine(
               id: ingredient.id,
               foodId: ingredient.foodId,
-              evidence: await listFoodEvidence(ingredient.foodId),
+              evidence: [
+                for (final item in await listFoodEvidence(ingredient.foodId))
+                  item.copyWith(ingredientLineage: ingredient.id),
+              ],
             ),
         ],
         evaluatedAtUtc: evaluatedAt,
@@ -448,8 +460,31 @@ class NutritionConstraintRepository {
   }
 
   Future<NutritionConstraintAcknowledgement> recordAcknowledgement(
-    NutritionConstraintAcknowledgement acknowledgement,
-  ) async {
+    NutritionConstraintAcknowledgement acknowledgement, {
+    required NutritionConstraintEvaluationResult evaluation,
+  }) async {
+    if (acknowledgement.userId != evaluation.userId ||
+        acknowledgement.evaluationFingerprint != evaluation.fingerprint ||
+        !evaluation.evaluations.any(
+          (item) =>
+              item.constraintId == acknowledgement.constraintId &&
+              item.acknowledged,
+        )) {
+      throw const NutritionConstraintValidationError(
+        'invalid_constraint_acknowledgement',
+        'Acknowledgement must match an explicitly acknowledged evaluation.',
+      );
+    }
+    final constraint = await getConstraint(
+      userId: acknowledgement.userId,
+      constraintId: acknowledgement.constraintId,
+    );
+    if (constraint == null) {
+      throw const NutritionConstraintNotFoundError(
+        'constraint_not_found',
+        'The acknowledged constraint is not available for this user.',
+      );
+    }
     final existing =
         await (_db.select(_db.nutritionUserCorrections)
               ..where((table) => table.id.equals(acknowledgement.commandId)))
@@ -465,21 +500,23 @@ class NutritionConstraintRepository {
         'The acknowledgement command was already used for another payload.',
       );
     }
-    await _db
-        .into(_db.nutritionUserCorrections)
-        .insert(
-          db.NutritionUserCorrectionsCompanion.insert(
-            id: acknowledgement.commandId,
-            userId: acknowledgement.userId,
-            targetType: 'nutrition_constraint_evaluation',
-            targetId: acknowledgement.evaluationFingerprint,
-            field: 'acknowledgement',
-            newValue: Value(encoded),
-            reason: acknowledgement.reason,
-            source: 'user_entered',
-            createdAt: Value(acknowledgement.acknowledgedAtUtc),
+    await _db.transaction(
+      () => _db
+          .into(_db.nutritionUserCorrections)
+          .insert(
+            db.NutritionUserCorrectionsCompanion.insert(
+              id: acknowledgement.commandId,
+              userId: acknowledgement.userId,
+              targetType: 'nutrition_constraint_evaluation',
+              targetId: acknowledgement.evaluationFingerprint,
+              field: 'acknowledgement',
+              newValue: Value(encoded),
+              reason: acknowledgement.reason,
+              source: 'user_entered',
+              createdAt: Value(acknowledgement.acknowledgedAtUtc),
+            ),
           ),
-        );
+    );
     return acknowledgement;
   }
 
@@ -524,6 +561,77 @@ class NutritionConstraintRepository {
         ]);
       });
     });
+  }
+
+  Future<void> _validateUserTargetReference({
+    required NutritionConstraintType type,
+    required NutritionConstraintTarget target,
+  }) async {
+    NutritionConstraintTargetCatalog.validateForUserConstraint(
+      type: type,
+      target: target,
+    );
+    if (target.type == NutritionConstraintTargetType.food ||
+        (target.type == NutritionConstraintTargetType.ingredient &&
+            !NutritionConstraintTargetCatalog.isFixedTarget(target))) {
+      final row = await (_db.select(
+        _db.nutritionFoods,
+      )..where((table) => table.id.equals(target.id))).getSingleOrNull();
+      if (row == null) {
+        throw const NutritionConstraintNotFoundError(
+          'constraint_target_not_found',
+          'The selected dietary target is not a known portable food identity.',
+        );
+      }
+    } else if (target.type == NutritionConstraintTargetType.preparation) {
+      final row = await (_db.select(
+        _db.nutritionFoodPreparations,
+      )..where((table) => table.id.equals(target.id))).getSingleOrNull();
+      if (row == null) {
+        throw const NutritionConstraintNotFoundError(
+          'constraint_target_not_found',
+          'The selected preparation identity is not available.',
+        );
+      }
+    }
+  }
+
+  Future<void> _validateEvidenceTargetReference(
+    NutritionConstraintTarget target,
+  ) async {
+    if (target.type == NutritionConstraintTargetType.unknownOrUnsupported ||
+        NutritionConstraintTargetCatalog.isFixedTarget(target)) {
+      return;
+    }
+    if (target.type == NutritionConstraintTargetType.food ||
+        target.type == NutritionConstraintTargetType.ingredient) {
+      final row = await (_db.select(
+        _db.nutritionFoods,
+      )..where((table) => table.id.equals(target.id))).getSingleOrNull();
+      if (row == null) {
+        throw const NutritionConstraintNotFoundError(
+          'constraint_target_not_found',
+          'Evidence references an unavailable portable food identity.',
+        );
+      }
+      return;
+    }
+    if (target.type == NutritionConstraintTargetType.preparation) {
+      final row = await (_db.select(
+        _db.nutritionFoodPreparations,
+      )..where((table) => table.id.equals(target.id))).getSingleOrNull();
+      if (row == null) {
+        throw const NutritionConstraintNotFoundError(
+          'constraint_target_not_found',
+          'Evidence references an unavailable preparation identity.',
+        );
+      }
+      return;
+    }
+    throw const NutritionConstraintValidationError(
+      'unsupported_constraint_target',
+      'Evidence references an unsupported dietary target.',
+    );
   }
 
   Future<void> _validateDefinitionRow(
