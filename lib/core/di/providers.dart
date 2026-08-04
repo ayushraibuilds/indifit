@@ -13,6 +13,7 @@ import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/nutrition_constraint_repository.dart';
 import '../../data/repositories/nutrition_consumption_repository.dart';
 import '../../data/repositories/nutrition_estimate_repository.dart';
 import '../../data/repositories/nutrition_household_measure_repository.dart';
@@ -27,6 +28,8 @@ import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
 import '../../features/food_log/saved_recipe_log_controller.dart';
+import '../../features/settings/nutrition_constraint_review_controller.dart';
+import '../../features/settings/nutrition_constraints_controller.dart';
 import '../config/app_config.dart';
 import '../nutrients.dart';
 import '../nutrition_calculation_service.dart';
@@ -46,6 +49,36 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 final nutritionRecipeRepositoryProvider = Provider<NutritionRecipeRepository>(
   (ref) => NutritionRecipeRepository(db: ref.watch(databaseProvider)),
 );
+
+final nutritionConstraintRepositoryProvider =
+    Provider<NutritionConstraintRepository>(
+      (ref) =>
+          NutritionConstraintRepository(database: ref.watch(databaseProvider)),
+    );
+
+final nutritionConstraintManagementControllerProvider =
+    StateNotifierProvider.autoDispose<
+      NutritionConstraintManagementController,
+      NutritionConstraintManagementState
+    >((ref) {
+      final controller = NutritionConstraintManagementController(
+        repository: ref.watch(nutritionConstraintRepositoryProvider),
+        userId: kLocalNutritionUserScopeId,
+      );
+      unawaited(controller.load());
+      return controller;
+    });
+
+final nutritionConstraintEvaluationReviewControllerProvider =
+    StateNotifierProvider.autoDispose<
+      NutritionConstraintEvaluationReviewController,
+      NutritionConstraintEvaluationReviewState
+    >(
+      (ref) => NutritionConstraintEvaluationReviewController(
+        repository: ref.watch(nutritionConstraintRepositoryProvider),
+        userId: kLocalNutritionUserScopeId,
+      ),
+    );
 
 final nutritionTransformationRepositoryProvider =
     Provider<NutritionTransformationRepository>(

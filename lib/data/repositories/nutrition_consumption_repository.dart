@@ -5,9 +5,14 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/nutrients.dart';
+import '../../core/nutrition_constraints.dart';
 import '../../core/nutrition_consumption_snapshots.dart';
 import '../../core/typed_quantities.dart';
-import '../database/app_database.dart' hide NutritionConsumptionSnapshot;
+import '../database/app_database.dart'
+    hide
+        NutritionConsumptionSnapshot,
+        NutritionUserConstraint,
+        NutritionConstraintDefinition;
 
 typedef NutritionConsumptionFailureInjector = void Function(String stage);
 
@@ -246,6 +251,14 @@ class NutritionConsumptionRepository {
           }
         }
         _inject('after_nutrients');
+        await _persistConstraintEvaluation(
+          snapshotId: id,
+          evaluation: prepared.constraintEvaluation,
+          acknowledgement: prepared.constraintAcknowledgement,
+          items: prepared.items,
+          evaluatedAt: now,
+        );
+        _inject('after_constraints');
         return _readSnapshot(id, request.userId);
       });
     } on NutritionConsumptionError {
@@ -424,6 +437,13 @@ class NutritionConsumptionRepository {
     }
     if (request.commandId != null && request.commandId!.trim().isEmpty) {
       _invalid('invalid_command_id', 'A command ID cannot be blank.');
+    }
+    if (request.evidence.containsKey('constraint_evaluation') ||
+        request.evidence.containsKey('constraint_acknowledgement')) {
+      _invalid(
+        'reserved_constraint_evidence_key',
+        'Dietary evaluation lineage must be supplied through its typed fields.',
+      );
     }
     final items = request.items.toList(growable: false);
     if (items.isEmpty) {
@@ -604,6 +624,23 @@ class NutritionConsumptionRepository {
       ),
       requestedNutrientIds: requested,
     );
+    final constraintEvaluation = request.constraintEvaluation;
+    final constraintAcknowledgement = request.constraintAcknowledgement;
+    if (constraintAcknowledgement != null && constraintEvaluation == null) {
+      _invalid(
+        'orphan_constraint_acknowledgement',
+        'A constraint acknowledgement requires its immutable evaluation.',
+      );
+    }
+    if (constraintEvaluation != null) {
+      await _validateConstraintEvaluation(
+        request: request,
+        evaluation: constraintEvaluation,
+        items: items,
+        recipeVersionId: recipeVersionId,
+        acknowledgement: constraintAcknowledgement,
+      );
+    }
     final contentFingerprint = request.contentFingerprint;
     final lineageEvidence = {
       'calculator_version': calculatorVersion,
@@ -626,6 +663,10 @@ class NutritionConsumptionRepository {
         for (final item in preparedItems) item.input.id: item.toLineageJson(),
       },
       'request_evidence': request.evidence,
+      if (constraintEvaluation != null)
+        'constraint_evaluation': constraintEvaluation.toJson(),
+      if (constraintAcknowledgement != null)
+        'constraint_acknowledgement': constraintAcknowledgement.toJson(),
     };
     return _PreparedConsumption(
       items: preparedItems,
@@ -633,7 +674,219 @@ class NutritionConsumptionRepository {
       recipeVersionId: recipeVersionId,
       contentFingerprint: contentFingerprint,
       lineageEvidence: lineageEvidence,
+      constraintEvaluation: constraintEvaluation,
+      constraintAcknowledgement: constraintAcknowledgement,
     );
+  }
+
+  Future<void> _validateConstraintEvaluation({
+    required NutritionConsumptionFinalizeRequest request,
+    required NutritionConstraintEvaluationResult evaluation,
+    required Iterable<NutritionConsumptionItemInput> items,
+    required String? recipeVersionId,
+    required NutritionConstraintAcknowledgement? acknowledgement,
+  }) async {
+    if (evaluation.userId != request.userId) {
+      _invalid(
+        'constraint_evaluation_ownership',
+        'Constraint evaluation belongs to another user.',
+      );
+    }
+    if (recipeVersionId != null) {
+      if (evaluation.recipeVersionId != recipeVersionId ||
+          evaluation.foodId != null ||
+          evaluation.subjectId != recipeVersionId) {
+        _invalid(
+          'constraint_evaluation_subject_mismatch',
+          'Recipe constraint evaluation must reference the selected immutable version.',
+        );
+      }
+    } else {
+      final foodIds = items
+          .map((item) => item.foodId)
+          .whereType<String>()
+          .toSet();
+      if (evaluation.foodId == null ||
+          evaluation.recipeVersionId != null ||
+          evaluation.subjectId != evaluation.foodId ||
+          !foodIds.contains(evaluation.foodId)) {
+        _invalid(
+          'constraint_evaluation_subject_mismatch',
+          'Direct-food constraint evaluation must reference a consumed food.',
+        );
+      }
+    }
+    final evaluations = evaluation.evaluations;
+    final constraintIds = evaluations.map((item) => item.constraintId).toList();
+    if (constraintIds.toSet().length != constraintIds.length) {
+      _invalid(
+        'duplicate_constraint_evaluation',
+        'A snapshot cannot contain duplicate constraint evaluations.',
+      );
+    }
+    if (constraintIds.isNotEmpty) {
+      final rows = await (_db.select(
+        _db.nutritionUserConstraints,
+      )..where((table) => table.id.isIn(constraintIds))).get();
+      final byId = {for (final row in rows) row.id: row};
+      if (byId.length != constraintIds.length) {
+        _invalid(
+          'missing_constraint',
+          'Constraint evaluation references a missing user constraint.',
+        );
+      }
+      for (final item in evaluations) {
+        final row = byId[item.constraintId]!;
+        if (row.userId != request.userId) {
+          _invalid(
+            'constraint_evaluation_ownership',
+            'Constraint evaluation references another user\'s constraint.',
+          );
+        }
+        late final NutritionConstraintDefinition definition;
+        late final NutritionConstraintTarget target;
+        try {
+          definition = NutritionConstraintTaxonomy.definitionForId(
+            row.definitionId,
+          );
+          final decoded = jsonDecode(row.value);
+          if (decoded is! Map || decoded['target'] is! Map) {
+            throw const FormatException('missing target envelope');
+          }
+          target = NutritionConstraintTarget.fromJson(decoded['target']);
+        } catch (error) {
+          _invalid(
+            'invalid_constraint_persistence',
+            'The persisted user constraint is malformed.',
+            error,
+          );
+        }
+        if (item.type != definition.type ||
+            item.targetKey != target.stableKey) {
+          _invalid(
+            'constraint_evaluation_mismatch',
+            'Constraint evaluation evidence does not match its user constraint.',
+          );
+        }
+        NutritionConstraintTarget.fromStableKey(item.targetKey);
+      }
+    }
+    if (acknowledgement != null) {
+      if (acknowledgement.userId != request.userId ||
+          acknowledgement.evaluationFingerprint != evaluation.fingerprint ||
+          !constraintIds.contains(acknowledgement.constraintId)) {
+        _invalid(
+          'invalid_constraint_acknowledgement',
+          'Constraint acknowledgement does not match the evaluated result.',
+        );
+      }
+    }
+    final acknowledgedIds = evaluations
+        .where((item) => item.acknowledged)
+        .map((item) => item.constraintId)
+        .toSet();
+    if (acknowledgedIds.isNotEmpty && acknowledgement == null) {
+      _invalid(
+        'invalid_constraint_acknowledgement',
+        'An acknowledged constraint requires an explicit acknowledgement command.',
+      );
+    }
+    if (acknowledgement != null &&
+        !acknowledgedIds.contains(acknowledgement.constraintId)) {
+      _invalid(
+        'invalid_constraint_acknowledgement',
+        'The acknowledgement command is not reflected in the evaluation result.',
+      );
+    }
+  }
+
+  Future<void> _persistConstraintEvaluation({
+    required String snapshotId,
+    required NutritionConstraintEvaluationResult? evaluation,
+    required NutritionConstraintAcknowledgement? acknowledgement,
+    required List<_PreparedItem> items,
+    required DateTime evaluatedAt,
+  }) async {
+    if (evaluation == null) return;
+    final recipeItems = items
+        .where((item) => item.input.recipeVersionId != null)
+        .toList(growable: false);
+    final recipeItemId = recipeItems.isEmpty
+        ? null
+        : recipeItems.first.input.id;
+    for (final item in evaluation.evaluations) {
+      final resultId = '$snapshotId::constraint::${item.constraintId}';
+      await _db
+          .into(_db.nutritionSnapshotConstraintResults)
+          .insert(
+            NutritionSnapshotConstraintResultsCompanion.insert(
+              id: resultId,
+              snapshotId: snapshotId,
+              constraintId: item.constraintId,
+              result: item.outcome.stableId,
+              ruleVersion: evaluation.ruleVersion,
+              evaluatedAt: evaluation.evaluatedAtUtc,
+              createdAt: Value(evaluatedAt),
+              updatedAt: Value(evaluatedAt),
+            ),
+          );
+      for (var index = 0; index < item.evidence.length; index++) {
+        final reference = item.evidence[index];
+        final isRecipe = evaluation.recipeVersionId != null;
+        final foodId = isRecipe ? null : reference.foodId ?? evaluation.foodId;
+        final snapshotItemId = isRecipe ? recipeItemId : null;
+        if (foodId == null && snapshotItemId == null) {
+          throw const NutritionConsumptionPersistenceError(
+            'constraint_evidence_owner',
+            'Constraint evidence cannot be attached to a snapshot item.',
+          );
+        }
+        // The constraint's cross-contact flag is a user handling preference;
+        // it is not evidence that cross-contact occurred. Preserve the
+        // actual owner kind here so direct-food rows satisfy the schema and
+        // history never labels ordinary food evidence as cross-contact.
+        final evidenceKind = isRecipe ? 'ingredient' : 'food';
+        await _db
+            .into(_db.nutritionSnapshotConstraintResultEvidence)
+            .insert(
+              NutritionSnapshotConstraintResultEvidenceCompanion.insert(
+                id: '$resultId::evidence::$index::${reference.evidenceId}',
+                resultId: resultId,
+                foodId: Value(foodId),
+                snapshotItemId: Value(snapshotItemId),
+                evidenceKind: evidenceKind,
+                status: reference.status.stableId,
+                source: reference.source.stableId,
+                version: reference.version.toString(),
+                createdAt: Value(evaluatedAt),
+              ),
+            );
+      }
+      if (acknowledgement != null &&
+          acknowledgement.constraintId == item.constraintId) {
+        final itemId = items.isEmpty ? null : items.first.input.id;
+        if (itemId == null) {
+          throw const NutritionConsumptionPersistenceError(
+            'constraint_acknowledgement_owner',
+            'Constraint acknowledgement cannot be attached to an empty snapshot.',
+          );
+        }
+        await _db
+            .into(_db.nutritionSnapshotConstraintResultEvidence)
+            .insert(
+              NutritionSnapshotConstraintResultEvidenceCompanion.insert(
+                id: '$resultId::acknowledgement::${acknowledgement.commandId}',
+                resultId: resultId,
+                snapshotItemId: Value(itemId),
+                evidenceKind: 'user_override',
+                status: 'unknown',
+                source: 'user_entered',
+                version: evaluation.ruleVersion,
+                createdAt: Value(evaluatedAt),
+              ),
+            );
+      }
+    }
   }
 
   Map<String, NutrientFact> _effectiveFacts(
@@ -1031,6 +1284,10 @@ class NutritionConsumptionRepository {
       );
     }
     final lineage = _parsePersistedLineage(lineageRaw);
+    final constraintEvaluation = _readPersistedConstraintEvaluation(lineage);
+    final constraintAcknowledgement = _readPersistedConstraintAcknowledgement(
+      lineage,
+    );
     if (lineage.evidence['totals'] is! Map) {
       throw const NutritionConsumptionPersistenceError(
         'missing_snapshot_totals',
@@ -1252,6 +1509,13 @@ class NutritionConsumptionRepository {
         'Snapshot header and item recipe ancestry disagree.',
       );
     }
+    await _validatePersistedConstraintRows(
+      snapshotId: id,
+      userId: userId,
+      evaluation: constraintEvaluation,
+      acknowledgement: constraintAcknowledgement,
+      itemRows: itemRows,
+    );
     return NutritionConsumptionSnapshot(
       id: header.id,
       userId: header.userId,
@@ -1269,7 +1533,159 @@ class NutritionConsumptionRepository {
       createdAtUtc: header.createdAt.toUtc(),
       lineage: lineage,
       items: List.unmodifiable(snapshotItems),
+      constraintEvaluation: constraintEvaluation,
+      constraintAcknowledgement: constraintAcknowledgement,
     );
+  }
+
+  NutritionConstraintEvaluationResult? _readPersistedConstraintEvaluation(
+    NutritionConsumptionLineage lineage,
+  ) {
+    final raw = lineage.evidence['constraint_evaluation'];
+    if (raw == null) return null;
+    try {
+      return NutritionConstraintEvaluationResult.fromJson(raw);
+    } catch (error) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_constraint_evaluation_lineage',
+        'Persisted dietary evaluation lineage is malformed.',
+        cause: error,
+      );
+    }
+  }
+
+  NutritionConstraintAcknowledgement? _readPersistedConstraintAcknowledgement(
+    NutritionConsumptionLineage lineage,
+  ) {
+    final raw = lineage.evidence['constraint_acknowledgement'];
+    if (raw == null) return null;
+    try {
+      return NutritionConstraintAcknowledgement.fromJson(raw);
+    } catch (error) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_constraint_acknowledgement_lineage',
+        'Persisted dietary acknowledgement lineage is malformed.',
+        cause: error,
+      );
+    }
+  }
+
+  Future<void> _validatePersistedConstraintRows({
+    required String snapshotId,
+    required String userId,
+    required NutritionConstraintEvaluationResult? evaluation,
+    required NutritionConstraintAcknowledgement? acknowledgement,
+    required List<NutritionSnapshotItem> itemRows,
+  }) async {
+    final resultRows = await (_db.select(
+      _db.nutritionSnapshotConstraintResults,
+    )..where((table) => table.snapshotId.equals(snapshotId))).get();
+    final evidenceRows = resultRows.isEmpty
+        ? <NutritionSnapshotConstraintResultEvidenceData>[]
+        : await (_db.select(_db.nutritionSnapshotConstraintResultEvidence)
+                ..where(
+                  (table) => table.resultId.isIn(
+                    resultRows.map((row) => row.id).toList(),
+                  ),
+                ))
+              .get();
+    if (evaluation == null) {
+      if (resultRows.isNotEmpty || evidenceRows.isNotEmpty) {
+        throw const NutritionConsumptionPersistenceError(
+          'orphan_constraint_graph',
+          'Snapshot constraint rows exist without their immutable evaluation lineage.',
+        );
+      }
+      return;
+    }
+    final expected = {
+      for (final item in evaluation.evaluations) item.constraintId: item,
+    };
+    if (resultRows.length != expected.length ||
+        resultRows.any((row) => !expected.containsKey(row.constraintId))) {
+      throw const NutritionConsumptionPersistenceError(
+        'constraint_result_mismatch',
+        'Snapshot constraint result rows disagree with their immutable lineage.',
+      );
+    }
+    final itemIds = itemRows.map((row) => row.id).toSet();
+    final evidenceById = {for (final row in evidenceRows) row.id: row};
+    for (final row in resultRows) {
+      final item = expected[row.constraintId]!;
+      if (row.result != item.outcome.stableId ||
+          row.ruleVersion != evaluation.ruleVersion ||
+          row.evaluatedAt.toUtc() != evaluation.evaluatedAtUtc) {
+        throw const NutritionConsumptionPersistenceError(
+          'constraint_result_mismatch',
+          'Snapshot constraint result projection disagrees with its lineage.',
+        );
+      }
+      final owner = await (_db.select(
+        _db.nutritionUserConstraints,
+      )..where((table) => table.id.equals(row.constraintId))).getSingleOrNull();
+      if (owner == null || owner.userId != userId) {
+        throw const NutritionConsumptionPersistenceError(
+          'constraint_result_owner',
+          'Snapshot constraint result is not owned by the snapshot user.',
+        );
+      }
+      final expectedEvidence = <String, NutritionConstraintEvidenceReference>{
+        for (final reference in item.evidence)
+          '${row.id}::evidence::${item.evidence.indexOf(reference)}::${reference.evidenceId}':
+              reference,
+      };
+      for (final entry in expectedEvidence.entries) {
+        final persisted = evidenceById[entry.key];
+        final reference = entry.value;
+        final isRecipe = evaluation.recipeVersionId != null;
+        final expectedFoodId = reference.foodId ?? evaluation.foodId;
+        final expectedEvidenceKind = isRecipe ? 'ingredient' : 'food';
+        if (persisted == null ||
+            persisted.evidenceKind != expectedEvidenceKind ||
+            persisted.status != reference.status.stableId ||
+            persisted.source != reference.source.stableId ||
+            persisted.version != reference.version.toString() ||
+            (isRecipe
+                ? persisted.foodId != null ||
+                      persisted.snapshotItemId == null ||
+                      !itemIds.contains(persisted.snapshotItemId)
+                : persisted.foodId != expectedFoodId ||
+                      persisted.snapshotItemId != null)) {
+          throw const NutritionConsumptionPersistenceError(
+            'constraint_evidence_mismatch',
+            'Snapshot constraint evidence does not match its immutable lineage.',
+          );
+        }
+      }
+      if (acknowledgement != null &&
+          acknowledgement.constraintId == row.constraintId) {
+        final ackId =
+            '${row.id}::acknowledgement::${acknowledgement.commandId}';
+        final persisted = evidenceById[ackId];
+        if (persisted == null ||
+            persisted.evidenceKind != 'user_override' ||
+            persisted.snapshotItemId == null ||
+            !itemIds.contains(persisted.snapshotItemId)) {
+          throw const NutritionConsumptionPersistenceError(
+            'constraint_acknowledgement_mismatch',
+            'Snapshot constraint acknowledgement does not match its lineage.',
+          );
+        }
+      }
+    }
+    final expectedEvidenceCount = evaluation.evaluations.fold<int>(
+      0,
+      (count, item) =>
+          count +
+          item.evidence.length +
+          (acknowledgement?.constraintId == item.constraintId ? 1 : 0),
+    );
+    if (evidenceRows.length != expectedEvidenceCount) {
+      throw const NutritionConsumptionPersistenceError(
+        'constraint_evidence_mismatch',
+        'Snapshot constraint evidence contains extra or missing rows.',
+      );
+    }
   }
 
   NutrientCompleteness _readCompleteness(NutritionConsumptionLineage lineage) {
@@ -1590,6 +2006,8 @@ class _PreparedConsumption {
   final String? recipeVersionId;
   final String contentFingerprint;
   final Map<String, dynamic> lineageEvidence;
+  final NutritionConstraintEvaluationResult? constraintEvaluation;
+  final NutritionConstraintAcknowledgement? constraintAcknowledgement;
 
   const _PreparedConsumption({
     required this.items,
@@ -1597,6 +2015,8 @@ class _PreparedConsumption {
     required this.recipeVersionId,
     required this.contentFingerprint,
     required this.lineageEvidence,
+    required this.constraintEvaluation,
+    required this.constraintAcknowledgement,
   });
 }
 
