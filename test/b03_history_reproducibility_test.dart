@@ -40,7 +40,7 @@ void main() {
         commandId: 'original-command',
         itemId: 'original-item',
         loggedAtUtc: DateTime.utc(2026, 8, 3, 20),
-        localDate: '2026-08-03',
+        localDate: '2026-08-04',
         protein: '99',
       );
       await consumption.finalizeConsumption(original);
@@ -86,7 +86,7 @@ void main() {
           commandId: 'corrected-command',
           itemId: 'corrected-item',
           mealCategory: 'dinner',
-          loggedAtUtc: DateTime.utc(2026, 8, 4, 19),
+          loggedAtUtc: DateTime.utc(2026, 8, 4, 13),
           protein: '12',
           supersedesSnapshotId: original.consumptionId,
           correctionId: 'correction-1',
@@ -265,7 +265,7 @@ void main() {
           id: collidingId,
           commandId: 'collision-original-command',
           itemId: 'collision-original-item',
-          localDate: '2026-08-03',
+          localDate: '2026-08-04',
           protein: '10',
         ),
       );

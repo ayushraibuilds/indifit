@@ -360,6 +360,8 @@ void main() {
           loggedAtUtc: DateTime.utc(2026, 8, 4, 10),
           mealCategory: 'lunch',
           sourceType: 'estimate',
+          localDate: '2026-08-04',
+          timezoneId: 'Asia/Kolkata',
           calculatorVersion: 'snapshot-test-v1',
           items: [
             NutritionConsumptionItemInput(
@@ -659,6 +661,7 @@ void main() {
           consumptionId: 'successor-cross-date',
           commandId: 'successor-cross-date-command',
           itemId: 'cross-date-item-2',
+          loggedAtUtc: DateTime.utc(2026, 8, 4, 19),
           localDate: '2026-08-05',
           supersedesSnapshotId: original.id,
           correctionId: 'cross-date-correction',
@@ -904,13 +907,14 @@ NutritionConsumptionFinalizeRequest _request({
   String? correctionId,
   String? correctionReason,
   String itemId = 'item-1',
+  DateTime? loggedAtUtc,
   String localDate = '2026-08-04',
   String timezoneId = 'Asia/Kolkata',
 }) => NutritionConsumptionFinalizeRequest(
   userId: 'user-1',
   consumptionId: consumptionId,
   commandId: commandId,
-  loggedAtUtc: DateTime.utc(2026, 8, 4, 10),
+  loggedAtUtc: loggedAtUtc ?? DateTime.utc(2026, 8, 4, 10),
   mealCategory: 'lunch',
   sourceType: 'direct_food',
   localDate: localDate,

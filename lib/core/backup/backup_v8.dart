@@ -1268,7 +1268,7 @@ class NutritionBackupGraph {
         _requireRef(items, row['item_id'], 'snapshot nutrient item_id');
         if (snapshotItemOwners[row['item_id']] != row['snapshot_id']) {
           throw BackupV8ValidationException(
-            'snapshot_item_mismatch',
+            'cross_snapshot_nutrient_owner',
             'Backup-v8 snapshot nutrient item must belong to its snapshot.',
           );
         }
