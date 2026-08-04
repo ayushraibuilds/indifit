@@ -136,6 +136,11 @@ void main() {
         await target.customSelect('PRAGMA foreign_key_check').get(),
         isEmpty,
       );
+      final restoredFact =
+          (await target.select(target.nutritionFoodNutrientFacts).get())
+              .singleWhere((row) => row.id == 'v8-fact');
+      expect(restoredFact.status, 'known_zero');
+      expect(restoredFact.amount, 0);
     },
   );
 
@@ -233,6 +238,112 @@ void main() {
       expect(
         (await target.select(target.workoutRoutines).get()).single.name,
         'sentinel',
+      );
+    },
+  );
+
+  test(
+    'v8 rejects malformed nutrient states and reviewed measure ownership',
+    () async {
+      final source = AppDatabase.memory();
+      addTearDown(source.close);
+      await _populateNutritionGraph(source);
+      final valid = await BackupV8Data.createFromDatabase(source);
+
+      final malformed =
+          jsonDecode(jsonEncode(valid.toJson())) as Map<String, dynamic>;
+      final malformedTables =
+          (malformed['nutrition_graph'] as Map<String, dynamic>)['tables']
+              as Map<String, dynamic>;
+      final fact =
+          (malformedTables['nutrition_food_nutrient_facts'] as List)
+                  .singleWhere(
+                    (row) => (row as Map<String, dynamic>)['id'] == 'v8-fact',
+                  )
+              as Map<String, dynamic>;
+      fact['amount'] = 1;
+      expect(
+        () => BackupV8Data.fromJson(malformed),
+        throwsA(
+          isA<BackupV8ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'invalid_known_zero',
+          ),
+        ),
+      );
+
+      final reviewed =
+          jsonDecode(jsonEncode(valid.toJson())) as Map<String, dynamic>;
+      final reviewedTables =
+          (reviewed['nutrition_graph'] as Map<String, dynamic>)['tables']
+              as Map<String, dynamic>;
+      reviewedTables['nutrition_household_measures'] = [
+        {
+          'id': 'household_measure_cup_v1',
+          'key': 'cup',
+          'display_name': 'User-overwritten cup',
+          'dimension': 'volume',
+          'base_unit': 'millilitre',
+          'nominal_value': 999,
+          'lower': null,
+          'upper': null,
+          'locale': 'en-IN',
+          'version': 1,
+          'created_at': 0,
+          'updated_at': 0,
+        },
+      ];
+      expect(
+        () => BackupV8Data.fromJson(reviewed),
+        throwsA(
+          isA<BackupV8ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'reviewed_measure_ownership',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'v8 restore preserves reviewed measures and replaces only user measures',
+    () async {
+      final source = AppDatabase.memory();
+      final target = AppDatabase.memory();
+      addTearDown(source.close);
+      addTearDown(target.close);
+      await _populateNutritionGraph(source);
+      await target
+          .into(target.nutritionHouseholdMeasures)
+          .insert(
+            NutritionHouseholdMeasuresCompanion.insert(
+              id: 'household_measure_cup_v1',
+              key: 'cup',
+              displayName: 'Reviewed cup',
+              dimension: 'volume',
+              baseUnit: 'millilitre',
+              nominalValue: 240,
+              locale: 'en-IN',
+              version: 1,
+            ),
+          );
+      final backup = await BackupV8Data.createFromDatabase(source);
+      await backup.restoreToDatabase(target);
+
+      final measures = await target
+          .select(target.nutritionHouseholdMeasures)
+          .get();
+      expect(
+        measures
+            .singleWhere((row) => row.id == 'household_measure_cup_v1')
+            .displayName,
+        'Reviewed cup',
+      );
+      expect(
+        measures.singleWhere((row) => row.id == 'v8-measure').displayName,
+        'V8 cup',
       );
     },
   );

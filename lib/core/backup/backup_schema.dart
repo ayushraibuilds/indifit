@@ -3948,14 +3948,31 @@ class BackupData {
     Map<String, _PreferenceSnapshot> snapshots, {
     Future<void> Function()? onEntryRestored,
   }) async {
+    Object? firstFailure;
+    StackTrace? firstFailureStack;
     for (final entry in snapshots.entries) {
-      final restored = entry.value.existed
-          ? await _writePreference(prefs, entry.key, entry.value.value)
-          : await prefs.remove(entry.key);
-      if (!restored) {
-        throw StateError('Failed to roll back preference "${entry.key}".');
+      try {
+        final restored = entry.value.existed
+            ? await _writePreference(prefs, entry.key, entry.value.value)
+            : await prefs.remove(entry.key);
+        if (!restored) {
+          throw StateError('Failed to roll back preference "${entry.key}".');
+        }
+      } catch (error, stackTrace) {
+        firstFailure ??= error;
+        firstFailureStack ??= stackTrace;
       }
-      if (onEntryRestored != null) await onEntryRestored();
+      if (onEntryRestored != null) {
+        try {
+          await onEntryRestored();
+        } catch (error, stackTrace) {
+          firstFailure ??= error;
+          firstFailureStack ??= stackTrace;
+        }
+      }
+    }
+    if (firstFailure != null) {
+      Error.throwWithStackTrace(firstFailure, firstFailureStack!);
     }
   }
 

@@ -294,6 +294,13 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('PRAGMA foreign_keys = ON;');
       if (schemaVersionOverride != 16) {
         await _ensurePreReleaseV17VesselGraph();
+        if (await _tableExists('nutrition_foods')) {
+          // Triggers are part of the durable v17 boundary. Reinstall them on
+          // every open so a v17 database created before a boundary repair
+          // cannot bypass the same checks through raw SQL, restore, or a
+          // second writer.
+          await _createV17Indexes();
+        }
       }
     },
   );
@@ -986,6 +993,227 @@ class AppDatabase extends _$AppDatabase {
          WHEN NEW.current_version_id IS NOT NULL AND NOT EXISTS
            (SELECT 1 FROM nutrition_recipe_versions WHERE id = NEW.current_version_id AND recipe_id = NEW.id)
          BEGIN SELECT RAISE(ABORT, 'Recipe current version must belong to the recipe'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_food_fact_preparation_owner_insert
+         BEFORE INSERT ON nutrition_food_nutrient_facts
+         WHEN NEW.preparation_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_food_preparations
+            WHERE id = NEW.preparation_id AND food_id = NEW.food_id)
+         BEGIN SELECT RAISE(ABORT, 'Nutrient fact preparation must belong to its food'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_food_fact_preparation_owner_update
+         BEFORE UPDATE OF food_id, preparation_id ON nutrition_food_nutrient_facts
+         WHEN NEW.preparation_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_food_preparations
+            WHERE id = NEW.preparation_id AND food_id = NEW.food_id)
+         BEGIN SELECT RAISE(ABORT, 'Nutrient fact preparation must belong to its food'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_conversion_preparation_owner_insert
+         BEFORE INSERT ON nutrition_quantity_conversions
+         WHEN NEW.preparation_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_food_preparations
+            WHERE id = NEW.preparation_id AND food_id = NEW.food_id)
+         BEGIN SELECT RAISE(ABORT, 'Conversion preparation must belong to its food'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_conversion_preparation_owner_update
+         BEFORE UPDATE OF food_id, preparation_id ON nutrition_quantity_conversions
+         WHEN NEW.preparation_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_food_preparations
+            WHERE id = NEW.preparation_id AND food_id = NEW.food_id)
+         BEGIN SELECT RAISE(ABORT, 'Conversion preparation must belong to its food'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_ingredient_preparation_owner_insert
+         BEFORE INSERT ON nutrition_recipe_ingredients
+         WHEN NEW.preparation_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_food_preparations
+            WHERE id = NEW.preparation_id AND food_id = NEW.food_id)
+         BEGIN SELECT RAISE(ABORT, 'Ingredient preparation must belong to its food'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_ingredient_preparation_owner_update
+         BEFORE UPDATE OF food_id, preparation_id ON nutrition_recipe_ingredients
+         WHEN NEW.preparation_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_food_preparations
+            WHERE id = NEW.preparation_id AND food_id = NEW.food_id)
+         BEGIN SELECT RAISE(ABORT, 'Ingredient preparation must belong to its food'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_item_preparation_owner_insert
+         BEFORE INSERT ON nutrition_snapshot_items
+         WHEN NEW.preparation_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_food_preparations
+            WHERE id = NEW.preparation_id AND food_id = NEW.food_id)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot preparation must belong to its food'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_item_preparation_owner_update
+         BEFORE UPDATE OF food_id, preparation_id ON nutrition_snapshot_items
+         WHEN NEW.preparation_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_food_preparations
+            WHERE id = NEW.preparation_id AND food_id = NEW.food_id)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot preparation must belong to its food'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_estimate_nutrient_registry_unit_insert
+         BEFORE INSERT ON nutrition_estimate_nutrients
+         WHEN NOT EXISTS
+           (SELECT 1 FROM nutrition_nutrient_definitions
+            WHERE id = NEW.nutrient_id AND unit = NEW.unit)
+         BEGIN SELECT RAISE(ABORT, 'Estimate nutrient unit must match the registry'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_estimate_nutrient_registry_unit_update
+         BEFORE UPDATE OF nutrient_id, unit ON nutrition_estimate_nutrients
+         WHEN NOT EXISTS
+           (SELECT 1 FROM nutrition_nutrient_definitions
+            WHERE id = NEW.nutrient_id AND unit = NEW.unit)
+         BEGIN SELECT RAISE(ABORT, 'Estimate nutrient unit must match the registry'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_nutrient_registry_unit_insert
+         BEFORE INSERT ON nutrition_snapshot_nutrients
+         WHEN NOT EXISTS
+           (SELECT 1 FROM nutrition_nutrient_definitions
+            WHERE id = NEW.nutrient_id AND unit = NEW.unit)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot nutrient unit must match the registry'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_nutrient_registry_unit_update
+         BEFORE UPDATE OF nutrient_id, unit ON nutrition_snapshot_nutrients
+         WHEN NOT EXISTS
+           (SELECT 1 FROM nutrition_nutrient_definitions
+            WHERE id = NEW.nutrient_id AND unit = NEW.unit)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot nutrient unit must match the registry'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_nutrient_item_owner_insert
+         BEFORE INSERT ON nutrition_snapshot_nutrients
+         WHEN NEW.item_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_snapshot_items
+            WHERE id = NEW.item_id AND snapshot_id = NEW.snapshot_id)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot nutrient item must belong to its snapshot'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_nutrient_item_owner_update
+         BEFORE UPDATE OF snapshot_id, item_id ON nutrition_snapshot_nutrients
+         WHEN NEW.item_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_snapshot_items
+            WHERE id = NEW.item_id AND snapshot_id = NEW.snapshot_id)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot nutrient item must belong to its snapshot'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_food_nutrient_state_insert
+         BEFORE INSERT ON nutrition_food_nutrient_facts
+         WHEN (NEW.status = 'known' AND NEW.amount IS NULL)
+           OR (NEW.status = 'known_zero' AND
+               (NEW.amount IS NULL OR NEW.amount <> 0 OR
+                (NEW.lower IS NOT NULL AND NEW.lower <> 0) OR
+                (NEW.upper IS NOT NULL AND NEW.upper <> 0)))
+           OR (NEW.status = 'estimated' AND NEW.amount IS NULL AND
+               NEW.lower IS NULL AND NEW.upper IS NULL)
+         BEGIN SELECT RAISE(ABORT, 'Invalid food nutrient state'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_food_nutrient_state_update
+         BEFORE UPDATE OF status, amount, lower, upper
+         ON nutrition_food_nutrient_facts
+         WHEN (NEW.status = 'known' AND NEW.amount IS NULL)
+           OR (NEW.status = 'known_zero' AND
+               (NEW.amount IS NULL OR NEW.amount <> 0 OR
+                (NEW.lower IS NOT NULL AND NEW.lower <> 0) OR
+                (NEW.upper IS NOT NULL AND NEW.upper <> 0)))
+           OR (NEW.status = 'estimated' AND NEW.amount IS NULL AND
+               NEW.lower IS NULL AND NEW.upper IS NULL)
+         BEGIN SELECT RAISE(ABORT, 'Invalid food nutrient state'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_estimate_nutrient_state_insert
+         BEFORE INSERT ON nutrition_estimate_nutrients
+         WHEN (NEW.status = 'known' AND NEW.amount IS NULL)
+           OR (NEW.status = 'known_zero' AND
+               (NEW.amount IS NULL OR NEW.amount <> 0 OR
+                (NEW.lower IS NOT NULL AND NEW.lower <> 0) OR
+                (NEW.upper IS NOT NULL AND NEW.upper <> 0)))
+           OR (NEW.status = 'estimated' AND NEW.amount IS NULL AND
+               NEW.lower IS NULL AND NEW.upper IS NULL)
+         BEGIN SELECT RAISE(ABORT, 'Invalid estimate nutrient state'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_estimate_nutrient_state_update
+         BEFORE UPDATE OF status, amount, lower, upper
+         ON nutrition_estimate_nutrients
+         WHEN (NEW.status = 'known' AND NEW.amount IS NULL)
+           OR (NEW.status = 'known_zero' AND
+               (NEW.amount IS NULL OR NEW.amount <> 0 OR
+                (NEW.lower IS NOT NULL AND NEW.lower <> 0) OR
+                (NEW.upper IS NOT NULL AND NEW.upper <> 0)))
+           OR (NEW.status = 'estimated' AND NEW.amount IS NULL AND
+               NEW.lower IS NULL AND NEW.upper IS NULL)
+         BEGIN SELECT RAISE(ABORT, 'Invalid estimate nutrient state'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_nutrient_state_insert
+         BEFORE INSERT ON nutrition_snapshot_nutrients
+         WHEN (NEW.status = 'known' AND NEW.amount IS NULL)
+           OR (NEW.status = 'known_zero' AND
+               (NEW.amount IS NULL OR NEW.amount <> 0 OR
+                (NEW.lower IS NOT NULL AND NEW.lower <> 0) OR
+                (NEW.upper IS NOT NULL AND NEW.upper <> 0)))
+           OR (NEW.status = 'estimated' AND NEW.amount IS NULL AND
+               NEW.lower IS NULL AND NEW.upper IS NULL)
+         BEGIN SELECT RAISE(ABORT, 'Invalid snapshot nutrient state'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_nutrient_state_update
+         BEFORE UPDATE OF status, amount, lower, upper
+         ON nutrition_snapshot_nutrients
+         WHEN (NEW.status = 'known' AND NEW.amount IS NULL)
+           OR (NEW.status = 'known_zero' AND
+               (NEW.amount IS NULL OR NEW.amount <> 0 OR
+                (NEW.lower IS NOT NULL AND NEW.lower <> 0) OR
+                (NEW.upper IS NOT NULL AND NEW.upper <> 0)))
+           OR (NEW.status = 'estimated' AND NEW.amount IS NULL AND
+               NEW.lower IS NULL AND NEW.upper IS NULL)
+         BEGIN SELECT RAISE(ABORT, 'Invalid snapshot nutrient state'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_estimate_supersession_owner_insert
+         BEFORE INSERT ON nutrition_estimates
+         WHEN NEW.supersedes_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_estimates
+            WHERE id = NEW.supersedes_id AND user_id = NEW.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Estimate ancestry must remain within one user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_estimate_supersession_owner_update
+         BEFORE UPDATE OF user_id, supersedes_id ON nutrition_estimates
+         WHEN NEW.supersedes_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_estimates
+            WHERE id = NEW.supersedes_id AND user_id = NEW.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Estimate ancestry must remain within one user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_thali_recipe_owner_insert
+         BEFORE INSERT ON nutrition_thali_items
+         WHEN NEW.recipe_version_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1
+            FROM nutrition_recipe_versions rv
+            JOIN nutrition_recipes r ON r.id = rv.recipe_id
+            JOIN nutrition_thalis t ON t.id = NEW.thali_id
+            WHERE rv.id = NEW.recipe_version_id AND r.user_id = t.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Thali recipe must belong to the thali user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_thali_recipe_owner_update
+         BEFORE UPDATE OF thali_id, recipe_version_id ON nutrition_thali_items
+         WHEN NEW.recipe_version_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1
+            FROM nutrition_recipe_versions rv
+            JOIN nutrition_recipes r ON r.id = rv.recipe_id
+            JOIN nutrition_thalis t ON t.id = NEW.thali_id
+            WHERE rv.id = NEW.recipe_version_id AND r.user_id = t.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Thali recipe must belong to the thali user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_recipe_owner_insert
+         BEFORE INSERT ON nutrition_consumption_snapshots
+         WHEN NEW.recipe_version_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1
+            FROM nutrition_recipe_versions rv
+            JOIN nutrition_recipes r ON r.id = rv.recipe_id
+            WHERE rv.id = NEW.recipe_version_id AND r.user_id = NEW.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot recipe must belong to the snapshot user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_recipe_owner_update
+         BEFORE UPDATE OF user_id, recipe_version_id ON nutrition_consumption_snapshots
+         WHEN NEW.recipe_version_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1
+            FROM nutrition_recipe_versions rv
+            JOIN nutrition_recipes r ON r.id = rv.recipe_id
+            WHERE rv.id = NEW.recipe_version_id AND r.user_id = NEW.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot recipe must belong to the snapshot user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_thali_owner_insert
+         BEFORE INSERT ON nutrition_consumption_snapshots
+         WHEN NEW.thali_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_thalis
+            WHERE id = NEW.thali_id AND user_id = NEW.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot thali must belong to the snapshot user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_thali_owner_update
+         BEFORE UPDATE OF user_id, thali_id ON nutrition_consumption_snapshots
+         WHEN NEW.thali_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_thalis
+            WHERE id = NEW.thali_id AND user_id = NEW.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot thali must belong to the snapshot user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_constraint_owner_insert
+         BEFORE INSERT ON nutrition_snapshot_constraint_results
+         WHEN NOT EXISTS
+           (SELECT 1
+            FROM nutrition_consumption_snapshots s
+            JOIN nutrition_user_constraints c ON c.id = NEW.constraint_id
+            WHERE s.id = NEW.snapshot_id AND c.user_id = s.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot constraint must belong to the snapshot user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS nutrition_snapshot_constraint_owner_update
+         BEFORE UPDATE OF snapshot_id, constraint_id ON nutrition_snapshot_constraint_results
+         WHEN NOT EXISTS
+           (SELECT 1
+            FROM nutrition_consumption_snapshots s
+            JOIN nutrition_user_constraints c ON c.id = NEW.constraint_id
+            WHERE s.id = NEW.snapshot_id AND c.user_id = s.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Snapshot constraint must belong to the snapshot user'); END''',
     ];
     for (final statement in statements) {
       await customStatement(statement);

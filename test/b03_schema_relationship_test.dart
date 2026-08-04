@@ -109,6 +109,266 @@ void main() {
   });
 
   test(
+    'schema boundary rejects malformed nutrient states and registry units',
+    () async {
+      final db = AppDatabase.memory();
+      addTearDown(db.close);
+
+      await db
+          .into(db.nutritionFoods)
+          .insert(
+            NutritionFoodsCompanion.insert(
+              id: 'schema-nutrient-food',
+              kind: 'canonical',
+              displayName: 'Schema nutrient food',
+              locale: 'en-IN',
+              sourceType: 'fixture',
+              lifecycle: 'active',
+            ),
+          );
+      final nutrient =
+          (await db.select(db.nutritionNutrientDefinitions).get()).first;
+      final wrongUnit = nutrient.unit == 'mass_gram'
+          ? 'energy_kilocalorie'
+          : 'mass_gram';
+
+      await expectLater(
+        db
+            .into(db.nutritionFoodNutrientFacts)
+            .insert(
+              NutritionFoodNutrientFactsCompanion.insert(
+                id: 'schema-known-zero-invalid',
+                foodId: 'schema-nutrient-food',
+                nutrientId: nutrient.id,
+                amount: const Value(1),
+                status: 'known_zero',
+                source: 'fixture',
+                factVersion: 1,
+                basis: 'absolute',
+              ),
+            ),
+        throwsA(isA<Exception>()),
+      );
+      await expectLater(
+        db
+            .into(db.nutritionFoodNutrientFacts)
+            .insert(
+              NutritionFoodNutrientFactsCompanion.insert(
+                id: 'schema-known-missing-point',
+                foodId: 'schema-nutrient-food',
+                nutrientId: nutrient.id,
+                status: 'known',
+                source: 'fixture',
+                factVersion: 2,
+                basis: 'absolute',
+              ),
+            ),
+        throwsA(isA<Exception>()),
+      );
+      await expectLater(
+        db
+            .into(db.nutritionFoodNutrientFacts)
+            .insert(
+              NutritionFoodNutrientFactsCompanion.insert(
+                id: 'schema-estimated-empty',
+                foodId: 'schema-nutrient-food',
+                nutrientId: nutrient.id,
+                status: 'estimated',
+                source: 'fixture',
+                factVersion: 3,
+                basis: 'absolute',
+              ),
+            ),
+        throwsA(isA<Exception>()),
+      );
+
+      await db
+          .into(db.nutritionEstimates)
+          .insert(
+            NutritionEstimatesCompanion.insert(
+              id: 'schema-estimate',
+              userId: 'schema-user',
+              source: 'ai_estimate',
+              status: 'estimated',
+            ),
+          );
+      await expectLater(
+        db
+            .into(db.nutritionEstimateNutrients)
+            .insert(
+              NutritionEstimateNutrientsCompanion.insert(
+                id: 'schema-estimate-zero-invalid',
+                estimateId: 'schema-estimate',
+                nutrientId: nutrient.id,
+                amount: const Value(1),
+                status: 'known_zero',
+                unit: nutrient.unit,
+              ),
+            ),
+        throwsA(isA<Exception>()),
+      );
+      await expectLater(
+        db
+            .into(db.nutritionEstimateNutrients)
+            .insert(
+              NutritionEstimateNutrientsCompanion.insert(
+                id: 'schema-estimate-unit-invalid',
+                estimateId: 'schema-estimate',
+                nutrientId: nutrient.id,
+                amount: const Value(1),
+                status: 'known',
+                unit: wrongUnit,
+              ),
+            ),
+        throwsA(isA<Exception>()),
+      );
+    },
+  );
+
+  test('schema boundary rejects cross-owner relationships', () async {
+    final db = AppDatabase.memory();
+    addTearDown(db.close);
+
+    for (final foodId in const ['schema-food-a', 'schema-food-b']) {
+      await db
+          .into(db.nutritionFoods)
+          .insert(
+            NutritionFoodsCompanion.insert(
+              id: foodId,
+              kind: 'canonical',
+              displayName: foodId,
+              locale: 'en-IN',
+              sourceType: 'fixture',
+              lifecycle: 'active',
+            ),
+          );
+    }
+    await db
+        .into(db.nutritionFoodPreparations)
+        .insert(
+          NutritionFoodPreparationsCompanion.insert(
+            id: 'schema-preparation-b',
+            foodId: 'schema-food-b',
+            state: 'cooked',
+            source: 'fixture',
+            version: 'v1',
+          ),
+        );
+    final nutrient =
+        (await db.select(db.nutritionNutrientDefinitions).get()).first;
+
+    await expectLater(
+      db
+          .into(db.nutritionFoodNutrientFacts)
+          .insert(
+            NutritionFoodNutrientFactsCompanion.insert(
+              id: 'schema-fact-cross-food',
+              foodId: 'schema-food-a',
+              nutrientId: nutrient.id,
+              preparationId: const Value('schema-preparation-b'),
+              amount: const Value(1),
+              status: 'known',
+              source: 'fixture',
+              factVersion: 1,
+              basis: 'absolute',
+            ),
+          ),
+      throwsA(isA<Exception>()),
+    );
+    await expectLater(
+      db
+          .into(db.nutritionQuantityConversions)
+          .insert(
+            NutritionQuantityConversionsCompanion.insert(
+              id: 'schema-conversion-cross-food',
+              foodId: 'schema-food-a',
+              preparationId: const Value('schema-preparation-b'),
+              sourceUnit: 'gram',
+              targetUnit: 'millilitre',
+              factor: 1,
+              method: 'fixture',
+              source: 'fixture',
+              ruleVersion: 'v1',
+              ownerScope: 'catalogue',
+            ),
+          ),
+      throwsA(isA<Exception>()),
+    );
+
+    await db
+        .into(db.nutritionRecipes)
+        .insert(
+          NutritionRecipesCompanion.insert(
+            id: 'schema-recipe-a',
+            userId: 'schema-user-a',
+            name: 'Recipe A',
+            lifecycle: 'active',
+          ),
+        );
+    await db
+        .into(db.nutritionRecipeVersions)
+        .insert(
+          NutritionRecipeVersionsCompanion.insert(
+            id: 'schema-recipe-a-v1',
+            recipeId: 'schema-recipe-a',
+            versionNumber: 1,
+            status: 'draft',
+            calcRuleVersion: 'v1',
+            source: 'fixture',
+          ),
+        );
+    await expectLater(
+      db
+          .into(db.nutritionRecipeIngredients)
+          .insert(
+            NutritionRecipeIngredientsCompanion.insert(
+              id: 'schema-ingredient-cross-food',
+              recipeVersionId: 'schema-recipe-a-v1',
+              position: 0,
+              foodId: 'schema-food-a',
+              preparationId: const Value('schema-preparation-b'),
+              quantityValue: 1,
+              quantityDimension: 'count',
+              quantityUnit: 'piece',
+            ),
+          ),
+      throwsA(isA<Exception>()),
+    );
+
+    await db
+        .into(db.nutritionConsumptionSnapshots)
+        .insert(
+          NutritionConsumptionSnapshotsCompanion.insert(
+            id: 'schema-snapshot-a',
+            userId: 'schema-user-a',
+            loggedAt: DateTime.utc(2026, 1, 1),
+            mealCategory: 'lunch',
+            sourceType: 'manual',
+            calculatorVersion: 'v1',
+            completeness: 'unknown',
+            estimateStatus: 'none',
+          ),
+        );
+    await expectLater(
+      db
+          .into(db.nutritionSnapshotItems)
+          .insert(
+            NutritionSnapshotItemsCompanion.insert(
+              id: 'schema-snapshot-item-cross-food',
+              snapshotId: 'schema-snapshot-a',
+              position: 0,
+              foodId: const Value('schema-food-a'),
+              preparationId: const Value('schema-preparation-b'),
+              quantityValue: 1,
+              quantityDimension: 'count',
+              quantityUnit: 'piece',
+            ),
+          ),
+      throwsA(isA<Exception>()),
+    );
+  });
+
+  test(
     'portable vessels allow duplicate names and immutable calibration history',
     () async {
       final db = AppDatabase.memory();

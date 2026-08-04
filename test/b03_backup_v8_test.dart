@@ -63,15 +63,13 @@ void main() {
           before.assertLogicallyEquals(afterFailure);
           expect(harness.injected, isTrue);
           expect(harness.reachedStages, contains(stage));
-          if (stage != B03FailureStage.preferenceRestore) {
-            expect(
-              await B03RestoreFailureHarness.preferenceSnapshot(
-                prefs,
-                fixture.userPreferences.keys,
-              ),
-              beforePreferences,
-            );
-          }
+          expect(
+            await B03RestoreFailureHarness.preferenceSnapshot(
+              prefs,
+              fixture.userPreferences.keys,
+            ),
+            beforePreferences,
+          );
           expect(
             await target.customSelect('PRAGMA foreign_key_check').get(),
             isEmpty,

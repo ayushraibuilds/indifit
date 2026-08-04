@@ -88,6 +88,151 @@ class B03ContractReference {
   });
 }
 
+/// A decision-specific evidence row. Unlike [B03ContractFixture], which proves
+/// that every decision has valid/invalid/unknown structural coverage, this
+/// matrix names the concrete scenario, assertion, and test that proves the
+/// accepted semantic boundary.
+class B03DecisionEvidence {
+  final String decisionId;
+  final String fixtureScenario;
+  final String assertion;
+  final String testName;
+  final String expectedOutcome;
+
+  const B03DecisionEvidence({
+    required this.decisionId,
+    required this.fixtureScenario,
+    required this.assertion,
+    required this.testName,
+    required this.expectedOutcome,
+  });
+}
+
+/// Explicit B03-01 decision-to-fixture-to-assertion register.
+const List<B03DecisionEvidence> b03DecisionEvidenceMatrix = [
+  B03DecisionEvidence(
+    decisionId: 'B03-D01',
+    fixtureScenario:
+        'identity-canonical-roti, identity-approved-alias-fixture, and identity-regional-overlap-ambiguous',
+    assertion:
+        'cosmetic alias keeps food-seed-0001; ambiguous regional food has no durable ID',
+    testName: 'decision D01 identity stability and ambiguity',
+    expectedOutcome: 'pass',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-D02',
+    fixtureScenario:
+        'identity-approved-alias-fixture versus generic ambiguous name',
+    assertion:
+        'only the explicit alias resolves; generic text remains unresolved',
+    testName: 'decision D02 exact identity resolution',
+    expectedOutcome: 'pass',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-D04',
+    fixtureScenario:
+        'quantity-glass-milk-volume and quantity-katori-rice-no-density',
+    assertion:
+        'volume remains typed and household-to-mass conversion is unavailable without density',
+    testName: 'decision D04 dimensional quantity safety',
+    expectedOutcome: 'reject',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-D07',
+    fixtureScenario: 'b03-history-correction-001',
+    assertion:
+        'original snapshot remains stored while the correction is the effective read-model row',
+    testName: 'decision D07 immutable history correction lineage',
+    expectedOutcome: 'pass',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-D08',
+    fixtureScenario:
+        'preparation-raw-to-cooked-reviewed and preparation-cooked-to-raw-unsupported',
+    assertion:
+        'reviewed directional transformation is available; unreviewed reverse transformation is unavailable',
+    testName: 'decision D08 reviewed transformation provenance',
+    expectedOutcome: 'reject',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-D10',
+    fixtureScenario:
+        'nutrient-known-zero-sodium, nutrient-missing-fibre, and nutrient-estimated-protein-bounds',
+    assertion:
+        'known zero is 0, missing has no point, and estimated bounds retain lower/point/upper',
+    testName: 'decision D10 nutrient zero unknown and range states',
+    expectedOutcome: 'pass',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-D11',
+    fixtureScenario:
+        'estimate-ai-range-no-image-retention and estimate-offline-manual-unknown',
+    assertion:
+        'source, uncertainty, and correction provenance remain separate from raw provider material',
+    testName: 'decision D11 estimate provenance separation',
+    expectedOutcome: 'pass',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-D18',
+    fixtureScenario:
+        'identity-regional-overlap-ambiguous and identity-legacy-text-only',
+    assertion:
+        'name-only and legacy text-only rows do not receive a durable identity',
+    testName: 'decision D18 no name-based durable resolution',
+    expectedOutcome: 'reject',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-PD03',
+    fixtureScenario:
+        'identity-legacy-text-only and direct-food recipe boundary',
+    assertion:
+        'legacy copied values remain legacy evidence and do not become recipe identity',
+    testName: 'product default PD03 legacy recipe separation',
+    expectedOutcome: 'pass',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-PD04',
+    fixtureScenario:
+        'b03-history-correction-001 and estimate correction lineage',
+    assertion: 'correction appends a successor and preserves the predecessor',
+    testName: 'product default PD04 append-only corrections',
+    expectedOutcome: 'pass',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-PD05',
+    fixtureScenario: 'b03-history-correction-001 with frozen local date',
+    assertion:
+        'history reads use the stored local date rather than the device current date',
+    testName: 'product default PD05 frozen local time',
+    expectedOutcome: 'pass',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-PD07',
+    fixtureScenario:
+        'quantity-glass-milk-volume and personal vessel calibration contract',
+    assertion: 'vessel calibration produces volume only and never food mass',
+    testName: 'product default PD07 volume-only vessel calibration',
+    expectedOutcome: 'pass',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-PD08',
+    fixtureScenario: 'estimate-offline-manual-unknown',
+    assertion:
+        'offline handling is manual/unknown and has no fabricated exact point',
+    testName: 'product default PD08 offline estimate uncertainty',
+    expectedOutcome: 'unknown',
+  ),
+  B03DecisionEvidence(
+    decisionId: 'B03-D16',
+    fixtureScenario:
+        'single authoritative identity, quantity, nutrient, and history owners',
+    assertion:
+        'fixture evidence names one owner for each bounded context and no widget-owned rule',
+    testName: 'decision D16 single bounded-context owner',
+    expectedOutcome: 'pass',
+  ),
+];
+
 /// A deterministic valid/invalid/unknown case for one accepted contract.
 class B03ContractFixture {
   final String id;
@@ -636,6 +781,41 @@ class B03BackupFixture {
     required this.expectedZeroMutationOnFailure,
   });
 }
+
+/// A small immutable-history fixture used by the decision-specific evidence
+/// matrix. The correction is a successor record; it is never an in-place
+/// rewrite of the original snapshot.
+class B03ImmutableHistoryFixture {
+  final String id;
+  final String originalSnapshotId;
+  final String correctionSnapshotId;
+  final String effectiveSnapshotId;
+  final double originalAmount;
+  final double correctedAmount;
+  final bool originalRetained;
+
+  const B03ImmutableHistoryFixture({
+    required this.id,
+    required this.originalSnapshotId,
+    required this.correctionSnapshotId,
+    required this.effectiveSnapshotId,
+    required this.originalAmount,
+    required this.correctedAmount,
+    required this.originalRetained,
+  });
+}
+
+const List<B03ImmutableHistoryFixture> b03ImmutableHistoryFixtures = [
+  B03ImmutableHistoryFixture(
+    id: 'b03-history-correction-001',
+    originalSnapshotId: 'snapshot-original-001',
+    correctionSnapshotId: 'snapshot-correction-001',
+    effectiveSnapshotId: 'snapshot-correction-001',
+    originalAmount: 100,
+    correctedAmount: 125,
+    originalRetained: true,
+  ),
+];
 
 /// Immutable B03-01 fixture matrix used by contract and audit tests.
 class B03NutritionFixtureMatrix {
