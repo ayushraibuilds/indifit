@@ -38,6 +38,8 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   File? _selectedImage;
 
   bool _loading = false;
+  bool _saving = false;
+  String? _saveError;
   NutritionEstimate? _estimate;
   NutritionEstimateImageCleanupResult? _imageCleanup;
 
@@ -88,6 +90,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    if (_loading || _saving) return;
     final bool isCamera = source == ImageSource.camera;
 
     await showDialog(
@@ -119,6 +122,21 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
               onPressed: () async {
                 Navigator.pop(dialogContext);
                 try {
+                  final cleanup = await _cleanupSelectedImage(
+                    lifecycle: NutritionEstimateImageLifecycle.cancelled,
+                  );
+                  if (cleanup != null && !cleanup.succeeded) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'The previous temporary photo could not be deleted. Retry cleanup before selecting another photo.',
+                          ),
+                        ),
+                      );
+                    }
+                    return;
+                  }
                   final XFile? file = await _picker.pickImage(
                     source: source,
                     maxWidth: 800,
@@ -127,12 +145,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   );
 
                   if (file != null && mounted) {
-                    await _cleanupSelectedImage(
-                      lifecycle: NutritionEstimateImageLifecycle.cancelled,
-                    );
                     setState(() {
                       _selectedImage = File(file.path);
                       _estimate = null;
+                      _saveError = null;
+                      _imageCleanup = null;
                     });
                   }
                 } catch (e) {
@@ -157,23 +174,32 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     );
   }
 
-  Future<void> _cleanupSelectedImage({
+  Future<NutritionEstimateImageCleanupResult?> _cleanupSelectedImage({
     required NutritionEstimateImageLifecycle lifecycle,
     bool notify = true,
   }) async {
     final image = _selectedImage;
-    if (image == null) return;
+    if (image == null) return null;
     final result = await ref
         .read(nutritionEstimatePrivacyServiceProvider)
         .cleanupTemporaryImage(path: image.path, lifecycle: lifecycle);
-    if (!mounted || !notify) return;
-    setState(() {
-      _selectedImage = null;
-      _imageCleanup = result;
-    });
+    if (mounted && notify) {
+      setState(() {
+        _imageCleanup = result;
+        if (result.succeeded) _selectedImage = null;
+      });
+    }
+    return result;
+  }
+
+  Future<void> _retryImageCleanup() async {
+    await _cleanupSelectedImage(
+      lifecycle: NutritionEstimateImageLifecycle.failed,
+    );
   }
 
   Future<void> _submitTextEstimate() async {
+    if (_loading || _saving) return;
     final description = _textController.text.trim();
     if (description.isEmpty) return;
 
@@ -194,6 +220,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     setState(() {
       _loading = true;
       _estimate = null;
+      _saveError = null;
     });
 
     try {
@@ -230,7 +257,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   }
 
   Future<void> _submitPhotoEstimate() async {
-    if (_selectedImage == null) return;
+    if (_selectedImage == null || _loading || _saving) return;
 
     final policy = ref.read(privacyPolicyProvider);
     if (!policy.isImageUploadAllowed) {
@@ -249,6 +276,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     setState(() {
       _loading = true;
       _estimate = null;
+      _saveError = null;
     });
 
     final imagePath = _selectedImage!.path;
@@ -313,6 +341,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     if (!mounted) return;
     setState(() {
       _estimate = estimate;
+      _saveError = null;
       _initEditControllers();
     });
   }
@@ -324,7 +353,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
   Future<void> _logMeal() async {
     final estimate = _estimate;
-    if (estimate == null) return;
+    if (estimate == null || _saving) return;
 
     final String name = _nameEditController.text.trim();
     if (name.isEmpty) {
@@ -394,81 +423,111 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       return;
     }
 
-    final repository = await ref.read(
-      nutritionEstimateRepositoryProvider.future,
-    );
-    final replacements = <String, NutrientFact>{};
-    for (final entry in values.entries) {
-      final value = entry.value;
-      if (value == null) continue;
-      final definition = repository.registry.definitionFor(entry.key);
-      replacements[entry.key] = NutrientFact.estimated(
-        nutrientId: entry.key,
-        point: NutrientAmount(
-          value: QuantityAmount.fromNum(value),
-          unit: definition.unit,
-        ),
-        basis: NutrientBasis(NutrientBasisKind.absolute),
-        source: NutrientSourceType.userEntered,
-        sourceReference: 'user-correction-v1',
-        confidence: NutrientConfidence.unknown,
-        factVersion: 'user-correction-v1',
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    try {
+      final repository = await ref.read(
+        nutritionEstimateRepositoryProvider.future,
       );
-    }
-    final hasLabelCorrection = name != estimate.displayLabel;
-    final hasQuantityCorrection =
-        rawServingCount.isNotEmpty &&
-        (estimate.quantity == null ||
-            estimate.quantity!.unit != QuantityUnit.serving ||
-            estimate.quantity!.amount.toString() != rawServingCount);
-    NutritionEstimate selected;
-    if (hasLabelCorrection ||
-        replacements.isNotEmpty ||
-        hasQuantityCorrection) {
-      selected = await repository.correctEstimate(
+      final replacements = <String, NutrientFact>{};
+      for (final entry in values.entries) {
+        final value = entry.value;
+        if (value == null) continue;
+        final originalPoint = estimate.facts[entry.key]?.point?.value.asDouble;
+        if (originalPoint != null && value == originalPoint) continue;
+        final definition = repository.registry.definitionFor(entry.key);
+        replacements[entry.key] = NutrientFact.estimated(
+          nutrientId: entry.key,
+          point: NutrientAmount(
+            value: QuantityAmount.fromNum(value),
+            unit: definition.unit,
+          ),
+          basis: NutrientBasis(NutrientBasisKind.absolute),
+          source: NutrientSourceType.userEntered,
+          sourceReference: 'user-correction-v1',
+          confidence: NutrientConfidence.unknown,
+          factVersion: 'user-correction-v1',
+        );
+      }
+      final hasLabelCorrection = name != estimate.displayLabel;
+      final hasQuantityCorrection =
+          rawServingCount.isNotEmpty &&
+          (estimate.quantity == null ||
+              estimate.quantity!.unit != QuantityUnit.serving ||
+              estimate.quantity!.amount.toString() != rawServingCount);
+      NutritionEstimate selected;
+      if (hasLabelCorrection ||
+          replacements.isNotEmpty ||
+          hasQuantityCorrection) {
+        selected = await repository.correctEstimate(
+          userId: kLocalNutritionUserScopeId,
+          estimateId: estimate.id,
+          correction: NutritionEstimateCorrection(
+            commandId: 'ai-meal-correction::${estimate.id}',
+            reason: 'User reviewed the estimate before logging.',
+            displayLabel: hasLabelCorrection ? name : null,
+            nutrientReplacements: replacements,
+            replaceQuantity: hasQuantityCorrection,
+            quantity: hasQuantityCorrection ? quantity : null,
+            fieldUpdates: hasLabelCorrection
+                ? const {'food_identity': 'user_corrected'}
+                : const {},
+          ),
+        );
+      } else {
+        selected = await repository.acceptEstimate(
+          userId: kLocalNutritionUserScopeId,
+          estimateId: estimate.id,
+          commandId: 'ai-meal-accept::${estimate.id}',
+        );
+      }
+      if (mounted &&
+          (selected.id != estimate.id ||
+              selected.reviewState != estimate.reviewState)) {
+        setState(() {
+          _estimate = selected;
+          _initEditControllers();
+        });
+      }
+      final finalizer = await ref.read(
+        nutritionEstimateFinalizationServiceProvider.future,
+      );
+      final loggedAt = (widget.selectedDate ?? DateTime.now()).toUtc();
+      await finalizer.finalizeEstimate(
         userId: kLocalNutritionUserScopeId,
-        estimateId: estimate.id,
-        correction: NutritionEstimateCorrection(
-          commandId: 'ai-meal-correction::${estimate.id}',
-          reason: 'User reviewed the estimate before logging.',
-          displayLabel: hasLabelCorrection ? name : null,
-          nutrientReplacements: replacements,
-          replaceQuantity: hasQuantityCorrection,
-          quantity: hasQuantityCorrection ? quantity : null,
-          fieldUpdates: hasLabelCorrection
-              ? const {'food_identity': 'user_corrected'}
-              : const {},
-        ),
+        estimateId: selected.id,
+        mealCategory: widget.mealType,
+        quantity: quantity,
+        loggedAtUtc: loggedAt,
+        localDate: DateFormat('yyyy-MM-dd').format(loggedAt.toLocal()),
+        timezoneId: DateTime.now().timeZoneName,
+        commandId: 'ai-meal-finalize::${selected.id}',
+        consumptionId: 'ai-meal-consumption::${selected.id}',
+        displayLabel: selected.displayLabel,
       );
-    } else {
-      selected = await repository.acceptEstimate(
-        userId: kLocalNutritionUserScopeId,
-        estimateId: estimate.id,
-        commandId: 'ai-meal-accept::${estimate.id}',
-      );
-    }
-    final finalizer = await ref.read(
-      nutritionEstimateFinalizationServiceProvider.future,
-    );
-    final loggedAt = (widget.selectedDate ?? DateTime.now()).toUtc();
-    await finalizer.finalizeEstimate(
-      userId: kLocalNutritionUserScopeId,
-      estimateId: selected.id,
-      mealCategory: widget.mealType,
-      quantity: quantity,
-      loggedAtUtc: loggedAt,
-      localDate: DateFormat('yyyy-MM-dd').format(loggedAt.toLocal()),
-      timezoneId: DateTime.now().timeZoneName,
-      commandId: 'ai-meal-finalize::${selected.id}',
-      consumptionId: 'ai-meal-consumption::${selected.id}',
-      displayLabel: selected.displayLabel,
-    );
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Meal logged successfully!')),
-      );
-      Navigator.pop(context); // Close logger screen
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _saveError = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Meal logged successfully!')),
+        );
+        Navigator.pop(context); // Close logger screen
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _saveError = _estimateErrorMessage(error);
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_estimateErrorMessage(error))));
+      }
     }
   }
 
@@ -481,6 +540,58 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     if (text.trim().isEmpty) return false;
     final value = double.tryParse(text.trim());
     return value == null || !value.isFinite || value < 0;
+  }
+
+  String _rangeText(String nutrientId) {
+    final fact = _estimate?.facts[nutrientId];
+    if (fact == null || !fact.hasNumericValue) return 'Unknown';
+    String format(NutrientAmount? amount) =>
+        amount == null ? 'unknown' : '${amount.value} ${amount.unit.symbol}';
+    final point = format(fact.point);
+    if (fact.lower == null && fact.upper == null) {
+      return '$point (estimate)';
+    }
+    return '${format(fact.lower)} ≤ point $point ≤ ${format(fact.upper)}';
+  }
+
+  Widget _buildUncertaintySummary(NutritionEstimate estimate) {
+    const nutrients = <(String, String)>[
+      ('Calories', 'energy'),
+      ('Protein', 'protein'),
+      ('Carbohydrates', 'carbohydrate'),
+      ('Fat', 'fat'),
+    ];
+    return Card(
+      color: AppColors.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Uncertainty and provenance',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text('Source: ${estimate.source.stableId}'),
+            Text(
+              'Input: ${estimate.evidence.inputModality ?? 'unknown'} · Completeness: ${estimate.completeness.state.name}',
+            ),
+            if (estimate.evidence.providerCategory != null)
+              Text('Provider category: ${estimate.evidence.providerCategory}'),
+            const SizedBox(height: 8),
+            for (final nutrient in nutrients)
+              Semantics(
+                label: '${nutrient.$1}: ${_rangeText(nutrient.$2)}',
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Text('${nutrient.$1}: ${_rangeText(nutrient.$2)}'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -679,7 +790,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton.icon(
-                onPressed: _submitTextEstimate,
+                onPressed: _saving ? null : _submitTextEstimate,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -729,7 +840,9 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _pickImage(ImageSource.gallery),
+                    onPressed: _saving
+                        ? null
+                        : () => _pickImage(ImageSource.gallery),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.border),
                       shape: RoundedRectangleBorder(
@@ -750,7 +863,9 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _pickImage(ImageSource.camera),
+                    onPressed: _saving
+                        ? null
+                        : () => _pickImage(ImageSource.camera),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.border),
                       shape: RoundedRectangleBorder(
@@ -773,7 +888,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
             if (_selectedImage != null) ...[
               const SizedBox(height: 12),
               ElevatedButton.icon(
-                onPressed: _submitPhotoEstimate,
+                onPressed: _saving ? null : _submitPhotoEstimate,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -787,11 +902,22 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
               ),
             ],
             if (_imageCleanup != null && !_imageCleanup!.succeeded)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'Temporary photo cleanup needs a retry. No photo content was saved to nutrition data.',
-                  style: TextStyle(color: AppColors.danger, fontSize: 11),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Temporary photo cleanup needs a retry. No photo content was saved to nutrition data.',
+                        style: TextStyle(color: AppColors.danger, fontSize: 11),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _retryImageCleanup,
+                      child: const Text('Retry cleanup'),
+                    ),
+                  ],
                 ),
               ),
           ],
@@ -802,9 +928,8 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
   Widget _buildResultSection() {
     final estimate = _estimate;
-    final confidenceLabel = estimate == null
-        ? 'Estimate · review required'
-        : 'Estimate · ${estimate.confidence.stableId}';
+    if (estimate == null) return const SizedBox.shrink();
+    final confidenceLabel = 'Estimate · ${estimate.confidence.stableId}';
     const labelColor = AppColors.primary;
     const confidenceIcon = Icons.auto_awesome_rounded;
 
@@ -878,10 +1003,13 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                _buildUncertaintySummary(estimate),
+                const SizedBox(height: 12),
 
                 // Name Field
                 TextField(
                   controller: _nameEditController,
+                  enabled: !_saving,
                   decoration: const InputDecoration(
                     labelText: 'Meal Name',
                     contentPadding: EdgeInsets.symmetric(vertical: 4),
@@ -890,6 +1018,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: _servingCountEditController,
+                  enabled: !_saving,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -908,6 +1037,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                     Expanded(
                       child: TextField(
                         controller: _caloriesEditController,
+                        enabled: !_saving,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           labelText: 'Calories (kcal)',
@@ -919,6 +1049,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                     Expanded(
                       child: TextField(
                         controller: _proteinEditController,
+                        enabled: !_saving,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           labelText: 'Protein (g)',
@@ -934,6 +1065,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                     Expanded(
                       child: TextField(
                         controller: _carbsEditController,
+                        enabled: !_saving,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           labelText: 'Carbs (g)',
@@ -945,6 +1077,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                     Expanded(
                       child: TextField(
                         controller: _fatEditController,
+                        enabled: !_saving,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           labelText: 'Fat (g)',
@@ -956,8 +1089,26 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                 ),
                 const SizedBox(height: 24),
 
+                if (_saveError != null)
+                  Card(
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: Text(_saveError!)),
+                          TextButton(
+                            onPressed: _saving ? null : _logMeal,
+                            child: const Text('Retry save'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (_saveError != null) const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: _logMeal,
+                  onPressed: _saving ? null : _logMeal,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -966,10 +1117,23 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Verify & Save to Log',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  child: _saving
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 10),
+                            Text('Saving…'),
+                          ],
+                        )
+                      : const Text(
+                          'Verify & Save to Log',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                 ),
               ],
             ),

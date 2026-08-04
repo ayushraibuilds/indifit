@@ -2118,7 +2118,15 @@ class NutritionBackupGraph {
         'Backup-v8 estimate evidence must be a JSON string.',
       );
     }
-    final decoded = jsonDecode(raw);
+    late final Object? decoded;
+    try {
+      decoded = jsonDecode(raw);
+    } catch (_) {
+      throw BackupV8ValidationException(
+        'invalid_estimate_evidence',
+        'Backup-v8 estimate evidence is malformed JSON.',
+      );
+    }
     if (decoded is! Map || decoded['contract_version'] != 1) {
       throw BackupV8ValidationException(
         'unsupported_estimate_version',
@@ -2192,10 +2200,10 @@ class NutritionBackupGraph {
         'invalid_estimate_facts',
         'Backup-v8 estimate facts are invalid: ${error.message}',
       );
-    } catch (error) {
+    } catch (_) {
       throw BackupV8ValidationException(
         'invalid_estimate_evidence',
-        'Backup-v8 estimate evidence is malformed: $error',
+        'Backup-v8 estimate evidence is malformed.',
       );
     }
     const forbiddenFragments = {

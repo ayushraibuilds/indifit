@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_estimates.dart';
 import 'package:indifit/core/privacy/nutrition_estimate_privacy.dart';
 
@@ -74,4 +75,98 @@ void main() {
       expect(result.errorCode, isNull);
     },
   );
+
+  test('cleanup can be retried without exposing the temporary path', () async {
+    var attempts = 0;
+    final service = NutritionEstimatePrivacyService(
+      delete: (_) async {
+        attempts += 1;
+        if (attempts == 1) throw StateError('private path must not escape');
+      },
+    );
+
+    final failed = await service.cleanupTemporaryImage(
+      path: '/private/temporary/meal.jpg',
+      lifecycle: NutritionEstimateImageLifecycle.failed,
+    );
+    final retried = await service.cleanupTemporaryImage(
+      path: '/private/temporary/meal.jpg',
+      lifecycle: NutritionEstimateImageLifecycle.failed,
+    );
+
+    expect(failed.succeeded, isFalse);
+    expect(retried.succeeded, isTrue);
+    expect(attempts, 2);
+  });
+
+  test(
+    'evidence validates typed modality and persistence errors stay private',
+    () {
+      expect(
+        () => NutritionEstimateEvidence.fromJson({
+          'contract_version': 1,
+          'input_modality': 'provider-secret-modality',
+        }),
+        throwsA(
+          isA<NutritionEstimateValidationError>().having(
+            (error) => error.code,
+            'code',
+            'unsupported_input_modality',
+          ),
+        ),
+      );
+
+      final error = NutritionEstimatePersistenceError(
+        'estimate_write_failed',
+        'The estimate could not be saved.',
+        cause: StateError('/private/temporary/meal.jpg token=secret'),
+      );
+      expect(error.toString(), contains('estimate_write_failed'));
+      expect(error.toString(), isNot(contains('/private/temporary')));
+      expect(error.toString(), isNot(contains('secret')));
+    },
+  );
+
+  test('malformed estimate JSON does not echo provider payload details', () {
+    final registry = NutrientRegistry.fromAssetFileSync(
+      'assets/data/nutrient_registry.json',
+    );
+    Object? error;
+    try {
+      NutritionEstimateResponseParser.parseJson(
+        '{"private_prompt":"do not echo",',
+        registry: registry,
+      );
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error, isA<NutritionEstimateValidationError>());
+    expect(error.toString(), isNot(contains('do not echo')));
+  });
+
+  test('provider metadata rejects secret-like durable values', () {
+    final registry = NutrientRegistry.fromAssetFileSync(
+      'assets/data/nutrient_registry.json',
+    );
+    expect(
+      () => NutritionEstimateResponseParser.parse({
+        'subject': {'type': 'meal_estimate', 'label': 'Private test'},
+        'provenance': {
+          'source': 'ai_estimate',
+          'provider': 'api_key=secret-value',
+          'input_modality': 'text',
+        },
+        'nutrients': [
+          {
+            'id': 'energy',
+            'unit': 'energy_kilocalorie',
+            'status': 'estimated',
+            'point': 100,
+            'basis': 'absolute',
+          },
+        ],
+      }, registry: registry),
+      throwsA(isA<NutritionEstimatePrivacyError>()),
+    );
+  });
 }

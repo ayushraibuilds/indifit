@@ -44,8 +44,7 @@ class NutritionEstimatePersistenceError extends NutritionEstimateError {
   });
 
   @override
-  String toString() =>
-      '$runtimeType($code): $message${cause == null ? '' : ' cause=$cause'}';
+  String toString() => '$runtimeType($code): $message';
 }
 
 class NutritionEstimatePrivacyError extends NutritionEstimateValidationError {
@@ -260,6 +259,18 @@ class NutritionEstimateEvidence {
         result[key] = metadata;
         continue;
       }
+      if (key == 'input_modality') {
+        if (raw is! String) {
+          throw const NutritionEstimatePrivacyError(
+            'invalid_input_modality',
+            'Evidence input modality must be a supported stable value.',
+          );
+        }
+        final modality = raw.trim();
+        NutritionEstimateInputModalityContract.fromStableId(modality);
+        result[key] = modality;
+        continue;
+      }
       if (raw is String) {
         result[key] = _safeString(key, raw, maxLength: 1000);
       } else if (raw is bool && key == 'temporary_image_retained') {
@@ -347,6 +358,12 @@ class NutritionEstimateDraft {
       displayLabel: displayLabel,
       facts: this.facts,
       requestedNutrientIds: this.requestedNutrientIds,
+    );
+    _validateEstimateMetadata(
+      provider: provider,
+      model: model,
+      ruleVersion: ruleVersion,
+      inputHash: inputHash,
     );
     if (quantity != null) {
       try {
@@ -840,10 +857,10 @@ class NutritionEstimateResponseParser {
       return parse(jsonDecode(raw), registry: registry);
     } on NutritionEstimateError {
       rethrow;
-    } catch (error) {
+    } catch (_) {
       throw NutritionEstimateValidationError(
         'malformed_estimate_json',
-        'Nutrition estimate JSON could not be parsed: $error.',
+        'Nutrition estimate JSON could not be parsed.',
       );
     }
   }
@@ -1178,6 +1195,12 @@ void _validateEstimate({
       'Estimate metadata cannot contain blank values.',
     );
   }
+  _validateEstimateMetadata(
+    provider: provider,
+    model: model,
+    ruleVersion: ruleVersion,
+    inputHash: inputHash,
+  );
   if (confidenceScore != null &&
       (!confidenceScore.isFinite ||
           confidenceScore < 0 ||
@@ -1212,6 +1235,51 @@ void _validateEstimate({
       facts: facts,
       requestedNutrientIds: requestedNutrientIds,
     );
+  }
+}
+
+void _validateEstimateMetadata({
+  required String? provider,
+  required String? model,
+  required String? ruleVersion,
+  required String? inputHash,
+}) {
+  const sensitiveMarkers = <String>{
+    'prompt',
+    'raw_response',
+    'rawresponse',
+    'access_token',
+    'api_key',
+    'image_path',
+    'photo_path',
+    'image_bytes',
+    'authorization',
+    'password',
+    'secret',
+    'token=',
+  };
+  final values = <String, String?>{
+    'provider': provider,
+    'model': model,
+    'rule version': ruleVersion,
+    'input hash': inputHash,
+  };
+  for (final entry in values.entries) {
+    final value = entry.value?.trim();
+    if (value == null) continue;
+    if (value.length > 256) {
+      throw NutritionEstimatePrivacyError(
+        'estimate_metadata_too_large',
+        'Estimate ${entry.key} metadata exceeds the privacy-safe size limit.',
+      );
+    }
+    final lower = value.toLowerCase();
+    if (sensitiveMarkers.any(lower.contains)) {
+      throw NutritionEstimatePrivacyError(
+        'sensitive_estimate_metadata',
+        'Estimate ${entry.key} metadata contains excluded sensitive content.',
+      );
+    }
   }
 }
 
