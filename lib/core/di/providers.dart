@@ -14,6 +14,7 @@ import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/nutrition_consumption_repository.dart';
+import '../../data/repositories/nutrition_estimate_repository.dart';
 import '../../data/repositories/nutrition_household_measure_repository.dart';
 import '../../data/repositories/nutrition_read_model_repository.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
@@ -24,11 +25,13 @@ import '../../data/repositories/program_repository.dart';
 import '../../data/repositories/travel_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../../features/food_log/nutrition_estimate_review_controller.dart';
 import '../../features/food_log/saved_recipe_log_controller.dart';
 import '../config/app_config.dart';
 import '../nutrients.dart';
 import '../nutrition_calculation_service.dart';
 import '../nutrition_household_measures.dart';
+import '../privacy/nutrition_estimate_privacy.dart';
 import '../privacy/privacy_policy.dart';
 import '../services/local_schedule_date_service.dart';
 
@@ -76,6 +79,55 @@ final nutritionConsumptionRepositoryProvider =
         db: ref.watch(databaseProvider),
         registry: registry,
       );
+    });
+
+final nutritionEstimateRepositoryProvider =
+    FutureProvider<NutritionEstimateRepository>((ref) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      return NutritionEstimateRepository(
+        database: ref.watch(databaseProvider),
+        registry: registry,
+      );
+    });
+
+final nutritionEstimatePrivacyServiceProvider =
+    Provider<NutritionEstimatePrivacyService>(
+      (_) => NutritionEstimatePrivacyService(),
+    );
+
+final nutritionEstimateFinalizationServiceProvider =
+    FutureProvider<NutritionEstimateFinalizationService>((ref) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      final estimates = await ref.watch(
+        nutritionEstimateRepositoryProvider.future,
+      );
+      final consumption = await ref.watch(
+        nutritionConsumptionRepositoryProvider.future,
+      );
+      return NutritionEstimateFinalizationService(
+        estimates: estimates,
+        consumption: consumption,
+        registry: registry,
+      );
+    });
+
+final nutritionEstimateReviewControllerProvider = StateNotifierProvider
+    .autoDispose
+    .family<
+      NutritionEstimateReviewController,
+      NutritionEstimateReviewControllerState,
+      String
+    >((ref, estimateId) {
+      final repository = ref
+          .watch(nutritionEstimateRepositoryProvider)
+          .requireValue;
+      final controller = NutritionEstimateReviewController(
+        repository: repository,
+        userId: kLocalNutritionUserScopeId,
+        estimateId: estimateId,
+      );
+      unawaited(controller.load());
+      return controller;
     });
 
 final nutritionRecipeLogCoordinatorProvider =

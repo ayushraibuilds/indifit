@@ -1,5 +1,6 @@
 import 'nutrients.dart';
 import 'nutrition_consumption_snapshots.dart';
+import 'nutrition_estimates.dart';
 import 'typed_quantities.dart';
 
 /// Stable source labels used by the unified historical read boundary.
@@ -145,6 +146,15 @@ class NutritionHistoricalReadItem {
   final String stableId;
   final int position;
   final String sourceType;
+
+  /// The immutable source inside a canonical snapshot. `sourceType` remains
+  /// the compatibility read-model namespace for existing consumers.
+  final String originSourceType;
+  final String? sourceReference;
+  final String? estimateId;
+  final String? estimateVersion;
+  final NutritionEstimateReviewState? estimateReviewState;
+  final NutritionEstimateEvidence? estimateEvidence;
   final String? displayLabel;
   final String? foodId;
   final String? recipeVersionId;
@@ -156,13 +166,20 @@ class NutritionHistoricalReadItem {
     required this.stableId,
     required this.position,
     required this.sourceType,
+    String? originSourceType,
+    this.sourceReference,
+    this.estimateId,
+    this.estimateVersion,
+    this.estimateReviewState,
+    this.estimateEvidence,
     required this.displayLabel,
     required this.foodId,
     required this.recipeVersionId,
     required this.quantity,
     required Map<String, NutrientFact> facts,
     required List<NutritionCompatibilityIssue> issues,
-  }) : facts = Map.unmodifiable(facts),
+  }) : originSourceType = originSourceType ?? sourceType,
+       facts = Map.unmodifiable(facts),
        issues = List.unmodifiable(issues);
 }
 
@@ -288,6 +305,18 @@ class NutritionCanonicalSnapshotReadModel
         stableId: item.id,
         position: item.position,
         sourceType: sourceType,
+        originSourceType: item.sourceType,
+        sourceReference: item.sourceReference,
+        estimateId: item.sourceType == 'estimate' ? item.sourceReference : null,
+        estimateVersion: item.sourceType == 'estimate'
+            ? _estimateVersionFromSnapshot(snapshot)
+            : null,
+        estimateReviewState: item.sourceType == 'estimate'
+            ? _estimateReviewStateFromSnapshot(snapshot)
+            : null,
+        estimateEvidence: item.sourceType == 'estimate'
+            ? _estimateEvidenceFromSnapshot(snapshot)
+            : null,
         displayLabel: item.displayLabel,
         foodId: item.foodId,
         recipeVersionId: item.recipeVersionId,
@@ -308,6 +337,73 @@ class NutritionCanonicalSnapshotReadModel
 
   @override
   bool get isLegacy => false;
+
+  bool get isEstimate =>
+      snapshot.sourceType == 'estimate' ||
+      snapshot.items.any((item) => item.sourceType == 'estimate');
+
+  NutritionConsumptionSnapshotItem? get estimateItem {
+    for (final item in snapshot.items) {
+      if (item.sourceType == 'estimate') return item;
+    }
+    return null;
+  }
+
+  String? get estimateId => estimateItem?.sourceReference;
+
+  String? get estimateVersion {
+    final requestEvidence = snapshot.lineage.evidence['request_evidence'];
+    if (requestEvidence is Map &&
+        requestEvidence['estimate_version'] is String) {
+      return requestEvidence['estimate_version'] as String;
+    }
+    return null;
+  }
+
+  NutritionEstimateEvidence? get estimateEvidence {
+    return _estimateEvidenceFromSnapshot(snapshot);
+  }
+}
+
+String? _estimateVersionFromSnapshot(NutritionConsumptionSnapshot snapshot) {
+  final requestEvidence = snapshot.lineage.evidence['request_evidence'];
+  if (requestEvidence is Map && requestEvidence['estimate_version'] is String) {
+    return requestEvidence['estimate_version'] as String;
+  }
+  return null;
+}
+
+NutritionEstimateReviewState? _estimateReviewStateFromSnapshot(
+  NutritionConsumptionSnapshot snapshot,
+) {
+  final requestEvidence = snapshot.lineage.evidence['request_evidence'];
+  if (requestEvidence is! Map || requestEvidence['review_state'] is! String) {
+    return null;
+  }
+  try {
+    return NutritionEstimateReviewStateContract.fromStableId(
+      requestEvidence['review_state'] as String,
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+NutritionEstimateEvidence? _estimateEvidenceFromSnapshot(
+  NutritionConsumptionSnapshot snapshot,
+) {
+  final requestEvidence = snapshot.lineage.evidence['request_evidence'];
+  if (requestEvidence is! Map ||
+      requestEvidence['estimate_provenance'] == null) {
+    return null;
+  }
+  try {
+    return NutritionEstimateEvidence.fromJson(
+      requestEvidence['estimate_provenance'],
+    );
+  } catch (_) {
+    return null;
+  }
 }
 
 class NutritionLegacyMealTemplateItemReadModel {
