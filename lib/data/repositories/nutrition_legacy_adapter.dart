@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/legacy_nutrient_adapter.dart';
 import '../../core/nutrients.dart';
+import '../../core/nutrition_legacy_corrections.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/typed_quantities.dart';
 import '../database/app_database.dart';
@@ -47,6 +48,7 @@ class NutritionLegacyAdapter {
     DateTime? from,
     DateTime? to,
   }) async {
+    final scope = userId?.trim() ?? legacyUserId;
     final fromUtc = from?.toUtc();
     final toUtc = to?.toUtc();
     final rows =
@@ -72,13 +74,17 @@ class NutritionLegacyAdapter {
               ]))
             .get();
     final duplicatePortableIds = _duplicatePortableIds(rows);
-    final scope = userId?.trim() ?? legacyUserId;
+    final corrections = await _latestLegacyCorrections(scope);
     return Future.wait(
       rows.map(
         (row) => adaptFoodLog(
           row,
           userId: scope,
           duplicatePortableIds: duplicatePortableIds,
+          projection:
+              corrections[NutritionLegacyFoodLogCorrectionCodec.targetIdForRow(
+                row.id,
+              )],
         ),
       ),
     );
@@ -93,10 +99,16 @@ class NutritionLegacyAdapter {
     )..where((table) => table.id.equals(legacyRowId))).getSingleOrNull();
     if (row == null) return null;
     final duplicatePortableIds = await _duplicatePortableIdsForUuid(row.uuid);
+    final scope = userId?.trim() ?? legacyUserId;
+    final corrections = await _latestLegacyCorrections(scope);
     return adaptFoodLog(
       row,
-      userId: userId?.trim() ?? legacyUserId,
+      userId: scope,
       duplicatePortableIds: duplicatePortableIds,
+      projection:
+          corrections[NutritionLegacyFoodLogCorrectionCodec.targetIdForRow(
+            row.id,
+          )],
     );
   }
 
@@ -104,8 +116,19 @@ class NutritionLegacyAdapter {
     FoodLog row, {
     String? userId,
     Set<String> duplicatePortableIds = const {},
+    NutritionLegacyFoodLogProjection? projection,
   }) async {
     final scope = userId?.trim() ?? legacyUserId;
+    final effective =
+        projection ??
+        NutritionLegacyFoodLogProjection(
+          name: row.name,
+          calories: row.calories,
+          proteinG: row.proteinG,
+          carbsG: row.carbsG,
+          fatG: row.fatG,
+          servingLogged: row.servingLogged,
+        );
     final stableId = _foodLogStableId(row, duplicatePortableIds);
     final issues = <NutritionCompatibilityIssue>[
       const NutritionCompatibilityIssue(
@@ -139,23 +162,32 @@ class NutritionLegacyAdapter {
         ),
       );
     }
+    if (projection != null) {
+      issues.add(
+        const NutritionCompatibilityIssue(
+          code: NutritionCompatibilityIssueCode.legacyCorrectionApplied,
+          message:
+              'This legacy row is read through an append-only correction; the original row remains unchanged.',
+        ),
+      );
+    }
 
     final identity = await _resolveFoodIdentity(
       legacyFoodItemId: row.foodItemId,
-      displayLabel: row.name,
+      displayLabel: effective.name,
     );
     issues.addAll(identity.issues);
     final quantity = _adaptQuantity(
-      amount: row.servingLogged,
+      amount: effective.servingLogged,
       unit: row.servingUnit,
       stableId: stableId,
     );
     issues.addAll(quantity.issues);
     final facts = _legacyFacts(
-      calories: row.calories,
-      proteinG: row.proteinG,
-      carbohydrateG: row.carbsG,
-      fatG: row.fatG,
+      calories: effective.calories,
+      proteinG: effective.proteinG,
+      carbohydrateG: effective.carbsG,
+      fatG: effective.fatG,
       fibreG: null,
       sourceReference: stableId,
     );
@@ -164,7 +196,7 @@ class NutritionLegacyAdapter {
       stableId: stableId,
       position: 0,
       sourceType: NutritionHistoricalSourceType.legacyFoodLog.stableId,
-      displayLabel: row.name,
+      displayLabel: effective.name,
       foodId: identity.canonicalFoodId,
       recipeVersionId: null,
       quantity: quantity,
@@ -180,7 +212,7 @@ class NutritionLegacyAdapter {
       localDate: _localDateKey(row.loggedAt),
       mealCategory: row.mealType,
       mealGroupId: _optionalText(row.mealGroupId),
-      displayLabel: row.name,
+      displayLabel: effective.name,
       foodIdentity: identity,
       quantity: quantity,
       isSynced: row.isSynced,
@@ -641,6 +673,46 @@ class NutritionLegacyAdapter {
     )..where((table) => table.uuid.isNotNull())).get();
     final count = rows.where((row) => _portableUuid(row.uuid) == value).length;
     return count > 1 ? {value} : const {};
+  }
+
+  Future<Map<String, NutritionLegacyFoodLogProjection>>
+  _latestLegacyCorrections(String userId) async {
+    final rows =
+        await (_db.select(_db.nutritionUserCorrections)..where(
+              (table) =>
+                  table.userId.equals(userId) &
+                  table.targetType.equals(
+                    NutritionLegacyFoodLogCorrectionCodec.targetType,
+                  ),
+            ))
+            .get();
+    rows.sort((left, right) {
+      final created = left.createdAt.compareTo(right.createdAt);
+      return created == 0 ? left.id.compareTo(right.id) : created;
+    });
+    final result = <String, NutritionLegacyFoodLogProjection>{};
+    for (final row in rows) {
+      if (row.field != NutritionLegacyFoodLogCorrectionCodec.field ||
+          row.newValue == null) {
+        throw const NutritionLegacyAdapterError(
+          'malformed_legacy_correction',
+          'A legacy correction has an unsupported field or missing payload.',
+        );
+      }
+      try {
+        final payload = NutritionLegacyFoodLogCorrectionCodec.decode(
+          row.newValue,
+        );
+        result[row.targetId] = payload.projection;
+      } catch (error) {
+        throw NutritionLegacyAdapterError(
+          'malformed_legacy_correction',
+          'A legacy correction payload could not be read safely.',
+          cause: error,
+        );
+      }
+    }
+    return result;
   }
 
   String _foodLogStableId(FoodLog row, Set<String> duplicatePortableIds) {

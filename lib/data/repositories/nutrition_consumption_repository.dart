@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_constraints.dart';
 import '../../core/nutrition_consumption_snapshots.dart';
+import '../../core/services/local_schedule_date_service.dart';
 import '../../core/typed_quantities.dart';
 import '../database/app_database.dart'
     hide
@@ -195,8 +196,8 @@ class NutritionConsumptionRepository {
                 calculatorVersion: request.calculatorVersion.trim(),
                 completeness: prepared.totals.completeness.state.name,
                 estimateStatus: _estimateStatus(prepared.totals.facts),
-                localDate: Value(request.localDate),
-                timezoneId: Value(request.timezoneId),
+                localDate: Value(prepared.localDate),
+                timezoneId: Value(prepared.timezoneId),
                 lineage: Value(lineage.canonicalJson),
                 createdAt: Value(now),
                 updatedAt: Value(now),
@@ -447,10 +448,42 @@ class NutritionConsumptionRepository {
     if (calculatorVersion.isEmpty) {
       _invalid('missing_calculator_version', 'Calculator version is required.');
     }
-    if ((request.localDate == null) != (request.timezoneId == null)) {
+    final requestedLocalDate = request.localDate;
+    final requestedTimezoneId = request.timezoneId;
+    if (requestedLocalDate == null && requestedTimezoneId == null) {
+      _invalid(
+        'missing_local_time_context',
+        'Canonical finalization requires an explicit local date and timezone.',
+      );
+    }
+    if ((requestedLocalDate == null) != (requestedTimezoneId == null)) {
       _invalid(
         'incomplete_local_time_context',
         'Local date and timezone must be supplied together.',
+      );
+    }
+    late final String localDate;
+    try {
+      final dates = LocalScheduleDateService();
+      localDate = dates.normalizeLocalDate(requestedLocalDate!);
+      dates.validateTimezone(requestedTimezoneId!);
+      final derivedDate = dates.localDateFor(
+        request.loggedAtUtc,
+        requestedTimezoneId,
+      );
+      if (localDate != derivedDate) {
+        _invalid(
+          'local_time_context_mismatch',
+          'The stored local date must match the event instant in its stored timezone.',
+        );
+      }
+    } on NutritionConsumptionError {
+      rethrow;
+    } on ArgumentError catch (error) {
+      _invalid(
+        'invalid_local_time_context',
+        'The local date or timezone is not a valid historical time context.',
+        error,
       );
     }
     if (request.commandId != null && request.commandId!.trim().isEmpty) {
@@ -696,6 +729,11 @@ class NutritionConsumptionRepository {
         for (final item in preparedItems) item.input.id: item.toLineageJson(),
       },
       'request_evidence': request.evidence,
+      'time_context': {
+        'local_date': localDate,
+        'timezone_id': requestedTimezoneId,
+        'event_instant_utc': request.loggedAtUtc.toIso8601String(),
+      },
       if (constraintEvaluation != null)
         'constraint_evaluation': constraintEvaluation.toJson(),
       if (constraintAcknowledgement != null)
@@ -705,6 +743,8 @@ class NutritionConsumptionRepository {
       items: preparedItems,
       totals: totals,
       recipeVersionId: recipeVersionId,
+      localDate: localDate,
+      timezoneId: requestedTimezoneId,
       contentFingerprint: contentFingerprint,
       lineageEvidence: lineageEvidence,
       constraintEvaluation: constraintEvaluation,
@@ -2140,6 +2180,8 @@ class _PreparedConsumption {
   final List<_PreparedItem> items;
   final NutrientAggregationResult totals;
   final String? recipeVersionId;
+  final String localDate;
+  final String timezoneId;
   final String contentFingerprint;
   final Map<String, dynamic> lineageEvidence;
   final NutritionConstraintEvaluationResult? constraintEvaluation;
@@ -2149,6 +2191,8 @@ class _PreparedConsumption {
     required this.items,
     required this.totals,
     required this.recipeVersionId,
+    required this.localDate,
+    required this.timezoneId,
     required this.contentFingerprint,
     required this.lineageEvidence,
     required this.constraintEvaluation,

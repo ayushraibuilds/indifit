@@ -9,6 +9,7 @@ import '../nutrition_constraints.dart';
 import '../nutrition_consumption_snapshots.dart';
 import '../nutrition_estimates.dart';
 import '../nutrition_household_measures.dart';
+import '../nutrition_legacy_corrections.dart';
 import '../typed_quantities.dart';
 import 'backup_schema.dart';
 
@@ -1065,6 +1066,7 @@ class NutritionBackupGraph {
       for (final row in _rows('nutrition_snapshot_items'))
         row['id'] as String: row['snapshot_id'] as String,
     };
+    final correctionIds = _ids('nutrition_user_corrections');
     for (final row in _rows('nutrition_user_corrections')) {
       final targetType = row['target_type'];
       final targetId = row['target_id'];
@@ -1074,6 +1076,49 @@ class NutritionBackupGraph {
           throw BackupV8ValidationException(
             'correction_owner_mismatch',
             'Backup-v8 estimate corrections must remain within one user.',
+          );
+        }
+      }
+      if (targetType == NutritionLegacyFoodLogCorrectionCodec.targetType) {
+        if (targetId is! String ||
+            !targetId.startsWith('legacy-food-log:local-id:') ||
+            row['field'] != NutritionLegacyFoodLogCorrectionCodec.field ||
+            row['source'] != NutritionLegacyFoodLogCorrectionCodec.source ||
+            row['old_value'] is! String ||
+            row['new_value'] is! String) {
+          throw BackupV8ValidationException(
+            'invalid_legacy_correction',
+            'Backup-v8 legacy corrections require the append-only projection contract.',
+          );
+        }
+        try {
+          final oldPayload = NutritionLegacyFoodLogCorrectionCodec.decode(
+            row['old_value'],
+          );
+          final newPayload = NutritionLegacyFoodLogCorrectionCodec.decode(
+            row['new_value'],
+          );
+          final predecessor = newPayload.supersedesId;
+          if (predecessor != null &&
+              (!correctionIds.contains(predecessor) ||
+                  !_rows('nutrition_user_corrections').any(
+                    (candidate) =>
+                        candidate['id'] == predecessor &&
+                        candidate['user_id'] == row['user_id'] &&
+                        candidate['target_id'] == targetId,
+                  ))) {
+            throw const FormatException(
+              'Legacy correction supersession points outside its ancestry.',
+            );
+          }
+          // Decode both sides to prove that the correction is a real
+          // before/after record rather than an opaque arbitrary JSON blob.
+          oldPayload.projection;
+          newPayload.projection;
+        } catch (error) {
+          throw BackupV8ValidationException(
+            'invalid_legacy_correction',
+            'Backup-v8 legacy correction ancestry or values are malformed: $error',
           );
         }
       }

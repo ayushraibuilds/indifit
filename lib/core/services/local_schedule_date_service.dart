@@ -112,6 +112,17 @@ class LocalScheduleDateService {
     return _format(local.year, local.month, local.day);
   }
 
+  /// Converts an event instant to the stored civil date for its explicit
+  /// timezone. Historical callers must use this persisted location rather
+  /// than the device's current timezone.
+  String localDateFor(DateTime instantUtc, String timezoneId) {
+    final local = tz.TZDateTime.from(
+      instantUtc.toUtc(),
+      locationFor(timezoneId),
+    );
+    return _format(local.year, local.month, local.day);
+  }
+
   int compare(String first, String second) {
     return normalizeLocalDate(first).compareTo(normalizeLocalDate(second));
   }
