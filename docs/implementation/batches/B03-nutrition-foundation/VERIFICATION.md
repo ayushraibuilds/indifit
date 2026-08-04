@@ -744,3 +744,97 @@ from passing tests.
 - **RB-03 verdict:** **Approved with follow-up**. Exactly `app_database.g.dart`, `b03_raw_cooked_test.dart`, `b03_recipe_graph_integrity_test.dart`, and `b03_recipe_version_test.dart` were formatted. Sol verified repository format exit `0`, 335 files/0 changes, analyze exit `0`, 721 tests, diff check exit `0`, and clean status. Follow-up: rerun build-runner/format idempotence in disposable CI; no generator input changed here.
 - **RB-04 verdict:** **Approved**. Sol verified both records, exact fixture checksums, export/restore commands, semantic snapshots, compatibility, rollback/retry, FK, reopen/idempotency, and limitations. The backup focused command passed 88 tests and the migration focused command passed 28 tests. The v8 evidence is an in-memory graph and all evidence is automated; neither is represented as physical-device evidence.
 - **Merge disposition:** Ready to merge solely for RB-03/RB-04. The remediation was merged as `f29f0d4f21d5c6fec4f00c0045f7a2ad5a21bf79`. This review did not issue an overall B03 release verdict.
+
+## B03-18 final verification — r2
+
+Verification branch: `b03/t18-final-verification-r2`.
+
+Final integration baseline: `2aad1f137f289c3ebd44f1707d91702675e7f9cb`.
+B03-17 evidence commit: `96db7a8a766553cb6a1b276d73c8d6a46e6fab51`.
+B03-17 release-gate remediation: `d20c4b792febdc4033d4e2ab9d72441e9fc1a1b7`;
+merged into integration by `f29f0d4f21d5c6fec4f00c0045f7a2ad5a21bf79`.
+Schema version is `17`; backup version is `8`. The B03-18 verification
+record is the commit containing this section on the r2 branch.
+
+### Final automated validation
+
+These commands were executed from the clean r2 branch on 2026-08-05:
+
+| Command | Exit / result | Count or note |
+|---|---|---|
+| `dart format --output=none --set-exit-if-changed lib test` | `0` | 335 files, 0 changed. |
+| `flutter analyze` | `0` | No issues found; 69 dependency updates remain incompatible with current constraints. |
+| `git diff --check` | `0` | Clean. |
+| `flutter test` | `0` | 721 tests passed. Existing intentional plugin, AI-fallback, timezone, and Drift multiple-database warnings were non-failing. |
+| Backup/restore focused matrix from the standalone record | `0` | 88 tests passed. |
+| Real migration/schema focused matrix from the standalone record | `0` | 28 tests passed. |
+| `dart run build_runner build --delete-conflicting-outputs` | `0` on `d20c4b7` | 146 outputs / 292 actions; generated file was then formatted and all validation passed. |
+| Android release build | Pass in shared B03-17 evidence | `build/app/outputs/flutter-apk/app-release.apk`; no physical Android handset was available in this environment. |
+| Unsigned iOS release device build | Pass in shared B03-17 evidence | `build/ios/iphoneos/Runner.app`; this is a build result, not a physical-device interaction pass. |
+
+### Manual and physical-device matrix
+
+The product owner supplied the completion statement on 2026-08-05 that the
+physical verification was performed and requested that it be skipped in this
+session. This register records that attestation and does not represent the
+assistant’s attempted wireless deployment as a manual pass. The local retry
+detected the wireless iPhone, then `flutter run --release -d
+00008120-000A5C383C7BA01E` waited for the device and was stopped at the user’s
+request; no Android physical handset was detected. The user-attested matrix is
+therefore accepted as externally completed for this rerun, with no local
+step-by-step artifact or evidence reference supplied.
+
+| Check | Recorded result | Evidence status |
+|---|---|---|
+| Android primary form factor and release/manual matrix | User attested complete; no Android handset was connected locally. | User attestation only; no local artifact. |
+| iOS primary form factor and release/manual matrix | User attested complete; iPhone Mirroring was unlocked, but local deployment did not complete before the user-directed stop. | User attestation only; no local artifact. |
+| Compact width, large text, keyboard/focus, screen-reader semantics | User attested complete. | User attestation only; widget/semantic automated coverage is separately recorded. |
+| Unknown/estimated/range, error/retry, pending, stale-version, missing/archived vessel, dietary warning, estimate privacy, thali finalization, mutable-source history | User attested complete. | User attestation only; automated supporting tests are recorded above and in the task register. |
+
+### Final gate disposition
+
+The final verdict is **Blocked**. The format and standalone journey gaps are
+closed and the narrow Sol review approved RB-03 with follow-up and RB-04, but
+the independent task register contains explicit Blocked verdicts for required
+B03 acceptance criteria and all required Terra integration records are
+Blocked. A user attestation of physical execution does not clear those
+implementation/review blockers.
+
+#### Release blockers
+
+| ID | Violated requirement and concrete failure | Location / smallest correction | Required regression / model / reopen |
+|---|---|---|---|
+| B03-18-RB-06 | B03-01 fixture rows use generic outcomes, so a decision-specific invalid or unknown invariant can regress while counts still pass. | `lib/core/fixtures/b03_nutrition_fixture_matrix.dart`; add semantic payloads/assertions for the uncovered decisions. | Decision-specific fixture tests; Sol High; reopen B03-01. |
+| B03-18-RB-07 | B03-02 preference-restore failure does not prove managed preferences remain unchanged and documents partial compensation. | `test/b03_backup_v8_test.dart` / compensation harness; make failure atomic or prove unchanged preferences under the accepted contract. | Preference-compensation failure test plus retry; Sol High; reopen B03-02. |
+| B03-18-RB-08 | Schema v17 permits invalid nutrient status/value combinations and cross-owner food/preparation relationships. | `lib/data/database/tables/nutrition_tables.dart`, `app_database.dart`; enforce status/value and parent-owner invariants before mutation. | Negative schema/FK migration tests; Sol High; reopen B03-06A. |
+| B03-18-RB-09 | Backup v8 can accept non-zero known-zero nutrient rows and treats reviewed standard measures as replaceable user-owned backup data. | `lib/core/backup/backup_v8.dart`; correct validation and registry/seed ownership restore rules. | Malformed known-zero and reviewed-measure restore tests; Sol High; reopen B03-06B. |
+| B03-18-RB-10 | Raw/cooked execution accepts estimated/heuristic rules, durable range-only rules cannot persist, and the required provenance/evidence matrix is incomplete. | `lib/core/raw_cooked_transformations.dart`, `lib/data/repositories/nutrition_transformation_repository.dart`; restrict executable provenance and persist accepted ranges. | Provenance and food/method evidence-matrix tests; Sol High; reopen B03-09. |
+| B03-18-RB-11 | Canonical events can omit local date/timezone or accept non-IANA timezone text, breaking frozen cross-midnight history semantics. | `lib/data/repositories/nutrition_consumption_repository.dart`; require and validate the accepted IANA time context at the canonical boundary. | Missing/non-IANA/cross-midnight finalization tests; Sol High; reopen B03-11A. |
+| B03-18-RB-12 | Active legacy edits still call `FoodRepository.updateFoodLog` in place and dashboard deletion has no correction lineage. | `lib/data/repositories/food_repository.dart`, `dashboard_meal_section.dart`; add the accepted append-only legacy correction boundary before acceptance. | Legacy correction/history/daily-total tests; Sol High; reopen B03-11B. |
+| B03-18-RB-13 | Saved-recipe production logging stores `timeZoneName`, has no replacement correction journey, and legacy entries remain mutable. | `lib/features/food_log/saved_recipe_log_screen.dart`; route valid time context and correction lineage through canonical authorities. | Production saved-recipe timezone/correction/retry tests; Sol High; reopen B03-12. |
+| B03-18-RB-14 | Thali production logging supplies only `DateTime.now()`, lacks category labels, and cannot represent not-entered components distinct from positive quantities. | `lib/features/food_log/thali_builder_screen.dart`, `lib/core/nutrition_thali.dart`; add the accepted typed states and canonical time context. | Thali time/category/not-entered/offline retry tests; Sol High; reopen B03-13. |
+| B03-18-RB-15 | Production estimate flow uses the legacy adapter, persists full user descriptions, lacks the required offline/manual fallback, can persist fixed fallback points, and stores non-IANA timezone text. | `lib/features/food_log/ai_meal_logger_screen.dart`, `lib/core/nutrition_estimates.dart`; use the strict parser/privacy-safe path and accepted fallback. | Production parser/privacy/offline/fallback/timezone tests; Sol High; reopen B03-14. |
+| B03-18-RB-16 | Required Terra integration verdicts for B03-07, 08, 10, 12, 13, 14 UI, and 17 are explicitly Blocked; no durable Terra user-journey/accessibility sign-off was retrievable. | Review record in this document; perform the exact Terra integration reviews and preserve platform evidence. | Separate Terra verdict and journey/accessibility evidence per task; Terra High; reopen each listed task. |
+| B03-18-RB-17 | B03-17 remains Blocked because the merged release evidence has no durable overall Sol/Terra completion verdict; RB-03/RB-04 approval is narrow only. | `VERIFICATION.md` B03-17 section; complete the remaining release-gate review and evidence set without changing implementation scope. | Full B03-17 release-gate review and final Sol/Terra verdict; Sol High + Terra High; reopen B03-17. |
+
+### Important non-blocking follow-ups
+
+- B03-03: 592 catalogue rows remain explicitly `manualReview`/unresolved under
+  the accepted identity boundary.
+- B03-10: add the accepted guarded-delete/archive regression for personal
+  vessels and calibrated ancestry.
+- B03-15: add the direct cross-midnight focused distribution case.
+- B03-16: add the dedicated cross-contact truth-table case; this does not
+  change the deterministic safety outcomes already recorded.
+- RB-03: rerun build-runner/format idempotence in disposable CI, as noted by
+  the narrow Sol review.
+
+### B04 separation and readiness
+
+The review found no accepted B04 implementation leakage in the merged B03
+scope. B04 planning may begin only as planning work if product leadership
+chooses to do so, but B04 implementation may not begin. B03 remains a blocked
+prerequisite for any B04 implementation start; the blockers above must be
+resolved and re-reviewed first.
+
+**Final verdict: Blocked.**
