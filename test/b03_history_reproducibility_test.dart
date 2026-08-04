@@ -195,6 +195,16 @@ void main() {
       );
 
       await expectLater(event, completes);
+      expect(
+        () => history.watchCanonicalChanges(userId: '  '),
+        throwsA(
+          isA<NutritionReadModelError>().having(
+            (error) => error.code,
+            'code',
+            'missing_user_id',
+          ),
+        ),
+      );
     },
   );
 

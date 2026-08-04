@@ -44,12 +44,16 @@ class NutritionConsumptionRepository {
   /// The stream intentionally exposes no database rows. Consumers that need
   /// history re-read through [NutritionReadModelRepository], which keeps the
   /// dashboard and other surfaces from becoming a second snapshot read path.
-  Stream<void> watchChanges({String? userId}) {
-    final query = _db.select(_db.nutritionConsumptionSnapshots);
-    final normalizedUserId = userId?.trim();
-    if (normalizedUserId != null && normalizedUserId.isNotEmpty) {
-      query.where((row) => row.userId.equals(normalizedUserId));
+  Stream<void> watchChanges({required String userId}) {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) {
+      throw const NutritionConsumptionValidationError(
+        'missing_user_id',
+        'A user ID is required to watch canonical history changes.',
+      );
     }
+    final query = _db.select(_db.nutritionConsumptionSnapshots);
+    query.where((row) => row.userId.equals(normalizedUserId));
     return query.watch().map((_) {});
   }
 

@@ -38,8 +38,16 @@ class NutritionReadModelRepository {
   /// Legacy food-log changes are already delivered through the existing
   /// [FoodRepository] day stream. The dashboard combines that stream with this
   /// canonical stream and always re-reads through this repository.
-  Stream<void> watchCanonicalChanges({String? userId}) =>
-      _canonical.watchChanges(userId: userId);
+  Stream<void> watchCanonicalChanges({required String userId}) {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) {
+      throw const NutritionReadModelError(
+        'missing_user_id',
+        'A user ID is required to watch canonical history changes.',
+      );
+    }
+    return _canonical.watchChanges(userId: normalizedUserId);
+  }
 
   Future<List<NutritionHistoricalReadRecord>> listHistory({
     required String userId,
