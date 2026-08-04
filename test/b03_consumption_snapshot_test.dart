@@ -1,4 +1,6 @@
-import 'package:drift/drift.dart' hide isNull;
+import 'dart:convert';
+
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/backup/backup_v8.dart';
 import 'package:indifit/core/nutrients.dart';
@@ -108,6 +110,149 @@ void main() {
       expect(
         historical.items.single.facts['protein']!.point!.value.toString(),
         '12.345678',
+      );
+    },
+  );
+
+  test(
+    'normalizes omitted requested nutrient facts into immutable calculation lineage',
+    () async {
+      await _insertFood(db, 'food-1', 'Food');
+      final repository = NutritionConsumptionRepository(
+        db: db,
+        registry: registry,
+      );
+      await repository.finalizeConsumption(
+        _request(
+          calculation: _calculation(
+            registry,
+            facts: {'protein': _known('protein', '10')},
+            requested: const ['protein', 'fibre'],
+          ),
+          consumptionId: 'normalized-calculation',
+          commandId: 'normalized-calculation-command',
+        ),
+      );
+
+      final row =
+          (await db.select(db.nutritionConsumptionSnapshots).get()).single;
+      final lineage = jsonDecode(row.lineage!) as Map<String, dynamic>;
+      final evidence = Map<String, dynamic>.from(lineage['evidence'] as Map);
+      final items = Map<String, dynamic>.from(evidence['items'] as Map);
+      final item = Map<String, dynamic>.from(items['item-1'] as Map);
+      final calculation = Map<String, dynamic>.from(item['calculation'] as Map);
+      expect(calculation['facts'], contains('fibre'));
+      expect(
+        (await repository.getSnapshot(
+          userId: 'user-1',
+          consumptionId: 'normalized-calculation',
+        )),
+        isNotNull,
+      );
+    },
+  );
+
+  test(
+    'historical reads reject calculation-fact and estimate-status drift',
+    () async {
+      await _insertFood(db, 'food-1', 'Food');
+      final repository = NutritionConsumptionRepository(
+        db: db,
+        registry: registry,
+      );
+      await repository.finalizeConsumption(
+        _request(
+          calculation: _calculation(
+            registry,
+            facts: {
+              'protein': NutrientFact.estimated(
+                nutrientId: 'protein',
+                point: NutrientAmount(
+                  value: QuantityAmount.fromString('10'),
+                  unit: NutrientUnit.gram,
+                ),
+                basis: NutrientBasis(NutrientBasisKind.absolute),
+                source: NutrientSourceType.aiEstimate,
+                factVersion: 'estimate-v1',
+              ),
+            },
+            requested: const ['protein'],
+          ),
+          consumptionId: 'drifted-calculation',
+          commandId: 'drifted-calculation-command',
+        ),
+      );
+
+      final row =
+          (await db.select(db.nutritionConsumptionSnapshots).get()).single;
+      final originalLineage = row.lineage!;
+      final lineage = jsonDecode(row.lineage!) as Map<String, dynamic>;
+      final evidence = Map<String, dynamic>.from(lineage['evidence'] as Map);
+      final items = Map<String, dynamic>.from(evidence['items'] as Map);
+      final item = Map<String, dynamic>.from(items['item-1'] as Map);
+      final calculation = Map<String, dynamic>.from(item['calculation'] as Map)
+        ..['facts'] = <String, dynamic>{};
+      item['calculation'] = calculation;
+      items['item-1'] = item;
+      evidence['items'] = items;
+      lineage['evidence'] = evidence;
+      await (db.update(
+        db.nutritionConsumptionSnapshots,
+      )..where((table) => table.id.equals('drifted-calculation'))).write(
+        NutritionConsumptionSnapshotsCompanion(
+          lineage: Value(jsonEncode(lineage)),
+        ),
+      );
+      await expectLater(
+        repository.getSnapshot(
+          userId: 'user-1',
+          consumptionId: 'drifted-calculation',
+        ),
+        throwsA(
+          isA<NutritionConsumptionPersistenceError>().having(
+            (error) => error.code,
+            'code',
+            'calculation_lineage_mismatch',
+          ),
+        ),
+      );
+
+      await (db.update(
+        db.nutritionConsumptionSnapshots,
+      )..where((table) => table.id.equals('drifted-calculation'))).write(
+        NutritionConsumptionSnapshotsCompanion(lineage: Value(originalLineage)),
+      );
+      await (db.update(
+        db.nutritionConsumptionSnapshots,
+      )..where((table) => table.id.equals('drifted-calculation'))).write(
+        const NutritionConsumptionSnapshotsCompanion(
+          estimateStatus: Value('none'),
+        ),
+      );
+      await expectLater(
+        repository.getSnapshot(
+          userId: 'user-1',
+          consumptionId: 'drifted-calculation',
+        ),
+        throwsA(
+          isA<NutritionConsumptionPersistenceError>().having(
+            (error) => error.code,
+            'code',
+            'snapshot_result_mismatch',
+          ),
+        ),
+      );
+
+      final graph = await NutritionBackupGraph.capture(db);
+      expect(
+        () => NutritionBackupGraph.fromJson(graph.toJson()),
+        throwsA(
+          isA<BackupV8ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'snapshot_result_mismatch',
+          ),
+        ),
       );
     },
   );
