@@ -10,6 +10,18 @@ import '../../data/models/b02_execution_models.dart';
 import '../../data/models/b02_rich_set_helpers.dart';
 import '../fixtures/b02_execution_draft_codec.dart';
 
+/// Parses an offset-less legacy backup timestamp without consulting the
+/// machine's local timezone. Legacy backup timestamps represent instants in
+/// UTC; explicit offsets retain their ISO-8601 meaning.
+DateTime parseLegacyBackupTimestamp(String value) {
+  final trimmed = value.trim();
+  final hasExplicitOffset = RegExp(
+    r'(?:[zZ]|[+-]\d{2}:?\d{2})$',
+  ).hasMatch(trimmed);
+  final parsed = DateTime.parse(hasExplicitOffset ? trimmed : '${trimmed}Z');
+  return parsed.toUtc();
+}
+
 /// Test-only restore boundaries. The production restore path remains
 /// transactional; callers leave the injector null.
 ///
@@ -316,7 +328,7 @@ class BackupData {
 
     return BackupData(
       version: currentVersion,
-      timestamp: DateTime.now().toIso8601String(),
+      timestamp: DateTime.now().toUtc().toIso8601String(),
       schemaVersion: db.schemaVersion,
       userProfile: userProfile,
       userSettings: userSettings,
@@ -393,14 +405,14 @@ class BackupData {
           'name': userProfile!.name,
           'equipment_access': userProfile!.equipmentAccess,
           'injuries_limitations': userProfile!.injuriesLimitations,
-          'updated_at': userProfile!.updatedAt.toIso8601String(),
+          'updated_at': userProfile!.updatedAt.toUtc().toIso8601String(),
         },
       'user_settings': userSettings
           .map(
             (s) => {
               'key': s.key,
               'value': s.value,
-              'updated_at': s.updatedAt.toIso8601String(),
+              'updated_at': s.updatedAt.toUtc().toIso8601String(),
             },
           )
           .toList(),
@@ -438,7 +450,7 @@ class BackupData {
               'serving_logged': f.servingLogged,
               'serving_unit': f.servingUnit,
               'meal_type': f.mealType,
-              'logged_at': f.loggedAt.toIso8601String(),
+              'logged_at': f.loggedAt.toUtc().toIso8601String(),
               'is_synced': f.isSynced,
               'meal_group_id': f.mealGroupId,
               'uuid': f.uuid,
@@ -451,7 +463,7 @@ class BackupData {
               'id': t.id,
               'name': t.name,
               'default_meal_type': t.defaultMealType,
-              'created_at': t.createdAt.toIso8601String(),
+              'created_at': t.createdAt.toUtc().toIso8601String(),
             },
           )
           .toList(),
@@ -494,7 +506,7 @@ class BackupData {
               'total_volume': s.totalVolume,
               'duration_seconds': s.durationSeconds,
               'estimated_calories': s.estimatedCalories,
-              'completed_at': s.completedAt.toIso8601String(),
+              'completed_at': s.completedAt.toUtc().toIso8601String(),
               'is_synced': s.isSynced,
               'uuid': s.uuid,
               'scheduled_occurrence_id': s.scheduledOccurrenceId,
@@ -536,7 +548,7 @@ class BackupData {
               'name': r.name,
               'goal': r.goal,
               'notes': r.notes,
-              'created_at': r.createdAt.toIso8601String(),
+              'created_at': r.createdAt.toUtc().toIso8601String(),
             },
           )
           .toList(),
@@ -572,7 +584,7 @@ class BackupData {
               'current_set_index': d.currentSetIndex,
               'elapsed_seconds': d.elapsedSeconds,
               'logged_sets_json': d.loggedSetsJson,
-              'updated_at': d.updatedAt.toIso8601String(),
+              'updated_at': d.updatedAt.toUtc().toIso8601String(),
               'scheduled_occurrence_id': d.scheduledOccurrenceId,
               'execution_snapshot_json': d.executionSnapshotJson,
               'draft_schema_version': d.draftSchemaVersion,
@@ -589,7 +601,7 @@ class BackupData {
               'waist': m.waist,
               'chest': m.chest,
               'arms': m.arms,
-              'recorded_at': m.recordedAt.toIso8601String(),
+              'recorded_at': m.recordedAt.toUtc().toIso8601String(),
               'is_synced': m.isSynced,
             },
           )
@@ -601,7 +613,7 @@ class BackupData {
               'date_string': h.dateString,
               'total_ml': h.totalMl,
               'goal_ml': h.goalMl,
-              'updated_at': h.updatedAt.toIso8601String(),
+              'updated_at': h.updatedAt.toUtc().toIso8601String(),
             },
           )
           .toList(),
@@ -612,7 +624,7 @@ class BackupData {
               'provider': p.provider,
               'external_id': p.externalId,
               'source_name': p.sourceName,
-              'imported_at': p.importedAt.toIso8601String(),
+              'imported_at': p.importedAt.toUtc().toIso8601String(),
               'local_session_id': p.localSessionId,
               'fingerprint': p.fingerprint,
             },
@@ -623,7 +635,7 @@ class BackupData {
             (a) => {
               'id': a.id,
               'achievement_id': a.achievementId,
-              'unlocked_at': a.unlockedAt.toIso8601String(),
+              'unlocked_at': a.unlockedAt.toUtc().toIso8601String(),
             },
           )
           .toList(),
@@ -731,8 +743,11 @@ class BackupData {
       );
     }
 
-    final timestamp =
-        json['timestamp'] as String? ?? DateTime.now().toIso8601String();
+    final timestamp = (json['timestamp'] as String?) != null
+        ? parseLegacyBackupTimestamp(
+            json['timestamp'] as String,
+          ).toIso8601String()
+        : DateTime.now().toUtc().toIso8601String();
     final schemaVersion = (json['schema_version'] as num?)?.toInt() ?? 13;
     final isB01Payload = rawVersion >= 6;
     final isB02Payload = rawVersion >= 7;
@@ -758,8 +773,8 @@ class BackupData {
         equipmentAccess: p['equipment_access'] as String? ?? 'full_gym',
         injuriesLimitations: p['injuries_limitations'] as String? ?? '',
         updatedAt: p['updated_at'] != null
-            ? DateTime.parse(p['updated_at'] as String)
-            : DateTime.now(),
+            ? parseLegacyBackupTimestamp(p['updated_at'] as String)
+            : DateTime.now().toUtc(),
       );
     }
 
@@ -773,8 +788,8 @@ class BackupData {
             key: s['key'] as String,
             value: s['value'] as String,
             updatedAt: s['updated_at'] != null
-                ? DateTime.parse(s['updated_at'] as String)
-                : DateTime.now(),
+                ? parseLegacyBackupTimestamp(s['updated_at'] as String)
+                : DateTime.now().toUtc(),
           ),
         );
       }
@@ -840,8 +855,8 @@ class BackupData {
             servingUnit: f['serving_unit'] as String,
             mealType: f['meal_type'] as String,
             loggedAt: f['logged_at'] != null
-                ? DateTime.parse(f['logged_at'] as String)
-                : DateTime.now(),
+                ? parseLegacyBackupTimestamp(f['logged_at'] as String)
+                : DateTime.now().toUtc(),
             isSynced: f['is_synced'] as bool? ?? false,
             mealGroupId: f['meal_group_id'] as String?,
             uuid: f['uuid'] as String?,
@@ -861,8 +876,8 @@ class BackupData {
             name: t['name'] as String,
             defaultMealType: t['default_meal_type'] as String? ?? 'breakfast',
             createdAt: t['created_at'] != null
-                ? DateTime.parse(t['created_at'] as String)
-                : DateTime.now(),
+                ? parseLegacyBackupTimestamp(t['created_at'] as String)
+                : DateTime.now().toUtc(),
           ),
         );
       }
@@ -931,8 +946,8 @@ class BackupData {
             durationSeconds: (s['duration_seconds'] as num).toInt(),
             estimatedCalories: (s['estimated_calories'] as num).toInt(),
             completedAt: s['completed_at'] != null
-                ? DateTime.parse(s['completed_at'] as String)
-                : DateTime.now(),
+                ? parseLegacyBackupTimestamp(s['completed_at'] as String)
+                : DateTime.now().toUtc(),
             isSynced: s['is_synced'] as bool? ?? false,
             uuid: s['uuid'] as String?,
             scheduledOccurrenceId: s['scheduled_occurrence_id'] as String?,
@@ -992,8 +1007,8 @@ class BackupData {
             goal: r['goal'] as String,
             notes: r['notes'] as String?,
             createdAt: r['created_at'] != null
-                ? DateTime.parse(r['created_at'] as String)
-                : DateTime.now(),
+                ? parseLegacyBackupTimestamp(r['created_at'] as String)
+                : DateTime.now().toUtc(),
           ),
         );
       }
@@ -1055,8 +1070,8 @@ class BackupData {
             elapsedSeconds: (d['elapsed_seconds'] as num).toInt(),
             loggedSetsJson: d['logged_sets_json'] as String,
             updatedAt: d['updated_at'] != null
-                ? DateTime.parse(d['updated_at'] as String)
-                : DateTime.now(),
+                ? parseLegacyBackupTimestamp(d['updated_at'] as String)
+                : DateTime.now().toUtc(),
             scheduledOccurrenceId: d['scheduled_occurrence_id'] as String?,
             executionSnapshotJson: d['execution_snapshot_json'] as String?,
             draftSchemaVersion:
@@ -1087,8 +1102,8 @@ class BackupData {
             chest: (m['chest'] as num?)?.toDouble(),
             arms: (m['arms'] as num?)?.toDouble(),
             recordedAt: m['recorded_at'] != null
-                ? DateTime.parse(m['recorded_at'] as String)
-                : DateTime.now(),
+                ? parseLegacyBackupTimestamp(m['recorded_at'] as String)
+                : DateTime.now().toUtc(),
             isSynced: m['is_synced'] as bool? ?? false,
           ),
         );
@@ -1107,8 +1122,8 @@ class BackupData {
             totalMl: (h['total_ml'] as num).toInt(),
             goalMl: (h['goal_ml'] as num).toInt(),
             updatedAt: h['updated_at'] != null
-                ? DateTime.parse(h['updated_at'] as String)
-                : DateTime.now(),
+                ? parseLegacyBackupTimestamp(h['updated_at'] as String)
+                : DateTime.now().toUtc(),
           ),
         );
       }
@@ -1126,8 +1141,8 @@ class BackupData {
             externalId: p['external_id'] as String?,
             sourceName: p['source_name'] as String? ?? 'External Provider',
             importedAt: p['imported_at'] != null
-                ? DateTime.parse(p['imported_at'] as String)
-                : DateTime.now(),
+                ? parseLegacyBackupTimestamp(p['imported_at'] as String)
+                : DateTime.now().toUtc(),
             localSessionId: (p['local_session_id'] as num?)?.toInt(),
             fingerprint: p['fingerprint'] as String,
           ),
@@ -1145,8 +1160,8 @@ class BackupData {
             id: (a['id'] as num?)?.toInt() ?? 0,
             achievementId: a['achievement_id'] as String,
             unlockedAt: a['unlocked_at'] != null
-                ? DateTime.parse(a['unlocked_at'] as String)
-                : DateTime.now(),
+                ? parseLegacyBackupTimestamp(a['unlocked_at'] as String)
+                : DateTime.now().toUtc(),
           ),
         );
       }
@@ -4132,8 +4147,11 @@ class BackupEnvelope {
       formatIdentifier: format ?? 'INDIFIT_BACKUP_ENVELOPE',
       version: version,
       schemaVersion: (json['schema_version'] as num?)?.toInt() ?? 13,
-      timestamp:
-          json['timestamp'] as String? ?? DateTime.now().toIso8601String(),
+      timestamp: (json['timestamp'] as String?) != null
+          ? parseLegacyBackupTimestamp(
+              json['timestamp'] as String,
+            ).toIso8601String()
+          : DateTime.now().toUtc().toIso8601String(),
       isEncrypted: json['is_encrypted'] as bool? ?? false,
       checksum: expectedChecksum ?? '',
       profileName: json['profile_name'] as String? ?? 'User Profile',

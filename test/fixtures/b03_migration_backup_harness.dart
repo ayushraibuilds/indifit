@@ -681,9 +681,9 @@ class B03BackupV7Fixture {
   static const String completeFixturePath =
       'test/fixtures/data/b03_backup_v7_complete_graph.json';
   static const String checksum =
-      '16e486faf0abba0f4b075a928eab25f3fe9e651e68687a6f66da14b944daa3ae';
+      'd3b6a4d4d86f308a8816f2da9a5fbf80bc71a4cf1f509c838d0a410e5722ee6c';
   static const String completeChecksum =
-      '02dc06612a6798ceec21efdc3bc9617a58e9e99af87b765ce11992b1aa51890a';
+      'be14bf2f552255c7eafeb4950db1206014562aab2848c4106734ad8ee36e0b97';
   static const String timestamp = '2026-01-15T08:30:00.000Z';
 
   static BackupData load() {
