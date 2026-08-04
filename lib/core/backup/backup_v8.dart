@@ -1040,6 +1040,9 @@ class NutritionBackupGraph {
     final correctionById = <String, String>{};
     final commandById = <String, String>{};
     final calculationFingerprintByItem = <String, String>{};
+    final calculationNutrientIdsByItem = <String, Set<String>>{};
+    final nutrientIdsByItem = <String, Set<String>>{};
+    final nutrientStatusesBySnapshot = <String, List<String>>{};
 
     for (final row in _rows('nutrition_snapshot_items')) {
       final snapshotId = row['snapshot_id'];
@@ -1138,6 +1141,11 @@ class NutritionBackupGraph {
           headerCalculatorVersion: calculatorVersion,
         );
         calculationFingerprintByItem[itemId] = calculationFingerprint;
+        final calculationFacts =
+            (evidence['calculation'] as Map)['facts'] as Map;
+        calculationNutrientIdsByItem[itemId] = calculationFacts.keys
+            .cast<String>()
+            .toSet();
         if (item['quantity_value'] is! num ||
             !_quantityProjectionMatches(
               quantity.amount,
@@ -1322,6 +1330,12 @@ class NutritionBackupGraph {
         );
       }
       nutrientRowsByItem[itemId] = (nutrientRowsByItem[itemId] ?? 0) + 1;
+      nutrientIdsByItem
+          .putIfAbsent(itemId, () => {})
+          .add(row['nutrient_id'] as String);
+      nutrientStatusesBySnapshot
+          .putIfAbsent(snapshotId, () => [])
+          .add(row['status'] as String);
     }
     final finalizedItemIds = {
       for (final entry in itemsBySnapshot.entries)
@@ -1333,6 +1347,27 @@ class NutritionBackupGraph {
         throw BackupV8ValidationException(
           'missing_snapshot_nutrients',
           'Every finalized snapshot item must preserve nutrient rows.',
+        );
+      }
+      final calculationIds = calculationNutrientIdsByItem[itemId] ?? const {};
+      final nutrientIds = nutrientIdsByItem[itemId] ?? const {};
+      if (calculationIds.length != nutrientIds.length ||
+          !calculationIds.containsAll(nutrientIds)) {
+        throw BackupV8ValidationException(
+          'calculation_lineage_mismatch',
+          'Snapshot calculation facts do not match its nutrient rows.',
+        );
+      }
+    }
+
+    for (final snapshotId in finalizedSnapshotIds) {
+      final expectedStatus = _snapshotEstimateStatus(
+        nutrientStatusesBySnapshot[snapshotId] ?? const [],
+      );
+      if (snapshotRows[snapshotId]!['estimate_status'] != expectedStatus) {
+        throw BackupV8ValidationException(
+          'snapshot_result_mismatch',
+          'Snapshot estimate status disagrees with its immutable nutrient facts.',
         );
       }
     }
@@ -1454,6 +1489,20 @@ class NutritionBackupGraph {
       }
     }
     return raw['calculation_fingerprint'] as String;
+  }
+
+  static String _snapshotEstimateStatus(Iterable<String> statuses) {
+    final values = statuses.toList(growable: false);
+    final estimated = values.contains('estimated');
+    if (!estimated) return 'none';
+    final hasAvailable = values.any(
+      (status) =>
+          status == 'known' || status == 'known_zero' || status == 'estimated',
+    );
+    final hasMeasuredOrKnown = values.any(
+      (status) => status == 'known' || status == 'known_zero',
+    );
+    return hasAvailable && hasMeasuredOrKnown ? 'mixed' : 'estimated';
   }
 
   static void _validateSnapshotItemSource(

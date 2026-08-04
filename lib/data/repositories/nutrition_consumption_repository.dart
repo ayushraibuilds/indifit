@@ -444,6 +444,21 @@ class NutritionConsumptionRepository {
       } on NutrientError catch (error) {
         _invalid('invalid_calculation_result', error.message, error);
       }
+      final calculationCompleteness = NutrientCompletenessEvaluator.evaluate(
+        registry: _registry,
+        facts: facts,
+        requestedNutrientIds: item.calculation.completeness.requestedNutrientIds
+            .toSet(),
+      );
+      if (!_sameCompleteness(
+        item.calculation.completeness,
+        calculationCompleteness,
+      )) {
+        _invalid(
+          'invalid_calculation_result',
+          'Calculation completeness does not match its nutrient facts.',
+        );
+      }
       for (final fact in facts.values) {
         try {
           fact.validateAgainst(_registry);
@@ -459,7 +474,17 @@ class NutritionConsumptionRepository {
           );
         }
       }
-      preparedItems.add(_PreparedItem(input: item, facts: facts));
+      preparedItems.add(
+        _PreparedItem(
+          input: item,
+          facts: facts,
+          calculationLineage: _normalizedCalculationLineage(
+            item.calculation,
+            facts,
+            calculationCompleteness,
+          ),
+        ),
+      );
     }
     final expectedPositions = List<int>.generate(
       items.length,
@@ -541,7 +566,9 @@ class NutritionConsumptionRepository {
         },
         'fact_version_lineage': totals.factVersionLineage,
       },
-      'items': {for (final item in items) item.id: item.toLineageJson()},
+      'items': {
+        for (final item in preparedItems) item.input.id: item.toLineageJson(),
+      },
       'request_evidence': request.evidence,
     };
     return _PreparedConsumption(
@@ -574,6 +601,21 @@ class NutritionConsumptionRepository {
       );
     }
     return result;
+  }
+
+  Map<String, dynamic> _normalizedCalculationLineage(
+    NutritionConsumptionCalculationSnapshot calculation,
+    Map<String, NutrientFact> facts,
+    NutrientCompleteness completeness,
+  ) {
+    final json = calculation.toJson();
+    return {
+      ...json,
+      'facts': {
+        for (final id in facts.keys.toList()..sort()) id: facts[id]!.toJson(),
+      },
+      'completeness': completeness.toJson(),
+    };
   }
 
   Future<void> _validateRecipeOwnership(
@@ -1132,6 +1174,7 @@ class NutritionConsumptionRepository {
     final expectedCompleteness = _readCompleteness(lineage);
     if (!_sameCompleteness(expectedCompleteness, totals.completeness) ||
         header.completeness != totals.completeness.state.name ||
+        header.estimateStatus != _estimateStatus(totals.facts) ||
         lineage.evidence['calculator_version'] != header.calculatorVersion ||
         lineage.evidence['nutrient_registry_version'] != _registry.version) {
       throw const NutritionConsumptionPersistenceError(
@@ -1237,6 +1280,16 @@ class NutritionConsumptionRepository {
         'Persisted calculation facts for item $itemId have invalid IDs.',
       );
     }
+    final rawFactKeySet = rawFactKeys.cast<String>().toSet();
+    final persistedFactKeySet = persistedFacts.keys.toSet();
+    if (rawFactKeySet.length != persistedFactKeySet.length ||
+        !rawFactKeySet.containsAll(persistedFactKeySet)) {
+      throw NutritionConsumptionPersistenceError(
+        'calculation_lineage_mismatch',
+        'Persisted calculation facts for item $itemId do not match its nutrient rows.',
+      );
+    }
+    late final NutrientCompleteness calculationCompleteness;
     for (final key in rawFactKeys.cast<String>()) {
       final fact = _readPersistedFact(rawFacts[key], itemId);
       if (fact.nutrientId != key ||
@@ -1247,6 +1300,29 @@ class NutritionConsumptionRepository {
           'Persisted calculation facts for item $itemId disagree with nutrient rows.',
         );
       }
+    }
+    try {
+      calculationCompleteness = NutrientCompleteness.fromJson(
+        raw['completeness'],
+      );
+    } catch (error) {
+      throw NutritionConsumptionPersistenceError(
+        'invalid_calculation_lineage',
+        'Persisted completeness evidence for item $itemId is malformed.',
+        cause: error,
+      );
+    }
+    final expectedCompleteness = NutrientCompletenessEvaluator.evaluate(
+      registry: _registry,
+      facts: persistedFacts,
+      requestedNutrientIds: calculationCompleteness.requestedNutrientIds
+          .toSet(),
+    );
+    if (!_sameCompleteness(calculationCompleteness, expectedCompleteness)) {
+      throw NutritionConsumptionPersistenceError(
+        'calculation_lineage_mismatch',
+        'Persisted completeness evidence for item $itemId disagrees with its nutrient facts.',
+      );
     }
     return raw['calculation_fingerprint'] as String;
   }
@@ -1438,8 +1514,18 @@ class NutritionConsumptionRepository {
 class _PreparedItem {
   final NutritionConsumptionItemInput input;
   final Map<String, NutrientFact> facts;
+  final Map<String, dynamic> calculationLineage;
 
-  const _PreparedItem({required this.input, required this.facts});
+  const _PreparedItem({
+    required this.input,
+    required this.facts,
+    required this.calculationLineage,
+  });
+
+  Map<String, dynamic> toLineageJson() => {
+    ...input.toLineageJson(),
+    'calculation': calculationLineage,
+  };
 }
 
 class _PreparedConsumption {
