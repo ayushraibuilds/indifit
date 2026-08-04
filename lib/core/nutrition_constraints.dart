@@ -1016,6 +1016,7 @@ class NutritionConstraintEvaluationInput {
   final String subjectId;
   final String? foodId;
   final String? recipeVersionId;
+  final String? thaliId;
   final List<NutritionConstraintEvidence> evidence;
   final List<NutritionConstraintSubjectLine> lines;
   final DateTime evaluatedAtUtc;
@@ -1025,6 +1026,7 @@ class NutritionConstraintEvaluationInput {
     required String subjectId,
     String? foodId,
     String? recipeVersionId,
+    String? thaliId,
     Iterable<NutritionConstraintEvidence> evidence = const [],
     Iterable<NutritionConstraintSubjectLine> lines = const [],
     DateTime? evaluatedAtUtc,
@@ -1032,6 +1034,7 @@ class NutritionConstraintEvaluationInput {
        subjectId = subjectId.trim(),
        foodId = _optional(foodId),
        recipeVersionId = _optional(recipeVersionId),
+       thaliId = _optional(thaliId),
        evidence = List.unmodifiable(evidence),
        lines = List.unmodifiable(lines),
        evaluatedAtUtc = (evaluatedAtUtc ?? DateTime.now()).toUtc() {
@@ -1039,25 +1042,26 @@ class NutritionConstraintEvaluationInput {
   }
 
   bool get isRecipe => recipeVersionId != null;
+  bool get isThali => thaliId != null;
 
   void validate() {
-    if (userId.isEmpty || subjectId.isEmpty) {
+    final subjectKinds = [
+      foodId,
+      recipeVersionId,
+      thaliId,
+    ].whereType<String>().length;
+    if (userId.isEmpty || subjectId.isEmpty || subjectKinds != 1) {
       throw const NutritionConstraintValidationError(
         'invalid_evaluation_subject',
-        'Evaluation requires user and subject identity.',
-      );
-    }
-    if ((foodId == null) == (recipeVersionId == null)) {
-      throw const NutritionConstraintValidationError(
-        'invalid_evaluation_subject',
-        'Evaluation must identify exactly one direct food or recipe version.',
+        'Evaluation requires exactly one food, recipe version, or thali subject.',
       );
     }
     if ((foodId != null && subjectId != foodId) ||
-        (recipeVersionId != null && subjectId != recipeVersionId)) {
+        (recipeVersionId != null && subjectId != recipeVersionId) ||
+        (thaliId != null && subjectId != thaliId)) {
       throw const NutritionConstraintValidationError(
         'constraint_evaluation_subject_mismatch',
-        'Evaluation subject identity must match its direct food or recipe version.',
+        'Evaluation subject identity must match its selected subject.',
       );
     }
     if (foodId != null && lines.isNotEmpty) {
@@ -1070,6 +1074,12 @@ class NutritionConstraintEvaluationInput {
       throw const NutritionConstraintValidationError(
         'unknown_recipe_composition',
         'Recipe evaluation requires its immutable ingredient graph.',
+      );
+    }
+    if (thaliId != null && lines.isEmpty) {
+      throw const NutritionConstraintValidationError(
+        'unknown_thali_composition',
+        'Thali evaluation requires its ordered component graph.',
       );
     }
     final lineIds = <String>{};
@@ -1339,6 +1349,7 @@ class NutritionConstraintEvaluationResult {
   final String subjectId;
   final String? foodId;
   final String? recipeVersionId;
+  final String? thaliId;
   final NutritionConstraintOutcome outcome;
   final List<NutritionConstraintEvaluation> evaluations;
   final List<String> missingEvidence;
@@ -1353,6 +1364,7 @@ class NutritionConstraintEvaluationResult {
     required String subjectId,
     required String? foodId,
     required String? recipeVersionId,
+    String? thaliId,
     required this.outcome,
     required Iterable<NutritionConstraintEvaluation> evaluations,
     required Iterable<String> missingEvidence,
@@ -1365,23 +1377,28 @@ class NutritionConstraintEvaluationResult {
        subjectId = subjectId.trim(),
        foodId = _optional(foodId),
        recipeVersionId = _optional(recipeVersionId),
+       thaliId = _optional(thaliId),
        evaluatedAtUtc = (evaluatedAtUtc ?? DateTime.utc(1970)).toUtc(),
        evaluations = _sortedEvaluations(evaluations),
        missingEvidence = _sortedUnique(missingEvidence),
        provenanceSummary = _sortedUnique(provenanceSummary) {
-    if (userId.isEmpty ||
-        subjectId.isEmpty ||
-        ((foodId == null) == (recipeVersionId == null))) {
+    final subjectKinds = [
+      foodId,
+      recipeVersionId,
+      thaliId,
+    ].whereType<String>().length;
+    if (userId.isEmpty || subjectId.isEmpty || subjectKinds != 1) {
       throw const NutritionConstraintValidationError(
         'invalid_evaluation_subject',
-        'A dietary evaluation requires one direct food or recipe version.',
+        'A dietary evaluation requires one food, recipe version, or thali subject.',
       );
     }
     if ((foodId != null && subjectId != foodId) ||
-        (recipeVersionId != null && subjectId != recipeVersionId)) {
+        (recipeVersionId != null && subjectId != recipeVersionId) ||
+        (thaliId != null && subjectId != thaliId)) {
       throw const NutritionConstraintValidationError(
         'constraint_evaluation_subject_mismatch',
-        'Evaluation subject identity must match its direct food or recipe version.',
+        'Evaluation subject identity must match its selected subject.',
       );
     }
     final constraintIds = <String>{};
@@ -1407,6 +1424,14 @@ class NutritionConstraintEvaluationResult {
               'Recipe evidence must retain ingredient-line ancestry.',
             );
           }
+        }
+        if (thaliId != null &&
+            reference.foodId == null &&
+            reference.ingredientLineage == null) {
+          throw const NutritionConstraintValidationError(
+            'constraint_evidence_lineage_mismatch',
+            'Thali evidence must retain a food or component-line identity.',
+          );
         }
       }
     }
@@ -1442,6 +1467,7 @@ class NutritionConstraintEvaluationResult {
     'subject_id': subjectId,
     if (foodId != null) 'food_id': foodId,
     if (recipeVersionId != null) 'recipe_version_id': recipeVersionId,
+    if (thaliId != null) 'thali_id': thaliId,
     'outcome': outcome.stableId,
     'evaluations': evaluations.map((item) => item.toJson()).toList(),
     'missing_evidence': missingEvidence,
@@ -1469,8 +1495,10 @@ class NutritionConstraintEvaluationResult {
     }
     final foodId = raw['food_id'];
     final recipeVersionId = raw['recipe_version_id'];
+    final thaliId = raw['thali_id'];
     if ((foodId != null && foodId is! String) ||
-        (recipeVersionId != null && recipeVersionId is! String)) {
+        (recipeVersionId != null && recipeVersionId is! String) ||
+        (thaliId != null && thaliId is! String)) {
       throw const NutritionConstraintValidationError(
         'malformed_constraint_evaluation',
         'Dietary evaluation subject identities must be text.',
@@ -1496,6 +1524,7 @@ class NutritionConstraintEvaluationResult {
       subjectId: _requiredString(raw['subject_id'], 'subject_id'),
       foodId: foodId as String?,
       recipeVersionId: recipeVersionId as String?,
+      thaliId: thaliId as String?,
       outcome: NutritionConstraintOutcomeContract.fromStableId(
         _requiredString(raw['outcome'], 'outcome'),
       ),
@@ -1709,6 +1738,7 @@ class NutritionConstraintEvaluator {
       subjectId: subject.subjectId,
       foodId: subject.foodId,
       recipeVersionId: subject.recipeVersionId,
+      thaliId: subject.thaliId,
       outcome: overall,
       evaluations: results,
       missingEvidence: allMissing,

@@ -253,6 +253,89 @@ class NutritionRecipeLogCoordinator {
     );
   }
 
+  /// Calculates one already-resolved direct-food component through the same
+  /// B03-08 service used by recipe ingredients. The pseudo calculation
+  /// identity is lineage-only; the persisted snapshot item remains explicitly
+  /// a direct food and never becomes a recipe record.
+  Future<NutritionCalculationResult> previewDirectFood({
+    required String foodId,
+    required Quantity quantity,
+    String? preparationId,
+    String? itemId,
+  }) async {
+    final identity = foodId.trim();
+    if (identity.isEmpty) {
+      throw const NutritionRecipeLogError(
+        'missing_food_id',
+        'A direct-food calculation requires a portable food identity.',
+      );
+    }
+    try {
+      NutritionQuantityService.validatePositiveConsumedQuantity(quantity);
+    } on QuantityError catch (error) {
+      throw NutritionRecipeLogError(
+        'invalid_quantity',
+        error.toString(),
+        cause: error,
+      );
+    }
+    final food = await (_db.select(
+      _db.nutritionFoods,
+    )..where((row) => row.id.equals(identity))).getSingleOrNull();
+    if (food == null) {
+      throw const NutritionRecipeLogError(
+        'food_not_found',
+        'The selected direct food is no longer available.',
+      );
+    }
+    if (food.lifecycle != 'active') {
+      throw const NutritionRecipeLogError(
+        'inactive_food',
+        'Archived or unresolved foods cannot be used for a new thali.',
+      );
+    }
+    final preparation = preparationId?.trim();
+    final calculationIdentity =
+        'direct-food:$identity:${preparation == null || preparation.isEmpty ? 'default' : preparation}';
+    final ingredients = [
+      NutritionCalculationIngredient.directFood(
+        id: itemId?.trim().isNotEmpty == true
+            ? itemId!.trim()
+            : 'direct-food-line:$identity',
+        foodId: identity,
+        quantity: quantity,
+        position: 0,
+        preparationId: preparation == null || preparation.isEmpty
+            ? null
+            : preparation,
+        provenanceSource: food.sourceType,
+        nutrientFacts: await _readCurrentFacts(
+          foodId: identity,
+          preparationId: preparation == null || preparation.isEmpty
+              ? null
+              : preparation,
+        ),
+      ),
+    ];
+    try {
+      return _calculator.calculate(
+        NutritionCalculationRequest(
+          recipeId: calculationIdentity,
+          recipeVersionId: calculationIdentity,
+          ingredients: ingredients,
+          registry: _registry,
+          nutrientRegistryVersion: _registry.version,
+          calculationRuleVersion: 'direct-food-b03-13-v1',
+          requestedNutrientIds: _registry.definitions
+              .map((definition) => definition.id)
+              .toSet(),
+        ),
+      );
+    } on NutritionCalculationError catch (error) {
+      throw NutritionRecipeLogError.fromCalculation(error);
+    }
+  }
+
   Future<NutritionConsumptionSnapshot> finalize({
     required String userId,
     required NutritionRecipeLogPreview preview,
