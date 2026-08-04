@@ -17,6 +17,7 @@ import '../../data/repositories/nutrition_constraint_repository.dart';
 import '../../data/repositories/nutrition_consumption_repository.dart';
 import '../../data/repositories/nutrition_estimate_repository.dart';
 import '../../data/repositories/nutrition_household_measure_repository.dart';
+import '../../data/repositories/nutrition_protein_distribution_repository.dart';
 import '../../data/repositories/nutrition_read_model_repository.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
@@ -30,6 +31,7 @@ import '../../data/repositories/workout_repository.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
 import '../../features/food_log/nutrition_thali_controller.dart';
 import '../../features/food_log/saved_recipe_log_controller.dart';
+import '../../features/nutrition/protein_distribution_controller.dart';
 import '../../features/settings/nutrition_constraint_review_controller.dart';
 import '../../features/settings/nutrition_constraints_controller.dart';
 import '../config/app_config.dart';
@@ -226,6 +228,36 @@ final nutritionReadModelRepositoryProvider =
         canonicalRepository: consumption,
         legacyUserId: kLocalNutritionUserScopeId,
       );
+    });
+
+final nutritionProteinDistributionRepositoryProvider =
+    FutureProvider<NutritionProteinDistributionRepository>((ref) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      final history = await ref.watch(
+        nutritionReadModelRepositoryProvider.future,
+      );
+      return NutritionProteinDistributionRepository(
+        registry: registry,
+        history: history,
+      );
+    });
+
+final nutritionProteinDistributionControllerProvider = StateNotifierProvider
+    .autoDispose
+    .family<
+      NutritionProteinDistributionController,
+      NutritionProteinDistributionState,
+      String
+    >((ref, localDate) {
+      final controller = NutritionProteinDistributionController(
+        repository: ref.watch(
+          nutritionProteinDistributionRepositoryProvider.future,
+        ),
+        userId: kLocalNutritionUserScopeId,
+        localDate: localDate,
+      );
+      unawaited(controller.load());
+      return controller;
     });
 
 final savedRecipeLogControllerProvider =

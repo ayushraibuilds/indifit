@@ -16,6 +16,7 @@ import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../activity/b02_activity_controller.dart';
 import '../food_log/ai_meal_planner_screen.dart';
+import '../nutrition/protein_distribution_screen.dart';
 import '../settings/settings_screen.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
@@ -443,6 +444,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 logs: logs,
                                 selectedDate: state.selectedDate,
                                 unifiedDay: daily,
+                              ),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton.icon(
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ProteinDistributionScreen(
+                                        localDate: _localDateKey(
+                                          state.selectedDate,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.bar_chart_outlined),
+                                  label: const Text(
+                                    'View protein logged by meal',
+                                  ),
+                                ),
                               ),
                               const SizedBox(height: 16),
                               TodayWorkoutCard(
