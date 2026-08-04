@@ -168,11 +168,13 @@ void main() {
         records[2].quantity.state,
         NutritionHistoricalQuantityState.contextual,
       );
+      expect(records[2].quantity.isResolved, isFalse);
       expect(records[2].quantity.quantity!.unit, QuantityUnit.serving);
       expect(
         records[3].quantity.state,
         NutritionHistoricalQuantityState.unresolved,
       );
+      expect(records[3].quantity.isResolved, isFalse);
       expect(
         records[3].quantity.quantity!.unit,
         QuantityUnit.householdReference,
@@ -192,6 +194,71 @@ void main() {
       expect(
         records[3].issues.map((issue) => issue.code),
         contains(NutritionCompatibilityIssueCode.unsupportedQuantity),
+      );
+    },
+  );
+
+  test('single-row reads isolate normalized duplicate legacy UUIDs', () async {
+    await _insertLog(db, id: 1, uuid: 'duplicate-row', amount: 1);
+    await _insertLog(db, id: 2, uuid: ' duplicate-row ', amount: 2);
+
+    final first = await adapter.readFoodLog(legacyRowId: 1);
+    final second = await adapter.readFoodLog(legacyRowId: 2);
+
+    expect(first!.stableId, 'legacy-food-log:local-id:1');
+    expect(second!.stableId, 'legacy-food-log:local-id:2');
+    expect(
+      first.issues.map((issue) => issue.code),
+      contains(NutritionCompatibilityIssueCode.duplicateLegacyIdentity),
+    );
+  });
+
+  test(
+    'precision-overflow legacy quantities remain invalid and readable',
+    () async {
+      await _insertLog(db, id: 1, amount: 0.0000000000001, unit: 'g');
+
+      final record = (await adapter.readFoodLogs()).single;
+
+      expect(record.quantity.state, NutritionHistoricalQuantityState.invalid);
+      expect(record.quantity.quantity, isNull);
+      expect(
+        record.quantity.issues.map((issue) => issue.code),
+        contains(NutritionCompatibilityIssueCode.invalidStoredAmount),
+      );
+    },
+  );
+
+  test(
+    'orphan legacy template items fail as a typed relationship error',
+    () async {
+      await db.customStatement('PRAGMA foreign_keys = OFF');
+      await db
+          .into(db.mealTemplateItems)
+          .insert(
+            MealTemplateItemsCompanion.insert(
+              id: const Value(99),
+              templateId: 404,
+              name: 'Orphan item',
+              calories: 100,
+              proteinG: 4,
+              carbsG: 10,
+              fatG: 2,
+              servingLogged: 1,
+              servingUnit: 'piece',
+            ),
+          );
+      await db.customStatement('PRAGMA foreign_keys = ON');
+
+      expect(
+        adapter.readTemplates(),
+        throwsA(
+          isA<NutritionLegacyAdapterError>().having(
+            (error) => error.code,
+            'code',
+            'corrupt_legacy_relationship',
+          ),
+        ),
       );
     },
   );
@@ -341,6 +408,39 @@ void main() {
     },
   );
 
+  test(
+    'canonical and legacy IDs with the same text remain separate records',
+    () async {
+      await _insertLog(
+        db,
+        id: 1,
+        uuid: 'collision',
+        amount: 1,
+        unit: 'serving',
+      );
+      await _seedCanonicalSnapshot(
+        db,
+        registry,
+        consumptionId: 'legacy-food-log:uuid:collision',
+      );
+
+      final repository = NutritionReadModelRepository(
+        db: db,
+        registry: registry,
+      );
+      final records = await repository.listHistory(userId: 'user-1');
+
+      expect(records, hasLength(2));
+      expect(
+        records.map((record) => record.sourceType),
+        containsAll([
+          NutritionHistoricalSourceType.legacyFoodLog.stableId,
+          NutritionHistoricalSourceType.canonicalSnapshot.stableId,
+        ]),
+      );
+    },
+  );
+
   test('v5, v6, and v7 imports remain legacy-only and readable', () async {
     final current = await BackupV8Data.createFromDatabase(db);
     final base =
@@ -451,8 +551,9 @@ Future<void> _insertLog(
 
 Future<void> _seedCanonicalSnapshot(
   AppDatabase db,
-  NutrientRegistry registry,
-) async {
+  NutrientRegistry registry, {
+  String consumptionId = 'canonical-consumption-1',
+}) async {
   await db
       .into(db.nutritionFoods)
       .insert(
@@ -487,7 +588,7 @@ Future<void> _seedCanonicalSnapshot(
   await repository.finalizeConsumption(
     NutritionConsumptionFinalizeRequest(
       userId: 'user-1',
-      consumptionId: 'canonical-consumption-1',
+      consumptionId: consumptionId,
       commandId: 'canonical-command-1',
       loggedAtUtc: DateTime.utc(2026, 8, 4, 10),
       mealCategory: 'lunch',

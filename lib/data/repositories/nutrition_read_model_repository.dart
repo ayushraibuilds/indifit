@@ -140,7 +140,12 @@ class NutritionReadModelRepository {
   ) {
     final byId = <String, NutritionHistoricalReadRecord>{};
     for (final record in records) {
-      byId.putIfAbsent(record.stableId, () => record);
+      // Canonical IDs are user-provided portable IDs while legacy IDs are
+      // namespaced compatibility IDs. Keep the source namespace in the
+      // de-duplication key so a canonical ID cannot hide a legacy row with
+      // the same text.
+      final key = '${record.sourceType}\u0000${record.stableId}';
+      byId.putIfAbsent(key, () => record);
     }
     final result = byId.values.toList();
     result.sort((left, right) {

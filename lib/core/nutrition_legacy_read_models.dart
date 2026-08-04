@@ -136,7 +136,8 @@ class NutritionHistoricalQuantity {
     required this.issues,
   });
 
-  bool get isResolved => quantity != null;
+  bool get isResolved =>
+      state == NutritionHistoricalQuantityState.typed && quantity != null;
 }
 
 /// Common item shape consumed by history/daily-total UI.

@@ -23,6 +23,8 @@ that legacy writers or legacy storage have been retired.
 - Rows without a portable UUID, or with duplicate UUIDs, use the explicit
   namespaced local-row identity `legacy-food-log:local-id:<id>` and expose a
   compatibility issue.
+- Unified history de-duplicates within a source namespace, so a caller-chosen
+  canonical snapshot ID cannot hide a legacy record with the same text.
 - Templates and template items use namespaced local identities because the
   legacy tables do not contain portable IDs.
 - Food identity resolves only through an explicit reviewed
@@ -40,6 +42,10 @@ that legacy writers or legacy storage have been retired.
   performed.
 - Non-positive, non-finite, and unknown units remain invalid/unresolved and
   retain the stored value/unit.
+- Contextual servings and unresolved household references retain a typed
+  quantity object for display but are not reported as resolved quantities.
+- Precision-overflow legacy amounts remain readable as invalid compatibility
+  state rather than escaping the adapter as an exception.
 - Copied legacy energy, protein, carbohydrate, fat, and fibre values are read
   as legacy facts. A stored null remains missing; absent micronutrients remain
   missing; no current catalogue nutrient value is substituted. Completeness is
@@ -72,3 +78,5 @@ unsupported or invalid quantities, unknown nutrient values, legacy source
 coverage limits, unsupported template structures, corrupt relationships, and
 unsupported backup records are returned as explicit compatibility state. They
 are never converted into empty valid records or fabricated modern nutrition.
+Orphan template-item relationships are rejected with a typed corruption error
+instead of being silently omitted from the template read model.

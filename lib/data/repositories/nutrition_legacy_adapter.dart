@@ -47,15 +47,17 @@ class NutritionLegacyAdapter {
     DateTime? from,
     DateTime? to,
   }) async {
+    final fromUtc = from?.toUtc();
+    final toUtc = to?.toUtc();
     final rows =
         await (_db.select(_db.foodLogs)
               ..where((table) {
                 final predicates = <Expression<bool>>[];
-                if (from != null) {
-                  predicates.add(table.loggedAt.isBiggerOrEqualValue(from));
+                if (fromUtc != null) {
+                  predicates.add(table.loggedAt.isBiggerOrEqualValue(fromUtc));
                 }
-                if (to != null) {
-                  predicates.add(table.loggedAt.isSmallerThanValue(to));
+                if (toUtc != null) {
+                  predicates.add(table.loggedAt.isSmallerThanValue(toUtc));
                 }
                 if (predicates.isEmpty) return const Constant(true);
                 var result = predicates.first;
@@ -196,6 +198,17 @@ class NutritionLegacyAdapter {
               (table) => OrderingTerm(expression: table.id),
             ]))
             .get();
+    final templateIds = templates.map((template) => template.id).toSet();
+    final orphanItems = (await _db.select(_db.mealTemplateItems).get())
+        .where((item) => !templateIds.contains(item.templateId))
+        .toList(growable: false);
+    if (orphanItems.isNotEmpty) {
+      throw NutritionLegacyAdapterError(
+        'corrupt_legacy_relationship',
+        'Legacy template items reference missing templates: '
+            '${orphanItems.map((item) => item.id).join(', ')}.',
+      );
+    }
     return Future.wait(templates.map(adaptTemplate));
   }
 
@@ -460,8 +473,8 @@ class NutritionLegacyAdapter {
         ],
       );
     }
-    final amountValue = QuantityAmount.fromNum(amount);
     try {
+      final amountValue = QuantityAmount.fromNum(amount);
       if ({'serving', 'servings'}.contains(normalizedUnit)) {
         final quantity = Quantity.serving(
           amount: amountValue.toString(),
@@ -531,14 +544,21 @@ class NutritionLegacyAdapter {
         issues: const [],
       );
     } on QuantityError catch (error) {
+      final invalidAmount =
+          error is InvalidQuantityAmountError ||
+          error is PrecisionOverflowError;
       return NutritionHistoricalQuantity(
         storedAmount: amount,
         storedUnit: unit,
         quantity: null,
-        state: NutritionHistoricalQuantityState.unresolved,
+        state: invalidAmount
+            ? NutritionHistoricalQuantityState.invalid
+            : NutritionHistoricalQuantityState.unresolved,
         issues: [
           NutritionCompatibilityIssue(
-            code: NutritionCompatibilityIssueCode.unsupportedQuantity,
+            code: invalidAmount
+                ? NutritionCompatibilityIssueCode.invalidStoredAmount
+                : NutritionCompatibilityIssueCode.unsupportedQuantity,
             message: error.message,
             field: 'serving_unit',
           ),
@@ -618,8 +638,9 @@ class NutritionLegacyAdapter {
     if (value == null) return const {};
     final rows = await (_db.select(
       _db.foodLogs,
-    )..where((table) => table.uuid.equals(value))).get();
-    return rows.length > 1 ? {value} : const {};
+    )..where((table) => table.uuid.isNotNull())).get();
+    final count = rows.where((row) => _portableUuid(row.uuid) == value).length;
+    return count > 1 ? {value} : const {};
   }
 
   String _foodLogStableId(FoodLog row, Set<String> duplicatePortableIds) {
