@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/nutrients.dart';
+import '../../../core/nutrition_legacy_read_models.dart';
 import '../../../core/theme/colors.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/food_repository.dart';
@@ -15,11 +17,13 @@ import '../dashboard_controller.dart';
 class DashboardMealSection extends ConsumerWidget {
   final List<FoodLog> logs;
   final DateTime? selectedDate;
+  final NutritionDailyReadModel? unifiedDay;
 
   const DashboardMealSection({
     super.key,
     required this.logs,
     this.selectedDate,
+    this.unifiedDay,
   });
 
   @override
@@ -42,6 +46,7 @@ class DashboardMealSection extends ConsumerWidget {
           type: 'breakfast',
           allLogs: logs,
           selectedDate: selectedDate ?? DateTime.now(),
+          unifiedDay: unifiedDay,
         ),
         const SizedBox(height: 8),
         _MealCard(
@@ -49,6 +54,7 @@ class DashboardMealSection extends ConsumerWidget {
           type: 'lunch',
           allLogs: logs,
           selectedDate: selectedDate ?? DateTime.now(),
+          unifiedDay: unifiedDay,
         ),
         const SizedBox(height: 8),
         _MealCard(
@@ -56,6 +62,7 @@ class DashboardMealSection extends ConsumerWidget {
           type: 'dinner',
           allLogs: logs,
           selectedDate: selectedDate ?? DateTime.now(),
+          unifiedDay: unifiedDay,
         ),
         const SizedBox(height: 8),
         _MealCard(
@@ -63,6 +70,7 @@ class DashboardMealSection extends ConsumerWidget {
           type: 'snack',
           allLogs: logs,
           selectedDate: selectedDate ?? DateTime.now(),
+          unifiedDay: unifiedDay,
         ),
       ],
     );
@@ -74,12 +82,14 @@ class _MealCard extends ConsumerWidget {
   final String type;
   final List<FoodLog> allLogs;
   final DateTime selectedDate;
+  final NutritionDailyReadModel? unifiedDay;
 
   const _MealCard({
     required this.title,
     required this.type,
     required this.allLogs,
     required this.selectedDate,
+    required this.unifiedDay,
   });
 
   void _showAddMealSheet(BuildContext context, WidgetRef ref) {
@@ -509,7 +519,17 @@ class _MealCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mealLogs = allLogs.where((l) => l.mealType == type).toList();
-    int totalCals = mealLogs.fold(0, (sum, item) => sum + item.calories);
+    final recipeRecords = unifiedDay?.records
+        .where((record) => !record.isLegacy && record.mealCategory == type)
+        .toList(growable: false);
+    final recipeCalories = recipeRecords?.fold<double>(
+      0,
+      (sum, record) =>
+          sum + (record.totals.facts['energy']?.point?.value.asDouble ?? 0),
+    );
+    final totalCals =
+        mealLogs.fold(0, (sum, item) => sum + item.calories) +
+        (recipeCalories?.round() ?? 0);
 
     Color accentColor = AppColors.primary;
     IconData mealIcon = Icons.restaurant_rounded;
@@ -555,9 +575,9 @@ class _MealCard extends ConsumerWidget {
           ],
         ),
         subtitle: Text(
-          mealLogs.isEmpty
+          mealLogs.isEmpty && (recipeRecords?.isEmpty ?? true)
               ? 'Tap plus to log item'
-              : '${mealLogs.length} items logged',
+              : '${mealLogs.length + (recipeRecords?.length ?? 0)} items logged',
           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
         trailing: IconButton(
@@ -569,7 +589,7 @@ class _MealCard extends ConsumerWidget {
           vertical: 8.0,
         ),
         children: [
-          if (mealLogs.isEmpty)
+          if (mealLogs.isEmpty && (recipeRecords?.isEmpty ?? true))
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: Column(
@@ -662,6 +682,9 @@ class _MealCard extends ConsumerWidget {
             )
           else ...[
             ...mealLogs.map((log) => _LoggedItemRow(log: log)),
+            ...?recipeRecords?.map(
+              (record) => _CanonicalItemRow(record: record),
+            ),
             const Divider(color: AppColors.border, height: 20),
             Row(
               children: [
@@ -704,6 +727,86 @@ class _MealCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _CanonicalItemRow extends StatelessWidget {
+  final NutritionHistoricalReadRecord record;
+
+  const _CanonicalItemRow({required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    final item = record.items.isEmpty ? null : record.items.first;
+    final energy = record.totals.facts['energy'];
+    final version = item?.recipeVersionId;
+    final quantity = item?.quantity.quantity;
+    final amount = quantity == null
+        ? null
+        : '${quantity.amount} ${quantity.definition.stableId}';
+    final energyText = energy?.point == null
+        ? 'Energy unknown'
+        : '${energy!.point!.value.format(decimalPlaces: 0)} kcal';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.menu_book_rounded,
+            color: AppColors.primary,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  record.displayLabel,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  [
+                    'Saved recipe',
+                    if (version != null) 'version ${_shortId(version)}',
+                    ?amount,
+                    energyText,
+                  ].join(' • '),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                if (record.completeness.state !=
+                    NutrientCompletenessState.complete)
+                  Text(
+                    record.completeness.state.name,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.lock_outline_rounded,
+            size: 16,
+            color: AppColors.textMuted,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _shortId(String value) =>
+      value.length <= 12 ? value : '${value.substring(0, 8)}…';
 }
 
 class _LoggedItemRow extends ConsumerWidget {

@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
@@ -11,7 +13,10 @@ import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/nutrition_consumption_repository.dart';
 import '../../data/repositories/nutrition_household_measure_repository.dart';
+import '../../data/repositories/nutrition_read_model_repository.dart';
+import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
 import '../../data/repositories/nutrition_transformation_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
@@ -19,8 +24,11 @@ import '../../data/repositories/program_repository.dart';
 import '../../data/repositories/travel_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../../features/food_log/saved_recipe_log_controller.dart';
 import '../config/app_config.dart';
+import '../nutrients.dart';
 import '../nutrition_calculation_service.dart';
+import '../nutrition_household_measures.dart';
 import '../privacy/privacy_policy.dart';
 import '../services/local_schedule_date_service.dart';
 
@@ -53,6 +61,64 @@ final nutritionCalculationServiceProvider =
     Provider<NutritionCalculationService>(
       (_) => const NutritionCalculationService(),
     );
+
+/// The checked-in registry is loaded through Flutter's asset boundary so the
+/// mobile app does not depend on a development filesystem path.
+final nutritionRegistryProvider = FutureProvider<NutrientRegistry>((ref) async {
+  final raw = await rootBundle.loadString('assets/data/nutrient_registry.json');
+  return NutrientRegistry.fromJson(jsonDecode(raw));
+});
+
+final nutritionConsumptionRepositoryProvider =
+    FutureProvider<NutritionConsumptionRepository>((ref) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      return NutritionConsumptionRepository(
+        db: ref.watch(databaseProvider),
+        registry: registry,
+      );
+    });
+
+final nutritionRecipeLogCoordinatorProvider =
+    FutureProvider<NutritionRecipeLogCoordinator>((ref) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      final consumption = await ref.watch(
+        nutritionConsumptionRepositoryProvider.future,
+      );
+      return NutritionRecipeLogCoordinator(
+        db: ref.watch(databaseProvider),
+        recipes: ref.watch(nutritionRecipeRepositoryProvider),
+        calculator: ref.watch(nutritionCalculationServiceProvider),
+        consumption: consumption,
+        registry: registry,
+      );
+    });
+
+final nutritionReadModelRepositoryProvider =
+    FutureProvider<NutritionReadModelRepository>((ref) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      final consumption = await ref.watch(
+        nutritionConsumptionRepositoryProvider.future,
+      );
+      return NutritionReadModelRepository(
+        db: ref.watch(databaseProvider),
+        registry: registry,
+        canonicalRepository: consumption,
+        legacyUserId: kLocalNutritionUserScopeId,
+      );
+    });
+
+final savedRecipeLogControllerProvider =
+    StateNotifierProvider.autoDispose<
+      SavedRecipeLogController,
+      SavedRecipeLogState
+    >((ref) {
+      final controller = SavedRecipeLogController(
+        coordinator: ref.watch(nutritionRecipeLogCoordinatorProvider.future),
+        userId: kLocalNutritionUserScopeId,
+      );
+      unawaited(controller.loadRecipes());
+      return controller;
+    });
 
 final dioProvider = Provider<Dio>((ref) {
   // AppConfig.apiKey validates the build key and throws a deterministic StateError

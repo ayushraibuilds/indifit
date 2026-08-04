@@ -67,6 +67,7 @@ extension NutritionRecipeSourceKindValue on NutritionRecipeSourceKind {
 /// it is never inferred from a display name or local row ID.
 class NutritionRecipeSource {
   final NutritionRecipeSourceKind kind;
+
   /// An ancestry edge within the same recipe. Cross-recipe copies use
   /// [copiedFromVersionId] instead so the recipe version graph remains
   /// acyclic and scoped to one recipe.
@@ -923,6 +924,34 @@ class NutritionRecipeRepository {
       );
     }
     return version;
+  }
+
+  /// Returns published immutable versions that may be inspected for logging.
+  ///
+  /// Drafts are deliberately excluded from this read model. Archived versions
+  /// remain readable through [getVersion] for history, but are not offered as
+  /// new logging choices by the B03-12 coordinator.
+  Future<List<NutritionRecipeVersionModel>> listPublishedVersions(
+    String recipeId,
+  ) async {
+    final recipe = await _recipeById(recipeId);
+    if (recipe == null) return const [];
+    final rows =
+        await (_db.select(_db.nutritionRecipeVersions)
+              ..where(
+                (row) =>
+                    row.recipeId.equals(recipeId) &
+                    row.status.equals('published'),
+              )
+              ..orderBy([
+                (row) => OrderingTerm(
+                  expression: row.versionNumber,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+    await _validateRecipeGraph(recipe);
+    return Future.wait(rows.map((row) => _loadVersionGraph(recipe, row)));
   }
 
   /// Renaming the mutable recipe head never rewrites an immutable version or
