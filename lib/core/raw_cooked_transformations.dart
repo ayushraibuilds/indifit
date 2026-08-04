@@ -277,6 +277,16 @@ class NutritionTransformation {
 
   bool get isRangeOnly => !yieldRange.isPointKnown;
 
+  /// Only reviewed catalogue/reference rules and explicit user-measured
+  /// overrides are authoritative executable transformations. Other evidence
+  /// may be retained for review, but it cannot silently become a rule.
+  bool get isAuthoritativeExecutable =>
+      (reviewState == NutritionTransformationReviewState.reviewed &&
+          (source == NutritionTransformationSource.reviewedCatalogue ||
+              source == NutritionTransformationSource.publishedReference)) ||
+      (reviewState == NutritionTransformationReviewState.userOverride &&
+          source == NutritionTransformationSource.userMeasured);
+
   bool get crossesDimensions =>
       QuantityUnitRegistry.definitionFor(sourceUnit).dimension !=
       QuantityUnitRegistry.definitionFor(targetUnit).dimension;
@@ -292,6 +302,7 @@ class NutritionTransformation {
     'target_preparation_id': targetPreparationId,
     'target_state': targetState.stableId,
     'direction': direction.name,
+    'point_available': yieldRange.point != null,
     'evidence': evidence,
     'density_context_id': densityContextId,
     'supersedes_id': supersedesId,
@@ -612,6 +623,13 @@ class NutritionTransformationService {
       return const NutritionTransformationUnresolved(
         code: 'unresolved_transformation',
         message: 'The transformation evidence is unresolved.',
+      );
+    }
+    if (!transformation.isAuthoritativeExecutable) {
+      return const NutritionTransformationUnresolved(
+        code: 'unreviewed_transformation',
+        message:
+            'Only reviewed rules or explicit user-measured overrides may execute.',
       );
     }
     final appliedDirection = direction ?? transformation.direction;

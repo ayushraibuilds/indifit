@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/nutrition_legacy_corrections.dart';
 import '../../core/utils/app_logger.dart';
 import '../database/app_database.dart';
 
@@ -15,9 +16,17 @@ final foodRepositoryProvider = Provider<FoodRepository>((ref) {
 });
 
 class FoodRepository {
-  final AppDatabase _db;
+  static const String defaultLegacyUserId = 'legacy-local-user';
 
-  FoodRepository(this._db);
+  final AppDatabase _db;
+  final String _legacyUserId;
+
+  FoodRepository(this._db, {String legacyUserId = defaultLegacyUserId})
+    : _legacyUserId = legacyUserId.trim() {
+    if (_legacyUserId.isEmpty) {
+      throw ArgumentError.value(legacyUserId, 'legacyUserId');
+    }
+  }
 
   // 1. Search food items locally with simple fuzzy / contains query
   Future<List<FoodItem>> searchFoodLocal(String query) async {
@@ -207,18 +216,113 @@ class FoodRepository {
     required double fatG,
     required double servingLogged,
   }) async {
-    final count =
-        await (_db.update(_db.foodLogs)..where((t) => t.id.equals(id))).write(
-          FoodLogsCompanion(
-            name: Value(name),
-            calories: Value(calories),
-            proteinG: Value(proteinG),
-            carbsG: Value(carbsG),
-            fatG: Value(fatG),
-            servingLogged: Value(servingLogged),
+    _validateLegacyCorrectionValues(
+      name: name,
+      calories: calories,
+      proteinG: proteinG,
+      carbsG: carbsG,
+      fatG: fatG,
+      servingLogged: servingLogged,
+    );
+    final row = await (_db.select(
+      _db.foodLogs,
+    )..where((table) => table.id.equals(id))).getSingleOrNull();
+    if (row == null) return false;
+
+    final targetId = NutritionLegacyFoodLogCorrectionCodec.targetIdForRow(id);
+    final corrections =
+        await (_db.select(_db.nutritionUserCorrections)..where(
+              (table) =>
+                  table.userId.equals(_legacyUserId) &
+                  table.targetType.equals(
+                    NutritionLegacyFoodLogCorrectionCodec.targetType,
+                  ) &
+                  table.targetId.equals(targetId),
+            ))
+            .get();
+    corrections.sort((left, right) {
+      final created = left.createdAt.compareTo(right.createdAt);
+      return created == 0 ? left.id.compareTo(right.id) : created;
+    });
+
+    var previous = NutritionLegacyFoodLogProjection(
+      name: row.name,
+      calories: row.calories,
+      proteinG: row.proteinG,
+      carbsG: row.carbsG,
+      fatG: row.fatG,
+      servingLogged: row.servingLogged,
+    );
+    String? supersedesId;
+    for (final correction in corrections) {
+      final payload = NutritionLegacyFoodLogCorrectionCodec.decode(
+        correction.newValue,
+      );
+      previous = payload.projection;
+      supersedesId = correction.id;
+    }
+    final next = previous.copyWith(
+      name: name.trim(),
+      calories: calories,
+      proteinG: proteinG,
+      carbsG: carbsG,
+      fatG: fatG,
+      servingLogged: servingLogged,
+    );
+    if (next == previous) return true;
+
+    final correctionId = NutritionLegacyFoodLogCorrectionCodec.idFor(
+      targetId: targetId,
+      projection: next,
+    );
+    await _db
+        .into(_db.nutritionUserCorrections)
+        .insertOnConflictUpdate(
+          NutritionUserCorrectionsCompanion.insert(
+            id: correctionId,
+            userId: _legacyUserId,
+            targetType: NutritionLegacyFoodLogCorrectionCodec.targetType,
+            targetId: targetId,
+            field: NutritionLegacyFoodLogCorrectionCodec.field,
+            oldValue: Value(
+              NutritionLegacyFoodLogCorrectionCodec.encode(
+                projection: previous,
+                supersedesId: supersedesId,
+              ),
+            ),
+            newValue: Value(
+              NutritionLegacyFoodLogCorrectionCodec.encode(
+                projection: next,
+                supersedesId: supersedesId,
+              ),
+            ),
+            reason: 'User corrected a legacy food-log entry.',
+            source: NutritionLegacyFoodLogCorrectionCodec.source,
           ),
         );
-    return count > 0;
+    return true;
+  }
+
+  static void _validateLegacyCorrectionValues({
+    required String name,
+    required int calories,
+    required double proteinG,
+    required double carbsG,
+    required double fatG,
+    required double servingLogged,
+  }) {
+    if (name.trim().isEmpty ||
+        calories < 0 ||
+        !proteinG.isFinite ||
+        !carbsG.isFinite ||
+        !fatG.isFinite ||
+        !servingLogged.isFinite ||
+        proteinG < 0 ||
+        carbsG < 0 ||
+        fatG < 0 ||
+        servingLogged <= 0) {
+      throw ArgumentError('Legacy food-log corrections must be valid values.');
+    }
   }
 
   // 9. Copy meal group entries to target date / meal type

@@ -155,11 +155,6 @@ class NutritionTransformationRepository {
     NutritionTransformation transformation, {
     required String ownerScope,
   }) async {
-    if (transformation.yieldRange.point == null) {
-      throw const TransformationPersistenceError(
-        'The v17 conversion row requires a point factor; range-only transformations remain pure unresolved results.',
-      );
-    }
     await _validateIdentityReferences(transformation);
     final existing = await getById(transformation.id);
     if (existing != null) {
@@ -168,6 +163,15 @@ class NutritionTransformationRepository {
       );
     }
     try {
+      // Schema-v17 predates nullable conversion factors. Keep a deterministic
+      // positive storage anchor for SQLite's legacy NOT NULL column, while
+      // the provenance envelope records that no point exists. The read path
+      // restores the typed range-only state and never exposes the anchor as
+      // an exact point estimate.
+      final storageFactor =
+          transformation.yieldRange.point?.asDouble ??
+          transformation.yieldRange.lower?.asDouble ??
+          transformation.yieldRange.upper!.asDouble;
       await _db
           .into(_db.nutritionQuantityConversions)
           .insert(
@@ -181,7 +185,7 @@ class NutritionTransformationRepository {
               targetUnit: QuantityUnitRegistry.definitionFor(
                 transformation.targetUnit,
               ).stableId,
-              factor: transformation.yieldRange.point!.asDouble,
+              factor: storageFactor,
               lower: Value(transformation.yieldRange.lower?.asDouble),
               upper: Value(transformation.yieldRange.upper?.asDouble),
               method: transformation.method.stableId,
@@ -300,7 +304,9 @@ class NutritionTransformationRepository {
         targetUnit: QuantityUnitRegistry.fromStableId(row.targetUnit).unit,
         yieldRange: TransformationRange(
           lower: row.lower == null ? null : QuantityAmount.fromNum(row.lower!),
-          point: QuantityAmount.fromNum(row.factor),
+          point: metadata['point_available'] == false
+              ? null
+              : QuantityAmount.fromNum(row.factor),
           upper: row.upper == null ? null : QuantityAmount.fromNum(row.upper!),
         ),
         direction: nutritionTransformationDirectionFromStableId(

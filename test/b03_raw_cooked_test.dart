@@ -119,6 +119,39 @@ void main() {
       expect(result.upper!.amount.toString(), '290');
     });
 
+    test('unreviewed evidence cannot execute as an authoritative rule', () {
+      final estimated = _transformation(
+        source: NutritionTransformationSource.userEstimated,
+        reviewState: NutritionTransformationReviewState.userOverride,
+      );
+      final unresolved =
+          NutritionTransformationService.apply(
+                transformation: estimated,
+                sourceFoodId: estimated.sourceFoodId,
+                sourcePreparationId: estimated.sourcePreparationId,
+                input: Quantity.fromDecimal(
+                  amount: '100',
+                  unit: QuantityUnit.gram,
+                ),
+              )
+              as NutritionTransformationUnresolved;
+      expect(unresolved.code, 'unreviewed_transformation');
+
+      final measured = _transformation(
+        source: NutritionTransformationSource.userMeasured,
+        reviewState: NutritionTransformationReviewState.userOverride,
+      );
+      expect(
+        NutritionTransformationService.apply(
+          transformation: measured,
+          sourceFoodId: measured.sourceFoodId,
+          sourcePreparationId: measured.sourcePreparationId,
+          input: Quantity.fromDecimal(amount: '100', unit: QuantityUnit.gram),
+        ),
+        isA<NutritionTransformationApplied>(),
+      );
+    });
+
     test('invalid yields and bounds fail without clamping', () {
       expect(
         () => _transformation(yieldRange: _range(point: '0')),
@@ -431,6 +464,31 @@ void main() {
         } finally {
           await target.close();
         }
+      },
+    );
+
+    test(
+      'range-only user evidence round-trips without inventing a point',
+      () async {
+        final repository = NutritionTransformationRepository(db: db);
+        final transformation = _transformation(
+          id: 'range-only-user-transform',
+          sourceFoodId: 'user-rice',
+          sourcePreparationId: 'user-rice-raw',
+          targetFoodId: 'user-rice',
+          targetPreparationId: 'user-rice-cooked',
+          source: NutritionTransformationSource.userMeasured,
+          reviewState: NutritionTransformationReviewState.userOverride,
+          yieldRange: _range(lower: '2.1', upper: '2.9'),
+        );
+        await repository.createUserOverride(transformation);
+
+        final restored = await repository.getById(transformation.id);
+        expect(restored, isNotNull);
+        expect(restored!.yieldRange.point, isNull);
+        expect(restored.yieldRange.lower!.toString(), '2.1');
+        expect(restored.yieldRange.upper!.toString(), '2.9');
+        expect(restored.isRangeOnly, isTrue);
       },
     );
 

@@ -33,6 +33,7 @@ enum NutritionCompatibilityIssueCode {
   unknownNutrientValue,
   legacyNutrientCoverage,
   legacySourceUnknown,
+  legacyCorrectionApplied,
   unsupportedTemplateStructure,
   corruptLegacyRelationship,
   unsupportedBackupRecord,
@@ -63,6 +64,8 @@ extension NutritionCompatibilityIssueCodeContract
       'legacy_nutrient_coverage',
     NutritionCompatibilityIssueCode.legacySourceUnknown =>
       'legacy_source_unknown',
+    NutritionCompatibilityIssueCode.legacyCorrectionApplied =>
+      'legacy_correction_applied',
     NutritionCompatibilityIssueCode.unsupportedTemplateStructure =>
       'unsupported_template_structure',
     NutritionCompatibilityIssueCode.corruptLegacyRelationship =>
