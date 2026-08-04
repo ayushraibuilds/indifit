@@ -265,6 +265,45 @@ class NutritionRecipeLogCoordinator {
     required String commandId,
     bool allowPartial = false,
   }) async {
+    if (commandId.trim().isEmpty) {
+      throw const NutritionRecipeLogError(
+        'missing_command_id',
+        'A retryable finalization command ID is required.',
+      );
+    }
+
+    final request = _buildFinalizeRequest(
+      userId: userId,
+      preview: preview,
+      mealCategory: mealCategory,
+      loggedAt: loggedAt,
+      mealGroupId: mealGroupId,
+      localDate: localDate,
+      timezoneId: timezoneId,
+      consumptionId: consumptionId,
+      commandId: commandId,
+    );
+
+    // Re-acknowledge an already committed command before consulting mutable
+    // recipe lifecycle/head state. This is what makes a lost acknowledgement
+    // safe after a recipe is archived or a successor is published.
+    final existing = consumptionId == null
+        ? await _consumption.findByCommandId(
+            userId: userId,
+            commandId: commandId,
+          )
+        : await _consumption.getSnapshot(
+                userId: userId,
+                consumptionId: consumptionId,
+              ) ??
+              await _consumption.findByCommandId(
+                userId: userId,
+                commandId: commandId,
+              );
+    if (existing != null) {
+      return _submit(request);
+    }
+
     if ((preview.isPartial || preview.isUnknown) && !allowPartial) {
       throw const NutritionRecipeLogError(
         'partial_confirmation_required',
@@ -294,19 +333,27 @@ class NutritionRecipeLogCoordinator {
         'The preview does not belong to the selected immutable recipe version.',
       );
     }
-    if (commandId.trim().isEmpty) {
-      throw const NutritionRecipeLogError(
-        'missing_command_id',
-        'A retryable finalization command ID is required.',
-      );
-    }
+    return _submit(request);
+  }
 
+  NutritionConsumptionFinalizeRequest _buildFinalizeRequest({
+    required String userId,
+    required NutritionRecipeLogPreview preview,
+    required String mealCategory,
+    required DateTime loggedAt,
+    required String? mealGroupId,
+    required String? localDate,
+    required String? timezoneId,
+    required String? consumptionId,
+    required String commandId,
+  }) {
     final calculation =
         NutritionConsumptionCalculationSnapshot.fromRecipeResult(
           preview.calculation,
         );
     final itemId = '${consumptionId ?? commandId}::recipe';
-    final request = NutritionConsumptionFinalizeRequest(
+    final version = preview.version;
+    return NutritionConsumptionFinalizeRequest(
       userId: userId,
       consumptionId: consumptionId,
       commandId: commandId,
@@ -329,7 +376,7 @@ class NutritionRecipeLogCoordinator {
           position: 0,
           sourceType: 'recipe',
           recipeVersionId: version.id,
-          sourceReference: recipe.id,
+          sourceReference: preview.recipe.id,
           displayLabel: preview.recipe.name,
           quantity: _snapshotQuantity(version, preview.amount),
           calculation: calculation,
@@ -337,6 +384,11 @@ class NutritionRecipeLogCoordinator {
         ),
       ],
     );
+  }
+
+  Future<NutritionConsumptionSnapshot> _submit(
+    NutritionConsumptionFinalizeRequest request,
+  ) async {
     try {
       return await _consumption.finalizeConsumption(request);
     } on NutritionConsumptionError catch (error) {

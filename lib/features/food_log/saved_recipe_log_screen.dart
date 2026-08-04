@@ -332,14 +332,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                   ? () => controller.preview()
                   : state.errorCode == 'stale_recipe_version'
                   ? () => controller.preview()
-                  : () => controller.retryFinalize(
-                      mealCategory: widget.mealType,
-                      loggedAt: widget.selectedDate ?? DateTime.now(),
-                      localDate: _localDate(
-                        widget.selectedDate ?? DateTime.now(),
-                      ),
-                      timezoneId: DateTime.now().timeZoneName,
-                    ),
+                  : () => _retryFinalize(controller),
             ),
           if (state.status == SavedRecipeLogStatus.loadingPreview)
             const LinearProgressIndicator(),
@@ -366,14 +359,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                     child: ElevatedButton(
                       onPressed: isFinalizing
                           ? null
-                          : () => controller.finalize(
-                              mealCategory: widget.mealType,
-                              loggedAt: widget.selectedDate ?? DateTime.now(),
-                              localDate: _localDate(
-                                widget.selectedDate ?? DateTime.now(),
-                              ),
-                              timezoneId: DateTime.now().timeZoneName,
-                            ),
+                          : () => _finalize(controller),
                       child: Text(isFinalizing ? 'Saving…' : 'Confirm & log'),
                     ),
                   ),
@@ -568,6 +554,30 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
 
   void _backToRecipeList() {
     ref.read(savedRecipeLogControllerProvider.notifier).clearSelection();
+  }
+
+  void _finalize(SavedRecipeLogController controller) {
+    final loggedAt = widget.selectedDate ?? DateTime.now();
+    unawaited(
+      controller.finalize(
+        mealCategory: widget.mealType,
+        loggedAt: loggedAt,
+        localDate: _localDate(loggedAt),
+        timezoneId: loggedAt.timeZoneName,
+      ),
+    );
+  }
+
+  void _retryFinalize(SavedRecipeLogController controller) {
+    final loggedAt = widget.selectedDate ?? DateTime.now();
+    unawaited(
+      controller.retryFinalize(
+        mealCategory: widget.mealType,
+        loggedAt: loggedAt,
+        localDate: _localDate(loggedAt),
+        timezoneId: loggedAt.timeZoneName,
+      ),
+    );
   }
 
   String _formatDate(DateTime value) =>

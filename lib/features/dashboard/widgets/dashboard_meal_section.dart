@@ -519,17 +519,17 @@ class _MealCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mealLogs = allLogs.where((l) => l.mealType == type).toList();
-    final recipeRecords = unifiedDay?.records
+    final canonicalRecords = unifiedDay?.records
         .where((record) => !record.isLegacy && record.mealCategory == type)
         .toList(growable: false);
-    final recipeCalories = recipeRecords?.fold<double>(
+    final canonicalCalories = canonicalRecords?.fold<double>(
       0,
       (sum, record) =>
           sum + (record.totals.facts['energy']?.point?.value.asDouble ?? 0),
     );
     final totalCals =
         mealLogs.fold(0, (sum, item) => sum + item.calories) +
-        (recipeCalories?.round() ?? 0);
+        (canonicalCalories?.round() ?? 0);
 
     Color accentColor = AppColors.primary;
     IconData mealIcon = Icons.restaurant_rounded;
@@ -575,9 +575,9 @@ class _MealCard extends ConsumerWidget {
           ],
         ),
         subtitle: Text(
-          mealLogs.isEmpty && (recipeRecords?.isEmpty ?? true)
+          mealLogs.isEmpty && (canonicalRecords?.isEmpty ?? true)
               ? 'Tap plus to log item'
-              : '${mealLogs.length + (recipeRecords?.length ?? 0)} items logged',
+              : '${mealLogs.length + (canonicalRecords?.length ?? 0)} items logged',
           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
         trailing: IconButton(
@@ -589,7 +589,7 @@ class _MealCard extends ConsumerWidget {
           vertical: 8.0,
         ),
         children: [
-          if (mealLogs.isEmpty && (recipeRecords?.isEmpty ?? true))
+          if (mealLogs.isEmpty && (canonicalRecords?.isEmpty ?? true))
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12.0),
               child: Column(
@@ -682,7 +682,7 @@ class _MealCard extends ConsumerWidget {
             )
           else ...[
             ...mealLogs.map((log) => _LoggedItemRow(log: log)),
-            ...?recipeRecords?.map(
+            ...?canonicalRecords?.map(
               (record) => _CanonicalItemRow(record: record),
             ),
             const Divider(color: AppColors.border, height: 20),
@@ -739,6 +739,7 @@ class _CanonicalItemRow extends StatelessWidget {
     final item = record.items.isEmpty ? null : record.items.first;
     final energy = record.totals.facts['energy'];
     final version = item?.recipeVersionId;
+    final isRecipe = record.items.any((item) => item.recipeVersionId != null);
     final quantity = item?.quantity.quantity;
     final amount = quantity == null
         ? null
@@ -756,8 +757,8 @@ class _CanonicalItemRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.menu_book_rounded,
+          Icon(
+            isRecipe ? Icons.menu_book_rounded : Icons.restaurant_rounded,
             color: AppColors.primary,
             size: 18,
           ),
@@ -772,7 +773,7 @@ class _CanonicalItemRow extends StatelessWidget {
                 ),
                 Text(
                   [
-                    'Saved recipe',
+                    isRecipe ? 'Saved recipe' : 'Canonical food',
                     if (version != null) 'version ${_shortId(version)}',
                     ?amount,
                     energyText,

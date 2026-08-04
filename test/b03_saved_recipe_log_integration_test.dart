@@ -325,6 +325,49 @@ void main() {
       },
     );
 
+    test('idempotent acknowledgement retry survives recipe archival', () async {
+      final harness = await _Harness.create();
+      addTearDown(harness.close);
+      final published = await harness.published(
+        'archived-after-log',
+        'Archived after log',
+      );
+      final preview = await harness.coordinator.preview(
+        userId: harness.userId,
+        recipeId: published.recipe.id,
+        amount: NutritionRecipeLogAmount.wholeRecipe(),
+      );
+
+      final first = await harness.coordinator.finalize(
+        userId: harness.userId,
+        preview: preview,
+        mealCategory: 'lunch',
+        loggedAt: DateTime.utc(2026, 8, 4, 12),
+        localDate: '2026-08-04',
+        timezoneId: 'Asia/Kolkata',
+        commandId: 'archived-after-log-command',
+        allowPartial: true,
+      );
+      await harness.recipes.archiveRecipe(published.recipe.id);
+
+      final acknowledgementRetry = await harness.coordinator.finalize(
+        userId: harness.userId,
+        preview: preview,
+        mealCategory: 'lunch',
+        loggedAt: DateTime.utc(2026, 8, 4, 12),
+        localDate: '2026-08-04',
+        timezoneId: 'Asia/Kolkata',
+        commandId: 'archived-after-log-command',
+        allowPartial: false,
+      );
+
+      expect(acknowledgementRetry.id, first.id);
+      expect(
+        await harness.consumption.listAllForUser(userId: harness.userId),
+        hasLength(1),
+      );
+    });
+
     test(
       'changing the recipe head after preview produces a stale-version error',
       () async {
@@ -525,7 +568,7 @@ void main() {
 
         await controller.finalize(
           mealCategory: 'lunch',
-          loggedAt: DateTime.utc(2026, 8, 4, 12),
+          loggedAt: DateTime.utc(2026, 8, 4, 11, 59),
           localDate: '2026-08-04',
           timezoneId: 'Asia/Kolkata',
         );
@@ -543,6 +586,10 @@ void main() {
         expect(
           controller.state.savedSnapshot?.recipeVersionId,
           'controller-v1',
+        );
+        expect(
+          controller.state.savedSnapshot?.loggedAtUtc,
+          DateTime.utc(2026, 8, 4, 11, 59),
         );
       },
     );

@@ -102,6 +102,7 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
   final Uuid _uuid;
   String? _commandId;
   String? _consumptionId;
+  _SavedRecipeFinalizeContext? _pendingFinalization;
 
   SavedRecipeLogController({
     required Future<NutritionRecipeLogCoordinator> coordinator,
@@ -311,6 +312,13 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
     }
     _commandId ??= 'recipe-log:${_uuid.v4()}';
     _consumptionId ??= 'recipe-consumption:${_uuid.v4()}';
+    final finalization = _pendingFinalization ??= _SavedRecipeFinalizeContext(
+      mealCategory: mealCategory,
+      loggedAt: loggedAt,
+      mealGroupId: mealGroupId,
+      localDate: localDate,
+      timezoneId: timezoneId,
+    );
     state = state.copyWith(
       status: SavedRecipeLogStatus.finalizing,
       errorCode: null,
@@ -320,11 +328,11 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
       final saved = await (await _coordinatorFuture).finalize(
         userId: userId,
         preview: preview,
-        mealCategory: mealCategory,
-        loggedAt: loggedAt,
-        mealGroupId: mealGroupId,
-        localDate: localDate,
-        timezoneId: timezoneId,
+        mealCategory: finalization.mealCategory,
+        loggedAt: finalization.loggedAt,
+        mealGroupId: finalization.mealGroupId,
+        localDate: finalization.localDate,
+        timezoneId: finalization.timezoneId,
         consumptionId: _consumptionId,
         commandId: _commandId!,
         allowPartial: state.partialAcknowledged,
@@ -399,5 +407,25 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
   void _resetCommand() {
     _commandId = null;
     _consumptionId = null;
+    _pendingFinalization = null;
   }
+}
+
+/// The finalization payload is part of the idempotency identity. Keep the
+/// first accepted values for the lifetime of the pending log intent so a
+/// retry cannot drift across a clock tick, local-date boundary, or rebuild.
+class _SavedRecipeFinalizeContext {
+  final String mealCategory;
+  final DateTime loggedAt;
+  final String? mealGroupId;
+  final String? localDate;
+  final String? timezoneId;
+
+  const _SavedRecipeFinalizeContext({
+    required this.mealCategory,
+    required this.loggedAt,
+    required this.mealGroupId,
+    required this.localDate,
+    required this.timezoneId,
+  });
 }

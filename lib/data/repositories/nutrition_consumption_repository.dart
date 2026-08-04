@@ -272,6 +272,22 @@ class NutritionConsumptionRepository {
     return row == null ? null : _readSnapshot(row.id, userId);
   }
 
+  /// Looks up a committed command without resolving any mutable source data.
+  ///
+  /// Integration callers use this only to preserve the B03-11A idempotency
+  /// path when acknowledgement is retried after the source object changes.
+  Future<NutritionConsumptionSnapshot?> findByCommandId({
+    required String userId,
+    required String commandId,
+  }) {
+    final normalizedUserId = userId.trim();
+    final normalizedCommandId = commandId.trim();
+    if (normalizedUserId.isEmpty || normalizedCommandId.isEmpty) {
+      return Future.value(null);
+    }
+    return _findByCommand(normalizedUserId, normalizedCommandId);
+  }
+
   Future<List<NutritionConsumptionSnapshot>> listForLocalDate({
     required String userId,
     required String localDate,
