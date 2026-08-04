@@ -296,8 +296,8 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
     required String mealCategory,
     required DateTime loggedAt,
     String? mealGroupId,
-    String? localDate,
-    String? timezoneId,
+    required String localDate,
+    required String timezoneId,
   }) async {
     final preview = state.preview;
     if (preview == null) {
@@ -352,8 +352,8 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
     required String mealCategory,
     required DateTime loggedAt,
     String? mealGroupId,
-    String? localDate,
-    String? timezoneId,
+    required String localDate,
+    required String timezoneId,
   }) => finalize(
     mealCategory: mealCategory,
     loggedAt: loggedAt,
@@ -418,8 +418,8 @@ class _SavedRecipeFinalizeContext {
   final String mealCategory;
   final DateTime loggedAt;
   final String? mealGroupId;
-  final String? localDate;
-  final String? timezoneId;
+  final String localDate;
+  final String timezoneId;
 
   const _SavedRecipeFinalizeContext({
     required this.mealCategory,

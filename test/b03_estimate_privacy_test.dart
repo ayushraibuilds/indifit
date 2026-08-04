@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_estimates.dart';
 import 'package:indifit/core/privacy/nutrition_estimate_privacy.dart';
+import 'package:indifit/core/services/local_timezone_service.dart';
 
 void main() {
   test(
@@ -169,4 +170,35 @@ void main() {
       throwsA(isA<NutritionEstimatePrivacyError>()),
     );
   });
+
+  test(
+    'provider fallback is unavailable and platform timezone is typed',
+    () async {
+      final registry = NutrientRegistry.fromAssetFileSync(
+        'assets/data/nutrient_registry.json',
+      );
+      expect(
+        () => NutritionEstimateResponseParser.parseProviderPayload(
+          const {'is_fallback': true},
+          registry: registry,
+          inputModality: NutritionEstimateInputModality.text,
+          inputHash: 'hash',
+        ),
+        throwsA(
+          isA<NutritionEstimateValidationError>().having(
+            (error) => error.code,
+            'code',
+            'estimate_unavailable_offline',
+          ),
+        ),
+      );
+
+      final service = LocalTimezoneService(read: () async => 'Asia/Kolkata');
+      expect(await service.currentTimezoneId(), 'Asia/Kolkata');
+      await expectLater(
+        LocalTimezoneService(read: () async => 'IST').currentTimezoneId(),
+        throwsA(isA<LocalTimezoneError>()),
+      );
+    },
+  );
 }

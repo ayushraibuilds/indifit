@@ -404,8 +404,8 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
   Future<void> finalize({
     required DateTime loggedAt,
     String? mealGroupId,
-    String? localDate,
-    String? timezoneId,
+    required String localDate,
+    required String timezoneId,
   }) async {
     final preview = state.preview;
     if (preview == null || state.dirty) {
@@ -500,11 +500,23 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       case _NutritionThaliRetryAction.preview:
         await preview();
       case _NutritionThaliRetryAction.finalize:
+        final storedDate = localDate ?? _finalizeContext?.localDate;
+        final storedTimezone = timezoneId ?? _finalizeContext?.timezoneId;
+        if (storedDate == null || storedTimezone == null) {
+          _fail(
+            const NutritionThaliValidationError(
+              'missing_local_time_context',
+              'Retry requires the original local date and timezone.',
+            ),
+            action: _NutritionThaliRetryAction.finalize,
+          );
+          return;
+        }
         await finalize(
           loggedAt: loggedAt ?? _finalizeContext?.loggedAt ?? DateTime.now(),
           mealGroupId: mealGroupId ?? _finalizeContext?.mealGroupId,
-          localDate: localDate ?? _finalizeContext?.localDate,
-          timezoneId: timezoneId ?? _finalizeContext?.timezoneId,
+          localDate: storedDate,
+          timezoneId: storedTimezone,
         );
       case _NutritionThaliRetryAction.none:
         break;
@@ -601,8 +613,8 @@ enum _NutritionThaliRetryAction {
 class _NutritionThaliFinalizeContext {
   final DateTime loggedAt;
   final String? mealGroupId;
-  final String? localDate;
-  final String? timezoneId;
+  final String localDate;
+  final String timezoneId;
 
   const _NutritionThaliFinalizeContext({
     required this.loggedAt,

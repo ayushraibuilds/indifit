@@ -238,7 +238,6 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       await _persistResponse(
         response.data,
         inputModality: NutritionEstimateInputModality.text,
-        userDescription: description,
         inputHash: nutritionEstimateInputHash(description),
       );
     } catch (error) {
@@ -298,6 +297,15 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
           'The estimation service returned no usable estimate.',
         );
       }
+      final cleanup = await _cleanupSelectedImage(
+        lifecycle: NutritionEstimateImageLifecycle.completed,
+      );
+      if (cleanup == null || !cleanup.succeeded) {
+        throw const NutritionEstimatePrivacyError(
+          'temporary_image_cleanup_required',
+          'The temporary meal photo must be deleted before the estimate can be saved.',
+        );
+      }
       await _persistResponse(
         response.data,
         inputModality: NutritionEstimateInputModality.photo,
@@ -321,18 +329,16 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     Object? response, {
     required NutritionEstimateInputModality inputModality,
     required String inputHash,
-    String? userDescription,
   }) async {
     final registry = await ref.read(nutritionRegistryProvider.future);
     final repository = await ref.read(
       nutritionEstimateRepositoryProvider.future,
     );
-    final draft = NutritionEstimateLegacyResponseAdapter.fromResponse(
+    final draft = NutritionEstimateResponseParser.parseProviderPayload(
       response,
       registry: registry,
       inputModality: inputModality,
       inputHash: inputHash,
-      userDescription: userDescription,
     );
     final estimate = await repository.createEstimateFromDraft(
       draft: draft,
@@ -495,14 +501,20 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         nutritionEstimateFinalizationServiceProvider.future,
       );
       final loggedAt = (widget.selectedDate ?? DateTime.now()).toUtc();
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      final localDate = ref
+          .read(localScheduleDateServiceProvider)
+          .localDateFor(loggedAt, timezoneId);
       await finalizer.finalizeEstimate(
         userId: kLocalNutritionUserScopeId,
         estimateId: selected.id,
         mealCategory: widget.mealType,
         quantity: quantity,
         loggedAtUtc: loggedAt,
-        localDate: DateFormat('yyyy-MM-dd').format(loggedAt.toLocal()),
-        timezoneId: DateTime.now().timeZoneName,
+        localDate: localDate,
+        timezoneId: timezoneId,
         commandId: 'ai-meal-finalize::${selected.id}',
         consumptionId: 'ai-meal-consumption::${selected.id}',
         displayLabel: selected.displayLabel,

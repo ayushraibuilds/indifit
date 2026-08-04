@@ -41,6 +41,7 @@ import '../nutrition_household_measures.dart';
 import '../privacy/nutrition_estimate_privacy.dart';
 import '../privacy/privacy_policy.dart';
 import '../services/local_schedule_date_service.dart';
+import '../services/local_timezone_service.dart';
 
 export 'user_profile_provider.dart';
 
@@ -510,6 +511,12 @@ final localScheduleDateServiceProvider = Provider<LocalScheduleDateService>((
   ref,
 ) {
   return LocalScheduleDateService();
+});
+
+final localTimezoneServiceProvider = Provider<LocalTimezoneService>((ref) {
+  return LocalTimezoneService(
+    dates: ref.watch(localScheduleDateServiceProvider),
+  );
 });
 
 final programActivationCoordinatorProvider =

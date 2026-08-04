@@ -403,10 +403,13 @@ class NutritionThaliRepository {
     required String commandId,
     String? consumptionId,
     String? mealGroupId,
-    String? localDate,
-    String? timezoneId,
+    required String localDate,
+    required String timezoneId,
     bool allowPartial = false,
     NutritionConstraintAcknowledgement? acknowledgement,
+    String? supersedesSnapshotId,
+    String? correctionId,
+    String? correctionReason,
   }) async {
     if (commandId.trim().isEmpty) {
       throw const NutritionThaliValidationError(
@@ -451,6 +454,9 @@ class NutritionThaliRepository {
           thaliId: preview.draft.id,
           localDate: localDate,
           timezoneId: timezoneId,
+          supersedesSnapshotId: supersedesSnapshotId,
+          correctionId: correctionId,
+          correctionReason: correctionReason,
           calculatorVersion: preview.calculationVersion,
           items: items,
           evidence: preview.evidence,

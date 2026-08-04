@@ -347,6 +347,9 @@ class NutritionRecipeLogCoordinator {
     String? consumptionId,
     required String commandId,
     bool allowPartial = false,
+    String? supersedesSnapshotId,
+    String? correctionId,
+    String? correctionReason,
   }) async {
     if (commandId.trim().isEmpty) {
       throw const NutritionRecipeLogError(
@@ -365,6 +368,9 @@ class NutritionRecipeLogCoordinator {
       timezoneId: timezoneId,
       consumptionId: consumptionId,
       commandId: commandId,
+      supersedesSnapshotId: supersedesSnapshotId,
+      correctionId: correctionId,
+      correctionReason: correctionReason,
     );
 
     // Re-acknowledge an already committed command before consulting mutable
@@ -429,6 +435,9 @@ class NutritionRecipeLogCoordinator {
     required String? timezoneId,
     required String? consumptionId,
     required String commandId,
+    required String? supersedesSnapshotId,
+    required String? correctionId,
+    required String? correctionReason,
   }) {
     final calculation =
         NutritionConsumptionCalculationSnapshot.fromRecipeResult(
@@ -447,6 +456,9 @@ class NutritionRecipeLogCoordinator {
       recipeVersionId: version.id,
       localDate: localDate,
       timezoneId: timezoneId,
+      supersedesSnapshotId: supersedesSnapshotId,
+      correctionId: correctionId,
+      correctionReason: correctionReason,
       calculatorVersion: preview.calculation.calculationRuleVersion,
       evidence: {
         ...preview.evidence,

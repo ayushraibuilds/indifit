@@ -865,6 +865,39 @@ class NutritionEstimateResponseParser {
     }
   }
 
+  /// Parses the provider boundary used by the production estimate flow.
+  ///
+  /// The current service may still return the pre-B03 flat envelope, but that
+  /// compatibility conversion is kept at this wire boundary. Durable writes
+  /// receive only the provider-neutral typed draft returned from this method.
+  /// A provider/offline fallback is an unavailable result, never a valid
+  /// estimate with fabricated nutrient values.
+  static NutritionEstimateDraft parseProviderPayload(
+    Object? raw, {
+    required NutrientRegistry registry,
+    required NutritionEstimateInputModality inputModality,
+    required String inputHash,
+  }) {
+    if (raw is Map && raw['is_fallback'] == true) {
+      throw const NutritionEstimateValidationError(
+        'estimate_unavailable_offline',
+        'No supported estimate is available in offline mode.',
+      );
+    }
+    if (raw is Map &&
+        raw['subject'] is Map &&
+        raw['provenance'] is Map &&
+        raw['nutrients'] is List) {
+      return parse(raw, registry: registry);
+    }
+    return NutritionEstimateLegacyResponseAdapter.fromResponse(
+      raw,
+      registry: registry,
+      inputModality: inputModality,
+      inputHash: inputHash,
+    );
+  }
+
   static NutrientSourceType _parseSource(String value) {
     return NutrientSourceContract.fromStableId(value);
   }
@@ -985,10 +1018,13 @@ class NutritionEstimateLegacyResponseAdapter {
         'The existing estimate response has no display label.',
       );
     }
-    final fallback = json['is_fallback'] == true;
-    final confidence = fallback
-        ? NutrientConfidence.unknown
-        : NutrientConfidence.medium;
+    if (json['is_fallback'] == true) {
+      throw const NutritionEstimateValidationError(
+        'estimate_unavailable_offline',
+        'No supported estimate is available in offline mode.',
+      );
+    }
+    const confidence = NutrientConfidence.medium;
     final values = <String, Object?>{
       'energy': json['calories'],
       'protein': json['protein'],
@@ -1043,7 +1079,7 @@ class NutritionEstimateLegacyResponseAdapter {
       selectedCandidateId: selectedCandidate is String
           ? selectedCandidate
           : null,
-      processingStatus: fallback ? 'fallback' : 'completed',
+      processingStatus: 'completed',
       assumptions: const [
         'The existing flat response has no defensible nutrient bounds.',
         'Provider candidate IDs are provenance only and are not food identity.',

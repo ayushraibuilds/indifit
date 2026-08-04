@@ -459,6 +459,8 @@ void main() {
         commandId: 'lineage-finalize',
         consumptionId: 'lineage-consumption',
         loggedAtUtc: DateTime.utc(2026, 8, 4, 19),
+        localDate: '2026-08-05',
+        timezoneId: 'Asia/Kolkata',
       );
 
       final requestEvidence =
