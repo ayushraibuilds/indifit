@@ -273,6 +273,104 @@ void main() {
     );
 
     test(
+      'bounded vessel quantities retain dimensional and calibration lineage in history',
+      () async {
+        final harness = await _ThaliHarness.create();
+        addTearDown(harness.close);
+        await _insertVolumeFood(harness.db, 'food-milk', 50, 'Milk');
+        final measures = NutritionHouseholdMeasureRepository(db: harness.db);
+        final vessel = await measures.createVessel(
+          userId: harness.userId,
+          displayName: 'Measured cup',
+          portableId: 'vessel-a',
+        );
+        final calibration = await measures.addCalibration(
+          userId: harness.userId,
+          vesselId: vessel.id,
+          volume: Quantity.fromNum(amount: 200, unit: QuantityUnit.millilitre),
+          lower: QuantityAmount.fromNum(180),
+          upper: QuantityAmount.fromNum(220),
+          method: 'water fill',
+          portableId: 'calibration-a',
+        );
+        final draft = await harness.repository.saveDraft(
+          harness.repository.newDraft(
+            userId: harness.userId,
+            items: [
+              NutritionThaliItem(
+                id: 'item-milk',
+                position: 0,
+                source: NutritionThaliItemSource.food,
+                foodId: 'food-milk',
+                recipeVersionId: null,
+                quantity: Quantity.householdReference(
+                  count: '1',
+                  reference: HouseholdMeasureReference(measureType: vessel.id),
+                ),
+                measureId: vessel.id,
+                displayLabel: 'Milk',
+              ),
+            ],
+          ),
+        );
+
+        final preview = await harness.repository.preview(draft: draft);
+        final resolved = preview.items.single.resolvedQuantity;
+        expect(resolved.calculationQuantity.unit, QuantityUnit.millilitre);
+        expect(
+          resolved.calculationQuantity.amount,
+          QuantityAmount.fromNum(200),
+        );
+        expect(resolved.original.unit, QuantityUnit.householdReference);
+        expect(
+          resolved.original.context.householdMeasure!.calibrationId,
+          calibration.id,
+        );
+        expect(
+          resolved.original.context.householdMeasure!.resolutionState,
+          HouseholdResolutionState.volumeResolved,
+        );
+        expect(resolved.original.context.approximate, isTrue);
+        final volume = resolved.evidence['volume'] as Map;
+        expect(volume['lower'], '180');
+        expect(volume['point'], '200');
+        expect(volume['upper'], '220');
+
+        final snapshot = await harness.repository.finalize(
+          preview: preview,
+          mealCategory: 'breakfast',
+          loggedAt: DateTime.utc(2026, 8, 4, 8),
+          commandId: 'thali-volume-command',
+          consumptionId: 'thali-volume-consumption',
+          allowPartial: true,
+        );
+        final historicalQuantity = snapshot.items.single.quantity;
+        expect(historicalQuantity.unit, QuantityUnit.householdReference);
+        expect(historicalQuantity.amount, QuantityAmount.one);
+        expect(
+          historicalQuantity.context.householdMeasure!.calibrationId,
+          calibration.id,
+        );
+        expect(historicalQuantity.context.approximate, isTrue);
+        final itemLineage =
+            snapshot.lineage.evidence['items'] as Map<String, dynamic>;
+        final itemEvidence =
+            (itemLineage['item-milk'] as Map<String, dynamic>)['evidence']
+                as Map<String, dynamic>;
+        expect(itemEvidence['quantity_evidence'], isNotNull);
+        expect(
+          (itemEvidence['measure'] as Map<String, dynamic>)['calibration_id'],
+          calibration.id,
+        );
+        expect(
+          (itemEvidence['measure']
+              as Map<String, dynamic>)['calibration_version'],
+          calibration.version,
+        );
+      },
+    );
+
+    test(
       'dietary evaluation stays component-scoped and acknowledgement is explicit',
       () async {
         final harness = await _ThaliHarness.create();
@@ -350,6 +448,69 @@ void main() {
           saved.constraintEvaluation!.evaluations.single.acknowledged,
           isTrue,
         );
+      },
+    );
+
+    test(
+      'duplicate thali components receive distinct constraint evidence identities',
+      () async {
+        final harness = await _ThaliHarness.create();
+        addTearDown(harness.close);
+        final constraints = NutritionConstraintRepository(database: harness.db);
+        final target = NutritionConstraintTarget(
+          type: NutritionConstraintTargetType.allergen,
+          id: 'milk',
+        );
+        final timestamp = DateTime.utc(2026, 8, 4);
+        await constraints.createConstraint(
+          NutritionUserConstraint(
+            id: 'constraint-duplicate-milk',
+            userId: harness.userId,
+            definitionId: NutritionConstraintTaxonomy.definitionForType(
+              NutritionConstraintType.allergy,
+            ).id,
+            type: NutritionConstraintType.allergy,
+            target: target,
+            strictness: NutritionConstraintStrictness.avoid,
+            effectiveFrom: timestamp,
+            source: NutritionConstraintSource.userEntered,
+            createdAtUtc: timestamp,
+            updatedAtUtc: timestamp,
+          ),
+        );
+        await constraints.recordFoodEvidence(
+          foodId: 'food-a',
+          evidence: NutritionConstraintEvidence(
+            id: 'food-a-milk-evidence',
+            subjectId: 'food-a',
+            target: target,
+            status: NutritionConstraintEvidenceStatus.confirmed,
+            source:
+                NutritionConstraintEvidenceSource.reviewedAllergenDeclaration,
+          ),
+        );
+
+        final draft = await harness.repository.saveDraft(
+          harness.repository.newDraft(
+            userId: harness.userId,
+            items: [
+              harness.foodItem('food-a', 0),
+              harness.foodItem('food-a', 1),
+            ],
+          ),
+        );
+        final preview = await harness.repository.preview(draft: draft);
+        final result = preview.constraintEvaluation!.evaluations.single;
+        expect(result.outcome, NutritionConstraintOutcome.confirmedConflict);
+        expect(result.evidence, hasLength(2));
+        expect(
+          result.evidence.map((item) => item.evidenceId).toSet(),
+          hasLength(2),
+        );
+        expect(result.evidence.map((item) => item.ingredientLineage).toSet(), {
+          'item-a',
+          'item-b',
+        });
       },
     );
   });
@@ -496,6 +657,43 @@ Future<void> _insertFood(
           basis: 'per_100_grams',
           basisQuantity: const Value(100),
           basisUnit: const Value('gram'),
+          amount: Value(energy),
+          isCurrent: const Value(true),
+        ),
+      );
+}
+
+Future<void> _insertVolumeFood(
+  AppDatabase db,
+  String id,
+  double energy,
+  String displayName,
+) async {
+  await db
+      .into(db.nutritionFoods)
+      .insert(
+        NutritionFoodsCompanion.insert(
+          id: id,
+          kind: 'canonical',
+          displayName: displayName,
+          locale: 'en-IN',
+          sourceType: 'fixture',
+          lifecycle: 'active',
+        ),
+      );
+  await db
+      .into(db.nutritionFoodNutrientFacts)
+      .insert(
+        NutritionFoodNutrientFactsCompanion.insert(
+          id: '$id-energy-v1',
+          foodId: id,
+          nutrientId: 'energy',
+          status: 'known',
+          source: 'reviewed_catalogue',
+          factVersion: 1,
+          basis: 'per_100_millilitres',
+          basisQuantity: const Value(100),
+          basisUnit: const Value('millilitre'),
           amount: Value(energy),
           isCurrent: const Value(true),
         ),

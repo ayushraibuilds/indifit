@@ -401,6 +401,12 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             ),
             const SizedBox(height: 4),
             Text(nutritionState),
+            for (final item in preview.items)
+              Text(
+                '${item.displayLabel}: ${_previewQuantityLabel(item)}',
+                semanticsLabel:
+                    '${item.displayLabel} quantity ${_previewQuantityLabel(item)}',
+              ),
             if (preview.hasUnresolvedInputs)
               const Text('One or more quantity inputs still need context.'),
             const SizedBox(height: 6),
@@ -652,7 +658,19 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   }
 
   String _quantityLabel(Quantity quantity) =>
-      '${quantity.amount} ${QuantityUnitRegistry.definitionFor(quantity.unit).symbol}';
+      '${quantity.amount} ${QuantityUnitRegistry.definitionFor(quantity.unit).symbol}${quantity.context.approximate ? ' (approximate)' : ''}';
+
+  String _previewQuantityLabel(NutritionThaliItemPreview item) {
+    final quantity = _quantityLabel(item.resolvedQuantity.original);
+    final volume = item.resolvedQuantity.evidence['volume'];
+    if (volume is Map && (volume['lower'] != null || volume['upper'] != null)) {
+      final lower = volume['lower'] ?? '?';
+      final upper = volume['upper'] ?? '?';
+      final point = volume['point'] ?? '?';
+      return '$quantity · volume $lower–$upper ml (point $point ml)';
+    }
+    return quantity;
+  }
 
   String _measureLabel(NutritionThaliItem item, NutritionThaliState state) {
     final id = item.measureId;

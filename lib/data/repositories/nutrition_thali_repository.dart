@@ -245,6 +245,7 @@ class NutritionThaliRepository {
     }
     final now = _nowUtc();
     final version = existing == null ? 1 : existing.currentVersion + 1;
+    final persistedMeasureIds = await _persistedMeasureIds(draft);
     try {
       await _db.transaction(() async {
         if (existing == null) {
@@ -293,7 +294,10 @@ class NutritionThaliRepository {
                     quantityValue: item.quantity.amount.asDouble,
                     quantityDimension: _dimensionId(item.quantity.dimension),
                     quantityUnit: _databaseUnitId(item.quantity.unit),
-                    measureId: Value(item.measureId),
+                    // This schema projection references reviewed standard
+                    // measures only. Personal vessel and unresolved measure
+                    // identities remain in the typed quantity envelope.
+                    measureId: Value(persistedMeasureIds[item.id]),
                     optional: Value(item.optional),
                     notes: Value(_encodeItemNotes(item)),
                     createdAt: Value(now),
@@ -661,8 +665,13 @@ class NutritionThaliRepository {
         approximate: volume.isRange,
       ),
     );
+    final originalQuantity = _resolvedOriginalQuantity(
+      item.quantity,
+      calibrationId: conversion.calibrationId,
+      approximate: volume.isRange,
+    );
     return NutritionThaliResolvedQuantity(
-      original: item.quantity,
+      original: originalQuantity,
       calculationQuantity: calculationQuantity,
       measureId: measureId,
       evidence: {
@@ -692,9 +701,7 @@ class NutritionThaliRepository {
           NutritionConstraintSubjectLine(
             id: item.id,
             foodId: item.foodId!,
-            evidence: evidence.map(
-              (value) => value.copyWith(ingredientLineage: item.id),
-            ),
+            evidence: evidence.map((value) => _qualifyEvidence(value, item.id)),
           ),
         );
         continue;
@@ -713,9 +720,7 @@ class NutritionThaliRepository {
           NutritionConstraintSubjectLine(
             id: lineId,
             foodId: ingredient.foodId,
-            evidence: evidence.map(
-              (value) => value.copyWith(ingredientLineage: lineId),
-            ),
+            evidence: evidence.map((value) => _qualifyEvidence(value, lineId)),
           ),
         );
       }
@@ -885,7 +890,9 @@ class NutritionThaliRepository {
       foodId: row.foodId,
       recipeVersionId: row.recipeVersionId,
       quantity: quantity,
-      measureId: row.measureId,
+      measureId:
+          row.measureId ??
+          storedQuantity?.context.householdMeasure?.measureType,
       optional: row.optional,
       notes: decoded.notes,
       displayLabel: label,
@@ -967,6 +974,24 @@ class NutritionThaliRepository {
     'quantity': item.quantity.toJson(),
   });
 
+  Future<Map<String, String?>> _persistedMeasureIds(
+    NutritionThaliDraft draft,
+  ) async {
+    final ids = <String, String?>{};
+    for (final item in draft.items) {
+      final measureId = item.measureId?.trim();
+      if (measureId == null || measureId.isEmpty) {
+        ids[item.id] = null;
+        continue;
+      }
+      final standard = await (_db.select(
+        _db.nutritionHouseholdMeasures,
+      )..where((row) => row.id.equals(measureId))).getSingleOrNull();
+      ids[item.id] = standard == null ? null : measureId;
+    }
+    return ids;
+  }
+
   _DecodedItemNotes _decodeItemNotes(String? raw) {
     if (raw == null || raw.trim().isEmpty) {
       return const _DecodedItemNotes();
@@ -1008,6 +1033,34 @@ class NutritionThaliRepository {
     NutritionThaliItemPreview item,
   ) {
     final calculation = preview.snapshotFor(item, _registry);
+    final evidence = <String, dynamic>{
+      ...item.evidence,
+      'resolved_quantity': item.resolvedQuantity.calculationQuantity.toJson(),
+      'original_quantity': item.resolvedQuantity.original.toJson(),
+      'quantity_evidence': item.resolvedQuantity.evidence,
+    };
+    final quantityEvidence = item.resolvedQuantity.evidence;
+    if (quantityEvidence['resolution'] == 'volume') {
+      final measureEvidence = <String, dynamic>{
+        'source': quantityEvidence['source'],
+        if (quantityEvidence['source'] == 'reviewed_standard' &&
+            quantityEvidence['measure_id'] is String)
+          'measure_id': quantityEvidence['measure_id'],
+        if (quantityEvidence['source'] == 'reviewed_standard' &&
+            quantityEvidence['definition_version'] is int)
+          'definition_version': quantityEvidence['definition_version'],
+        if (quantityEvidence['source'] == 'user_calibration' &&
+            quantityEvidence['measure_id'] is String)
+          'vessel_id': quantityEvidence['measure_id'],
+        if (quantityEvidence['calibration_id'] is String)
+          'calibration_id': quantityEvidence['calibration_id'],
+        if (quantityEvidence['calibration_version'] is int)
+          'calibration_version': quantityEvidence['calibration_version'],
+        if (quantityEvidence['volume'] is Map)
+          'volume': quantityEvidence['volume'],
+      };
+      evidence['measure'] = measureEvidence;
+    }
     return NutritionConsumptionItemInput(
       id: item.item.id,
       position: item.item.position,
@@ -1018,14 +1071,62 @@ class NutritionThaliRepository {
           ? item.item.foodId
           : item.item.recipeVersionId,
       displayLabel: item.displayLabel,
-      quantity: item.resolvedQuantity.calculationQuantity,
+      // History must retain the user-selected typed input (for example
+      // `1 cup` or `1 calibrated vessel`).  The resolved volume remains in
+      // calculation/evidence lineage and is never the historical quantity
+      // authority.
+      quantity: item.resolvedQuantity.original,
       calculation: calculation,
-      evidence: {
-        ...item.evidence,
-        'resolved_quantity': item.resolvedQuantity.calculationQuantity.toJson(),
-        'original_quantity': item.resolvedQuantity.original.toJson(),
-        'quantity_evidence': item.resolvedQuantity.evidence,
-      },
+      evidence: evidence,
+    );
+  }
+
+  NutritionConstraintEvidence _qualifyEvidence(
+    NutritionConstraintEvidence evidence,
+    String componentLineage,
+  ) => NutritionConstraintEvidence(
+    // The same food evidence may legitimately occur more than once in a
+    // thali.  Evaluation evidence identity is global to the result, so make
+    // the component occurrence part of the deterministic identity while
+    // retaining the original evidence ID as the suffix.
+    id: '$componentLineage::${evidence.id}',
+    subjectId: evidence.subjectId,
+    target: evidence.target,
+    status: evidence.status,
+    source: evidence.source,
+    confidence: evidence.confidence,
+    notes: evidence.notes,
+    sourceReference: evidence.sourceReference,
+    ingredientLineage: componentLineage,
+    version: evidence.version,
+  );
+
+  Quantity _resolvedOriginalQuantity(
+    Quantity quantity, {
+    required String? calibrationId,
+    required bool approximate,
+  }) {
+    final context = quantity.context;
+    final household = context.householdMeasure;
+    if (household == null && !approximate) return quantity;
+    return Quantity(
+      amount: quantity.amount,
+      unit: quantity.unit,
+      context: QuantityContext(
+        servingDefinition: context.servingDefinition,
+        householdMeasure: household == null
+            ? null
+            : HouseholdMeasureReference(
+                measureType: household.measureType,
+                calibrationId: calibrationId ?? household.calibrationId,
+                resolutionState: HouseholdResolutionState.volumeResolved,
+              ),
+        conversion: context.conversion,
+        source: context.source,
+        sourceScope: context.sourceScope,
+        approximate: context.approximate || approximate,
+        legacy: context.legacy,
+      ),
     );
   }
 
