@@ -171,10 +171,7 @@ void main() {
       expect(loaded.version.source.externalReference, 'provider:recipe-42');
       expect(loaded.version.servingDefinition!.id, 'imported-serving');
       expect(loaded.version.servingDefinition!.revision, 'label-v2');
-      expect(
-        loaded.version.servingDefinition!.source,
-        'manufacturer_label',
-      );
+      expect(loaded.version.servingDefinition!.source, 'manufacturer_label');
     },
   );
 }

@@ -423,17 +423,12 @@ void main() {
       );
 
       expect(duplicate.version.source.parentVersionId, isNull);
+      expect(duplicate.version.source.copiedFromVersionId, original.version.id);
+      expect(duplicate.version.servingDefinition!.source, 'manufacturer_label');
       expect(
-        duplicate.version.source.copiedFromVersionId,
-        original.version.id,
-      );
-      expect(
-        duplicate.version.servingDefinition!.source,
-        'manufacturer_label',
-      );
-      expect(
-        (await repository.getDraft(duplicate.version.id))!.version.source
-            .copiedFromVersionId,
+        (await repository.getDraft(
+          duplicate.version.id,
+        ))!.version.source.copiedFromVersionId,
         original.version.id,
       );
     },
