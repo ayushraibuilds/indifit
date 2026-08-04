@@ -39,6 +39,24 @@ class NutritionConsumptionRepository {
        _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
        _failureInjector = failureInjector;
 
+  /// Emits an invalidation event when canonical snapshot rows change.
+  ///
+  /// The stream intentionally exposes no database rows. Consumers that need
+  /// history re-read through [NutritionReadModelRepository], which keeps the
+  /// dashboard and other surfaces from becoming a second snapshot read path.
+  Stream<void> watchChanges({required String userId}) {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) {
+      throw const NutritionConsumptionValidationError(
+        'missing_user_id',
+        'A user ID is required to watch canonical history changes.',
+      );
+    }
+    final query = _db.select(_db.nutritionConsumptionSnapshots);
+    query.where((row) => row.userId.equals(normalizedUserId));
+    return query.watch().map((_) {});
+  }
+
   Future<NutritionConsumptionSnapshot> finalizeConsumption(
     NutritionConsumptionFinalizeRequest request,
   ) async {

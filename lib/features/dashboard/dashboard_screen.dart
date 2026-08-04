@@ -257,8 +257,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final state = ref.watch(dashboardControllerProvider);
     final controller = ref.read(dashboardControllerProvider.notifier);
     final foodRepo = ref.watch(foodRepositoryProvider);
-    final database = ref.watch(databaseProvider);
     final readModelAsync = ref.watch(nutritionReadModelRepositoryProvider);
+    final canonicalHistoryStream = readModelAsync.when(
+      data: (repository) =>
+          repository.watchCanonicalChanges(userId: kLocalNutritionUserScopeId),
+      loading: () => const Stream<void>.empty(),
+      error: (_, _) => const Stream<void>.empty(),
+    );
 
     // Achievement unlock toast & celebration
     ref.listen<DashboardState>(dashboardControllerProvider, (prev, next) {
@@ -306,12 +311,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Scaffold(
       body: SafeArea(
         child: StreamBuilder<Object?>(
-          // Canonical recipe snapshots are immutable rows and do not emit
-          // through the legacy FoodLogs stream. Watching this table keeps the
-          // dashboard totals/history current after a recipe is finalized.
-          stream: database
-              .select(database.nutritionConsumptionSnapshots)
-              .watch(),
+          // Canonical snapshots do not emit through the legacy FoodLogs
+          // stream. The read-model boundary supplies an invalidation-only
+          // stream so this widget never reads the Drift graph directly.
+          stream: canonicalHistoryStream,
           builder: (context, snapshot) {
             return StreamBuilder<List<FoodLog>>(
               stream: foodRepo.watchLogsForDay(state.selectedDate),

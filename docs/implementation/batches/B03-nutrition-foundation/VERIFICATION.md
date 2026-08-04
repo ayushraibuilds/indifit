@@ -274,3 +274,142 @@ sequence is intentionally conservative around history and safety boundaries.
 - Universal or unreviewed raw/cooked factors, automatic reverse conversion, and unsupported nutrient-retention heuristics.
 - Unrestricted user-created allergen/conflict rules and automatic safety classification from names.
 - Persistent images, provider-side image retention, and full prompt history.
+
+## B03-17 integrated regression evidence
+
+This section records the B03-17 integration run on branch
+`b03/t17-integrated-regression`. The baseline was clean at `d104550`, the
+merged B03-15 tip, before the remediation below. The implementation/remediation
+commits are `620d7eb` (`fix(b03-17): route dashboard history through read
+model`) and `145fefd` (`fix(b03-17): scope history invalidation by user`).
+
+### Dependency and version gate
+
+The required merge commits were verified as ancestors of the branch tip:
+
+| Dependency | Verified commit |
+|---|---|
+| B03-06A | `58fe53b` |
+| B03-06B | `79ca888` |
+| B03-07 | `d347b6f` |
+| B03-08 | `aa0b5bd` |
+| B03-09 | `04b648e` |
+| B03-10 | `973e0f6` |
+| B03-11A | `d5dcc33` |
+| B03-11B | `299302c` |
+| B03-12 | `e40a367` |
+| B03-13 | `70be45a` |
+| B03-14 | `bbd4052` |
+| B03-15 | `d104550` |
+| B03-16 | `0ded6a4` |
+
+The branch was clean before editing. Schema v17 and Backup v8 remain the
+current versions. No B03-18 or B04 work is present.
+
+### Baseline and final command results
+
+| Command/check | Result |
+|---|---|
+| `flutter analyze` baseline and final | Pass; no issues found. |
+| `git diff --check` baseline and final | Pass. |
+| `flutter test` baseline | Pass; 720 tests. |
+| `flutter test` final | Pass; 721 tests. |
+| Focused B03/migration/backup matrix | Pass; 349 tests before remediation. |
+| Post-remediation history boundary test | Pass; 5 tests. |
+| `dart run build_runner build --delete-conflicting-outputs` | Pass; generated outputs unchanged. Existing analyzer-version and Drift parse warnings remain. |
+| `dart format --output=none --set-exit-if-changed lib test` | Environment exit 1 before formatting because Flutter cache `engine.stamp` is not writable. Direct SDK check also reports four pre-existing unrelated files that would change: `app_database.g.dart`, `b03_raw_cooked_test.dart`, `b03_recipe_graph_integrity_test.dart`, and `b03_recipe_version_test.dart`; no files were changed by the check. |
+| Android release APK | Pass; `build/app/outputs/flutter-apk/app-release.apk`, 117.8s. |
+| Unsigned iOS release device build | Pass; `build/ios/iphoneos/Runner.app`, 50.0s. The existing mobile-scanner arm64 simulator warning was emitted; the device build passed. |
+
+The full suite still prints existing Drift multiple-database warnings,
+intentional plugin-missing warnings, and test-only crash/AI fallback logs; none
+caused a test failure.
+
+### Fixture checksums
+
+The checked-in immutable fixtures matched their accepted hashes:
+
+| Fixture | SHA-256 |
+|---|---|
+| `test/fixtures/data/b03_v16_legacy_baseline.db` | `27516799c7cfa9dba53a408c13a638fdb2be8bae32ee887fee2bf9f7ce147eb5` |
+| `test/fixtures/data/b03_backup_v7_legacy_baseline.json` | `16e486faf0abba0f4b075a928eab25f3fe9e651e68687a6f66da14b944daa3ae` |
+| `test/fixtures/data/b03_v16_complete_graph.db` | `cee818f3502273e507d02670e3ecf084a3dd0528828e68e40d15cd88c645e550` |
+| `test/fixtures/data/b03_backup_v7_complete_graph.json` | `02dc06612a6798ceec21efdc3bc9617a58e9e99af87b765ce11992b1aa51890a` |
+
+### Ownership sweep and remediation
+
+The sweep confirmed the accepted authorities for identity, typed quantities,
+nutrient aggregation, schema migration, Backup v8, recipe graph/calculation,
+transformations, measures/calibrations, consumption finalization, legacy
+adaptation, estimates, constraints, protein/leucine read models, and daily
+history. B03-12/13/14/16/15 paths submit to the single consumption repository
+and read through the unified read model; no new calculator or snapshot writer
+was found.
+
+One confirmed wiring defect was found: the dashboard directly watched the
+Drift consumption-snapshot table solely to invalidate its totals. The
+dashboard now consumes an invalidation-only stream exposed by the canonical
+consumption/read-model boundary and re-reads history through that repository.
+The regression is covered by the canonical history invalidation test. Existing
+`FoodRepository` and food-search/template writers remain explicitly legacy
+compatibility paths under B03-11B; they were not rewritten or used by new
+recipe/thali/estimate flows.
+
+The focused critical evidence review then found that the new invalidation API
+could be called without a user scope and would otherwise watch all canonical
+users. Both repository boundaries now require a nonblank user ID and filter the
+watch query by that ID. The blank-scope regression is covered by the same
+history test. No schema, backup, calculator, snapshot, or UI architecture was
+expanded by either remediation.
+
+### Migration and backup result
+
+The real v16-to-v17 tests passed for the legacy and complete graph fixtures,
+including semantic snapshot/checksum stability, preserved B01/B02 rows and
+timestamps, unresolved/unknown values, corrected vessel graph migration,
+foreign-key validation, idempotent reopen, stage-aware rollback, and retry.
+
+The Backup v5/v6/v7 compatibility and Backup v8 tests passed. They cover
+deterministic export, complete graph round-trip, portable-ID/local-ID remap,
+recipe/version/ingredient and vessel/calibration lineage, consumption and
+estimate/correction records, dietary constraints, known-zero/unknown/range
+states, privacy exclusions, future/invalid graph rejection before mutation,
+transaction rollback, preference compensation, and retry.
+
+### Critical journey matrix
+
+| Journey | Evidence result |
+|---|---|
+| Direct food | Pass through the canonical direct-food component in the thali path: typed quantity, B03-08 preview, B03-11A snapshot, unified history/totals. Standalone legacy food search remains an explicit B03-11B compatibility path. |
+| Saved recipe | Pass: immutable published version selection, preview, finalization, successor publication, stale-version detection, frozen history, retry/idempotency. |
+| Raw/cooked transformation | Pass: reviewed transformation, dimensional validation, versioned lineage, Backup v8 and historical tests. |
+| Personal vessel | Pass: duplicate labels, volume-only calibration, recalibration ancestry, archived-vessel historical readability, Backup v8. |
+| Estimate correction | Pass: range/provenance, correction ancestry, finalization, later-correction immutability, cleanup/privacy exclusions, Backup v8. |
+| Dietary constraints | Pass: explicit user constraint, direct/recipe/thali evaluation, unknown evidence, acknowledgement, immutable history after constraint changes. |
+| Thali | Pass: direct food plus saved recipe, measure/vessel handling, aggregation, constraint evaluation, one transactional event, retry without duplication. |
+| Protein/leucine | Pass: snapshot-based meal distribution, partial/range/unknown states, explicit leucine only, no target/recommendation language. |
+
+### Integrity, privacy, and UI result
+
+Historical reads remained snapshot-based after mutable food, recipe, estimate,
+constraint, vessel, calibration, and registry changes. Known zero, unknown,
+estimated ranges, and partial completeness remained distinct through preview,
+finalization, history, daily totals, and Backup v8. Temporary images, secrets,
+tokens, raw prompts/responses, and device-local paths remain excluded by the
+privacy tests. New B03 screens use controllers/repositories; no B03 screen
+reads Drift directly after the dashboard wiring correction. Compact/large-text
+widget tests and semantic-label/accessibility tests passed. No manual device or
+keyboard-navigation check was executed in this run.
+
+### Remaining limitations and B03-18 evidence
+
+- The repository-wide format command is still environment-blocked and has four
+  unrelated pre-existing format discrepancies; the changed files were
+  explicitly formatted and the full suite/analyzer passed.
+- Build-runner retains existing analyzer-version/Drift parse warnings that do
+  not affect generation, analysis, or tests.
+- Manual device interaction checks were not executed. Android and unsigned iOS
+  release smoke builds did pass.
+- No confirmed B03 integration correctness blocker remains. Independent Sol
+  review and any required manual checks remain for B03-18; this section does
+  not issue the final release verdict.
