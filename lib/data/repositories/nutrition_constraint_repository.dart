@@ -459,6 +459,43 @@ class NutritionConstraintRepository {
     );
   }
 
+  /// Evaluates one persisted thali composition through the same pure B03-16
+  /// evaluator used by direct foods and immutable recipes. The caller supplies
+  /// stable, evidence-bearing component lines; this method only loads the
+  /// user's active constraints and performs the deterministic evaluation.
+  Future<NutritionConstraintEvaluationResult> evaluateThali({
+    required String userId,
+    required String thaliId,
+    required Iterable<NutritionConstraintSubjectLine> lines,
+    DateTime? atUtc,
+    Iterable<String> acknowledgedConstraintIds = const [],
+  }) async {
+    final owner = _requiredOwner(userId);
+    final subjectId = thaliId.trim();
+    if (subjectId.isEmpty) {
+      throw const NutritionConstraintValidationError(
+        'invalid_thali_id',
+        'A portable thali identity is required for evaluation.',
+      );
+    }
+    final evaluatedAt = (atUtc ?? _nowUtc()).toUtc();
+    final constraints = await listActiveConstraints(
+      userId: owner,
+      atUtc: evaluatedAt,
+    );
+    return _evaluator.evaluate(
+      subject: NutritionConstraintEvaluationInput(
+        userId: owner,
+        subjectId: subjectId,
+        thaliId: subjectId,
+        lines: lines,
+        evaluatedAtUtc: evaluatedAt,
+      ),
+      constraints: constraints,
+      acknowledgedConstraintIds: acknowledgedConstraintIds,
+    );
+  }
+
   Future<NutritionConstraintAcknowledgement> recordAcknowledgement(
     NutritionConstraintAcknowledgement acknowledgement, {
     required NutritionConstraintEvaluationResult evaluation,

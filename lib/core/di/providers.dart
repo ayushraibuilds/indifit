@@ -20,6 +20,7 @@ import '../../data/repositories/nutrition_household_measure_repository.dart';
 import '../../data/repositories/nutrition_read_model_repository.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
+import '../../data/repositories/nutrition_thali_repository.dart';
 import '../../data/repositories/nutrition_transformation_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
@@ -27,6 +28,7 @@ import '../../data/repositories/travel_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
+import '../../features/food_log/nutrition_thali_controller.dart';
 import '../../features/food_log/saved_recipe_log_controller.dart';
 import '../../features/settings/nutrition_constraint_review_controller.dart';
 import '../../features/settings/nutrition_constraints_controller.dart';
@@ -176,6 +178,40 @@ final nutritionRecipeLogCoordinatorProvider =
         consumption: consumption,
         registry: registry,
       );
+    });
+
+final nutritionThaliRepositoryProvider =
+    FutureProvider<NutritionThaliRepository>((ref) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      final consumption = await ref.watch(
+        nutritionConsumptionRepositoryProvider.future,
+      );
+      final recipeLogging = await ref.watch(
+        nutritionRecipeLogCoordinatorProvider.future,
+      );
+      return NutritionThaliRepository(
+        db: ref.watch(databaseProvider),
+        registry: registry,
+        recipes: ref.watch(nutritionRecipeRepositoryProvider),
+        recipeLogging: recipeLogging,
+        measures: ref.watch(nutritionHouseholdMeasureRepositoryProvider),
+        constraints: ref.watch(nutritionConstraintRepositoryProvider),
+        consumption: consumption,
+      );
+    });
+
+final nutritionThaliControllerProvider = StateNotifierProvider.autoDispose
+    .family<NutritionThaliController, NutritionThaliState, String>((
+      ref,
+      mealCategory,
+    ) {
+      final controller = NutritionThaliController(
+        repository: ref.watch(nutritionThaliRepositoryProvider.future),
+        userId: kLocalNutritionUserScopeId,
+        mealCategory: mealCategory,
+      );
+      unawaited(controller.initialize());
+      return controller;
     });
 
 final nutritionReadModelRepositoryProvider =

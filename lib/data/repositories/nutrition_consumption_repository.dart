@@ -574,7 +574,7 @@ class NutritionConsumptionRepository {
         'Item positions must be contiguous from zero.',
       );
     }
-    if (recipeIds.length > 1) {
+    if (request.thaliId == null && recipeIds.length > 1) {
       _invalid(
         'multiple_recipe_versions',
         'One consumption event cannot point to multiple recipe versions.',
@@ -582,7 +582,9 @@ class NutritionConsumptionRepository {
     }
     await _validateFoodReferences(items);
     await _validateItemEvidence(items, request.userId);
-    final derivedRecipeId = recipeIds.singleOrNull;
+    final derivedRecipeId = request.thaliId == null
+        ? recipeIds.singleOrNull
+        : null;
     if (request.recipeVersionId != null &&
         derivedRecipeId != null &&
         request.recipeVersionId != derivedRecipeId) {
@@ -602,7 +604,20 @@ class NutritionConsumptionRepository {
       }
     }
     if (request.thaliId != null) {
-      await _validateThaliOwnership(request.thaliId!, request.userId);
+      if (request.recipeVersionId != null) {
+        _invalid(
+          'ambiguous_snapshot_source',
+          'A thali snapshot cannot also use a recipe-version header.',
+        );
+      }
+      for (final recipeId in recipeIds) {
+        await _validateRecipeOwnership(recipeId, request.userId);
+      }
+      await _validateThaliOwnership(
+        request.thaliId!,
+        request.userId,
+        expectedVersion: _readThaliVersion(request.evidence),
+      );
     }
     if (request.thaliId != null && recipeVersionId != null) {
       _invalid(
@@ -692,7 +707,39 @@ class NutritionConsumptionRepository {
         'Constraint evaluation belongs to another user.',
       );
     }
-    if (recipeVersionId != null) {
+    if (request.thaliId != null) {
+      if (evaluation.thaliId != request.thaliId ||
+          evaluation.foodId != null ||
+          evaluation.recipeVersionId != null ||
+          evaluation.subjectId != request.thaliId) {
+        _invalid(
+          'constraint_evaluation_subject_mismatch',
+          'Thali constraint evaluation must reference the selected thali.',
+        );
+      }
+      final itemIds = items.map((item) => item.id).toSet();
+      for (final result in evaluation.evaluations) {
+        for (final reference in result.evidence) {
+          final lineage = reference.ingredientLineage;
+          if (lineage == null || lineage.trim().isEmpty) {
+            _invalid(
+              'constraint_evaluation_item_mismatch',
+              'Thali evidence must retain the affected component identity.',
+            );
+          }
+          final separator = lineage.indexOf('::');
+          final itemId = separator < 1
+              ? lineage
+              : lineage.substring(0, separator);
+          if (!itemIds.contains(itemId)) {
+            _invalid(
+              'constraint_evaluation_item_mismatch',
+              'Thali evidence references an item outside the finalized composition.',
+            );
+          }
+        }
+      }
+    } else if (recipeVersionId != null) {
       if (evaluation.recipeVersionId != recipeVersionId ||
           evaluation.foodId != null ||
           evaluation.subjectId != recipeVersionId) {
@@ -833,8 +880,15 @@ class NutritionConsumptionRepository {
       for (var index = 0; index < item.evidence.length; index++) {
         final reference = item.evidence[index];
         final isRecipe = evaluation.recipeVersionId != null;
-        final foodId = isRecipe ? null : reference.foodId ?? evaluation.foodId;
-        final snapshotItemId = isRecipe ? recipeItemId : null;
+        final isThali = evaluation.thaliId != null;
+        final foodId = isRecipe || isThali
+            ? null
+            : reference.foodId ?? evaluation.foodId;
+        final snapshotItemId = isRecipe
+            ? recipeItemId
+            : isThali
+            ? _componentItemId(reference, items)
+            : null;
         if (foodId == null && snapshotItemId == null) {
           throw const NutritionConsumptionPersistenceError(
             'constraint_evidence_owner',
@@ -845,7 +899,7 @@ class NutritionConsumptionRepository {
         // it is not evidence that cross-contact occurred. Preserve the
         // actual owner kind here so direct-food rows satisfy the schema and
         // history never labels ordinary food evidence as cross-contact.
-        final evidenceKind = isRecipe ? 'ingredient' : 'food';
+        final evidenceKind = isRecipe || isThali ? 'ingredient' : 'food';
         await _db
             .into(_db.nutritionSnapshotConstraintResultEvidence)
             .insert(
@@ -887,6 +941,17 @@ class NutritionConsumptionRepository {
             );
       }
     }
+  }
+
+  String? _componentItemId(
+    NutritionConstraintEvidenceReference reference,
+    List<_PreparedItem> items,
+  ) {
+    final lineage = reference.ingredientLineage;
+    if (lineage == null || lineage.trim().isEmpty) return null;
+    final separator = lineage.indexOf('::');
+    final itemId = separator < 1 ? lineage : lineage.substring(0, separator);
+    return items.any((item) => item.input.id == itemId) ? itemId : null;
   }
 
   Map<String, NutrientFact> _effectiveFacts(
@@ -957,7 +1022,11 @@ class NutritionConsumptionRepository {
     }
   }
 
-  Future<void> _validateThaliOwnership(String thaliId, String userId) async {
+  Future<void> _validateThaliOwnership(
+    String thaliId,
+    String userId, {
+    int? expectedVersion,
+  }) async {
     final thali = await (_db.select(
       _db.nutritionThalis,
     )..where((table) => table.id.equals(thaliId))).getSingleOrNull();
@@ -967,6 +1036,30 @@ class NutritionConsumptionRepository {
     if (thali.userId != userId) {
       _invalid('thali_ownership', 'Thali is not owned by the requesting user.');
     }
+    if (thali.lifecycle != 'active') {
+      _invalid(
+        'inactive_thali',
+        'Only an active thali composition can be finalized for new history.',
+      );
+    }
+    if (expectedVersion != null && thali.currentVersion != expectedVersion) {
+      _invalid(
+        'stale_thali_version',
+        'The thali changed after preview. Review the composition before saving.',
+      );
+    }
+  }
+
+  int? _readThaliVersion(Map<String, dynamic> evidence) {
+    final raw = evidence['thali_version'];
+    if (raw == null) return null;
+    if (raw is! int || raw < 1) {
+      _invalid(
+        'invalid_thali_version',
+        'Thali finalization evidence must contain a positive version.',
+      );
+    }
+    return raw;
   }
 
   Future<void> _validateFoodReferences(
@@ -1503,10 +1596,14 @@ class NutritionConsumptionRepository {
     final derivedRecipeId = itemRecipeIds.length == 1
         ? itemRecipeIds.single
         : null;
-    if (itemRecipeIds.length > 1 || header.recipeVersionId != derivedRecipeId) {
+    final recipeHeaderMatches = header.thaliId != null
+        ? header.recipeVersionId == null
+        : itemRecipeIds.length <= 1 &&
+              header.recipeVersionId == derivedRecipeId;
+    if (!recipeHeaderMatches) {
       throw const NutritionConsumptionPersistenceError(
         'recipe_version_mismatch',
-        'Snapshot header and item recipe ancestry disagree.',
+        'Snapshot header and item recipe/thali ancestry disagree.',
       );
     }
     await _validatePersistedConstraintRows(
@@ -1638,8 +1735,14 @@ class NutritionConsumptionRepository {
         final persisted = evidenceById[entry.key];
         final reference = entry.value;
         final isRecipe = evaluation.recipeVersionId != null;
+        final isThali = evaluation.thaliId != null;
         final expectedFoodId = reference.foodId ?? evaluation.foodId;
-        final expectedEvidenceKind = isRecipe ? 'ingredient' : 'food';
+        final expectedEvidenceKind = isRecipe || isThali
+            ? 'ingredient'
+            : 'food';
+        final expectedComponentId = isThali
+            ? _persistedComponentItemId(reference, itemIds)
+            : null;
         if (persisted == null ||
             persisted.evidenceKind != expectedEvidenceKind ||
             persisted.status != reference.status.stableId ||
@@ -1649,6 +1752,10 @@ class NutritionConsumptionRepository {
                 ? persisted.foodId != null ||
                       persisted.snapshotItemId == null ||
                       !itemIds.contains(persisted.snapshotItemId)
+                : isThali
+                ? persisted.foodId != null ||
+                      expectedComponentId == null ||
+                      persisted.snapshotItemId != expectedComponentId
                 : persisted.foodId != expectedFoodId ||
                       persisted.snapshotItemId != null)) {
           throw const NutritionConsumptionPersistenceError(
@@ -1686,6 +1793,17 @@ class NutritionConsumptionRepository {
         'Snapshot constraint evidence contains extra or missing rows.',
       );
     }
+  }
+
+  String? _persistedComponentItemId(
+    NutritionConstraintEvidenceReference reference,
+    Set<String> itemIds,
+  ) {
+    final lineage = reference.ingredientLineage;
+    if (lineage == null || lineage.trim().isEmpty) return null;
+    final separator = lineage.indexOf('::');
+    final itemId = separator < 1 ? lineage : lineage.substring(0, separator);
+    return itemIds.contains(itemId) ? itemId : null;
   }
 
   NutrientCompleteness _readCompleteness(NutritionConsumptionLineage lineage) {
