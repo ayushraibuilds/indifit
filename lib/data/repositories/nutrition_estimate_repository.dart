@@ -1025,8 +1025,8 @@ class NutritionEstimateFinalizationService {
     required String mealCategory,
     Quantity? quantity,
     DateTime? loggedAtUtc,
-    String? localDate,
-    String? timezoneId,
+    required String localDate,
+    required String timezoneId,
     String? commandId,
     String? consumptionId,
     String? displayLabel,
@@ -1064,10 +1064,8 @@ class NutritionEstimateFinalizationService {
         final sameLoggedAt =
             loggedAtUtc == null ||
             existing.loggedAtUtc.isAtSameMomentAs(loggedAtUtc.toUtc());
-        final sameLocalDate =
-            localDate == null || existing.localDate == localDate.trim();
-        final sameTimezone =
-            timezoneId == null || existing.timezoneId == timezoneId.trim();
+        final sameLocalDate = existing.localDate == localDate.trim();
+        final sameTimezone = existing.timezoneId == timezoneId.trim();
         final sameLabel =
             displayLabel == null || existingItem?.displayLabel == displayLabel;
         if (!sameEstimate ||

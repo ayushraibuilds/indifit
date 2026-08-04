@@ -195,6 +195,8 @@ void main() {
             loggedAt: DateTime.utc(2026, 8, 4, 12),
             commandId: 'thali-retry-command',
             consumptionId: 'thali-retry-consumption',
+            localDate: '2026-08-04',
+            timezoneId: 'Asia/Kolkata',
             allowPartial: true,
           ),
           throwsA(isA<NutritionThaliError>()),
@@ -210,6 +212,8 @@ void main() {
           loggedAt: DateTime.utc(2026, 8, 4, 12),
           commandId: 'thali-retry-command',
           consumptionId: 'thali-retry-consumption',
+          localDate: '2026-08-04',
+          timezoneId: 'Asia/Kolkata',
           allowPartial: true,
         );
         final repeated = await harness.repository.finalize(
@@ -218,6 +222,8 @@ void main() {
           loggedAt: DateTime.utc(2026, 8, 4, 12),
           commandId: 'thali-retry-command',
           consumptionId: 'thali-retry-consumption',
+          localDate: '2026-08-04',
+          timezoneId: 'Asia/Kolkata',
           allowPartial: true,
         );
         expect(saved.id, 'thali-retry-consumption');
@@ -342,6 +348,8 @@ void main() {
           loggedAt: DateTime.utc(2026, 8, 4, 8),
           commandId: 'thali-volume-command',
           consumptionId: 'thali-volume-consumption',
+          localDate: '2026-08-04',
+          timezoneId: 'Asia/Kolkata',
           allowPartial: true,
         );
         final historicalQuantity = snapshot.items.single.quantity;
@@ -433,6 +441,8 @@ void main() {
           mealCategory: 'lunch',
           loggedAt: timestamp,
           commandId: commandId,
+          localDate: '2026-08-04',
+          timezoneId: 'Asia/Kolkata',
           acknowledgement: NutritionConstraintAcknowledgement(
             commandId: commandId,
             userId: harness.userId,

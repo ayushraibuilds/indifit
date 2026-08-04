@@ -557,34 +557,49 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
   }
 
   void _finalize(SavedRecipeLogController controller) {
-    final loggedAt = widget.selectedDate ?? DateTime.now();
-    unawaited(
-      controller.finalize(
-        mealCategory: widget.mealType,
-        loggedAt: loggedAt,
-        localDate: _localDate(loggedAt),
-        timezoneId: loggedAt.timeZoneName,
-      ),
-    );
+    unawaited(_finalizeWithStoredTimezone(controller));
   }
 
   void _retryFinalize(SavedRecipeLogController controller) {
-    final loggedAt = widget.selectedDate ?? DateTime.now();
-    unawaited(
-      controller.retryFinalize(
-        mealCategory: widget.mealType,
-        loggedAt: loggedAt,
-        localDate: _localDate(loggedAt),
-        timezoneId: loggedAt.timeZoneName,
-      ),
+    unawaited(_retryWithStoredTimezone(controller));
+  }
+
+  Future<void> _finalizeWithStoredTimezone(
+    SavedRecipeLogController controller,
+  ) async {
+    final loggedAt = (widget.selectedDate ?? DateTime.now()).toUtc();
+    final timezoneId = await ref
+        .read(localTimezoneServiceProvider)
+        .currentTimezoneId();
+    final localDate = ref
+        .read(localScheduleDateServiceProvider)
+        .localDateFor(loggedAt, timezoneId);
+    await controller.finalize(
+      mealCategory: widget.mealType,
+      loggedAt: loggedAt,
+      localDate: localDate,
+      timezoneId: timezoneId,
+    );
+  }
+
+  Future<void> _retryWithStoredTimezone(
+    SavedRecipeLogController controller,
+  ) async {
+    final loggedAt = (widget.selectedDate ?? DateTime.now()).toUtc();
+    final timezoneId = await ref
+        .read(localTimezoneServiceProvider)
+        .currentTimezoneId();
+    final localDate = ref
+        .read(localScheduleDateServiceProvider)
+        .localDateFor(loggedAt, timezoneId);
+    await controller.retryFinalize(
+      mealCategory: widget.mealType,
+      loggedAt: loggedAt,
+      localDate: localDate,
+      timezoneId: timezoneId,
     );
   }
 
   String _formatDate(DateTime value) =>
       '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
-
-  String _localDate(DateTime value) =>
-      '${value.year.toString().padLeft(4, '0')}-'
-      '${value.month.toString().padLeft(2, '0')}-'
-      '${value.day.toString().padLeft(2, '0')}';
 }

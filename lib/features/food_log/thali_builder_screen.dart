@@ -353,9 +353,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: enabled
-                      ? () => _controller.finalize(loggedAt: DateTime.now())
-                      : null,
+                  onPressed: enabled ? _finalize : null,
                   icon: const Icon(Icons.check_circle_outline),
                   label: const Text('Log complete thali'),
                 ),
@@ -375,6 +373,29 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _finalize() async {
+    try {
+      final loggedAt = DateTime.now().toUtc();
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      final localDate = ref
+          .read(localScheduleDateServiceProvider)
+          .localDateFor(loggedAt, timezoneId);
+      await _controller.finalize(
+        loggedAt: loggedAt,
+        localDate: localDate,
+        timezoneId: timezoneId,
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('The thali could not be logged: $error')),
+        );
+      }
+    }
   }
 
   Widget _buildPreview(
