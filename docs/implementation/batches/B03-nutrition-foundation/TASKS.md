@@ -1,10 +1,11 @@
 # B03 — Dependency-Ordered Execution Tasks
 
-Status: planning only. The architecture gate is **Passed with automatically
-accepted defaults**, but no B03 feature implementation or branch is authorized
-until the dependencies and review points below are satisfied. `SOL-GATE
-REQUIRED` means the task has a mandatory Sol High review before its durable
-consumer or downstream task can land.
+Status: B03 implementation is merged; independent review recovery is recorded
+below. Release acceptance remains blocked until every required review and
+physical-device gate is complete. The architecture gate is **Passed with
+automatically accepted defaults**. `SOL-GATE REQUIRED` means the task has a
+mandatory Sol High review before its durable consumer or downstream task can
+land.
 
 ## Ordering and ownership rules
 
@@ -40,6 +41,45 @@ consumer or downstream task can land.
 | B03-16 | Dietary constraint taxonomy and deterministic evaluator | B03-03, B03-05, B03-06A/B, B03-11A | GPT Luna + Terra High / Sol High **SOL-GATE REQUIRED** | Critical | L |
 | B03-17 | Integrated regression and narrowly scoped remediation | B03-06A/B, B03-07–B03-16 | GPT Luna / Terra High + Sol High | High | L |
 | B03-18 | Final Sol High verification | B03-17 | Sol High / GPT Luna evidence | Critical | M |
+
+## Verified task status and review evidence
+
+Product-owner authorization:
+
+You are explicitly authorized to update only the B03 task status fields and
+review-evidence fields in `TASKS.md` so they accurately reflect verified merged
+implementation and independent review results.
+
+Do not alter task goals, dependencies, acceptance criteria, architecture,
+scope, or model routing.
+
+These statuses reflect the independent review register in `VERIFICATION.md`.
+`Approved` is used only where the required verdict is recorded; a missing
+required Terra verdict keeps the task `Blocked` even when the Sol retrospective
+verdict is positive.
+
+| Task | Status | Review evidence |
+|---|---|---|
+| B03-01 | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Blocked; decision-specific fixture/assertion gap. |
+| B03-02 | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Blocked; preference compensation does not prove unchanged preferences. |
+| B03-03 | Implemented and merged; Independently reviewed; Approved with follow-up | Sol retrospective: Approved with follow-up; 592 manual-review catalogue rows remain unresolved. |
+| B03-04 | Implemented and merged; Independently reviewed; Approved | Sol retrospective: Approved. |
+| B03-05 | Implemented and merged; Independently reviewed; Approved | Sol retrospective: Approved. |
+| B03-06A | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Blocked; nutrient-state and cross-owner relationship constraints remain incomplete. |
+| B03-06B | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Blocked; known-zero validation and reviewed-measure ownership remain incomplete. |
+| B03-07 | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Approved; required Terra integration verdict is not retrievable. |
+| B03-08 | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Approved; required Terra integration verdict is not retrievable. |
+| B03-09 | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Blocked; executable provenance and range persistence gaps. |
+| B03-10 | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Approved with follow-up; required Terra integration verdict is not retrievable. |
+| B03-11A | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Blocked; canonical time context permits missing/non-IANA values. |
+| B03-11B | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Blocked; active legacy edits mutate rows in place. |
+| B03-12 | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Blocked; production timezone/correction gaps; Terra verdict not retrievable. |
+| B03-13 | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Blocked; production time/category/not-entered gaps; Terra verdict not retrievable. |
+| B03-14 | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Blocked; legacy estimate path and prompt/privacy gaps; Terra verdict not retrievable. |
+| B03-15 | Implemented and merged; Independently reviewed; Approved with follow-up | Sol retrospective: Approved with follow-up; direct cross-midnight focused evidence remains a follow-up. |
+| B03-16 | Implemented and merged; Independently reviewed; Approved with follow-up | Sol retrospective: Approved with follow-up; cross-contact truth-table and Terra journey evidence follow-up. |
+| B03-17 | Implemented and merged; Independently reviewed; Blocked | Sol retrospective: Blocked; Terra integration/manual-device evidence and final release gate remain incomplete. |
+| B03-18 | Not accepted; Independently reviewed gate; Blocked | Final gate remains blocked pending the required task reviews and physical-device matrix. |
 
 ## Task specifications
 
