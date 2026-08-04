@@ -291,6 +291,46 @@ class NutritionConsumptionRepository {
     return Future.wait(rows.map((row) => _readSnapshot(row.id, userId)));
   }
 
+  /// Returns all canonical snapshots in deterministic historical order.
+  ///
+  /// This is a read-only primitive for the unified B03-11B read boundary. It
+  /// deliberately returns immutable snapshots and never consults mutable food,
+  /// recipe, conversion, or calibration tables.
+  Future<List<NutritionConsumptionSnapshot>> listAllForUser({
+    required String userId,
+    DateTime? fromUtc,
+    DateTime? toUtc,
+  }) async {
+    final rows =
+        await (_db.select(_db.nutritionConsumptionSnapshots)
+              ..where((table) {
+                final predicates = <Expression<bool>>[
+                  table.userId.equals(userId),
+                ];
+                if (fromUtc != null) {
+                  predicates.add(
+                    table.loggedAt.isBiggerOrEqualValue(fromUtc.toUtc()),
+                  );
+                }
+                if (toUtc != null) {
+                  predicates.add(
+                    table.loggedAt.isSmallerThanValue(toUtc.toUtc()),
+                  );
+                }
+                var result = predicates.first;
+                for (final predicate in predicates.skip(1)) {
+                  result = result & predicate;
+                }
+                return result;
+              })
+              ..orderBy([
+                (table) => OrderingTerm(expression: table.loggedAt),
+                (table) => OrderingTerm(expression: table.id),
+              ]))
+            .get();
+    return Future.wait(rows.map((row) => _readSnapshot(row.id, userId)));
+  }
+
   /// Aggregates only active immutable snapshots. It never consults current
   /// foods, recipes, transformations, or vessel calibrations.
   Future<NutritionDailySnapshotTotals> dailyTotals({
