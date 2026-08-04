@@ -280,7 +280,8 @@ sequence is intentionally conservative around history and safety boundaries.
 This section records the B03-17 integration run on branch
 `b03/t17-integrated-regression`. The baseline was clean at `d104550`, the
 merged B03-15 tip, before the remediation below. The implementation/remediation
-commit is `620d7eb` (`fix(b03-17): route dashboard history through read model`).
+commits are `620d7eb` (`fix(b03-17): route dashboard history through read
+model`) and `145fefd` (`fix(b03-17): scope history invalidation by user`).
 
 ### Dependency and version gate
 
@@ -353,6 +354,13 @@ The regression is covered by the canonical history invalidation test. Existing
 `FoodRepository` and food-search/template writers remain explicitly legacy
 compatibility paths under B03-11B; they were not rewritten or used by new
 recipe/thali/estimate flows.
+
+The focused critical evidence review then found that the new invalidation API
+could be called without a user scope and would otherwise watch all canonical
+users. Both repository boundaries now require a nonblank user ID and filter the
+watch query by that ID. The blank-scope regression is covered by the same
+history test. No schema, backup, calculator, snapshot, or UI architecture was
+expanded by either remediation.
 
 ### Migration and backup result
 
