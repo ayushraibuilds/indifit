@@ -832,9 +832,9 @@ class B03StageAwareFailureHarness {
   ]) async {
     // Preference restoration is only reachable while compensating for a
     // database failure. The trigger is a deterministic setup fault; the
-    // selected typed failure is still the preference-restore boundary and is
-    // injected after one compensation write, leaving a documented partial
-    // compensation state that a retry can safely complete.
+    // selected typed failure is still the preference-restore boundary. The
+    // production compensation path must restore the complete captured set
+    // before rethrowing this injected failure.
     final needsCompensationFailure =
         enabled && selectedStage == B03FailureStage.preferenceRestore;
     if (needsCompensationFailure) {
