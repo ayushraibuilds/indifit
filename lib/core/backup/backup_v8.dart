@@ -8,6 +8,7 @@ import '../nutrients.dart';
 import '../nutrition_constraints.dart';
 import '../nutrition_consumption_snapshots.dart';
 import '../nutrition_estimates.dart';
+import '../nutrition_household_measures.dart';
 import '../typed_quantities.dart';
 import 'backup_schema.dart';
 
@@ -187,6 +188,10 @@ class NutritionBackupGraph {
     'imported_provider',
     'ai_estimate',
   };
+  static final Set<String> _reviewedStandardMeasureIds = {
+    for (final definition in NutritionStandardHouseholdMeasures.definitions)
+      definition.id,
+  };
 
   final int graphVersion;
   final String manifestVersion;
@@ -238,6 +243,9 @@ class NutritionBackupGraph {
       tables: _sortedTables(selected),
     );
   }
+
+  static bool _isReviewedStandardMeasureId(Object? id) =>
+      id is String && _reviewedStandardMeasureIds.contains(id);
 
   factory NutritionBackupGraph.fromJson(Object? raw) {
     if (raw is! Map) {
@@ -363,6 +371,10 @@ class NutritionBackupGraph {
         (await db.select(db.nutritionNutrientDefinitions).get())
             .map((row) => row.id)
             .toSet();
+    final targetNutrientUnits = {
+      for (final row in await db.select(db.nutritionNutrientDefinitions).get())
+        row.id: row.unit,
+    };
     final targetConstraints =
         (await db.select(db.nutritionConstraintDefinitions).get())
             .map((row) => row.id)
@@ -396,6 +408,30 @@ class NutritionBackupGraph {
     final versions = exported['nutrition_recipe_versions'] ?? const <String>{};
     final constraints = targetConstraints;
     final estimates = exported['nutrition_estimates'] ?? const <String>{};
+    final recipeOwners = {
+      for (final row in _rows('nutrition_recipes'))
+        row['id'] as String: row['user_id'] as String,
+    };
+    final versionOwners = {
+      for (final row in _rows('nutrition_recipe_versions'))
+        row['id'] as String: recipeOwners[row['recipe_id']],
+    };
+    final thaliOwners = {
+      for (final row in _rows('nutrition_thalis'))
+        row['id'] as String: row['user_id'] as String,
+    };
+    final estimateOwners = {
+      for (final row in _rows('nutrition_estimates'))
+        row['id'] as String: row['user_id'] as String,
+    };
+    final snapshotItemOwners = {
+      for (final row in _rows('nutrition_snapshot_items'))
+        row['id'] as String: row['snapshot_id'] as String,
+    };
+    final snapshotOwners = {
+      for (final row in _rows('nutrition_consumption_snapshots'))
+        row['id'] as String: row['user_id'] as String,
+    };
 
     for (final row in _rows('nutrition_food_aliases')) {
       _requireRef(foods, row['food_id'], 'food alias food_id');
@@ -417,6 +453,12 @@ class NutritionBackupGraph {
       _requireRef(nutrients, row['nutrient_id'], 'nutrient fact nutrient_id');
       if (row['preparation_id'] != null) {
         _requireRef(preparations, row['preparation_id'], 'fact preparation_id');
+        if (preparationOwners[row['preparation_id']] != row['food_id']) {
+          throw BackupV8ValidationException(
+            'fact_preparation_mismatch',
+            'Backup-v8 nutrient fact preparation does not belong to its food.',
+          );
+        }
       }
     }
     for (final row in _rows('nutrition_quantity_conversions')) {
@@ -476,6 +518,12 @@ class NutritionBackupGraph {
           row['preparation_id'],
           'ingredient preparation_id',
         );
+        if (preparationOwners[row['preparation_id']] != row['food_id']) {
+          throw BackupV8ValidationException(
+            'ingredient_preparation_mismatch',
+            'Backup-v8 ingredient preparation does not belong to its food.',
+          );
+        }
       }
       if (row['measure_id'] != null) {
         _requireRef(measures, row['measure_id'], 'ingredient measure_id');
@@ -483,10 +531,17 @@ class NutritionBackupGraph {
     }
     for (final row in _rows('nutrition_estimate_nutrients')) {
       _requireRef(nutrients, row['nutrient_id'], 'estimate nutrient_id');
+      _validateRegistryUnit(row, targetNutrientUnits, 'estimate nutrient');
     }
     for (final row in _rows('nutrition_estimates')) {
       if (row['supersedes_id'] != null) {
         _requireRef(estimates, row['supersedes_id'], 'estimate supersedes_id');
+        if (estimateOwners[row['supersedes_id']] != row['user_id']) {
+          throw BackupV8ValidationException(
+            'estimate_owner_mismatch',
+            'Backup-v8 estimate correction ancestry must remain within one user.',
+          );
+        }
       }
     }
     for (final row in _rows('nutrition_user_corrections')) {
@@ -547,6 +602,13 @@ class NutritionBackupGraph {
           row['recipe_version_id'],
           'thali recipe_version_id',
         );
+        if (versionOwners[row['recipe_version_id']] !=
+            thaliOwners[row['thali_id']]) {
+          throw BackupV8ValidationException(
+            'thali_recipe_owner_mismatch',
+            'Backup-v8 thali recipe must belong to the thali user.',
+          );
+        }
       }
       if (row['measure_id'] != null) {
         _requireRef(measures, row['measure_id'], 'thali measure_id');
@@ -559,6 +621,12 @@ class NutritionBackupGraph {
           row['recipe_version_id'],
           'snapshot recipe_version_id',
         );
+        if (versionOwners[row['recipe_version_id']] != row['user_id']) {
+          throw BackupV8ValidationException(
+            'snapshot_recipe_owner_mismatch',
+            'Backup-v8 snapshot recipe must belong to the snapshot user.',
+          );
+        }
       }
       if (row['thali_id'] != null) {
         _requireRef(
@@ -566,6 +634,12 @@ class NutritionBackupGraph {
           row['thali_id'],
           'snapshot thali_id',
         );
+        if (thaliOwners[row['thali_id']] != row['user_id']) {
+          throw BackupV8ValidationException(
+            'snapshot_thali_owner_mismatch',
+            'Backup-v8 snapshot thali must belong to the snapshot user.',
+          );
+        }
       }
     }
     for (final row in _rows('nutrition_snapshot_items')) {
@@ -578,6 +652,13 @@ class NutritionBackupGraph {
           row['recipe_version_id'],
           'snapshot item recipe_version_id',
         );
+        if (versionOwners[row['recipe_version_id']] !=
+            snapshotOwners[row['snapshot_id']]) {
+          throw BackupV8ValidationException(
+            'snapshot_item_recipe_owner_mismatch',
+            'Backup-v8 snapshot item recipe must belong to the snapshot user.',
+          );
+        }
       }
       if (row['preparation_id'] != null) {
         _requireRef(
@@ -585,10 +666,24 @@ class NutritionBackupGraph {
           row['preparation_id'],
           'snapshot item preparation_id',
         );
+        if (preparationOwners[row['preparation_id']] != row['food_id']) {
+          throw BackupV8ValidationException(
+            'snapshot_preparation_mismatch',
+            'Backup-v8 snapshot preparation does not belong to its food.',
+          );
+        }
       }
     }
     for (final row in _rows('nutrition_snapshot_nutrients')) {
       _requireRef(nutrients, row['nutrient_id'], 'snapshot nutrient_id');
+      _validateRegistryUnit(row, targetNutrientUnits, 'snapshot nutrient');
+      if (row['item_id'] != null &&
+          snapshotItemOwners[row['item_id']] != row['snapshot_id']) {
+        throw BackupV8ValidationException(
+          'snapshot_item_mismatch',
+          'Backup-v8 snapshot nutrient item must belong to its snapshot.',
+        );
+      }
     }
     for (final row in _rows('nutrition_food_constraint_evidence')) {
       _requireRef(foods, row['food_id'], 'food constraint evidence food_id');
@@ -938,11 +1033,49 @@ class NutritionBackupGraph {
     final constraints = _ids('nutrition_user_constraints');
     final vessels = _ids('nutrition_personal_vessels');
     final calibrations = _ids('nutrition_vessel_calibrations');
+    final preparationOwners = {
+      for (final row in _rows('nutrition_food_preparations'))
+        row['id'] as String: row['food_id'] as String,
+    };
+    final recipeOwners = {
+      for (final row in _rows('nutrition_recipes'))
+        row['id'] as String: row['user_id'] as String,
+    };
+    final versionOwners = {
+      for (final row in _rows('nutrition_recipe_versions'))
+        row['id'] as String: recipeOwners[row['recipe_id']],
+    };
+    final thaliOwners = {
+      for (final row in _rows('nutrition_thalis'))
+        row['id'] as String: row['user_id'] as String,
+    };
+    final estimateOwners = {
+      for (final row in _rows('nutrition_estimates'))
+        row['id'] as String: row['user_id'] as String,
+    };
+    final snapshotOwners = {
+      for (final row in _rows('nutrition_consumption_snapshots'))
+        row['id'] as String: row['user_id'] as String,
+    };
+    final constraintOwners = {
+      for (final row in _rows('nutrition_user_constraints'))
+        row['id'] as String: row['user_id'] as String,
+    };
+    final snapshotItemOwners = {
+      for (final row in _rows('nutrition_snapshot_items'))
+        row['id'] as String: row['snapshot_id'] as String,
+    };
     for (final row in _rows('nutrition_user_corrections')) {
       final targetType = row['target_type'];
       final targetId = row['target_id'];
       if (targetType == 'nutrition_estimate') {
         _requireRef(estimates, targetId, 'estimate correction target_id');
+        if (estimateOwners[targetId] != row['user_id']) {
+          throw BackupV8ValidationException(
+            'correction_owner_mismatch',
+            'Backup-v8 estimate corrections must remain within one user.',
+          );
+        }
       }
       if (row['user_id'] is! String ||
           (row['user_id'] as String).trim().isEmpty ||
@@ -981,6 +1114,15 @@ class NutritionBackupGraph {
       // A preparation may belong to a bundled canonical food resolved from the
       // manifest at restore time; target validation handles that reference.
     }
+    for (final row in _rows('nutrition_food_nutrient_facts')) {
+      if (row['preparation_id'] != null &&
+          preparationOwners[row['preparation_id']] != row['food_id']) {
+        throw BackupV8ValidationException(
+          'fact_preparation_mismatch',
+          'Backup-v8 nutrient fact preparation does not belong to its food.',
+        );
+      }
+    }
     for (final row in _rows('nutrition_foods')) {
       final parentId = row['variant_of_food_id'];
       if (parentId is String && parentId == row['id']) {
@@ -1011,10 +1153,25 @@ class NutritionBackupGraph {
         'ingredient recipe_version_id',
         allowTarget: true,
       );
+      if (row['preparation_id'] != null &&
+          preparationOwners[row['preparation_id']] != row['food_id']) {
+        throw BackupV8ValidationException(
+          'ingredient_preparation_mismatch',
+          'Backup-v8 ingredient preparation does not belong to its food.',
+        );
+      }
     }
     for (final row in _rows('nutrition_thali_items')) {
       _oneOf(row['food_id'], row['recipe_version_id'], 'thali item reference');
       _requireRef(thalis, row['thali_id'], 'thali item thali_id');
+      if (row['recipe_version_id'] != null &&
+          versionOwners[row['recipe_version_id']] !=
+              thaliOwners[row['thali_id']]) {
+        throw BackupV8ValidationException(
+          'thali_recipe_owner_mismatch',
+          'Backup-v8 thali recipe must belong to the thali user.',
+        );
+      }
     }
     for (final row in _rows('nutrition_consumption_snapshots')) {
       _atMostOne(
@@ -1022,10 +1179,39 @@ class NutritionBackupGraph {
         row['thali_id'],
         'snapshot owner reference',
       );
+      if (row['recipe_version_id'] != null &&
+          versionOwners[row['recipe_version_id']] != row['user_id']) {
+        throw BackupV8ValidationException(
+          'snapshot_recipe_owner_mismatch',
+          'Backup-v8 snapshot recipe must belong to the snapshot user.',
+        );
+      }
+      if (row['thali_id'] != null &&
+          thaliOwners[row['thali_id']] != row['user_id']) {
+        throw BackupV8ValidationException(
+          'snapshot_thali_owner_mismatch',
+          'Backup-v8 snapshot thali must belong to the snapshot user.',
+        );
+      }
     }
     for (final row in _rows('nutrition_snapshot_items')) {
       _validateSnapshotItemReference(row);
       _requireRef(snapshots, row['snapshot_id'], 'snapshot item snapshot_id');
+      if (row['preparation_id'] != null &&
+          preparationOwners[row['preparation_id']] != row['food_id']) {
+        throw BackupV8ValidationException(
+          'snapshot_preparation_mismatch',
+          'Backup-v8 snapshot preparation does not belong to its food.',
+        );
+      }
+      if (row['recipe_version_id'] != null &&
+          versionOwners[row['recipe_version_id']] !=
+              snapshotOwners[row['snapshot_id']]) {
+        throw BackupV8ValidationException(
+          'snapshot_item_recipe_owner_mismatch',
+          'Backup-v8 snapshot item recipe must belong to the snapshot user.',
+        );
+      }
     }
     for (final row in _rows('nutrition_snapshot_nutrients')) {
       _requireRef(
@@ -1035,6 +1221,12 @@ class NutritionBackupGraph {
       );
       if (row['item_id'] != null) {
         _requireRef(items, row['item_id'], 'snapshot nutrient item_id');
+        if (snapshotItemOwners[row['item_id']] != row['snapshot_id']) {
+          throw BackupV8ValidationException(
+            'snapshot_item_mismatch',
+            'Backup-v8 snapshot nutrient item must belong to its snapshot.',
+          );
+        }
       }
     }
     for (final row in _rows('nutrition_estimate_nutrients')) {
@@ -1048,6 +1240,14 @@ class NutritionBackupGraph {
       for (final row in _rows('nutrition_estimates')) row['id'] as String: row,
     };
     for (final id in estimateById.keys) {
+      final supersedesId = estimateById[id]?['supersedes_id'];
+      if (supersedesId != null &&
+          estimateOwners[supersedesId] != estimateOwners[id]) {
+        throw BackupV8ValidationException(
+          'estimate_owner_mismatch',
+          'Backup-v8 estimate correction ancestry must remain within one user.',
+        );
+      }
       final seen = <String>{};
       String? cursor = id;
       while (cursor != null) {
@@ -1071,6 +1271,20 @@ class NutritionBackupGraph {
         row['constraint_id'],
         'constraint result constraint_id',
       );
+      if (constraintOwners[row['constraint_id']] !=
+          snapshotOwners[row['snapshot_id']]) {
+        throw BackupV8ValidationException(
+          'constraint_owner_mismatch',
+          'Backup-v8 snapshot constraint must belong to the snapshot user.',
+        );
+      }
+      if (constraintOwners[row['constraint_id']] !=
+          snapshotOwners[row['snapshot_id']]) {
+        throw BackupV8ValidationException(
+          'constraint_owner_mismatch',
+          'Backup-v8 snapshot constraint must belong to the snapshot user.',
+        );
+      }
     }
     for (final row in _rows('nutrition_snapshot_constraint_result_evidence')) {
       _requireRef(results, row['result_id'], 'constraint evidence result_id');
@@ -2373,7 +2587,12 @@ class NutritionBackupGraph {
       );
     }
     final point = row['amount'];
-    if (table == 'nutrition_estimate_nutrients' &&
+    final nutrientTables = {
+      'nutrition_food_nutrient_facts',
+      'nutrition_estimate_nutrients',
+      'nutrition_snapshot_nutrients',
+    };
+    if (nutrientTables.contains(table) &&
         point is num &&
         ((lower is num && lower > point) || (upper is num && point > upper))) {
       throw BackupV8ValidationException(
@@ -2452,6 +2671,41 @@ class NutritionBackupGraph {
         );
       }
     }
+    if (nutrientTables.contains(table)) {
+      switch (row['status']) {
+        case 'known':
+          if (point is! num) {
+            throw BackupV8ValidationException(
+              'invalid_known_fact',
+              'Known nutrient facts require a numeric point value.',
+            );
+          }
+        case 'known_zero':
+          if (point is! num ||
+              point != 0 ||
+              (lower is num && lower != 0) ||
+              (upper is num && upper != 0)) {
+            throw BackupV8ValidationException(
+              'invalid_known_zero',
+              'Known-zero nutrient facts must preserve zero exactly.',
+            );
+          }
+        case 'estimated':
+          if (point is! num && lower is! num && upper is! num) {
+            throw BackupV8ValidationException(
+              'invalid_estimate_range',
+              'Estimated nutrient facts require a point or at least one bound.',
+            );
+          }
+      }
+    }
+    if (table == 'nutrition_household_measures' &&
+        _isReviewedStandardMeasureId(row['id'])) {
+      throw BackupV8ValidationException(
+        'reviewed_measure_ownership',
+        'Reviewed household measure definitions cannot be restored as user-owned rows.',
+      );
+    }
     if (table == 'nutrition_estimates' && row['assumptions'] != null) {
       _validateEstimateEnvelope(row['assumptions']);
     }
@@ -2485,6 +2739,20 @@ class NutritionBackupGraph {
       );
     }
     _validateEnums(table, row);
+  }
+
+  static void _validateRegistryUnit(
+    Map<String, dynamic> row,
+    Map<String, String> registryUnits,
+    String owner,
+  ) {
+    final expected = registryUnits[row['nutrient_id']];
+    if (expected != null && row['unit'] != expected) {
+      throw BackupV8ValidationException(
+        'nutrient_unit_mismatch',
+        'Backup-v8 $owner unit must match the reviewed nutrient registry.',
+      );
+    }
   }
 
   static void _validateEnums(String table, Map<String, dynamic> row) {
@@ -2794,9 +3062,17 @@ class NutritionBackupGraph {
       'DELETE FROM nutrition_food_aliases WHERE food_id IN (SELECT id FROM nutrition_foods WHERE kind IN (\'userCreated\', \'imported\', \'aiEstimate\')) OR source IN (\'user\', \'user_entered\', \'imported_provider\')',
       'DELETE FROM nutrition_user_constraints',
       'DELETE FROM nutrition_foods WHERE kind IN (\'userCreated\', \'imported\', \'aiEstimate\')',
-      'DELETE FROM nutrition_household_measures',
     ]) {
       await db.customStatement(statement);
+    }
+    // Reviewed standard definitions are registry-owned and must survive a
+    // user restore unchanged. Only user-owned measures are replaceable.
+    for (final row in await db.select(db.nutritionHouseholdMeasures).get()) {
+      if (!NutritionBackupGraph._isReviewedStandardMeasureId(row.id)) {
+        await (db.delete(
+          db.nutritionHouseholdMeasures,
+        )..where((measure) => measure.id.equals(row.id))).go();
+      }
     }
   }
 
@@ -3093,6 +3369,8 @@ final Map<String, _NutritionTableSpec> _specs = {
       'updated_at',
     ],
     orderBy: 'id',
+    filter: (row, _) =>
+        !NutritionBackupGraph._isReviewedStandardMeasureId(row['id']),
   ),
   'nutrition_personal_vessels': _NutritionTableSpec(
     columns: const [
