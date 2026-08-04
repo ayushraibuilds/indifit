@@ -478,3 +478,269 @@ Result: exit `0`, `28` tests passed, no test failures reported.
 | Foreign keys/indexes | `test/b03_schema_relationship_test.dart` passes the v17 table/index/FK assertions; migration checks report empty foreign-key violations. |
 | Reopen/idempotency | Reopening the migrated file does not duplicate rows or repeat B03 seed state; real fixture checksum and semantic comparison remain stable. |
 | Limitations | This record is automated evidence only. It does not claim a physical-device journey or a separate checked-in migrated-output artifact. |
+
+## Independent Task Review Register
+
+Recorded on 2026-08-05 (Asia/Kolkata) after the B03-17 remediation merge
+`f29f0d4f21d5c6fec4f00c0045f7a2ad5a21bf79`. This register preserves the
+retrievable evidence and the fresh retrospective review results. A search of
+the accepted B03 documents, Git history, commit trailers, Git notes, and local
+Codex review artifacts (`.agents` and `.codex`) found no durable per-task
+historical review register. No historical verdict was inferred from passing
+tests. Where a historical verdict was unavailable, the fresh reviewer
+inspected the exact merged task range, acceptance criteria, relevant tests, and
+remediation history and issued the explicit verdict below.
+
+For the Sol records, the reviewer was GPT-5 Codex, fresh Sol High retrospective
+session, current verification task; a stable session identifier is not exposed.
+The review date for every Sol record below is 2026-08-05. Tests listed in these
+records were inspected as committed evidence unless an exact rerun is stated;
+the review did not treat passing tests alone as approval. The required Terra
+records were separately checked by a fresh Terra High retrospective agent on
+the same date; no historical Terra session identifier or durable prior verdict
+was retrievable.
+
+### Foundation wave — B03-01 through B03-06B
+
+#### B03-01
+
+- **Implementation commit:** `15c5954673f3d20565ac735ce8a3cd18fbe4a916`; no separate merge node.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Blocked**. **Re-review:** **Blocked**.
+- **Findings:** The audit accounts for 573 base and 25 regional rows, but 87 traceability rows use generic outcomes rather than decision-specific valid/invalid/unknown fixtures. The focused tests therefore cannot prove the required semantic invariants for recipe immutability, snapshots, thalis, and other domains.
+- **Remediation:** None found.
+- **Tests verified:** `test/b03_contract_fixture_test.dart`, `test/b03_food_manifest_fixture_test.dart`; recorded full/focused suites were supporting evidence only.
+- **Merge commit:** None; implementation landed directly as `15c5954`.
+- **Evidence:** `lib/core/fixtures/b03_nutrition_fixture_matrix.dart`, `FIXTURE_MATRIX.md`, and `TASKS.md:46`.
+
+#### B03-02
+
+- **Implementation commit:** `d84c7e8485adb6d5f6ac7debf142dfcf888aff55`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Blocked**. **Re-review:** **Blocked**.
+- **Findings:** Real v16/v7 fixtures, migration/restore ordering, FK checks, rollback, and retry are evidenced. The `preferenceRestore` failure stage does not assert that managed preferences remain unchanged and documents a recoverable partial-compensation state, contrary to the acceptance criterion.
+- **Remediation:** `d512eda1120adb82e34e0124a5e6a92dca727b96`, `db714fa75e782b8bf519b82222d061a9272722a9`; re-review remained Blocked.
+- **Tests verified:** `test/b03_schema_v17_migration_test.dart`, `test/b03_backup_v8_test.dart`, `test/backup_schema_test.dart`, `test/backup_restore_transaction_test.dart`.
+- **Merge commit:** `fc1044962ba8675ca9ea6c0a00ee7c4202bab845`.
+- **Evidence:** `test/fixtures/b03_migration_backup_harness.dart`, `FIXTURE_MATRIX.md:246`, and the four immutable fixture files.
+
+#### B03-03
+
+- **Implementation commit:** `8bc003f575dfc94a63572d79c182c7c6c09486c5`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Approved with follow-up**. **Re-review:** **Approved with follow-up**.
+- **Findings:** Manifest v1, stable IDs, aliases, legacy mappings, exact resolver behavior, and manifest SHA-256 `0fa8d39aa6c9299780e62494721b0023b13f793bacce8b28ee87fa8e4d5c58c1` are verified. The 592 `manualReview` catalogue rows remain explicitly unresolved. The older B03-18 ancestry table incorrectly labels `60a01c4` as B03-03; the actual B03-03 merge is `60cd60a` and `60a01c4` belongs to B03-07.
+- **Remediation:** `c8a0e963ea99b9496a63028b204973ee03ca74a2`, `8813f962a6b414444575899184140631596a8ad0`; re-review remained Approved with follow-up.
+- **Tests verified:** `test/b03_identity_test.dart`, `test/b03_food_manifest_fixture_test.dart`, `test/food_repository_test.dart`, `test/food_api_service_test.dart`.
+- **Merge commit:** `60cd60a9f9b4b73027d6b72ccf69e01e8b2413e4`.
+- **Evidence:** `assets/data/nutrition_food_identity_manifest.json`, `lib/core/fixtures/food_identity_manifest.dart`, `FOOD_IDENTITY_AUDIT.md:16`, and `TASKS.md:69`.
+
+#### B03-04
+
+- **Implementation commit:** `d9d2fd0af0fda407b4b482b5ffbc2783e3b5fda6`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Approved**. **Re-review:** **Approved**.
+- **Findings:** Typed mass/volume/count/serving/household dimensions, deterministic same-dimension arithmetic, typed unavailable conversions, positive persisted boundaries, and formatter-only rounding are present. No universal gram/millilitre fallback was found.
+- **Remediation:** `91e2e558fdd442c62eaee1f5bec626251a86c648`; re-review Approved.
+- **Tests verified:** `test/b03_quantity_test.dart`, `test/b03_quantity_conversion_test.dart`, `test/b03_quantity_positivity_test.dart`, `test/household_measure_test.dart`.
+- **Merge commit:** `3b371a66a3d8dc153e0a602523fd43035eed5c13`.
+- **Evidence:** `lib/core/typed_quantities.dart`, `lib/core/legacy_quantity_adapter.dart`, and `TASKS.md:81`.
+
+#### B03-05
+
+- **Implementation commit:** `9b4ebe83d4318f72c58169eb6b6a1e1acebb7d5e`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Approved**. **Re-review:** **Approved**.
+- **Findings:** Registry v1 contains 18 stable nutrients and canonical units; known, known-zero, missing, not-applicable, estimated, bases, bounds, provenance, and full-precision aggregation remain distinct. Stable unit-ID serialization was verified.
+- **Remediation:** `1b2487a186698c219112133dc1a0f289d83dafb9`; re-review Approved.
+- **Tests verified:** `test/b03_nutrient_registry_test.dart`, `test/b03_nutrient_facts_test.dart`, `test/b03_nutrient_aggregation_test.dart`, `test/b03_nutrient_completeness_test.dart`, `test/nutrition_calculation_test.dart`.
+- **Merge commit:** `df2ea8649862ce52bc28d1a52624987a63dba66d`.
+- **Evidence:** `assets/data/nutrient_registry.json`, `lib/core/nutrients.dart`, `lib/core/legacy_nutrient_adapter.dart`, and `TASKS.md:93`.
+
+#### B03-06A
+
+- **Implementation commit:** `73f07db47016c0ea0f33b3274fdacd7e52e89cf4`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Blocked**. **Re-review:** **Blocked**.
+- **Findings:** Fresh v17 creation, real v16 migration, FK/index checks, rollback/retry, and vessel ancestry are evidenced. Nutrient tables still allow invalid known-zero/non-zero combinations and numeric values for missing/not-applicable estimate rows. Cross-owner relationships can reference independently valid but mismatched food/preparation parents.
+- **Remediation:** `cc3bc7b12689a04a1253d21768ebe87f01d239d4`; post-merge vessel remediation `7901b079ceb2902d76973cdebdfec02ec8b3466f`; re-review remained Blocked.
+- **Tests verified:** `test/b03_schema_v17_migration_test.dart`, `test/b03_schema_relationship_test.dart`, `test/db_migration_test.dart`; the required negative cases were not found.
+- **Merge commit:** `58fe53b45bbb375c3539c25297f5ccadc807fec3`.
+- **Evidence:** `lib/data/database/tables/nutrition_tables.dart:148`, `:464`, `:630`, `lib/data/database/app_database.dart:651`, and `TASKS.md:105`.
+
+#### B03-06B
+
+- **Implementation commit:** `41e8bedf7a67553618ea40385c286c8f21ff4908`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Blocked**. **Re-review:** **Blocked**.
+- **Findings:** Deterministic Backup v8 graph capture, old-version compatibility, prevalidation, ordering, rollback, preferences, and vessel supersession are present. Prevalidation does not reject non-zero known-zero rows. Restore treats reviewed standard household measures as exported user rows and can replace/delete newer reviewed definitions.
+- **Remediation:** `658fc41e6f6ae0b42bc0cef4ca2e43c7195f1a1a`; re-review remained Blocked.
+- **Tests verified:** `test/b03_backup_v8_codec_test.dart`, `test/b03_backup_v8_test.dart`, `test/backup_restore_transaction_test.dart`, `test/backup_schema_test.dart`.
+- **Merge commit:** `79ca888b580f416760f911c44bae4e243c9c27a1`.
+- **Evidence:** `lib/core/backup/backup_v8.dart:2430`, `:2797`, `:3080`, `lib/data/repositories/nutrition_household_measure_repository.dart:415`, and `TASKS.md:117`.
+
+### Nutrition-domain wave — B03-07 through B03-10
+
+#### B03-07
+
+- **Implementation commit:** `60a01c497eeff46842a90c7ea9eb30a1e37301b1`; equivalent stable patch/task tip `d347b6f4881c15320ab6a5a78787ba43c182f4ef`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Approved**. **Re-review:** **Approved**. **Terra review:** **Blocked** because no retrievable Terra lifecycle/copy/integration verdict exists.
+- **Findings:** Published versions are immutable, successor publication is append-only, ingredient order/identity/provenance/ancestry are retained, nested recipes are rejected, and downstream history freezes the selected version. Terra’s required user-visible integration evidence is absent.
+- **Remediation:** None required by Sol; Terra evidence remains unresolved.
+- **Tests verified:** `test/b03_recipe_version_test.dart`, `test/b03_recipe_graph_integrity_test.dart`, `test/meal_template_compatibility_test.dart`, `test/b03_consumption_snapshot_test.dart`, `test/b03_saved_recipe_log_integration_test.dart`, `test/b03_history_reproducibility_test.dart`.
+- **Merge commit:** `2bb907e223468662080a9229f3668cd4ea8bba26` (octopus integration).
+- **Evidence:** `lib/data/repositories/nutrition_recipe_repository.dart:788-852,943-1010,1121-1257,1621-1698`, `test/b03_saved_recipe_log_integration_test.dart:372-503`, and `TASKS.md:129`.
+
+#### B03-08
+
+- **Implementation commit:** `c5f96b01900d4919a30a872c574a0b7209307c4`; accepted integrated tip `aa0b5bd9bccf9efa2e6093036383b6dad13bc380`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Approved**. **Re-review:** **Approved**. **Terra review:** **Blocked** because no retrievable Terra serving/presentation verdict exists.
+- **Findings:** `NutritionCalculationService` is the single recipe orchestrator, delegates typed arithmetic, preserves facts/bases/unknowns/ranges/fingerprints, and does not persist. The remediation preserves unknownness for incompatible source bases. Terra integration evidence is absent.
+- **Remediation:** `aa0b5bd9bccf9efa2e6093036383b6dad13bc380`; re-review Approved for Sol.
+- **Tests verified:** `test/b03_recipe_calculation_test.dart`, `test/b03_scaling_test.dart`, `test/nutrition_calculation_test.dart`, saved-recipe and thali integration tests.
+- **Merge commit:** No dedicated merge node; `c5f96b0..aa0b5bd` integrated linearly and `aa0b5bd` is an ancestor of `37a557b`.
+- **Evidence:** `lib/core/nutrition_calculation_service.dart:496-618,793-833,836-950`, `test/b03_recipe_calculation_test.dart:206-369,622-872`, and `TASKS.md:141`.
+
+#### B03-09
+
+- **Implementation commit:** `04b648e1a32b36630bb98e7ca3e29d0e84a15e80`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Blocked**. **Re-review:** **Blocked**.
+- **Findings:** Directional/versioned identity and typed transformation structures are present, but executable `estimated`/`heuristic` rules are not rejected, range-only rules are rejected by durable persistence despite the contract, the required provenance test is absent, and the accepted evidence matrix lacks substantive pasta/noodle, vegetable, frying/oil, edible-loss, and water-behavior fixtures.
+- **Remediation:** None found; `d20c4b7` only formats the raw/cooked test and adds release evidence.
+- **Tests verified:** `test/b03_raw_cooked_test.dart`, raw/cooked deferral coverage in `test/b03_recipe_calculation_test.dart`; missing `test/b03_transformation_provenance_test.dart` is recorded.
+- **Merge commit:** `2bb907e223468662080a9229f3668cd4ea8bba26`.
+- **Evidence:** `lib/core/raw_cooked_transformations.dart:448-471,592-697`, `lib/data/repositories/nutrition_transformation_repository.dart:154-161`, `lib/data/database/tables/nutrition_tables.dart:225-229`, and `TASKS.md:153`.
+
+#### B03-10
+
+- **Implementation commit:** `973e0f6de7945fee1721c58d73c243c800265da1`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Approved with follow-up**. **Re-review:** **Approved with follow-up**. **Terra review:** **Blocked** because no retrievable Terra labels/calibration/accessibility verdict exists.
+- **Findings:** Stable user-scoped vessel IDs, duplicate names/renames, immutable calibration ancestry, volume-only conversion, archive history, and Backup v8/migration lineage are verified. No guarded delete behavior or regression was found; Terra evidence is absent.
+- **Remediation:** `7901b079ceb2902d76973cdebdfec02ec8b3466f`, `658fc41e6f6ae0b42bc0cef4ca2e43c7195f1a1a`; Sol re-review Approved with follow-up.
+- **Tests verified:** `test/b03_household_measure_test.dart`, `test/b03_vessel_calibration_test.dart`, `test/b03_quantity_test.dart`, `test/b03_household_measure_controller_test.dart`, schema, Backup v8, and snapshot/history tests.
+- **Merge commit:** No dedicated merge node; `973e0f6` and its remediations integrated linearly.
+- **Evidence:** `lib/data/database/tables/nutrition_tables.dart:269-325`, `lib/data/database/app_database.dart:910-934,951-1080`, `lib/data/repositories/nutrition_household_measure_repository.dart:45-195,219-407`, and `TASKS.md:165`.
+
+### History and integration wave — B03-11A through B03-14
+
+#### B03-11A
+
+- **Implementation commit:** `96de9e3ba0ed308e8047e00c802de1ee1b6b5aa9`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Blocked**. **Re-review:** **Blocked**.
+- **Findings:** Canonical transactional snapshots, retry identity, append-only corrections, frozen nutrient ownership, rollback, and estimate drift checks are sound. New canonical events may omit both local date and timezone, and supplied timezones are not validated as IANA identifiers; required missing/non-IANA and cross-midnight evidence is absent.
+- **Remediation:** `0abb829fa25125ecbf81dd55047349a31d815e2d`, `e312092b4d84d050ad509d4236d7f63a3e285408`; re-review remained Blocked.
+- **Tests verified:** `test/b03_consumption_snapshot_test.dart`, later `test/b03_history_reproducibility_test.dart`; task-named `food_log_editing_test.dart` and `daily_totals_test.dart` were absent at the accepted tip.
+- **Merge commits:** Initial `297d10078028f4c74221cbdc5be83e817a5834f7`; final remediation `d5dcc33d6dcf6b5623695ded9cd75b31ad44bfa3`.
+- **Evidence:** `lib/data/repositories/nutrition_consumption_repository.dart:450`, `TASKS.md:177`.
+
+#### B03-11B
+
+- **Implementation commit:** `e5030445deb455bbf168915eb1efa5d8c6a79a73`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Blocked**. **Re-review:** **Blocked**.
+- **Findings:** The legacy adapter preserves explicit mappings, absent fibre, copied macros, templates, and namespaces, but the active edit journey still calls `FoodRepository.updateFoodLog` and the dashboard retains destructive deletion. No append-only legacy correction lineage is present.
+- **Remediation:** `7ee4c4fad131f48c2a11c44853d74d6d51b319fc`; re-review remained Blocked.
+- **Tests verified:** `test/b03_legacy_nutrition_adapter_test.dart`, `test/meal_template_compatibility_test.dart`, `test/food_repository_test.dart`; no append-only correction test.
+- **Merge commit:** `299302c6a58ff110840296bc5fb6d0b09656aaf5`.
+- **Evidence:** `docs/implementation/batches/B03-nutrition-foundation/LEGACY_COMPATIBILITY.md:54`, `lib/data/repositories/food_repository.dart:201`, `lib/features/dashboard/widgets/dashboard_meal_section.dart:929`, and `TASKS.md:189`.
+
+#### B03-12
+
+- **Implementation commit:** `1c249fedb059254ea9b51df1e41afac2addce0e7`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Blocked**. **Re-review:** **Blocked**. **Terra review:** **Blocked** because no retrievable joint Terra/Sol integration sign-off exists.
+- **Findings:** Immutable recipe selection, B03-08 calculation, B03-11A finalization, stale-head detection, and retry behavior are present. The production screen stores `DateTime.timeZoneName` rather than IANA time, no saved-recipe correction journey creates replacement lineage, and legacy entries remain mutable. Several named integration tests were absent at the accepted tip.
+- **Remediation:** `e40a36763d759f98b8b7987f89a4cf876a75e51a`; later ownership fixes `620d7eb6629d5cbffbeb9ca8145f4679277ce144`, `145fefd20337be7a1dca06e96d9ebf4b89f601a6`; re-review remained Blocked.
+- **Tests verified:** `test/b03_saved_recipe_log_integration_test.dart`, later history evidence; named `b03_recipe_log_integration_test.dart`, `food_log_screen_test.dart`, and `meal_grouping_test.dart` were absent.
+- **Merge commit:** None; integrated directly/fast-forward at `e40a367`.
+- **Evidence:** `lib/data/repositories/nutrition_recipe_log_coordinator.dart:154`, `lib/features/food_log/saved_recipe_log_screen.dart:566`, `test/b03_history_reproducibility_test.dart:172`, and `TASKS.md:201`.
+
+#### B03-13
+
+- **Implementation commit:** `d0aae8006b33ae6f1cbabc6d3c741d58db3e881b`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Blocked**. **Re-review:** **Blocked**. **Terra review:** **Blocked** because no retrievable regional-vocabulary/journey/accessibility verdict exists.
+- **Findings:** Direct foods and recipes share the calculation/quantity/constraint/snapshot authorities and transactional finalization. The production builder supplies only `DateTime.now()`, optional category labels are absent, and a not-entered component state is absent because every component requires a positive concrete quantity.
+- **Remediation:** `37d4e2b97229b71bdfc5c58f3876800bd3f725b6`; re-review remained Blocked.
+- **Tests verified:** `test/b03_thali_test.dart`, `test/b03_thali_screen_test.dart`, `test/b03_constraints_test.dart`; missing `test/offline_logging_test.dart` and no production time/category/not-entered coverage.
+- **Merge commit:** `70be45a534e10e45c53f9d8caec68a135e4fd55b`.
+- **Evidence:** `lib/core/nutrition_thali.dart:65`, `lib/features/food_log/thali_builder_screen.dart:357`, `TASKS.md:213`.
+
+#### B03-14
+
+- **Implementation commit:** `495b4411732ab6dc7cf29562745fd094782b4fb5`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Blocked**. **Re-review:** **Blocked**. **Terra review:** **Blocked** because no retrievable copy/recovery/journey verdict exists.
+- **Findings:** Typed ranges, provenance, correction ancestry, rollback, cleanup, and privacy-safe error handling are substantial. The production AI screen uses the legacy response adapter rather than the strict parser, persists the full user description, provides no required local/manual fallback on strict offline refusal, may persist fixed fallback values, and stores non-IANA `timeZoneName`. Named offline/AI integration tests were absent.
+- **Remediation:** `b15f739647b8b58c45b3646404814ae0b0bdb537`; re-review remained Blocked.
+- **Tests verified:** `test/b03_estimate_provenance_test.dart`, `test/b03_estimate_privacy_test.dart`, `test/b03_estimate_review_widget_test.dart`; missing `test/b03_estimate_parsing_test.dart`, `test/ai_food_analysis_test.dart`, and `test/offline_estimate_fallback_test.dart`.
+- **Merge commit:** `bbd4052daf24a431bb45a6d7631ad2688ad6375a`.
+- **Evidence:** `lib/core/nutrition_estimates.dart:93,988`, `lib/features/food_log/ai_meal_logger_screen.dart:207,241`, `TASKS.md:225`.
+
+### Safety and completion wave — B03-15 through B03-17
+
+#### B03-15
+
+- **Implementation commit:** `559377081c31f28c2f48def302de377bb7297de6`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Approved with follow-up**. **Re-review:** **Approved with follow-up**.
+- **Findings:** The remediation limits leucine display to explicit reviewed/measured sources, scopes supersession to canonical records, and retains descriptive snapshot-based unknown/range behavior. No target, threshold, quality score, recommendation, or duplicate persisted total was found. Direct cross-midnight focused evidence is a follow-up gap.
+- **Remediation:** `6062e9e397517718a39cfb99873eaa4abb991e8f`; re-review Approved with follow-up.
+- **Tests verified:** `test/b03_protein_distribution_test.dart`, `test/b03_leucine_test.dart`, `test/b03_history_reproducibility_test.dart`, `test/b03_protein_distribution_controller_test.dart`, `test/b03_protein_distribution_widget_test.dart`.
+- **Merge commit:** `d1045505cb52f2f7ea8da374c202d6dd8f9b6f83`.
+- **Evidence:** `lib/core/nutrition_protein_distribution.dart`, `lib/data/repositories/nutrition_protein_distribution_repository.dart`, `lib/features/nutrition/protein_distribution_screen.dart`, and `TASKS.md:237`.
+
+#### B03-16
+
+- **Implementation commit:** `9e43e7b477d82fc74b309c59641007daed056264`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Approved with follow-up**. **Re-review:** **Approved with follow-up**.
+- **Findings:** Fixed targets, stable-ID evidence, four deterministic outcomes, unknown-not-safe behavior, acknowledgement separation, and privacy/backup evidence are verified. Follow-ups are a dedicated cross-contact truth table and the missing mandatory Terra journey approval noted by the reviewer; no diagnosis or recommendation was found.
+- **Remediation:** `f40e9bf60b4d4c946f59612b7353d6eb93ab7cac`; re-review Approved with follow-up. `test/b03_thali_test.dart` was added later by B03-13 and is present in the final integration.
+- **Tests verified:** `test/b03_constraints_test.dart`, `test/dietary_preferences_test.dart`, `test/b03_constraint_backup_test.dart`, `test/b03_constraint_controller_test.dart`, `test/b03_constraint_review_test.dart`, later `test/b03_thali_test.dart`, `test/b03_thali_screen_test.dart`.
+- **Merge commit:** `0ded6a460297a53940b24b373fec3563fa611a44`.
+- **Evidence:** `lib/core/nutrition_constraints.dart`, `lib/data/repositories/nutrition_constraint_repository.dart`, `lib/core/backup/backup_v8.dart`, `lib/features/settings/nutrition_constraint_review_screen.dart`, and `TASKS.md:249`.
+
+#### B03-17
+
+- **Implementation commits:** `620d7eb6629d5cbffbeb9ca8145f4679277ce144`, `145fefd20337be7a1dca06e96d9ebf4b89f601a6`; evidence commits `24088c782a8520ed4b29c3974e902edf136c6a75`, `96db7a8a766553cb6a1b276d73c8d6a46e6fab51`; post-merge remediation `d20c4b792febdc4033d4e2ab9d72441e9fc1a1b7`.
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High retrospective; 2026-08-05.
+- **Verdict:** **Blocked**. **Re-review:** **Blocked**. **Terra review:** **Blocked** because no retrievable Terra completion/device/keyboard/screen-reader verdict exists.
+- **Findings:** The merged remediation fixes dashboard read-model ownership and user-scoped invalidation. Before `d20c4b7`, the repository-wide format gate failed, standalone backup/migration journey records were absent, no manual device or keyboard review was executed, and no final release verdict existed. `d20c4b7` closes formatting and the two automated evidence records, but the exact merged branch still required durable independent review and physical/manual evidence; the narrow Sol review only approved RB-03/RB-04.
+- **Remediation/re-review:** `d20c4b7` was reviewed only for RB-03/RB-04 by Sol: RB-03 **Approved with follow-up**, RB-04 **Approved**. It does not clear B03-17’s overall Blocked verdict.
+- **Tests verified:** merged evidence recorded 721 full tests and 349 focused tests; remediation reran format (0), analyze (0), diff check (0), full Flutter suite (721), backup/restore focused suite (88), and migration focused suite (28). Terra/manual device evidence remains absent.
+- **Merge commit:** `37a557bf1d04e83133a24ca0a908604275242ce9`; remediation merge `f29f0d4f21d5c6fec4f00c0045f7a2ad5a21bf79`.
+- **Evidence:** `VERIFICATION.md:278`, `VERIFICATION.md:417`, `test/b03_history_reproducibility_test.dart`, `lib/data/repositories/nutrition_consumption_repository.dart`, and `TASKS.md:261`.
+
+### Required Terra integration review register
+
+The following tasks were explicitly designated for Terra integration evidence:
+B03-07, B03-08, B03-10, B03-12, B03-13, B03-14 UI integration, and B03-17.
+The fresh Terra High retrospective reviewer inspected the relevant merged task
+range and recorded a separate **Blocked** verdict for each because no durable
+historical Terra verdict, user-journey review, or required platform/accessibility
+evidence was retrievable. This is a recorded review outcome, not an inference
+from passing tests.
+
+| Task | Implementation / merge evidence | Terra reviewer / date | Verdict and finding | Tests/evidence checked |
+|---|---|---|---|---|
+| B03-07 | `60a01c4`/`d347b6f`; merge `2bb907e` | Fresh Terra High retrospective; 2026-08-05; session ID unavailable | **Blocked** — no lifecycle/copy/integration sign-off. | `test/b03_recipe_version_test.dart`, `TASKS.md:129`, recipe repository. |
+| B03-08 | `c5f96b0`/`aa0b5bd`; linear integration | Fresh Terra High retrospective; 2026-08-05; session ID unavailable | **Blocked** — no serving presentation or Terra integration verdict. | Recipe calculation/scaling tests; `TASKS.md:141`. |
+| B03-10 | `973e0f6`; linear integration | Fresh Terra High retrospective; 2026-08-05; session ID unavailable | **Blocked** — no labels, calibration, accessibility, or Terra journey verdict. | Household/vessel controller tests; `TASKS.md:165`. |
+| B03-12 | `1c249fe`/`e40a367`; direct/fast-forward integration | Fresh Terra High retrospective; 2026-08-05; session ID unavailable | **Blocked** — no joint integration sign-off; named recipe-log/screen/grouping tests absent. | `test/b03_saved_recipe_log_integration_test.dart`; `TASKS.md:201`. |
+| B03-13 | `d0aae80`/`37d4e2b`; merge `70be45a` | Fresh Terra High retrospective; 2026-08-05; session ID unavailable | **Blocked** — no regional-vocabulary, journey, or accessibility verdict; `offline_logging_test.dart` absent. | `test/b03_thali_test.dart`, `test/b03_thali_screen_test.dart`; `TASKS.md:213`. |
+| B03-14 UI | `495b441`/`b15f739`; merge `bbd4052` | Fresh Terra High retrospective; 2026-08-05; session ID unavailable | **Blocked** — no copy/recovery/journey verdict; named AI/offline tests absent. | Estimate privacy/review widget tests; `TASKS.md:225`. |
+| B03-17 | `620d7eb`/`145fefd`; merge `37a557b`; post-merge `d20c4b7`/`f29f0d4` | Fresh Terra High retrospective; 2026-08-05; session ID unavailable | **Blocked** — no completion session, manual device, keyboard navigation, or screen-reader verdict. | `VERIFICATION.md:278,392,417`; `TASKS.md:261`. |
+
+### B03-18-RB-03 and B03-18-RB-04 narrow Sol review
+
+- **Reviewer / date:** GPT-5 Codex, fresh Sol High session; 2026-08-05; stable session identifier unavailable.
+- **Scope:** Only RB-03 (formatting) and RB-04 (standalone backup/migration journey evidence) on `d20c4b792febdc4033d4e2ab9d72441e9fc1a1b7`.
+- **RB-03 verdict:** **Approved with follow-up**. Exactly `app_database.g.dart`, `b03_raw_cooked_test.dart`, `b03_recipe_graph_integrity_test.dart`, and `b03_recipe_version_test.dart` were formatted. Sol verified repository format exit `0`, 335 files/0 changes, analyze exit `0`, 721 tests, diff check exit `0`, and clean status. Follow-up: rerun build-runner/format idempotence in disposable CI; no generator input changed here.
+- **RB-04 verdict:** **Approved**. Sol verified both records, exact fixture checksums, export/restore commands, semantic snapshots, compatibility, rollback/retry, FK, reopen/idempotency, and limitations. The backup focused command passed 88 tests and the migration focused command passed 28 tests. The v8 evidence is an in-memory graph and all evidence is automated; neither is represented as physical-device evidence.
+- **Merge disposition:** Ready to merge solely for RB-03/RB-04. The remediation was merged as `f29f0d4f21d5c6fec4f00c0045f7a2ad5a21bf79`. This review did not issue an overall B03 release verdict.
