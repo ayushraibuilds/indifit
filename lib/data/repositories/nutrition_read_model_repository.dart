@@ -87,7 +87,10 @@ class NutritionReadModelRepository {
         .where(
           (record) =>
               record.localDate == localDate &&
-              !superseded.contains(record.stableId),
+              // Canonical correction lineage must not hide a legacy row with
+              // the same text ID; history identity includes source type.
+              (record is! NutritionCanonicalSnapshotReadModel ||
+                  !superseded.contains(record.stableId)),
         )
         .toList(growable: false);
     final contributions = records.expand(

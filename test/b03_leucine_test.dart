@@ -102,16 +102,49 @@ void main() {
       );
     },
   );
+
+  test('derived recipe calculation is not promoted to measured leucine', () {
+    final result = service.build(
+      registry: registry,
+      userId: 'user-1',
+      localDate: '2026-08-04',
+      records: [
+        _record(
+          id: 'derived-leucine',
+          items: [
+            _item(
+              id: 'derived-item',
+              facts: {
+                'protein': _known('protein', '20'),
+                'leucine': _known(
+                  'leucine',
+                  '1.5',
+                  source: NutrientSourceType.recipeCalculation,
+                ),
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+
+    expect(result.leucineAvailability, NutritionLeucineAvailability.unknown);
+    expect(result.totalLeucine.pointText, '1.50');
+  });
 }
 
-NutrientFact _known(String nutrientId, String value) => NutrientFact.known(
+NutrientFact _known(
+  String nutrientId,
+  String value, {
+  NutrientSourceType source = NutrientSourceType.reviewedCatalogue,
+}) => NutrientFact.known(
   nutrientId: nutrientId,
   point: NutrientAmount(
     value: QuantityAmount.fromString(value),
     unit: NutrientUnit.gram,
   ),
   basis: NutrientBasis(NutrientBasisKind.absolute),
-  source: NutrientSourceType.reviewedCatalogue,
+  source: source,
   factVersion: 'leucine-test-v1',
 );
 

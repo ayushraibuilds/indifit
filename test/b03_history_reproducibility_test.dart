@@ -210,6 +210,88 @@ void main() {
   );
 
   test(
+    'canonical supersession does not hide a colliding legacy identity',
+    () async {
+      await _insertFood(db, 'food-1', 'Food');
+      final consumption = NutritionConsumptionRepository(
+        db: db,
+        registry: registry,
+      );
+      const collidingId = 'legacy-food-log:uuid:collision';
+
+      await consumption.finalizeConsumption(
+        _request(
+          registry: registry,
+          id: collidingId,
+          commandId: 'collision-original-command',
+          itemId: 'collision-original-item',
+          localDate: '2026-08-03',
+          protein: '10',
+        ),
+      );
+      await consumption.finalizeConsumption(
+        _request(
+          registry: registry,
+          id: 'collision-correction',
+          commandId: 'collision-correction-command',
+          itemId: 'collision-correction-item',
+          localDate: '2026-08-04',
+          protein: '12',
+          supersedesSnapshotId: collidingId,
+          correctionId: 'collision-correction-lineage',
+          correctionReason: 'Corrected quantity.',
+        ),
+      );
+      await db
+          .into(db.foodLogs)
+          .insert(
+            FoodLogsCompanion.insert(
+              name: 'Legacy collision',
+              calories: 50,
+              proteinG: 3,
+              carbsG: 2,
+              fatG: 1,
+              servingLogged: 1,
+              servingUnit: 'serving',
+              mealType: 'snack',
+              loggedAt: Value(DateTime(2026, 8, 4, 12)),
+              uuid: const Value('collision'),
+            ),
+          );
+
+      final history = NutritionReadModelRepository(
+        db: db,
+        registry: registry,
+        canonicalRepository: consumption,
+        legacyUserId: 'user-1',
+      );
+      final repository = NutritionProteinDistributionRepository(
+        registry: registry,
+        history: history,
+      );
+
+      final distribution = await repository.forLocalDate(
+        userId: 'user-1',
+        localDate: '2026-08-04',
+      );
+      expect(distribution.totalProtein.pointText, '15.0');
+      expect(
+        distribution.meals
+            .map((meal) => meal.sourceTypes)
+            .expand((types) => types),
+        contains('legacy_food_log'),
+      );
+
+      final daily = await history.dailyTotals(
+        userId: 'user-1',
+        localDate: '2026-08-04',
+      );
+      expect(daily.totals.facts['protein']?.point?.value.toString(), '15');
+      expect(daily.sourceCounts['legacy_food_log'], 1);
+    },
+  );
+
+  test(
     'Backup-v8 round trip preserves descriptive distribution fingerprint',
     () async {
       await _insertFood(db, 'food-1', 'Food');

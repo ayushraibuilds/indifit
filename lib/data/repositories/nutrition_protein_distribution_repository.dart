@@ -53,7 +53,11 @@ class NutritionProteinDistributionRepository {
     final activeForDate = history.where(
       (record) =>
           record.localDate == normalizedDate &&
-          !superseded.contains(record.stableId),
+          // Correction lineage points to canonical snapshots only. Legacy
+          // records have a separate source namespace even if their text ID
+          // happens to collide with a canonical ID.
+          (record is! NutritionCanonicalSnapshotReadModel ||
+              !superseded.contains(record.stableId)),
     );
     return _service.build(
       registry: _registry,

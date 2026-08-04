@@ -697,12 +697,14 @@ class NutritionProteinDistributionService {
 
   static bool _isMeasuredOrReviewedLeucine(NutrientFact fact) {
     if (!_isKnownPointFact(fact)) return false;
+    // A recipe calculation is derived data. This read model does not carry
+    // the source lineage needed to prove that every contributing leucine
+    // value was measured or curated, so it remains unknown here.
     return switch (fact.source) {
       NutrientSourceType.bundledCatalogue ||
       NutrientSourceType.regionalCatalogue ||
       NutrientSourceType.reviewedCatalogue ||
-      NutrientSourceType.manufacturerLabel ||
-      NutrientSourceType.recipeCalculation => true,
+      NutrientSourceType.manufacturerLabel => true,
       _ => false,
     };
   }
