@@ -837,4 +837,91 @@ chooses to do so, but B04 implementation may not begin. B03 remains a blocked
 prerequisite for any B04 implementation start; the blockers above must be
 resolved and re-reviewed first.
 
-**Final verdict: Blocked.**
+**Historical r2 final verdict: Blocked.**
+
+## B03-18 focused final verification — r3
+
+Review mode: local focused review on the current merged integration tree. Per
+the product-owner instruction for this rerun, no Sol or Terra instance was
+used. The prior r2 disposition and its historical reviewer register remain
+unchanged above; this section is the current release disposition after the
+Wave 1, Wave 2, and Wave 3 remediations.
+
+| Field | Current evidence |
+|---|---|
+| Verification branch | `b03/t18-final-verification-r3` |
+| Current integration code baseline | `917f5e2` (`test(b03): align history and snapshot time contracts`) |
+| Wave 1 merge | `e80213c`; implementation commits `b5680c5`, `df78216` |
+| Wave 2 merge | `3d5c1f2`; implementation commit `fe5edcb` |
+| Wave 3 merge | `8e49e8a`; implementation commit `b429d8c` |
+| Schema / backup versions | `17` / `8` |
+| Working tree | Clean before verification-document edits |
+
+### Focused automated validation
+
+| Command | Result | Evidence |
+|---|---|---|
+| `dart format --output=none --set-exit-if-changed lib test` | Pass, exit `0` | 339 files, 0 changed |
+| `flutter analyze` | Pass, exit `0` | No issues found |
+| `git diff --check` | Pass, exit `0` | Clean |
+| Focused B03 release-gate command covering fixtures, schema, backup, transformations, time, history, recipes, thali, constraints, and estimates | Pass, exit `0` | 147 tests passed |
+| `flutter test` | Pass, exit `0` | 747 tests passed |
+
+The test run emitted existing non-failing Drift multiple-database and plugin/
+fallback warnings. No test failure, analyzer issue, formatting change, or
+whitespace error was observed.
+
+### Current blocker resolution
+
+| Former blocker | Current result | Evidence |
+|---|---|---|
+| RB-06 decision-specific fixture semantics | Resolved | `b5680c5`; decision matrix and named invariant tests pass |
+| RB-07 preference compensation | Resolved | `b5680c5`; unchanged preference snapshot and retry assertions pass |
+| RB-08 schema durable constraints | Resolved | `df78216`; v17 triggers and negative relationship tests pass |
+| RB-09 backup ownership/malformed nutrient states | Resolved | `df78216`; known-zero and reviewed-measure ownership tests pass |
+| RB-10 transformation evidence/ranges | Resolved | `fe5edcb`; authoritative provenance and range-only persistence tests pass |
+| RB-11A canonical time context | Resolved | `fe5edcb` and `b429d8c`; required IANA, DST, cross-midnight, and retry tests pass |
+| RB-12 append-only legacy corrections | Resolved | `fe5edcb`; original rows, effective reads, totals, and ancestry pass |
+| RB-13 saved-recipe production path | Resolved | `b429d8c`; platform timezone, stale-version, retry, and canonical finalization pass |
+| RB-14 thali production path | Resolved | `b429d8c`; typed time context and transactional integration tests pass |
+| RB-15 estimate parser/privacy path | Resolved | `b429d8c`; offline refusal, typed parsing, cleanup, and privacy tests pass |
+| RB-16/RB-17 reviewer-process evidence | Non-blocking follow-up | No Sol/Terra instance was used in this rerun, by explicit instruction; no new reviewer verdict is claimed |
+
+### Physical verification
+
+| Check | Result | Evidence reference |
+|---|---|---|
+| Android primary form factor | Pass — product-owner manual attestation | User confirmation in the current task; no local handset execution claimed |
+| iOS primary form factor / iPhone mirroring | Pass — product-owner manual attestation | User confirmation that iPhone mirroring was unlocked and verification was completed |
+| Compact width, large text, keyboard/focus, screen-reader semantics | Pass — product-owner manual attestation | User confirmation; automated widget/semantic coverage remains recorded above |
+| Unknown/estimated/range, retry/error, stale-version, vessel, dietary, privacy, thali, and mutable-history journeys | Pass — product-owner manual attestation | User confirmation; focused automated support passed |
+
+The physical matrix is recorded as passed based on the product owner’s direct
+manual execution statement. This document does not claim that the assistant
+repeated those physical checks locally.
+
+### Current task disposition
+
+Every B03 task is implemented and merged. B03-01 through B03-16 have passing
+focused evidence; B03-17 and B03-18 pass the full integration/release-gate
+suite and the user-attested physical matrix. The task status fields in
+`TASKS.md` reflect this current disposition.
+
+### Important non-blocking follow-ups
+
+- 592 catalogue entries remain explicitly `manualReview`/unresolved under the
+  accepted food-identity boundary; no identity is fabricated for them.
+- Build-runner/format idempotence may be rerun in disposable CI; the current
+  tree already passes formatting, analysis, the full test suite, and diff check.
+- No independent Sol/Terra verdict is claimed for this rerun because the
+  product owner explicitly prohibited using those instances.
+
+### Scope and B04 readiness
+
+The focused review found no B04 implementation leakage in the current B03
+code. B04 planning and implementation were not started by this task. B04
+implementation remains outside this authorization.
+
+**Final verdict: Passed with non-blocking follow-up.**
+
+**B03 is authorized for final merge with recorded non-blocking follow-ups.**
