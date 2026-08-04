@@ -450,8 +450,8 @@ void main() {
         await repository.createUserOverride(transformation);
 
         final backup = await BackupV8Data.createFromDatabase(db);
-        final payload = jsonDecode(jsonEncode(backup.toJson()))
-            as Map<String, dynamic>;
+        final payload =
+            jsonDecode(jsonEncode(backup.toJson())) as Map<String, dynamic>;
         final graph = payload['nutrition_graph'] as Map<String, dynamic>;
         final tables = graph['tables'] as Map<String, dynamic>;
         final rows = tables['nutrition_quantity_conversions'] as List;

@@ -413,3 +413,68 @@ keyboard-navigation check was executed in this run.
 - No confirmed B03 integration correctness blocker remains. Independent Sol
   review and any required manual checks remain for B03-18; this section does
   not issue the final release verdict.
+
+### B03-17 release-gate remediation — standalone journey evidence
+
+Recorded on 2026-08-05 from `b03/t17-release-gate-remediation`, whose parent is
+the latest B03-17 integration baseline `37a557bf1d04e83133a24ca0a908604275242ce9`.
+These are automated execution records only; they do not claim manual-device
+execution.
+
+#### Backup export/restore
+
+Fixture and graph identities:
+
+| Fixture/graph | Version | SHA-256 or identity note |
+|---|---:|---|
+| `b03-backup-v7-legacy-baseline-01` — `test/fixtures/data/b03_backup_v7_legacy_baseline.json` | Backup 7 / schema 16 | `16e486faf0abba0f4b075a928eab25f3fe9e651e68687a6f66da14b944daa3ae` |
+| Complete compatibility graph — `test/fixtures/data/b03_backup_v7_complete_graph.json` | Backup 7 / schema 16 | `02dc06612a6798ceec21efdc3bc9617a58e9e99af87b765ce11992b1aa51890a`; the harness has no separate portable ID for this complete file, so its exact filename and checksum are the identity. |
+| In-memory Backup v8 graph — `_populateNutritionGraph` in `test/b03_backup_v8_codec_test.dart` | Backup 8 / schema 17 | Graph IDs include `v8-user-food`, `v8-recipe-v1`, `v8-vessel-a`, `v8-vessel-b`, and `v8-calibration-1/2`. No checked-in v8 JSON fixture exists; file checksum is therefore not applicable. |
+
+Exact execution command:
+
+```bash
+flutter test --reporter compact test/b03_backup_v8_codec_test.dart test/b03_backup_v8_test.dart test/b03_consumption_snapshot_test.dart test/b03_constraint_backup_test.dart test/b03_estimate_provenance_test.dart test/b03_history_reproducibility_test.dart test/b03_recipe_version_test.dart test/b03_vessel_calibration_test.dart test/b01_backup_v6_test.dart test/b02_backup_v7_test.dart test/backup_restore_transaction_test.dart
+```
+
+Result: exit `0`, `88` tests passed, no test failures reported.
+
+| Evidence item | Recorded result |
+|---|---|
+| Export command/test | `BackupV8Data.createFromDatabase(source)` and `BackupFileAdapter.exportV8ToEnvelopeJson(data: backup)` in `test/b03_backup_v8_codec_test.dart`; two JSON exports compare equal and assert Backup v8/schema v17. |
+| Pre-export semantic snapshot | v8: `NutritionBackupGraph.capture(source)` and deterministic `backup.nutrition.toJson()`; v7: `B03LogicalSnapshot.capture(source)` over the copied checked-in fixture. |
+| Restore command/test | v8: `BackupV8Data.fromJson(jsonDecode(jsonEncode(backup.toJson())))` followed by `restoreToDatabase(target, targetPrefs)` and `NutritionBackupGraph.fromJson(...).restoreInto(restored)`; v7: `B03BackupV7Fixture.load().restoreToDatabase(target)`. |
+| Post-restore semantic snapshot | v8 row/lineage assertions preserve portable food, recipe/version, duplicate vessel names, archive state, calibration supersession, estimate ancestry, consumption snapshots, preferences, and empty foreign-key checks; history fingerprint remains equal before/after restore. v7 `B03LogicalSnapshot.assertLogicallyEquals` passes for legacy and complete graphs. |
+| Portable/local identity | Portable nutrition IDs survive v8 restore. v7 complete-graph logical snapshots omit local integer IDs and replace foreign keys with semantic parent tokens; local-ID remapping passes. |
+| v5/v6/v7 compatibility | `v5, v6 and v7 imports remain legacy-only` passes; B03 nutrition tables are absent and no B03 entities are fabricated. B01 Backup v6 and B02 Backup v7 suites also pass. |
+| Rollback/retry | v8 database/preference failure and v7 stage-aware relationship, database, preference, and final-transaction failures leave durable state unchanged, then retry successfully after fault removal. |
+| Foreign keys | `PRAGMA foreign_key_check` is empty after successful restores and after rollback checks. |
+| Limitations | The v8 export uses an in-memory graph helper rather than a checked-in v8 file. This record covers automated export/restore only; it does not substitute for physical-device or manual UI evidence. |
+
+#### Real v16→v17 migration
+
+Fixture identities:
+
+| Fixture | Source schema | SHA-256 |
+|---|---:|---|
+| `b03-v16-legacy-baseline-01` — `test/fixtures/data/b03_v16_legacy_baseline.db` | 16 | `27516799c7cfa9dba53a408c13a638fdb2be8bae32ee887fee2bf9f7ce147eb5` |
+| Complete graph — `test/fixtures/data/b03_v16_complete_graph.db` | 16 | `cee818f3502273e507d02670e3ecf084a3dd0528828e68e40d15cd88c645e550`; exact filename/checksum identify the complete fixture because the harness has no second fixture ID. |
+
+Exact execution command:
+
+```bash
+flutter test --reporter compact test/b03_schema_v17_migration_test.dart test/b03_schema_relationship_test.dart test/b01_schema_v15_migration_test.dart test/b02_schema_v16_migration_test.dart
+```
+
+Result: exit `0`, `28` tests passed, no test failures reported.
+
+| Evidence item | Recorded result |
+|---|---|
+| Migration command/test | `test/b03_schema_v17_migration_test.dart` copies the immutable on-disk fixture, opens it through `AppDatabase` with the v17 migration boundary, and exercises the complete graph, fresh v17 creation, corrected vessel graph, and every supported injected migration stage. |
+| Source/result versions | Source `PRAGMA user_version = 16`; resulting migrated database asserts schema/user version `17`. |
+| Pre/post semantic snapshot | `B03LogicalSnapshot.capture` compares the complete v16 source and migrated durable state while preserving B01/B02 rows, timestamps, meal categories, quantities, stored macros, and foreign-key relationships. The legacy fixture also has stable logical/file snapshots across repeated opens. |
+| Rollback injection | Validation, DDL/data mutation, and pre-commit failure stages are injected; each failed attempt rolls back, preserves the original v16 file at schema 16, and leaves it readable. |
+| Retry | Every injected stage is disabled and retried; migration succeeds to schema 17. |
+| Foreign keys/indexes | `test/b03_schema_relationship_test.dart` passes the v17 table/index/FK assertions; migration checks report empty foreign-key violations. |
+| Reopen/idempotency | Reopening the migrated file does not duplicate rows or repeat B03 seed state; real fixture checksum and semantic comparison remain stable. |
+| Limitations | This record is automated evidence only. It does not claim a physical-device journey or a separate checked-in migrated-output artifact. |
