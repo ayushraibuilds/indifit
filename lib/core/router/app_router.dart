@@ -15,6 +15,7 @@ import '../../features/equipment/equipment_profiles_screen.dart';
 import '../../features/equipment/exercise_preference_editor_screen.dart';
 import '../../features/food_log/ai_meal_logger_screen.dart';
 import '../../features/food_log/ai_meal_planner_screen.dart';
+import '../../features/food_log/nutrition_estimate_review_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/routine_wizard_screen.dart';
 import '../../features/program_authoring/program_author_screen.dart';
@@ -80,6 +81,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final mealType = state.uri.queryParameters['mealType'] ?? 'breakfast';
           return AiMealLoggerScreen(mealType: mealType);
+        },
+      ),
+      GoRoute(
+        path: '/food/estimate-review',
+        builder: (context, state) {
+          final estimateId = state.uri.queryParameters['estimateId'];
+          if (estimateId == null || estimateId.trim().isEmpty) {
+            return const Scaffold(
+              body: Center(child: Text('No estimate selected.')),
+            );
+          }
+          return NutritionEstimateReviewScreen(estimateId: estimateId);
         },
       ),
       GoRoute(

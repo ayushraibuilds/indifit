@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -8,10 +9,14 @@ import 'package:intl/intl.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/di/providers.dart';
+import '../../core/nutrients.dart';
+import '../../core/nutrition_estimates.dart';
+import '../../core/nutrition_household_measures.dart';
+import '../../core/privacy/nutrition_estimate_privacy.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/colors.dart';
+import '../../core/typed_quantities.dart';
 import '../../core/utils/natural_meal_parser.dart';
-import '../../data/repositories/food_repository.dart';
 
 class AiMealLoggerScreen extends ConsumerStatefulWidget {
   final String mealType; // "breakfast", "lunch", "dinner", "snack"
@@ -33,7 +38,8 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   File? _selectedImage;
 
   bool _loading = false;
-  Map<String, dynamic>? _estimatedMeal;
+  NutritionEstimate? _estimate;
+  NutritionEstimateImageCleanupResult? _imageCleanup;
 
   // Edit-before-save controllers
   final TextEditingController _nameEditController = TextEditingController();
@@ -41,27 +47,44 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   final TextEditingController _proteinEditController = TextEditingController();
   final TextEditingController _carbsEditController = TextEditingController();
   final TextEditingController _fatEditController = TextEditingController();
+  final TextEditingController _servingCountEditController =
+      TextEditingController();
 
   @override
   void dispose() {
+    unawaited(
+      _cleanupSelectedImage(
+        lifecycle: NutritionEstimateImageLifecycle.cancelled,
+        notify: false,
+      ),
+    );
     _textController.dispose();
     _nameEditController.dispose();
     _caloriesEditController.dispose();
     _proteinEditController.dispose();
     _carbsEditController.dispose();
     _fatEditController.dispose();
+    _servingCountEditController.dispose();
     super.dispose();
   }
 
   void _initEditControllers() {
-    if (_estimatedMeal == null) return;
-    _nameEditController.text = _estimatedMeal!['name'] ?? 'AI Estimated Meal';
-    _caloriesEditController.text = (_estimatedMeal!['calories'] ?? '0')
-        .toString();
-    _proteinEditController.text = (_estimatedMeal!['protein'] ?? '0.0')
-        .toString();
-    _carbsEditController.text = (_estimatedMeal!['carbs'] ?? '0.0').toString();
-    _fatEditController.text = (_estimatedMeal!['fat'] ?? '0.0').toString();
+    final estimate = _estimate;
+    if (estimate == null) return;
+    _nameEditController.text = estimate.displayLabel;
+    _caloriesEditController.text = _pointText('energy');
+    _proteinEditController.text = _pointText('protein');
+    _carbsEditController.text = _pointText('carbohydrate');
+    _fatEditController.text = _pointText('fat');
+    _servingCountEditController.text =
+        estimate.quantity?.unit == QuantityUnit.serving
+        ? estimate.quantity!.amount.toString()
+        : '';
+  }
+
+  String _pointText(String nutrientId) {
+    final point = _estimate?.facts[nutrientId]?.point;
+    return point == null ? '' : point.value.toString();
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -80,8 +103,8 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
           ),
           content: Text(
             isCamera
-                ? 'IndiFit requires access to your camera to snap a photo of your meal. This photo is parsed locally to estimate ingredients, portion weights, and nutritional values.'
-                : 'IndiFit requires access to your photo library to choose an existing image of your meal for ingredient extraction.',
+                ? 'IndiFit can send this meal photo to the approved estimation service after you confirm. The temporary photo is deleted after processing and is not backed up.'
+                : 'IndiFit can send the selected meal photo to the approved estimation service after you confirm. The temporary photo is deleted after processing and is not backed up.',
             style: const TextStyle(height: 1.4, color: AppColors.textSecondary),
           ),
           actions: [
@@ -104,15 +127,20 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   );
 
                   if (file != null && mounted) {
+                    await _cleanupSelectedImage(
+                      lifecycle: NutritionEstimateImageLifecycle.cancelled,
+                    );
                     setState(() {
                       _selectedImage = File(file.path);
-                      _estimatedMeal = null; // Clear previous estimation
+                      _estimate = null;
                     });
                   }
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to select image: $e')),
+                      const SnackBar(
+                        content: Text('The image could not be selected.'),
+                      ),
                     );
                   }
                 }
@@ -129,8 +157,25 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     );
   }
 
+  Future<void> _cleanupSelectedImage({
+    required NutritionEstimateImageLifecycle lifecycle,
+    bool notify = true,
+  }) async {
+    final image = _selectedImage;
+    if (image == null) return;
+    final result = await ref
+        .read(nutritionEstimatePrivacyServiceProvider)
+        .cleanupTemporaryImage(path: image.path, lifecycle: lifecycle);
+    if (!mounted || !notify) return;
+    setState(() {
+      _selectedImage = null;
+      _imageCleanup = result;
+    });
+  }
+
   Future<void> _submitTextEstimate() async {
-    if (_textController.text.trim().isEmpty) return;
+    final description = _textController.text.trim();
+    if (description.isEmpty) return;
 
     final policy = ref.read(privacyPolicyProvider);
     if (!policy.isAiAllowed) {
@@ -148,30 +193,39 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
     setState(() {
       _loading = true;
-      _estimatedMeal = null;
+      _estimate = null;
     });
 
     try {
       final dio = ref.read(dioProvider);
       final response = await dio.post(
         '${AppConfig.backendUrl}/api/ai/meal-estimate-text',
-        data: {'text': _textController.text},
+        data: {'text': description},
       );
-
-      if (response.statusCode == 200 && response.data != null) {
-        setState(() {
-          _estimatedMeal = response.data;
-          _initEditControllers();
-          _loading = false;
-        });
+      if (response.statusCode != 200 || response.data == null) {
+        throw const NutritionEstimateValidationError(
+          'malformed_estimate_response',
+          'The estimation service returned no usable estimate.',
+        );
       }
-    } catch (e) {
-      setState(() => _loading = false);
+      await _persistResponse(
+        response.data,
+        inputModality: NutritionEstimateInputModality.text,
+        userDescription: description,
+        inputHash: nutritionEstimateInputHash(description),
+      );
+    } catch (error) {
+      if (mounted) setState(() => _loading = false);
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('API Error: $e')));
+        ).showSnackBar(SnackBar(content: Text(_estimateErrorMessage(error))));
       }
+    } finally {
+      await _cleanupSelectedImage(
+        lifecycle: NutritionEstimateImageLifecycle.cancelled,
+      );
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -194,46 +248,83 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
     setState(() {
       _loading = true;
-      _estimatedMeal = null;
+      _estimate = null;
     });
 
+    final imagePath = _selectedImage!.path;
     try {
       final dio = ref.read(dioProvider);
 
-      final filename = _selectedImage!.path.split('/').last;
+      final filename = imagePath.split('/').last;
       final formData = FormData.fromMap({
-        'image': await MultipartFile.fromFile(
-          _selectedImage!.path,
-          filename: filename,
-        ),
+        'image': await MultipartFile.fromFile(imagePath, filename: filename),
       });
 
       final response = await dio.post(
         '${AppConfig.backendUrl}/api/ai/meal-estimate-photo',
         data: formData,
       );
-
-      if (response.statusCode == 200 && response.data != null) {
-        setState(() {
-          _estimatedMeal = response.data;
-          _initEditControllers();
-          _loading = false;
-        });
+      if (response.statusCode != 200 || response.data == null) {
+        throw const NutritionEstimateValidationError(
+          'malformed_estimate_response',
+          'The estimation service returned no usable estimate.',
+        );
       }
-    } catch (e) {
-      setState(() => _loading = false);
+      await _persistResponse(
+        response.data,
+        inputModality: NutritionEstimateInputModality.photo,
+        inputHash: nutritionEstimateInputHash('photo-request:$filename'),
+      );
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('API Error: $e')));
+        ).showSnackBar(SnackBar(content: Text(_estimateErrorMessage(error))));
       }
+    } finally {
+      await _cleanupSelectedImage(
+        lifecycle: NutritionEstimateImageLifecycle.completed,
+      );
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  Future<void> _logMeal() async {
-    if (_estimatedMeal == null) return;
+  Future<void> _persistResponse(
+    Object? response, {
+    required NutritionEstimateInputModality inputModality,
+    required String inputHash,
+    String? userDescription,
+  }) async {
+    final registry = await ref.read(nutritionRegistryProvider.future);
+    final repository = await ref.read(
+      nutritionEstimateRepositoryProvider.future,
+    );
+    final draft = NutritionEstimateLegacyResponseAdapter.fromResponse(
+      response,
+      registry: registry,
+      inputModality: inputModality,
+      inputHash: inputHash,
+      userDescription: userDescription,
+    );
+    final estimate = await repository.createEstimateFromDraft(
+      draft: draft,
+      userId: kLocalNutritionUserScopeId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _estimate = estimate;
+      _initEditControllers();
+    });
+  }
 
-    final repo = ref.read(foodRepositoryProvider);
+  String _estimateErrorMessage(Object error) {
+    if (error is NutritionEstimateError) return error.message;
+    return 'The estimate could not be processed. You can retry.';
+  }
+
+  Future<void> _logMeal() async {
+    final estimate = _estimate;
+    if (estimate == null) return;
 
     final String name = _nameEditController.text.trim();
     if (name.isEmpty) {
@@ -246,42 +337,131 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       return;
     }
 
-    final int? calories = int.tryParse(_caloriesEditController.text);
-    final double? protein = double.tryParse(_proteinEditController.text);
-    final double? carbs = double.tryParse(_carbsEditController.text);
-    final double? fat = double.tryParse(_fatEditController.text);
-
-    if (calories == null ||
-        calories < 0 ||
-        protein == null ||
-        protein < 0 ||
-        carbs == null ||
-        carbs < 0 ||
-        fat == null ||
-        fat < 0) {
+    final rawValues = <String, String>{
+      'energy': _caloriesEditController.text,
+      'protein': _proteinEditController.text,
+      'carbohydrate': _carbsEditController.text,
+      'fat': _fatEditController.text,
+    };
+    if (rawValues.values.any(_isInvalidNonNegative)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Please enter valid non-negative values for calories and macros.',
+            'Enter valid finite non-negative values, or leave an unknown nutrient blank.',
           ),
           backgroundColor: AppColors.danger,
         ),
       );
       return;
     }
+    final values = {
+      for (final entry in rawValues.entries)
+        entry.key: _optionalNonNegative(entry.value),
+    };
 
-    await repo.logFoodEntry(
-      name: name,
-      calories: calories,
-      proteinG: protein,
-      carbsG: carbs,
-      fatG: fat,
-      servingLogged:
-          (_estimatedMeal!['serving_size'] as num?)?.toDouble() ?? 1.0,
-      servingUnit: _estimatedMeal!['serving_unit'] ?? 'serving',
-      mealType: widget.mealType,
-      foodItemId: null,
-      loggedAt: widget.selectedDate ?? DateTime.now(),
+    Quantity? quantity = estimate.quantity;
+    final rawServingCount = _servingCountEditController.text.trim();
+    if (rawServingCount.isNotEmpty) {
+      try {
+        quantity = Quantity.serving(
+          amount: rawServingCount,
+          definition:
+              estimate.quantity?.context.servingDefinition ??
+              const ServingDefinitionReference(
+                id: 'user-review-serving-v1',
+                revision: '1',
+              ),
+          source: 'user-review-v1',
+        );
+        NutritionQuantityService.validatePositiveUserEnteredPortion(quantity);
+      } on QuantityError catch (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.message),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+        return;
+      }
+    }
+    if (quantity == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter a positive serving count before logging.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
+    final repository = await ref.read(
+      nutritionEstimateRepositoryProvider.future,
+    );
+    final replacements = <String, NutrientFact>{};
+    for (final entry in values.entries) {
+      final value = entry.value;
+      if (value == null) continue;
+      final definition = repository.registry.definitionFor(entry.key);
+      replacements[entry.key] = NutrientFact.estimated(
+        nutrientId: entry.key,
+        point: NutrientAmount(
+          value: QuantityAmount.fromNum(value),
+          unit: definition.unit,
+        ),
+        basis: NutrientBasis(NutrientBasisKind.absolute),
+        source: NutrientSourceType.userEntered,
+        sourceReference: 'user-correction-v1',
+        confidence: NutrientConfidence.unknown,
+        factVersion: 'user-correction-v1',
+      );
+    }
+    final hasLabelCorrection = name != estimate.displayLabel;
+    final hasQuantityCorrection =
+        rawServingCount.isNotEmpty &&
+        (estimate.quantity == null ||
+            estimate.quantity!.unit != QuantityUnit.serving ||
+            estimate.quantity!.amount.toString() != rawServingCount);
+    NutritionEstimate selected;
+    if (hasLabelCorrection ||
+        replacements.isNotEmpty ||
+        hasQuantityCorrection) {
+      selected = await repository.correctEstimate(
+        userId: kLocalNutritionUserScopeId,
+        estimateId: estimate.id,
+        correction: NutritionEstimateCorrection(
+          commandId: 'ai-meal-correction::${estimate.id}',
+          reason: 'User reviewed the estimate before logging.',
+          displayLabel: hasLabelCorrection ? name : null,
+          nutrientReplacements: replacements,
+          replaceQuantity: hasQuantityCorrection,
+          quantity: hasQuantityCorrection ? quantity : null,
+          fieldUpdates: hasLabelCorrection
+              ? const {'food_identity': 'user_corrected'}
+              : const {},
+        ),
+      );
+    } else {
+      selected = await repository.acceptEstimate(
+        userId: kLocalNutritionUserScopeId,
+        estimateId: estimate.id,
+        commandId: 'ai-meal-accept::${estimate.id}',
+      );
+    }
+    final finalizer = await ref.read(
+      nutritionEstimateFinalizationServiceProvider.future,
+    );
+    final loggedAt = (widget.selectedDate ?? DateTime.now()).toUtc();
+    await finalizer.finalizeEstimate(
+      userId: kLocalNutritionUserScopeId,
+      estimateId: selected.id,
+      mealCategory: widget.mealType,
+      quantity: quantity,
+      loggedAtUtc: loggedAt,
+      localDate: DateFormat('yyyy-MM-dd').format(loggedAt.toLocal()),
+      timezoneId: DateTime.now().timeZoneName,
+      commandId: 'ai-meal-finalize::${selected.id}',
+      consumptionId: 'ai-meal-consumption::${selected.id}',
+      displayLabel: selected.displayLabel,
     );
 
     if (mounted) {
@@ -290,6 +470,17 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       );
       Navigator.pop(context); // Close logger screen
     }
+  }
+
+  double? _optionalNonNegative(String text) {
+    if (text.trim().isEmpty) return null;
+    return double.tryParse(text.trim());
+  }
+
+  bool _isInvalidNonNegative(String text) {
+    if (text.trim().isEmpty) return false;
+    final value = double.tryParse(text.trim());
+    return value == null || !value.isFinite || value < 0;
   }
 
   @override
@@ -351,7 +542,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Estimate nutrition via Gemini Flash AI. Type description or snap a food photo!',
+                          'Estimate nutrition from a meal description or photo. Review the result before logging.',
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
@@ -368,7 +559,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                         const SizedBox(height: 20),
 
                         // 3. AI Estimate Results Section
-                        if (_estimatedMeal != null) _buildResultSection(),
+                        if (_estimate != null) _buildResultSection(),
                       ],
                     ),
                   ),
@@ -595,6 +786,14 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                 label: const Text('Analyze Food Photo'),
               ),
             ],
+            if (_imageCleanup != null && !_imageCleanup!.succeeded)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Temporary photo cleanup needs a retry. No photo content was saved to nutrition data.',
+                  style: TextStyle(color: AppColors.danger, fontSize: 11),
+                ),
+              ),
           ],
         ),
       ),
@@ -602,22 +801,12 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   }
 
   Widget _buildResultSection() {
-    final isFallback = _estimatedMeal!['is_fallback'] ?? false;
-    final matchedId = _estimatedMeal!['matched_food_id'];
-
-    String confidenceLabel = 'Moderate Confidence · AI Estimate';
-    Color labelColor = AppColors.primary;
-    IconData confidenceIcon = Icons.auto_awesome_rounded;
-
-    if (isFallback) {
-      confidenceLabel = 'Approximate · Offline Rule';
-      labelColor = Colors.amber;
-      confidenceIcon = Icons.offline_bolt_outlined;
-    } else if (matchedId != null) {
-      confidenceLabel = 'High Confidence · Verified Dish';
-      labelColor = AppColors.success;
-      confidenceIcon = Icons.verified_rounded;
-    }
+    final estimate = _estimate;
+    final confidenceLabel = estimate == null
+        ? 'Estimate · review required'
+        : 'Estimate · ${estimate.confidence.stableId}';
+    const labelColor = AppColors.primary;
+    const confidenceIcon = Icons.auto_awesome_rounded;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,7 +832,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'Edit & verify macro details:',
+                      'Review estimated values:',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -681,12 +870,33 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   ],
                 ),
                 const Divider(color: AppColors.border, height: 24),
+                const Text(
+                  'Values remain estimates. Bounds are shown only when evidence provides them; missing nutrients are not treated as zero.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 12),
 
                 // Name Field
                 TextField(
                   controller: _nameEditController,
                   decoration: const InputDecoration(
                     labelText: 'Meal Name',
+                    contentPadding: EdgeInsets.symmetric(vertical: 4),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _servingCountEditController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Servings consumed',
+                    helperText:
+                        'Use a positive serving count; it does not imply grams.',
                     contentPadding: EdgeInsets.symmetric(vertical: 4),
                   ),
                 ),
@@ -782,7 +992,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
           ),
           SizedBox(height: 8),
           Text(
-            'Gemini Flash is computing calories and macro portions...',
+            'The approved estimation service is processing the meal...',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
         ],

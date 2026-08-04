@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
 import '../nutrients.dart';
 import '../nutrition_consumption_snapshots.dart';
+import '../nutrition_estimates.dart';
 import '../typed_quantities.dart';
 import 'backup_schema.dart';
 
@@ -485,6 +486,30 @@ class NutritionBackupGraph {
         _requireRef(estimates, row['supersedes_id'], 'estimate supersedes_id');
       }
     }
+    for (final row in _rows('nutrition_user_corrections')) {
+      final targetType = row['target_type'];
+      final targetId = row['target_id'];
+      if (targetType == 'nutrition_estimate') {
+        _requireRef(estimates, targetId, 'estimate correction target_id');
+      }
+      if (row['user_id'] is! String ||
+          (row['user_id'] as String).trim().isEmpty ||
+          row['target_type'] is! String ||
+          (row['target_type'] as String).trim().isEmpty ||
+          row['target_id'] is! String ||
+          (row['target_id'] as String).trim().isEmpty ||
+          row['field'] is! String ||
+          (row['field'] as String).trim().isEmpty ||
+          row['reason'] is! String ||
+          (row['reason'] as String).trim().isEmpty ||
+          row['source'] is! String ||
+          (row['source'] as String).trim().isEmpty) {
+        throw BackupV8ValidationException(
+          'invalid_correction_record',
+          'Backup-v8 user correction records require complete ownership and field metadata.',
+        );
+      }
+    }
     for (final row in _rows('nutrition_thali_items')) {
       if (row['food_id'] != null) {
         _requireRef(foods, row['food_id'], 'thali food_id');
@@ -886,6 +911,30 @@ class NutritionBackupGraph {
     final constraints = _ids('nutrition_user_constraints');
     final vessels = _ids('nutrition_personal_vessels');
     final calibrations = _ids('nutrition_vessel_calibrations');
+    for (final row in _rows('nutrition_user_corrections')) {
+      final targetType = row['target_type'];
+      final targetId = row['target_id'];
+      if (targetType == 'nutrition_estimate') {
+        _requireRef(estimates, targetId, 'estimate correction target_id');
+      }
+      if (row['user_id'] is! String ||
+          (row['user_id'] as String).trim().isEmpty ||
+          row['target_type'] is! String ||
+          (row['target_type'] as String).trim().isEmpty ||
+          row['target_id'] is! String ||
+          (row['target_id'] as String).trim().isEmpty ||
+          row['field'] is! String ||
+          (row['field'] as String).trim().isEmpty ||
+          row['reason'] is! String ||
+          (row['reason'] as String).trim().isEmpty ||
+          row['source'] is! String ||
+          (row['source'] as String).trim().isEmpty) {
+        throw BackupV8ValidationException(
+          'invalid_correction_record',
+          'Backup-v8 user correction records require complete ownership and field metadata.',
+        );
+      }
+    }
     for (final row in _rows('nutrition_personal_vessels')) {
       _validateVesselOwner(row);
     }
@@ -1825,6 +1874,15 @@ class NutritionBackupGraph {
         'Backup-v8 $table has lower greater than upper.',
       );
     }
+    final point = row['amount'];
+    if (table == 'nutrition_estimate_nutrients' &&
+        point is num &&
+        ((lower is num && lower > point) || (upper is num && point > upper))) {
+      throw BackupV8ValidationException(
+        'invalid_range',
+        'Backup-v8 $table must preserve lower ≤ point ≤ upper.',
+      );
+    }
     final dimensions = <String, Set<String>>{
       'mass': {'milligram', 'gram', 'kilogram'},
       'volume': {'millilitre', 'litre'},
@@ -1895,6 +1953,9 @@ class NutritionBackupGraph {
           'Missing nutrient facts cannot carry numeric values.',
         );
       }
+    }
+    if (table == 'nutrition_estimates' && row['assumptions'] != null) {
+      _validateEstimateEnvelope(row['assumptions']);
     }
     if (table == 'nutrition_snapshot_constraint_results' &&
         !{
@@ -2048,6 +2109,128 @@ class NutritionBackupGraph {
         );
       }
     }
+  }
+
+  static void _validateEstimateEnvelope(Object? raw) {
+    if (raw is! String) {
+      throw BackupV8ValidationException(
+        'invalid_estimate_evidence',
+        'Backup-v8 estimate evidence must be a JSON string.',
+      );
+    }
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map || decoded['contract_version'] != 1) {
+      throw BackupV8ValidationException(
+        'unsupported_estimate_version',
+        'Backup-v8 estimate evidence uses an unsupported contract version.',
+      );
+    }
+    try {
+      if (decoded['evidence'] != null) {
+        NutritionEstimateEvidence.fromJson(decoded['evidence']);
+      }
+      final rawFacts = decoded['facts'];
+      if (rawFacts != null) {
+        if (rawFacts is! Map) {
+          throw const NutrientValidationError(
+            'Estimate facts must be an object.',
+          );
+        }
+        for (final entry in rawFacts.entries) {
+          if (entry.key is! String || entry.value is! Map) {
+            throw const NutrientValidationError(
+              'Estimate facts must be keyed nutrient objects.',
+            );
+          }
+          final factJson = Map<String, dynamic>.from(entry.value as Map);
+          final fact = NutrientFact(
+            nutrientId: factJson['nutrient_id'] as String,
+            unit: NutrientUnitContract.fromStableId(factJson['unit'] as String),
+            status: NutrientFactStatusContract.fromStableId(
+              factJson['status'] as String,
+            ),
+            point: factJson['point'] == null
+                ? null
+                : NutrientAmount.fromJson(factJson['point']),
+            lower: factJson['lower'] == null
+                ? null
+                : NutrientAmount.fromJson(factJson['lower']),
+            upper: factJson['upper'] == null
+                ? null
+                : NutrientAmount.fromJson(factJson['upper']),
+            basis: NutrientBasis.fromJson(factJson['basis']),
+            source: NutrientSourceContract.fromStableId(
+              factJson['source'] as String,
+            ),
+            sourceReference: factJson['source_reference'] as String?,
+            confidence: NutrientConfidenceContract.fromStableId(
+              factJson['confidence'] as String,
+            ),
+            factVersion: factJson['fact_version'] as String,
+            coverageIncomplete: factJson['coverage_incomplete'] as bool,
+          );
+          if (fact.nutrientId != entry.key) {
+            throw const NutrientValidationError(
+              'Estimate fact identity does not match its map key.',
+            );
+          }
+        }
+      }
+      if (decoded['quantity'] is Map) {
+        final quantity = Quantity.fromJson(
+          Map<String, dynamic>.from(decoded['quantity'] as Map),
+        );
+        NutritionQuantityService.validatePositiveUserEnteredPortion(quantity);
+      }
+    } on NutritionEstimateError catch (error) {
+      throw BackupV8ValidationException(
+        'invalid_estimate_evidence',
+        'Backup-v8 estimate evidence is not privacy-safe: ${error.message}',
+      );
+    } on NutrientError catch (error) {
+      throw BackupV8ValidationException(
+        'invalid_estimate_facts',
+        'Backup-v8 estimate facts are invalid: ${error.message}',
+      );
+    } catch (error) {
+      throw BackupV8ValidationException(
+        'invalid_estimate_evidence',
+        'Backup-v8 estimate evidence is malformed: $error',
+      );
+    }
+    const forbiddenFragments = {
+      'prompt',
+      'raw_response',
+      'rawresponse',
+      'image_path',
+      'photo_path',
+      'access_token',
+      'api_key',
+      'secret',
+      'authorization',
+      'password',
+      'image_bytes',
+    };
+    void visit(Object? value) {
+      if (value is Map) {
+        for (final entry in value.entries) {
+          final key = entry.key.toString().toLowerCase();
+          if (forbiddenFragments.any(key.contains)) {
+            throw BackupV8ValidationException(
+              'sensitive_estimate_evidence',
+              'Backup-v8 estimate evidence contains excluded sensitive data.',
+            );
+          }
+          visit(entry.value);
+        }
+      } else if (value is Iterable) {
+        for (final item in value) {
+          visit(item);
+        }
+      }
+    }
+
+    visit(decoded);
   }
 
   Future<void> _deleteOwnedRows(AppDatabase db) async {
