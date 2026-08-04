@@ -169,6 +169,36 @@ void main() {
   );
 
   test(
+    'canonical history invalidations stay behind the read-model boundary',
+    () async {
+      await _insertFood(db, 'food-1', 'Watch food');
+      final consumption = NutritionConsumptionRepository(
+        db: db,
+        registry: registry,
+      );
+      final history = NutritionReadModelRepository(
+        db: db,
+        registry: registry,
+        canonicalRepository: consumption,
+        legacyUserId: 'user-1',
+      );
+      final event = history.watchCanonicalChanges(userId: 'user-1').first;
+
+      await consumption.finalizeConsumption(
+        _request(
+          registry: registry,
+          id: 'watch-event',
+          commandId: 'watch-command',
+          itemId: 'watch-item',
+          protein: '1',
+        ),
+      );
+
+      await expectLater(event, completes);
+    },
+  );
+
+  test(
     'repeated finalization does not duplicate the read-model total',
     () async {
       await _insertFood(db, 'food-1', 'Food');

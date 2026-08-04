@@ -33,6 +33,14 @@ class NutritionReadModelRepository {
              legacyUserId: legacyUserId,
            );
 
+  /// Emits canonical-history invalidations without exposing the Drift graph.
+  ///
+  /// Legacy food-log changes are already delivered through the existing
+  /// [FoodRepository] day stream. The dashboard combines that stream with this
+  /// canonical stream and always re-reads through this repository.
+  Stream<void> watchCanonicalChanges({String? userId}) =>
+      _canonical.watchChanges(userId: userId);
+
   Future<List<NutritionHistoricalReadRecord>> listHistory({
     required String userId,
     DateTime? fromUtc,
