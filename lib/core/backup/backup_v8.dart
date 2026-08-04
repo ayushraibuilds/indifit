@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../data/database/app_database.dart';
+import '../../data/database/app_database.dart'
+    hide NutritionConstraintDefinition;
 import '../nutrients.dart';
+import '../nutrition_constraints.dart';
 import '../nutrition_consumption_snapshots.dart';
 import '../nutrition_estimates.dart';
 import '../typed_quantities.dart';
@@ -339,6 +341,7 @@ class NutritionBackupGraph {
     _topologicallySorted([
       ..._rows('nutrition_vessel_calibrations'),
     ], 'supersedes_calibration_id');
+    _validateConstraintRows();
     _validateRelationships();
     _validateSnapshotGraph();
   }
@@ -508,6 +511,30 @@ class NutritionBackupGraph {
           'invalid_correction_record',
           'Backup-v8 user correction records require complete ownership and field metadata.',
         );
+      }
+      if (targetType == 'nutrition_constraint_evaluation') {
+        if (row['field'] != 'acknowledgement' || row['new_value'] is! String) {
+          throw BackupV8ValidationException(
+            'invalid_constraint_acknowledgement',
+            'Constraint acknowledgement corrections require their typed payload.',
+          );
+        }
+        try {
+          final acknowledgement = NutritionConstraintAcknowledgement.fromJson(
+            jsonDecode(row['new_value'] as String),
+          );
+          if (acknowledgement.userId != row['user_id'] ||
+              acknowledgement.evaluationFingerprint != targetId) {
+            throw const FormatException(
+              'acknowledgement owner/fingerprint mismatch',
+            );
+          }
+        } catch (error) {
+          throw BackupV8ValidationException(
+            'invalid_constraint_acknowledgement',
+            'Backup-v8 constraint acknowledgement is invalid: $error',
+          );
+        }
       }
     }
     for (final row in _rows('nutrition_thali_items')) {
@@ -1062,6 +1089,131 @@ class NutritionBackupGraph {
     }
   }
 
+  void _validateConstraintRows() {
+    final activeKeys = <String>{};
+    for (final row in _rows('nutrition_user_constraints')) {
+      _validateUserConstraintRow(row);
+      final value = _decodeConstraintValue(row['value']);
+      if (value['active'] == true) {
+        final target = NutritionConstraintTarget.fromJson(value['target']);
+        final key =
+            '${row['user_id']}\u0000${row['definition_id']}\u0000${target.stableKey}';
+        if (!activeKeys.add(key)) {
+          throw BackupV8ValidationException(
+            'duplicate_active_constraint',
+            'Backup-v8 contains duplicate active dietary constraints.',
+          );
+        }
+      }
+    }
+    for (final row in _rows('nutrition_food_constraint_evidence')) {
+      final foodId = row['food_id'];
+      if (foodId is! String || foodId.trim().isEmpty) {
+        throw BackupV8ValidationException(
+          'invalid_constraint_evidence',
+          'Food constraint evidence requires a portable food identity.',
+        );
+      }
+      try {
+        NutritionConstraintTarget.fromStableKey(
+          row['constraint_key'] as String,
+        );
+        NutritionConstraintEvidenceStatusContract.fromStableId(
+          row['status'] as String,
+        );
+        NutritionConstraintEvidenceSourceContract.fromStableId(
+          row['evidence_source'] as String,
+        );
+      } catch (error) {
+        throw BackupV8ValidationException(
+          'invalid_constraint_evidence',
+          'Backup-v8 food constraint evidence is invalid: $error',
+        );
+      }
+      if (row['version'] is! int || (row['version'] as int) < 1) {
+        throw BackupV8ValidationException(
+          'invalid_constraint_evidence_version',
+          'Backup-v8 food constraint evidence versions must be positive.',
+        );
+      }
+    }
+  }
+
+  static void _validateUserConstraintRow(Map<String, dynamic> row) {
+    final id = row['id'];
+    final userId = row['user_id'];
+    final definitionId = row['definition_id'];
+    if (id is! String ||
+        id.trim().isEmpty ||
+        userId is! String ||
+        userId.trim().isEmpty ||
+        definitionId is! String ||
+        definitionId.trim().isEmpty ||
+        row['value'] is! String) {
+      throw BackupV8ValidationException(
+        'invalid_user_constraint',
+        'Backup-v8 user constraints require portable identity, ownership, and value metadata.',
+      );
+    }
+    late final NutritionConstraintDefinition definition;
+    try {
+      definition = NutritionConstraintTaxonomy.definitionForId(definitionId);
+      final value = _decodeConstraintValue(row['value']);
+      final target = NutritionConstraintTarget.fromJson(value['target']);
+      if (!definition.targetTypes.contains(target.type)) {
+        throw const FormatException('target type is not allowed by definition');
+      }
+      NutritionConstraintStrictnessContract.fromStableId(
+        row['strictness'] as String,
+      );
+      NutritionConstraintSourceContract.fromStableId(row['source'] as String);
+      final effectiveFrom = _readBackupDate(row['effective_from']);
+      final effectiveTo = row['effective_to'] == null
+          ? null
+          : _readBackupDate(row['effective_to']);
+      if (effectiveTo != null && effectiveTo.isBefore(effectiveFrom)) {
+        throw const FormatException('effective period is reversed');
+      }
+      if (row['severity'] != null && row['severity'] is! String) {
+        throw const FormatException('severity must be text');
+      }
+      if (!definition.severitySupported && row['severity'] != null) {
+        throw const FormatException('severity is not supported');
+      }
+      if (!definition.crossContactSupported && row['cross_contact'] == true) {
+        throw const FormatException('cross-contact is not supported');
+      }
+    } catch (error) {
+      throw BackupV8ValidationException(
+        'invalid_user_constraint',
+        'Backup-v8 user constraint is invalid: $error',
+      );
+    }
+  }
+
+  static Map<String, dynamic> _decodeConstraintValue(Object? raw) {
+    if (raw is! String) {
+      throw const FormatException('constraint value must be JSON text');
+    }
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map ||
+        decoded['contract_version'] !=
+            kNutritionConstraintValueContractVersion ||
+        decoded['target'] is! Map ||
+        decoded['active'] is! bool) {
+      throw const FormatException('unsupported constraint value envelope');
+    }
+    return Map<String, dynamic>.from(decoded);
+  }
+
+  static DateTime _readBackupDate(Object? raw) {
+    if (raw is String) return DateTime.parse(raw).toUtc();
+    if (raw is num && raw.isFinite) {
+      return DateTime.fromMillisecondsSinceEpoch(raw.toInt(), isUtc: true);
+    }
+    throw const FormatException('date must be an ISO string or milliseconds');
+  }
+
   void _validateSnapshotGraph() {
     final snapshotRows = <String, Map<String, dynamic>>{
       for (final row in _rows('nutrition_consumption_snapshots'))
@@ -1432,6 +1584,265 @@ class NutritionBackupGraph {
           );
         }
         cursor = lineageBySnapshot[cursor]?.supersedesSnapshotId;
+      }
+    }
+    _validateSnapshotConstraintLineage(
+      snapshotRows: snapshotRows,
+      itemRows: itemRows,
+      lineageBySnapshot: lineageBySnapshot,
+      legacySnapshotIds: legacySnapshotIds,
+    );
+  }
+
+  void _validateSnapshotConstraintLineage({
+    required Map<String, Map<String, dynamic>> snapshotRows,
+    required Map<String, Map<String, dynamic>> itemRows,
+    required Map<String, NutritionConsumptionLineage> lineageBySnapshot,
+    required Set<String> legacySnapshotIds,
+  }) {
+    final constraints = {
+      for (final row in _rows('nutrition_user_constraints'))
+        row['id'] as String: row,
+    };
+    final evaluationByOwnerAndFingerprint = <String, String>{};
+    final resultsBySnapshot = <String, List<Map<String, dynamic>>>{};
+    final evidenceByResult = <String, List<Map<String, dynamic>>>{};
+    for (final row in _rows('nutrition_snapshot_constraint_results')) {
+      final snapshotId = row['snapshot_id'];
+      if (snapshotId is! String || !snapshotRows.containsKey(snapshotId)) {
+        throw BackupV8ValidationException(
+          'missing_reference',
+          'Constraint result references a missing snapshot.',
+        );
+      }
+      resultsBySnapshot.putIfAbsent(snapshotId, () => []).add(row);
+    }
+    for (final row in _rows('nutrition_snapshot_constraint_result_evidence')) {
+      final resultId = row['result_id'];
+      final evidenceId = row['id'];
+      if (resultId is! String ||
+          evidenceId is! String ||
+          evidenceId.trim().isEmpty) {
+        throw BackupV8ValidationException(
+          'invalid_constraint_evidence',
+          'Constraint evidence requires portable evidence and result identities.',
+        );
+      }
+      evidenceByResult.putIfAbsent(resultId, () => []).add(row);
+    }
+    for (final snapshotId in legacySnapshotIds) {
+      if ((resultsBySnapshot[snapshotId] ?? const []).isNotEmpty) {
+        throw BackupV8ValidationException(
+          'legacy_constraint_lineage',
+          'Pre-11A snapshots cannot contain B03-16 evaluation rows.',
+        );
+      }
+    }
+    for (final entry in lineageBySnapshot.entries) {
+      final snapshotId = entry.key;
+      final rawEvaluation = entry.value.evidence['constraint_evaluation'];
+      final rawAcknowledgement =
+          entry.value.evidence['constraint_acknowledgement'];
+      final resultRows = resultsBySnapshot[snapshotId] ?? const [];
+      if (rawEvaluation == null) {
+        if (resultRows.isNotEmpty) {
+          throw BackupV8ValidationException(
+            'orphan_constraint_graph',
+            'Snapshot constraint rows require immutable evaluation lineage.',
+          );
+        }
+        continue;
+      }
+      late final NutritionConstraintEvaluationResult evaluation;
+      try {
+        evaluation = NutritionConstraintEvaluationResult.fromJson(
+          rawEvaluation,
+        );
+      } catch (error) {
+        throw BackupV8ValidationException(
+          'invalid_constraint_evaluation_lineage',
+          'Snapshot dietary evaluation lineage is malformed: $error',
+        );
+      }
+      final snapshot = snapshotRows[snapshotId]!;
+      final userId = snapshot['user_id'];
+      if (evaluation.userId != userId) {
+        throw BackupV8ValidationException(
+          'constraint_evaluation_owner',
+          'Snapshot dietary evaluation belongs to another user.',
+        );
+      }
+      evaluationByOwnerAndFingerprint['$userId\u0000${evaluation.fingerprint}'] =
+          snapshotId;
+      final snapshotRecipeId = snapshot['recipe_version_id'];
+      final snapshotItems = itemRows.values
+          .where((row) => row['snapshot_id'] == snapshotId)
+          .toList(growable: false);
+      if (evaluation.recipeVersionId != null) {
+        if (evaluation.recipeVersionId != snapshotRecipeId ||
+            evaluation.subjectId != evaluation.recipeVersionId ||
+            evaluation.foodId != null) {
+          throw BackupV8ValidationException(
+            'constraint_evaluation_subject_mismatch',
+            'Snapshot recipe evaluation does not match its immutable version.',
+          );
+        }
+      } else if (evaluation.foodId == null ||
+          evaluation.subjectId != evaluation.foodId ||
+          !snapshotItems.any((row) => row['food_id'] == evaluation.foodId)) {
+        throw BackupV8ValidationException(
+          'constraint_evaluation_subject_mismatch',
+          'Snapshot direct-food evaluation does not match its consumed food.',
+        );
+      }
+      final expected = {
+        for (final item in evaluation.evaluations) item.constraintId: item,
+      };
+      if (resultRows.length != expected.length ||
+          resultRows.any(
+            (row) => !expected.containsKey(row['constraint_id']),
+          )) {
+        throw BackupV8ValidationException(
+          'constraint_result_mismatch',
+          'Snapshot constraint result rows disagree with their lineage.',
+        );
+      }
+      NutritionConstraintAcknowledgement? acknowledgement;
+      if (rawAcknowledgement != null) {
+        try {
+          acknowledgement = NutritionConstraintAcknowledgement.fromJson(
+            rawAcknowledgement,
+          );
+        } catch (error) {
+          throw BackupV8ValidationException(
+            'invalid_constraint_acknowledgement',
+            'Snapshot acknowledgement lineage is malformed: $error',
+          );
+        }
+        if (acknowledgement.userId != userId ||
+            acknowledgement.evaluationFingerprint != evaluation.fingerprint ||
+            !expected.containsKey(acknowledgement.constraintId)) {
+          throw BackupV8ValidationException(
+            'invalid_constraint_acknowledgement',
+            'Snapshot acknowledgement does not match its evaluation.',
+          );
+        }
+      }
+      for (final row in resultRows) {
+        final item = expected[row['constraint_id']]!;
+        final constraint = constraints[row['constraint_id']];
+        if (constraint == null || constraint['user_id'] != userId) {
+          throw BackupV8ValidationException(
+            'constraint_result_owner',
+            'Snapshot constraint result references an unavailable user constraint.',
+          );
+        }
+        late final Map<String, dynamic> value;
+        late final NutritionConstraintDefinition definition;
+        late final NutritionConstraintTarget target;
+        late final DateTime evaluatedAt;
+        try {
+          value = _decodeConstraintValue(constraint['value']);
+          definition = NutritionConstraintTaxonomy.definitionForId(
+            constraint['definition_id'] as String,
+          );
+          target = NutritionConstraintTarget.fromJson(value['target']);
+          evaluatedAt = _readBackupDate(row['evaluated_at']);
+        } catch (error) {
+          throw BackupV8ValidationException(
+            'invalid_constraint_result',
+            'Snapshot constraint result contains invalid persisted metadata: $error',
+          );
+        }
+        if (definition.type != item.type ||
+            target.stableKey != item.targetKey ||
+            row['result'] != item.outcome.stableId ||
+            row['rule_version'] != evaluation.ruleVersion ||
+            evaluatedAt != evaluation.evaluatedAtUtc) {
+          throw BackupV8ValidationException(
+            'constraint_result_mismatch',
+            'Snapshot constraint result projection disagrees with its lineage.',
+          );
+        }
+        final resultId = row['id'];
+        if (resultId is! String || resultId.trim().isEmpty) {
+          throw BackupV8ValidationException(
+            'invalid_constraint_result',
+            'Snapshot constraint results require portable identity.',
+          );
+        }
+        final persisted = <String, Map<String, dynamic>>{};
+        for (final child in evidenceByResult[resultId] ?? const []) {
+          final evidenceId = child['id'];
+          if (evidenceId is! String || evidenceId.trim().isEmpty) {
+            throw BackupV8ValidationException(
+              'invalid_constraint_evidence',
+              'Snapshot constraint evidence requires portable identity.',
+            );
+          }
+          persisted[evidenceId] = child;
+        }
+        final references = item.evidence;
+        for (var index = 0; index < references.length; index++) {
+          final reference = references[index];
+          final child =
+              persisted['${row['id']}::evidence::$index::${reference.evidenceId}'];
+          final isRecipe = evaluation.recipeVersionId != null;
+          if (child == null ||
+              child['status'] != reference.status.stableId ||
+              child['source'] != reference.source.stableId ||
+              child['version'] != reference.version.toString() ||
+              (isRecipe
+                  ? child['snapshot_item_id'] == null ||
+                        child['food_id'] != null
+                  : child['food_id'] !=
+                            (reference.foodId ?? evaluation.foodId) ||
+                        child['snapshot_item_id'] != null)) {
+            throw BackupV8ValidationException(
+              'constraint_evidence_mismatch',
+              'Snapshot constraint evidence projection disagrees with its lineage.',
+            );
+          }
+          if (child['snapshot_item_id'] != null &&
+              !snapshotItems.any(
+                (item) => item['id'] == child['snapshot_item_id'],
+              )) {
+            throw BackupV8ValidationException(
+              'constraint_evidence_owner',
+              'Snapshot constraint evidence points outside its snapshot.',
+            );
+          }
+        }
+        if (acknowledgement?.constraintId == row['constraint_id']) {
+          final ackId =
+              '${row['id']}::acknowledgement::${acknowledgement!.commandId}';
+          final child = persisted[ackId];
+          if (child == null || child['evidence_kind'] != 'user_override') {
+            throw BackupV8ValidationException(
+              'constraint_acknowledgement_mismatch',
+              'Snapshot acknowledgement evidence is missing.',
+            );
+          }
+        }
+        final expectedCount =
+            references.length +
+            (acknowledgement?.constraintId == row['constraint_id'] ? 1 : 0);
+        if (persisted.length != expectedCount) {
+          throw BackupV8ValidationException(
+            'constraint_evidence_mismatch',
+            'Snapshot constraint evidence contains extra or missing rows.',
+          );
+        }
+      }
+    }
+    for (final row in _rows('nutrition_user_corrections')) {
+      if (row['target_type'] != 'nutrition_constraint_evaluation') continue;
+      final key = '${row['user_id']}\u0000${row['target_id']}';
+      if (!evaluationByOwnerAndFingerprint.containsKey(key)) {
+        throw BackupV8ValidationException(
+          'orphan_constraint_acknowledgement',
+          'Constraint acknowledgement references an unavailable historical evaluation.',
+        );
       }
     }
   }
@@ -1969,6 +2380,23 @@ class NutritionBackupGraph {
         'Backup-v8 contains an invalid constraint result.',
       );
     }
+    if (table == 'nutrition_snapshot_constraint_results' &&
+        row['rule_version'] != kNutritionConstraintRuleVersion) {
+      throw BackupV8ValidationException(
+        'unsupported_evaluation_version',
+        'Backup-v8 contains an unsupported dietary evaluation rule version.',
+      );
+    }
+    if (table == 'nutrition_snapshot_constraint_result_evidence' &&
+        (row['source'] is! String ||
+            (row['source'] as String).trim().isEmpty ||
+            row['version'] is! String ||
+            (row['version'] as String).trim().isEmpty)) {
+      throw BackupV8ValidationException(
+        'invalid_constraint_evidence',
+        'Backup-v8 snapshot constraint evidence requires source and version.',
+      );
+    }
     _validateEnums(table, row);
   }
 
@@ -2028,6 +2456,19 @@ class NutritionBackupGraph {
       },
       'nutrition_food_constraint_evidence': {
         'status': {'confirmed', 'possible', 'not_indicated', 'unknown'},
+        'evidence_source': {
+          'reviewed_catalogue',
+          'explicit_ingredient_list',
+          'manufacturer_declaration',
+          'user_entered',
+          'recipe_ingredient_graph',
+          'reviewed_allergen_declaration',
+          'imported_provider',
+          'ai_estimate',
+          'heuristic',
+          'legacy',
+          'unknown',
+        },
       },
       'nutrition_recipe_versions': {
         'status': {'draft', 'published', 'archived'},
@@ -2088,6 +2529,7 @@ class NutritionBackupGraph {
       },
       'nutrition_user_constraints': {
         'strictness': {'avoid', 'warn', 'informational'},
+        'source': {'user_entered', 'imported', 'legacy', 'approved_value'},
       },
       'nutrition_snapshot_constraint_result_evidence': {
         'evidence_kind': {

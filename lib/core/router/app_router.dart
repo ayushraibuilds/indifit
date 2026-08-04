@@ -24,6 +24,7 @@ import '../../features/progress/achievements_screen.dart';
 import '../../features/reports/weekly_report_screen.dart';
 import '../../features/settings/health_sync_hub_screen.dart';
 import '../../features/settings/household_measures_screen.dart';
+import '../../features/settings/nutrition_constraints_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/travel/travel_mode_screen.dart';
 import '../../features/workout_player/b02_strength_player_screen.dart';
@@ -106,6 +107,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings/household-measures',
         builder: (context, state) => const HouseholdMeasuresScreen(),
+      ),
+      GoRoute(
+        path: '/settings/dietary-constraints',
+        builder: (context, state) => const NutritionConstraintsScreen(),
       ),
       GoRoute(
         path: '/meal-planner',

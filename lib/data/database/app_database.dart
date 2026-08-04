@@ -14,6 +14,7 @@ import '../../core/fixtures/equipment_fixtures.dart';
 import '../../core/fixtures/exercise_identity_fixtures.dart';
 import '../../core/fixtures/food_identity_manifest.dart';
 import '../../core/nutrients.dart';
+import '../../core/nutrition_constraints.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../models/b02_execution_models.dart';
@@ -282,6 +283,7 @@ class AppDatabase extends _$AppDatabase {
       await _createV16IndexesAndTriggers();
       await _createV17Indexes();
       await _seedV17NutrientRegistry(contracts.registry);
+      await _seedV17ConstraintTaxonomy();
       await _seedV17FoodIdentity(contracts.manifest);
       await _ensureTrainingPlanSettings();
       await seedFoodsFromAsset();
@@ -690,6 +692,7 @@ class AppDatabase extends _$AppDatabase {
 
       await _createV17Indexes();
       await _seedV17NutrientRegistry(contracts.registry);
+      await _seedV17ConstraintTaxonomy();
       await _seedV17FoodIdentity(contracts.manifest);
 
       if (stageInjector != null) {
@@ -735,6 +738,47 @@ class AppDatabase extends _$AppDatabase {
             kind: registry.definitions[index].category.stableId,
             sortOrder: index,
             version: registry.version,
+          ),
+      ]);
+    });
+  }
+
+  /// Constraint definitions are a reviewed registry, not user-owned backup
+  /// rows. Seed them from the stable B03-16 taxonomy so every v17 target has
+  /// the same definition IDs before user constraints or v8 restores arrive.
+  Future<void> _seedV17ConstraintTaxonomy() async {
+    final expected = {
+      for (final definition in NutritionConstraintTaxonomy.definitions)
+        definition.id: definition,
+    };
+    final existing = await select(nutritionConstraintDefinitions).get();
+    for (final row in existing) {
+      final definition = expected[row.id];
+      if (definition == null ||
+          row.key != definition.key ||
+          row.type != definition.type.stableId ||
+          row.version != definition.version ||
+          row.displayName.trim().isEmpty) {
+        throw StateError(
+          'Stored B03-16 taxonomy definition ${row.id} is unsupported.',
+        );
+      }
+    }
+    final missing = expected.values
+        .where((definition) => !existing.any((row) => row.id == definition.id))
+        .toList();
+    if (missing.isEmpty) return;
+    await batch((batch) {
+      batch.insertAll(nutritionConstraintDefinitions, [
+        for (final definition in missing)
+          NutritionConstraintDefinitionsCompanion.insert(
+            id: definition.id,
+            key: definition.key,
+            type: definition.type.stableId,
+            displayName: definition.displayName,
+            severitySupported: Value(definition.severitySupported),
+            crossContactSupported: Value(definition.crossContactSupported),
+            version: definition.version,
           ),
       ]);
     });

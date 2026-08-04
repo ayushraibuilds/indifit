@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 
 import 'nutrients.dart';
 import 'nutrition_calculation_service.dart';
+import 'nutrition_constraints.dart';
 import 'typed_quantities.dart';
 
 const int kNutritionConsumptionSnapshotContractVersion = 1;
@@ -313,6 +314,8 @@ class NutritionConsumptionFinalizeRequest {
   final String calculatorVersion;
   final Iterable<NutritionConsumptionItemInput> items;
   final Map<String, dynamic> evidence;
+  final NutritionConstraintEvaluationResult? constraintEvaluation;
+  final NutritionConstraintAcknowledgement? constraintAcknowledgement;
   final String? supersedesSnapshotId;
   final String? correctionId;
   final String? correctionReason;
@@ -332,6 +335,8 @@ class NutritionConsumptionFinalizeRequest {
     required String calculatorVersion,
     required Iterable<NutritionConsumptionItemInput> items,
     Map<String, dynamic> evidence = const {},
+    this.constraintEvaluation,
+    this.constraintAcknowledgement,
     String? supersedesSnapshotId,
     String? correctionId,
     String? correctionReason,
@@ -366,6 +371,10 @@ class NutritionConsumptionFinalizeRequest {
     'calculator_version': calculatorVersion,
     'items': items.map((item) => item.toLineageJson()).toList(growable: false),
     'evidence': evidence,
+    if (constraintEvaluation != null)
+      'constraint_evaluation': constraintEvaluation!.toJson(),
+    if (constraintAcknowledgement != null)
+      'constraint_acknowledgement': constraintAcknowledgement!.toJson(),
     if (supersedesSnapshotId != null)
       'supersedes_snapshot_id': supersedesSnapshotId,
     if (correctionId != null) 'correction_id': correctionId,
@@ -418,6 +427,8 @@ class NutritionConsumptionSnapshot {
   final DateTime createdAtUtc;
   final NutritionConsumptionLineage lineage;
   final List<NutritionConsumptionSnapshotItem> items;
+  final NutritionConstraintEvaluationResult? constraintEvaluation;
+  final NutritionConstraintAcknowledgement? constraintAcknowledgement;
 
   const NutritionConsumptionSnapshot({
     required this.id,
@@ -436,6 +447,8 @@ class NutritionConsumptionSnapshot {
     required this.createdAtUtc,
     required this.lineage,
     required this.items,
+    this.constraintEvaluation,
+    this.constraintAcknowledgement,
   });
 
   bool get isCorrection => lineage.supersedesSnapshotId != null;
