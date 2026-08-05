@@ -11,6 +11,7 @@ import '../../data/repositories/food_repository.dart';
 import 'barcode_scanner_screen.dart';
 import 'custom_food_editor_screen.dart';
 import 'meal_templates_screen.dart';
+import 'saved_recipe_log_screen.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
   final String mealType; // "breakfast", "lunch", "dinner", "snack"
@@ -350,6 +351,22 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.menu_book_rounded, color: AppColors.primary),
+            tooltip: 'Saved Recipes',
+            onPressed: () async {
+              final result = await Navigator.push<bool?>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SavedRecipeLogScreen(
+                    mealType: widget.mealType,
+                    selectedDate: widget.selectedDate,
+                  ),
+                ),
+              );
+              if (result == true && context.mounted) Navigator.pop(context);
+            },
+          ),
           IconButton(
             icon: const Icon(
               Icons.bookmark_border_rounded,

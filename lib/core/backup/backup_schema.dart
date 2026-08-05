@@ -10,6 +10,29 @@ import '../../data/models/b02_execution_models.dart';
 import '../../data/models/b02_rich_set_helpers.dart';
 import '../fixtures/b02_execution_draft_codec.dart';
 
+/// Test-only restore boundaries. The production restore path remains
+/// transactional; callers leave the injector null.
+///
+/// [beforeTransactionCommit] is the last supported injectable boundary. The
+/// database layer does not expose a post-commit callback, so the harness does
+/// not claim coverage after the physical SQLite COMMIT.
+enum BackupRestoreFailureStage {
+  relationshipPrevalidation,
+  preferenceWrite,
+  databaseMutation,
+  beforeTransactionCommit,
+  preferenceRestore,
+}
+
+typedef BackupRestoreFailureInjector =
+    Future<void> Function(BackupRestoreFailureStage stage);
+
+/// Optional work that a versioned extension can append to the existing
+/// restore transaction.  Backup-v8 uses this seam for the schema-v17 graph;
+/// it is intentionally not exposed to ordinary callers through a second
+/// transaction.
+typedef BackupAdditionalMutation = Future<void> Function(AppDatabase db);
+
 /// Canonical Versioned Backup Schema (Version 7).
 ///
 /// Provides a unified, production-safe DTO and serializer for all user-owned
@@ -3080,10 +3103,33 @@ class BackupData {
   /// Pre-validates relationship graph, remaps custom catalog entity IDs to avoid
   /// replacing seeded target records, inserts records within one single [db.transaction],
   /// and updates SharedPreferences with automatic compensation/reversion on any failure.
-  Future<void> restoreToDatabase(
-    AppDatabase db, [
+  Future<void> restoreToDatabase(AppDatabase db, [SharedPreferences? prefs]) =>
+      _restoreToDatabase(db, prefs, null, null);
+
+  /// Internal extension seam for a newer versioned graph.  It keeps the
+  /// extension inside this restore's transaction and preference compensation
+  /// protocol without changing the v5-v7 public call shape.
+  Future<void> restoreToDatabaseWithAdditionalMutation(
+    AppDatabase db, {
     SharedPreferences? prefs,
-  ]) async {
+    required BackupAdditionalMutation additionalMutation,
+  }) => _restoreToDatabase(db, prefs, null, additionalMutation);
+
+  /// Test-only entry point for the stage-aware B03 fixture harness. Production
+  /// callers use [restoreToDatabase], leaving the injector absent.
+  Future<void> restoreToDatabaseWithFailureInjector(
+    AppDatabase db, {
+    SharedPreferences? prefs,
+    required BackupRestoreFailureInjector failureInjector,
+    BackupAdditionalMutation? additionalMutation,
+  }) => _restoreToDatabase(db, prefs, failureInjector, additionalMutation);
+
+  Future<void> _restoreToDatabase(
+    AppDatabase db,
+    SharedPreferences? prefs,
+    BackupRestoreFailureInjector? failureInjector,
+    BackupAdditionalMutation? additionalMutation,
+  ) async {
     // 1. Prevalidation of relationship graph
     final validSessionIds = workoutSessions.map((s) => s.id).toSet();
     for (final s in workoutSets) {
@@ -3140,6 +3186,12 @@ class BackupData {
       }
     }
 
+    if (failureInjector != null) {
+      await failureInjector(
+        BackupRestoreFailureStage.relationshipPrevalidation,
+      );
+    }
+
     // Capture previous preference values for compensation on failure.
     // `SharedPreferences` has no transaction API, so preferences are applied
     // before the database transaction and restored if it cannot commit.
@@ -3158,6 +3210,9 @@ class BackupData {
       // 2. Apply preferences first. A failed write prevents any database mutation.
       if (prefs != null && userPreferences.isNotEmpty) {
         await _applyPreferences(prefs, userPreferences);
+        if (failureInjector != null) {
+          await failureInjector(BackupRestoreFailureStage.preferenceWrite);
+        }
       }
 
       // 3. Perform DB deletion and remapped insertion inside one single transaction.
@@ -3212,6 +3267,9 @@ class BackupData {
         await db.delete(db.equipmentProfiles).go();
 
         await db.delete(db.foodLogs).go();
+        if (failureInjector != null) {
+          await failureInjector(BackupRestoreFailureStage.databaseMutation);
+        }
         await db.delete(db.mealTemplateItems).go();
         await db.delete(db.mealTemplates).go();
         await db.delete(db.workoutSets).go();
@@ -3619,11 +3677,29 @@ class BackupData {
           // same transaction; never activate or schedule anything.
           await db.importLegacyCompatibilityDataForRestore();
         }
+
+        if (additionalMutation != null) {
+          await additionalMutation(db);
+        }
+
+        if (failureInjector != null) {
+          await failureInjector(
+            BackupRestoreFailureStage.beforeTransactionCommit,
+          );
+        }
       });
     } catch (e) {
       // Revert every managed preference, including keys created by this restore.
       if (prefs != null && oldPrefValues.isNotEmpty) {
-        await _restorePreferences(prefs, oldPrefValues);
+        await _restorePreferences(
+          prefs,
+          oldPrefValues,
+          onEntryRestored: failureInjector == null
+              ? null
+              : () => failureInjector(
+                  BackupRestoreFailureStage.preferenceRestore,
+                ),
+        );
       }
       rethrow;
     }
@@ -3659,7 +3735,17 @@ class BackupData {
           );
     }
     for (final row in cardioIntervals) {
-      await db.into(db.cardioIntervals).insert(row.toCompanion(true));
+      await db
+          .into(db.cardioIntervals)
+          .insert(
+            row
+                .toCompanion(true)
+                .copyWith(
+                  cardioSessionId: Value(
+                    sessionIdMap[row.cardioSessionId] ?? row.cardioSessionId,
+                  ),
+                ),
+          );
     }
     for (final row in mobilitySessionDetails) {
       await db
@@ -3859,15 +3945,34 @@ class BackupData {
 
   static Future<void> _restorePreferences(
     SharedPreferences prefs,
-    Map<String, _PreferenceSnapshot> snapshots,
-  ) async {
+    Map<String, _PreferenceSnapshot> snapshots, {
+    Future<void> Function()? onEntryRestored,
+  }) async {
+    Object? firstFailure;
+    StackTrace? firstFailureStack;
     for (final entry in snapshots.entries) {
-      final restored = entry.value.existed
-          ? await _writePreference(prefs, entry.key, entry.value.value)
-          : await prefs.remove(entry.key);
-      if (!restored) {
-        throw StateError('Failed to roll back preference "${entry.key}".');
+      try {
+        final restored = entry.value.existed
+            ? await _writePreference(prefs, entry.key, entry.value.value)
+            : await prefs.remove(entry.key);
+        if (!restored) {
+          throw StateError('Failed to roll back preference "${entry.key}".');
+        }
+      } catch (error, stackTrace) {
+        firstFailure ??= error;
+        firstFailureStack ??= stackTrace;
       }
+      if (onEntryRestored != null) {
+        try {
+          await onEntryRestored();
+        } catch (error, stackTrace) {
+          firstFailure ??= error;
+          firstFailureStack ??= stackTrace;
+        }
+      }
+    }
+    if (firstFailure != null) {
+      Error.throwWithStackTrace(firstFailure, firstFailureStack!);
     }
   }
 
@@ -3999,9 +4104,9 @@ class BackupEnvelope {
     }
 
     final version = (json['version'] as num?)?.toInt();
-    if (version == null || version < 3 || version > BackupData.currentVersion) {
+    if (version == null || version < 3 || version > 8) {
       throw FormatException(
-        'Unsupported backup envelope version ${json['version']} (latest supported is ${BackupData.currentVersion}).',
+        'Unsupported backup envelope version ${json['version']} (latest supported is 8).',
       );
     }
 

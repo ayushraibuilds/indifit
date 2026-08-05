@@ -55,11 +55,11 @@ void main() {
       final backup = await BackupData.createFromDatabase(db, prefs);
 
       expect(backup.version, equals(7));
-      expect(backup.schemaVersion, equals(16));
+      expect(backup.schemaVersion, equals(17));
 
       final jsonMap = backup.toJson();
       expect(jsonMap['version'], equals(7));
-      expect(jsonMap['schema_version'], equals(16));
+      expect(jsonMap['schema_version'], equals(17));
       expect(jsonMap.containsKey('user_preferences'), isTrue);
 
       final restored = BackupData.fromJson(jsonMap);
@@ -269,7 +269,7 @@ void main() {
         final restored = BackupData.fromJson(decodedMap);
 
         expect(restored.version, equals(7));
-        expect(restored.schemaVersion, equals(16));
+        expect(restored.schemaVersion, equals(17));
 
         // 1. User Profile check
         expect(restored.userProfile, isNotNull);
@@ -375,13 +375,13 @@ void main() {
       expect(
         () => BackupEnvelope.fromJson({
           'format_identifier': 'INDIFIT_BACKUP_ENVELOPE',
-          'version': 8,
+          'version': 9,
         }),
         throwsA(
           isA<FormatException>().having(
             (e) => e.message,
             'message',
-            contains('Unsupported backup envelope version 8'),
+            contains('Unsupported backup envelope version 9'),
           ),
         ),
       );

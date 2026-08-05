@@ -6,7 +6,9 @@ import '../../core/theme/colors.dart';
 import '../profile/profile_screen.dart';
 import 'data_management_sub_screen.dart';
 import 'health_sync_hub_screen.dart';
+import 'household_measures_screen.dart';
 import 'notification_settings_screen.dart';
+import 'nutrition_constraints_screen.dart';
 import 'nutrition_goals_sub_screen.dart';
 import 'regional_food_packs_screen.dart';
 import 'settings_controller.dart';
@@ -134,6 +136,22 @@ class SettingsScreen extends ConsumerWidget {
                         const Divider(height: 1, color: AppColors.border),
                         _buildSettingTile(
                           context,
+                          icon: Icons.health_and_safety_outlined,
+                          iconColor: AppColors.warning,
+                          title: 'Dietary Constraints',
+                          subtitle:
+                              'Manage user-entered preferences and restrictions',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const NutritionConstraintsScreen(),
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1, color: AppColors.border),
+                        _buildSettingTile(
+                          context,
                           icon: Icons.notifications_none_rounded,
                           iconColor: AppColors.achievementGold,
                           title: 'Notifications & Reminders',
@@ -159,6 +177,21 @@ class SettingsScreen extends ConsumerWidget {
                             context,
                             MaterialPageRoute(
                               builder: (_) => const WaterSettingsSubScreen(),
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1, color: AppColors.border),
+                        _buildSettingTile(
+                          context,
+                          icon: Icons.local_drink_outlined,
+                          iconColor: AppColors.infoBlue,
+                          title: 'Household Measures',
+                          subtitle:
+                              'Manage personal vessels and measured volume capacity',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HouseholdMeasuresScreen(),
                             ),
                           ),
                         ),

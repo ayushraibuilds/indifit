@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../utils/app_logger.dart';
 import '../utils/encryption_helper.dart';
 import 'backup_schema.dart';
+import 'backup_v8.dart';
 
 class BackupInspectionResult {
   final BackupEnvelope envelope;
@@ -15,6 +17,7 @@ class BackupInspectionResult {
   final int schemaVersion;
   final String timestamp;
   final Map<String, int> tableCounts;
+  final BackupV8Data? backupV8Data;
 
   BackupInspectionResult({
     required this.envelope,
@@ -24,6 +27,7 @@ class BackupInspectionResult {
     required this.schemaVersion,
     required this.timestamp,
     required this.tableCounts,
+    this.backupV8Data,
   });
 }
 
@@ -108,12 +112,29 @@ class BackupFileAdapter {
       envelope = BackupEnvelope.fromJson(parsedJson);
     } else {
       // Create envelope from legacy raw json payload
-      final legacyData = BackupData.fromJson(parsedJson);
-      envelope = BackupEnvelope.create(
-        data: legacyData,
-        payloadText: rawContent,
-        isEncrypted: false,
-      );
+      if ((parsedJson['version'] as num?)?.toInt() ==
+          BackupV8Data.currentVersion) {
+        final v8 = BackupV8Data.fromJson(parsedJson);
+        envelope = BackupEnvelope(
+          version: v8.version,
+          schemaVersion: v8.schemaVersion,
+          timestamp: v8.timestamp,
+          isEncrypted: false,
+          checksum: sha256.convert(utf8.encode(rawContent)).toString(),
+          profileName: v8.legacy.userProfile?.name ?? 'User Profile',
+          tableCounts: {
+            for (final entry in v8.nutrition.tables.entries)
+              entry.key: entry.value.length,
+          },
+          payload: rawContent,
+        );
+      } else {
+        envelope = BackupEnvelope.create(
+          data: BackupData.fromJson(parsedJson),
+          payloadText: rawContent,
+          isEncrypted: false,
+        );
+      }
     }
 
     String jsonPayload = envelope.payload;
@@ -133,8 +154,11 @@ class BackupFileAdapter {
     }
 
     final payloadMap = jsonDecode(jsonPayload) as Map<String, dynamic>;
-    final backupData = BackupData.fromJson(payloadMap);
-    if (envelope.version != backupData.version) {
+    final backupV8Data = envelope.version == BackupV8Data.currentVersion
+        ? BackupV8Data.fromJson(payloadMap)
+        : null;
+    final backupData = backupV8Data?.legacy ?? BackupData.fromJson(payloadMap);
+    if (envelope.version != (backupV8Data?.version ?? backupData.version)) {
       throw const FormatException(
         'Backup envelope version does not match its payload version.',
       );
@@ -158,7 +182,11 @@ class BackupFileAdapter {
               'body_measurements': backupData.bodyMeasurements.length,
               'daily_hydrations': backupData.dailyHydrations.length,
               'achievement_unlocks': backupData.achievementUnlocks.length,
+              ...?backupV8Data?.nutrition.tables.map(
+                (key, rows) => MapEntry(key, rows.length),
+              ),
             },
+      backupV8Data: backupV8Data,
     );
   }
 
@@ -182,6 +210,43 @@ class BackupFileAdapter {
       isEncrypted: isEncrypted,
     );
 
+    return jsonEncode(envelope.toJson());
+  }
+
+  /// Exports a schema-v17 Backup-v8 payload while retaining the same envelope
+  /// checksum and optional encryption protocol as legacy exports.
+  static String exportV8ToEnvelopeJson({
+    required BackupV8Data data,
+    String? password,
+  }) {
+    final rawDataJson = jsonEncode(data.toJson());
+    var finalPayload = rawDataJson;
+    var isEncrypted = false;
+    if (password != null && password.isNotEmpty) {
+      finalPayload = EncryptionHelper.encrypt(rawDataJson, password);
+      isEncrypted = true;
+    }
+    final checksum = sha256.convert(utf8.encode(finalPayload)).toString();
+    final legacyEnvelope = BackupEnvelope.create(
+      data: data.legacy,
+      payloadText: finalPayload,
+      isEncrypted: isEncrypted,
+    );
+    final counts = <String, int>{
+      ...legacyEnvelope.tableCounts,
+      for (final entry in data.nutrition.tables.entries)
+        entry.key: entry.value.length,
+    };
+    final envelope = BackupEnvelope(
+      version: data.version,
+      schemaVersion: data.schemaVersion,
+      timestamp: data.timestamp,
+      isEncrypted: isEncrypted,
+      checksum: checksum,
+      profileName: data.legacy.userProfile?.name ?? 'User Profile',
+      tableCounts: counts,
+      payload: finalPayload,
+    );
     return jsonEncode(envelope.toJson());
   }
 
