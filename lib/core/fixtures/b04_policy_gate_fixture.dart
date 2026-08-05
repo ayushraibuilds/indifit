@@ -10,6 +10,58 @@ const int kB04PolicyGateFixtureVersion = 1;
 const String kB04PendingSolReviewStatus =
     'pending_fresh_independent_sol_high_review';
 
+const List<String> kB04PolicyGateRequiredStateFixtureIds = [
+  'hold-unavailable-zero-delta',
+  'readiness-hold-zero-effect',
+  'feedback-accept-append-only',
+  'feedback-dismiss-no-mutation',
+  'missing-required-evidence',
+  'dangling-lineage',
+  'dietary-possible-unavailable',
+  'dietary-unknown-unavailable',
+  'dietary-insufficient-unavailable',
+  'unknown-nutrition-preserved',
+  'range-crosses-decision-boundary',
+  'missing-provenance-unavailable',
+  'timezone-dst-local-date-frozen',
+  'feedback-acknowledge-append-only',
+  'feedback-override-user-set',
+  'feedback-snooze-presentation-only',
+  'future-only-enabled-replay',
+];
+
+const List<String> kB04PolicyGateRequiredArithmeticFixtureIds = [
+  'E13-range-1800-2200',
+  'E13-range-1799-2201',
+  'E16-range-1850-2150',
+  'E16-range-1849-2151',
+  'E41-range-zero-midpoint',
+  'E41-range-reversed',
+  'E41-range-positive-point',
+  'E41-range-negative-bound',
+  'E41-range-non-finite',
+  'E41-range-mismatched-units',
+  'E43-odd-median-and-slopes',
+  'E43-even-median-and-slopes',
+  'E44-tied-and-fractional-slopes',
+  'E42-M-2000',
+  'E42-M-2001',
+  'E42-M-1801',
+];
+
+const List<String> kB04PolicyGateRequiredSafetyWordingIds = [
+  'general-wellness',
+  'insufficient-information',
+  'unsupported-goal',
+  'consult-professional',
+  'medical-exclusion',
+  'emergency-out-of-scope',
+  'dietary-unavailable',
+  'dietary-hard-block',
+  'no-known-conflict',
+  'low-risk-logging-warning',
+];
+
 class B04ActivationGateFixture {
   final String id;
   final String requirement;
@@ -51,8 +103,7 @@ class B04ActivationGateFixture {
         requirement.isEmpty ||
         evidenceReference.isEmpty ||
         !blocking ||
-        !activationRequired ||
-        satisfied) {
+        !activationRequired) {
       throw StateError('B04 activation gate $id is invalid.');
     }
   }
@@ -264,6 +315,7 @@ class B04ConsentAndAcceptanceFixture {
   final bool historyPreservedAfterWithdrawal;
   final bool proposalAcceptanceRequired;
   final bool proposalAcceptanceIdempotent;
+  final bool acceptanceRequiresEnabledPolicy;
   final bool acceptedChangeCreatesEffectiveDatedTargetVersion;
   final bool rejectionDismissalExpiryLeaveTargetUnchanged;
   final bool backgroundActivationAllowed;
@@ -278,6 +330,7 @@ class B04ConsentAndAcceptanceFixture {
     required this.historyPreservedAfterWithdrawal,
     required this.proposalAcceptanceRequired,
     required this.proposalAcceptanceIdempotent,
+    required this.acceptanceRequiresEnabledPolicy,
     required this.acceptedChangeCreatesEffectiveDatedTargetVersion,
     required this.rejectionDismissalExpiryLeaveTargetUnchanged,
     required this.backgroundActivationAllowed,
@@ -293,6 +346,7 @@ class B04ConsentAndAcceptanceFixture {
     historyPreservedAfterWithdrawal: true,
     proposalAcceptanceRequired: true,
     proposalAcceptanceIdempotent: true,
+    acceptanceRequiresEnabledPolicy: true,
     acceptedChangeCreatesEffectiveDatedTargetVersion: true,
     rejectionDismissalExpiryLeaveTargetUnchanged: true,
     backgroundActivationAllowed: false,
@@ -309,6 +363,7 @@ class B04ConsentAndAcceptanceFixture {
     'history_preserved_after_withdrawal': historyPreservedAfterWithdrawal,
     'proposal_acceptance_required': proposalAcceptanceRequired,
     'proposal_acceptance_idempotent': proposalAcceptanceIdempotent,
+    'acceptance_requires_enabled_policy': acceptanceRequiresEnabledPolicy,
     'accepted_change_creates_effective_dated_target_version':
         acceptedChangeCreatesEffectiveDatedTargetVersion,
     'rejection_dismissal_expiry_leave_target_unchanged':
@@ -348,6 +403,10 @@ class B04ConsentAndAcceptanceFixture {
           json,
           'proposal_acceptance_idempotent',
         ),
+        acceptanceRequiresEnabledPolicy: _gateBool(
+          json,
+          'acceptance_requires_enabled_policy',
+        ),
         acceptedChangeCreatesEffectiveDatedTargetVersion: _gateBool(
           json,
           'accepted_change_creates_effective_dated_target_version',
@@ -375,6 +434,7 @@ class B04ConsentAndAcceptanceFixture {
         !historyPreservedAfterWithdrawal ||
         !proposalAcceptanceRequired ||
         !proposalAcceptanceIdempotent ||
+        !acceptanceRequiresEnabledPolicy ||
         !acceptedChangeCreatesEffectiveDatedTargetVersion ||
         !rejectionDismissalExpiryLeaveTargetUnchanged ||
         backgroundActivationAllowed ||
@@ -992,7 +1052,9 @@ class B04SolReviewPacketFixture {
         activationEligible ||
         requiredScope.length != 7 ||
         !acceptedVerdicts.contains('approved') ||
-        !acceptedVerdicts.contains('approved_with_non_blocking_follow_up')) {
+        !acceptedVerdicts.contains('approved_with_non_blocking_follow_up') ||
+        !_sameOrderedStrings(requiredScope, current.requiredScope) ||
+        !_sameOrderedStrings(acceptedVerdicts, current.acceptedVerdicts)) {
       throw StateError('Fresh independent Sol review packet is invalid.');
     }
   }
@@ -1063,7 +1125,7 @@ class B04PolicyGateFixturePacket {
         evidenceReference: 'DECISIONS.md#B04-D04-ENABLED-1',
         blocking: true,
         activationRequired: true,
-        satisfied: false,
+        satisfied: true,
       ),
       B04ActivationGateFixture(
         id: 'fresh-independent-sol-high',
@@ -1101,41 +1163,8 @@ class B04PolicyGateFixturePacket {
     legacyPolicyIsolation: B04LegacyPolicyIsolationFixture.current,
     solReview: B04SolReviewPacketFixture.current,
     requiredEdgeIds: b04EnabledEdgeIds,
-    requiredStateFixtureIds: [
-      'hold-unavailable-zero-delta',
-      'readiness-hold-zero-effect',
-      'feedback-accept-append-only',
-      'missing-required-evidence',
-      'dietary-possible-unavailable',
-      'dietary-unknown-unavailable',
-      'dietary-insufficient-unavailable',
-      'unknown-nutrition-preserved',
-      'range-crosses-decision-boundary',
-      'missing-provenance-unavailable',
-      'timezone-dst-local-date-frozen',
-      'feedback-acknowledge-append-only',
-      'feedback-override-user-set',
-      'feedback-snooze-presentation-only',
-      'future-only-enabled-replay',
-    ],
-    requiredArithmeticFixtureIds: [
-      'E13-range-1800-2200',
-      'E13-range-1799-2201',
-      'E16-range-1850-2150',
-      'E16-range-1849-2151',
-      'E41-range-zero-midpoint',
-      'E41-range-reversed',
-      'E41-range-positive-point',
-      'E41-range-negative-bound',
-      'E41-range-non-finite',
-      'E41-range-mismatched-units',
-      'E43-odd-median-and-slopes',
-      'E43-even-median-and-slopes',
-      'E44-tied-and-fractional-slopes',
-      'E42-M-2000',
-      'E42-M-2001',
-      'E42-M-1801',
-    ],
+    requiredStateFixtureIds: kB04PolicyGateRequiredStateFixtureIds,
+    requiredArithmeticFixtureIds: kB04PolicyGateRequiredArithmeticFixtureIds,
   );
 
   Map<String, dynamic> toJson() => {
@@ -1234,9 +1263,16 @@ class B04PolicyGateFixturePacket {
         decisionIds.length != 20 ||
         !decisionIds.toSet().containsAll(b04D04DecisionIds) ||
         activationGates.length != 4 ||
-        safetyWording.length != B04SafetyWordingFixture.catalog.length ||
         requiredEdgeIds.length != b04EnabledEdgeIds.length ||
-        !requiredEdgeIds.toSet().containsAll(b04EnabledEdgeIds)) {
+        !requiredEdgeIds.toSet().containsAll(b04EnabledEdgeIds) ||
+        !_sameStrings(
+          requiredStateFixtureIds,
+          kB04PolicyGateRequiredStateFixtureIds,
+        ) ||
+        !_sameStrings(
+          requiredArithmeticFixtureIds,
+          kB04PolicyGateRequiredArithmeticFixtureIds,
+        )) {
       throw StateError('B04-02 policy gate packet is incomplete.');
     }
 
@@ -1251,20 +1287,52 @@ class B04PolicyGateFixturePacket {
       gate.validate();
     }
     final gateIds = activationGates.map((gate) => gate.id).toSet();
-    if (!gateIds.containsAll([
-      'product-owner-approval',
-      'fresh-independent-sol-high',
-      'policy-branch-merge',
-      'explicit-release-selection',
-    ])) {
+    final expectedGates = {
+      for (final gate in B04PolicyGateFixturePacket.current.activationGates)
+        gate.id: gate,
+    };
+    if (!_sameStrings(gateIds, expectedGates.keys)) {
       throw StateError('B04 activation gate coverage is incomplete.');
+    }
+    for (final gate in activationGates) {
+      final expected = expectedGates[gate.id]!;
+      if (gate.requirement != expected.requirement ||
+          gate.evidenceReference != expected.evidenceReference ||
+          gate.blocking != expected.blocking ||
+          gate.activationRequired != expected.activationRequired ||
+          gate.satisfied != expected.satisfied) {
+        throw StateError('B04 activation gate ${gate.id} changed.');
+      }
     }
 
     consentAndAcceptance.validate();
     holdPolicy.validate();
     readinessHold.validate();
+    if (!_sameStrings(
+      safetyWording.map((item) => item.id),
+      kB04PolicyGateRequiredSafetyWordingIds,
+    )) {
+      throw StateError('B04 safety wording catalog coverage is incomplete.');
+    }
     for (final wording in safetyWording) {
       wording.validate();
+      final expected = B04SafetyWordingFixture.catalog.singleWhere(
+        (item) => item.id == wording.id,
+      );
+      if (wording.semanticState != expected.semanticState ||
+          wording.text != expected.text ||
+          wording.recommendationAllowed != expected.recommendationAllowed ||
+          wording.targetMutationAllowed != expected.targetMutationAllowed ||
+          wording.hardBlock != expected.hardBlock ||
+          wording.lowRiskLoggingOnly != expected.lowRiskLoggingOnly ||
+          wording.aiMayAlterNumericalMeaning !=
+              expected.aiMayAlterNumericalMeaning ||
+          !_sameOrderedStrings(
+            wording.prohibitedClaims,
+            expected.prohibitedClaims,
+          )) {
+        throw StateError('B04 safety wording ${wording.id} changed.');
+      }
     }
     offlineAiBoundary.validate();
     n8Boundary.validate();
@@ -1338,4 +1406,25 @@ B04FixtureOutcome _gateOutcome(dynamic value) {
     throw const FormatException('Outcome must be a string.');
   }
   return B04FixtureOutcome.values.byName(value);
+}
+
+bool _sameStrings(Iterable<String> actual, Iterable<String> expected) {
+  final actualList = actual.toList();
+  final expectedList = expected.toList();
+  final actualSet = actualList.toSet();
+  final expectedSet = expectedList.toSet();
+  return actualList.length == expectedList.length &&
+      actualSet.length == actualList.length &&
+      actualSet.length == expectedSet.length &&
+      actualSet.containsAll(expectedSet);
+}
+
+bool _sameOrderedStrings(Iterable<String> actual, Iterable<String> expected) {
+  final actualList = actual.toList();
+  final expectedList = expected.toList();
+  if (actualList.length != expectedList.length) return false;
+  for (var index = 0; index < actualList.length; index++) {
+    if (actualList[index] != expectedList[index]) return false;
+  }
+  return true;
 }

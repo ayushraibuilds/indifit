@@ -46,6 +46,7 @@ void main() {
         expect(consent.historyPreservedAfterWithdrawal, isTrue);
         expect(consent.proposalAcceptanceRequired, isTrue);
         expect(consent.proposalAcceptanceIdempotent, isTrue);
+        expect(consent.acceptanceRequiresEnabledPolicy, isTrue);
         expect(
           consent.acceptedChangeCreatesEffectiveDatedTargetVersion,
           isTrue,
@@ -165,7 +166,11 @@ void main() {
         for (final gate in packet.activationGates) {
           expect(gate.blocking, isTrue, reason: gate.id);
           expect(gate.activationRequired, isTrue, reason: gate.id);
-          expect(gate.satisfied, isFalse, reason: gate.id);
+          expect(
+            gate.satisfied,
+            gate.id == 'product-owner-approval',
+            reason: gate.id,
+          );
         }
         expect(packet.solReview.reviewerRole, 'Sol High');
         expect(packet.solReview.status, kB04PendingSolReviewStatus);
@@ -256,6 +261,57 @@ void main() {
       invalidSol['sol_review'] = sol;
       expect(
         () => B04PolicyGateFixturePacket.fromJson(invalidSol),
+        throwsA(isA<StateError>()),
+      );
+
+      final invalidStateReferences = B04PolicyGateFixturePacket.current
+          .toJson();
+      final stateReferences = List<String>.from(
+        invalidStateReferences['required_state_fixture_ids'] as List,
+      )..remove('feedback-dismiss-no-mutation');
+      invalidStateReferences['required_state_fixture_ids'] = stateReferences;
+      expect(
+        () => B04PolicyGateFixturePacket.fromJson(invalidStateReferences),
+        throwsA(isA<StateError>()),
+      );
+
+      final invalidArithmeticReferences = B04PolicyGateFixturePacket.current
+          .toJson();
+      final arithmeticReferences = List<String>.from(
+        invalidArithmeticReferences['required_arithmetic_fixture_ids'] as List,
+      )..remove('E41-range-non-finite');
+      invalidArithmeticReferences['required_arithmetic_fixture_ids'] =
+          arithmeticReferences;
+      expect(
+        () => B04PolicyGateFixturePacket.fromJson(invalidArithmeticReferences),
+        throwsA(isA<StateError>()),
+      );
+
+      final invalidWording = B04PolicyGateFixturePacket.current.toJson();
+      final wording = List<Map<String, dynamic>>.from(
+        (invalidWording['safety_wording'] as List).map(
+          (item) => Map<String, dynamic>.from(item as Map),
+        ),
+      );
+      final generalWellness = wording.firstWhere(
+        (item) => item['id'] == 'general-wellness',
+      );
+      wording
+        ..removeWhere((item) => item['id'] == 'medical-exclusion')
+        ..add(generalWellness);
+      invalidWording['safety_wording'] = wording;
+      expect(
+        () => B04PolicyGateFixturePacket.fromJson(invalidWording),
+        throwsA(isA<StateError>()),
+      );
+
+      final invalidAcceptance = B04PolicyGateFixturePacket.current.toJson();
+      final acceptance = Map<String, dynamic>.from(
+        invalidAcceptance['consent_and_acceptance'] as Map,
+      )..['acceptance_requires_enabled_policy'] = false;
+      invalidAcceptance['consent_and_acceptance'] = acceptance;
+      expect(
+        () => B04PolicyGateFixturePacket.fromJson(invalidAcceptance),
         throwsA(isA<StateError>()),
       );
     });
