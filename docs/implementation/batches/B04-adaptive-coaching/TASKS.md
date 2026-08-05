@@ -2,9 +2,10 @@
 
 Status: planning only. No task below has started. The DAG uses the concrete
 B04 integration baseline `741aa18972ebc1b61cd65c0bf12b442b10b50890`, whose
-parent contains accepted B03. After independent Sol High approval of this
-documentation remediation, B04-01 may begin; later tasks remain gated by this
-DAG and their own dependencies.
+parent contains accepted B03. Numerical-policy authoring baseline is
+`61cac3dd35579fde01118626b5fa009024a04a7f`. `B04-D04-ENABLED-1` is proposed
+but inactive; this branch does not authorize B04-01, application work or
+runtime activation.
 
 ## Task rules
 
@@ -16,25 +17,60 @@ DAG and their own dependencies.
   production state ownership, navigation, wording and accessibility.
 - `B04-02` is the sole owner of the D04 policy packet. No implementation task
   may choose an unrecorded age, evidence threshold, cadence, bound, wording or
-  N8 semantic.
-- `B04-D04-HOLD-1` blocks enabled adaptive calorie proposals, readiness-driven
-  target/training-change proposals, every non-zero adaptive target delta,
-  adaptive deficit/surplus behavior and calorie floor/ceiling behavior. It does
-  not block contracts, fixtures, Schema v18 or Backup v9 foundations, goals,
-  consent, readiness, safety, lineage, feedback, deterministic unavailable
-  states, descriptive/history features or valid user-set targets. Under the
-  hold, adaptive output is `unavailable`, upward/downward/aggregate deltas are
-  exactly `0 kcal`, no proposal can be accepted, and user override/AI cannot
-  bypass it.
+  N8 semantic. `B04-D04-ENABLED-1` is the only proposed enabled calorie
+  numerical contract; its activation requires fresh independent Sol High
+  approval, branch merge and explicit release/feature-policy selection.
+- `B04-D04-HOLD-1` remains retained for historical replay and for
+  installations/users that do not select `ENABLED-1`; until activation it is
+  the current/default behavior. It blocks adaptive calorie proposals,
+  readiness-driven target/training-change proposals, every non-zero adaptive
+  target delta, adaptive deficit/surplus behavior and calorie floor/ceiling
+  behavior. Under the hold, adaptive output is `unavailable`, all adaptive
+  deltas are exactly `0 kcal`, no proposal can be accepted, and user
+  override/AI cannot bypass it. `B04-D04-READINESS-HOLD-1` separately fixes
+  readiness numerical effects at exactly zero. Neither hold blocks contracts,
+  fixtures, Schema v18 or Backup v9 foundations, goals, consent, readiness,
+  safety, lineage, feedback, deterministic unavailable states,
+  descriptive/history features or valid user-set targets.
 - Product Owner qualitative decisions are authorized in the D04 packet:
   verified age `18` inclusive, below-age `coaching_unavailable_age`, opt-in,
   explicit target acceptance, no background automatic activation, typed
   missing-data behavior, dietary hard blocks, reviewed wording boundaries,
-  offline/AI limits and conditional N8. Numerical values remain under
-  `HOLD-1`.
+  offline/AI limits and conditional N8. The proposed numerical values are
+  recorded only in `B04-D04-ENABLED-1`; they are not active until the fresh
+  Sol/merge/release activation gate passes. `HOLD-1` remains retained for
+  replay and non-selection.
 - `B04-18` is a conditional product/scope gate only. It is not required for
   B04 completion and must not create an implementation branch without a new
   roadmap decision.
+
+## `B04-D04-ENABLED-1` task acceptance overlay
+
+The following acceptance criteria and deterministic tests apply in addition
+to each task’s base criteria. They define the enabled numerical contract but
+do not authorize implementation from this branch. Until the activation gate
+passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
+
+| Task | Acceptance criteria | Required deterministic tests |
+|---|---|---|
+| `B04-01` | Contract matrix includes exact `ENABLED-1` eligibility, goal rates, 21-day window, weight/nutrition/maintenance evidence, Theil–Sen trend, deadbands, 100-kcal step, cadence, expiry, aggregate, deficit/surplus, floor/ceiling, rapid-change, future-only activation and replay; task remains not started. | Every edge listed in `VERIFICATION.md`, including `HOLD-1`/`ENABLED-1` policy-version replay. |
+| `B04-02` | Owns the Product Owner selection, version, activation conditions, retained `HOLD-1`, `READINESS-HOLD-1`, exact numeric semantics and fresh independent Sol review packet. | Decision-record completeness; all unit/period/inclusivity/missing-data/version/override fields; no legacy-constant inference; activation remains blocked. |
+| `B04-03` | Planned Schema v18 entities carry policy/algorithm versions, effective dates, evidence links, target lineage and feedback; no new numerical-policy or N8 tables are introduced. | Fresh/v17→v18/idempotent migration ownership and required-field tests; policy/version lineage round trip. |
+| `B04-04` | Planned Backup v9 graph preserves `HOLD-1` and `ENABLED-1` policy-version history, future-only effective dates and evidence lineage; no new N8/raw-payload sections. | Round trip, unsupported policy version, duplicate/cross-user graph, rollback and historical replay tests. |
+| `B04-05` | Enforces verified 18+ age, explicit consent, supported rates/defaults, goal versions, user-set labeling, explicit acceptance, idempotency and 21-day reset after goal/target/policy changes. | Exact birthday, underage/unknown/withheld, consent, rate, target acceptance, duplicate command, effective-date and reset edges. |
+| `B04-06` | Preserves readiness provenance and completeness; `READINESS-HOLD-1` yields exactly `0 kcal/day`, `0%` load, `0%` intensity and `0` schedule duration, including complete readiness. | Complete/missing/denied/stale/conflicting readiness and all exact-zero numerical effect cases. |
+| `B04-07` | Implements the pure deterministic calorie engine only after activation; otherwise returns `HOLD-1` unavailable. Enforces all `ENABLED-1` evidence, trend, deadband, direction, delta, cadence, aggregate, deficit/surplus, floor/ceiling and rapid-change rules. | Full numerical edge suite, deterministic replay, no target mutation, explicit acceptance, user/AI bypass rejection and future-only activation. |
+| `B04-08` | Context carries recorded local date/timezone, goal/target/policy versions, B03 snapshots, maintenance estimate, missing/range states and N8 absence without inference. | 21/42-day period, timezone/DST, cross-midnight, stale/conflicting evidence, redaction and no-N8-inference tests. |
+| `B04-09` | B03 remains the sole dietary evaluator; hard blocks and possible/unknown/insufficient/missing/cross-contact evidence prevent safety-sensitive enabled output. | All B03 conflict/uncertainty states before and after policy selection; acknowledgement/override cannot bypass safety. |
+| `B04-10` | One deterministic engine owns direction, exact `100 kcal/day` delta, availability, confidence, evidence and wording state; AI cannot alter numerical or safety output. | Golden direction/deadband/boundary/ranking/replay tests and malformed/conflicting AI output discard. |
+| `B04-11` | Freezes every enabled-policy input/result and appends accept/reject/dismiss/override/snooze events; corrections and policy changes never rewrite history. | Append-only lineage, duplicate actions, correction snapshots, target versions, policy-version replay and backup tests. |
+| `B04-12` | Calorie policy never becomes food-safety authority; eat-now output remains B03-filtered, unavailable when evidence is insufficient and independent of N8. | Offline/local candidate, hard-block, range/unknown, target-version and no-N8 tests. |
+| `B04-13` | Daily/weekly views expose future-only policy state, exact deltas/reasons, deadbands, rapid-change/boundary states, acceptance, user-set targets and historical replay. | Local period, 21/42-day, expiry, offline, missing evidence, wording and acceptance presentation tests. |
+| `B04-14` (optional) | AI is separately consented, redacted and wording-only; it cannot alter any `ENABLED-1` or readiness-hold value/state. | AI consent, redaction, provider failure, malformed output, offline and numerical non-effect tests. |
+| `B04-15` | UI renders exact units/edges, user-set labels, unavailable/boundary/rapid-change states, non-medical wording and no hidden activation accessibly. | Exact edge presentation, accessibility, compact/large text, offline, consent and no-bypass tests. |
+| `B04-16` | Regression proves B01–B03 ownership, HOLD-1 replay, ENABLED-1 future-only activation, readiness hold, legacy constant isolation and timezone/DST correction behavior. | Full cross-batch, migration/backup, legacy-authority, replay and policy-selection tests. |
+| `B04-17` | Release evidence contains Product Owner selection, fresh Sol verdict, branch merge, explicit activation selection, Terra copy review, all numerical edges and no readiness enablement. | Complete matrix, device/accessibility, rollback/idempotency, offline, AI, historical and activation-gate evidence. |
+| `B04-18` (conditional) | Remains outside mandatory B04; no festival/fasting/eating-out/travel inference, schema, backup or calorie-policy dependency is added. | N8 independence and no-inference tests only; separate DAG required for future work. |
 
 ## B04-01 — Contract and fixture matrix
 
@@ -63,30 +99,29 @@ DAG and their own dependencies.
 
 ## B04-02 — Product, target and safety policy gate
 
-- **Objective:** Implement the Product Owner-authorized qualitative D04
-  contract as a bounded policy task, record the exact staged `HOLD-1` contract,
-  and prepare the packet for independent Sol High review. This is policy
-  implementation/documentation, not another open planning exercise.
+- **Objective:** Record the Product Owner-authorized qualitative D04 contract,
+  the proposed `B04-D04-ENABLED-1` calorie policy and retained
+  `B04-D04-READINESS-HOLD-1`, then prepare the complete packet for fresh
+  independent Sol High review. This is documentation-only policy work and does
+  not activate or implement the engine.
 - **Dependencies:** `B04-01`.
 - **Risk / size:** Critical / M.
 - **Primary model / required reviewer:** Sol High / Product Owner and Sol High;
   Terra High for copy and accessibility.
 - **Likely files or domains:** Decision register, target-policy fixtures,
   safety wording catalog and release checklist.
-- **Acceptance criteria:** `B04-D04-01` through `B04-D04-20` record the
-  authorized qualitative selections; age is verified `18 completed years`
-  inclusive; below-age output is `coaching_unavailable_age`; coaching and AI
-  consent are separate; target acceptance is explicit and idempotent; no
-  background target activation occurs; possible, unknown, insufficient,
-  missing-ingredient, possible-cross-contact and structurally invalid evidence
-  returns unavailable for safety-sensitive outputs; warning acknowledgement is
-  limited to low-risk logging; N8 remains conditional; and `HOLD-1` records zero
-  upward, downward and aggregate kcal adjustment. Any future enabled numeric
-  policy must record unit, inclusive/exclusive edge, effective period,
-  missing-data behavior, policy version, override rule and boundary tests.
-  Existing TDEE constants remain legacy and are not B04 policy. The task
-  explicitly distinguishes foundations allowed under `HOLD-1` from enabled
-  adaptive behavior that remains blocked.
+- **Acceptance criteria:** `B04-D04-01` through `B04-D04-20` retain the
+  authorized qualitative selections; `B04-D04-ENABLED-1` records the exact
+  Product Owner-selected numerical contract, and
+  `B04-D04-READINESS-HOLD-1` records zero readiness numerical effect. Age is
+  verified `18 completed years` inclusive; consent and AI consent are
+  separate; target acceptance is explicit/idempotent; no background activation
+  occurs; safety-sensitive insufficient evidence is unavailable; N8 remains
+  conditional; and `HOLD-1` remains available for replay/non-selection with
+  zero adaptive deltas. Every enabled number records unit, period,
+  inclusive/exclusive edge, missing-data behavior, policy version, override
+  rule and deterministic boundary tests. Legacy TDEE constants remain
+  non-policy. The task records activation gates but does not activate them.
 - **Required tests:** Decision-record completeness; `HOLD-1` unavailable result,
   exact zero upward/downward/aggregate delta, no proposal acceptance and no
   user/AI bypass; boundary-value policy fixtures only for future approval;
@@ -95,9 +130,9 @@ DAG and their own dependencies.
   possible/unknown/insufficient/missing/invalid dietary evidence; warning
   preservation for low-risk logging only; professional-wording; offline/AI
   redaction; and N8 non-inference tests.
-- **Explicit exclusions:** No target engine or UI implementation before the
-  independent Sol review, dependency gate and remaining numerical approvals
-  are closed.
+- **Explicit exclusions:** No target engine, UI, schema, migration or backup
+  implementation; no B04-01 start; no runtime activation before the fresh
+  independent Sol verdict, branch merge and explicit release selection.
 - **Parallelizable:** No; it gates all safety-sensitive implementation.
 
 ## B04-03 — Schema v18 migration contract
@@ -116,10 +151,12 @@ DAG and their own dependencies.
   `coaching_eligibility_evaluations` is append-only and owns eligible,
   underage, unknown, conflicting, withheld, invalid and policy-unavailable
   evaluations; current projections are derived; effective-dated target
-  lineage, recommendation evidence and feedback have explicit ownership; IDs,
-  ownership, effective dates, timestamps, supersession, indexes and foreign
-  keys match `DECISIONS.md`; caches, prompts and raw provider payloads are not
-  durable schema entities.
+  lineage, recommendation evidence and feedback have explicit ownership; the
+  existing planned entities carry `ENABLED-1`/`HOLD-1`/readiness policy and
+  algorithm versions, numeric evidence, effective dates and replay links; no
+  new D04 numerical or N8 table is added; IDs, ownership, effective dates,
+  timestamps, supersession, indexes and foreign keys match `DECISIONS.md`;
+  caches, prompts and raw provider payloads are not durable schema entities.
 - **Required tests:** Append-only consent-event schema; current consent
   projection derived from events; enable/disable history; consent category
   separation; withheld eligibility; unknown/conflicting eligibility;
@@ -141,7 +178,9 @@ DAG and their own dependencies.
   envelope/manifest code, restore coordinator, backup fixtures and tests.
 - **Acceptance criteria:** Backup v9 round-trips the durable B04 data,
   including append-only consent events, eligibility evaluations,
-  effective-dated target lineage and feedback; restore ordering is explicit;
+  effective-dated target lineage, `HOLD-1`/`ENABLED-1` policy-version
+  evidence and feedback; restore ordering is explicit; no new N8 or numerical
+  policy section is added;
   v5–v8 imports restore with an empty B04 graph and do not fabricate consent
   or eligibility; invalid graph rollback is atomic; no raw AI, disclosure,
   medical-restriction or health payloads are serialized.
@@ -205,7 +244,11 @@ DAG and their own dependencies.
   visible; incomplete/denied/conflicting inputs produce unknown or unavailable
   readiness; snapshots freeze evidence and supersession; stale/missing
   evidence suppresses readiness-driven adaptation; schedule/activity alone
-  cannot infer readiness; no readiness is backfilled without evidence.
+  cannot infer readiness; no readiness is backfilled without evidence. Under
+  `B04-D04-READINESS-HOLD-1`, readiness contributes exactly `0 kcal/day`,
+  `0%` training-load change, `0%` intensity change and `0` schedule-duration
+  change even when readiness is complete; only descriptive coaching may use
+  it.
 - **Required tests:** Complete/incomplete/denied/stale/conflicting health,
   timezone/date boundaries, provenance lineage, idempotent import and
   historical immutability.
@@ -227,21 +270,22 @@ DAG and their own dependencies.
   calculation fixtures.
 - **Acceptance criteria:** No silent target mutation; verified age `18` is
   inclusive; below-age/unknown-age returns the explicit unavailable state; no
-  eligibility decision is inferred or reconstructed from the current
-  projection; immutable evaluations are read from
-  `coaching_eligibility_evaluations`; no
-  No background automatic target change occurs; one observation never changes a
-  target; while `HOLD-1` is active no adaptive calorie or readiness-driven
-  training proposal is emitted and upward/downward/aggregate delta is exactly
-  `0 kcal`; no hidden calculation becomes active; user override and AI cannot
-  bypass the hold; goals, trends, workload, readiness and overrides are named
-  evidence; training ownership remains B02-owned.
-- **Required tests:** `HOLD-1` emits no adaptive proposal; `HOLD-1` returns an
-  unavailable reason; upward delta exactly `0 kcal`; downward delta exactly
-  `0 kcal`; aggregate delta exactly `0 kcal`; no hidden calculation becomes
-  active; user override cannot bypass the hold; AI cannot bypass the hold; and
-  policy-version replay is deterministic. Future numerical-policy fixtures
-  remain separate and unapproved until the hold is superseded.
+  eligibility decision is inferred or reconstructed from a current projection;
+  immutable evaluations are read from `coaching_eligibility_evaluations`; no
+  background automatic target change occurs; one observation never changes a
+  target. While `HOLD-1` is active, no adaptive proposal is emitted and all
+  adaptive deltas are exactly `0 kcal`. After the separate activation gate
+  selects `ENABLED-1`, the engine enforces its exact 21-day/evidence/trend,
+  deadband, `100 kcal/day`, cadence, aggregate, deficit/surplus,
+  floor/ceiling and rapid-change contract. `READINESS-HOLD-1` keeps all
+  readiness numerical effects exactly zero. User override and AI cannot bypass
+  any policy; training ownership remains B02-owned.
+- **Required tests:** `HOLD-1` emits no adaptive proposal and returns its
+  unavailable reason; upward/downward/aggregate delta exactly `0 kcal`; no
+  hidden calculation, user override or AI bypass; `ENABLED-1` exact numerical
+  edge matrix; `READINESS-HOLD-1` exact-zero effects; activation gate;
+  policy-version replay; append-only correction; timezone/DST; offline
+  determinism; and duplicate acceptance idempotency.
 - **Explicit exclusions:** AI-generated targets, medical prescriptions,
   unapproved aggressive deficits and B02 load-target replacement.
 - **Parallelizable:** No; it depends on both new histories and the policy gate.
@@ -501,13 +545,15 @@ DAG and their own dependencies.
   migration/backup fixtures, Android/iOS artifacts and manual evidence.
 - **Acceptance criteria:** All required gates pass or have explicitly
   accepted non-blocking follow-ups; no unresolved safety/privacy/historical
-  blocker; Product Owner qualitative authorization, Terra copy review and
-  independent Sol High verdict for `B04-D04-01` through `B04-D04-20` are
-  recorded; `HOLD-1` numerical values remain explicit until separately
-  approved; the incremental evidence ledger is updated immediately after each
-  approved/merged task; Android and iOS physical checks are recorded; the
-  implementation branch is eligible for integration only after the dependency
-  gate closes.
+  blocker; Product Owner qualitative authorization, Product Owner selection of
+  proposed `ENABLED-1`, Terra copy review and a fresh independent Sol High
+  verdict covering the numerical contract are recorded. Branch merge and
+  explicit release/feature-policy selection are recorded before any enabled
+  activation; `HOLD-1` remains replayable/non-selected and
+  `READINESS-HOLD-1` remains active. The incremental evidence ledger is
+  updated immediately after each approved/merged task; Android and iOS
+  physical checks are recorded; this planning branch does not begin B04-01 or
+  implementation.
 - **Required tests:** Full matrix in `VERIFICATION.md`, direct task-level D04
   acceptance tests, manual journeys, release builds and rollback/idempotency
   evidence; ledger completeness is itself a release check.

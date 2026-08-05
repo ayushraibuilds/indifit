@@ -1,6 +1,6 @@
 # B04 — Adaptive Coaching
 
-Status: Documentation gate; foundational implementation may proceed after independent Sol High approval and the accepted dependency parent; enabled adaptive behavior remains blocked by `B04-D04-HOLD-1`
+Status: Documentation-only numerical policy gate; `B04-D04-ENABLED-1` is proposed but inactive. Foundational implementation remains gated by independent Sol High approval and the accepted dependency parent; `B04-D04-HOLD-1` remains the current/default behavior until an explicit release activation.
 Planning branch: `batch/b04-planning`
 Planning base: `main` at `12ce1b05c7626d3fb37eedc37fc0dd4d7af94d8a`
 Accepted B03 integration source: `batch/b03-nutrition-foundation` at `d85e8a16566735e7f6b7fe15cd2a97edb5677178`
@@ -10,7 +10,10 @@ D04 packet branch: `b04/d04-safety-policy-gate`
 D04 packet planning baseline: `9102092fd1b18e38beff500e2654ece6a191f66f`
 B04 implementation parent: `f976542e395a3e082f1ab5cdfdfd87e969910766`
 B04 integration baseline: `741aa18972ebc1b61cd65c0bf12b442b10b50890`
-D04 documentation commit under review: `750ef0999153a7cc41a2493cb6305d2a833b1f12`
+Prior D04 qualitative documentation commit: `750ef0999153a7cc41a2493cb6305d2a833b1f12`
+D04 numerical-policy authoring baseline: `61cac3dd35579fde01118626b5fa009024a04a7f`
+Proposed enabled calorie policy: `B04-D04-ENABLED-1` (not active; future-only)
+Readiness numerical policy: `B04-D04-READINESS-HOLD-1` (retained hold; readiness numerical effect is zero)
 Platforms: Android and iOS
 
 ## Canonical authority
@@ -79,11 +82,14 @@ deterministic result.
 
 - Medical diagnosis, treatment, injury rehabilitation, allergy-safety
   guarantees, or professional nutrition prescriptions.
-- Numerical deficit/surplus policy, enabled-adaptation cadence, evidence
-  thresholds or other medically sensitive constants until the Product Owner
-  and Sol record a superseding policy.
-- Adaptive target output while `B04-D04` is in `HOLD-1`; user-set targets,
-  descriptive history and unavailable states remain in scope.
+- Runtime enabled adaptation from this documentation branch. The proposed
+  `B04-D04-ENABLED-1` contract is not active until Product Owner approval,
+  independent fresh Sol High approval, branch merge and explicit release or
+  feature-policy selection. `B04-D04-HOLD-1` remains available for historical
+  replay and for installations/users not selecting the enabled policy.
+- Readiness-driven numerical calorie or training changes. They remain under
+  `B04-D04-READINESS-HOLD-1`; descriptive completeness-aware coaching only is
+  in scope.
 - Reimplementation of B01 scheduling, B02 activity/history, B02 load-rule v1,
   B03 nutrient calculation, B03 immutable snapshots, B03 constraints, B03
   estimates, recipes, thalis or household conversions.
@@ -112,14 +118,20 @@ deterministic result.
   immutable consumption snapshots, recipes/thali, estimate provenance,
   structured dietary constraints and read-model ownership.
 - A named, integrated B03 parent branch with no unresolved integration merge.
-- Product-owner/Sol approval of any enabled numerical target policy; the
-  disabled `HOLD-1` contract is sufficient for foundational implementation.
-- A Product Owner-authorized `B04-D04` qualitative decision packet and an
-  independent Sol High verdict. Numerical trend, completeness, cadence,
-  cooldown, deficit/surplus and adjustment values remain under `HOLD-1`;
-  adaptive target exposure remains unavailable. `HOLD-1` does not block
-  schema/backup foundations, persistence, unavailable states, or descriptive
-  and user-set-target behavior.
+- Product Owner approval of the proposed `B04-D04-ENABLED-1` numerical target
+  policy and an independent fresh Sol High safety/implementation-readiness
+  verdict. The policy is not active from this branch: merge and an explicit
+  release/feature-policy selection are also required. The disabled `HOLD-1`
+  contract remains sufficient for historical replay and for foundational
+  contracts, but not for enabled numerical runtime behavior.
+- A Product Owner-authorized `B04-D04` qualitative packet, the proposed
+  `B04-D04-ENABLED-1` numerical packet, and an independent fresh Sol High
+  verdict. The enabled packet is future-only and inactive until the branch is
+  merged and the release/feature policy explicitly selects it. `HOLD-1`
+  remains available for historical replay and non-enabled installations/users;
+  `B04-D04-READINESS-HOLD-1` keeps all readiness-driven numerical effects at
+  zero. Neither hold blocks schema/backup foundations, persistence,
+  unavailable states, descriptive behavior or valid user-set-target behavior.
 - One user/profile identity and timezone authority for B04 writes.
 
 ## Inherited contracts B04 may consume
@@ -160,15 +172,19 @@ deterministic result.
 
 - Goal changes and user overrides produce versioned, effective-dated records.
 - `B04-D04` age, consent, target acceptance, evidence, dietary, wording,
-  offline/AI and N8 decisions are explicitly recorded and Product Owner-
-  authorized. After independent Sol approval of this remediation, the DAG
-  may begin foundational implementation; the remaining `HOLD-1` numerical
-  gates must close before adaptive exposure.
+  offline/AI, N8 and `B04-D04-ENABLED-1` decisions are explicitly recorded.
+  The Product Owner has authorized the qualitative packet and selected
+  `ENABLED-1` as the proposed first enabled calorie policy. Independent fresh
+  Sol approval, branch merge and explicit release/feature-policy selection
+  remain required before activation; `HOLD-1` remains selectable and
+  readiness numerical behavior remains held.
 - Readiness exposes completeness and never adapts from missing/permission-error
   inputs as if they were zero.
 - Enabled adaptive target proposals are deterministic, bounded, opt-in and
-  explainable. Under `HOLD-1`, adaptive results are unavailable and all
-  adaptive deltas are exactly zero.
+  explainable only when `ENABLED-1` is explicitly selected after all activation
+  gates pass. Under `HOLD-1`, adaptive results are unavailable and all
+  adaptive deltas are exactly zero. Under `READINESS-HOLD-1`, readiness has
+  exactly zero numerical calorie/training effect.
 - One engine produces daily, weekly and meal-opportunity recommendations with
   evidence, confidence, alternatives and unavailable states.
 - B03 food/recipe/thali candidates retain quantity, nutrient, estimate and
@@ -188,12 +204,12 @@ deterministic result.
 
 ## Non-goals
 
-- This branch is documentation-only and no B04-01 task has started. B04-01
-  may begin only after this remediation receives independent Sol High approval
-  and the accepted B04 implementation parent is used. Later tasks follow the
-  accepted DAG and their own dependencies. `HOLD-1` does not block foundational
-  contracts, schema v18, Backup v9, persistence, unavailable states, goals,
-  lineage, feedback, descriptive behavior or user-set targets; it continues
-  to block enabled adaptation and every non-zero adaptive delta.
+- This branch is documentation-only and no B04-01 task has started. This
+  packet does not authorize B04-01 or any application implementation. Later
+  work remains subject to the accepted DAG and its own review gates.
+  `HOLD-1` does not block foundational contracts, schema v18, Backup v9,
+  persistence, unavailable states, goals, lineage, feedback, descriptive
+  behavior or user-set targets; it continues to be the non-enabled policy and
+  blocks runtime adaptive exposure until `ENABLED-1` is activated.
 - No B04 implementation may start until the dependency gate in
   `VERIFICATION.md` is green.

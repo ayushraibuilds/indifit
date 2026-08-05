@@ -1,16 +1,18 @@
 # B04 — Verification Plan
 
 Status: verification plan only. No B04 implementation or verification run has
-started. This branch records the B04-D04 documentation gate from planning
-commit `9102092fd1b18e38beff500e2654ece6a191f66`.
+started. This branch records the B04-D04 documentation gate and the proposed
+`B04-D04-ENABLED-1` numerical policy; no activation is authorized here.
 
 The concrete B04 integration baseline is
 `741aa18972ebc1b61cd65c0bf12b442b10b50890`; its implementation parent is
 `f976542e395a3e082f1ab5cdfdfd87e969910766`. The accepted B03 commit is
 `d85e8a16566735e7f6b7fe15cd2a97edb5677178`, with timezone correction
 `78a43f909bae58dc5e509da97af426ad960c9190` and merge commit
-`f976542e395a3e082f1ab5cdfdfd87e969910766`. The current D04 documentation
-commit under review is `750ef0999153a7cc41a2493cb6305d2a833b1f12`.
+`f976542e395a3e082f1ab5cdfdfd87e969910766`. The prior D04 qualitative
+documentation commit is `750ef0999153a7cc41a2493cb6305d2a833b1f12`. The current
+numerical-policy authoring baseline is
+`61cac3dd35579fde01118626b5fa009024a04a7f`.
 
 ## Verification gate
 
@@ -20,12 +22,14 @@ accepted B03 integration parent; B03 schema v17 and Backup v8 are present
 there. The planning branch is schema v16/backup v7 and is not a verification
 baseline. B04’s proposed durable change remains schema v18/Backup v9.
 
-After independent Sol High approval of this remediation, B04-01 may begin.
-Foundational work may then proceed only according to the accepted task DAG and
-its dependencies. `HOLD-1` does not block contracts, fixtures, Schema v18 or
-Backup v9 foundations, goals, consent, eligibility, readiness, safety, lineage,
-feedback or deterministic unavailable states; it continues to block enabled
-adaptive output.
+This branch does not begin B04-01. Foundational work remains subject to the
+accepted task DAG and its own gates. `HOLD-1` remains the current/default
+policy for historical replay and installations/users not selecting
+`ENABLED-1`; it does not block contracts, fixtures, Schema v18 or Backup v9
+foundations, goals, consent, eligibility, readiness, safety, lineage, feedback
+or deterministic unavailable states. `ENABLED-1` is not active until Product
+Owner approval, a fresh independent Sol High verdict, branch merge and
+explicit release/feature-policy selection are all recorded.
 
 Required reviewers:
 
@@ -34,8 +38,10 @@ Required reviewers:
 - **Terra High:** production controllers/providers, navigation, UI ownership,
   copy, compact layouts, large text and accessibility.
 - **Product Owner:** qualitative adaptive opt-in, age, consent, safety,
-  wording and any N8 context decision; numerical cadence, evidence thresholds
-  and calorie bounds remain held.
+  wording, N8 boundary and the proposed `ENABLED-1` numerical selection.
+  Product Owner approval does not replace the fresh independent Sol verdict or
+  activation/merge gate. `READINESS-HOLD-1` remains selected for all readiness
+  numerical effects.
 
 Any unresolved dependency, safety, privacy, historical-immutability,
 unknown/range, offline or platform/accessibility failure is a release blocker.
@@ -43,22 +49,20 @@ Only reproducible CI/documentation follow-up may be non-blocking, with an
 owner and explicit Sol acceptance.
 
 For D04 specifically, `B04-D04-01` through `B04-D04-20` must each have an
-authorized Product Owner qualitative selection or the documented numerical
-`HOLD-1` disposition, plus an independent Sol High verdict. The qualitative
-policy is authorized; `HOLD-1` remains for trend duration/count/cutoff,
-completeness/range threshold, proposal frequency/cooldown and all adaptive
-calorie/deficit/surplus bounds. `HOLD-1` blocks enabled adaptive calorie
-proposals, readiness-driven target or training-change proposals, every
-non-zero adaptive delta, adaptive deficit/surplus and floor/ceiling behavior.
-Under the hold, adaptive output is `unavailable`, upward/downward/aggregate
-deltas are exactly `0 kcal`, no proposal may be accepted, and user override or
-AI cannot bypass the hold. This is a disabled-policy contract, not a numerical
-approval.
+authorized Product Owner qualitative selection, and the versioned
+`B04-D04-ENABLED-1` record must contain the explicit numerical selection and
+all boundary metadata, plus a fresh independent Sol High verdict. `HOLD-1`
+remains retained for replay/non-selection; under it adaptive output is
+`unavailable`, all adaptive deltas are exactly `0 kcal`, no proposal may be
+accepted and user override or AI cannot bypass the hold. `READINESS-HOLD-1`
+requires exact zero calorie and training numerical effects. `ENABLED-1` can be
+reviewed as a proposed policy but cannot become active until merge and explicit
+release/feature-policy selection.
 
 ## B04-D04 policy-gate verification
 
-The following evidence is required before the hold can be replaced by an
-enabled policy:
+The following evidence is required before `B04-D04-ENABLED-1` can become
+active; Product Owner selection alone is not activation:
 
 - A signed decision record for minimum age `18` inclusive on the local civil
   birthday, below-age behavior, opt-in/default,
@@ -99,6 +103,68 @@ enabled policy:
 - Direct D04 acceptance tests are recorded in the owning task entries for
   `B04-03`, `B04-04`, `B04-05`, `B04-07`, `B04-08` and `B04-13`; they are not
   deferred to this final matrix.
+- The proposed `ENABLED-1` record includes the exact supported rates, 21-day
+  window, weight/nutrition/maintenance-energy thresholds, versioned Theil–Sen
+  formula, deadbands, exact `100 kcal/day` event, 21-day cadence, seven-day
+  expiry, 42-day aggregate boundary, deficit/surplus limits, floor/ceiling,
+  rapid-change states and future-only activation rule.
+- A separate `READINESS-HOLD-1` fixture proves readiness contributes exactly
+  `0 kcal/day`, `0%` load, `0%` intensity and `0` schedule-duration change;
+  descriptive readiness remains possible and missing readiness remains
+  unknown/unavailable.
+- Activation evidence names the merged policy branch and the release or
+  feature-policy selection, including policy version, effective local date,
+  timezone and user/installation scope. No activation date is implied by this
+  documentation commit.
+
+## `B04-D04-ENABLED-1` direct numerical edge tests
+
+These are required deterministic policy tests, not an implementation claim.
+Each fixture records policy version, unit, local-civil-day period, timezone,
+missing-data result, override behavior and historical evidence references.
+
+| ID | Edge fixture | Required result |
+|---|---|---|
+| E01 | Product Owner selection without Sol verdict, merge or explicit release selection | `ENABLED-1` remains inactive; `HOLD-1` remains current/default; no proposal is emitted. |
+| E02 | Exact local civil date of the 18th birthday | Eligible when every other requirement passes; birthday boundary inclusive. |
+| E03 | Underage, unknown, withheld, missing, invalid or conflicting age | Typed age-unavailable result; no adaptive calorie proposal; logging/history/user-set targets remain available. |
+| E04 | Self-declared pregnancy and breastfeeding | Unsupported adaptive path; no enabled adaptive calorie proposal; no clinical inference or validation. |
+| E05 | BMI exactly `18.5 kg/m²` versus one unit below | Exactly `18.5` passes this loss screening boundary; below it returns unavailable; BMI is not a diagnosis. |
+| E06 | `20` versus `21` completed local evaluation days | 20 is insufficient; exactly 21 is required; current incomplete day is excluded. |
+| E07 | `9` versus `10` valid weight-measurement days | 9 fails; exactly 10 passes this count gate if all other gates pass. |
+| E08 | Weight measurements spanning `13` versus `14` local civil days | 13 fails; exactly 14 passes this span gate. |
+| E09 | Fewer than `3` valid days in first or final seven-day block versus exactly 3 | Any block failure returns unavailable; exactly 3 in each block satisfies the distribution gate. |
+| E10 | Latest valid weight at `4` versus `5` completed local days old | Exactly 4 is fresh enough; 5 is stale and returns unavailable. |
+| E11 | `13` versus `14` nutrition-valid days out of 21 | 13 fails; exactly 14 passes if each day is valid. |
+| E12 | Daily completeness `79.99%`, `80%` and above | 79.99% fails; exactly 80% and higher pass the completeness gate. |
+| E13 | Nutrition range width exactly `20%` versus beyond `20%` of midpoint | Exactly 20% is accepted; beyond 20% returns unavailable. |
+| E14 | Lower and upper nutrition bounds produce different actions | Return `unavailable_uncertain_range`; never choose one bound or exactify it. |
+| E15 | Maintenance estimate age exactly `30` versus `31` completed local days | Exactly 30 is fresh enough; 31 is stale and returns unavailable. |
+| E16 | Maintenance uncertainty exactly `15%` versus beyond `15%` of midpoint | Exactly 15% is accepted; beyond 15% returns unavailable. |
+| E17 | Loss rate at `−0.65%`, `−0.35%` and just outside the `−0.50% ± 0.15` band | Both exact edges are `on_track`; outside the inclusive band selects the specified direction. |
+| E18 | Gain rate at `+0.10%`, `+0.40%` and just outside the `+0.25% ± 0.15` band | Both exact edges are `on_track`; outside the inclusive band selects the specified direction. |
+| E19 | Maintenance at `−0.25%`, `+0.25%` and just outside | Exact edges are `on_track`; below permits `+100 kcal/day`, above permits `−100 kcal/day`. |
+| E20 | Normal proposal delta | Every emitted normal proposal is exactly `100 kcal/day`; 50, 150 and 200 are rejected. |
+| E21 | Proposal cadence at 20 versus 21 completed local civil days | 20 fails cooldown; exactly 21 permits at most one proposal if all gates pass. |
+| E22 | Proposal expiry before, at exactly, and after 7 completed local civil days | Proposal is available only before expiry; exactly seven completed days reaches the expiry boundary; expired proposal cannot be accepted. |
+| E23 | Rolling aggregate at `+200`/`−200` versus one unit beyond within 42 days | Exact inclusive bounds are allowed; one unit beyond returns `policy_boundary_reached` and leaves target unchanged. |
+| E24 | Loss deficit exactly `500 kcal/day` versus one unit beyond, with the 20% limit non-limiting | Exactly 500 is allowed by this bound; one unit beyond is blocked; when 20% is smaller, the smaller limit governs. |
+| E25 | Loss deficit exactly `20%` of maintenance versus one unit beyond, with the 500-kcal limit non-limiting | Exactly 20% is allowed by this bound; one unit beyond is blocked; when 500 kcal is smaller, the smaller limit governs. |
+| E26 | Loss floor at exact `1200 kcal/day` and exact dynamic `80%` maintenance boundary | Exact permitted boundary is retained; crossing is clamped only when movement is no greater than the 100-kcal step, otherwise no proposal. |
+| E27 | Gain surplus exactly `300 kcal/day` versus one unit beyond, with the 15% limit non-limiting | Exactly 300 is allowed by this bound; one unit beyond is blocked; when 15% is smaller, the smaller limit governs. |
+| E28 | Gain surplus exactly `15%` of maintenance versus one unit beyond, with the 300-kcal limit non-limiting | Exactly 15% is allowed by this bound; one unit beyond is blocked; when 300 kcal is smaller, the smaller limit governs. |
+| E29 | Loss trend exactly `−1.00%` versus faster than `−1.00%` | Exactly −1.00% does not trigger rapid review; faster triggers `rapid_change_review` with no proposal. |
+| E30 | Gain trend exactly `+0.50%` versus faster than `+0.50%` | Exactly +0.50% does not trigger rapid review; faster triggers `rapid_change_review` with no proposal. |
+| E31 | Current target below floor or above ceiling | Preserve/display as user-set; return `user_target_outside_supported_policy`; do not silently clamp or propose. |
+| E32 | Complete, missing, denied, stale and conflicting readiness | Readiness contributes exactly zero to calories, load, intensity and schedule duration; missing remains unknown/unavailable. |
+| E33 | AI suggests a different eligibility, rate, trend, delta, bound, safety state or confidence | Deterministic result remains authoritative; conflicting/malformed AI output is discarded. |
+| E34 | Timezone change, DST transition, local midnight and current-day incompleteness | Historical observations retain their recorded local date/timezone; no reinterpretation or current-day inclusion. |
+| E35 | Corrected weight, nutrition or maintenance evidence | Correction appends evidence/snapshot and creates future evaluation only; old result and lineage remain immutable. |
+| E36 | Duplicate acceptance command, including retry after restart | One effective-dated target version is created; duplicate command is idempotent and current target is not duplicated. |
+| E37 | Replay a `HOLD-1` evaluation after `ENABLED-1` is proposed/activated, and replay an `ENABLED-1` evaluation under `HOLD-1` | Each history replays under its stored policy version; no cross-version recomputation or retroactive rewrite. |
+| E38 | Offline with complete local evidence, missing evidence, stale evidence and AI unavailable | Deterministic local result or explicit unavailable state; no invented evidence, queued authoritative change or cached-AI authority. |
+| E39 | Supported goal-rate selection, default and faster-than-supported request | Only listed loss/maintenance/gain rates are accepted; defaults are explicit; unsupported faster rates are unavailable. |
+| E40 | Accepted target change, manual target change, goal-rate change and maintenance-policy version change | Evidence window resets; 21 new completed local civil days are required; pre-change observations are excluded. |
 
 ## Automated verification matrix
 
@@ -119,16 +185,19 @@ enabled policy:
 | Backup invalid graph | Duplicate IDs, dangling evidence, invalid supersession, unknown future records | Restore fails closed and leaves the destination unchanged. |
 | Backup idempotency | Repeat restore/export and compare canonical payloads | No duplicated durable entities or feedback events. |
 | HOLD-1 disabled-policy guard | Attempt adaptive calorie/readiness proposals, user acceptance, manual override and AI bypass | Adaptive result is `unavailable`; no proposal is accepted; upward/downward/aggregate deltas are exactly `0 kcal`; no hidden calculation is active. |
+| ENABLED-1 activation gate | Product Owner selection, fresh independent Sol verdict, merged branch and explicit release/feature-policy selection | Policy is inactive until all four conditions are recorded; activation has a future effective local date/timezone and never rewrites HOLD-1 history. |
+| ENABLED-1 numerical contract | Exact eligibility, goal rates, 21-day window, evidence thresholds, Theil–Sen algorithm, deadbands, 100-kcal step, cadence, expiry, aggregate, deficit/surplus, floor/ceiling and rapid-change rules | Same frozen inputs/policy version produce the specified proposal, unavailable reason or boundary state; no legacy constant is authoritative. |
+| READINESS-HOLD-1 numerical guard | Complete, missing, denied, stale and conflicting readiness under the proposed enabled calorie policy | Calories change exactly `0 kcal/day`; load/intensity change exactly `0%`; schedule duration change exactly `0`; descriptive readiness may remain. |
 | Goal history | User-set, calculated proposal, accepted adaptive proposal, override and reset | Each accepted change is a new version with correct effective date; old reads do not change. |
 | Readiness completeness | Complete, missing, denied, stale and conflicting observations | Completeness/status is explicit; missing is never zero; adaptation is suppressed when required. |
-| D04 decision completeness | `B04-D04-01` through `B04-D04-20`, exact Product Owner approval evidence, numerical `HOLD-1` register, durable-owner contract, direct task-test trace and Sol verdict | No unresolved policy record is hidden; missing Sol approval blocks implementation and missing numerical approval keeps `HOLD-1` active. |
+| D04 decision completeness | `B04-D04-01` through `B04-D04-20`, exact qualitative approval, `ENABLED-1` selection/metadata, retained HOLD-1 and READINESS-HOLD-1, durable-owner contract, direct task-test trace and fresh Sol verdict | No unresolved policy record is hidden; missing Sol/merge/explicit activation keeps ENABLED-1 inactive and HOLD-1 behavior current. |
 | Age eligibility | Verified `18 completed years`, inclusive birthday, below-age user, unknown/invalid/conflicting/withheld age, correction and no inference | `coaching_eligibility_evaluations` is append-only; below-18 returns `coaching_unavailable_age`; unknown/invalid/conflicting/withheld age returns typed unavailable; logging/history/user-set targets remain available; historical evaluations are retained. |
 | Opt-in and consent | Default off, explicit disclosure/action, append-only enable/disable/withdrawal events, separate AI consent, effective date, copy/version/timestamp and withdrawal | `coaching_consent_events` is the historical authority; no implicit consent; disablement stops new coaching; historical recommendations, accepted targets and feedback remain readable. |
 | Target acceptance | Read-only proposal, explicit accept/reject/dismiss, duplicate acceptance and effective-dated target version | No silent replacement; acceptance is idempotent; rejection/dismissal does not mutate the current target. |
-| Cadence/evidence gate | No background activation, explicit user/scheduled-review initiation, one-observation negative, window edges, valid-day count, completeness threshold, cooldown, stale and contradictory evidence | No proposal becomes active automatically; `HOLD-1` suppresses proposals until numerical evidence/cadence policy is approved. |
-| Adjustment safety guard | `HOLD-1` zero upward, downward and aggregate delta plus approved per-event/period bounds when available | Current maximum upward, downward and aggregate adjustments are exactly `0 kcal`; future policy cannot omit unit, period, inclusivity, missing-data, version or override semantics. |
+| Cadence/evidence gate | No background activation, explicit initiation, one-observation negative, exact 21-day window, valid-day counts, completeness/range/freshness thresholds, cooldown, expiry, stale and contradictory evidence | HOLD-1 suppresses current output; after explicit ENABLED-1 activation, only the exact cadence/evidence contract can emit one unresolved proposal. |
+| Adjustment safety guard | HOLD-1 zero upward/downward/aggregate delta; ENABLED-1 exact 100-kcal event, 42-day ±200 aggregate, deficit/surplus, floor/ceiling and override semantics | Current HOLD-1 is zero; future enabled behavior passes every signed bound and cannot be bypassed by user or AI. |
 | Target determinism | Fixed fixtures for profile, trends, workload, readiness and policy versions | Same inputs/rule version produce the same result and evidence. |
-| Target bounds | Lower/upper policy edges and missing metrics | No unsafe value or silent legacy default; policy-unavailable is explicit when gate is open. |
+| Target bounds | ENABLED-1 loss/gain deficit, surplus, floor, ceiling, unsupported user target and missing maintenance evidence | Exact inclusive edges pass; one unit beyond returns the specified boundary/unavailable state; no medical-safety claim or silent clamp. |
 | Unknown propagation | Unknown nutrient, ingredient, recovery and meal availability | Unknown remains unknown through context, filter, engine, UI and history. |
 | Range propagation | Point/lower/upper estimates crossing target or safety boundaries | Range remains a range; safety-sensitive output is unavailable when evidence cannot support the approved decision; no exactification or fabricated confidence. |
 | Body-metric missingness | Missing, stale, conflicting, invalid and withheld weight/height/body metrics | No fallback or inference; adaptive output unavailable; valid user-set target remains displayable; corrections append evidence. |
@@ -200,12 +269,13 @@ permissions, input fixture and result.
 
 ## Manual end-to-end journeys
 
-1. **Evidence-backed adaptive day:** future enabled-policy fixture only. Set a
-   goal, log a B03 snapshot with an estimate range, complete a B02 activity,
-   provide complete recovery, accept a separately approved proposal, and verify
-   the daily explanation cites every input and preserves the old goal version.
-   Under current `HOLD-1`, the same journey must return unavailable and cannot
-   accept a target.
+1. **Evidence-backed adaptive day:** future `ENABLED-1` fixture only, after
+   policy activation evidence exists. Set a supported goal rate, satisfy the
+   exact 21-day/weight/nutrition/maintenance-energy gates, log a B03 snapshot
+   with an estimate range whose bounds produce the same action, and verify the
+   exact 100-kcal proposal, explicit acceptance and preserved old target
+   version. Under current `HOLD-1`, the same journey must return unavailable
+   and cannot accept a target; readiness must have no numerical effect.
 2. **Insufficient evidence:** remove recent logs and deny health permission;
    verify the app does not adapt, does not use zeros, and offers a useful
    user-set or unavailable state without pretending confidence.
@@ -253,23 +323,22 @@ The final verification package must include:
   Sol review required;
 - append-only consent-event and eligibility-evaluation owner evidence,
   restore-order/rollback evidence and the incrementally maintained task ledger;
-- independent Sol High verdict covering the authorized policy, inherited
-  B01–B03 boundaries, v18/v9 ownership, safety, privacy, wording and hold
-  behavior;
+- independent fresh Sol High verdict covering the authorized policy,
+  `ENABLED-1` numerical contract, `READINESS-HOLD-1`, inherited B01–B03
+  boundaries, v18/v9 ownership, safety, privacy, wording and HOLD-1 behavior;
 - safety, unknown/range, medical-wording and AI privacy results;
 - Android/iOS physical-device and accessibility records;
 - manual journey results, known follow-ups, owners and due dates.
 
 Sol High records one of: **Passed**, **Passed with explicitly accepted
 non-blocking follow-up**, or **Blocked**. A blocked dependency must never be
-reported as accepted. If the independent Sol verdict for this remediation is
-Approved/Passed, B04-01 is authorized to begin from the concrete accepted
-parent; later tasks remain constrained by the DAG and their own dependencies.
-Foundational Schema v18/Backup v9 work, persistence, goals, consent,
-eligibility, readiness, safety, lineage, feedback and unavailable-state
-behavior are authorized only within those gates. Enabled adaptive calorie
-proposals, non-zero target adjustment, adaptive deficit/surplus, calorie floor
-or ceiling, readiness-driven target/training adjustment and any unresolved
-numerical-threshold behavior remain blocked until a superseding numerical
-policy is approved. B04 release still requires all hard gates above and
-explicit Terra evidence for production surfaces.
+reported as accepted. A passing fresh verdict does not itself activate
+`ENABLED-1`: the policy branch must also be merged and the release or
+feature-policy activation must explicitly select the version with a future
+effective local date/timezone and user/installation scope. This branch still
+does not begin B04-01 or implementation. Until those activation conditions
+pass, HOLD-1 remains current and all adaptive deltas are zero. Even after
+ENABLED-1 activation, readiness-driven numerical target/training changes,
+medical/youth/clinical adaptation and AI numerical authority remain blocked by
+`READINESS-HOLD-1` and the qualitative policy. B04 release still requires all
+hard gates above and explicit Terra evidence for production surfaces.

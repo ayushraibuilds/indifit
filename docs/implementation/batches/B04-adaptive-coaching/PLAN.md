@@ -1,9 +1,11 @@
 # B04 — Adaptive Coaching Plan
 
 Status: planning-only package. This document authorizes design and review
-work. After independent Sol High approval of the D04 remediation, B04-01 and
-later DAG tasks may proceed from the accepted implementation parent; enabled
-adaptive behavior remains blocked by `B04-D04-HOLD-1`.
+work only. `B04-D04-ENABLED-1` is the Product Owner-selected proposed first
+enabled calorie policy, but it is inactive pending independent fresh Sol High
+approval, branch merge and explicit release/feature-policy selection. This
+branch does not authorize B04-01 or runtime implementation. `HOLD-1` remains
+retained for historical replay and non-selected installations/users.
 
 ## Gate and authority
 
@@ -19,6 +21,7 @@ Task 8, and the N9/N10/P1/P2/P7/P9 dependency entries.
 | Integration baseline | `main` at the same commit; schema v16, backup v7 | This is the accepted B02 parent available to the planning worktree. |
 | B04 implementation parent | `f976542e395a3e082f1ab5cdfdfd87e969910766` | Accepted B03 merge; schema v17 and Backup v8 are the dependency baseline. |
 | B04 integration baseline | `741aa18972ebc1b61cd65c0bf12b442b10b50890` | B04 planning package merged onto the accepted B03 parent; no B04-01 branch starts before independent Sol approval of this remediation. |
+| Numerical-policy authoring baseline | `61cac3dd35579fde01118626b5fa009024a04a7f` | Current documentation baseline for the proposed `B04-D04-ENABLED-1` calorie contract; not a runtime activation. |
 | B01 | Final verification passed; B01 lineage is in `main` | B04 may consume programs, occurrences, local-date/timezone and immutable execution contracts. |
 | B02 | Final verification passed and B02 is integrated in `main` | B04 may consume activity history, load evidence, health provenance and typed optional recovery inputs. |
 | B03 | Accepted commit `d85e8a16566735e7f6b7fe15cd2a97edb5677178`, timezone correction `78a43f909bae58dc5e509da97af426ad960c9190`, and merge commit `f976542e395a3e082f1ab5cdfdfd87e969910766` are ancestors of the concrete B04 integration baseline | B03 schema v17 and Backup v8 are present in the B04 implementation parent; no unresolved B03 release blocker is absorbed by B04. |
@@ -35,9 +38,12 @@ The dependency status is therefore:
   schema v18, Backup v9, persistence, unavailable states, goals, consent,
   readiness, safety, lineage, feedback, descriptive behavior or user-set
   targets.
-- **Enabled adaptive implementation:** blocked while `HOLD-1` remains active;
-  no adaptive calorie/readiness-driven proposal, non-zero delta, adaptive
-  deficit/surplus, floor or ceiling may be enabled.
+- **Enabled adaptive implementation:** not authorized from this branch. The
+  proposed `B04-D04-ENABLED-1` policy may be implemented only after the fresh
+  independent Sol High verdict, branch merge and explicit release/
+  feature-policy selection. Until then `HOLD-1` remains the active/default
+  behavior, with no adaptive proposal or non-zero delta. Readiness numerical
+  effects remain under `B04-D04-READINESS-HOLD-1`.
 
 The implementation parent must be a clean branch containing accepted B01,
 B02 and B03. It must not be inferred from the planning branch’s schema v16/v7
@@ -100,19 +106,22 @@ criteria and Task 8. They are the only required B04 product outcomes.
 
 ### Open decisions
 
-Only the future enabled numerical adaptation policy and conditional N8 scope
-remain gated; implementation preferences are not promoted to product
-decisions.
+The first enabled numerical calorie policy is now defined as a proposed,
+future-only contract. Its independent safety/readiness review and runtime
+activation gate remain open. Readiness-driven numerical changes remain a
+separate hold, and conditional N8 scope remains outside mandatory B04.
 
 | Decision | Why it remains open | Required gate |
 |---|---|---|
-| Enabled adaptation numerical policy: trend duration/count/cutoff, completeness/range threshold, cadence/cooldown and calorie/deficit/surplus bounds | Qualitative behavior is approved; numerical values remain under `B04-D04-HOLD-1` and are not approved for enabled adaptation. | Product Owner + Sol before any superseding enabled policy. |
+| `B04-D04-ENABLED-1` activation and implementation | Product Owner selected the explicit first enabled calorie contract; fresh independent Sol High safety/implementation-readiness verdict, branch merge and explicit release/feature-policy selection are still required. It is not active and never applies retroactively. | Product Owner + independent Sol High; release policy owner for explicit selection. |
+| Readiness-driven numerical policy | `B04-D04-READINESS-HOLD-1` retains exactly zero calorie/training numerical effect; descriptive completeness-aware guidance only. | Separate Product Owner selection + independent Sol review before any future readiness numerical policy. |
 | N8 context semantics and ownership | Roadmap makes festival/travel/eating-out/fasting a separate product-owner decision. | Product Owner decision; Sol architecture/safety review before any persistence. |
 | Future external lookup | N10 does not authorize a cloud food-search authority. | Reopen scope and privacy review; not a B04 implementation dependency. |
 
-The decisions are recorded as `B04-D01` through `B04-D18` in
-`DECISIONS.md`. No other open item found in the targeted audit changes the
-product boundary.
+The qualitative decisions are recorded as `B04-D01` through `B04-D18` and the
+versioned numerical packets are recorded as `B04-D04-ENABLED-1` and
+`B04-D04-READINESS-HOLD-1` in `DECISIONS.md`. No other open item found in the
+targeted audit changes the product boundary.
 
 ## Minimum system boundaries
 
@@ -126,7 +135,7 @@ AI and UI state at once.
 | Coaching preferences | Store adaptive opt-in, health-input permission/use, AI wording consent and user display choices. | New B04 preferences repository; no second `SharedPreferences` authority for durable settings. | Current preference mutable/versioned; changes timestamped. | Sensitive consent/preferences; backup allowed, no provider payload. | B03 privacy/AI policy informs AI flag. | Durable; B04. |
 | Recovery observations | Normalize typed recovery inputs with source, status, ranges, freshness and provenance. | B04 adapter/repository; B02 health/import repositories remain source authorities. | Imported observations immutable; corrections are new records. | Health data; source/provider identifiers only, no raw payload. | No direct B03 dependency. | Durable if needed for historical readiness; B04. |
 | Readiness | Calculate a completeness-aware readiness snapshot from accepted observations; output band/status, confidence, evidence IDs and unavailable reason. | New pure B04 `ReadinessService` plus snapshot repository. | Snapshots immutable and superseded; observation links frozen. | Health-derived; backup only with user-owned evidence. | No direct B03 dependency. | Durable for historical recommendations; B04. |
-| Adaptive target engine | Calculate proposed calorie/macro and bounded training overlay from goal versions, measurements, trends, workload and readiness. | New pure B04 engine; B02 retains load-target authority. | Proposals ephemeral; accepted targets become goal versions. | Sensitive health/weight data; no AI required. | Consumes B03 totals/ranges for trend evidence. | Engine no; accepted goal yes; B04. |
+| Adaptive target engine | Under an explicitly activated policy, calculate the deterministic `B04-D04-ENABLED-1` calorie proposal from goal versions, measurements, nutrition evidence and maintenance-energy evidence; readiness numerical overlay remains held. | New pure B04 engine; B02 retains load-target authority. | Proposals are read-only until explicit acceptance; accepted targets become goal versions. | Sensitive health/weight data; no AI required. | Consumes B03 totals/ranges for trend evidence. | Engine no; accepted goal yes; B04. |
 | Recommendation context | Assemble a typed, redacted snapshot of schedule, activity, nutrition totals, goals, readiness, constraints, time and evidence completeness. | New B04 context assembler; each source repository remains authoritative. | Context snapshot immutable when attached to a recommendation; otherwise ephemeral. | Minimize data; no raw images/prompts; provider-ready redaction. | Strong: B03 totals, estimates, constraints and provenance. | Attached context/evidence durable; transient assembly no. |
 | Meal opportunity / current availability | Represent the user’s explicit meal opportunity and selected local candidates for “what can I eat now?”. | New B04 query/service; user selection and B03 catalogue remain authorities. | Input is ephemeral unless referenced by a recommendation; no inferred meal windows. | Local food choices and constraints; no external search. | Strong: B03 recipes, thali, snapshots, constraints. | No standalone table required; B04. |
 | Safety filter | Map B03 constraint outcomes and nutrient evidence into hard-block, unavailable or separately scoped low-risk-logging states. | B03 evaluator remains conflict authority; B04 maps outcomes to recommendation policy. | Pure evaluation; output attached to recommendation if persisted. | Allergy/medical restrictions sensitive; never sent to AI by default. | Strong and non-duplicating. | No independent persistence; B04. |
@@ -145,6 +154,14 @@ require schema v18/Backup v9. The version increase is justified by durable
 historical goals, consent events, eligibility evaluations, recovery/readiness,
 recommendations/evidence and feedback; it is not justified by recomputable
 daily/weekly caches.
+
+`B04-D04-ENABLED-1` does not add schema-v18 entities or Backup-v9 sections.
+Its policy version, algorithm versions, numeric inputs/results, evidence
+references, availability reason, user action, effective local date and
+timezone are owned by the already planned goal/target, recommendation/evidence
+and feedback lineage. `B04-D04-HOLD-1` and `B04-D04-READINESS-HOLD-1` remain
+valid policy identifiers for replay and non-enabled behavior. This clarification
+does not authorize schema, migration or backup implementation on this branch.
 
 ### Proposed durable entities
 
@@ -237,11 +254,38 @@ deterministic unavailable-state behavior, descriptive or historical features,
 or valid user-set targets. Under the hold, the adaptive result is
 `unavailable`; upward, downward and aggregate deltas are exactly `0 kcal`; no
 adaptive proposal may be accepted; user override and AI cannot bypass the
-hold. B04-01 may begin only after this remediation receives independent Sol
-High approval. Later tasks follow the accepted DAG and their own dependencies.
-Enabled adaptation remains blocked until a superseding numerical policy is
-approved with units, periods, boundaries, missing-data behavior, versioning,
-override rules and deterministic tests.
+hold. This documentation branch does not begin B04-01. The proposed
+`ENABLED-1` policy is separately recorded with units, periods, boundaries,
+missing-data behavior, versioning, override rules and deterministic tests; it
+remains inactive until fresh independent Sol approval, branch merge and
+explicit release/feature-policy selection. Later tasks follow the accepted
+DAG and their own dependencies.
+
+## Proposed `B04-D04-ENABLED-1` numerical activation contract
+
+The Product Owner has selected the explicit first enabled calorie policy in
+`DECISIONS.md` as a proposed policy, subject to an independent fresh Sol High
+safety and implementation-readiness verdict. It enables only adult,
+consented, evidence-sufficient calorie proposals for the supported loss,
+maintenance and gain rates, with explicit user acceptance. It never enables
+automatic activation, readiness-driven numerical changes, medical or clinical
+adaptation, youth adaptation, AI-authored targets or AI safety decisions.
+
+The contract uses a 21-completed-local-civil-day window, 10 valid weight days
+spanning 14 local days with first/final seven-day block requirements, 14
+nutrition-valid days at 80% completeness, a 30-day maintenance estimate
+freshness limit and 15% estimate-width limit. The deterministic trend is the
+versioned Theil–Sen slope over daily median weights. Supported rates,
+deadbands, exact 100-kcal steps, 21-day cadence, seven-day expiry, 42-day
+aggregate bounds, deficit/surplus boundaries, floor/ceiling behavior and the
+exclusive rapid-change gates are all listed in the decision record and direct
+verification matrix.
+
+No activation effective date is assigned by this planning commit. A future
+release/feature-policy selection must record the effective local date/timezone,
+policy version and user/install scope. Existing `HOLD-1` evaluations remain
+replayable under `HOLD-1`; an `ENABLED-1` evaluation applies only to future
+evidence after its effective date and never rewrites prior results.
 
 ## Outcome traceability
 

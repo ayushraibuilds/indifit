@@ -9,6 +9,14 @@ baseline `741aa18972ebc1b61cd65c0bf12b442b10b50890`, whose implementation
 parent contains accepted B03. The planning-base observations below are retained
 as audit history and are not the current implementation parent.
 
+Numerical-policy follow-up: this documentation-only packet is authored from
+baseline `61cac3dd35579fde01118626b5fa009024a04a7f`. It records the proposed
+first enabled calorie policy `B04-D04-ENABLED-1` and the separate
+`B04-D04-READINESS-HOLD-1`; neither is active from this branch. `HOLD-1`
+remains retained for historical replay and for installations/users that do not
+select the enabled policy. No application, schema, migration or backup code is
+changed by this follow-up.
+
 ## Method and scope
 
 The audit began with the canonical roadmap and accepted B01–B03 planning and
@@ -80,8 +88,13 @@ review used product-owner attestation rather than a new Sol/Terra instance.
 
 - Goal versions, effective dates, target source, opt-in, override and
   historical target lineage.
-- Adaptive target safety policy: minimum evidence, cadence, adjustment bounds,
-  minimum-age/consent rule and professional-advice wording.
+- Enabled target safety policy: `B04-D04-ENABLED-1` now specifies minimum age,
+  consent, goal-rate, 21-day evaluation, weight/nutrition/maintenance-energy
+  evidence, deterministic trend, deadbands, 100-kcal steps, cooldowns,
+  aggregate limits, deficit/surplus boundaries, floor/ceiling behavior,
+  rapid-change handling and future-only lineage. It remains subject to an
+  independent fresh Sol High safety and implementation-readiness verdict,
+  branch merge and explicit release/feature-policy selection.
 - Durable recovery observations, readiness snapshots and evidence links.
 - A typed recommendation context separating target calculation, safety filter,
   candidate opportunity, ranking and presentation.
@@ -118,3 +131,18 @@ review used product-owner attestation rather than a new Sol/Terra instance.
    complete; it is not a dependency for offline B04 outcomes.
 5. Festival/eating-out/fasting behavior stays outside the required DAG until
    the canonical N8 product decision is explicitly accepted.
+
+## Numerical-policy follow-up disposition
+
+| Policy | Current audit disposition | Runtime consequence |
+|---|---|---|
+| `B04-D04-HOLD-1` | Retained and not deleted or rewritten | Historical replay/default for non-selected installations/users; no adaptive proposal and exact zero adaptive delta. |
+| `B04-D04-ENABLED-1` | Product Owner-selected proposed first enabled calorie policy; independent fresh Sol High review still required | Not active from this branch; future-only after merge and explicit release/feature-policy selection. |
+| `B04-D04-READINESS-HOLD-1` | Created as a separate retained hold | Readiness contributes exactly `0 kcal/day`, `0%` training-load change, `0%` intensity change and `0` schedule-duration change; descriptive coaching only. |
+
+The enabled policy is an explicit numerical contract, not an inference from
+legacy `-500`, `+300` or `1200` constants. Its evidence, trend, target,
+deficit/surplus, floor/ceiling, rapid-change, timezone/DST, offline, AI and
+historical-replay requirements are recorded in `DECISIONS.md` and
+`VERIFICATION.md`. The audit does not authorize B04-01 or any runtime
+implementation.
