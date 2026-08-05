@@ -272,7 +272,7 @@ but must not reconstruct prior reviews from memory or from a final matrix.
 
 | Task | Implementation commit | Primary reviewer | Verdict | Terra review | Remediation | Re-review | Merge commit | Focused tests | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| `B04-01` | — | — | — | — | — | — | — | — | Not started |
+| `B04-01` | `ea8ecdf7832db430f0bb5381a01d2c85c8ecd94d` | GPT-5 Codex | Pass after remediation | — | `cb94eabf3d3736a169fd2be8f137aafa0199135b` | `cb94eabf3d3736a169fd2be8f137aafa0199135b` | `db4cae01bb75fa15987ae8f02e9a04d1ecc013e9` | `flutter test test/b04_contract_fixture_test.dart` (22 passed) | Merged |
 | `B04-02` | — | — | — | — | — | — | — | — | Not started |
 | `B04-03` | — | — | — | — | — | — | — | — | Not started |
 | `B04-04` | — | — | — | — | — | — | — | — | Not started |
