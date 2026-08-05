@@ -228,12 +228,27 @@ void main() {
               hardBlockConstraintIds: const ['constraint-conflict'],
             ),
           ),
+          _candidate(
+            id: 'training-available',
+            action: B04RecommendationAction.training,
+          ),
         ],
       );
 
-      expect(result.availableRecommendations, isEmpty);
+      expect(result.availableRecommendations.map((item) => item.id), [
+        'training-available',
+      ]);
+      expect(result.recommendations.first.id, 'conflicting-safety');
       expect(
-        result.recommendations.single.unavailableReasons,
+        result.recommendations.first.explanation,
+        contains('blocked by the recorded dietary constraint'),
+      );
+      expect(
+        result.recommendations.first.explanation,
+        isNot(contains('No known conflict')),
+      );
+      expect(
+        result.recommendations.first.unavailableReasons,
         contains('dietary_hard_block'),
       );
     },
@@ -261,9 +276,35 @@ void main() {
     expect(result.availableRecommendations, isEmpty);
     expect(result.lowRiskWarnings, hasLength(1));
     expect(result.lowRiskWarnings.single.wording, contains('does not make'));
+    expect(result.recommendations, isEmpty);
+  });
+
+  test('blank evidence identifiers cannot make an available result valid', () {
     expect(
-      result.recommendations.single.unavailableReasons,
-      contains('low_risk_logging_only'),
+      () => B04Recommendation(
+        id: 'blank-evidence',
+        action: B04RecommendationAction.education,
+        state: B04RecommendationState.available,
+        priority: B04RecommendationPriority.education,
+        rationaleCode: 'blank_evidence',
+        explanation: 'General wellness guidance only; not medical advice.',
+        confidence: B04RecommendationConfidence.high,
+        completeness: B04RecommendationCompleteness.complete,
+        evidenceIds: const [''],
+        eligibilityState: B04RecommendationEligibilityState.eligible,
+        consentState: B04RecommendationConsentState.enabled,
+        policyState: B04RecommendationPolicyState.hold,
+        policyVersion: kB04HoldPolicyVersion,
+        ruleVersion: kB04RecommendationRuleVersion,
+        algorithmVersion: kB04RecommendationAlgorithmVersion,
+        copyVersion: kB04RecommendationCopyVersion,
+        targetAcceptanceState:
+            B04RecommendationTargetAcceptanceState.notApplicable,
+        canonicalAdaptiveTarget: null,
+        canonicalTrainingRecommendation: null,
+        safetyDisposition: null,
+      ),
+      throwsArgumentError,
     );
   });
 
@@ -391,7 +432,19 @@ void main() {
       );
 
       expect(first.fingerprint, second.fingerprint);
+      expect(first.contextFingerprint, second.contextFingerprint);
       expect(first.toRedactedMap(), second.toRedactedMap());
+      final changedContext = engine.evaluate(
+        context: _context(
+          target: _target(evidenceId: 'changed-target-evidence'),
+        ),
+        candidates: candidates,
+      );
+      expect(
+        changedContext.contextFingerprint,
+        isNot(first.contextFingerprint),
+      );
+      expect(changedContext.fingerprint, isNot(first.fingerprint));
       final encoded = jsonEncode(first.toRedactedMap());
       expect(encoded, isNot(contains(_userId)));
       expect(encoded, isNot(contains('prompt')));
@@ -418,6 +471,10 @@ void main() {
     expect(
       result.recommendations.single.unavailableReasons,
       contains('dietary_safety_scope_mismatch'),
+    );
+    expect(
+      result.recommendations.single.explanation,
+      contains('Safety-sensitive guidance is unavailable'),
     );
   });
 }
@@ -542,25 +599,26 @@ NutritionGoalVersionReadModel _goal() => NutritionGoalVersionReadModel(
   createdAtUtc: DateTime.utc(2026, 8, 1),
 );
 
-B04AdaptiveTargetResult _target() => B04AdaptiveTargetResult(
-  status: B04AdaptiveTargetStatus.onTrack,
-  reasonCode: 'target_on_track',
-  policyVersion: kB04HoldPolicyVersion,
-  calculationVersion: 'B04-07-TARGET-V1',
-  algorithmVersion: 'B04-07-TREND-V1',
-  direction: B04AdaptiveTargetDirection.onTrack,
-  adaptiveDeltaKcal: 0,
-  currentTargetKcal: 2000,
-  proposedTargetKcal: null,
-  normalizedMaintenanceKcal: 2000,
-  medianWeightGrams: null,
-  slopeGramsPerDay: null,
-  weeklyRatePercent: null,
-  displayWeeklyRatePercent: null,
-  evidenceIds: const ['target-evidence'],
-  proposal: null,
-  trainingOverlay: B04TrainingOverlayResult.unavailable,
-);
+B04AdaptiveTargetResult _target({String evidenceId = 'target-evidence'}) =>
+    B04AdaptiveTargetResult(
+      status: B04AdaptiveTargetStatus.unavailable,
+      reasonCode: 'adaptive_policy_hold',
+      policyVersion: kB04HoldPolicyVersion,
+      calculationVersion: 'B04-07-TARGET-V1',
+      algorithmVersion: 'B04-07-TREND-V1',
+      direction: B04AdaptiveTargetDirection.onTrack,
+      adaptiveDeltaKcal: 0,
+      currentTargetKcal: 2000,
+      proposedTargetKcal: null,
+      normalizedMaintenanceKcal: 2000,
+      medianWeightGrams: null,
+      slopeGramsPerDay: null,
+      weeklyRatePercent: null,
+      displayWeeklyRatePercent: null,
+      evidenceIds: [evidenceId],
+      proposal: null,
+      trainingOverlay: B04TrainingOverlayResult.unavailable,
+    );
 
 B04NutritionSafetyResult _safety({
   B04NutritionSafetyOutput output = B04NutritionSafetyOutput.eatNow,

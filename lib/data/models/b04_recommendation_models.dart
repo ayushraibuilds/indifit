@@ -347,10 +347,11 @@ class B04Recommendation {
       );
     }
     if (state == B04RecommendationState.unavailable &&
-        unavailableReasons.isEmpty) {
+        _sortedUnique(unavailableReasons).isEmpty) {
       throw ArgumentError('Unavailable recommendations require a reason.');
     }
-    if (state != B04RecommendationState.unavailable && evidenceIds.isEmpty) {
+    if (state != B04RecommendationState.unavailable &&
+        _sortedUnique(evidenceIds).isEmpty) {
       throw ArgumentError(
         'Available recommendation states require evidence identifiers.',
       );
@@ -442,6 +443,7 @@ class B04RecommendationEvaluation {
   final String copyVersion;
   final List<B04Recommendation> recommendations;
   final List<B04RecommendationWarning> lowRiskWarnings;
+  final String contextFingerprint;
   final String fingerprint;
 
   B04RecommendationEvaluation({
@@ -461,6 +463,7 @@ class B04RecommendationEvaluation {
     this.copyVersion = kB04RecommendationCopyVersion,
     required Iterable<B04Recommendation> recommendations,
     required Iterable<B04RecommendationWarning> lowRiskWarnings,
+    required this.contextFingerprint,
     required this.fingerprint,
   }) : contextId = contextId.trim(),
        userId = userId.trim(),
@@ -475,6 +478,11 @@ class B04RecommendationEvaluation {
     }
     if (fingerprint.trim().isEmpty) {
       throw ArgumentError('Recommendation evaluations require a fingerprint.');
+    }
+    if (contextFingerprint.trim().isEmpty) {
+      throw ArgumentError(
+        'Recommendation evaluations require a context fingerprint.',
+      );
     }
   }
 
@@ -502,6 +510,7 @@ class B04RecommendationEvaluation {
     'low_risk_warnings': lowRiskWarnings
         .map((item) => item.toRedactedMap())
         .toList(),
+    'context_fingerprint': contextFingerprint,
     'fingerprint': fingerprint,
   };
 }

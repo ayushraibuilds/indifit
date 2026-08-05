@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
-import '../../core/fixtures/b04_adaptive_coaching_fixture_matrix.dart';
 import '../models/b04_adaptive_target_models.dart';
 import '../models/b04_goal_models.dart';
 import '../models/b04_nutrition_safety_models.dart';
@@ -44,7 +43,7 @@ class B04RecommendationEngine {
       policyState: policyState,
     );
 
-    final evaluated = <B04Recommendation>[
+    final evaluatedCandidates = <_CandidateEvaluation>[
       for (final candidate in orderedCandidates)
         _evaluateCandidate(
           context: context,
@@ -54,7 +53,11 @@ class B04RecommendationEngine {
           policyState: policyState,
           policyVersion: policyVersion,
           globalReasons: globalReasons,
-        ).recommendation,
+        ),
+    ];
+    final evaluated = <B04Recommendation>[
+      for (final item in evaluatedCandidates)
+        if (item.includeRecommendation) item.recommendation,
     ];
     evaluated.sort(_compareRecommendations);
 
@@ -71,16 +74,7 @@ class B04RecommendationEngine {
         .toList(growable: false);
 
     final warnings = <B04RecommendationWarning>[
-      for (final item in orderedCandidates)
-        ..._evaluateCandidate(
-          context: context,
-          candidate: item,
-          eligibilityState: eligibilityState,
-          consentState: consentState,
-          policyState: policyState,
-          policyVersion: policyVersion,
-          globalReasons: globalReasons,
-        ).warnings,
+      for (final item in evaluatedCandidates) ...item.warnings,
     ];
     warnings.sort(
       (left, right) => left.candidateId.compareTo(right.candidateId),
@@ -107,9 +101,11 @@ class B04RecommendationEngine {
           .map((item) => item.toRedactedMap())
           .toList(),
     };
-    final fingerprint = sha256
-        .convert(utf8.encode(jsonEncode(draft)))
-        .toString();
+    final contextFingerprint = _fingerprint(context.toRedactedMap());
+    final fingerprint = _fingerprint({
+      ...draft,
+      'context_fingerprint': contextFingerprint,
+    });
 
     return B04RecommendationEvaluation(
       contextId: context.contextId,
@@ -125,6 +121,7 @@ class B04RecommendationEngine {
       policyVersion: policyVersion,
       recommendations: recommendations,
       lowRiskWarnings: warnings,
+      contextFingerprint: contextFingerprint,
       fingerprint: fingerprint,
     );
   }
@@ -198,7 +195,7 @@ class B04RecommendationEngine {
       if (target == null) {
         targetAcceptance = B04RecommendationTargetAcceptanceState.unavailable;
         unavailableReasons.add('target_policy_missing');
-      } else if (target.policyVersion == kB04HoldPolicyVersion) {
+      } else if (_isHoldTarget(target)) {
         targetAcceptance = B04RecommendationTargetAcceptanceState.unavailable;
         unavailableReasons.add('adaptive_policy_hold');
       } else if (target.status != B04AdaptiveTargetStatus.available &&
@@ -232,7 +229,7 @@ class B04RecommendationEngine {
       state = B04RecommendationState.unavailable;
     }
 
-    final priority = _priority(candidate, safety);
+    final priority = _priority(candidate, safety, unavailableReasons);
     final evidenceIds = <String>{...candidate.evidence.evidenceIds};
     if (safety != null) evidenceIds.addAll(safety.evidenceIds);
     final sortedEvidence = evidenceIds.toList()..sort();
@@ -300,17 +297,24 @@ class B04RecommendationEngine {
     return _CandidateEvaluation(
       recommendation: recommendation,
       warnings: warnings,
+      includeRecommendation: safety?.isLowRiskLoggingOnly != true,
     );
   }
 
   B04RecommendationPriority _priority(
     B04RecommendationCandidate candidate,
     B04NutritionSafetyResult? safety,
+    Set<String> unavailableReasons,
   ) {
     if (candidate.action.isNutrition &&
         (safety == null ||
             !safety.recommendationAllowed ||
-            safety.isLowRiskLoggingOnly)) {
+            safety.isHardBlock ||
+            safety.isUnavailable ||
+            safety.isLowRiskLoggingOnly ||
+            unavailableReasons.contains('dietary_safety_scope_mismatch') ||
+            unavailableReasons.contains('dietary_evidence_missing') ||
+            unavailableReasons.contains('dietary_safety_evidence_missing'))) {
       return B04RecommendationPriority.safetyBlock;
     }
     if (candidate.urgent) return B04RecommendationPriority.urgent;
@@ -332,8 +336,20 @@ class B04RecommendationEngine {
     required List<String> uncertaintyCodes,
     required List<String> unavailableReasons,
   }) {
-    final base = safety != null
-        ? safety.wording
+    final useSafetyWording =
+        safety != null &&
+        (state != B04RecommendationState.unavailable ||
+            safety.isHardBlock ||
+            safety.isLowRiskLoggingOnly ||
+            safety.isUnavailable ||
+            unavailableReasons.contains('dietary_safety_scope_mismatch') ||
+            unavailableReasons.contains('dietary_evidence_missing') ||
+            unavailableReasons.contains('dietary_safety_evidence_missing'));
+    final base = useSafetyWording
+        ? _safetyExplanation(
+            safety: safety,
+            unavailableReasons: unavailableReasons,
+          )
         : unavailableReasons.any(
             (reason) =>
                 reason.contains('unsupported') || reason.contains('policy'),
@@ -352,6 +368,20 @@ class B04RecommendationEngine {
       B04RecommendationState.superseded => 'This guidance was superseded.',
     };
     return '$base $status ${_appendEvidenceText(evidenceIds, uncertaintyCodes)}';
+  }
+
+  String _safetyExplanation({
+    required B04NutritionSafetyResult safety,
+    required List<String> unavailableReasons,
+  }) {
+    if (unavailableReasons.contains('dietary_safety_scope_mismatch') ||
+        safety.isUnavailable) {
+      return 'Safety-sensitive guidance is unavailable because dietary evidence is missing or uncertain.';
+    }
+    if (safety.isHardBlock) {
+      return 'This candidate is blocked by the recorded dietary constraint.';
+    }
+    return safety.wording;
   }
 
   String _appendEvidence({
@@ -523,14 +553,17 @@ class B04RecommendationEngine {
 
   B04RecommendationPolicyState _policyState(B04AdaptiveTargetResult? target) {
     if (target == null) return B04RecommendationPolicyState.missing;
-    if (target.policyVersion == kB04HoldPolicyVersion) {
+    if (_isHoldTarget(target)) {
       return B04RecommendationPolicyState.hold;
     }
-    if (target.policyVersion == kB04EnabledPolicyVersion) {
+    if (target.policyVersion == B04AdaptiveTargetPolicy.current.policyVersion) {
       return B04RecommendationPolicyState.enabled;
     }
     return B04RecommendationPolicyState.unavailable;
   }
+
+  bool _isHoldTarget(B04AdaptiveTargetResult target) =>
+      target.reasonCode == 'adaptive_policy_hold';
 
   int _compareRecommendations(B04Recommendation left, B04Recommendation right) {
     final priority = left.priority.rank.compareTo(right.priority.rank);
@@ -566,14 +599,36 @@ class B04RecommendationEngine {
       B04NutritionSafetyOutput.lowRiskLogging => false,
     };
   }
+
+  String _fingerprint(Object? value) =>
+      sha256.convert(utf8.encode(jsonEncode(_canonicalize(value)))).toString();
+
+  Object? _canonicalize(Object? value) {
+    if (value is Map) {
+      final entries = value.entries.toList()
+        ..sort(
+          (left, right) => left.key.toString().compareTo(right.key.toString()),
+        );
+      return <String, Object?>{
+        for (final entry in entries)
+          entry.key.toString(): _canonicalize(entry.value),
+      };
+    }
+    if (value is Iterable) {
+      return value.map(_canonicalize).toList(growable: false);
+    }
+    return value;
+  }
 }
 
 class _CandidateEvaluation {
   final B04Recommendation recommendation;
   final List<B04RecommendationWarning> warnings;
+  final bool includeRecommendation;
 
   const _CandidateEvaluation({
     required this.recommendation,
     required this.warnings,
+    required this.includeRecommendation,
   });
 }
