@@ -50062,7 +50062,7 @@ class $RecoveryObservationsTable extends RecoveryObservations
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   List<Set<GeneratedColumn>> get uniqueKeys => [
-    {source, providerExternalId},
+    {userId, source, providerExternalId},
   ];
   @override
   RecoveryObservation map(Map<String, dynamic> data, {String? tablePrefix}) {

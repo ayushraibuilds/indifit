@@ -954,7 +954,7 @@ class RecoveryObservations extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {source, providerExternalId},
+    {userId, source, providerExternalId},
   ];
 
   @override

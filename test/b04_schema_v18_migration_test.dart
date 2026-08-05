@@ -53,18 +53,57 @@ void main() {
         isEmpty,
       );
       final indexes = await db
-          .customSelect(
-            "SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE '%b04%' OR name LIKE '%recommendation%' OR name LIKE '%consent%'",
-          )
+          .customSelect("SELECT name FROM sqlite_master WHERE type = 'index'")
           .get();
-      final indexNames = indexes.map((row) => row.data['name'] as String);
-      expect(indexNames, contains('coaching_consent_events_user_date_idx'));
+      final indexNames = indexes
+          .map((row) => row.data['name'] as String)
+          .toSet();
       expect(
         indexNames,
-        contains('recommendations_user_scope_period_status_idx'),
+        containsAll(const [
+          'nutrition_goal_versions_user_effective_idx',
+          'coaching_consent_events_user_date_idx',
+          'nutrition_coaching_preferences_user_idx',
+          'recovery_observations_user_time_kind_idx',
+          'recovery_observations_user_date_idx',
+          'readiness_snapshots_user_date_version_idx',
+          'readiness_snapshot_evidence_snapshot_idx',
+          'recommendations_user_scope_period_status_idx',
+          'recommendations_goal_readiness_idx',
+          'recommendation_evidence_recommendation_source_idx',
+          'coaching_eligibility_evaluations_user_date_result_idx',
+          'coaching_eligibility_evaluations_goal_recommendation_idx',
+          'recommendation_feedback_recommendation_time_idx',
+          'recommendation_feedback_user_time_idx',
+        ]),
       );
       expect(await db.select(db.coachingConsentEvents).get(), isEmpty);
       expect(await db.select(db.coachingEligibilityEvaluations).get(), isEmpty);
+      await db.customStatement('''
+        INSERT INTO nutrition_coaching_preferences (id, user_id)
+        VALUES ('user-a', 'user-a')
+      ''');
+      final defaultPreferences = await db
+          .select(db.nutritionCoachingPreferences)
+          .getSingle();
+      expect(defaultPreferences.adaptiveCoachingEnabled, isFalse);
+      expect(defaultPreferences.optionalAiEnabled, isFalse);
+      for (final table in const [
+        'nutrition_goal_versions',
+        'coaching_consent_events',
+        'readiness_snapshots',
+        'readiness_snapshot_evidence',
+        'recommendations',
+        'recommendation_evidence',
+        'coaching_eligibility_evaluations',
+        'recommendation_feedback',
+      ]) {
+        expect(
+          await db.customSelect('PRAGMA foreign_key_list($table)').get(),
+          isNotEmpty,
+          reason: '$table must expose its declared foreign-key relationships',
+        );
+      }
       expect(await db.customSelect('PRAGMA foreign_key_check').get(), isEmpty);
     } finally {
       await db.close();
@@ -130,6 +169,30 @@ void main() {
         );
       } finally {
         await reopened.close();
+      }
+    },
+  );
+
+  test(
+    'v16 to v18 chained migration preserves the accepted B03 graph',
+    () async {
+      final file = await B03V16Fixture.copyCompleteTo(
+        tempDir,
+        filename: 'v16-chain.db',
+      );
+      final db = AppDatabase.executor(NativeDatabase(file));
+      try {
+        await db.customSelect('SELECT 1').get();
+        expect(B03V16Fixture.readUserVersion(file), 18);
+        expect(await db.select(db.foodLogs).get(), hasLength(3));
+        expect(await db.select(db.nutritionGoalVersions).get(), isEmpty);
+        expect(await db.select(db.recommendations).get(), isEmpty);
+        expect(
+          await db.customSelect('PRAGMA foreign_key_check').get(),
+          isEmpty,
+        );
+      } finally {
+        await db.close();
       }
     },
   );
@@ -223,6 +286,23 @@ void main() {
       ''');
         await expectLater(
           db.customStatement('''
+          INSERT INTO nutrition_goal_versions
+            (id, user_id, version_number, goal_type, target_source,
+             effective_from_local_date, timezone_id, supersedes_goal_version_id)
+          VALUES ('goal-a-invalid-version', 'user-a', 1, 'maintenance',
+                  'user_set', '2026-01-02', 'Asia/Kolkata', 'goal-a')
+        '''),
+          throwsA(isA<Exception>()),
+        );
+        await db.customStatement('''
+          INSERT INTO nutrition_goal_versions
+            (id, user_id, version_number, goal_type, target_source,
+             effective_from_local_date, timezone_id, supersedes_goal_version_id)
+          VALUES ('goal-a-v2', 'user-a', 2, 'maintenance', 'user_set',
+                  '2026-01-02', 'Asia/Kolkata', 'goal-a')
+        ''');
+        await expectLater(
+          db.customStatement('''
           INSERT INTO recommendations
             (id, user_id, scope, local_period_start, local_period_end,
              timezone_id, status, priority, action, explanation, rule_version,
@@ -245,6 +325,121 @@ void main() {
         '''),
           throwsA(isA<Exception>()),
         );
+      } finally {
+        await db.close();
+      }
+    },
+  );
+
+  test(
+    'consent history separates categories and recovery deduplication is user-scoped',
+    () async {
+      final db = AppDatabase.memory();
+      try {
+        for (final event in const [
+          ('consent-adaptive-enable', 'adaptive_coaching', 'enable', 1000),
+          ('consent-ai-enable', 'optional_ai', 'enable', 1001),
+          ('consent-adaptive-disable', 'adaptive_coaching', 'disable', 1002),
+        ]) {
+          await db.customStatement('''
+            INSERT INTO coaching_consent_events
+              (id, user_id, consent_category, action, consent_policy_version,
+               copy_version, timestamp_utc, local_date, timezone_id, actor_source)
+            VALUES ('${event.$1}', 'user-a', '${event.$2}', '${event.$3}',
+                    'policy-1', 'copy-1', ${event.$4}, '2026-01-01',
+                    'Asia/Kolkata', 'user')
+          ''');
+        }
+        final events = await db.select(db.coachingConsentEvents).get();
+        expect(
+          events.map((event) => event.consentCategory),
+          containsAll(['adaptive_coaching', 'optional_ai']),
+        );
+        expect(
+          events.where((event) => event.consentCategory == 'adaptive_coaching'),
+          hasLength(2),
+        );
+
+        Future<void> insertRecovery(String id, String userId, int timestamp) =>
+            db.customStatement('''
+              INSERT INTO recovery_observations
+                (id, user_id, kind, observed_at_utc, local_date, timezone_id,
+                 status, unit, value, source, provenance, freshness,
+                 provider_external_id)
+              VALUES ('$id', '$userId', 'sleep', $timestamp, '2026-01-01',
+                      'Asia/Kolkata', 'known', 'hours', 7.5, 'provider',
+                      'fixture-v1', 'fresh', 'external-1')
+            ''');
+        await insertRecovery('recovery-a', 'user-a', 2000);
+        await expectLater(
+          insertRecovery('recovery-a-duplicate', 'user-a', 2001),
+          throwsA(isA<Exception>()),
+        );
+        await insertRecovery('recovery-b', 'user-b', 2000);
+        expect(await db.select(db.recoveryObservations).get(), hasLength(2));
+      } finally {
+        await db.close();
+      }
+    },
+  );
+
+  test(
+    'readiness and recommendation supersession cannot cross users',
+    () async {
+      final db = AppDatabase.memory();
+      try {
+        await db.customStatement('''
+          INSERT INTO readiness_snapshots
+            (id, user_id, local_date, timezone_id, completeness, status,
+             calculation_version)
+          VALUES ('readiness-b', 'user-b', '2026-01-01', 'Asia/Kolkata',
+                  'complete', 'available', 'readiness-1')
+        ''');
+        await expectLater(
+          db.customStatement('''
+            INSERT INTO readiness_snapshots
+              (id, user_id, local_date, timezone_id, completeness, status,
+               calculation_version, supersedes_snapshot_id)
+            VALUES ('readiness-a', 'user-a', '2026-01-02', 'Asia/Kolkata',
+                    'complete', 'available', 'readiness-2', 'readiness-b')
+          '''),
+          throwsA(isA<Exception>()),
+        );
+
+        await db.customStatement('''
+          INSERT INTO recommendations
+            (id, user_id, scope, local_period_start, local_period_end,
+             timezone_id, status, priority, action, explanation, rule_version,
+             context_fingerprint)
+          VALUES ('recommendation-b', 'user-b', 'daily', '2026-01-01',
+                  '2026-01-01', 'Asia/Kolkata', 'available', 1, 'review',
+                  'Review evidence', 'rule-1', 'context-b')
+        ''');
+        await expectLater(
+          db.customStatement('''
+            INSERT INTO recommendations
+              (id, user_id, scope, local_period_start, local_period_end,
+               timezone_id, status, priority, action, explanation, rule_version,
+               context_fingerprint, supersedes_recommendation_id)
+            VALUES ('recommendation-a', 'user-a', 'daily', '2026-01-02',
+                    '2026-01-02', 'Asia/Kolkata', 'available', 1, 'review',
+                    'Review evidence', 'rule-1', 'context-a',
+                    'recommendation-b')
+          '''),
+          throwsA(isA<Exception>()),
+        );
+
+        await db.customStatement('''
+          INSERT INTO recommendations
+            (id, user_id, scope, local_period_start, local_period_end,
+             timezone_id, status, priority, action, explanation, rule_version,
+             context_fingerprint, supersedes_recommendation_id)
+          VALUES ('recommendation-b-v2', 'user-b', 'daily', '2026-01-02',
+                  '2026-01-02', 'Asia/Kolkata', 'available', 1, 'review',
+                  'Review evidence', 'rule-1', 'context-b-v2',
+                  'recommendation-b')
+        ''');
+        expect(await db.select(db.recommendations).get(), hasLength(2));
       } finally {
         await db.close();
       }

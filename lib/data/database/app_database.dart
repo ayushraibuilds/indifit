@@ -1334,14 +1334,18 @@ class AppDatabase extends _$AppDatabase {
          BEFORE INSERT ON nutrition_goal_versions
          WHEN NEW.supersedes_goal_version_id IS NOT NULL AND NOT EXISTS
            (SELECT 1 FROM nutrition_goal_versions
-            WHERE id = NEW.supersedes_goal_version_id AND user_id = NEW.user_id)
-         BEGIN SELECT RAISE(ABORT, 'Goal supersession must remain within one user'); END''',
+            WHERE id = NEW.supersedes_goal_version_id
+              AND user_id = NEW.user_id
+              AND version_number < NEW.version_number)
+         BEGIN SELECT RAISE(ABORT, 'Goal supersession must remain within one user and advance its version'); END''',
       '''CREATE TRIGGER IF NOT EXISTS b04_goal_versions_owner_update
          BEFORE UPDATE OF user_id, supersedes_goal_version_id ON nutrition_goal_versions
          WHEN NEW.supersedes_goal_version_id IS NOT NULL AND NOT EXISTS
            (SELECT 1 FROM nutrition_goal_versions
-            WHERE id = NEW.supersedes_goal_version_id AND user_id = NEW.user_id)
-         BEGIN SELECT RAISE(ABORT, 'Goal supersession must remain within one user'); END''',
+            WHERE id = NEW.supersedes_goal_version_id
+              AND user_id = NEW.user_id
+              AND version_number < NEW.version_number)
+         BEGIN SELECT RAISE(ABORT, 'Goal supersession must remain within one user and advance its version'); END''',
       '''CREATE TRIGGER IF NOT EXISTS b04_consent_events_append_only_update
          BEFORE UPDATE ON coaching_consent_events
          BEGIN SELECT RAISE(ABORT, 'B04 consent events are append-only'); END''',
@@ -1369,6 +1373,18 @@ class AppDatabase extends _$AppDatabase {
       '''CREATE TRIGGER IF NOT EXISTS b04_readiness_snapshots_append_only_delete
          BEFORE DELETE ON readiness_snapshots
          BEGIN SELECT RAISE(ABORT, 'B04 readiness snapshots are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_readiness_snapshots_owner_insert
+         BEFORE INSERT ON readiness_snapshots
+         WHEN NEW.supersedes_snapshot_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM readiness_snapshots
+            WHERE id = NEW.supersedes_snapshot_id AND user_id = NEW.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Readiness supersession must remain within one user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_readiness_snapshots_owner_update
+         BEFORE UPDATE OF user_id, supersedes_snapshot_id ON readiness_snapshots
+         WHEN NEW.supersedes_snapshot_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM readiness_snapshots
+            WHERE id = NEW.supersedes_snapshot_id AND user_id = NEW.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Readiness supersession must remain within one user'); END''',
       '''CREATE TRIGGER IF NOT EXISTS b04_readiness_evidence_append_only_update
          BEFORE UPDATE ON readiness_snapshot_evidence
          BEGIN SELECT RAISE(ABORT, 'B04 readiness evidence is append-only'); END''',
@@ -1397,6 +1413,9 @@ class AppDatabase extends _$AppDatabase {
            OR (NEW.readiness_snapshot_id IS NOT NULL AND NOT EXISTS
            (SELECT 1 FROM readiness_snapshots
             WHERE id = NEW.readiness_snapshot_id AND user_id = NEW.user_id))
+           OR (NEW.supersedes_recommendation_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM recommendations
+            WHERE id = NEW.supersedes_recommendation_id AND user_id = NEW.user_id))
          BEGIN SELECT RAISE(ABORT, 'Recommendation ownership is invalid'); END''',
       '''CREATE TRIGGER IF NOT EXISTS b04_recommendation_evidence_append_only_update
          BEFORE UPDATE ON recommendation_evidence
