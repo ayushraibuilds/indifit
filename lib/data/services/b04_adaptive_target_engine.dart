@@ -296,7 +296,7 @@ class B04AdaptiveTargetEngine {
     final proposal = _proposal(
       request,
       goal: goal,
-      goalRate: request.goalRate!.trim(),
+      goalRate: parsedRate.text!,
       candidateTarget: candidate,
       normalizedMaintenanceKcal: normalizedMaintenance,
       evidenceIds: evidenceIds,
@@ -556,11 +556,36 @@ class B04AdaptiveTargetEngine {
     if (body == null) {
       return _failure(request, reasonCode: 'body_metrics_unavailable');
     }
+    try {
+      _dates.normalizeLocalDate(body.localDate);
+      _dates.validateTimezone(body.timezoneId);
+    } on Object {
+      return _failure(
+        request,
+        status: B04AdaptiveTargetStatus.invalidEvidence,
+        reasonCode: 'invalid_body_time_context',
+      );
+    }
+    if (body.observedAtUtc.isAfter(request.evaluatedAtUtc)) {
+      return _failure(
+        request,
+        status: B04AdaptiveTargetStatus.invalidEvidence,
+        reasonCode: 'future_body_evidence',
+      );
+    }
+    if (body.state != B04EvidenceState.known &&
+        body.state != B04EvidenceState.estimated) {
+      return _failure(
+        request,
+        status: body.state == B04EvidenceState.invalid
+            ? B04AdaptiveTargetStatus.invalidEvidence
+            : B04AdaptiveTargetStatus.unavailable,
+        reasonCode: 'body_${body.state.stableId}',
+      );
+    }
     if (body.userId != request.userId.trim() ||
         body.heightUnit != 'cm' ||
         body.weightUnit != 'g' ||
-        body.state != B04EvidenceState.known &&
-            body.state != B04EvidenceState.estimated ||
         body.id.trim().isEmpty ||
         body.sourceId.trim().isEmpty ||
         body.sourceVersion.trim().isEmpty ||
@@ -710,7 +735,8 @@ class B04AdaptiveTargetEngine {
           item.id.trim().isEmpty ||
           item.sourceId.trim().isEmpty ||
           item.sourceVersion.trim().isEmpty ||
-          !item.observedAtUtc.isUtc) {
+          !item.observedAtUtc.isUtc ||
+          item.observedAtUtc.isAfter(request.evaluatedAtUtc)) {
         return _Gate.failure(
           B04AdaptiveTargetStatus.invalidEvidence,
           'invalid_weight_provenance',
@@ -891,7 +917,8 @@ class B04AdaptiveTargetEngine {
           item.sourceId.trim().isEmpty ||
           item.sourceVersion.trim().isEmpty ||
           !item.historicalSnapshot ||
-          !item.observedAtUtc.isUtc) {
+          !item.observedAtUtc.isUtc ||
+          item.observedAtUtc.isAfter(request.evaluatedAtUtc)) {
         return _Gate.failure(
           B04AdaptiveTargetStatus.invalidEvidence,
           'invalid_nutrition_provenance',
@@ -1013,10 +1040,28 @@ class B04AdaptiveTargetEngine {
         item.sourceVersion.trim().isEmpty ||
         !item.historicalSnapshot ||
         !item.observedAtUtc.isUtc ||
+        item.observedAtUtc.isAfter(request.evaluatedAtUtc) ||
         item.policyVersion != policy.policyVersion) {
       return _Gate.failure(
         B04AdaptiveTargetStatus.invalidEvidence,
         'invalid_maintenance_provenance',
+        [item.id],
+      );
+    }
+    if (item.energy.state != B04EvidenceState.known &&
+        item.energy.state != B04EvidenceState.estimated) {
+      return _Gate.failure(
+        item.energy.state == B04EvidenceState.invalid
+            ? B04AdaptiveTargetStatus.invalidEvidence
+            : B04AdaptiveTargetStatus.unavailable,
+        'maintenance_${item.energy.state.stableId}',
+        [item.id],
+      );
+    }
+    if (item.energy.stale || item.energy.conflicting) {
+      return _Gate.failure(
+        B04AdaptiveTargetStatus.unavailable,
+        item.energy.stale ? 'maintenance_stale' : 'maintenance_conflicting',
         [item.id],
       );
     }

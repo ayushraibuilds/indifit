@@ -41,6 +41,58 @@ void main() {
       expect(result.adaptiveDeltaKcal, 0);
     });
 
+    test('every ENABLED-1 activation gate is required', () {
+      final incomplete = [
+        const B04ActivationMetadata(
+          policyVersion: kB04EnabledPolicyVersion,
+          freshIndependentSolApproved: true,
+          policyBranchMerged: true,
+          releasePolicySelected: true,
+          effectiveFromLocalDate: '2026-01-01',
+          timezoneId: _timezoneId,
+          mergedBranch: 'batch/b04-adaptive-coaching',
+          releaseSelection: 'test-enabled-policy',
+        ),
+        const B04ActivationMetadata(
+          policyVersion: kB04EnabledPolicyVersion,
+          productOwnerApproved: true,
+          policyBranchMerged: true,
+          releasePolicySelected: true,
+          effectiveFromLocalDate: '2026-01-01',
+          timezoneId: _timezoneId,
+          mergedBranch: 'batch/b04-adaptive-coaching',
+          releaseSelection: 'test-enabled-policy',
+        ),
+        const B04ActivationMetadata(
+          policyVersion: kB04EnabledPolicyVersion,
+          productOwnerApproved: true,
+          freshIndependentSolApproved: true,
+          releasePolicySelected: true,
+          effectiveFromLocalDate: '2026-01-01',
+          timezoneId: _timezoneId,
+          mergedBranch: 'batch/b04-adaptive-coaching',
+          releaseSelection: 'test-enabled-policy',
+        ),
+        const B04ActivationMetadata(
+          policyVersion: kB04EnabledPolicyVersion,
+          productOwnerApproved: true,
+          freshIndependentSolApproved: true,
+          policyBranchMerged: true,
+          effectiveFromLocalDate: '2026-01-01',
+          timezoneId: _timezoneId,
+          mergedBranch: 'batch/b04-adaptive-coaching',
+          releaseSelection: 'test-enabled-policy',
+        ),
+      ];
+
+      for (final activation in incomplete) {
+        final result = engine.evaluate(_request(activation: activation));
+        expect(result.policyVersion, kB04HoldPolicyVersion);
+        expect(result.reasonCode, 'adaptive_policy_hold');
+        expect(result.adaptiveDeltaKcal, 0);
+      }
+    });
+
     test(
       'future activation remains inactive until its local effective date',
       () {
@@ -204,6 +256,74 @@ void main() {
       },
     );
 
+    test('uncertain maintenance and future evidence fail closed', () {
+      for (final state in [
+        B04EvidenceState.unknown,
+        B04EvidenceState.stale,
+        B04EvidenceState.conflicting,
+      ]) {
+        final result = engine.evaluate(
+          _request(
+            activation: _enabled(),
+            maintenance: _maintenance(state: state),
+          ),
+        );
+
+        expect(result.status, B04AdaptiveTargetStatus.unavailable);
+        expect(result.reasonCode, 'maintenance_${state.stableId}');
+        expect(result.adaptiveDeltaKcal, 0);
+        expect(result.proposal, isNull);
+      }
+
+      final future = DateTime.utc(2026, 2, 23, 10);
+      final futureBody = engine.evaluate(
+        _request(
+          activation: _enabled(),
+          body: _body(observedAtUtc: future),
+        ),
+      );
+      final futureWeight = engine.evaluate(
+        _request(
+          activation: _enabled(),
+          weights: _weights(observedAtUtc: future),
+        ),
+      );
+      final futureNutrition = engine.evaluate(
+        _request(
+          activation: _enabled(),
+          nutrition: _nutritionDays(observedAtUtc: future),
+        ),
+      );
+      final futureMaintenance = engine.evaluate(
+        _request(
+          activation: _enabled(),
+          maintenance: _maintenance(observedAtUtc: future),
+        ),
+      );
+
+      expect(futureBody.reasonCode, 'future_body_evidence');
+      expect(futureWeight.reasonCode, 'invalid_weight_provenance');
+      expect(futureNutrition.reasonCode, 'invalid_nutrition_provenance');
+      expect(futureMaintenance.reasonCode, 'invalid_maintenance_provenance');
+      for (final result in [
+        futureBody,
+        futureWeight,
+        futureNutrition,
+        futureMaintenance,
+      ]) {
+        expect(result.adaptiveDeltaKcal, 0);
+        expect(result.proposal, isNull);
+      }
+
+      final invalidBodyTimezone = engine.evaluate(
+        _request(
+          activation: _enabled(),
+          body: _body(timezoneId: 'Not/IANA'),
+        ),
+      );
+      expect(invalidBodyTimezone.reasonCode, 'invalid_body_time_context');
+    });
+
     test(
       'loss BMI exactly 18.5 passes while one unit below is unavailable',
       () {
@@ -245,6 +365,17 @@ void main() {
       expect(upward.proposedTargetKcal, 1900);
       expect(downward.proposal!.goalRate, '-0.50% body weight/week');
       downward.proposal!.validate();
+
+      final prefixed = engine.evaluate(
+        _request(
+          activation: _enabled(),
+          goalRate: 'loss:-0.50% body weight/week',
+          slopeGramsPerDay: -20,
+        ),
+      );
+      expect(prefixed.status, B04AdaptiveTargetStatus.available);
+      expect(prefixed.proposal!.goalRate, '-0.50% body weight/week');
+      prefixed.proposal!.validate();
     });
 
     test(
@@ -544,10 +675,39 @@ void main() {
           ],
         ),
       );
+      final exactCadence = engine.evaluate(
+        _request(
+          activation: _enabled(),
+          slopeGramsPerDay: -20,
+          history: [
+            _history(
+              id: 'exact-cadence',
+              localDate: '2026-02-01',
+              state: B04AdaptiveProposalState.accepted,
+              accepted: true,
+            ),
+          ],
+        ),
+      );
+      final beforeExpiry = engine.evaluate(
+        _request(
+          activation: _enabled(),
+          slopeGramsPerDay: -20,
+          history: [
+            _history(
+              id: 'pending-before-expiry',
+              localDate: '2026-02-16',
+              state: B04AdaptiveProposalState.pending,
+            ),
+          ],
+        ),
+      );
 
       expect(recent.reasonCode, 'proposal_cadence_not_met');
       expect(expired.status, B04AdaptiveTargetStatus.expired);
       expect(expired.reasonCode, 'proposal_expired');
+      expect(exactCadence.status, B04AdaptiveTargetStatus.available);
+      expect(beforeExpiry.reasonCode, 'unresolved_proposal');
     });
 
     test(
@@ -591,10 +751,27 @@ void main() {
             ],
           ),
         );
+        final aggregateAtLimit = engine.evaluate(
+          _request(
+            activation: _enabled(),
+            slopeGramsPerDay: -80,
+            history: [
+              _history(
+                id: 'engine-plus-100-at-limit',
+                localDate: '2026-01-20',
+                deltaKcal: 100,
+                state: B04AdaptiveProposalState.accepted,
+                accepted: true,
+              ),
+            ],
+          ),
+        );
 
         expect(blocked.status, B04AdaptiveTargetStatus.policyBoundaryReached);
         expect(manualIgnored.status, B04AdaptiveTargetStatus.available);
         expect(manualIgnored.adaptiveDeltaKcal, 100);
+        expect(aggregateAtLimit.status, B04AdaptiveTargetStatus.available);
+        expect(aggregateAtLimit.adaptiveDeltaKcal, 100);
       },
     );
 
@@ -1081,6 +1258,8 @@ B04BodyMetricsEvidence _body({
   String weightGrams = '70000',
   String localDate = '2026-02-21',
   String timezoneId = _timezoneId,
+  B04EvidenceState state = B04EvidenceState.known,
+  DateTime? observedAtUtc,
 }) => B04BodyMetricsEvidence(
   id: 'body-1',
   userId: _userId,
@@ -1090,13 +1269,15 @@ B04BodyMetricsEvidence _body({
   sourceVersion: 'profile-v1',
   localDate: localDate,
   timezoneId: timezoneId,
-  observedAtUtc: DateTime.utc(2026, 2, 21, 10),
+  state: state,
+  observedAtUtc: observedAtUtc ?? DateTime.utc(2026, 2, 21, 10),
 );
 
 List<B04WeightObservation> _weights({
   int slopeGramsPerDay = -50,
   String evaluationLocalDate = _evaluationDate,
   String timezoneId = _timezoneId,
+  DateTime? observedAtUtc,
 }) {
   final end = _dates.addCalendarDays(evaluationLocalDate, timezoneId, -1);
   final start = _dates.addCalendarDays(end, timezoneId, -20);
@@ -1107,6 +1288,7 @@ List<B04WeightObservation> _weights({
         _dates.addCalendarDays(start, timezoneId, index),
         (70000 + slopeGramsPerDay * (index - 10)).toString(),
         timezoneId: timezoneId,
+        observedAtUtc: observedAtUtc,
       ),
   ];
 }
@@ -1117,6 +1299,7 @@ B04WeightObservation _weight(
   String grams, {
   String timezoneId = _timezoneId,
   String? supersedesObservationId,
+  DateTime? observedAtUtc,
 }) => B04WeightObservation(
   id: id,
   userId: _userId,
@@ -1125,7 +1308,7 @@ B04WeightObservation _weight(
   grams: grams,
   sourceId: 'scale',
   sourceVersion: 'scale-v1',
-  observedAtUtc: DateTime.utc(2026, 2, 21, 8),
+  observedAtUtc: observedAtUtc ?? DateTime.utc(2026, 2, 21, 8),
   supersedesObservationId: supersedesObservationId,
 );
 
@@ -1133,6 +1316,7 @@ List<B04NutritionDayEvidence> _nutritionDays({
   String evaluationLocalDate = _evaluationDate,
   String timezoneId = _timezoneId,
   String completenessPercent = '80',
+  DateTime? observedAtUtc,
   B04NumericRangeEvidence energy = const B04NumericRangeEvidence(
     point: '2000',
     unit: 'kcal/day',
@@ -1152,7 +1336,7 @@ List<B04NutritionDayEvidence> _nutritionDays({
         sourceId: 'b03-history',
         sourceVersion: 'b03-v1',
         historicalSnapshot: true,
-        observedAtUtc: DateTime.utc(2026, 2, 1 + index, 12),
+        observedAtUtc: observedAtUtc ?? DateTime.utc(2026, 2, 1 + index, 12),
       ),
   ];
 }
@@ -1163,6 +1347,10 @@ B04MaintenanceEnergyEvidence _maintenance({
   String? upper,
   String localDate = '2026-02-21',
   String timezoneId = _timezoneId,
+  B04EvidenceState state = B04EvidenceState.known,
+  bool stale = false,
+  bool conflicting = false,
+  DateTime? observedAtUtc,
 }) => B04MaintenanceEnergyEvidence(
   id: 'maintenance-1',
   userId: _userId,
@@ -1173,12 +1361,15 @@ B04MaintenanceEnergyEvidence _maintenance({
     lower: lower,
     upper: upper,
     unit: 'kcal/day',
+    state: state,
+    stale: stale,
+    conflicting: conflicting,
   ),
   sourceId: 'b03-maintenance',
   sourceVersion: 'b03-v1',
   policyVersion: kB04EnabledPolicyVersion,
   historicalSnapshot: true,
-  observedAtUtc: DateTime.utc(2026, 2, 21, 12),
+  observedAtUtc: observedAtUtc ?? DateTime.utc(2026, 2, 21, 12),
 );
 
 B04AdaptiveTargetHistoryEvent _history({
