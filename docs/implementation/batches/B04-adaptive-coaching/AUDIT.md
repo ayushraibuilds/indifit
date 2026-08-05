@@ -4,6 +4,19 @@ Audit mode: read-only, planning only
 Checkout: `batch/b04-planning` at `12ce1b05c7626d3fb37eedc37fc0dd4d7af94d8a`
 Future-input ref: `batch/b03-nutrition-foundation` at `d85e8a16566735e7f6b7fe15cd2a97edb5677178`
 
+Remediation update: the B04 gate is evaluated from concrete integration
+baseline `741aa18972ebc1b61cd65c0bf12b442b10b50890`, whose implementation
+parent contains accepted B03. The planning-base observations below are retained
+as audit history and are not the current implementation parent.
+
+Numerical-policy follow-up: this documentation-only packet is authored from
+baseline `61cac3dd35579fde01118626b5fa009024a04a7f`. It records the proposed
+first enabled calorie policy `B04-D04-ENABLED-1` and the separate
+`B04-D04-READINESS-HOLD-1`; neither is active from this branch. `HOLD-1`
+remains retained for historical replay and for installations/users that do not
+select the enabled policy. No application, schema, migration or backup code is
+changed by this follow-up.
+
 ## Method and scope
 
 The audit began with the canonical roadmap and accepted B01–B03 planning and
@@ -25,7 +38,7 @@ No application code, schema, asset or feature branch was changed by the audit.
 |---|---|---|
 | B01 | `docs/implementation/batches/B01-training-programs/VERIFICATION.md`: integration baseline `baff96e`, final Sol/platform verification passed; `main` contains the accepted lineage. | Accepted and integrated; no B01 blocker. |
 | B02 | `docs/implementation/batches/B02-workout-execution/VERIFICATION.md`: final verification passed, Sol gate released at `330bda5`; `main` is merge `12ce1b0` and schema/backup are v16/v7. | Accepted and integrated; no B02 blocker. |
-| B03 | `batch/b03-nutrition-foundation` at `d85e8a1`: focused r3 final verdict “Passed with non-blocking follow-up”; schema/backup v17/v8; B03 implementation is not an ancestor of `main`. | Accepted on its final branch, not integrated into B04’s planning base. Blocks B04 implementation only. |
+| B03 | Accepted commit `d85e8a1`, timezone correction `78a43f9` and merge commit `f976542` are ancestors of the concrete B04 integration baseline; schema/backup v17/v8 are present in the implementation parent. | B03 is integrated into the B04 implementation parent; no unresolved B03 release blocker is absorbed by B04. |
 
 The historical B03 r2 section records a blocked verdict, but the r3 section is
 the current disposition and supersedes it. B03 follow-ups remain explicitly
@@ -46,7 +59,7 @@ review used product-owner attestation rather than a new Sol/Terra instance.
 | B03 `lib/data/repositories/nutrition_read_model_repository.dart` — `NutritionReadModelRepository` | Unifies immutable canonical snapshots and legacy records; `dailyTotals` preserves correction lineage, source counts and issues. | Required nutrition totals/history authority. | Reuse. | Dashboard/progress still have direct legacy reads on the B04 base. | Integrate B04 only from this boundary after B03 merge; do not recalculate. |
 | B03 `lib/data/repositories/nutrition_consumption_repository.dart` — `dailyTotals`, `listForLocalDate` | Reads active immutable snapshots with UTC/IANA/local-date context and source/result facts. | Historical daily evidence. | Reuse. | Crossing into legacy rows or current catalogue would change history. | Fixture cross-midnight, correction and range behavior before coaching. |
 | B03 `nutrition_protein_distribution_repository.dart`, `nutrition_protein_distribution.dart` | Descriptive meal distribution with explicit groups/categories and measured/estimated/unknown leucine. | Optional evidence/context for coaching. | Reuse read-only. | B04 could accidentally turn descriptive data into physiology claims. | No thresholds, quality score or MPS outcome in B04. |
-| B03 `lib/core/nutrition_constraints.dart` and `nutrition_constraint_repository.dart` | Typed constraints/evidence; evaluator outcomes are confirmed, possible, no-known and insufficient. | Safety filter for candidates and guidance. | Reuse as sole evaluator. | “No known conflict” can be misrendered as safe; cross-contact follow-up remains. | Add Sol-reviewed hard-block/warning/confirmation fixtures. |
+| B03 `lib/core/nutrition_constraints.dart` and `nutrition_constraint_repository.dart` | Typed constraints/evidence; evaluator outcomes are confirmed, possible, no-known and insufficient. | Safety filter for candidates and guidance. | Reuse as sole evaluator. | “No known conflict” can be misrendered as safe; cross-contact follow-up remains. | Add Sol-reviewed hard-block/unavailable fixtures; warning acknowledgement is limited to separately defined low-risk logging and cannot enter recommendations. |
 | B03 `lib/core/nutrition_estimates.dart`, `nutrition_estimate_repository.dart` | Typed point/lower/upper facts, confidence, provider/model/rule provenance, correction lineage and unavailable offline state. | Uncertainty and estimate evidence. | Reuse/adapt. | Range-only or legacy point values can be treated as exact. | Propagate status/ranges into ranking and explanation; never use legacy adapter as authority. |
 | Current `lib/data/database/tables/food_tables.dart` — `FoodLogs`; `lib/data/repositories/food_repository.dart` — `FoodRepository` | Legacy copied macros; fuzzy text search; 15-minute implicit meal grouping; device-local day reads; in-place update/delete. | Compatibility history only. | Isolate behind B03 legacy adapter. | Totals, grouping and correction lineage can diverge from canonical snapshots. | No new B04 decisions may read or write this path directly. |
 | `lib/data/repositories/progress_statistics_repository.dart` — `getWeeklyMetrics`; `dashboard_controller.dart` — weekly adherence/action methods | Existing weekly/report/dashboard paths aggregate legacy logs and use current profile targets. | Current weekly surface. | Adapt to B03/B04 read models; retire duplicate coaching actions. | Editing today’s target can reinterpret past adherence. | One daily/weekly orchestration boundary with effective goal version. |
@@ -75,8 +88,13 @@ review used product-owner attestation rather than a new Sol/Terra instance.
 
 - Goal versions, effective dates, target source, opt-in, override and
   historical target lineage.
-- Adaptive target safety policy: minimum evidence, cadence, adjustment bounds,
-  minimum-age/consent rule and professional-advice wording.
+- Enabled target safety policy: `B04-D04-ENABLED-1` now specifies minimum age,
+  consent, goal-rate, 21-day evaluation, weight/nutrition/maintenance-energy
+  evidence, deterministic trend, deadbands, 100-kcal steps, cooldowns,
+  aggregate limits, deficit/surplus boundaries, floor/ceiling behavior,
+  rapid-change handling and future-only lineage. It remains subject to an
+  independent fresh Sol High safety and implementation-readiness verdict,
+  branch merge and explicit release/feature-policy selection.
 - Durable recovery observations, readiness snapshots and evidence links.
 - A typed recommendation context separating target calculation, safety filter,
   candidate opportunity, ranking and presentation.
@@ -113,3 +131,18 @@ review used product-owner attestation rather than a new Sol/Terra instance.
    complete; it is not a dependency for offline B04 outcomes.
 5. Festival/eating-out/fasting behavior stays outside the required DAG until
    the canonical N8 product decision is explicitly accepted.
+
+## Numerical-policy follow-up disposition
+
+| Policy | Current audit disposition | Runtime consequence |
+|---|---|---|
+| `B04-D04-HOLD-1` | Retained and not deleted or rewritten | Historical replay/default for non-selected installations/users; no adaptive proposal and exact zero adaptive delta. |
+| `B04-D04-ENABLED-1` | Product Owner-selected proposed first enabled calorie policy; independent fresh Sol High review still required | Not active from this branch; future-only after merge and explicit release/feature-policy selection. |
+| `B04-D04-READINESS-HOLD-1` | Created as a separate retained hold | Readiness contributes exactly `0 kcal/day`, `0%` training-load change, `0%` intensity change and `0` schedule-duration change; descriptive coaching only. |
+
+The enabled policy is an explicit numerical contract, not an inference from
+legacy `-500`, `+300` or `1200` constants. Its evidence, trend, target,
+deficit/surplus, floor/ceiling, rapid-change, timezone/DST, offline, AI and
+historical-replay requirements are recorded in `DECISIONS.md` and
+`VERIFICATION.md`. The audit does not authorize B04-01 or any runtime
+implementation.
