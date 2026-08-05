@@ -389,6 +389,7 @@ class B04BackupGraph {
           users[id] = userId;
         }
         _validateRequiredColumns(row, table, spec);
+        _validateTypedColumns(row, table);
         _validateDates(row, table);
         _validateEnums(row, table);
         _validatePolicyVersions(row, table);
@@ -412,6 +413,11 @@ class B04BackupGraph {
     }
 
     _validateRelationshipsForGraph(idsByTable, usersByTable);
+    for (final entry in _b04Specs.entries) {
+      final selfReferenceColumn = entry.value.selfReferenceColumn;
+      if (selfReferenceColumn == null) continue;
+      _topologicallySorted([..._rows(entry.key)], selfReferenceColumn);
+    }
   }
 
   Future<void> validateAgainstTarget(AppDatabase db) async {
@@ -595,14 +601,17 @@ class B04BackupGraph {
   }
 
   static dynamic _databaseValue(String column, Object? value) {
-    if (value is DateTime) return value.toUtc().millisecondsSinceEpoch;
+    if (value is DateTime) return _unixSeconds(value);
     if (value is bool) return value ? 1 : 0;
     if (value is String && _timestampColumns.contains(column)) {
-      final parsed = DateTime.tryParse(value);
-      if (parsed != null) return parsed.toUtc().millisecondsSinceEpoch;
+      final parsed = _dateTime(value);
+      if (parsed != null) return _unixSeconds(parsed);
     }
     return value;
   }
+
+  static int _unixSeconds(DateTime value) =>
+      value.toUtc().millisecondsSinceEpoch ~/ Duration.millisecondsPerSecond;
 
   static Future<List<Map<String, dynamic>>> _readRows(
     AppDatabase db,
@@ -649,6 +658,57 @@ class B04BackupGraph {
       );
     }
     return value;
+  }
+
+  static void _validateTypedColumns(Map<String, dynamic> row, String table) {
+    for (final entry in row.entries) {
+      final column = entry.key;
+      final value = entry.value;
+      if (value == null) continue;
+
+      if (_timestampColumns.contains(column)) {
+        if ((value is num && value is! int) || _dateTime(value) == null) {
+          throw BackupV9ValidationException(
+            'invalid_typed_column',
+            'Backup-v9 $table.$column must be a UTC timestamp.',
+          );
+        }
+        continue;
+      }
+      if (_integerColumns.contains(column)) {
+        if (value is! int) {
+          throw BackupV9ValidationException(
+            'invalid_typed_column',
+            'Backup-v9 $table.$column must be an integer.',
+          );
+        }
+        continue;
+      }
+      if (_numericColumns.contains(column)) {
+        if (value is! num || !value.isFinite) {
+          throw BackupV9ValidationException(
+            'invalid_typed_column',
+            'Backup-v9 $table.$column must be a finite number.',
+          );
+        }
+        continue;
+      }
+      if (_booleanColumns.contains(column)) {
+        if (value is! bool && !(value is int && (value == 0 || value == 1))) {
+          throw BackupV9ValidationException(
+            'invalid_typed_column',
+            'Backup-v9 $table.$column must be a boolean.',
+          );
+        }
+        continue;
+      }
+      if (value is! String) {
+        throw BackupV9ValidationException(
+          'invalid_typed_column',
+          'Backup-v9 $table.$column must be a typed string value.',
+        );
+      }
+    }
   }
 
   static void _validateDates(Map<String, dynamic> row, String table) {
@@ -919,6 +979,13 @@ class B04BackupGraph {
         );
       }
     }
+    if ((row['exact_result_numerator'] == null) !=
+        (row['exact_result_denominator'] == null)) {
+      throw BackupV9ValidationException(
+        'invalid_exact_result',
+        'Backup-v9 exact results must include both numerator and denominator.',
+      );
+    }
     final normalized = row['normalized_maintenance_kcal'];
     if (normalized is num && normalized <= 0) {
       throw BackupV9ValidationException(
@@ -1124,9 +1191,23 @@ class B04BackupGraph {
 
   static DateTime? _dateTime(Object? value) {
     if (value is DateTime) return value.toUtc();
-    if (value is String) return DateTime.tryParse(value)?.toUtc();
+    if (value is String) {
+      try {
+        return parseLegacyBackupTimestamp(value);
+      } catch (_) {
+        return null;
+      }
+    }
     if (value is num) {
-      return DateTime.fromMillisecondsSinceEpoch(value.toInt(), isUtc: true);
+      if (value is! int) return null;
+      try {
+        return DateTime.fromMillisecondsSinceEpoch(
+          value * Duration.millisecondsPerSecond,
+          isUtc: true,
+        );
+      } catch (_) {
+        return null;
+      }
     }
     return null;
   }
@@ -1504,4 +1585,29 @@ const _timestampColumns = {
   'evaluation_utc',
   'superseded_at_utc',
   'effective_at_utc',
+};
+
+const _integerColumns = {
+  'version_number',
+  'projection_version',
+  'calorie_target_kcal',
+  'normalized_maintenance_kcal',
+  'priority',
+  'proposed_delta_kcal',
+};
+
+const _numericColumns = {
+  'protein_target_g',
+  'carbs_target_g',
+  'fat_target_g',
+  'value',
+  'lower',
+  'upper',
+  'confidence',
+};
+
+const _booleanColumns = {
+  'adaptive_coaching_enabled',
+  'optional_ai_enabled',
+  'is_archived',
 };

@@ -231,6 +231,53 @@ void main() {
         ),
       );
 
+      final cyclicLineage = _copy(valid);
+      _table(
+        cyclicLineage,
+        'recommendations',
+      ).single['supersedes_recommendation_id'] = 'recommendation-a';
+      expect(
+        () => BackupV9Data.fromJson(cyclicLineage),
+        throwsA(
+          isA<BackupV9ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'cyclic_relationship',
+          ),
+        ),
+      );
+
+      final partialExactResult = _copy(valid);
+      _table(
+        partialExactResult,
+        'recommendations',
+      ).single['exact_result_denominator'] = null;
+      expect(
+        () => BackupV9Data.fromJson(partialExactResult),
+        throwsA(
+          isA<BackupV9ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'invalid_exact_result',
+          ),
+        ),
+      );
+
+      final malformedTypedValue = _copy(valid);
+      _table(malformedTypedValue, 'recommendations').single['explanation'] = {
+        'prompt': 'raw provider prompt',
+      };
+      expect(
+        () => BackupV9Data.fromJson(malformedTypedValue),
+        throwsA(
+          isA<BackupV9ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'invalid_typed_column',
+          ),
+        ),
+      );
+
       final future = _copy(valid)..['version'] = 10;
       expect(
         () => BackupV9Data.fromJson(future),
@@ -244,6 +291,32 @@ void main() {
       );
     },
   );
+
+  test('offset-less v9 timestamps are interpreted as UTC', () async {
+    final source = AppDatabase.memory();
+    final target = AppDatabase.memory();
+    addTearDown(source.close);
+    addTearDown(target.close);
+    await _populateB04Graph(source);
+
+    final payload =
+        jsonDecode(
+              jsonEncode(
+                (await BackupV9Data.createFromDatabase(source)).toJson(),
+              ),
+            )
+            as Map<String, dynamic>;
+    _table(payload, 'nutrition_goal_versions').first['created_at_utc'] =
+        '2026-01-01T00:00:00';
+
+    await BackupV9Data.fromJson(payload).restoreToDatabase(target);
+    final restored = (await target.select(target.nutritionGoalVersions).get())
+        .singleWhere((row) => row.id == 'goal-v1');
+    expect(
+      restored.createdAtUtc.toUtc(),
+      DateTime.parse('2026-01-01T00:00:00.000Z'),
+    );
+  });
 
   test('invalid v9 restore rolls back and a retry succeeds', () async {
     final source = AppDatabase.memory();
@@ -292,7 +365,9 @@ const _b04Tables = {
 };
 
 Future<void> _populateB04Graph(AppDatabase db) async {
-  final t0 = DateTime.parse('2026-01-01T08:00:00.000Z').millisecondsSinceEpoch;
+  final t0 =
+      DateTime.parse('2026-01-01T08:00:00.000Z').millisecondsSinceEpoch ~/
+      Duration.millisecondsPerSecond;
   await _insert(
     db,
     'nutrition_goal_versions',
