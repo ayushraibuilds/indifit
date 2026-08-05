@@ -12,7 +12,16 @@ The concrete B04 integration baseline is
 `f976542e395a3e082f1ab5cdfdfd87e969910766`. The prior D04 qualitative
 documentation commit is `750ef0999153a7cc41a2493cb6305d2a833b1f12`. The current
 numerical-policy authoring baseline is
-`61cac3dd35579fde01118626b5fa009024a04a7f`.
+`e19ae5d512bea0d46143ca5bda842425a46df0a8`, recorded as
+`B04_D04_FINAL_COMMIT`.
+
+The focused independent Sol High numerical-precision review is **Approved** at
+`B04_D04_FINAL_COMMIT` for range-width arithmetic, Theil–Sen medians and ties,
+exact decision precision, kcal normalization, directional floor/ceiling
+rounding, exact ±100 kcal proposal behavior and deterministic edge fixtures.
+This approval does not activate `ENABLED-1`; it remains inactive until the D04
+branch is merged and an explicit release/feature-policy selection records a
+future effective date, timezone and scope.
 
 ## Verification gate
 
