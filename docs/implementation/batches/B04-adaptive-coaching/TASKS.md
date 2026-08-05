@@ -12,6 +12,15 @@ that external gate is not a task to be hidden inside B04.
   decision gate remains open.
 - Every critical task has a required Sol High review. Terra High reviews
   production state ownership, navigation, wording and accessibility.
+- `B04-02` is the sole owner of the D04 policy packet. No implementation task
+  may choose an unrecorded age, evidence threshold, cadence, bound, wording or
+  N8 semantic.
+- Product Owner qualitative decisions are authorized in the D04 packet:
+  verified age `18` inclusive, below-age `coaching_unavailable_age`, opt-in,
+  explicit target acceptance, no background automatic activation, typed
+  missing-data behavior, dietary hard blocks, reviewed wording boundaries,
+  offline/AI limits and conditional N8. Numerical values remain under
+  `HOLD-1`.
 - `B04-18` is a conditional product/scope gate only. It is not required for
   B04 completion and must not create an implementation branch without a new
   roadmap decision.
@@ -29,7 +38,9 @@ that external gate is not a task to be hidden inside B04.
   existing B02/B03 model and repository tests.
 - **Acceptance criteria:** Every B04 outcome has an owner and fixture set;
   unknown/range/provenance/timezone/feedback states are enumerated; no B03
-  authority is duplicated; policy gates are marked blocking.
+  authority is duplicated; `B04-D04-01` through `B04-D04-20` each have the
+  required decision fields, affected tasks and deterministic negative fixture;
+  policy gates are marked blocking.
 - **Required tests:** Contract serialization, state-transition and roadmap
   traceability fixtures; negative fixtures for missing evidence and dangling
   lineage.
@@ -38,22 +49,34 @@ that external gate is not a task to be hidden inside B04.
 
 ## B04-02 — Product, target and safety policy gate
 
-- **Objective:** Obtain explicit Product Owner + Sol decisions for opt-in,
-  minimum age, trend window, cadence, deficit/surplus bounds, missing-metric
-  behavior, professional wording and hard-block/warning/confirmation policy.
+- **Objective:** Finalize and verify the Product Owner-authorized qualitative
+  D04 contract, record the exact `HOLD-1` numerical guards, and prepare the
+  packet for independent Sol High review. This task is documentation/policy
+  finalization only.
 - **Dependencies:** `B04-01`.
 - **Risk / size:** Critical / M.
 - **Primary model / required reviewer:** Sol High / Product Owner and Sol High;
   Terra High for copy and accessibility.
 - **Likely files or domains:** Decision register, target-policy fixtures,
   safety wording catalog and release checklist.
-- **Acceptance criteria:** `B04-D04` is closed with numeric bounds, opt-in and
-  fallback semantics; existing TDEE constants are explicitly classified as
-  legacy or replaced; medical and aggressive-deficit wording is approved.
-- **Required tests:** Boundary-value policy fixtures, contradictory-goal
-  fixtures, missing-body-metric fixtures and policy-version compatibility.
+- **Acceptance criteria:** `B04-D04-01` through `B04-D04-20` record the
+  authorized qualitative selections; age is verified `18 completed years`
+  inclusive; below-age output is `coaching_unavailable_age`; coaching and AI
+  consent are separate; target acceptance is explicit and idempotent; no
+  background target activation occurs; possible/insufficient safety evidence
+  returns unavailable; N8 remains conditional; and `HOLD-1` records zero
+  upward, downward and aggregate kcal adjustment. Any future enabled numeric
+  policy must record unit, inclusive/exclusive edge, effective period,
+  missing-data behavior, policy version, override rule and boundary tests.
+  Existing TDEE constants remain legacy and are not B04 policy.
+- **Required tests:** Decision-record completeness, zero-delta hold,
+  boundary-value policy fixtures, contradictory-goal fixtures,
+  missing-body-metric fixtures, missing nutrition/recovery fixtures,
+  consent/withdrawal, hard-block/possible/insufficient evidence,
+  professional-wording, offline/AI redaction and N8 non-inference tests.
 - **Explicit exclusions:** No target engine or UI implementation before the
-  gate is closed.
+  independent Sol review, dependency gate and remaining numerical approvals
+  are closed.
 - **Parallelizable:** No; it gates all safety-sensitive implementation.
 
 ## B04-03 — Schema v18 migration contract
@@ -67,8 +90,11 @@ that external gate is not a task to be hidden inside B04.
 - **Likely files or domains:** `lib/data/database/app_database.dart`,
   `nutrition_tables.dart`, migration tests, foreign keys and indexes.
 - **Acceptance criteria:** v17→v18 and fresh creation are deterministic;
-  IDs, ownership, effective dates, timestamps, supersession, indexes and
-  foreign keys match `DECISIONS.md`; no cache/prompt/image tables are added.
+  planned B04 entities own consent evidence, verified-age eligibility,
+  effective-dated target lineage, recommendation evidence and feedback as
+  specified in `DECISIONS.md`; IDs, ownership, effective dates, timestamps,
+  supersession, indexes and foreign keys match the existing v18 plan; no new
+  D04 table, cache, prompt or image table is added.
 - **Required tests:** Fresh schema, direct upgrade, chained upgrade, failed
   migration rollback, foreign-key and index checks, idempotent open.
 - **Explicit exclusions:** Repository behavior, backup serialization and UI.
@@ -83,9 +109,11 @@ that external gate is not a task to be hidden inside B04.
 - **Primary model / required reviewer:** GPT Luna / Sol High.
 - **Likely files or domains:** `lib/core/backup/backup_schema.dart`, backup
   envelope/manifest code, restore coordinator, backup fixtures and tests.
-- **Acceptance criteria:** Backup v9 round-trips all durable B04 data; v5–v8
-  imports restore with an empty B04 graph; restore ordering and invalid graph
-  rollback are atomic; no raw AI/health payloads are serialized.
+- **Acceptance criteria:** Backup v9 round-trips the already planned durable
+  B04 data, including consent/eligibility evidence, effective-dated target
+  lineage and feedback; v5–v8 imports restore with an empty B04 graph;
+  restore ordering and invalid graph rollback are atomic; no raw AI,
+  disclosure, medical-restriction or health payloads are serialized.
 - **Required tests:** Round-trip, old-version import, future-version rejection,
   malformed relationship, duplicate identity, failure injection and
   post-restore read verification.
@@ -107,8 +135,11 @@ that external gate is not a task to be hidden inside B04.
   controllers, `UserProfileNotifier`, `TdeeCalculator` adapter boundary,
   nutrition-goal screens and fixtures.
 - **Acceptance criteria:** Accepted versions are append-only and historical;
-  user-set target remains authoritative unless the user accepts a proposal;
-  opt-in/consent is explicit; legacy profile fields have one-way compatibility
+  user-set target remains authoritative unless the user explicitly accepts a
+  proposal; adaptive coaching defaults off; adaptive and AI consent are
+  separate, versioned and effective-dated; verified age is `18` inclusive;
+  below-age/unknown-age/disabled states cannot create adaptive output; duplicate
+  acceptance is idempotent; legacy profile fields have one-way compatibility
   mapping and no competing write authority.
 - **Required tests:** Version/effective-date history, override, reset,
   opt-in-off, timezone boundary, duplicate command and backup restore.
@@ -129,9 +160,10 @@ that external gate is not a task to be hidden inside B04.
   B02 health provenance/read models, `ReadinessService`, fixtures and backup
   tests.
 - **Acceptance criteria:** Source, freshness, status/range and permissions are
-  visible; incomplete/denied/conflicting inputs produce unknown readiness;
-  snapshots freeze evidence and supersession; no readiness is backfilled
-  without evidence.
+  visible; incomplete/denied/conflicting inputs produce unknown or unavailable
+  readiness; snapshots freeze evidence and supersession; stale/missing
+  evidence suppresses readiness-driven adaptation; schedule/activity alone
+  cannot infer readiness; no readiness is backfilled without evidence.
 - **Required tests:** Complete/incomplete/denied/stale/conflicting health,
   timezone/date boundaries, provenance lineage, idempotent import and
   historical immutability.
@@ -151,10 +183,13 @@ that external gate is not a task to be hidden inside B04.
 - **Likely files or domains:** New pure target engine, policy/rule version
   contracts, B02 load evidence adapters, B03 totals/estimate read models,
   calculation fixtures.
-- **Acceptance criteria:** No silent target mutation; missing evidence blocks
-  or lowers confidence as specified; range arithmetic is conservative; goals,
-  trends, workload, readiness and user overrides are named evidence; training
-  ownership remains B02-owned.
+- **Acceptance criteria:** No silent target mutation; verified age `18` is
+  inclusive; below-age/unknown-age returns the explicit unavailable state; no
+  background automatic target change occurs; one observation never changes a
+  target; while `HOLD-1` is active no adaptive calorie or readiness-driven
+  training proposal is emitted and upward/downward/aggregate delta is exactly
+  `0 kcal`; goals, trends, workload, readiness and overrides are named
+  evidence; training ownership remains B02-owned.
 - **Required tests:** Golden calculations, bounds, trend windows, missing and
   range propagation, opt-in/override, contradictory goals, idempotency and
   rule-version lineage.
@@ -176,8 +211,9 @@ that external gate is not a task to be hidden inside B04.
   service.
 - **Acceptance criteria:** Context carries local date/timezone, target version,
   totals/lineage, readiness completeness, workload, schedule, constraints,
-  estimates and missing evidence; candidates are explicit local selections;
-  no legacy FoodLogs/meal-plan path can become authority.
+  estimates, age/consent/eligibility, missing evidence and N8 absence;
+  candidates are explicit local selections; no legacy FoodLogs/meal-plan path
+  can become authority.
 - **Required tests:** Daily/weekly context, no-candidate, unknown totals,
   local timezone/DST, explicit meal opportunity and data redaction fixtures.
 - **Explicit exclusions:** External search, pantry inference, festival-mode
@@ -196,9 +232,12 @@ that external gate is not a task to be hidden inside B04.
 - **Likely files or domains:** B03 constraint repository/evaluator,
   `nutrition_constraints.dart`, estimate facts/ranges, new B04 policy mapper
   and safety fixtures.
-- **Acceptance criteria:** Confirmed conflicts hard-block; possible/unknown
-  evidence warns/confirms/withholds by approved policy; no-known-conflict is
-  not “safe”; unknown and range data are visible and conservative.
+- **Acceptance criteria:** Confirmed strict allergy, intolerance, religious and
+  ethical conflicts hard-block; possible, unknown, insufficient and missing
+  ingredient evidence return unavailable for adaptive/target/eat-now safety
+  guidance; no-known-conflict uses the approved exact semantic and is not a
+  safety guarantee; unknown and range data remain visible; user override cannot
+  bypass a hard block.
 - **Required tests:** Allergy, intolerance, religious, ethical, cross-contact,
   unknown ingredient, unknown nutrient, range crossing and user-override
   fixtures; no inference of restrictions.
@@ -218,8 +257,10 @@ that external gate is not a task to be hidden inside B04.
   prioritization policy, deterministic fixtures and UI state DTOs.
 - **Acceptance criteria:** Daily, weekly, training and nutrition consumers call
   the same engine; priority is deterministic; safety outcomes cannot be
-  bypassed; explanation names evidence and uncertainty; no AI is required for
-  an authoritative result.
+  bypassed; explanation names evidence and uncertainty; age/consent/policy
+  state, professional wording, target-acceptance state and unavailable reasons
+  are explicit; no AI is required for an authoritative result or may change
+  targets/safety.
 - **Required tests:** Golden ranking, tie-breaking, priority, no-evidence,
   range, conflict, readiness-incomplete, offline and deterministic replay.
 - **Explicit exclusions:** Separate nutrition/training engines, silent
@@ -236,8 +277,10 @@ that external gate is not a task to be hidden inside B04.
 - **Likely files or domains:** Recommendation/evidence/feedback repositories,
   schema/backup adapters, graph validators and history read models.
 - **Acceptance criteria:** Issued output freezes context/evidence/rule/model
-  versions; supersession is explicit; feedback cannot rewrite history; dangling
-  references fail closed; projections do not create duplicate recommendations.
+  versions, age eligibility, consent evidence and target version; supersession
+  is explicit; acceptance/rejection/dismissal/override/snooze feedback cannot
+  rewrite history; duplicate commands are idempotent; dangling references fail
+  closed; projections do not create duplicate recommendations.
 - **Required tests:** Historical reads after goal changes, lineage graph,
   feedback idempotency, duplicate recommendation prevention, backup round-trip,
   rollback and deletion/retention policy fixtures.
@@ -258,8 +301,10 @@ that external gate is not a task to be hidden inside B04.
   cards and fixtures.
 - **Acceptance criteria:** Candidates come only from trusted local/B03 data or
   explicit user selection; remaining targets show source/range/unknown state;
-  conflicts are excluded or confirmed by policy; no meal-time/availability
-  invention; no AI/network is necessary.
+  confirmed conflicts are excluded; possible/unknown/insufficient/missing
+  ingredient evidence returns unavailable for safety-sensitive guidance; the
+  approved no-known-conflict wording is not a safety claim; no
+  meal-time/availability invention; no AI/network is necessary.
 - **Required tests:** Candidate ranking, no candidate, consumed/estimated/
   missing totals, allergy and unknown ingredient, offline, acknowledgement and
   effective-date goal changes.
@@ -280,8 +325,9 @@ that external gate is not a task to be hidden inside B04.
   state components.
 - **Acceptance criteria:** Daily uses local civil date; weekly period is
   explicit and timezone-aware; no duplicate recommendation logic; explanation,
-  alternatives, missing evidence and feedback are reachable; no-data and
-  offline states are truthful.
+  alternatives, missing evidence, age/consent state, professional wording,
+  target acceptance and feedback are reachable; below-age wording is not
+  punitive or judgmental; no-data, policy-hold and offline states are truthful.
 - **Required tests:** DST/cross-midnight/week rollover, changed goals, missing
   logs, readiness incomplete, feedback projection, large text and semantics.
 - **Explicit exclusions:** Full dashboard redesign, new analytics metrics,
@@ -298,10 +344,12 @@ that external gate is not a task to be hidden inside B04.
 - **Likely files or domains:** AI adapter/provider boundary, privacy redaction,
   `meal_plan_service.dart` and weekly-report legacy isolation, offline/error
   states and privacy tests.
-- **Acceptance criteria:** AI cannot set targets, override safety, invent
-  foods, infer allergies or exactify ranges; request is redacted and consented;
-  offline/provider failure falls back deterministically; raw prompts,
-  responses and images are not persisted.
+- **Acceptance criteria:** AI cannot set targets, alter deltas, override safety,
+  invent foods, infer allergies, alter identity/ranking/evidence/ranges/
+  completeness/availability/confidence or exactify ranges; request is redacted
+  and separately consented; offline/provider failure leaves the deterministic
+  result unchanged or unavailable; raw prompts, responses, disclosure text,
+  health/allergy payloads and images are not persisted.
 - **Required tests:** Consent off, redaction, provider failure, malformed output,
   prompt-injection-like food claims, offline and lineage metadata.
 - **Explicit exclusions:** AI as nutrition authority, unrestricted external
@@ -322,9 +370,11 @@ that external gate is not a task to be hidden inside B04.
   report screens, providers/controllers, navigation, semantic labels and
   responsive layouts.
 - **Acceptance criteria:** User can inspect evidence, uncertainty, opt-in,
-  override, confirmation, dismissal and unavailable states; no duplicate
-  TDEE/weekly/AI authority remains; compact layouts and assistive technology
-  expose the same truth as data models.
+  consent, target acceptance, override, confirmation, dismissal and
+  unavailable states; below-18 users retain general app access and descriptive
+  features without punitive wording; no duplicate TDEE/weekly/AI authority
+  remains; compact layouts and assistive technology expose the same truth as
+  data models.
 - **Required tests:** Widget/controller tests, navigation restoration,
   accessibility semantics, compact/large text, offline and error state tests.
 - **Explicit exclusions:** New domain calculations, schema edits, final
@@ -344,8 +394,10 @@ that external gate is not a task to be hidden inside B04.
   legacy `FoodRepository`, `TdeeCalculator`, AI meal-plan/weekly-report paths,
   migration/backup and integration tests.
 - **Acceptance criteria:** One write/read authority per contract; no B03
-  reimplementation; B02 load ownership remains intact; old data and backups
-  remain readable; all B04 outcomes trace to the engine/history.
+  reimplementation; B02 load/readiness provenance ownership remains intact; old
+  data and backups remain readable; age/consent/target-acceptance,
+  missing-data, dietary, offline and AI boundaries are covered; all B04
+  outcomes trace to the engine/history.
 - **Required tests:** Full regression, duplicate-authority detection, migration
   and backup compatibility, offline, privacy and cross-batch end-to-end tests.
 - **Explicit exclusions:** Refactoring unrelated B01–B03 foundations or
@@ -365,7 +417,10 @@ that external gate is not a task to be hidden inside B04.
   migration/backup fixtures, Android/iOS artifacts and manual evidence.
 - **Acceptance criteria:** All required gates pass or have explicitly
   accepted non-blocking follow-ups; no unresolved safety/privacy/historical
-  blocker; Android and iOS physical checks are recorded; implementation
+  blocker; Product Owner qualitative authorization, Terra copy review and
+  independent Sol High verdict for `B04-D04-01` through `B04-D04-20` are
+  recorded; `HOLD-1` numerical values remain explicit until separately
+  approved; Android and iOS physical checks are recorded; implementation
   branch is eligible for integration only after the dependency gate closes.
 - **Required tests:** Full matrix in `VERIFICATION.md`, manual journeys,
   release builds and rollback/idempotency evidence.
@@ -385,8 +440,9 @@ that external gate is not a task to be hidden inside B04.
 - **Likely files or domains:** Decision register, context contract and privacy
   review only.
 - **Acceptance criteria:** Context ownership, effective dates, no-inference
-  semantics, target-policy interaction and backup decision are approved; a
-  new task DAG is issued if implementation is authorized.
+  semantics, target-policy interaction and backup decision are approved; no
+  N8 work is pulled into `B04-08`, `B04-12` or `B04-13`; a new task DAG is
+  issued if implementation is authorized.
 - **Required tests:** Decision/fixture matrix only; no B04 implementation test
   is required while the scope remains conditional.
 - **Explicit exclusions:** No feature branch, schema table, UI or target

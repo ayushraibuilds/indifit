@@ -1,7 +1,9 @@
 # B04 — Verification Plan
 
 Status: verification plan only. No B04 implementation or verification run has
-started from `batch/b04-planning`.
+started. This branch records the B04-D04 documentation gate from planning
+baseline `9102092`; it does not alter the B04 integration baseline marker
+`[B04-INTEGRATION-BASELINE]` or the accepted B03 baseline `d85e8a1`.
 
 ## Verification gate
 
@@ -24,6 +26,38 @@ unknown/range, offline or platform/accessibility failure is a release blocker.
 Only reproducible CI/documentation follow-up may be non-blocking, with an
 owner and explicit Sol acceptance.
 
+For D04 specifically, `B04-D04-01` through `B04-D04-20` must each have an
+the authorized Product Owner qualitative selection or the documented numerical
+`HOLD-1` disposition, plus an independent Sol High verdict. The qualitative
+policy is authorized; `HOLD-1` remains for trend duration/count/cutoff,
+completeness/range threshold, proposal frequency/cooldown and all adaptive
+calorie/deficit/surplus bounds. `HOLD-1` is a documentation-safe hold only:
+adaptive target output is unavailable and no unapproved numerical policy is
+enabled.
+
+## B04-D04 policy-gate verification
+
+The following evidence is required before the hold can be replaced by an
+enabled policy:
+
+- A signed decision record for minimum age `18` inclusive on the local civil
+  birthday, below-age behavior, opt-in/default,
+  consent/copy, cadence/cooldown, trend window, minimum evidence,
+  completeness, adjustment bounds, deficit/surplus boundaries, missing-data
+  behavior, wording, medical exclusions, dietary hard blocks, possible/
+  insufficient evidence, offline behavior, AI behavior, overrides and N8.
+- For every numeric field: unit; exact inclusive/exclusive edge; effective
+  period; missing-data behavior; policy/version ID; override rule; and
+  deterministic boundary tests. No record may use “reasonable,” “moderate” or
+  “periodic” as a substitute for a value.
+- Independent Sol High review of the selected policy, B03 mapping, B02 health
+  provenance/readiness boundary, copy catalog, offline/AI redaction and
+  historical lineage. Product Owner approval alone cannot close the gate.
+- A negative `HOLD-1` fixture proving that the current policy emits no adaptive
+  calorie or readiness-driven training proposal, applies exactly `0 kcal` per
+  adaptation event and per affected local-civil-day period, preserves a valid
+  user-set target, and records the unavailable reason and policy version.
+
 ## Automated verification matrix
 
 | Gate | Required evidence | Pass condition |
@@ -44,19 +78,31 @@ owner and explicit Sol acceptance.
 | Backup idempotency | Repeat restore/export and compare canonical payloads | No duplicated durable entities or feedback events. |
 | Goal history | User-set, calculated proposal, accepted adaptive proposal, override and reset | Each accepted change is a new version with correct effective date; old reads do not change. |
 | Readiness completeness | Complete, missing, denied, stale and conflicting observations | Completeness/status is explicit; missing is never zero; adaptation is suppressed when required. |
+| D04 decision completeness | `B04-D04-01` through `B04-D04-20`, authorized qualitative Product Owner selection, numerical `HOLD-1` register, Sol verdict and affected-task trace | No unresolved policy record is hidden; missing Sol approval blocks implementation and missing numerical approval keeps `HOLD-1` active. |
+| Age eligibility | Verified `18 completed years`, inclusive birthday, below-age user, unknown/invalid/conflicting age, correction and no inference | Below-18 returns `coaching_unavailable_age`; unknown/invalid/conflicting age returns `coaching_unavailable`; logging/history/user-set targets remain available; historical eligibility evidence is retained. |
+| Opt-in and consent | Default off, explicit disclosure/action, enable/disable, separate AI consent, effective date, copy/version/timestamp and withdrawal | No implicit consent; disablement stops new coaching; historical recommendations, accepted targets and feedback remain readable. |
+| Target acceptance | Read-only proposal, explicit accept/reject/dismiss, duplicate acceptance and effective-dated target version | No silent replacement; acceptance is idempotent; rejection/dismissal does not mutate the current target. |
+| Cadence/evidence gate | No background activation, explicit user/scheduled-review initiation, one-observation negative, window edges, valid-day count, completeness threshold, cooldown, stale and contradictory evidence | No proposal becomes active automatically; `HOLD-1` suppresses proposals until numerical evidence/cadence policy is approved. |
+| Adjustment safety guard | `HOLD-1` zero upward, downward and aggregate delta plus approved per-event/period bounds when available | Current maximum upward, downward and aggregate adjustments are exactly `0 kcal`; future policy cannot omit unit, period, inclusivity, missing-data, version or override semantics. |
 | Target determinism | Fixed fixtures for profile, trends, workload, readiness and policy versions | Same inputs/rule version produce the same result and evidence. |
 | Target bounds | Lower/upper policy edges and missing metrics | No unsafe value or silent legacy default; policy-unavailable is explicit when gate is open. |
 | Unknown propagation | Unknown nutrient, ingredient, recovery and meal availability | Unknown remains unknown through context, filter, engine, UI and history. |
 | Range propagation | Point/lower/upper estimates crossing target or safety boundaries | Range is shown; result becomes cautious, confirmatory or unavailable per policy. |
-| Dietary safety | Allergy, intolerance, religious, ethical, possible and insufficient evidence | Confirmed conflicts hard-block; no-known-conflict is not claimed safe; no inference occurs. |
+| Body-metric missingness | Missing, stale, conflicting, invalid and withheld weight/height/body metrics | No fallback or inference; adaptive output unavailable; valid user-set target remains displayable; corrections append evidence. |
+| Nutrition completeness | Known zero, unknown, not-applicable, estimated, partial, stale and historical catalogue changes | B03 read models remain authoritative; no zero backfill or current-catalogue rewrite; insufficient/stale history is unavailable. |
+| Recovery/readiness missingness | Missing, denied, stale, conflicting, incomplete, permission and provenance states | Readiness remains unknown/unavailable; no schedule/activity inference; readiness-driven proposals are suppressed. |
+| Dietary safety | Allergy, intolerance, religious, ethical, possible, unknown, insufficient and cross-contact evidence | Confirmed strict conflicts hard-block; possible/unknown/insufficient/missing evidence is unavailable for safety-sensitive guidance; no-known-conflict is not claimed safe. |
 | Medical wording | User-entered medical restriction and aggressive goal fixtures | No diagnosis/guarantee; professional-advice or unavailable wording is used as approved. |
+| Professional wording catalog | Wellness, non-medical coaching, missing evidence, aggressive request, medical restriction, consultation and emergency exclusions | Exact approved state-to-copy mapping; no diagnosis, prescription, guarantee or replacement-of-care claim. |
 | Recommendation determinism | Daily/weekly/training/nutrition same-context replay | One engine, stable priority/tie-break, same explanation/evidence. |
 | Recommendation lineage | Rule/model/provider versions, source IDs, context fingerprint, supersession | Historical recommendation remains explainable after goal/data changes. |
 | Feedback | Acknowledge, dismiss, accept, override, snooze, repeat action | Events append once, affect projections as specified, never rewrite issued output. |
 | Daily boundaries | Local civil-date boundary, UTC offset, DST, cross-midnight log | Daily result follows recorded local date/timezone, not current device timezone. |
 | Weekly boundaries | Explicit seven-civil-day period, week rollover, timezone change | Weekly review uses its stored period and evidence, not an implicit rolling window. |
 | Offline behavior | Airplane mode, no AI, no health permission, provider timeout | Deterministic local guidance or honest unavailable state; no invented data. |
-| AI privacy | Consent off/on, redaction, malformed output, provider failure | No raw prompts/images/health/allergy payload persisted or sent without approved consent; AI cannot author safety/targets. |
+| AI privacy | Separate consent, redaction, malformed/conflicting output, provider failure and forbidden fields | No raw prompts/responses/images/health/allergy payloads or secrets persisted/sent; AI cannot alter target, delta, safety, identity, ranking, evidence, ranges, completeness, availability or confidence. |
+| Override/acknowledgement | Confirmed hard block, possible/insufficient warning, accept, dismiss, override, snooze and retry | Feedback is append-only; acknowledgement cannot create safety; hard blocks remain; accepted targets create new versions. |
+| N8 conditional seam | No context, inferred holiday/location/clock/food/travel/fasting, explicit future trigger | Required B04 remains independent of N8; no inference or current v18/v9 N8 persistence. |
 | Legacy authorities | Old TDEE, FoodLogs, meal-plan and weekly-report paths | No duplicate writes/reads remain authoritative; legacy adapters are isolated. |
 | Accessibility | Semantics, focus order, announcements, dynamic text, contrast | Unknown/conflict/estimate/unavailable states are distinguishable and usable. |
 | Platform builds | Android release build and iOS release build/no-code-sign path as CI permits | Both build from the clean implementation branch with no platform-specific errors. |
@@ -69,7 +115,7 @@ permissions, input fixture and result.
 
 | ID | Journey | Android and iOS evidence |
 |---|---|---|
-| M01 | Create a user-set target; view a calculated proposal; keep adaptive opt-in off; enable it and accept a bounded proposal; override it. | Active target, consent, explanation and history are identical in meaning on both platforms. |
+| M01 | Create a user-set target; keep adaptive opt-in off; attempt enablement under `HOLD-1`; verify no adaptive proposal or acceptance is available; record the future enabled-policy fixture separately. | User-set target, consent state, unavailable reason and history are identical in meaning on both platforms; no target changes under `HOLD-1`. |
 | M02 | Open daily briefing and “what can I eat now?” offline with known, estimated and unknown nutrition. | Local candidates, ranges, missing evidence and unavailable states are truthful; no network spinner blocks the core. |
 | M03 | Deny or revoke health permission; provide incomplete and stale recovery inputs. | Readiness shows incomplete/unknown and no adaptive change is presented. |
 | M04 | Cross local midnight, DST, timezone change and week rollover with a goal change. | Daily/weekly periods and historical recommendation evidence retain their recorded timezone/effective date. |
@@ -79,13 +125,16 @@ permissions, input fixture and result.
 | M08 | Compact phone layout, large text, screen reader (TalkBack/VoiceOver), focus traversal and error announcement. | Evidence, confidence, unknown, conflict and action controls remain understandable and operable. |
 | M09 | Install/relaunch on representative Android and iOS devices, including a clean install and upgrade install. | Schema migration, backup access, navigation and state restoration succeed. |
 | M10 | Verify the conditional N8 seam remains unavailable unless an explicit approved context is supplied. | Festival/eating-out/fasting/travel is never inferred from time, location, food or history. |
+| M11 | Exercise below-18, unknown-age, invalid-age, disabled-coaching, consent-withdrawal and policy-hold states. | `coaching_unavailable_age` or the typed unavailable state is shown without punitive wording; descriptive logging/history/user-set targets remain usable; timestamps and feedback are truthful on both platforms. |
 
 ## Manual end-to-end journeys
 
-1. **Evidence-backed adaptive day:** set a goal, log a B03 snapshot with an
-   estimate range, complete a B02 activity, provide complete recovery, accept
-   a policy-approved proposal, and verify the daily explanation cites every
-   input and preserves the old goal version.
+1. **Evidence-backed adaptive day:** future enabled-policy fixture only. Set a
+   goal, log a B03 snapshot with an estimate range, complete a B02 activity,
+   provide complete recovery, accept a separately approved proposal, and verify
+   the daily explanation cites every input and preserves the old goal version.
+   Under current `HOLD-1`, the same journey must return unavailable and cannot
+   accept a target.
 2. **Insufficient evidence:** remove recent logs and deny health permission;
    verify the app does not adapt, does not use zeros, and offers a useful
    user-set or unavailable state without pretending confidence.
@@ -111,6 +160,11 @@ The final verification package must include:
 - fresh/direct/chained migration and rollback evidence;
 - backup v5–v9 compatibility, graph validation and idempotency evidence;
 - deterministic target/recommendation fixture outputs;
+- Product Owner authorization for qualitative D04 policy and the exact
+  `HOLD-1` numerical guard fixture;
+- independent Sol High verdict covering the authorized policy, inherited
+  B01–B03 boundaries, v18/v9 ownership, safety, privacy, wording and hold
+  behavior;
 - safety, unknown/range, medical-wording and AI privacy results;
 - Android/iOS physical-device and accessibility records;
 - manual journey results, known follow-ups, owners and due dates.
@@ -119,4 +173,6 @@ Sol High records one of: **Passed**, **Passed with explicitly accepted
 non-blocking follow-up**, or **Blocked**. A blocked dependency must never be
 reported as accepted. B04 implementation may begin only after the dependency
 parent and `B04-D04` policy gate are closed; B04 release requires all hard
-gates above and explicit Terra evidence for production surfaces.
+gates above and explicit Terra evidence for production surfaces. Documentation
+and already-planned v18/v9 ownership clarification may proceed under `HOLD-1`;
+application, migration, backup and adaptive-target implementation may not.

@@ -1,7 +1,8 @@
 # B04 — Decision Register
 
 Status: Planning gate; implementation decisions are conditional on the B03
-integration gate and the explicit policy gates below.
+integration gate and the explicit policy gates below. This branch adds the
+B04-D04 decision packet only; it does not claim Product Owner approval.
 Decision IDs: `B04-D01` onward.
 Canonical authority: `docs/roadmap/canonical-roadmap.md`, especially E5/M18,
 N8–N10, P1/P2/P7/P8/P9, the F4 cross-feature decisions and the Phase 5 exit
@@ -14,7 +15,7 @@ criteria.
 | B04-D01 | B04 scope is E5/M18 adaptive coaching with one engine; N8 context modes and detailed protein physiology are not required exit outcomes | Accepted |
 | B04-D02 | Goals use a hybrid user-set/calculated/adaptive model with explicit opt-in and override | Architecture accepted; policy constants gated |
 | B04-D03 | Goal and target history is append-only, versioned and effective-dated | Accepted |
-| B04-D04 | Safety-sensitive adaptation constants require Product Owner + Sol approval; no current hard-coded values become B04 policy | Open policy gate |
+| B04-D04 | Qualitative safety/product policy is Product Owner-authorized; numerical adaptation values remain under `HOLD-1` until independent Sol review and separate approval | Qualitative policy authorized; Sol review and numerical gates remain blocking |
 | B04-D05 | Deterministic local calculation is authoritative; AI is optional wording only | Accepted |
 | B04-D06 | Readiness may influence bounded guidance only through complete, provenance-bearing inputs | Accepted |
 | B04-D07 | Unknown, partial and range values propagate into guidance and confidence | Accepted |
@@ -100,14 +101,27 @@ criteria.
 
 - **Question:** What minimum age, trend duration, adjustment cadence and
   calorie/deficit bounds may adaptation use?
-- **Accepted answer:** The architecture is fail-closed, but the numerical
-  policy is **not silently resolved here**. Product Owner and Sol High must
-  explicitly approve age eligibility, evidence window, adjustment cadence,
-  maximum change, minimum/maximum target behavior, goal conflict handling and
-  professional-advice wording before adaptive target exposure. Until then the
-  engine may show a user-set target or an unavailable policy state, never an
-  adaptive value. Existing `-500/+300` and `1200` constants are not accepted
-  B04 policy.
+- **Gate disposition:** The Product Owner has approved the qualitative policy
+  records below. `HOLD-1` remains active only for the numerical values that are
+  explicitly listed as unapproved. User-set targets, descriptive history and
+  non-adaptive logging remain available where their inherited contracts allow.
+- **Accepted technical contract:** While `HOLD-1` is active, the engine emits
+  no adaptive proposal. The only permitted adaptation delta is exactly `0 kcal`
+  per adaptation event and exactly `0 kcal` over every affected local civil-day
+  period; this is a disabled-state guard, not a nutrition recommendation. The
+  guard is inclusive, applies from policy version `B04-D04-HOLD-1` until an
+  explicitly approved superseding version, treats missing data as unavailable,
+  and cannot be bypassed by a user override, acknowledgement or AI response.
+  No lower/upper target clamp is introduced, and legacy `-500`, `+300` and
+  `1200` constants remain non-policy compatibility behavior.
+- **Product Owner decision status:** Qualitative policy is authorized by the
+  Product Owner. Numerical trend, completeness, cadence/cooldown and target
+  bound values remain under `HOLD-1`; no future numerical value is inferred.
+  Exact production copy remains subject to Terra review for clarity,
+  accessibility and layout.
+- **Sol High assessment:** Independent Sol High review is still required before
+  implementation or adaptive enablement. The current documentation contract
+  is fail-closed and compatible with the accepted B01–B03 contracts.
 - **Rationale:** The canonical roadmap lists these as product-owner decisions;
   choosing them in an architecture document would silently choose medically
   sensitive behavior.
@@ -115,11 +129,645 @@ criteria.
   selecting a medical threshold from implementation convenience; treating a
   warning as approval.
 - **Consequences:** `B04-02` is a hard implementation gate for adaptive
-  targets. Planning is approved; implementation is not.
-- **Required tests:** Policy-unapproved returns unavailable; approved fixture
-  values are bounded, versioned and auditable; age/goal conflict/missing-data
-  cases fail closed.
+  targets and every consumer listed in the records below. Planning may be
+  approved as a documentation packet; implementation is not authorized.
+- **Required tests:** The `HOLD-1` zero-delta guard, policy-unapproved
+  unavailable state, explicit Product Owner selection completeness, approved
+  fixture bounds with unit/period/inclusivity/missing-data/version/override
+  metadata, age/goal-conflict/missing-data fail-closed cases, wording, safety,
+  offline and AI-boundary fixtures.
 - **Tasks depending on it:** `B04-02`, `B04-07`, `B04-10`, `B04-13`, `B04-17`.
+
+### B04-D04 decision-record convention
+
+Each record below uses the required Product Owner decision fields. Qualitative
+choices are approved; `HOLD-1` is retained only where this packet explicitly
+withholds a numerical value. Any future enabled numerical option must be
+recorded with a stable policy version, effective local date, unit,
+inclusive/exclusive boundary, effective period, missing-data rule, versioning
+rule, override rule and deterministic tests before implementation.
+No age may be inferred from account activity, food logging, photographs or
+appearance. No product copy below is a diagnosis, prescription, guarantee or
+substitute for professional care.
+
+### B04-D04-01 — Minimum supported age
+
+- **Policy question:** What minimum supported age permits adaptive
+  calorie-target proposals and readiness-driven training adjustment proposals?
+- **Options:** (A) No adaptive coaching in B04; (B) adaptive coaching only for
+  a Product Owner-selected integer age in completed years and older; (C) retain
+  adaptive coaching unavailable until a separate age/guardian policy is
+  approved.
+- **Recommended option:** Verified `18 completed years`, inclusive on the
+  local civil date of the 18th birthday.
+- **Product Owner selection:** Verified age of at least `18 completed years`,
+  inclusive on the local civil birthday; no youth/guardian workflow in B04.
+- **Rationale:** The approved threshold is explicit, testable and does not
+  require inference from behavior or appearance.
+- **Safety consequence:** Prevents adaptive target exposure to an unapproved
+  age group and prevents age inference.
+- **Implementation consequence:** Adaptive eligibility requires a verified,
+  user-entered date of birth or another approved verified input; unknown,
+  missing, conflicting or invalid age returns `coaching_unavailable`. Age is
+  compared as completed years on the stored local civil date, with the 18th
+  birthday boundary inclusive. Descriptive logging, workout logging, history,
+  user-set targets, dietary filtering, non-adaptive trend display and general
+  app access do not require age.
+- **Historical consequence:** Persist eligibility result, reason, policy
+  version, age-input source, evaluation local date, timezone and evidence
+  timestamp in goal/recommendation evidence within the planned Backup v9 graph;
+  no inferred age is stored. A later date-of-birth correction affects only
+  future eligibility; old recommendations retain their prior evidence.
+- **Required tests:** Missing age, conflicting age, exact birthday boundary,
+  timezone/local-date boundary, age correction after an issued recommendation,
+  no inference from activity/food/appearance, backup lineage and `HOLD-1`
+  unavailable output.
+- **Tasks affected:** `B04-02`, `B04-05`, `B04-07`, `B04-13`, `B04-15`,
+  `B04-17`.
+
+### B04-D04-02 — Eligibility below the minimum age
+
+- **Policy question:** What happens when a verified user is below the selected
+  minimum age?
+- **Options:** (A) Adaptive coaching unavailable while descriptive logging,
+  history and user-set targets remain available; (B) block all nutrition and
+  training logging; (C) route the user to a separately approved guardian or
+  youth product flow.
+- **Recommended option:** A, with the explicit state
+  `coaching_unavailable_age`.
+- **Product Owner selection:** Below-18 users retain logging, history,
+  user-set targets and descriptive summaries; adaptive calorie and
+  readiness-driven training proposals are unavailable. No youth/guardian flow
+  is in mandatory B04.
+- **Rationale:** Blocking data ownership would damage user history, while
+  enabling adaptive targets without an approved age policy is unsafe.
+- **Safety consequence:** Prevents target adaptation and medical-style coaching
+  below the approved boundary without erasing descriptive records.
+- **Implementation consequence:** Return an explicit `coaching_unavailable`
+  state with approved copy; do not calculate or suggest adaptive calorie or
+  readiness-driven training changes. Below-18 uses the distinct
+  `coaching_unavailable_age` state, with no medical, punitive or judgmental
+  wording. Do not infer age from appearance or usage.
+- **Historical consequence:** Store the eligibility result, reason and policy
+  version with any attempted evaluation; preserve descriptive records and
+  prior recommendations as readable history. Do not calculate an unused
+  adaptive target in the background.
+- **Required tests:** Below-threshold, unknown-age, age-change, logging/history
+  availability, no adaptive proposal, no target mutation, backup/restore and
+  wording/accessible-state tests.
+- **Tasks affected:** `B04-02`, `B04-05`, `B04-07`, `B04-10`, `B04-13`,
+  `B04-15`, `B04-17`.
+
+### B04-D04-03 — Coaching opt-in and default state
+
+- **Policy question:** Is adaptive coaching opt-in or default-on?
+- **Options:** (A) Default off; explicit enable required; (B) default on after
+  onboarding; (C) enable only after a separate user command for each proposal.
+- **Recommended option:** A, plus explicit acceptance for every proposed target
+  that would become active.
+- **Product Owner selection:** Adaptive coaching is off by default; enabling
+  requires an explicit user action after disclosure. Prior logging, continued
+  use, inactivity, existing goals and previous targets are not consent.
+- **Rationale:** The accepted B04-D02 contract requires opt-in and acceptance;
+  inactivity, prior logging and prior targets are not consent.
+- **Safety consequence:** Prevents silent target changes and prevents food or
+  health logging from being treated as consent.
+- **Implementation consequence:** Persist a versioned preference with
+  `adaptive_coaching_enabled=false` by default. A proposal is read-only until
+  the user accepts it; disabling stops new proposals immediately.
+- **Historical consequence:** Persist consent state, consent policy version,
+  copy version, effective local date, timezone, UTC timestamp and actor/source
+  in Backup v9; issued recommendations, accepted target versions and feedback
+  remain readable after disablement.
+- **Required tests:** Fresh-user default, inactivity/logging is not consent,
+  explicit enable/disable, proposal rejection/acceptance, restart, restore,
+  duplicate command and effective-date target history.
+- **Tasks affected:** `B04-02`, `B04-05`, `B04-07`, `B04-13`, `B04-15`,
+  `B04-17`.
+
+### B04-D04-04 — Consent and introductory copy
+
+- **Policy question:** What must be shown before coaching is enabled, and how
+  are coaching and AI consent separated?
+- **Options:** (A) A pre-enable disclosure followed by separate adaptive and AI
+  consent; (B) one bundled consent; (C) implicit consent from use of the app.
+- **Recommended option:** A.
+- **Product Owner selection:** Separate adaptive and AI consent after the
+  approved semantic disclosure. Exact production copy remains subject to Terra
+  review for clarity, accessibility and layout.
+- **Rationale:** Adaptive targets and optional AI have different data, network
+  and authority boundaries; bundled or implicit consent is not reviewable.
+- **Safety consequence:** Prevents unreviewed health/allergy disclosure and
+  prevents AI wording from being mistaken for target or safety authority.
+- **Implementation consequence:** Show before enablement: what user-entered and
+  historical inputs may be used; that outputs are proposals; that the user
+  accepts each target; that coaching can be disabled; that incomplete evidence
+  may return unavailable; that AI is optional and cannot set targets or bypass
+  safety; offline/unavailable behavior; and the non-medical boundary. Persist
+  separate consent flags, policy/copy versions, effective dates, UTC timestamps,
+  local date and timezone. Do not persist raw disclosure text, prompts or
+  responses.
+- **Historical consequence:** Consent version/timestamp and enable/disable
+  events are backupable; old recommendations remain readable and feedback is
+  retained after disablement. No raw disclosure text or AI prompt is stored.
+- **Required tests:** Copy presence/order, separate consent paths, consent
+  withdrawal, timestamp/version persistence, offline consent, accessibility
+  semantics and no implicit consent from inactivity or food logging.
+- **Tasks affected:** `B04-02`, `B04-05`, `B04-13`, `B04-14`, `B04-15`,
+  `B04-17`.
+
+### B04-D04-05 — Goal-change and target-change cadence
+
+- **Policy question:** How often may goals, targets and adaptive proposals
+  change, and what cooldown follows a manual target change?
+- **Options:** (A) No automatic target changes; user-triggered proposals only;
+  (B) automatic changes at a Product Owner-selected cadence with a separate
+  manual-change cooldown; (C) every new observation may trigger a proposal.
+- **Recommended option:** A: no background automatic target changes; explicit
+  user action or an explicitly approved scheduled review may initiate an
+  evaluation.
+- **Product Owner selection:** No background automatic target changes; no
+  proposal becomes active automatically; one observation never triggers a
+  target change. Proposal frequency and manual-change cooldown remain under
+  `HOLD-1`.
+- **Rationale:** An unselected cadence can cause repeated or contradictory
+  target changes and can reinterpret historical adherence.
+- **Safety consequence:** Prevents oscillation, surprise changes and a target
+  change triggered by one noisy observation.
+- **Implementation consequence:** No adaptive calorie or readiness-driven
+  training proposal is emitted under `HOLD-1`. Explicit user action or an
+  explicitly approved scheduled review may initiate evaluation; a scheduled
+  review may calculate a proposal only after the numerical evidence and cadence
+  policy are approved. No proposal becomes active automatically. Same-day
+  replacement, duplicate commands, contradiction handling and stale-evidence
+  behavior are deterministic; every accepted change gets a new effective-dated
+  version.
+- **Historical consequence:** Store source, effective local date/timezone,
+  superseded version, cooldown/cadence policy version and evidence links; old
+  target and recommendation records never update.
+- **Required tests:** Repeated trigger suppression, manual-change cooldown,
+  same-day replacement, contradictory goals, stale evidence, timezone/DST,
+  duplicate command and historical read stability.
+- **Tasks affected:** `B04-02`, `B04-05`, `B04-07`, `B04-10`, `B04-11`,
+  `B04-13`, `B04-17`.
+
+### B04-D04-06 — Trend window
+
+- **Policy question:** What observation window is required for weight/body
+  trend evidence?
+- **Options:** (A) No adaptive trend use; (B) a Product Owner-selected count
+  of local civil days with an explicit valid-observation count; (C) a single
+  current measurement.
+- **Recommended option:** A qualitative trend contract with a versioned local-
+  civil-day window; C is rejected.
+- **Product Owner selection:** A single measurement cannot establish a trend.
+  The window must define local-civil-day start/end inclusivity, valid count,
+  duplicate/stale/conflicting/correction handling, timezone and ranges. The
+  window duration, valid count and staleness cutoff remain under `HOLD-1`.
+- **Rationale:** The audit found sparse body measurements and device-local date
+  risks; a single measurement cannot establish a trend.
+- **Safety consequence:** Prevents noisy or sparse measurements from driving
+  adaptation.
+- **Implementation consequence:** Under `HOLD-1`, trend-dependent adaptation
+  is unavailable. A future policy must record window unit as local civil days,
+  start/end inclusion, required valid-day count, source/quality rules,
+  timezone, stale cutoff, range handling and policy version.
+- **Historical consequence:** Freeze the window definition, measurement IDs,
+  values/status/ranges, local dates/timezone and calculation version in
+  recommendation evidence; later measurements do not rewrite old trends.
+- **Required tests:** Window edges, missing days, duplicate days, out-of-order
+  measurements, stale data, DST/travel, range-only measurements, correction
+  lineage and no-trend unavailable output.
+- **Tasks affected:** `B04-02`, `B04-06`, `B04-07`, `B04-08`, `B04-10`,
+  `B04-13`, `B04-17`.
+
+### B04-D04-07 — Minimum evidence before adaptation
+
+- **Policy question:** What minimum valid evidence and completeness threshold
+  are required before a target can adapt?
+- **Options:** (A) No adaptive output until a Product Owner-selected evidence
+  set and numeric completeness threshold pass; (B) adapt from any one valid
+  input; (C) fill missing inputs from defaults or zeros.
+- **Recommended option:** A: require an explicitly approved evidence set and
+  completeness rule; C is prohibited by B03/B02 contracts.
+- **Product Owner selection:** The evidence contract includes active goal,
+  valid target, verified age eligibility, body metrics, nutrition evidence and
+  completeness, recovery/readiness, freshness, timezone/local date, dietary
+  safety, ranges and unknown states. Exact completeness percentage, valid-day
+  count and range-acceptance threshold remain under `HOLD-1`.
+- **Rationale:** B03 unknown/range facts and B02 missing recovery are first-class
+  states; defaults would create false precision.
+- **Safety consequence:** Prevents adaptation from partial logs, missing health,
+  stale metrics or unsupported assumptions.
+- **Implementation consequence:** Missing values never become zero; unknown,
+  estimated and range-valued inputs retain their status; stale/conflicting
+  evidence is exposed; profile defaults and current catalogue values cannot
+  replace historical evidence. Missing required evidence returns unavailable
+  with a structured missing-input list.
+- **Historical consequence:** Store evidence IDs, status/ranges, completeness
+  result, threshold/policy version and unavailable reason with each proposal or
+  withheld result; do not backfill missing evidence.
+- **Required tests:** Each missing input, denied provider, stale input,
+  estimated/range input, threshold inclusive/exclusive edges, contradictory
+  evidence, no-zero substitution and deterministic replay.
+- **Tasks affected:** `B04-01`, `B04-02`, `B04-06`, `B04-07`, `B04-08`,
+  `B04-10`, `B04-12`, `B04-13`, `B04-17`.
+
+### B04-D04-08 — Maximum upward and downward adjustment bounds
+
+- **Policy question:** What is the maximum calorie-target increase/decrease per
+  adaptation event and over a defined period?
+- **Options:** (A) No adaptive change; (B) a Product Owner-selected absolute
+  kcal bound per event plus a Product Owner-selected aggregate bound over a
+  named local-civil-day period; (C) an unbounded percentage of estimated need.
+- **Recommended option:** A until future numerical bounds are separately
+  approved; C is rejected.
+- **Product Owner selection:** Under `B04-D04-HOLD-1`, maximum upward
+  adjustment is `0 kcal`, maximum downward adjustment is `0 kcal`, and maximum
+  aggregate adjustment is `0 kcal`.
+- **Rationale:** Existing `-500/+300` values have no evidence, period,
+  versioning or override contract and therefore cannot be reused.
+- **Safety consequence:** Prevents unbounded target movement and prevents a
+  user override or AI output from bypassing limits.
+- **Implementation consequence:** `HOLD-1` permits exactly `0 kcal` increase
+  and `0 kcal` decrease per event and exactly `0 kcal` aggregate change over
+  each local-civil-day period, with inclusive zero bounds; missing data yields
+  no proposal. A future policy must specify direction, unit (`kcal`),
+  inclusive/exclusive edge, event/aggregate period, floor/ceiling interaction,
+  stale/missing behavior, policy version and override rule.
+- **Historical consequence:** Persist proposed/applied delta, pre/post target,
+  event and aggregate period, policy version, evidence and acceptance/override
+  event. Never recompute an old delta from a current target.
+- **Required tests:** Zero-delta hold, lower/upper exact edges, one-unit beyond
+  each edge, aggregate-period edge, repeated events, missing evidence, manual
+  override, policy-version replay and historical lineage.
+- **Tasks affected:** `B04-02`, `B04-07`, `B04-10`, `B04-13`, `B04-17`.
+
+### B04-D04-09 — Deficit and surplus safety boundaries
+
+- **Policy question:** What deficit and surplus boundaries may an adaptive
+  target use, including floor/ceiling behavior?
+- **Options:** (A) No adaptive deficit or surplus; (B) a Product Owner-selected
+  signed kcal range relative to a named baseline with explicit floor/ceiling;
+  (C) reuse the legacy fixed values and floor.
+- **Recommended option:** A: no adaptive deficit or surplus until numerical
+  policy is separately approved; C is rejected.
+- **Product Owner selection:** B04 must not prescribe an adaptive deficit or
+  surplus under `HOLD-1`; no calorie floor or ceiling is claimed medically
+  safe and no valid user-set target is silently clamped.
+- **Rationale:** The existing `1200` floor and `-500/+300` deltas are legacy
+  UI behavior, not an accepted medically sensitive product policy.
+- **Safety consequence:** Prevents the engine from presenting an unapproved
+  calorie prescription or implying that a floor is clinically safe.
+- **Implementation consequence:** Under `HOLD-1`, adaptive deficit/surplus
+  status is `unavailable`; a valid user-set target is displayed as user-set
+  without B04 silently clamping it. A future policy must specify baseline,
+  signed unit, inclusive/exclusive boundary, effective period, floor/ceiling,
+  unsupported states, versioning, override behavior and tests.
+- **Historical consequence:** Persist the target source, baseline/evidence,
+  requested delta, policy version, unavailable reason or accepted value and
+  effective local date/timezone. Do not rewrite historical targets when policy
+  changes.
+- **Required tests:** Legacy constants are not invoked, missing baseline,
+  floor/ceiling exact edges after approval, unsupported/underweight state,
+  manual target preservation, policy-version replay and copy tests.
+- **Tasks affected:** `B04-02`, `B04-07`, `B04-10`, `B04-13`, `B04-15`,
+  `B04-17`.
+
+### B04-D04-10 — Missing body metrics
+
+- **Policy question:** What happens when required weight, height or other body
+  metrics are missing, stale, conflicting or user-withheld?
+- **Options:** (A) Show user-set target/history and return adaptive unavailable;
+  (B) use a fixed default or profile fallback; (C) infer a metric from account
+  activity, appearance or unrelated logs.
+- **Recommended option:** A; B and C are rejected.
+- **Product Owner selection:** A: preserve typed missing/stale/conflicting
+  status, provide no fallback or inference, keep valid user-set targets
+  displayable and return unavailable when no valid target exists.
+- **Rationale:** The audit found fallback profile facts and mutable current
+  profile paths; they are not evidence for a historical adaptive decision.
+- **Safety consequence:** Prevents false personalization and prevents missing
+  metrics becoming hidden defaults.
+- **Implementation consequence:** Preserve missing/stale/conflicting status;
+  do not calculate adaptive output. A user-set target remains displayable if
+  valid, and any invalid/absent target returns unavailable rather than a
+  fallback value.
+- **Historical consequence:** Freeze source, timestamp, local date/timezone,
+  quality/status and metric values or ranges in evidence; corrections create
+  new observations and do not mutate old recommendations.
+- **Required tests:** Missing height/weight, stale metric, conflict, user
+  withheld value, legacy fallback rejection, user-set display, no target
+  mutation and restore lineage.
+- **Tasks affected:** `B04-01`, `B04-06`, `B04-07`, `B04-08`, `B04-10`,
+  `B04-13`, `B04-15`, `B04-17`.
+
+### B04-D04-11 — Missing or incomplete nutrition logs
+
+- **Policy question:** How does missing, partial, estimated or range-valued
+  nutrition history affect adaptation and remaining-target guidance?
+- **Options:** (A) Keep unknown/partial/range state and return unavailable when
+  the decision cannot be bounded; (B) treat missing as zero; (C) replace it
+  with current catalogue values or a point estimate.
+- **Recommended option:** A.
+- **Product Owner selection:** A, binding B03-D07/D10/D11/D17: use only B03
+  immutable read models; known zero may contribute zero, while unknown,
+  not-applicable, estimated, range and partial values retain their status.
+- **Rationale:** B03 snapshots, nutrient rows, estimates and corrections are
+  the historical authority; missing is not zero and estimates are not facts.
+- **Safety consequence:** Prevents undercounted intake and exact-looking
+  adaptation from incomplete records.
+- **Implementation consequence:** Consume only B03 read models. Known zero may
+  contribute zero; missing/not-applicable stays non-numeric; ranges propagate;
+  stale or insufficient logs return unavailable and list missing evidence.
+- **Historical consequence:** Preserve snapshot IDs, nutrient status, bounds,
+  estimate/correction lineage, local date/timezone and read-model version in
+  recommendation evidence; catalogue changes never rewrite old results.
+- **Required tests:** No logs, partial day, unknown nutrient, known zero,
+  estimated point, lower/upper range crossing, correction, stale period,
+  offline and historical replay.
+- **Tasks affected:** `B04-01`, `B04-07`, `B04-08`, `B04-10`, `B04-12`,
+  `B04-13`, `B04-15`, `B04-17`.
+
+### B04-D04-12 — Missing recovery/readiness
+
+- **Policy question:** What happens when recovery/readiness is missing,
+  denied, stale, contradictory or incomplete?
+- **Options:** (A) Readiness is unknown and readiness-driven adaptation is
+  unavailable; (B) treat missing recovery as zero/low readiness; (C) infer
+  readiness from activity or calendar data.
+- **Recommended option:** A.
+- **Product Owner selection:** A, binding B02-D11 and B04-D06: preserve
+  unknown/unavailable, permission and provenance states; suppress
+  readiness-driven proposals and never infer readiness from schedule/activity.
+- **Rationale:** B02 explicitly says missing recovery is unknown; provider
+  permission/error is not a measurement.
+- **Safety consequence:** Prevents health-derived target or load changes from
+  fabricated readiness.
+- **Implementation consequence:** Persist normalized observations and
+  completeness-aware snapshots with source, permission, freshness, range/status
+  and provenance. Missing/denied/conflicting inputs suppress readiness-driven
+  changes and expose the unavailable reason; no B02 history mutation occurs.
+- **Historical consequence:** Freeze observation IDs, source/provenance,
+  statuses/ranges, local date/timezone, readiness calculation version and
+  supersession links; corrections append new observations/snapshots.
+- **Required tests:** Complete/incomplete, denied permission, provider error,
+  stale, conflicting, range-only, timezone/DST, idempotent import, no-zero and
+  historical replay.
+- **Tasks affected:** `B04-01`, `B04-06`, `B04-07`, `B04-10`, `B04-13`,
+  `B04-17`.
+
+### B04-D04-13 — Professional-advice wording
+
+- **Policy question:** What wording is allowed for wellness, non-medical,
+  missing-evidence and professional-consultation states?
+- **Options:** (A) Use a reviewed wording catalog with explicit unavailable
+  states; (B) allow free-form generated advice; (C) use clinical-sounding
+  target instructions.
+- **Recommended option:** A.
+- **Product Owner selection:** Use a deterministic reviewed wording catalog for
+  the approved semantic states. Exact production copy remains subject to Terra
+  review for clarity, accessibility and layout.
+- **Rationale:** Wording is part of the safety contract and must match the
+  deterministic state, not an AI provider’s style.
+- **Safety consequence:** Prevents diagnosis, prescription, guarantee and
+  replacement-of-care claims.
+- **Implementation consequence:** The approved semantic catalog must cover:
+  general wellness guidance that is not medical advice; insufficient reliable
+  information with the current target unchanged; unsupported requested goals
+  with the target unchanged; consultation with a qualified healthcare
+  professional for medical or treatment decisions; no diagnosis,
+  prescription, guarantee or replacement-of-care claim; and severe/emergency
+  symptoms outside the feature with appropriate local emergency help. Terra
+  reviews the exact production copy.
+- **Historical consequence:** Persist wording/state key, copy version, policy
+  version and evidence references with issued recommendations; raw generated
+  wording is not an authority and is not required for replay.
+- **Required tests:** Exact state-to-copy mapping, no diagnosis/prescription/
+  guarantee terms outside approved catalog, missing/aggressive/medical cases,
+  emergency exclusion, localization/accessibility and deterministic replay.
+- **Tasks affected:** `B04-02`, `B04-09`, `B04-10`, `B04-12`, `B04-13`,
+  `B04-14`, `B04-15`, `B04-17`.
+
+### B04-D04-14 — Medical and diagnostic exclusions
+
+- **Policy question:** Which medical, diagnostic, treatment and outcome claims
+  must the system exclude?
+- **Options:** (A) Exclude diagnosis, treatment, prescription, clinical
+  interpretation, emergency assessment and guaranteed outcomes; (B) allow
+  medical interpretation from user-entered conditions; (C) allow AI to fill
+  clinical gaps.
+- **Recommended option:** A.
+- **Product Owner selection:** Exclude diagnosis, diagnosis validation,
+  treatment prescription, clinical symptom interpretation, emergency-severity
+  assessment, guarantees, professional-equivalence claims, medical inference
+  and AI clinical-gap filling. Bind B04 charter exclusions and B03-D19.
+- **Rationale:** A user-entered restriction is an input constraint, not a
+  clinically verified diagnosis or authorization.
+- **Safety consequence:** Prevents the app from replacing professional care or
+  converting a goal request into a medical prescription.
+- **Implementation consequence:** Medical restrictions are stored as
+  user-entered constraints with provenance; the system may filter or withhold
+  a candidate but cannot diagnose, validate clinically, prescribe, predict an
+  outcome or assess emergency symptoms. Use D04-13 wording.
+- **Historical consequence:** Preserve the user-entered restriction reference,
+  evidence state, wording/state key and policy version; never store an inferred
+  condition or send raw restriction text to AI by default.
+- **Required tests:** Medical restriction, aggressive request, symptom/emergency
+  text, AI prompt injection, no diagnosis/prescription/guarantee output,
+  redaction, restore and history stability.
+- **Tasks affected:** `B04-02`, `B04-09`, `B04-10`, `B04-12`, `B04-13`,
+  `B04-14`, `B04-15`, `B04-17`.
+
+### B04-D04-15 — Allergy and dietary hard-block behavior
+
+- **Policy question:** Which B03 dietary conflicts are hard blocks, and may a
+  user override them?
+- **Options:** (A) Map B03 confirmed conflicts for strict allergy, intolerance,
+  religious and ethical constraints to hard blocks; (B) show every conflict as
+  a soft warning; (C) infer safety from a food name or no-known-conflict result.
+- **Recommended option:** A, with no override that changes the safety result.
+- **Product Owner selection:** Adopt B03-D14 and B04-D08: confirmed strict
+  allergy, intolerance, religious and ethical conflicts are hard blocks; no
+  acknowledgement or override changes the evaluator result.
+- **Rationale:** B03 is the sole constraint authority and already requires
+  typed evidence, strictness, cross-contact relevance and cautious outcomes.
+- **Safety consequence:** Confirmed conflicts are removed from eat-now and
+  target guidance; a logged historical item remains history, not approval.
+- **Implementation consequence:** `confirmed_conflict` is a deterministic hard
+  block for the listed strict safety-sensitive types. `no_known_conflict` may
+  only render “No known conflict detected for the checked evidence.” Possible
+  and insufficient states follow D04-16. User acknowledgement/override may
+  record a personal decision or logging event, but cannot present the candidate
+  as safe or bypass a hard block in recommendation output.
+- **Historical consequence:** Freeze constraint ID/version, evidence IDs,
+  strictness/severity, cross-contact result, candidate identity/version,
+  acknowledgement/override event and policy version in recommendation lineage.
+- **Required tests:** Confirmed allergy/intolerance/religious/ethical cases,
+  strictness, cross-contact, no-known wording, unknown ingredient, user
+  override/logging, restore and no name-inference.
+- **Tasks affected:** `B04-01`, `B04-09`, `B04-10`, `B04-12`, `B04-13`,
+  `B04-14`, `B04-15`, `B04-16`, `B04-17`.
+
+### B04-D04-16 — Possible or insufficient evidence
+
+- **Policy question:** What happens when an ingredient conflict or safety
+  decision is possible, unknown or insufficiently evidenced?
+- **Options:** (A) Withhold safety-sensitive guidance as unavailable; (B) show
+  a warning that requires explicit acknowledgement without calling it safe; (C)
+  treat the state as no conflict.
+- **Recommended option:** A for target/safety guidance; B may be used only for
+  a separately approved low-risk logging action and must retain the warning.
+- **Product Owner selection:** Possible conflict, unknown conflict,
+  insufficient evidence, missing ingredient evidence and possible
+  cross-contact return `unavailable` for adaptive, target and eat-now
+  safety-sensitive guidance. No state is downgraded to no conflict.
+- **Rationale:** Unknown composition and possible cross-contact cannot support
+  a safety claim under B03-D14.
+- **Safety consequence:** Prevents uncertain candidates from being ranked as
+  safe or used to justify a target.
+- **Implementation consequence:** Return `unavailable` with the missing or
+  conflicting evidence list for material safety decisions. If a future policy
+  permits acknowledgement for logging, require an explicit action, retain the
+  evidence state, and never alter the evaluator result.
+- **Historical consequence:** Persist the original B03 outcome, evidence scope,
+  missing fields, displayed warning, acknowledgement/override and policy
+  version; corrections append lineage rather than rewriting the result.
+- **Required tests:** Unknown ingredient, possible conflict, insufficient
+  information, cross-contact, acknowledgement required, no-known negative,
+  offline, restore and deterministic replay.
+- **Tasks affected:** `B04-01`, `B04-08`, `B04-09`, `B04-10`, `B04-12`,
+  `B04-13`, `B04-15`, `B04-17`.
+
+### B04-D04-17 — Offline behavior
+
+- **Policy question:** What deterministic coaching remains available offline,
+  and what happens when required evidence cannot be obtained?
+- **Options:** (A) Local deterministic reads/guidance remain available when all
+  required local evidence is present; missing required evidence is unavailable;
+  (B) require network for every recommendation; (C) synthesize missing values
+  locally.
+- **Recommended option:** A, with `HOLD-1` disabling adaptive target proposals.
+- **Product Owner selection:** Local deterministic history, user-set target
+  display, descriptive summaries, filtered guidance with complete local
+  evidence, feedback and explicit unavailable states remain available offline.
+  No invented evidence, queued authoritative target change, cached AI
+  authority or safety downgrade is permitted. Bind B04-D05/D15 and B03-D19.
+- **Rationale:** Offline operation is a B04 requirement, and network fallback
+  values are not nutrition or safety truth.
+- **Safety consequence:** Prevents invented data, network-dependent target
+  authority and false confidence during provider failure.
+- **Implementation consequence:** Local logs, history, user-set target display,
+  deterministic filtered guidance, feedback and unavailable states work with
+  no network. Required missing/denied/stale evidence remains unavailable; no
+  provider call is queued as an authoritative target change.
+- **Historical consequence:** Persist only local typed evidence, policy/rule
+  versions, state and feedback; do not back up network payloads, raw prompts,
+  images or provider health payloads.
+- **Required tests:** Airplane mode, offline restart, no-network assertion,
+  missing/denied health, partial nutrition, deterministic replay, feedback and
+  no background target mutation.
+- **Tasks affected:** `B04-01`, `B04-08`, `B04-10`, `B04-12`, `B04-13`,
+  `B04-14`, `B04-15`, `B04-16`, `B04-17`.
+
+### B04-D04-18 — AI unavailable behavior
+
+- **Policy question:** What happens when optional AI is disabled, offline,
+  unavailable, malformed or returns a conflicting explanation?
+- **Options:** (A) Keep the deterministic result unchanged; if no deterministic
+  result exists, return unavailable; (B) use AI as a fallback target/safety
+  authority; (C) use a stored provider answer as a target default.
+- **Recommended option:** A.
+- **Product Owner selection:** AI is optional wording assistance only; separate
+  explicit AI opt-in is required and is not implied by coaching consent. AI
+  cannot alter target, delta, safety, identity, ranking, evidence, ranges,
+  completeness, availability or confidence.
+- **Rationale:** AI may improve wording only after deterministic filtering and
+  target calculation; it cannot author safety, targets or identity.
+- **Safety consequence:** Prevents provider failure or prompt injection from
+  changing a target, safety state, confidence, candidate or evidence.
+- **Implementation consequence:** AI receives a minimized redacted envelope
+  only after separate consent. It may return wording/alternative phrasing;
+  schema-invalid, unavailable or conflicting output is discarded. AI cannot
+  alter target, delta, safety state, candidate identity, ranking, evidence,
+  ranges, completeness, availability or confidence; these come only from local
+  deterministic results.
+- **Historical consequence:** Record provider/model metadata only when needed
+  for bounded reproducibility; do not persist or back up raw prompts, responses,
+  images, health/allergy payloads, provider secrets or access tokens.
+  Deterministic lineage remains complete without AI.
+- **Required tests:** Consent off/on, redaction, offline/provider timeout,
+  malformed output, conflicting output, prompt injection, no target mutation,
+  no safety bypass, log redaction, backup exclusion and deterministic fallback.
+- **Tasks affected:** `B04-01`, `B04-10`, `B04-13`, `B04-14`, `B04-15`,
+  `B04-16`, `B04-17`.
+
+### B04-D04-19 — Target acceptance, user actions and override
+
+- **Policy question:** What can a user acknowledge, dismiss, accept or
+  override, and what does target acceptance mean for safety and history?
+- **Options:** (A) Append-only feedback; accept creates a new effective-dated
+  target version; hard blocks remain; (B) override changes the evaluator result;
+  (C) acceptance silently changes the active target or retrains the engine.
+- **Recommended option:** A.
+- **Product Owner selection:** Append-only acknowledgement, dismissal,
+  acceptance, override and snooze. Acceptance creates a new effective-dated
+  target version only after an enabled policy exists; under `HOLD-1` no adaptive
+  target can be accepted because no adaptive proposal exists. Bind
+  B04-D02/D03/D14 and B03-D14.
+- **Rationale:** User control requires reversible explicit actions without
+  converting personal choice into evidence or safety approval.
+- **Safety consequence:** Acknowledgement cannot make a conflict safe; a hard
+  block cannot be bypassed in guidance; acceptance cannot force a target under
+  `HOLD-1`.
+- **Implementation consequence:** Record `acknowledge`, `dismiss`, `accept`,
+  `override`, `snooze` and any exposed reason as append-only events. Adaptive
+  proposals are read-only until explicit acceptance; acceptance is idempotent,
+  creates a new effective-dated target version and never silently replaces the
+  active target. Rejection/dismissal does not mutate it. A manual override is
+  labelled user-set and cannot alter B03 evidence, safety output or deterministic
+  policy. Snooze carries a typed period and changes presentation only.
+- **Historical consequence:** Backup feedback and recommendation lineage;
+  preserve issued output, supersession, user action, policy version and target
+  versions. Dismissal hides a projection but does not delete history; disabling
+  coaching does not delete feedback.
+- **Required tests:** Duplicate/retry idempotency, hard-block override attempt,
+  warning acknowledgement, acceptance, dismissal, snooze, target versioning,
+  offline action, restore and historical replay.
+- **Tasks affected:** `B04-05`, `B04-07`, `B04-09`, `B04-10`, `B04-11`,
+  `B04-12`, `B04-13`, `B04-15`, `B04-16`, `B04-17`.
+
+### B04-D04-20 — Conditional N8 context boundary
+
+- **Policy question:** Which festival, eating-out, fasting or travel context
+  semantics may enter mandatory B04 completion?
+- **Options:** (A) Keep N8 conditional and outside mandatory B04; (B) add an
+  explicit user-entered context contract through a new approved task DAG; (C)
+  infer context from calendar, location, time, food history or restaurant data.
+- **Recommended option:** A; B requires a new Product Owner/roadmap decision;
+  C is prohibited.
+- **Product Owner selection:** A for current B04 scope; no N8 schema-v18 table,
+  Backup-v9 section, target rule or implementation branch is authorized.
+- **Rationale:** Existing B04-D01/D10 and B04-18 explicitly separate N8 from
+  required B04 outcomes, and B01 owns schedule semantics without owning meal
+  context.
+- **Safety consequence:** Prevents religious, fasting, travel or restaurant
+  assumptions from changing targets or safety decisions.
+- **Implementation consequence:** B04-08, B04-12 and B04-13 remain independent
+  of N8. If context is absent, use ordinary evidence-limited guidance or
+  unavailable; never infer a mode. N8 can trigger only through an explicit
+  Product Owner decision, defined semantics, privacy review and a new task DAG.
+- **Historical consequence:** No current N8 context is persisted or backed up.
+  B04-08, B04-12 and B04-13 remain independent of N8. A future approved
+  context must be user-entered, effective-dated, typed, versioned, privacy
+  reviewed and linked to recommendation lineage before target interaction is
+  implemented.
+- **Required tests:** No inference from holiday/calendar/location/clock/food;
+  absent context ordinary/unavailable state; current-task independence;
+  conditional seam unavailable; no N8 rows in v18/v9; future trigger requires
+  explicit decision evidence.
+- **Tasks affected:** `B04-01`, `B04-02`, `B04-08`, `B04-10`, `B04-13`,
+  `B04-14`, `B04-15`, `B04-17`, `B04-18`.
 
 ## B04-D05 — Deterministic authority and optional AI
 
@@ -413,19 +1061,50 @@ criteria.
   isolation.
 - **Tasks depending on it:** All implementation tasks.
 
-## Open policy decisions that must remain visible
+## B04-D04 approval state
 
-These are not implementation preferences. They require explicit product-owner
-and/or Sol approval before the affected behavior can be enabled:
+The twenty records `B04-D04-01` through `B04-D04-20` are the complete policy
+packet for the D04 questions named by the planning report. The current explicit
+disposition is:
 
-1. Adaptive calorie opt-in copy/default, minimum eligible age, minimum trend
-   window, adjustment cadence and maximum change.
-2. Exact lower/upper target safety bounds and the wording/route for aggressive
-   deficits, contradictory goals and medical restrictions.
-3. First-class N8 festival, eating-out, fasting and travel modes, including
-   observance ownership, fasting-window semantics and restaurant uncertainty.
-4. Whether any future external-food lookup may be offered after B04; B04’s
-   answer is no.
+- **Current product behavior:** `HOLD-1`; adaptive coaching is unavailable,
+  user-set targets/history remain readable, and no adaptive target delta is
+  emitted.
+- **Product Owner approval:** Qualitative policy is authorized by the Product
+  Owner. Numerical trend duration/count/cutoff, completeness/range threshold,
+  proposal frequency/cooldown and calorie/deficit/surplus bounds remain under
+  `HOLD-1`.
+- **Independent Sol High verdict:** Required next; no adaptive enablement or
+  application implementation is authorized until Sol reviews the authorized
+  qualitative contract, inherited B01–B03 boundaries and deterministic
+  `HOLD-1` fixtures.
+- **External food lookup:** remains out of B04; a future request must reopen
+  scope and privacy review and cannot be introduced through D04.
 
-Until these are approved, the implementation must return a truthful unavailable
-or user-set state and must not invent a policy constant.
+Documentation and already-planned v18/v9 ownership clarification may proceed
+under `HOLD-1`. Application, migration, backup and adaptive-target
+implementation remain blocked. Runtime behavior must return a truthful
+unavailable or user-set state and must not invent a policy constant.
+
+### B04-D04 task mapping
+
+| Task | D04 consequence |
+|---|---|
+| `B04-01` | Contract fixtures cover age, consent, target acceptance, missingness, dietary states, wording, offline/AI and N8. This task has not started. |
+| `B04-02` | Owns this authorized policy packet, `HOLD-1` register and independent Sol review request. |
+| `B04-03` | The already planned v18 entities own consent/eligibility evidence, effective-dated target lineage and recommendation evidence; no new D04 table is added. |
+| `B04-04` | The already planned v9 graph carries those user-owned records and feedback; raw disclosure/AI/medical/health payloads remain excluded. |
+| `B04-05` | Enforce age eligibility, opt-in, separate consent, explicit acceptance, idempotency and immutable target versions. |
+| `B04-06` | Preserve recovery provenance/completeness and suppress readiness-driven proposals when evidence is unavailable. |
+| `B04-07` | Enforce `18` eligibility, no automatic activation, `HOLD-1` zero deltas and missing/range rules. |
+| `B04-08` | Carry local date/timezone, age/consent/evidence state and N8 absence without inference. |
+| `B04-09` | Map B03 hard blocks, unavailable possible/insufficient states and exact no-known-conflict wording. |
+| `B04-10` | Keep deterministic ranking/evidence/availability authoritative; AI cannot alter outputs. |
+| `B04-11` | Freeze age/consent/target/evidence lineage and append feedback without rewriting history. |
+| `B04-12` | Exclude hard blocks and return unavailable for possible/unknown/insufficient safety evidence. |
+| `B04-13` | Expose age, consent, missing-data, wording, target-acceptance, offline and feedback states. |
+| `B04-14` | Keep AI separate, consented, redacted and wording-only. |
+| `B04-15` | Terra reviews exact copy/accessibility; below-age wording is non-punitive. |
+| `B04-16` | Verify one authority and no B01–B03 contract or legacy-policy regression. |
+| `B04-17` | Require Product Owner authorization, Terra copy review, independent Sol verdict and numerical `HOLD-1` evidence. |
+| `B04-18` | N8 remains conditional and outside mandatory B04. |

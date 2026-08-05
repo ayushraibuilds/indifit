@@ -1,10 +1,14 @@
 # B04 — Adaptive Coaching
 
-Status: Planning gate only; implementation blocked pending the accepted B03 integration baseline
+Status: Planning gate only; implementation blocked pending the accepted B03 integration baseline, independent Sol High review, and the remaining `HOLD-1` numerical gates
 Planning branch: `batch/b04-planning`
 Planning base: `main` at `12ce1b05c7626d3fb37eedc37fc0dd4d7af94d8a`
 Accepted B03 integration source (not yet a parent): `batch/b03-nutrition-foundation` at `d85e8a16566735e7f6b7fe15cd2a97edb5677178`
-Target implementation schema/backup: v17 / v8
+Accepted B03 schema/backup baseline: v17 / v8
+Proposed B04 durable change: schema v18 / Backup v9
+D04 packet branch: `b04/d04-safety-policy-gate`
+D04 packet planning baseline: `9102092`
+B04 integration baseline marker: `[B04-INTEGRATION-BASELINE]`
 Platforms: Android and iOS
 
 ## Canonical authority
@@ -18,7 +22,10 @@ Phase 5 / Epic E5, **Recovery and Coaching**. The binding E5 scope is:
 - adaptive training-load and calorie targets;
 - a daily briefing and prioritized guidance;
 - “what can I eat now?” guidance;
-- user overrides and safe, non-medical behavior.
+- user overrides and safe, non-medical behavior;
+- an explicit Product Owner + independent Sol High policy gate for age,
+  consent, evidence, bounds, dietary safety, wording, offline/AI behavior and
+  the conditional N8 seam.
 
 The roadmap’s M18 migration adds recovery observations, readiness snapshots,
 recommendations, evidence links and feedback. The canonical dependency graph
@@ -70,6 +77,8 @@ deterministic result.
   guarantees, or professional nutrition prescriptions.
 - Numerical deficit/surplus policy, minimum-age policy or other medically
   sensitive constants until the product-owner/Sol policy gate records them.
+- Adaptive target output while `B04-D04` is in `HOLD-1`; user-set targets,
+  descriptive history and unavailable states remain in scope.
 - Reimplementation of B01 scheduling, B02 activity/history, B02 load-rule v1,
   B03 nutrient calculation, B03 immutable snapshots, B03 constraints, B03
   estimates, recipes, thalis or household conversions.
@@ -99,6 +108,10 @@ deterministic result.
   structured dietary constraints and read-model ownership.
 - A named, integrated B03 parent branch with no unresolved integration merge.
 - Product-owner/Sol approval of target safety constants and adaptation policy.
+- A Product Owner-authorized `B04-D04` qualitative decision packet and an
+  independent Sol High verdict. Numerical trend, completeness, cadence,
+  cooldown, deficit/surplus and adjustment values remain under `HOLD-1`;
+  adaptive target exposure remains unavailable.
 - One user/profile identity and timezone authority for B04 writes.
 
 ## Inherited contracts B04 may consume
@@ -138,6 +151,10 @@ deterministic result.
 ## Batch exit criteria
 
 - Goal changes and user overrides produce versioned, effective-dated records.
+- `B04-D04` age, consent, target acceptance, evidence, dietary, wording,
+  offline/AI and N8 decisions are explicitly recorded and Product Owner-
+  authorized; independent Sol review and the remaining `HOLD-1` numerical
+  gates must close before adaptive exposure.
 - Readiness exposes completeness and never adapts from missing/permission-error
   inputs as if they were zero.
 - Adaptive target proposals are deterministic, bounded, opt-in and explainable.
