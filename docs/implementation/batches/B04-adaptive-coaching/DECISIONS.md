@@ -1,8 +1,9 @@
 # B04 — Decision Register
 
-Status: Planning gate; implementation decisions are conditional on the B03
-integration gate and the explicit policy gates below. This branch adds the
-B04-D04 decision packet only; it does not claim Product Owner approval.
+Status: Documentation gate; foundational implementation decisions are
+conditional on independent Sol High approval of this remediation and the
+accepted B03 parent. This register records the Product Owner qualitative
+approval evidence and keeps enabled numerical adaptation under `HOLD-1`.
 Decision IDs: `B04-D01` onward.
 Canonical authority: `docs/roadmap/canonical-roadmap.md`, especially E5/M18,
 N8–N10, P1/P2/P7/P8/P9, the F4 cross-feature decisions and the Phase 5 exit
@@ -15,11 +16,11 @@ criteria.
 | B04-D01 | B04 scope is E5/M18 adaptive coaching with one engine; N8 context modes and detailed protein physiology are not required exit outcomes | Accepted |
 | B04-D02 | Goals use a hybrid user-set/calculated/adaptive model with explicit opt-in and override | Architecture accepted; policy constants gated |
 | B04-D03 | Goal and target history is append-only, versioned and effective-dated | Accepted |
-| B04-D04 | Qualitative safety/product policy is Product Owner-authorized; numerical adaptation values remain under `HOLD-1` until independent Sol review and separate approval | Qualitative policy authorized; Sol review and numerical gates remain blocking |
+| B04-D04 | Qualitative safety/product policy is Product Owner-authorized; numerical adaptation values remain under `HOLD-1` until independent Sol review and separate approval | Qualitative policy authorized; remediation review required; enabled adaptation remains held |
 | B04-D05 | Deterministic local calculation is authoritative; AI is optional wording only | Accepted |
 | B04-D06 | Readiness may influence bounded guidance only through complete, provenance-bearing inputs | Accepted |
 | B04-D07 | Unknown, partial and range values propagate into guidance and confidence | Accepted |
-| B04-D08 | B03 constraint outcomes map to explicit block/warn/confirm/unavailable states | Accepted subject to cross-contact fixture gate |
+| B04-D08 | B03 constraint outcomes map to explicit hard-block/unavailable/low-risk-logging states | Accepted subject to cross-contact fixture gate |
 | B04-D09 | “What can I eat now?” uses user-selected/local canonical candidates; no external search or pantry inference | Accepted |
 | B04-D10 | Festival, eating-out, fasting and travel modes are user-entered conditional N8 extensions, not required B04 behavior | Accepted boundary; later product gate |
 | B04-D11 | Meal opportunity is an explicit user/context input, not an inferred meal window | Accepted |
@@ -105,13 +106,18 @@ criteria.
   records below. `HOLD-1` remains active only for the numerical values that are
   explicitly listed as unapproved. User-set targets, descriptive history and
   non-adaptive logging remain available where their inherited contracts allow.
-- **Accepted technical contract:** While `HOLD-1` is active, the engine emits
-  no adaptive proposal. The only permitted adaptation delta is exactly `0 kcal`
-  per adaptation event and exactly `0 kcal` over every affected local civil-day
-  period; this is a disabled-state guard, not a nutrition recommendation. The
-  guard is inclusive, applies from policy version `B04-D04-HOLD-1` until an
-  explicitly approved superseding version, treats missing data as unavailable,
-  and cannot be bypassed by a user override, acknowledgement or AI response.
+- **Accepted technical contract:** `HOLD-1` blocks enabled adaptive calorie
+  proposals, readiness-driven target or training-change proposals, every
+  non-zero adaptive target delta, adaptive deficit/surplus behavior and calorie
+  floor/ceiling behavior. It does not block foundational contracts and
+  fixtures, schema v18 or Backup v9 foundations, goals, consent, readiness,
+  safety, lineage or feedback persistence, deterministic unavailable-state
+  behavior, descriptive/history features or valid user-set targets. While the
+  hold is active, the adaptive result is `unavailable`; upward, downward and
+  aggregate deltas are exactly `0 kcal` per event/local-civil-day guard; no
+  adaptive proposal may be accepted because no enabled proposal exists; and
+  user override or AI cannot bypass the hold. The guard applies from policy
+  version `B04-D04-HOLD-1` until an explicitly approved superseding version.
   No lower/upper target clamp is introduced, and legacy `-500`, `+300` and
   `1200` constants remain non-policy compatibility behavior.
 - **Product Owner decision status:** Qualitative policy is authorized by the
@@ -119,18 +125,20 @@ criteria.
   bound values remain under `HOLD-1`; no future numerical value is inferred.
   Exact production copy remains subject to Terra review for clarity,
   accessibility and layout.
-- **Sol High assessment:** Independent Sol High review is still required before
-  implementation or adaptive enablement. The current documentation contract
-  is fail-closed and compatible with the accepted B01–B03 contracts.
+- **Sol High assessment:** Independent Sol High review is required before
+  B04-01 begins. After that approval, foundational tasks may proceed according
+  to the accepted DAG; enabled adaptation remains blocked until a superseding
+  numerical policy is approved.
 - **Rationale:** The canonical roadmap lists these as product-owner decisions;
   choosing them in an architecture document would silently choose medically
   sensitive behavior.
 - **Alternatives rejected:** Copying `TdeeCalculator` constants as policy;
   selecting a medical threshold from implementation convenience; treating a
   warning as approval.
-- **Consequences:** `B04-02` is a hard implementation gate for adaptive
-  targets and every consumer listed in the records below. Planning may be
-  approved as a documentation packet; implementation is not authorized.
+- **Consequences:** `B04-02` is the policy gate for adaptive targets and every
+  consumer listed in the records below. B04-01 may begin after independent Sol
+  approval of this remediation. Later foundational work follows the accepted
+  DAG; enabled adaptive behavior remains unavailable under `HOLD-1`.
 - **Required tests:** The `HOLD-1` zero-delta guard, policy-unapproved
   unavailable state, explicit Product Owner selection completeness, approved
   fixture bounds with unit/period/inclusivity/missing-data/version/override
@@ -149,6 +157,77 @@ rule, override rule and deterministic tests before implementation.
 No age may be inferred from account activity, food logging, photographs or
 appearance. No product copy below is a diagnosis, prescription, guarantee or
 substitute for professional care.
+
+### B04-D04 approval and implementation baseline evidence
+
+- **Approval source:** Product Owner.
+- **Approval date:** `2026-08-05`.
+- **Approved D04 commit:** `750ef0999153a7cc41a2493cb6305d2a833b1f12`.
+- **Approval scope:** Qualitative B04-D04 policy decisions, including the
+  verified `18 completed years` eligibility rule for adaptive calorie and
+  readiness-driven proposals.
+- **Scope still held:** Numerical adaptation cadence, evidence thresholds,
+  calorie adjustment bounds, deficit/surplus limits, and calorie floors or
+  ceilings remain under `B04-D04-HOLD-1` and are not approved for enabled
+  adaptation.
+- **Required independent review:** Sol High must independently review this
+  remediation before `B04-01` may begin.
+
+> “I approve the qualitative B04-D04 policy decisions recorded at the approved
+> D04 commit, including the 18+ eligibility rule for adaptive calorie and
+> readiness-driven proposals.
+>
+> Numerical adaptation cadence, evidence thresholds, calorie adjustment bounds,
+> deficit/surplus limits, and calorie floors or ceilings remain under
+> B04-D04-HOLD-1 and are not approved for enabled adaptation.”
+
+The verified implementation lineage is: planning commit
+`9102092fd1b18e38beff500e2654ece6a191f66`; accepted B03 commit
+`d85e8a16566735e7f6b7fe15cd2a97edb5677178`; B03 timezone correction
+`78a43f909bae58dc5e509da97af426ad960c9190`; B03 merge commit
+`f976542e395a3e082f1ab5cdfdfd87e969910766`; B04 planning/integration merge
+commit `741aa18972ebc1b61cd65c0bf12b442b10b50890`; current D04 documentation
+commit `750ef0999153a7cc41a2493cb6305d2a833b1f12`. The integration baseline is
+the concrete commit `741aa18972ebc1b61cd65c0bf12b442b10b50890`, whose parent
+contains accepted B03.
+
+### B04-D04 durable historical authorities
+
+`coaching_consent_events` is the provisional durable, append-only authority for
+coaching consent history. It has a portable event ID, user ID, consent category
+(`adaptive_coaching` or `optional_ai`), action (`enable`, `disable` or
+`withdraw`), consent-policy version, copy version, UTC timestamp, local date,
+IANA timezone, actor/source, optional related or superseded event ID and
+created-at metadata. A mutable preference/projection may expose current state,
+but it is not historical authority. Prior logging, inactivity and existing
+targets never create consent. Disablement affects future proposals immediately
+without deleting recommendations, targets or feedback; duplicate commands are
+idempotent. Backup v9 includes approved events; older backups do not fabricate
+consent. Restore rejects duplicate IDs, invalid event order, invalid user
+ownership and unsupported versions.
+
+`coaching_eligibility_evaluations` is the provisional durable, append-only
+authority for every age-eligibility evaluation, including withheld and
+unavailable states. It has a portable evaluation ID, user ID, result
+(`eligible`, `underage`, `unknown_age`, `conflicting_age`, `withheld_age`,
+`invalid_evidence` or `policy_unavailable`), reason code, age-input source,
+evidence timestamp, evaluation UTC timestamp, evaluation local date, IANA
+timezone, policy version, minimum-age rule version, optional goal,
+recommendation or attempted-proposal reference and an approved evidence
+fingerprint where applicable. Age is never inferred; withheld, unknown and
+conflicting age remain explicit. A date-of-birth correction affects future
+evaluations only; historical evaluations are immutable. Backup v9 includes
+approved evaluations; restore rejects duplicate IDs, cross-user references,
+invalid result/source combinations and unsupported policy versions. A current
+eligibility projection may be derived, but it is not historical authority.
+
+The two authorities are owned and tested by `B04-03` and `B04-04`, consumed by
+`B04-05`, `B04-07`, `B04-13` and `B04-15`, and verified by `B04-16` and
+`B04-17`. They are user-owned durable data, not caches, prompts or raw provider
+payloads. Consent and eligibility events, goal/target versions and issued
+recommendation lineage are append-only; accepted goals/targets receive new
+effective-dated versions. All corrections and policy changes affect future
+decisions only and never rewrite historical recommendations.
 
 ### B04-D04-01 — Minimum supported age
 
@@ -173,11 +252,12 @@ substitute for professional care.
   birthday boundary inclusive. Descriptive logging, workout logging, history,
   user-set targets, dietary filtering, non-adaptive trend display and general
   app access do not require age.
-- **Historical consequence:** Persist eligibility result, reason, policy
-  version, age-input source, evaluation local date, timezone and evidence
-  timestamp in goal/recommendation evidence within the planned Backup v9 graph;
-  no inferred age is stored. A later date-of-birth correction affects only
-  future eligibility; old recommendations retain their prior evidence.
+- **Historical consequence:** Append an immutable record to
+  `coaching_eligibility_evaluations` with the result, reason, policy version,
+  age-input source, evaluation local date/timezone and evidence timestamp;
+  include approved user-owned evaluations in Backup v9. No inferred age is
+  stored. A later date-of-birth correction affects only future evaluations;
+  old recommendations retain their prior eligibility reference.
 - **Required tests:** Missing age, conflicting age, exact birthday boundary,
   timezone/local-date boundary, age correction after an issued recommendation,
   no inference from activity/food/appearance, backup lineage and `HOLD-1`
@@ -208,10 +288,11 @@ substitute for professional care.
   readiness-driven training changes. Below-18 uses the distinct
   `coaching_unavailable_age` state, with no medical, punitive or judgmental
   wording. Do not infer age from appearance or usage.
-- **Historical consequence:** Store the eligibility result, reason and policy
-  version with any attempted evaluation; preserve descriptive records and
-  prior recommendations as readable history. Do not calculate an unused
-  adaptive target in the background.
+- **Historical consequence:** Append the `underage` result, reason, policy
+  version, source and evaluation timestamps to
+  `coaching_eligibility_evaluations`; preserve descriptive records and prior
+  recommendations as readable history. Do not calculate an unused adaptive
+  target in the background, and do not rewrite an earlier evaluation.
 - **Required tests:** Below-threshold, unknown-age, age-change, logging/history
   availability, no adaptive proposal, no target mutation, backup/restore and
   wording/accessible-state tests.
@@ -235,10 +316,11 @@ substitute for professional care.
 - **Implementation consequence:** Persist a versioned preference with
   `adaptive_coaching_enabled=false` by default. A proposal is read-only until
   the user accepts it; disabling stops new proposals immediately.
-- **Historical consequence:** Persist consent state, consent policy version,
-  copy version, effective local date, timezone, UTC timestamp and actor/source
-  in Backup v9; issued recommendations, accepted target versions and feedback
-  remain readable after disablement.
+- **Historical consequence:** Append enable/disable/withdraw events to
+  `coaching_consent_events` with consent-policy version, copy version,
+  effective local date, timezone, UTC timestamp and actor/source; include the
+  events in Backup v9. Issued recommendations, accepted target versions and
+  feedback remain readable after disablement.
 - **Required tests:** Fresh-user default, inactivity/logging is not consent,
   explicit enable/disable, proposal rejection/acceptance, restart, restore,
   duplicate command and effective-date target history.
@@ -267,9 +349,10 @@ substitute for professional care.
   separate consent flags, policy/copy versions, effective dates, UTC timestamps,
   local date and timezone. Do not persist raw disclosure text, prompts or
   responses.
-- **Historical consequence:** Consent version/timestamp and enable/disable
-  events are backupable; old recommendations remain readable and feedback is
-  retained after disablement. No raw disclosure text or AI prompt is stored.
+- **Historical consequence:** Consent version/timestamp and enable/disable/
+  withdrawal events are append-only in `coaching_consent_events` and
+  backupable; old recommendations remain readable and feedback is retained
+  after disablement. No raw disclosure text or AI prompt is stored.
 - **Required tests:** Copy presence/order, separate consent paths, consent
   withdrawal, timestamp/version persistence, offline consent, accessibility
   semantics and no implicit consent from inactivity or food logging.
@@ -619,23 +702,31 @@ substitute for professional care.
 - **Recommended option:** A for target/safety guidance; B may be used only for
   a separately approved low-risk logging action and must retain the warning.
 - **Product Owner selection:** Possible conflict, unknown conflict,
-  insufficient evidence, missing ingredient evidence and possible
-  cross-contact return `unavailable` for adaptive, target and eat-now
-  safety-sensitive guidance. No state is downgraded to no conflict.
+  insufficient evidence, missing ingredient evidence, possible cross-contact
+  and structurally invalid evidence return `unavailable` for eat-now, adaptive
+  target, daily/weekly coaching, ranked meal candidates and any output
+  represented as suitable under active constraints. No state is downgraded to
+  no conflict.
 - **Rationale:** Unknown composition and possible cross-contact cannot support
   a safety claim under B03-D14.
 - **Safety consequence:** Prevents uncertain candidates from being ranked as
   safe or used to justify a target.
 - **Implementation consequence:** Return `unavailable` with the missing or
-  conflicting evidence list for material safety decisions. If a future policy
-  permits acknowledgement for logging, require an explicit action, retain the
-  evidence state, and never alter the evaluator result.
+  conflicting evidence list for every listed safety-sensitive output. If a
+  separately defined low-risk logging action permits acknowledgement, retain
+  the original evaluator result and warning, do not place the item into
+  recommendation output or change its ranking, and never alter the evaluator
+  result or bypass a hard block.
 - **Historical consequence:** Persist the original B03 outcome, evidence scope,
-  missing fields, displayed warning, acknowledgement/override and policy
-  version; corrections append lineage rather than rewriting the result.
+  missing fields, displayed warning and policy version in the relevant safety
+  evaluation/logging lineage; a low-risk acknowledgement or override is an
+  append-only feedback event and never becomes recommendation output or a
+  ranking input. Corrections append lineage rather than rewriting the result.
 - **Required tests:** Unknown ingredient, possible conflict, insufficient
-  information, cross-contact, acknowledgement required, no-known negative,
-  offline, restore and deterministic replay.
+  information, missing ingredient evidence, possible cross-contact,
+  structurally invalid evidence, every safety-sensitive output, low-risk
+  acknowledgement preservation, no-known negative, offline, restore and
+  deterministic replay.
 - **Tasks affected:** `B04-01`, `B04-08`, `B04-09`, `B04-10`, `B04-12`,
   `B04-13`, `B04-15`, `B04-17`.
 
@@ -813,10 +904,17 @@ substitute for professional care.
 - **Question:** How do missing nutrition facts and estimated ranges affect
   guidance?
 - **Accepted answer:** Preserve status, lower/point/upper bounds, source,
-  completeness and assumptions from B03. If every defensible bound fits the
-  requested target, guidance may be cautious; if bounds cross a safety or
-  decision threshold, return warning/confirmation or unavailable. Missing
-  data never becomes zero or an exact-looking value.
+  completeness and assumptions from B03. Estimated values remain ranges and
+  are never exactified. For eat-now, adaptive target, daily/weekly coaching,
+  ranked meal candidates and any output represented as suitable under active
+  constraints, possible conflict, unknown conflict state, insufficient
+  evidence, missing ingredient evidence, possible cross-contact or
+  structurally invalid evidence returns `unavailable`. A warning plus
+  acknowledgement is permitted only for a separately defined low-risk logging
+  action; it does not create recommendation output or safety. If an estimated
+  range crosses an approved safety or decision boundary, the safety-sensitive
+  result is `unavailable`; the range is never exactified. Missing data never
+  becomes zero.
 - **Rationale:** B03-D10/D11/D17 and the roadmap uncertainty principle are
   binding.
 - **Alternatives rejected:** Point-only ranking; midpoint-as-fact; suppressing
@@ -824,8 +922,9 @@ substitute for professional care.
 - **Consequences:** Recommendation DTOs carry uncertainty and evidence fields;
   UI must render partial/range/unavailable states accessibly.
 - **Required tests:** Known zero vs missing, range aggregation, threshold
-  crossing, incomplete daily totals, estimated restaurant candidate and
-  offline/manual state.
+  crossing, incomplete daily totals, estimated candidate, structurally invalid
+  evidence, each safety-sensitive output state, low-risk logging acknowledgement
+  preservation and offline/manual state.
 - **Tasks depending on it:** `B04-01`, `B04-08`, `B04-09`, `B04-10`, `B04-12`,
   `B04-15`.
 
@@ -833,21 +932,32 @@ substitute for professional care.
 
 - **Question:** How should allergy, intolerance, religious/ethical and
   unknown ingredient evidence constrain guidance?
-- **Accepted answer:** Reuse B03’s exact four outcomes. A confirmed conflict
-  for a strict safety-sensitive constraint hard-blocks a candidate from
-  “eat now”; a possible conflict or insufficient evidence produces a visible
-  warning/confirmation and cannot be called safe. A no-known-conflict result
-  permits a candidate only with “no known conflict” wording. Dislikes and
-  regional preferences can be soft filters. A user override records a personal
-  decision but cannot downgrade evidence or create a safety claim.
+- **Accepted answer:** Reuse B03’s exact evaluator outcomes. A confirmed
+  conflict for a strict safety-sensitive constraint hard-blocks a candidate
+  from recommendation output; possible conflict, unknown conflict state,
+  insufficient evidence, missing ingredient evidence, possible cross-contact
+  and structurally invalid evidence return `unavailable` for eat-now, adaptive
+  target, daily/weekly coaching, ranked meal candidates and any output
+  represented as suitable under active constraints. A warning plus
+  acknowledgement is allowed only for a separately defined low-risk logging
+  action. A no-known-conflict result is not a safety guarantee and may not be
+  used to override the unavailable states. Dislikes and regional preferences
+  can be soft filters. A user override records a personal decision but cannot
+  downgrade evidence, create a safety claim or bypass a hard block.
 - **Rationale:** B03-D14 makes the evaluator and evidence source authoritative.
 - **Alternatives rejected:** Name-based allergy inference; treating no-known as
   safe; one generic diet string; hidden hard blocks without explanation.
 - **Consequences:** `NutritionSafetyFilter` delegates to B03 and stores the
-  evaluation/result evidence used by a recommendation. Cross-contact fixtures
-  are a Sol gate before UI exposure.
-- **Required tests:** All four outcomes across all constraint types, strictness,
-  severity, cross-contact, unknown ingredient, user override and restore.
+  original evaluation/result evidence used by a recommendation. The mapper
+  emits typed `hard_block` or `unavailable` states for the listed
+  safety-sensitive outputs. A low-risk logging acknowledgement preserves the
+  original evaluator result and warning, never places the item in
+  recommendation output or changes ranking, and cannot bypass a hard block.
+  Cross-contact fixtures are a Sol gate before UI exposure.
+- **Required tests:** All evaluator outcomes across all constraint types,
+  strictness, severity, cross-contact, unknown ingredient, missing/invalid
+  evidence, safety-sensitive output unavailability, low-risk logging
+  acknowledgement preservation, user override and restore.
 - **Tasks depending on it:** `B04-01`, `B04-09`, `B04-10`, `B04-12`, `B04-15`,
   `B04-16`.
 
@@ -982,7 +1092,8 @@ substitute for professional care.
   request. Optional AI receives only a minimized/redacted candidate/result
   envelope after user consent; no raw health observations, allergies,
   unrestricted food logs, prompts, images or secrets are sent by default.
-  Provider/model metadata may be retained only as needed for reproducibility;
+  Provider/model metadata may be retained only when required by the approved
+  recommendation replay contract;
   raw response and prompt/image data are not persisted. Provider failure leaves
   the deterministic result or an unavailable/manual state.
 - **Rationale:** Existing privacy gates and B03-D19 are binding; current meal
@@ -1019,12 +1130,14 @@ substitute for professional care.
 
 - **Question:** Does B04 require durable schema and backup changes?
 - **Accepted answer:** Yes. After the accepted B03 v17/v8 baseline, use schema
-  v18 and Backup v9 for versioned nutrition goals/coaching preferences,
-  recovery observations, readiness snapshots/evidence, recommendations,
-  recommendation evidence and feedback. Do not back up daily/weekly derived
-  totals, in-memory caches, prompts, images or raw provider responses. v5–v8
-  imports remain valid with B04 sections absent; invalid v9 graphs restore zero
-  rows.
+  v18 and Backup v9 for versioned nutrition goals, the append-only
+  `coaching_consent_events` and `coaching_eligibility_evaluations` authorities,
+  coaching projections, recovery observations, readiness snapshots/evidence,
+  recommendations, recommendation evidence and feedback. Do not back up
+  daily/weekly derived totals, in-memory caches, prompts, images or raw
+  provider responses. v5–v8 imports remain valid with B04 sections absent and
+  do not fabricate consent or eligibility; invalid v9 graphs restore zero rows
+  transactionally.
 - **Rationale:** M18 explicitly adds durable observations, snapshots,
   recommendations, evidence and feedback; historical explanation cannot be
   reproduced from a cache.
@@ -1032,9 +1145,11 @@ substitute for professional care.
   recomputable caches; modifying B03 v17 tables without a new migration.
 - **Consequences:** Schema migration precedes all B04 durable work; backup
   follows schema ownership; restore ordering and compensation are required.
-- **Required tests:** Fresh v18, real v17→v18, direct accepted chain, rollback,
-  v5/v6/v7/v8 import, v9 round trip, malformed graph zero mutation and
-  preference compensation.
+- **Required tests:** Fresh v18, real v17→v18, direct accepted chain, migration
+  rollback, v5/v6/v7/v8 import without fabricated consent/eligibility, v9
+  round trip for events/evaluations and all durable graph edges, restore-order
+  validation, malformed graph zero mutation, duplicate/cross-user rejection,
+  unsupported-policy rejection and preference compensation.
 - **Tasks depending on it:** `B04-03`, `B04-04`, `B04-05`, `B04-06`, `B04-11`,
   `B04-17`.
 
@@ -1081,10 +1196,18 @@ disposition is:
 - **External food lookup:** remains out of B04; a future request must reopen
   scope and privacy review and cannot be introduced through D04.
 
-Documentation and already-planned v18/v9 ownership clarification may proceed
-under `HOLD-1`. Application, migration, backup and adaptive-target
-implementation remain blocked. Runtime behavior must return a truthful
-unavailable or user-set state and must not invent a policy constant.
+After independent Sol High approval of this remediation, `B04-01` may begin.
+Foundational tasks may proceed only according to the accepted DAG and their
+own dependencies, including Schema v18 and Backup v9 foundations, consent,
+eligibility, goals, readiness, safety, lineage, feedback and deterministic
+unavailable-state behavior. `HOLD-1` blocks enabled adaptive calorie proposals,
+readiness-driven target or training-change proposals, every non-zero adaptive
+target delta, adaptive deficit/surplus behavior and calorie floor/ceiling
+behavior. It does not block foundational contracts, fixtures, persistence,
+descriptive/history or valid user-set-target features. Runtime behavior must
+return a truthful unavailable or user-set state and must not invent a policy
+constant. Enabled adaptive behavior remains blocked until a superseding
+numerical policy is independently approved.
 
 ### B04-D04 task mapping
 
@@ -1092,19 +1215,19 @@ unavailable or user-set state and must not invent a policy constant.
 |---|---|
 | `B04-01` | Contract fixtures cover age, consent, target acceptance, missingness, dietary states, wording, offline/AI and N8. This task has not started. |
 | `B04-02` | Owns this authorized policy packet, `HOLD-1` register and independent Sol review request. |
-| `B04-03` | The already planned v18 entities own consent/eligibility evidence, effective-dated target lineage and recommendation evidence; no new D04 table is added. |
-| `B04-04` | The already planned v9 graph carries those user-owned records and feedback; raw disclosure/AI/medical/health payloads remain excluded. |
-| `B04-05` | Enforce age eligibility, opt-in, separate consent, explicit acceptance, idempotency and immutable target versions. |
+| `B04-03` | `coaching_consent_events` is the append-only consent authority and `coaching_eligibility_evaluations` is the append-only eligibility authority; both have explicit ownership, IDs, indexes, foreign keys and negative v17→v18 cases alongside target/recommendation lineage. |
+| `B04-04` | Backup v9 carries approved consent events, eligibility evaluations, goal/target versions, recommendation lineage and feedback with ordering, ownership, duplicate and unsupported-version validation; raw disclosure/AI/medical/health payloads remain excluded. |
+| `B04-05` | Enforce age eligibility, opt-in, separate append-only consent history, derived current projection, explicit acceptance, idempotency and immutable effective-dated target versions; historical evaluations remain immutable. |
 | `B04-06` | Preserve recovery provenance/completeness and suppress readiness-driven proposals when evidence is unavailable. |
-| `B04-07` | Enforce `18` eligibility, no automatic activation, `HOLD-1` zero deltas and missing/range rules. |
+| `B04-07` | Enforce `18` eligibility, no automatic activation, `HOLD-1` unavailable output with exact zero upward/downward/aggregate deltas, no user/AI bypass and missing/range rules. |
 | `B04-08` | Carry local date/timezone, age/consent/evidence state and N8 absence without inference. |
 | `B04-09` | Map B03 hard blocks, unavailable possible/insufficient states and exact no-known-conflict wording. |
 | `B04-10` | Keep deterministic ranking/evidence/availability authoritative; AI cannot alter outputs. |
 | `B04-11` | Freeze age/consent/target/evidence lineage and append feedback without rewriting history. |
 | `B04-12` | Exclude hard blocks and return unavailable for possible/unknown/insufficient safety evidence. |
-| `B04-13` | Expose age, consent, missing-data, wording, target-acceptance, offline and feedback states. |
+| `B04-13` | Expose durable eligibility and consent projections, age/withheld/unknown states, missing-data, wording, target-acceptance, offline and feedback states with typed unavailable reasons. |
 | `B04-14` | Keep AI separate, consented, redacted and wording-only. |
-| `B04-15` | Terra reviews exact copy/accessibility; below-age wording is non-punitive. |
-| `B04-16` | Verify one authority and no B01–B03 contract or legacy-policy regression. |
-| `B04-17` | Require Product Owner authorization, Terra copy review, independent Sol verdict and numerical `HOLD-1` evidence. |
+| `B04-15` | Read current consent from the event-derived projection, render age/withheld/unknown eligibility and unavailable safety states accessibly, and obtain Terra review of exact copy; below-age wording is non-punitive. |
+| `B04-16` | Verify one durable authority for consent and eligibility, append-only feedback/history and no B01–B03 contract or legacy-policy regression. |
+| `B04-17` | Require Product Owner authorization evidence, Terra copy review, incremental task ledger, independent Sol verdict and numerical `HOLD-1` evidence. |
 | `B04-18` | N8 remains conditional and outside mandatory B04. |

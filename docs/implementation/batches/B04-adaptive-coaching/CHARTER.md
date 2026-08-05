@@ -1,14 +1,16 @@
 # B04 — Adaptive Coaching
 
-Status: Planning gate only; implementation blocked pending the accepted B03 integration baseline, independent Sol High review, and the remaining `HOLD-1` numerical gates
+Status: Documentation gate; foundational implementation may proceed after independent Sol High approval and the accepted dependency parent; enabled adaptive behavior remains blocked by `B04-D04-HOLD-1`
 Planning branch: `batch/b04-planning`
 Planning base: `main` at `12ce1b05c7626d3fb37eedc37fc0dd4d7af94d8a`
-Accepted B03 integration source (not yet a parent): `batch/b03-nutrition-foundation` at `d85e8a16566735e7f6b7fe15cd2a97edb5677178`
+Accepted B03 integration source: `batch/b03-nutrition-foundation` at `d85e8a16566735e7f6b7fe15cd2a97edb5677178`
 Accepted B03 schema/backup baseline: v17 / v8
 Proposed B04 durable change: schema v18 / Backup v9
 D04 packet branch: `b04/d04-safety-policy-gate`
-D04 packet planning baseline: `9102092`
-B04 integration baseline marker: `[B04-INTEGRATION-BASELINE]`
+D04 packet planning baseline: `9102092fd1b18e38beff500e2654ece6a191f66f`
+B04 implementation parent: `f976542e395a3e082f1ab5cdfdfd87e969910766`
+B04 integration baseline: `741aa18972ebc1b61cd65c0bf12b442b10b50890`
+D04 documentation commit under review: `750ef0999153a7cc41a2493cb6305d2a833b1f12`
 Platforms: Android and iOS
 
 ## Canonical authority
@@ -51,7 +53,7 @@ deterministic result.
 | B04-R02 | Recovery observations and readiness snapshots expose completeness, missingness and calculation version | E5; F4; roadmap cross-feature decision 10 | Missing health input remains unknown; readiness is suppressed or downgraded below the approved evidence threshold. |
 | B04-R03 | One evidence-backed recommendation engine covers training and nutrition guidance, prioritization, explanation, confidence and alternatives | E5; canonical `Recommendation`, `RecommendationEvidence`, `RecommendationFeedback` | The same frozen context and rule version produce the same result and evidence lineage. |
 | B04-R04 | Adaptive calorie targets and bounded recovery-aware training guidance respect safety bounds and user overrides | E5; N9; roadmap Phase 5 exit criteria | Adaptive proposals are opt-in, bounded by an approved policy, reversible, and never silently replace a user-set target. |
-| B04-R05 | “What can I eat now?” uses only selected/local canonical food, recipe and thali candidates, remaining-target evidence and B03 safety/uncertainty contracts | E5; N10; B03 explicit deferral | No candidate is invented, unsafe candidates are blocked/warned, and unknown/range data remains visible. |
+| B04-R05 | “What can I eat now?” uses only selected/local canonical food, recipe and thali candidates, remaining-target evidence and B03 safety/uncertainty contracts | E5; N10; B03 explicit deferral | No candidate is invented; confirmed strict conflicts hard-block; possible/unknown/insufficient/missing/possible-cross-contact/structurally invalid evidence is unavailable for safety-sensitive output; unknown/range data remains visible. |
 | B04-R06 | Daily briefing and weekly coaching read models consume the same engine without creating a second recommendation authority | E5; P1/P2; canonical flow | Daily and weekly views show prioritized evidence, missing inputs, feedback state and historical goal context. |
 | B04-R07 | Recommendation evidence, historical lineage and user feedback preserve why guidance was issued and how the user responded | M18; Task 8; canonical `RecommendationEvidence`/`RecommendationFeedback` | A recommendation remains explainable after goal, catalogue, readiness or source changes; feedback is append-only. |
 
@@ -64,8 +66,10 @@ deterministic result.
 - Versioned readiness calculation and completeness read model.
 - One deterministic recommendation contract for training and nutrition.
 - Remaining-target and meal-opportunity guidance over local B03 candidates.
-- Safety filtering through the B03 constraint evaluator, including uncertainty
-  and confirmation states.
+- Safety filtering through the B03 constraint evaluator, including uncertainty,
+  hard-block and typed unavailable states. Warning plus acknowledgement is
+  limited to a separately defined low-risk logging action and never creates
+  recommendation output or a safety claim.
 - Durable recommendation evidence, historical lineage and append-only feedback.
 - Daily briefing and weekly review orchestration over explicit local-date
   periods.
@@ -75,8 +79,9 @@ deterministic result.
 
 - Medical diagnosis, treatment, injury rehabilitation, allergy-safety
   guarantees, or professional nutrition prescriptions.
-- Numerical deficit/surplus policy, minimum-age policy or other medically
-  sensitive constants until the product-owner/Sol policy gate records them.
+- Numerical deficit/surplus policy, enabled-adaptation cadence, evidence
+  thresholds or other medically sensitive constants until the Product Owner
+  and Sol record a superseding policy.
 - Adaptive target output while `B04-D04` is in `HOLD-1`; user-set targets,
   descriptive history and unavailable states remain in scope.
 - Reimplementation of B01 scheduling, B02 activity/history, B02 load-rule v1,
@@ -107,11 +112,14 @@ deterministic result.
   immutable consumption snapshots, recipes/thali, estimate provenance,
   structured dietary constraints and read-model ownership.
 - A named, integrated B03 parent branch with no unresolved integration merge.
-- Product-owner/Sol approval of target safety constants and adaptation policy.
+- Product-owner/Sol approval of any enabled numerical target policy; the
+  disabled `HOLD-1` contract is sufficient for foundational implementation.
 - A Product Owner-authorized `B04-D04` qualitative decision packet and an
   independent Sol High verdict. Numerical trend, completeness, cadence,
   cooldown, deficit/surplus and adjustment values remain under `HOLD-1`;
-  adaptive target exposure remains unavailable.
+  adaptive target exposure remains unavailable. `HOLD-1` does not block
+  schema/backup foundations, persistence, unavailable states, or descriptive
+  and user-set-target behavior.
 - One user/profile identity and timezone authority for B04 writes.
 
 ## Inherited contracts B04 may consume
@@ -153,17 +161,23 @@ deterministic result.
 - Goal changes and user overrides produce versioned, effective-dated records.
 - `B04-D04` age, consent, target acceptance, evidence, dietary, wording,
   offline/AI and N8 decisions are explicitly recorded and Product Owner-
-  authorized; independent Sol review and the remaining `HOLD-1` numerical
+  authorized. After independent Sol approval of this remediation, the DAG
+  may begin foundational implementation; the remaining `HOLD-1` numerical
   gates must close before adaptive exposure.
 - Readiness exposes completeness and never adapts from missing/permission-error
   inputs as if they were zero.
-- Adaptive target proposals are deterministic, bounded, opt-in and explainable.
+- Enabled adaptive target proposals are deterministic, bounded, opt-in and
+  explainable. Under `HOLD-1`, adaptive results are unavailable and all
+  adaptive deltas are exactly zero.
 - One engine produces daily, weekly and meal-opportunity recommendations with
   evidence, confidence, alternatives and unavailable states.
 - B03 food/recipe/thali candidates retain quantity, nutrient, estimate and
   constraint provenance through “what can I eat now?”.
-- Confirmed conflicts are blocked according to approved severity/strictness;
-  possible/insufficient evidence requires warnings or confirmation.
+- Confirmed strict conflicts are hard-blocked. Possible, unknown,
+  insufficient, missing, possible-cross-contact and structurally invalid
+  evidence return `unavailable` for safety-sensitive recommendation output.
+  Warning plus acknowledgement is limited to a separately defined low-risk
+  logging action and never changes safety or recommendation output.
 - Recommendation snapshots and feedback survive backup/restore and remain
   reproducible after goal, catalogue, health or recipe changes.
 - B03 and B02 historical authorities remain intact; no duplicate calculator,
@@ -174,7 +188,12 @@ deterministic result.
 
 ## Non-goals
 
-- No B04 feature branch, schema migration or application implementation is
-  authorized by this charter. This branch is documentation-only.
+- This branch is documentation-only and no B04-01 task has started. B04-01
+  may begin only after this remediation receives independent Sol High approval
+  and the accepted B04 implementation parent is used. Later tasks follow the
+  accepted DAG and their own dependencies. `HOLD-1` does not block foundational
+  contracts, schema v18, Backup v9, persistence, unavailable states, goals,
+  lineage, feedback, descriptive behavior or user-set targets; it continues
+  to block enabled adaptation and every non-zero adaptive delta.
 - No B04 implementation may start until the dependency gate in
   `VERIFICATION.md` is green.

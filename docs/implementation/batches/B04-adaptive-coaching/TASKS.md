@@ -1,8 +1,10 @@
 # B04 — Implementation Task DAG
 
-Status: planning only. No task below has started. The DAG assumes the
-accepted B03 branch has first been integrated into the implementation parent;
-that external gate is not a task to be hidden inside B04.
+Status: planning only. No task below has started. The DAG uses the concrete
+B04 integration baseline `741aa18972ebc1b61cd65c0bf12b442b10b50890`, whose
+parent contains accepted B03. After independent Sol High approval of this
+documentation remediation, B04-01 may begin; later tasks remain gated by this
+DAG and their own dependencies.
 
 ## Task rules
 
@@ -15,6 +17,15 @@ that external gate is not a task to be hidden inside B04.
 - `B04-02` is the sole owner of the D04 policy packet. No implementation task
   may choose an unrecorded age, evidence threshold, cadence, bound, wording or
   N8 semantic.
+- `B04-D04-HOLD-1` blocks enabled adaptive calorie proposals, readiness-driven
+  target/training-change proposals, every non-zero adaptive target delta,
+  adaptive deficit/surplus behavior and calorie floor/ceiling behavior. It does
+  not block contracts, fixtures, Schema v18 or Backup v9 foundations, goals,
+  consent, readiness, safety, lineage, feedback, deterministic unavailable
+  states, descriptive/history features or valid user-set targets. Under the
+  hold, adaptive output is `unavailable`, upward/downward/aggregate deltas are
+  exactly `0 kcal`, no proposal can be accepted, and user override/AI cannot
+  bypass it.
 - Product Owner qualitative decisions are authorized in the D04 packet:
   verified age `18` inclusive, below-age `coaching_unavailable_age`, opt-in,
   explicit target acceptance, no background automatic activation, typed
@@ -38,21 +49,24 @@ that external gate is not a task to be hidden inside B04.
   existing B02/B03 model and repository tests.
 - **Acceptance criteria:** Every B04 outcome has an owner and fixture set;
   unknown/range/provenance/timezone/feedback states are enumerated; no B03
-  authority is duplicated; `B04-D04-01` through `B04-D04-20` each have the
-  required decision fields, affected tasks and deterministic negative fixture;
-  policy gates are marked blocking.
+  authority is duplicated; `coaching_consent_events` and
+  `coaching_eligibility_evaluations` are represented as append-only durable
+  authorities; `B04-D04-01` through `B04-D04-20` each have the required
+  decision fields, affected tasks and deterministic negative fixture; policy
+  gates are marked blocking; this task produces contracts and fixtures only.
 - **Required tests:** Contract serialization, state-transition and roadmap
-  traceability fixtures; negative fixtures for missing evidence and dangling
-  lineage.
+  traceability fixtures; negative fixtures for missing evidence, dangling
+  lineage, possible/unknown/insufficient dietary evidence and exact
+  `HOLD-1` unavailable/zero-delta behavior; no application implementation.
 - **Explicit exclusions:** No schema migration, UI, engine or AI code.
 - **Parallelizable:** No; it establishes the shared contract baseline.
 
 ## B04-02 — Product, target and safety policy gate
 
-- **Objective:** Finalize and verify the Product Owner-authorized qualitative
-  D04 contract, record the exact `HOLD-1` numerical guards, and prepare the
-  packet for independent Sol High review. This task is documentation/policy
-  finalization only.
+- **Objective:** Implement the Product Owner-authorized qualitative D04
+  contract as a bounded policy task, record the exact staged `HOLD-1` contract,
+  and prepare the packet for independent Sol High review. This is policy
+  implementation/documentation, not another open planning exercise.
 - **Dependencies:** `B04-01`.
 - **Risk / size:** Critical / M.
 - **Primary model / required reviewer:** Sol High / Product Owner and Sol High;
@@ -63,17 +77,24 @@ that external gate is not a task to be hidden inside B04.
   authorized qualitative selections; age is verified `18 completed years`
   inclusive; below-age output is `coaching_unavailable_age`; coaching and AI
   consent are separate; target acceptance is explicit and idempotent; no
-  background target activation occurs; possible/insufficient safety evidence
-  returns unavailable; N8 remains conditional; and `HOLD-1` records zero
+  background target activation occurs; possible, unknown, insufficient,
+  missing-ingredient, possible-cross-contact and structurally invalid evidence
+  returns unavailable for safety-sensitive outputs; warning acknowledgement is
+  limited to low-risk logging; N8 remains conditional; and `HOLD-1` records zero
   upward, downward and aggregate kcal adjustment. Any future enabled numeric
   policy must record unit, inclusive/exclusive edge, effective period,
   missing-data behavior, policy version, override rule and boundary tests.
-  Existing TDEE constants remain legacy and are not B04 policy.
-- **Required tests:** Decision-record completeness, zero-delta hold,
-  boundary-value policy fixtures, contradictory-goal fixtures,
-  missing-body-metric fixtures, missing nutrition/recovery fixtures,
-  consent/withdrawal, hard-block/possible/insufficient evidence,
-  professional-wording, offline/AI redaction and N8 non-inference tests.
+  Existing TDEE constants remain legacy and are not B04 policy. The task
+  explicitly distinguishes foundations allowed under `HOLD-1` from enabled
+  adaptive behavior that remains blocked.
+- **Required tests:** Decision-record completeness; `HOLD-1` unavailable result,
+  exact zero upward/downward/aggregate delta, no proposal acceptance and no
+  user/AI bypass; boundary-value policy fixtures only for future approval;
+  contradictory-goal fixtures; missing-body-metric fixtures; missing
+  nutrition/recovery fixtures; consent/withdrawal; hard-block and
+  possible/unknown/insufficient/missing/invalid dietary evidence; warning
+  preservation for low-risk logging only; professional-wording; offline/AI
+  redaction; and N8 non-inference tests.
 - **Explicit exclusions:** No target engine or UI implementation before the
   independent Sol review, dependency gate and remaining numerical approvals
   are closed.
@@ -81,22 +102,31 @@ that external gate is not a task to be hidden inside B04.
 
 ## B04-03 — Schema v18 migration contract
 
-- **Objective:** Add the minimal durable schema for goal versions, coaching
-  preferences, recovery observations, readiness snapshots/evidence,
-  recommendations/evidence and feedback.
+- **Objective:** Add the minimal durable Schema v18 contracts for goal
+  versions, `coaching_consent_events`, derived coaching preferences,
+  `coaching_eligibility_evaluations`, recovery observations, readiness
+  snapshots/evidence, recommendations/evidence and feedback.
 - **Dependencies:** `B04-01`, `B04-02`, accepted B03 integration baseline.
 - **Risk / size:** Critical / L.
 - **Primary model / required reviewer:** Sol High / Sol High.
 - **Likely files or domains:** `lib/data/database/app_database.dart`,
   `nutrition_tables.dart`, migration tests, foreign keys and indexes.
 - **Acceptance criteria:** v17→v18 and fresh creation are deterministic;
-  planned B04 entities own consent evidence, verified-age eligibility,
-  effective-dated target lineage, recommendation evidence and feedback as
-  specified in `DECISIONS.md`; IDs, ownership, effective dates, timestamps,
-  supersession, indexes and foreign keys match the existing v18 plan; no new
-  D04 table, cache, prompt or image table is added.
-- **Required tests:** Fresh schema, direct upgrade, chained upgrade, failed
-  migration rollback, foreign-key and index checks, idempotent open.
+  `coaching_consent_events` is append-only and owns consent history;
+  `coaching_eligibility_evaluations` is append-only and owns eligible,
+  underage, unknown, conflicting, withheld, invalid and policy-unavailable
+  evaluations; current projections are derived; effective-dated target
+  lineage, recommendation evidence and feedback have explicit ownership; IDs,
+  ownership, effective dates, timestamps, supersession, indexes and foreign
+  keys match `DECISIONS.md`; caches, prompts and raw provider payloads are not
+  durable schema entities.
+- **Required tests:** Append-only consent-event schema; current consent
+  projection derived from events; enable/disable history; consent category
+  separation; withheld eligibility; unknown/conflicting eligibility;
+  cross-user relationship rejection; invalid result/source combinations;
+  portable IDs; required indexes and foreign keys; fresh schema; direct and
+  chained migration; idempotent open; failed migration rollback; and negative
+  v17-to-v18 migration cases.
 - **Explicit exclusions:** Repository behavior, backup serialization and UI.
 - **Parallelizable:** No; it is the shared persistence baseline.
 
@@ -109,14 +139,20 @@ that external gate is not a task to be hidden inside B04.
 - **Primary model / required reviewer:** GPT Luna / Sol High.
 - **Likely files or domains:** `lib/core/backup/backup_schema.dart`, backup
   envelope/manifest code, restore coordinator, backup fixtures and tests.
-- **Acceptance criteria:** Backup v9 round-trips the already planned durable
-  B04 data, including consent/eligibility evidence, effective-dated target
-  lineage and feedback; v5–v8 imports restore with an empty B04 graph;
-  restore ordering and invalid graph rollback are atomic; no raw AI,
-  disclosure, medical-restriction or health payloads are serialized.
-- **Required tests:** Round-trip, old-version import, future-version rejection,
-  malformed relationship, duplicate identity, failure injection and
-  post-restore read verification.
+- **Acceptance criteria:** Backup v9 round-trips the durable B04 data,
+  including append-only consent events, eligibility evaluations,
+  effective-dated target lineage and feedback; restore ordering is explicit;
+  v5–v8 imports restore with an empty B04 graph and do not fabricate consent
+  or eligibility; invalid graph rollback is atomic; no raw AI, disclosure,
+  medical-restriction or health payloads are serialized.
+- **Required tests:** Consent enable/disable/withdrawal round trip; separate
+  adaptive and AI consent round trip; consent event ordering; withheld
+  eligibility round trip; unknown/conflicting eligibility round trip;
+  local-ID remapping; duplicate ID rejection; cross-user rejection;
+  unsupported policy-version rejection; older backups do not fabricate
+  consent or eligibility; transactional restore and retry; future-version
+  rejection; malformed relationship; failure injection; and post-restore read
+  verification.
 - **Explicit exclusions:** The pre-existing unrelated backup-schema edit in
   the current worktree; B04 implementation must not absorb it silently.
 - **Parallelizable:** No; it follows the approved schema and must merge before
@@ -136,13 +172,19 @@ that external gate is not a task to be hidden inside B04.
   nutrition-goal screens and fixtures.
 - **Acceptance criteria:** Accepted versions are append-only and historical;
   user-set target remains authoritative unless the user explicitly accepts a
-  proposal; adaptive coaching defaults off; adaptive and AI consent are
-  separate, versioned and effective-dated; verified age is `18` inclusive;
-  below-age/unknown-age/disabled states cannot create adaptive output; duplicate
-  acceptance is idempotent; legacy profile fields have one-way compatibility
-  mapping and no competing write authority.
-- **Required tests:** Version/effective-date history, override, reset,
-  opt-in-off, timezone boundary, duplicate command and backup restore.
+  proposal; adaptive coaching defaults off; consent history is append-only in
+  `coaching_consent_events`; adaptive and AI consent are separate, versioned
+  and effective-dated; the current consent view is derived; verified age is
+  `18` inclusive; below-age/unknown/conflicting/withheld-age/disabled states
+  cannot create adaptive output; duplicate acceptance and consent commands are
+  idempotent;
+  legacy profile fields have one-way compatibility mapping and no competing
+  write authority.
+- **Required tests:** Default-off coaching; explicit enable; consent
+  withdrawal; consent policy/copy version history; restart and restore; age
+  eligibility and withheld age; historical goal unaffected by later consent or
+  age corrections; target acceptance creates an effective-dated version; and
+  duplicate commands are idempotent.
 - **Explicit exclusions:** No adaptive formula, readiness scoring, external
   search or final dashboard redesign.
 - **Parallelizable:** Yes, after `B04-04`; isolated from readiness repository
@@ -185,14 +227,21 @@ that external gate is not a task to be hidden inside B04.
   calculation fixtures.
 - **Acceptance criteria:** No silent target mutation; verified age `18` is
   inclusive; below-age/unknown-age returns the explicit unavailable state; no
-  background automatic target change occurs; one observation never changes a
+  eligibility decision is inferred or reconstructed from the current
+  projection; immutable evaluations are read from
+  `coaching_eligibility_evaluations`; no
+  No background automatic target change occurs; one observation never changes a
   target; while `HOLD-1` is active no adaptive calorie or readiness-driven
   training proposal is emitted and upward/downward/aggregate delta is exactly
-  `0 kcal`; goals, trends, workload, readiness and overrides are named
+  `0 kcal`; no hidden calculation becomes active; user override and AI cannot
+  bypass the hold; goals, trends, workload, readiness and overrides are named
   evidence; training ownership remains B02-owned.
-- **Required tests:** Golden calculations, bounds, trend windows, missing and
-  range propagation, opt-in/override, contradictory goals, idempotency and
-  rule-version lineage.
+- **Required tests:** `HOLD-1` emits no adaptive proposal; `HOLD-1` returns an
+  unavailable reason; upward delta exactly `0 kcal`; downward delta exactly
+  `0 kcal`; aggregate delta exactly `0 kcal`; no hidden calculation becomes
+  active; user override cannot bypass the hold; AI cannot bypass the hold; and
+  policy-version replay is deterministic. Future numerical-policy fixtures
+  remain separate and unapproved until the hold is superseded.
 - **Explicit exclusions:** AI-generated targets, medical prescriptions,
   unapproved aggressive deficits and B02 load-target replacement.
 - **Parallelizable:** No; it depends on both new histories and the policy gate.
@@ -215,7 +264,10 @@ that external gate is not a task to be hidden inside B04.
   candidates are explicit local selections; no legacy FoodLogs/meal-plan path
   can become authority.
 - **Required tests:** Daily/weekly context, no-candidate, unknown totals,
-  local timezone/DST, explicit meal opportunity and data redaction fixtures.
+  local timezone/DST, explicit meal opportunity and data redaction fixtures;
+  no N8 inference from holiday, calendar, location, clock, food history,
+  restaurant data, religion or region; and absence of N8 produces ordinary
+  evidence-limited or unavailable behavior.
 - **Explicit exclusions:** External search, pantry inference, festival-mode
   inference and duplicated nutrient calculations.
 - **Parallelizable:** No; the shared context contract is consumed by safety
@@ -233,14 +285,19 @@ that external gate is not a task to be hidden inside B04.
   `nutrition_constraints.dart`, estimate facts/ranges, new B04 policy mapper
   and safety fixtures.
 - **Acceptance criteria:** Confirmed strict allergy, intolerance, religious and
-  ethical conflicts hard-block; possible, unknown, insufficient and missing
-  ingredient evidence return unavailable for adaptive/target/eat-now safety
-  guidance; no-known-conflict uses the approved exact semantic and is not a
-  safety guarantee; unknown and range data remain visible; user override cannot
-  bypass a hard block.
+  ethical conflicts hard-block; possible, unknown, insufficient, missing
+  ingredient, possible cross-contact and structurally invalid evidence return
+  unavailable for eat-now, adaptive target, daily/weekly coaching, ranked meal
+  candidates and any output represented as suitable under active constraints;
+  no-known-conflict uses the approved exact semantic and is not a safety
+  guarantee; unknown and range data remain visible; a low-risk logging warning
+  preserves the evaluator result and never enters recommendation output; user
+  override cannot bypass a hard block or create safety.
 - **Required tests:** Allergy, intolerance, religious, ethical, cross-contact,
-  unknown ingredient, unknown nutrient, range crossing and user-override
-  fixtures; no inference of restrictions.
+  possible conflict, unknown conflict, insufficient evidence, missing
+  ingredient, structurally invalid evidence, unknown nutrient, range crossing,
+  every safety-sensitive output, low-risk acknowledgement preservation,
+  user-override and offline fixtures; no inference of restrictions.
 - **Explicit exclusions:** Medical diagnosis, guarantee language, new B03
   evaluator or unrestricted safety rules.
 - **Parallelizable:** No; it consumes the shared context and policy mapping.
@@ -256,13 +313,17 @@ that external gate is not a task to be hidden inside B04.
 - **Likely files or domains:** New recommendation/evidence models, pure engine,
   prioritization policy, deterministic fixtures and UI state DTOs.
 - **Acceptance criteria:** Daily, weekly, training and nutrition consumers call
-  the same engine; priority is deterministic; safety outcomes cannot be
-  bypassed; explanation names evidence and uncertainty; age/consent/policy
-  state, professional wording, target-acceptance state and unavailable reasons
-  are explicit; no AI is required for an authoritative result or may change
+  the same engine; priority is deterministic; confirmed hard blocks and
+  possible/unknown/insufficient/missing/invalid dietary evidence cannot be
+  bypassed; those safety-sensitive recommendation states are unavailable;
+  explanation names evidence and uncertainty; age/consent/policy state,
+  professional wording, target-acceptance state and unavailable reasons are
+  explicit; no AI is required for an authoritative result or may change
   targets/safety.
 - **Required tests:** Golden ranking, tie-breaking, priority, no-evidence,
-  range, conflict, readiness-incomplete, offline and deterministic replay.
+  possible/unknown/insufficient/missing/invalid dietary evidence, low-risk
+  warning preservation, range, conflict, readiness-incomplete, `HOLD-1`
+  unavailable, offline and deterministic replay.
 - **Explicit exclusions:** Separate nutrition/training engines, silent
   prioritization, clinical advice and raw AI output as authority.
 - **Parallelizable:** No; it is the central contract and critical review gate.
@@ -277,13 +338,15 @@ that external gate is not a task to be hidden inside B04.
 - **Likely files or domains:** Recommendation/evidence/feedback repositories,
   schema/backup adapters, graph validators and history read models.
 - **Acceptance criteria:** Issued output freezes context/evidence/rule/model
-  versions, age eligibility, consent evidence and target version; supersession
-  is explicit; acceptance/rejection/dismissal/override/snooze feedback cannot
-  rewrite history; duplicate commands are idempotent; dangling references fail
-  closed; projections do not create duplicate recommendations.
-- **Required tests:** Historical reads after goal changes, lineage graph,
-  feedback idempotency, duplicate recommendation prevention, backup round-trip,
-  rollback and deletion/retention policy fixtures.
+  versions, immutable eligibility evaluation, consent-event reference and
+  target version; supersession is explicit; acceptance/rejection/dismissal/
+  override/snooze feedback is append-only and cannot rewrite history; duplicate
+  commands are idempotent; dangling or cross-user references fail closed;
+  projections do not create duplicate recommendations.
+- **Required tests:** Historical reads after goal, consent or age changes;
+  append-only event/evaluation lineage graph; feedback idempotency; duplicate
+  recommendation prevention; backup round-trip; rollback; rejected cross-user
+  references; and deletion/retention policy fixtures.
 - **Explicit exclusions:** Persistent daily/weekly caches, raw prompts,
   unbounded event payloads and product analytics unrelated to feedback.
 - **Parallelizable:** No; it depends on the central engine and persistence
@@ -306,8 +369,9 @@ that external gate is not a task to be hidden inside B04.
   approved no-known-conflict wording is not a safety claim; no
   meal-time/availability invention; no AI/network is necessary.
 - **Required tests:** Candidate ranking, no candidate, consumed/estimated/
-  missing totals, allergy and unknown ingredient, offline, acknowledgement and
-  effective-date goal changes.
+  missing totals, allergy, possible/unknown/insufficient/missing/invalid
+  dietary evidence, offline, low-risk logging acknowledgement preservation and
+  effective-date goal changes; no safety-sensitive acknowledgement bypass.
 - **Explicit exclusions:** External food search, pantry scanning, exact claims
   for unknown nutrients and new recipe/nutrient calculation logic.
 - **Parallelizable:** No; it consumes the engine, safety and history contracts.
@@ -325,11 +389,19 @@ that external gate is not a task to be hidden inside B04.
   state components.
 - **Acceptance criteria:** Daily uses local civil date; weekly period is
   explicit and timezone-aware; no duplicate recommendation logic; explanation,
-  alternatives, missing evidence, age/consent state, professional wording,
-  target acceptance and feedback are reachable; below-age wording is not
-  punitive or judgmental; no-data, policy-hold and offline states are truthful.
-- **Required tests:** DST/cross-midnight/week rollover, changed goals, missing
-  logs, readiness incomplete, feedback projection, large text and semantics.
+  alternatives, missing evidence, durable age-evaluation and consent-derived
+  state, professional wording, target acceptance and feedback are reachable;
+  below-age/unknown/withheld wording is not punitive or judgmental; no-data,
+  policy-hold and offline states are truthful; possible/unknown/insufficient/
+  missing/invalid dietary evidence is unavailable for safety-sensitive output.
+- **Required tests:** Under-18 coaching-unavailable state; unknown/withheld age
+  state; consent disabled; consent withdrawn; `HOLD-1`; offline deterministic
+  unavailable state; missing nutrition evidence; missing readiness evidence;
+  possible/unknown/insufficient/missing/cross-contact/structurally invalid
+  safety evidence unavailable; no silent target activation; accessibility and
+  semantic presentation of unavailable reasons;
+  DST/cross-midnight/week rollover, changed goals, missing logs, readiness
+  incomplete, feedback projection and large text.
 - **Explicit exclusions:** Full dashboard redesign, new analytics metrics,
   calendar ownership or legacy weekly AI report as authority.
 - **Parallelizable:** No; it owns central production read-model integration.
@@ -344,14 +416,17 @@ that external gate is not a task to be hidden inside B04.
 - **Likely files or domains:** AI adapter/provider boundary, privacy redaction,
   `meal_plan_service.dart` and weekly-report legacy isolation, offline/error
   states and privacy tests.
-- **Acceptance criteria:** AI cannot set targets, alter deltas, override safety,
-  invent foods, infer allergies, alter identity/ranking/evidence/ranges/
-  completeness/availability/confidence or exactify ranges; request is redacted
-  and separately consented; offline/provider failure leaves the deterministic
+- **Acceptance criteria:** AI cannot set targets, alter deltas, override safety
+  or `HOLD-1`, invent foods, infer allergies, alter identity/ranking/evidence/
+  ranges/completeness/availability/confidence or exactify ranges; optional AI
+  consent is separate, append-only and withdrawable; request is redacted and
+  separately consented; offline/provider failure leaves the deterministic
   result unchanged or unavailable; raw prompts, responses, disclosure text,
   health/allergy payloads and images are not persisted.
-- **Required tests:** Consent off, redaction, provider failure, malformed output,
-  prompt-injection-like food claims, offline and lineage metadata.
+- **Required tests:** Separate AI consent enable/disable/withdrawal; consent
+  event history; `HOLD-1` bypass attempt; redaction; provider failure;
+  malformed output; prompt-injection-like food claims; offline and lineage
+  metadata.
 - **Explicit exclusions:** AI as nutrition authority, unrestricted external
   search, health/allergy payloads and replacement of B03 estimate privacy.
 - **Parallelizable:** Yes, after `B04-13`; isolated from UI except the optional
@@ -370,13 +445,18 @@ that external gate is not a task to be hidden inside B04.
   report screens, providers/controllers, navigation, semantic labels and
   responsive layouts.
 - **Acceptance criteria:** User can inspect evidence, uncertainty, opt-in,
-  consent, target acceptance, override, confirmation, dismissal and
-  unavailable states; below-18 users retain general app access and descriptive
-  features without punitive wording; no duplicate TDEE/weekly/AI authority
-  remains; compact layouts and assistive technology expose the same truth as
-  data models.
-- **Required tests:** Widget/controller tests, navigation restoration,
-  accessibility semantics, compact/large text, offline and error state tests.
+  append-only consent-history projection, age/withheld/unknown eligibility,
+  target acceptance, override, dismissal and unavailable states; warnings are
+  acknowledgement-capable only for a separately defined low-risk logging
+  action and never represent recommendation safety; below-18 users retain
+  general app access and descriptive features without punitive wording; no
+  duplicate TDEE/weekly/AI authority remains; compact layouts and assistive
+  technology expose the same truth as data models.
+- **Required tests:** Widget/controller tests for default-off coaching,
+  consent enable/disable/withdrawal, consent copy/policy version history,
+  unknown/withheld age, safety-sensitive unavailable states and no hard-block
+  bypass; navigation restoration; accessibility semantics; compact/large text;
+  offline and error state tests.
 - **Explicit exclusions:** New domain calculations, schema edits, final
   dashboard redesign and hidden background target changes.
 - **Parallelizable:** No; it modifies shared production state ownership and
@@ -393,13 +473,17 @@ that external gate is not a task to be hidden inside B04.
 - **Likely files or domains:** Repository ownership map, providers/controllers,
   legacy `FoodRepository`, `TdeeCalculator`, AI meal-plan/weekly-report paths,
   migration/backup and integration tests.
-- **Acceptance criteria:** One write/read authority per contract; no B03
-  reimplementation; B02 load/readiness provenance ownership remains intact; old
-  data and backups remain readable; age/consent/target-acceptance,
-  missing-data, dietary, offline and AI boundaries are covered; all B04
-  outcomes trace to the engine/history.
-- **Required tests:** Full regression, duplicate-authority detection, migration
-  and backup compatibility, offline, privacy and cross-batch end-to-end tests.
+- **Acceptance criteria:** One write/read authority per contract;
+  `coaching_consent_events` and `coaching_eligibility_evaluations` remain the
+  durable historical authorities; no B03 reimplementation; B02 load/readiness
+  provenance ownership remains intact; old data and backups remain readable;
+  age/consent/target-acceptance, missing-data, dietary, offline and AI
+  boundaries are covered; all B04 outcomes trace to the engine/history.
+- **Required tests:** Full regression; duplicate-authority detection; consent
+  and eligibility event/evaluation ownership; cross-user and unsupported
+  version rejection; migration and v5–v8/v9 backup compatibility;
+  possible/unknown/insufficient dietary evidence unavailable; offline, privacy
+  and cross-batch end-to-end tests.
 - **Explicit exclusions:** Refactoring unrelated B01–B03 foundations or
   absorbing their accepted follow-ups.
 - **Parallelizable:** No; it observes all merged contracts and shared
@@ -420,10 +504,13 @@ that external gate is not a task to be hidden inside B04.
   blocker; Product Owner qualitative authorization, Terra copy review and
   independent Sol High verdict for `B04-D04-01` through `B04-D04-20` are
   recorded; `HOLD-1` numerical values remain explicit until separately
-  approved; Android and iOS physical checks are recorded; implementation
-  branch is eligible for integration only after the dependency gate closes.
-- **Required tests:** Full matrix in `VERIFICATION.md`, manual journeys,
-  release builds and rollback/idempotency evidence.
+  approved; the incremental evidence ledger is updated immediately after each
+  approved/merged task; Android and iOS physical checks are recorded; the
+  implementation branch is eligible for integration only after the dependency
+  gate closes.
+- **Required tests:** Full matrix in `VERIFICATION.md`, direct task-level D04
+  acceptance tests, manual journeys, release builds and rollback/idempotency
+  evidence; ledger completeness is itself a release check.
 - **Explicit exclusions:** Feature changes during verification without a
   reviewed remediation task; B05 scope.
 - **Parallelizable:** No; final gate follows the integrated baseline.
@@ -471,7 +558,7 @@ implementation tasks.
 
 | Wave | Tasks / branches | Shared baseline | Expected merge order | Combined review |
 |---|---|---|---|---|
-| 0 | `B04-01`, then `B04-02` | Planning branch and accepted B01–B03 contract evidence | Contract matrix before policy gate | Sol; Product Owner; Terra for copy |
+| 0 | `B04-01`, then `B04-02` | Concrete B04 integration baseline, accepted B01–B03 contract evidence and independent Sol approval of this remediation | Contract matrix before policy gate | Sol; Product Owner; Terra for copy |
 | 1 | `B04-03` | Accepted B03 integration parent | Schema first | Sol schema gate |
 | 2 | `B04-04` | Schema v18 merged | Backup graph after migration | GPT Luna implementation, Sol restore gate |
 | 3 | `B04-05` and `B04-06` | Schema/backup baseline | Merge repositories independently, then shared fixtures | Sol; Terra only for settings surface |
@@ -485,6 +572,7 @@ implementation tasks.
 | 11 | `B04-16` | All implementation waves merged | Regression/authority sweep | Terra + Sol |
 | 12 | `B04-17` | Regression-clean integration branch | Final verification only | Sol release gate |
 
-Branches are conceptual task branches; they are not to be created until B03
-is integrated and the dependency/policy gates are closed. No B04-01 branch is
-to be started from this planning-only branch.
+Branches are conceptual task branches. B04-01 may be created only after the
+independent Sol High verdict approves this remediation and the accepted parent
+is used; every later branch requires its own DAG dependencies and review
+evidence. No task is marked implemented by this planning document.
