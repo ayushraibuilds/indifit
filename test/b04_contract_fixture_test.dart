@@ -11,11 +11,13 @@ void main() {
       matrix.validate();
 
       expect(matrix.version, kB04AdaptiveCoachingFixtureContractVersion);
+      expect(matrix.enabledPolicy.policyVersion, kB04EnabledPolicyVersion);
       expect(matrix.outcomes, hasLength(7));
       expect(matrix.decisions, hasLength(20));
+      expect(matrix.negativeFixtures, hasLength(20));
       expect(matrix.enabledEdges, hasLength(47));
       expect(matrix.states, isNotEmpty);
-      expect(matrix.ranges, hasLength(6));
+      expect(matrix.ranges, hasLength(10));
       expect(matrix.trends, hasLength(3));
       expect(matrix.maintenance, hasLength(3));
       expect(matrix.durableAuthorities, hasLength(2));
@@ -61,6 +63,17 @@ void main() {
           () => B04AdaptiveCoachingFixtureMatrix.fromJson(invalid),
           throwsA(isA<StateError>()),
         );
+
+        final invalidPolicy = B04AdaptiveCoachingFixtureMatrix.current.toJson();
+        final policy = Map<String, dynamic>.from(
+          invalidPolicy['enabled_policy'] as Map,
+        );
+        policy['proposal_step_kcal'] = 50;
+        invalidPolicy['enabled_policy'] = policy;
+        expect(
+          () => B04AdaptiveCoachingFixtureMatrix.fromJson(invalidPolicy),
+          throwsA(isA<StateError>()),
+        );
       },
     );
 
@@ -77,13 +90,24 @@ void main() {
         expect(fixtureIds, containsAll(outcome.fixtureIds));
         expect(outcome.downstreamTasks, isNotEmpty);
       }
+
+      final r01 = matrix.outcomes.singleWhere(
+        (outcome) => outcome.id == 'B04-R01',
+      );
+      expect(
+        r01.downstreamTasks,
+        equals(['B04-02', 'B04-05', 'B04-07', 'B04-15']),
+      );
     });
 
     test(
       'D04-01 through D04-20 retain required fields and negative fixtures',
       () {
-        for (final decision
-            in B04AdaptiveCoachingFixtureMatrix.current.decisions) {
+        final matrix = B04AdaptiveCoachingFixtureMatrix.current;
+        final negatives = {
+          for (final fixture in matrix.negativeFixtures) fixture.id: fixture,
+        };
+        for (final decision in matrix.decisions) {
           expect(decision.selectedOption, isNotEmpty);
           expect(decision.unit, isNotEmpty);
           expect(decision.effectivePeriod, isNotEmpty);
@@ -93,7 +117,82 @@ void main() {
           expect(decision.overrideRule, isNotEmpty);
           expect(decision.negativeFixtureId, isNotEmpty);
           expect(decision.affectedTasks, isNotEmpty);
+          expect(decision.blocking, isTrue);
+          final negative = negatives[decision.negativeFixtureId];
+          expect(negative, isNotNull);
+          expect(negative!.decisionId, decision.id);
+          expect(negative.id, 'd04-${decision.id.substring(8)}-negative');
+          expect(negative.scenario, isNotEmpty);
+          expect(
+            negative.expectedOutcome,
+            isIn([
+              B04FixtureOutcome.unavailable,
+              B04FixtureOutcome.invalidEvidence,
+            ]),
+          );
+          expect(negative.adaptiveDeltaKcal, 0);
+          expect(negative.targetUnchanged, isTrue);
+          expect(negative.historyUnchanged, isTrue);
         }
+      },
+    );
+
+    test(
+      'ENABLED-1 contract exposes exact policy values and blocking gates',
+      () {
+        final policy = B04AdaptiveCoachingFixtureMatrix.current.enabledPolicy;
+
+        policy.validate();
+        expect(policy.minimumAgeYears, 18);
+        expect(policy.evaluationWindowDays, 21);
+        expect(policy.minimumValidWeightDays, 10);
+        expect(policy.minimumWeightSpanDays, 14);
+        expect(policy.minimumFirstBlockWeightDays, 3);
+        expect(policy.minimumFinalBlockWeightDays, 3);
+        expect(policy.latestWeightFreshnessDays, 4);
+        expect(policy.minimumNutritionValidDays, 14);
+        expect(policy.nutritionCompletenessPercent, '80');
+        expect(policy.nutritionMaximumRangePercent, '20');
+        expect(policy.maintenanceFreshnessDays, 30);
+        expect(policy.maintenanceMaximumRangePercent, '15');
+        expect(policy.proposalStepKcal, 100);
+        expect(policy.proposalCadenceDays, 21);
+        expect(policy.proposalExpiryDays, 7);
+        expect(policy.aggregateWindowDays, 42);
+        expect(policy.aggregateMinimumKcal, -200);
+        expect(policy.aggregateMaximumKcal, 200);
+        expect(policy.lossMaximumDeficitKcal, 500);
+        expect(policy.lossMaximumDeficitPercent, '20');
+        expect(policy.lossMinimumFloorKcal, 1200);
+        expect(policy.lossMinimumFloorPercent, '80');
+        expect(policy.gainMaximumSurplusKcal, 300);
+        expect(policy.gainMaximumSurplusPercent, '15');
+        expect(
+          policy.supportedGoalRates,
+          equals([
+            'loss:-0.25% body weight/week',
+            'loss:-0.50% body weight/week',
+            'maintenance:0.00% body weight/week',
+            'gain:+0.10% body weight/week',
+            'gain:+0.25% body weight/week',
+          ]),
+        );
+        expect(
+          policy.defaultGoalRates,
+          equals({
+            'loss': '-0.50% body weight/week',
+            'maintenance': '0.00% body weight/week',
+            'gain': '+0.25% body weight/week',
+          }),
+        );
+        expect(policy.lossGainDeadbandPercent, '0.15');
+        expect(policy.maintenanceDeadbandPercent, '0.25');
+        expect(policy.lossRapidChangePercent, '-1.00');
+        expect(policy.gainRapidChangePercent, '+0.50');
+        expect(policy.blockingActivationGates, hasLength(4));
+        expect(policy.unitRule, contains('finite'));
+        expect(policy.missingDataRule, contains('never zero'));
+        expect(policy.overrideRule, contains('cannot bypass'));
       },
     );
   });
@@ -166,7 +265,41 @@ void main() {
           authority.rejectedRestoreCases,
           contains('unsupported_policy_version'),
         );
+        expect(authority.indexes, isNotEmpty);
+        expect(authority.foreignKeys, isNotEmpty);
+        expect(authority.correctionRule, contains('future'));
       }
+
+      final consent = B04AdaptiveCoachingFixtureMatrix
+          .current
+          .durableAuthorities
+          .singleWhere(
+            (authority) => authority.name == 'coaching_consent_events',
+          );
+      expect(
+        consent.requiredFields,
+        containsAll(['related_or_superseded_event_id', 'created_at_utc']),
+      );
+      expect(consent.indexes, contains('unique(portable_event_id)'));
+      expect(consent.foreignKeys, contains('user_id -> users.id'));
+
+      final eligibility = B04AdaptiveCoachingFixtureMatrix
+          .current
+          .durableAuthorities
+          .singleWhere(
+            (authority) => authority.name == 'coaching_eligibility_evaluations',
+          );
+      expect(
+        eligibility.requiredFields,
+        containsAll([
+          'minimum_age_rule_version',
+          'goal_reference',
+          'recommendation_or_attempt_reference',
+          'evidence_fingerprint',
+        ]),
+      );
+      expect(eligibility.indexes, contains('unique(portable_evaluation_id)'));
+      expect(eligibility.foreignKeys, contains('user_id -> users.id'));
     });
   });
 
@@ -212,6 +345,29 @@ void main() {
         ranges.singleWhere((range) => range.id == 'E41-range-reversed').width,
         isNull,
       );
+      final positivePoint = ranges.singleWhere(
+        (range) => range.id == 'E41-range-positive-point',
+      );
+      expect(positivePoint.width, B04Rational.fromInt(0));
+      expect(positivePoint.midpoint, B04Rational.fromInt(2000));
+      expect(positivePoint.relativeWidthPercent, B04Rational.fromInt(0));
+      expect(positivePoint.expectedOutcome, B04FixtureOutcome.available);
+      expect(
+        ranges
+            .singleWhere((range) => range.id == 'E41-range-negative-bound')
+            .midpoint,
+        isNull,
+      );
+      expect(
+        ranges.singleWhere((range) => range.id == 'E41-range-non-finite').width,
+        isNull,
+      );
+      final mismatchedUnits = ranges.singleWhere(
+        (range) => range.id == 'E41-range-mismatched-units',
+      );
+      expect(mismatchedUnits.lowerUnit, 'kcal/day');
+      expect(mismatchedUnits.upperUnit, 'grams');
+      expect(mismatchedUnits.width, isNull);
       expect(
         B04RangeFixture(
           id: 'non-finite',
@@ -280,6 +436,11 @@ void main() {
         expect(median, trend.expectedMedianGrams, reason: trend.id);
         expect(slope, trend.expectedSlopeGramsPerDay, reason: trend.id);
         expect(weekly, trend.expectedWeeklyRatePercent, reason: trend.id);
+        expect(trend.policyVersion, kB04EnabledPolicyVersion);
+        expect(trend.algorithmVersion, kB04TrendAlgorithmVersion);
+        expect(trend.unit, contains('grams'));
+        expect(trend.timezone, contains('IANA'));
+        expect(trend.effectivePeriod, contains('local civil'));
       }
     });
 
@@ -404,6 +565,47 @@ void main() {
           edges.singleWhere((edge) => edge.id == 'E47').scenario,
           contains('prospective aggregate'),
         );
+        expect(
+          edges.singleWhere((edge) => edge.id == 'E01').kind,
+          B04FixtureCaseKind.negative,
+        );
+        expect(
+          edges.singleWhere((edge) => edge.id == 'E13').kind,
+          B04FixtureCaseKind.boundary,
+        );
+        expect(
+          edges.singleWhere((edge) => edge.id == 'E20').kind,
+          B04FixtureCaseKind.positive,
+        );
+        expect(
+          edges.singleWhere((edge) => edge.id == 'E01').policyVersions,
+          containsAll([kB04EnabledPolicyVersion, kB04HoldPolicyVersion]),
+        );
+        expect(
+          edges.singleWhere((edge) => edge.id == 'E32').policyVersions,
+          containsAll([
+            kB04ReadinessHoldPolicyVersion,
+            kB04EnabledPolicyVersion,
+          ]),
+        );
+        expect(
+          edges.singleWhere((edge) => edge.id == 'E37').policyVersions,
+          containsAll([kB04EnabledPolicyVersion, kB04HoldPolicyVersion]),
+        );
+        for (final edge in edges) {
+          expect(edge.policyVersions, isNotEmpty, reason: edge.id);
+          expect(
+            edge.policyVersions,
+            everyElement(
+              isIn([
+                kB04EnabledPolicyVersion,
+                kB04HoldPolicyVersion,
+                kB04ReadinessHoldPolicyVersion,
+              ]),
+            ),
+            reason: edge.id,
+          );
+        }
       },
     );
   });
@@ -456,6 +658,48 @@ void main() {
         expect(replay.lineage, B04LineageKind.effectiveDated);
         expect(edge.expectedResult, contains('stored policy version'));
         expect(edge.period, contains('policy'));
+      },
+    );
+
+    test(
+      'unknown, range, provenance, timezone and feedback states are typed',
+      () {
+        final states = B04AdaptiveCoachingFixtureMatrix.current.states;
+        final byId = {for (final state in states) state.id: state};
+
+        expect(byId['unknown-nutrition-preserved']!.state, 'unknown');
+        expect(
+          byId['unknown-nutrition-preserved']!.expectedOutcome,
+          B04FixtureOutcome.unavailable,
+        );
+        expect(
+          byId['range-crosses-decision-boundary']!.state,
+          'uncertain_range',
+        );
+        expect(
+          byId['range-crosses-decision-boundary']!.expectedOutcome,
+          B04FixtureOutcome.unavailable,
+        );
+        expect(
+          byId['missing-provenance-unavailable']!.expectedOutcome,
+          B04FixtureOutcome.invalidEvidence,
+        );
+        expect(
+          byId['timezone-dst-local-date-frozen']!.inputCondition,
+          contains('DST'),
+        );
+        for (final id in [
+          'feedback-acknowledge-append-only',
+          'feedback-override-user-set',
+          'feedback-snooze-presentation-only',
+        ]) {
+          expect(byId[id]!.adaptiveDeltaKcal, 0);
+          expect(byId[id]!.userSetTargetPreserved, isTrue);
+        }
+        expect(
+          byId['feedback-override-user-set']!.lineage,
+          B04LineageKind.effectiveDated,
+        );
       },
     );
   });

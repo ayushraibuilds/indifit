@@ -175,11 +175,278 @@ BigInt _gcd(BigInt a, BigInt b) {
   return left == BigInt.zero ? BigInt.one : left;
 }
 
+/// The typed numerical contract selected for the proposed first enabled
+/// policy. This is fixture data, not an active runtime policy.
+class B04EnabledPolicyContract {
+  final String policyVersion;
+  final int minimumAgeYears;
+  final int evaluationWindowDays;
+  final int minimumValidWeightDays;
+  final int minimumWeightSpanDays;
+  final int minimumFirstBlockWeightDays;
+  final int minimumFinalBlockWeightDays;
+  final int latestWeightFreshnessDays;
+  final int minimumNutritionValidDays;
+  final String nutritionCompletenessPercent;
+  final String nutritionMaximumRangePercent;
+  final int maintenanceFreshnessDays;
+  final String maintenanceMaximumRangePercent;
+  final List<String> supportedGoalRates;
+  final Map<String, String> defaultGoalRates;
+  final String lossGainDeadbandPercent;
+  final String maintenanceDeadbandPercent;
+  final String lossRapidChangePercent;
+  final String gainRapidChangePercent;
+  final int proposalStepKcal;
+  final int proposalCadenceDays;
+  final int proposalExpiryDays;
+  final int aggregateWindowDays;
+  final int aggregateMinimumKcal;
+  final int aggregateMaximumKcal;
+  final int lossMaximumDeficitKcal;
+  final String lossMaximumDeficitPercent;
+  final int lossMinimumFloorKcal;
+  final String lossMinimumFloorPercent;
+  final int gainMaximumSurplusKcal;
+  final String gainMaximumSurplusPercent;
+  final List<String> blockingActivationGates;
+  final String unitRule;
+  final String missingDataRule;
+  final String overrideRule;
+
+  const B04EnabledPolicyContract({
+    required this.policyVersion,
+    required this.minimumAgeYears,
+    required this.evaluationWindowDays,
+    required this.minimumValidWeightDays,
+    required this.minimumWeightSpanDays,
+    required this.minimumFirstBlockWeightDays,
+    required this.minimumFinalBlockWeightDays,
+    required this.latestWeightFreshnessDays,
+    required this.minimumNutritionValidDays,
+    required this.nutritionCompletenessPercent,
+    required this.nutritionMaximumRangePercent,
+    required this.maintenanceFreshnessDays,
+    required this.maintenanceMaximumRangePercent,
+    required this.supportedGoalRates,
+    required this.defaultGoalRates,
+    required this.lossGainDeadbandPercent,
+    required this.maintenanceDeadbandPercent,
+    required this.lossRapidChangePercent,
+    required this.gainRapidChangePercent,
+    required this.proposalStepKcal,
+    required this.proposalCadenceDays,
+    required this.proposalExpiryDays,
+    required this.aggregateWindowDays,
+    required this.aggregateMinimumKcal,
+    required this.aggregateMaximumKcal,
+    required this.lossMaximumDeficitKcal,
+    required this.lossMaximumDeficitPercent,
+    required this.lossMinimumFloorKcal,
+    required this.lossMinimumFloorPercent,
+    required this.gainMaximumSurplusKcal,
+    required this.gainMaximumSurplusPercent,
+    required this.blockingActivationGates,
+    required this.unitRule,
+    required this.missingDataRule,
+    required this.overrideRule,
+  });
+
+  static const current = B04EnabledPolicyContract(
+    policyVersion: kB04EnabledPolicyVersion,
+    minimumAgeYears: 18,
+    evaluationWindowDays: 21,
+    minimumValidWeightDays: 10,
+    minimumWeightSpanDays: 14,
+    minimumFirstBlockWeightDays: 3,
+    minimumFinalBlockWeightDays: 3,
+    latestWeightFreshnessDays: 4,
+    minimumNutritionValidDays: 14,
+    nutritionCompletenessPercent: '80',
+    nutritionMaximumRangePercent: '20',
+    maintenanceFreshnessDays: 30,
+    maintenanceMaximumRangePercent: '15',
+    supportedGoalRates: [
+      'loss:-0.25% body weight/week',
+      'loss:-0.50% body weight/week',
+      'maintenance:0.00% body weight/week',
+      'gain:+0.10% body weight/week',
+      'gain:+0.25% body weight/week',
+    ],
+    defaultGoalRates: {
+      'loss': '-0.50% body weight/week',
+      'maintenance': '0.00% body weight/week',
+      'gain': '+0.25% body weight/week',
+    },
+    lossGainDeadbandPercent: '0.15',
+    maintenanceDeadbandPercent: '0.25',
+    lossRapidChangePercent: '-1.00',
+    gainRapidChangePercent: '+0.50',
+    proposalStepKcal: 100,
+    proposalCadenceDays: 21,
+    proposalExpiryDays: 7,
+    aggregateWindowDays: 42,
+    aggregateMinimumKcal: -200,
+    aggregateMaximumKcal: 200,
+    lossMaximumDeficitKcal: 500,
+    lossMaximumDeficitPercent: '20',
+    lossMinimumFloorKcal: 1200,
+    lossMinimumFloorPercent: '80',
+    gainMaximumSurplusKcal: 300,
+    gainMaximumSurplusPercent: '15',
+    blockingActivationGates: [
+      'Product Owner approval',
+      'fresh independent Sol High verdict',
+      'policy branch merge',
+      'explicit release/feature-policy selection',
+    ],
+    unitRule: 'Every numeric value is finite, unit-correct and in-domain.',
+    missingDataRule:
+        'Missing, invalid, stale or conflicting data is unavailable, never zero.',
+    overrideRule:
+        'User actions and AI cannot bypass safety or numerical boundaries.',
+  );
+
+  Map<String, dynamic> toJson() => {
+    'policy_version': policyVersion,
+    'minimum_age_years': minimumAgeYears,
+    'evaluation_window_days': evaluationWindowDays,
+    'minimum_valid_weight_days': minimumValidWeightDays,
+    'minimum_weight_span_days': minimumWeightSpanDays,
+    'minimum_first_block_weight_days': minimumFirstBlockWeightDays,
+    'minimum_final_block_weight_days': minimumFinalBlockWeightDays,
+    'latest_weight_freshness_days': latestWeightFreshnessDays,
+    'minimum_nutrition_valid_days': minimumNutritionValidDays,
+    'nutrition_completeness_percent': nutritionCompletenessPercent,
+    'nutrition_maximum_range_percent': nutritionMaximumRangePercent,
+    'maintenance_freshness_days': maintenanceFreshnessDays,
+    'maintenance_maximum_range_percent': maintenanceMaximumRangePercent,
+    'supported_goal_rates': supportedGoalRates,
+    'default_goal_rates': defaultGoalRates,
+    'loss_gain_deadband_percent': lossGainDeadbandPercent,
+    'maintenance_deadband_percent': maintenanceDeadbandPercent,
+    'loss_rapid_change_percent': lossRapidChangePercent,
+    'gain_rapid_change_percent': gainRapidChangePercent,
+    'proposal_step_kcal': proposalStepKcal,
+    'proposal_cadence_days': proposalCadenceDays,
+    'proposal_expiry_days': proposalExpiryDays,
+    'aggregate_window_days': aggregateWindowDays,
+    'aggregate_minimum_kcal': aggregateMinimumKcal,
+    'aggregate_maximum_kcal': aggregateMaximumKcal,
+    'loss_maximum_deficit_kcal': lossMaximumDeficitKcal,
+    'loss_maximum_deficit_percent': lossMaximumDeficitPercent,
+    'loss_minimum_floor_kcal': lossMinimumFloorKcal,
+    'loss_minimum_floor_percent': lossMinimumFloorPercent,
+    'gain_maximum_surplus_kcal': gainMaximumSurplusKcal,
+    'gain_maximum_surplus_percent': gainMaximumSurplusPercent,
+    'blocking_activation_gates': blockingActivationGates,
+    'unit_rule': unitRule,
+    'missing_data_rule': missingDataRule,
+    'override_rule': overrideRule,
+  };
+
+  factory B04EnabledPolicyContract.fromJson(
+    Map<String, dynamic> json,
+  ) => B04EnabledPolicyContract(
+    policyVersion: _string(json, 'policy_version'),
+    minimumAgeYears: _int(json, 'minimum_age_years'),
+    evaluationWindowDays: _int(json, 'evaluation_window_days'),
+    minimumValidWeightDays: _int(json, 'minimum_valid_weight_days'),
+    minimumWeightSpanDays: _int(json, 'minimum_weight_span_days'),
+    minimumFirstBlockWeightDays: _int(json, 'minimum_first_block_weight_days'),
+    minimumFinalBlockWeightDays: _int(json, 'minimum_final_block_weight_days'),
+    latestWeightFreshnessDays: _int(json, 'latest_weight_freshness_days'),
+    minimumNutritionValidDays: _int(json, 'minimum_nutrition_valid_days'),
+    nutritionCompletenessPercent: _string(
+      json,
+      'nutrition_completeness_percent',
+    ),
+    nutritionMaximumRangePercent: _string(
+      json,
+      'nutrition_maximum_range_percent',
+    ),
+    maintenanceFreshnessDays: _int(json, 'maintenance_freshness_days'),
+    maintenanceMaximumRangePercent: _string(
+      json,
+      'maintenance_maximum_range_percent',
+    ),
+    supportedGoalRates: _strings(json, 'supported_goal_rates'),
+    defaultGoalRates: _stringMap(json, 'default_goal_rates'),
+    lossGainDeadbandPercent: _string(json, 'loss_gain_deadband_percent'),
+    maintenanceDeadbandPercent: _string(json, 'maintenance_deadband_percent'),
+    lossRapidChangePercent: _string(json, 'loss_rapid_change_percent'),
+    gainRapidChangePercent: _string(json, 'gain_rapid_change_percent'),
+    proposalStepKcal: _int(json, 'proposal_step_kcal'),
+    proposalCadenceDays: _int(json, 'proposal_cadence_days'),
+    proposalExpiryDays: _int(json, 'proposal_expiry_days'),
+    aggregateWindowDays: _int(json, 'aggregate_window_days'),
+    aggregateMinimumKcal: _int(json, 'aggregate_minimum_kcal'),
+    aggregateMaximumKcal: _int(json, 'aggregate_maximum_kcal'),
+    lossMaximumDeficitKcal: _int(json, 'loss_maximum_deficit_kcal'),
+    lossMaximumDeficitPercent: _string(json, 'loss_maximum_deficit_percent'),
+    lossMinimumFloorKcal: _int(json, 'loss_minimum_floor_kcal'),
+    lossMinimumFloorPercent: _string(json, 'loss_minimum_floor_percent'),
+    gainMaximumSurplusKcal: _int(json, 'gain_maximum_surplus_kcal'),
+    gainMaximumSurplusPercent: _string(json, 'gain_maximum_surplus_percent'),
+    blockingActivationGates: _strings(json, 'blocking_activation_gates'),
+    unitRule: _string(json, 'unit_rule'),
+    missingDataRule: _string(json, 'missing_data_rule'),
+    overrideRule: _string(json, 'override_rule'),
+  );
+
+  void validate() {
+    final expected = B04EnabledPolicyContract.current;
+    if (policyVersion != expected.policyVersion ||
+        minimumAgeYears != expected.minimumAgeYears ||
+        evaluationWindowDays != expected.evaluationWindowDays ||
+        minimumValidWeightDays != expected.minimumValidWeightDays ||
+        minimumWeightSpanDays != expected.minimumWeightSpanDays ||
+        minimumFirstBlockWeightDays != expected.minimumFirstBlockWeightDays ||
+        minimumFinalBlockWeightDays != expected.minimumFinalBlockWeightDays ||
+        latestWeightFreshnessDays != expected.latestWeightFreshnessDays ||
+        minimumNutritionValidDays != expected.minimumNutritionValidDays ||
+        nutritionCompletenessPercent != expected.nutritionCompletenessPercent ||
+        nutritionMaximumRangePercent != expected.nutritionMaximumRangePercent ||
+        maintenanceFreshnessDays != expected.maintenanceFreshnessDays ||
+        maintenanceMaximumRangePercent !=
+            expected.maintenanceMaximumRangePercent ||
+        !_sameStrings(supportedGoalRates, expected.supportedGoalRates) ||
+        !_sameStringMap(defaultGoalRates, expected.defaultGoalRates) ||
+        lossGainDeadbandPercent != expected.lossGainDeadbandPercent ||
+        maintenanceDeadbandPercent != expected.maintenanceDeadbandPercent ||
+        lossRapidChangePercent != expected.lossRapidChangePercent ||
+        gainRapidChangePercent != expected.gainRapidChangePercent ||
+        proposalStepKcal != expected.proposalStepKcal ||
+        proposalCadenceDays != expected.proposalCadenceDays ||
+        proposalExpiryDays != expected.proposalExpiryDays ||
+        aggregateWindowDays != expected.aggregateWindowDays ||
+        aggregateMinimumKcal != expected.aggregateMinimumKcal ||
+        aggregateMaximumKcal != expected.aggregateMaximumKcal ||
+        lossMaximumDeficitKcal != expected.lossMaximumDeficitKcal ||
+        lossMaximumDeficitPercent != expected.lossMaximumDeficitPercent ||
+        lossMinimumFloorKcal != expected.lossMinimumFloorKcal ||
+        lossMinimumFloorPercent != expected.lossMinimumFloorPercent ||
+        gainMaximumSurplusKcal != expected.gainMaximumSurplusKcal ||
+        gainMaximumSurplusPercent != expected.gainMaximumSurplusPercent ||
+        !_sameStrings(
+          blockingActivationGates,
+          expected.blockingActivationGates,
+        ) ||
+        unitRule != expected.unitRule ||
+        missingDataRule != expected.missingDataRule ||
+        overrideRule != expected.overrideRule) {
+      throw StateError('B04 ENABLED-1 numerical contract changed.');
+    }
+  }
+}
+
 class B04RangeFixture {
   final String id;
   final String lower;
   final String upper;
   final String unit;
+  final String? lowerUnit;
+  final String? upperUnit;
   final B04FixtureOutcome expectedOutcome;
   final String expectedReason;
 
@@ -188,6 +455,8 @@ class B04RangeFixture {
     required this.lower,
     required this.upper,
     required this.unit,
+    this.lowerUnit,
+    this.upperUnit,
     required this.expectedOutcome,
     required this.expectedReason,
   });
@@ -210,7 +479,13 @@ class B04RangeFixture {
     try {
       final lowerValue = B04Rational.parse(lower);
       final upperValue = B04Rational.parse(upper);
+      final normalizedLowerUnit = lowerUnit ?? unit;
+      final normalizedUpperUnit = upperUnit ?? unit;
       if (unit.isEmpty ||
+          normalizedLowerUnit.isEmpty ||
+          normalizedUpperUnit.isEmpty ||
+          normalizedLowerUnit != normalizedUpperUnit ||
+          normalizedLowerUnit != unit ||
           lowerValue.numerator.isNegative ||
           upperValue.compareTo(lowerValue) < 0) {
         return null;
@@ -228,6 +503,8 @@ class B04RangeFixture {
     'lower': lower,
     'upper': upper,
     'unit': unit,
+    'lower_unit': lowerUnit ?? unit,
+    'upper_unit': upperUnit ?? unit,
     'expected_outcome': expectedOutcome.name,
     'expected_reason': expectedReason,
   };
@@ -238,6 +515,8 @@ class B04RangeFixture {
         lower: _string(json, 'lower'),
         upper: _string(json, 'upper'),
         unit: _string(json, 'unit'),
+        lowerUnit: _optionalString(json, 'lower_unit'),
+        upperUnit: _optionalString(json, 'upper_unit'),
         expectedOutcome: _outcome(json['expected_outcome']),
         expectedReason: _string(json, 'expected_reason'),
       );
@@ -264,6 +543,11 @@ class B04TrendFixture {
   final B04Rational expectedMedianGrams;
   final B04Rational expectedSlopeGramsPerDay;
   final B04Rational expectedWeeklyRatePercent;
+  final String policyVersion;
+  final String algorithmVersion;
+  final String unit;
+  final String timezone;
+  final String effectivePeriod;
 
   const B04TrendFixture({
     required this.id,
@@ -271,6 +555,11 @@ class B04TrendFixture {
     required this.expectedMedianGrams,
     required this.expectedSlopeGramsPerDay,
     required this.expectedWeeklyRatePercent,
+    this.policyVersion = kB04EnabledPolicyVersion,
+    this.algorithmVersion = kB04TrendAlgorithmVersion,
+    this.unit = 'grams/day and percentage points/week',
+    this.timezone = 'recorded IANA evaluation timezone',
+    this.effectivePeriod = 'completed local civil days',
   });
 
   Map<String, dynamic> toJson() => {
@@ -279,6 +568,11 @@ class B04TrendFixture {
     'expected_median_grams': expectedMedianGrams.toJson(),
     'expected_slope_grams_per_day': expectedSlopeGramsPerDay.toJson(),
     'expected_weekly_rate_percent': expectedWeeklyRatePercent.toJson(),
+    'policy_version': policyVersion,
+    'algorithm_version': algorithmVersion,
+    'unit': unit,
+    'timezone': timezone,
+    'effective_period': effectivePeriod,
   };
 
   factory B04TrendFixture.fromJson(Map<String, dynamic> json) =>
@@ -294,6 +588,31 @@ class B04TrendFixture {
         expectedWeeklyRatePercent: B04Rational.fromJson(
           json['expected_weekly_rate_percent'],
         ),
+        policyVersion: _stringOrDefault(
+          json,
+          'policy_version',
+          kB04EnabledPolicyVersion,
+        ),
+        algorithmVersion: _stringOrDefault(
+          json,
+          'algorithm_version',
+          kB04TrendAlgorithmVersion,
+        ),
+        unit: _stringOrDefault(
+          json,
+          'unit',
+          'grams/day and percentage points/week',
+        ),
+        timezone: _stringOrDefault(
+          json,
+          'timezone',
+          'recorded IANA evaluation timezone',
+        ),
+        effectivePeriod: _stringOrDefault(
+          json,
+          'effective_period',
+          'completed local civil days',
+        ),
       );
 }
 
@@ -305,6 +624,9 @@ class B04MaintenanceNormalizationFixture {
   final int targetFloor;
   final int surplusCap;
   final int targetCeiling;
+  final String policyVersion;
+  final String unit;
+  final String roundingRule;
 
   const B04MaintenanceNormalizationFixture({
     required this.id,
@@ -314,6 +636,9 @@ class B04MaintenanceNormalizationFixture {
     required this.targetFloor,
     required this.surplusCap,
     required this.targetCeiling,
+    this.policyVersion = kB04EnabledPolicyVersion,
+    this.unit = 'kcal/day',
+    this.roundingRule = 'nearest whole kcal; halfway ties away from zero',
   });
 
   Map<String, dynamic> toJson() => {
@@ -324,6 +649,9 @@ class B04MaintenanceNormalizationFixture {
     'target_floor': targetFloor,
     'surplus_cap': surplusCap,
     'target_ceiling': targetCeiling,
+    'policy_version': policyVersion,
+    'unit': unit,
+    'rounding_rule': roundingRule,
   };
 
   factory B04MaintenanceNormalizationFixture.fromJson(
@@ -336,6 +664,17 @@ class B04MaintenanceNormalizationFixture {
     targetFloor: _int(json, 'target_floor'),
     surplusCap: _int(json, 'surplus_cap'),
     targetCeiling: _int(json, 'target_ceiling'),
+    policyVersion: _stringOrDefault(
+      json,
+      'policy_version',
+      kB04EnabledPolicyVersion,
+    ),
+    unit: _stringOrDefault(json, 'unit', 'kcal/day'),
+    roundingRule: _stringOrDefault(
+      json,
+      'rounding_rule',
+      'nearest whole kcal; halfway ties away from zero',
+    ),
   );
 }
 
@@ -383,6 +722,7 @@ class B04DecisionRecord {
   final String overrideRule;
   final String negativeFixtureId;
   final List<String> affectedTasks;
+  final bool blocking;
 
   const B04DecisionRecord({
     required this.id,
@@ -395,6 +735,7 @@ class B04DecisionRecord {
     required this.overrideRule,
     required this.negativeFixtureId,
     required this.affectedTasks,
+    required this.blocking,
   });
 
   Map<String, dynamic> toJson() => {
@@ -408,6 +749,7 @@ class B04DecisionRecord {
     'override_rule': overrideRule,
     'negative_fixture_id': negativeFixtureId,
     'affected_tasks': affectedTasks,
+    'blocking': blocking,
   };
 
   factory B04DecisionRecord.fromJson(Map<String, dynamic> json) =>
@@ -422,6 +764,52 @@ class B04DecisionRecord {
         overrideRule: _string(json, 'override_rule'),
         negativeFixtureId: _string(json, 'negative_fixture_id'),
         affectedTasks: _strings(json, 'affected_tasks'),
+        blocking: _bool(json, 'blocking'),
+      );
+}
+
+class B04DecisionNegativeFixture {
+  final String id;
+  final String decisionId;
+  final String scenario;
+  final B04FixtureOutcome expectedOutcome;
+  final String policyVersion;
+  final int adaptiveDeltaKcal;
+  final bool targetUnchanged;
+  final bool historyUnchanged;
+
+  const B04DecisionNegativeFixture({
+    required this.id,
+    required this.decisionId,
+    required this.scenario,
+    required this.expectedOutcome,
+    required this.policyVersion,
+    required this.adaptiveDeltaKcal,
+    required this.targetUnchanged,
+    required this.historyUnchanged,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'decision_id': decisionId,
+    'scenario': scenario,
+    'expected_outcome': expectedOutcome.name,
+    'policy_version': policyVersion,
+    'adaptive_delta_kcal': adaptiveDeltaKcal,
+    'target_unchanged': targetUnchanged,
+    'history_unchanged': historyUnchanged,
+  };
+
+  factory B04DecisionNegativeFixture.fromJson(Map<String, dynamic> json) =>
+      B04DecisionNegativeFixture(
+        id: _string(json, 'id'),
+        decisionId: _string(json, 'decision_id'),
+        scenario: _string(json, 'scenario'),
+        expectedOutcome: _outcome(json['expected_outcome']),
+        policyVersion: _string(json, 'policy_version'),
+        adaptiveDeltaKcal: _int(json, 'adaptive_delta_kcal'),
+        targetUnchanged: _bool(json, 'target_unchanged'),
+        historyUnchanged: _bool(json, 'history_unchanged'),
       );
 }
 
@@ -475,6 +863,7 @@ class B04EdgeFixture {
   final B04FixtureCaseKind kind;
   final String scenario;
   final String expectedResult;
+  final List<String> policyVersions;
   final String unit;
   final String period;
   final String timezone;
@@ -488,6 +877,7 @@ class B04EdgeFixture {
     required this.kind,
     required this.scenario,
     required this.expectedResult,
+    required this.policyVersions,
     required this.unit,
     required this.period,
     required this.timezone,
@@ -502,6 +892,7 @@ class B04EdgeFixture {
     'kind': kind.name,
     'scenario': scenario,
     'expected_result': expectedResult,
+    'policy_versions': policyVersions,
     'unit': unit,
     'period': period,
     'timezone': timezone,
@@ -516,6 +907,7 @@ class B04EdgeFixture {
     kind: B04FixtureCaseKind.values.byName(_string(json, 'kind')),
     scenario: _string(json, 'scenario'),
     expectedResult: _string(json, 'expected_result'),
+    policyVersions: _strings(json, 'policy_versions'),
     unit: _string(json, 'unit'),
     period: _string(json, 'period'),
     timezone: _string(json, 'timezone'),
@@ -563,20 +955,29 @@ class B04DurableAuthorityFixture {
   final String name;
   final B04LineageKind lineage;
   final List<String> requiredFields;
+  final List<String> indexes;
+  final List<String> foreignKeys;
   final List<String> rejectedRestoreCases;
+  final String correctionRule;
 
   const B04DurableAuthorityFixture({
     required this.name,
     required this.lineage,
     required this.requiredFields,
+    required this.indexes,
+    required this.foreignKeys,
     required this.rejectedRestoreCases,
+    required this.correctionRule,
   });
 
   Map<String, dynamic> toJson() => {
     'name': name,
     'lineage': lineage.name,
     'required_fields': requiredFields,
+    'indexes': indexes,
+    'foreign_keys': foreignKeys,
     'rejected_restore_cases': rejectedRestoreCases,
+    'correction_rule': correctionRule,
   };
 
   factory B04DurableAuthorityFixture.fromJson(Map<String, dynamic> json) =>
@@ -584,14 +985,19 @@ class B04DurableAuthorityFixture {
         name: _string(json, 'name'),
         lineage: B04LineageKind.values.byName(_string(json, 'lineage')),
         requiredFields: _strings(json, 'required_fields'),
+        indexes: _strings(json, 'indexes'),
+        foreignKeys: _strings(json, 'foreign_keys'),
         rejectedRestoreCases: _strings(json, 'rejected_restore_cases'),
+        correctionRule: _string(json, 'correction_rule'),
       );
 }
 
 class B04AdaptiveCoachingFixtureMatrix {
   final int version;
+  final B04EnabledPolicyContract enabledPolicy;
   final List<B04ContractReference> outcomes;
   final List<B04DecisionRecord> decisions;
+  final List<B04DecisionNegativeFixture> negativeFixtures;
   final List<B04EdgeFixture> enabledEdges;
   final List<B04StateFixture> states;
   final List<B04RangeFixture> ranges;
@@ -602,8 +1008,10 @@ class B04AdaptiveCoachingFixtureMatrix {
 
   const B04AdaptiveCoachingFixtureMatrix({
     required this.version,
+    required this.enabledPolicy,
     required this.outcomes,
     required this.decisions,
+    required this.negativeFixtures,
     required this.enabledEdges,
     required this.states,
     required this.ranges,
@@ -617,8 +1025,10 @@ class B04AdaptiveCoachingFixtureMatrix {
 
   Map<String, dynamic> toJson() => {
     'version': version,
+    'enabled_policy': enabledPolicy.toJson(),
     'outcomes': outcomes.map((item) => item.toJson()).toList(),
     'decisions': decisions.map((item) => item.toJson()).toList(),
+    'negative_fixtures': negativeFixtures.map((item) => item.toJson()).toList(),
     'enabled_edges': enabledEdges.map((item) => item.toJson()).toList(),
     'states': states.map((item) => item.toJson()).toList(),
     'ranges': ranges.map((item) => item.toJson()).toList(),
@@ -643,8 +1053,16 @@ class B04AdaptiveCoachingFixtureMatrix {
     }
     final matrix = B04AdaptiveCoachingFixtureMatrix(
       version: version as int,
+      enabledPolicy: B04EnabledPolicyContract.fromJson(
+        _map(json['enabled_policy'], 'enabled_policy'),
+      ),
       outcomes: _objects(json, 'outcomes', B04ContractReference.fromJson),
       decisions: _objects(json, 'decisions', B04DecisionRecord.fromJson),
+      negativeFixtures: _objects(
+        json,
+        'negative_fixtures',
+        B04DecisionNegativeFixture.fromJson,
+      ),
       enabledEdges: _objects(json, 'enabled_edges', B04EdgeFixture.fromJson),
       states: _objects(json, 'states', B04StateFixture.fromJson),
       ranges: _objects(json, 'ranges', B04RangeFixture.fromJson),
@@ -671,11 +1089,16 @@ class B04AdaptiveCoachingFixtureMatrix {
     }
     _validateUnique('outcome', outcomes.map((item) => item.id));
     _validateUnique('decision', decisions.map((item) => item.id));
+    _validateUnique(
+      'decision negative fixture',
+      negativeFixtures.map((item) => item.id),
+    );
     _validateUnique('enabled edge', enabledEdges.map((item) => item.id));
     _validateUnique('state', states.map((item) => item.id));
     _validateUnique('range', ranges.map((item) => item.id));
     _validateUnique('trend', trends.map((item) => item.id));
     _validateUnique('maintenance fixture', maintenance.map((item) => item.id));
+    enabledPolicy.validate();
 
     final fixtureIds = {
       ...enabledEdges.map((item) => item.id),
@@ -707,6 +1130,10 @@ class B04AdaptiveCoachingFixtureMatrix {
     if (edgeIds.length != 47 || !edgeIds.containsAll(b04EnabledEdgeIds)) {
       throw StateError('B04 ENABLED-1 E01 through E47 are required.');
     }
+    final negativeById = {
+      for (final fixture in negativeFixtures) fixture.id: fixture,
+    };
+    final negativeDecisionIds = <String>{};
     for (final decision in decisions) {
       if (decision.selectedOption.isEmpty ||
           decision.unit.isEmpty ||
@@ -716,21 +1143,54 @@ class B04AdaptiveCoachingFixtureMatrix {
           decision.policyVersion.isEmpty ||
           decision.overrideRule.isEmpty ||
           decision.negativeFixtureId.isEmpty ||
-          decision.affectedTasks.isEmpty) {
+          decision.affectedTasks.isEmpty ||
+          !decision.blocking) {
         throw StateError('Decision ${decision.id} is incomplete.');
       }
       if (!b04KnownTaskIds.containsAll(decision.affectedTasks)) {
         throw StateError('Decision ${decision.id} has an unknown task.');
       }
-      if (!edgeIds.contains(decision.negativeFixtureId) &&
-          !fixtureIds.contains(decision.negativeFixtureId)) {
+      final negative = negativeById[decision.negativeFixtureId];
+      if (negative == null || negative.decisionId != decision.id) {
         throw StateError('Decision ${decision.id} has no negative fixture.');
+      }
+      if (!negativeDecisionIds.add(negative.decisionId)) {
+        throw StateError('Decision ${decision.id} shares a negative fixture.');
+      }
+    }
+    if (negativeDecisionIds.length != 20 ||
+        !negativeDecisionIds.containsAll(b04D04DecisionIds)) {
+      throw StateError('Every D04 decision needs its own negative fixture.');
+    }
+    for (final negative in negativeFixtures) {
+      if (!b04D04DecisionIds.contains(negative.decisionId) ||
+          negative.id != _decisionNegativeFixtureId(negative.decisionId) ||
+          negative.scenario.isEmpty ||
+          negative.policyVersion.isEmpty ||
+          (negative.policyVersion != kB04HoldPolicyVersion &&
+              negative.policyVersion != kB04EnabledPolicyVersion &&
+              negative.policyVersion != kB04ReadinessHoldPolicyVersion) ||
+          (negative.expectedOutcome != B04FixtureOutcome.unavailable &&
+              negative.expectedOutcome != B04FixtureOutcome.invalidEvidence) ||
+          negative.adaptiveDeltaKcal != 0 ||
+          !negative.targetUnchanged ||
+          !negative.historyUnchanged) {
+        throw StateError(
+          'Decision negative fixture ${negative.id} is invalid.',
+        );
       }
     }
 
     for (final edge in enabledEdges) {
       if (edge.scenario.isEmpty ||
           edge.expectedResult.isEmpty ||
+          edge.policyVersions.isEmpty ||
+          edge.policyVersions.any(
+            (version) =>
+                version != kB04HoldPolicyVersion &&
+                version != kB04EnabledPolicyVersion &&
+                version != kB04ReadinessHoldPolicyVersion,
+          ) ||
           edge.unit.isEmpty ||
           edge.period.isEmpty ||
           edge.timezone.isEmpty ||
@@ -742,6 +1202,9 @@ class B04AdaptiveCoachingFixtureMatrix {
           )) {
         throw StateError('Edge ${edge.id} is missing required metadata.');
       }
+      if (edge.kind != _edgeKind(edge.id)) {
+        throw StateError('Edge ${edge.id} has the wrong fixture kind.');
+      }
     }
 
     final stateIds = states.map((item) => item.id).toSet();
@@ -752,6 +1215,13 @@ class B04AdaptiveCoachingFixtureMatrix {
       'dietary-possible-unavailable',
       'dietary-unknown-unavailable',
       'dietary-insufficient-unavailable',
+      'unknown-nutrition-preserved',
+      'range-crosses-decision-boundary',
+      'missing-provenance-unavailable',
+      'timezone-dst-local-date-frozen',
+      'feedback-acknowledge-append-only',
+      'feedback-override-user-set',
+      'feedback-snooze-presentation-only',
     };
     if (!stateIds.containsAll(requiredStates)) {
       throw StateError('Required negative B04 state fixtures are missing.');
@@ -784,7 +1254,10 @@ class B04AdaptiveCoachingFixtureMatrix {
     for (final durable in durableAuthorities) {
       if (durable.lineage != B04LineageKind.appendOnly ||
           durable.requiredFields.isEmpty ||
-          durable.rejectedRestoreCases.isEmpty) {
+          durable.indexes.isEmpty ||
+          durable.foreignKeys.isEmpty ||
+          durable.rejectedRestoreCases.isEmpty ||
+          durable.correctionRule.isEmpty) {
         throw StateError('Durable authority ${durable.name} is incomplete.');
       }
     }
@@ -821,6 +1294,219 @@ final List<String> b04EnabledEdgeIds = List.unmodifiable([
   for (var index = 1; index <= 47; index++)
     'E${index.toString().padLeft(2, '0')}',
 ]);
+
+String _decisionNegativeFixtureId(String decisionId) =>
+    'd04-${decisionId.substring(8)}-negative';
+
+List<B04DecisionNegativeFixture> _buildDecisionNegativeFixtures() => [
+  const B04DecisionNegativeFixture(
+    id: 'd04-01-negative',
+    decisionId: 'B04-D04-01',
+    scenario: 'missing or unverified age cannot enter adaptive eligibility',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-02-negative',
+    decisionId: 'B04-D04-02',
+    scenario: 'verified below-18 user receives coaching_unavailable_age',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-03-negative',
+    decisionId: 'B04-D04-03',
+    scenario: 'default-off coaching cannot be enabled by logging or inactivity',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04HoldPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-04-negative',
+    decisionId: 'B04-D04-04',
+    scenario: 'implicit bundled consent cannot enable coaching or AI',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04HoldPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-05-negative',
+    decisionId: 'B04-D04-05',
+    scenario: 'one observation or background trigger cannot change a target',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04HoldPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-06-negative',
+    decisionId: 'B04-D04-06',
+    scenario: 'single measurement cannot establish a trend window',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04HoldPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-07-negative',
+    decisionId: 'B04-D04-07',
+    scenario: 'missing required evidence never becomes zero or a default',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-08-negative',
+    decisionId: 'B04-D04-08',
+    scenario: 'HOLD-1 rejects a non-zero adjustment and aggregate delta',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04HoldPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-09-negative',
+    decisionId: 'B04-D04-09',
+    scenario: 'HOLD-1 rejects adaptive deficit, surplus, floor and ceiling',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04HoldPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-10-negative',
+    decisionId: 'B04-D04-10',
+    scenario: 'missing, stale or conflicting body metrics have no fallback',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-11-negative',
+    decisionId: 'B04-D04-11',
+    scenario: 'missing or partial nutrition remains non-numeric',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-12-negative',
+    decisionId: 'B04-D04-12',
+    scenario: 'denied or stale readiness remains unknown and has zero effect',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04ReadinessHoldPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-13-negative',
+    decisionId: 'B04-D04-13',
+    scenario:
+        'free-form clinical or guarantee wording is not an approved state',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-14-negative',
+    decisionId: 'B04-D04-14',
+    scenario: 'medical restriction cannot be diagnosed or prescribed for',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-15-negative',
+    decisionId: 'B04-D04-15',
+    scenario:
+        'confirmed strict conflict stays hard-blocked after override attempt',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-16-negative',
+    decisionId: 'B04-D04-16',
+    scenario:
+        'possible, unknown or insufficient safety evidence is unavailable',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-17-negative',
+    decisionId: 'B04-D04-17',
+    scenario:
+        'offline provider failure cannot invent evidence or queue a target',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-18-negative',
+    decisionId: 'B04-D04-18',
+    scenario:
+        'malformed or conflicting AI cannot alter deterministic authority',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-19-negative',
+    decisionId: 'B04-D04-19',
+    scenario:
+        'HOLD-1 has no adaptive proposal available for acceptance or override',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04HoldPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+  const B04DecisionNegativeFixture(
+    id: 'd04-20-negative',
+    decisionId: 'B04-D04-20',
+    scenario:
+        'holiday, location, clock or food history cannot infer N8 context',
+    expectedOutcome: B04FixtureOutcome.unavailable,
+    policyVersion: kB04EnabledPolicyVersion,
+    adaptiveDeltaKcal: 0,
+    targetUnchanged: true,
+    historyUnchanged: true,
+  ),
+];
 
 List<B04DecisionRecord> _buildDecisions() {
   final affected = <String, List<String>>{
@@ -1015,8 +1701,9 @@ List<B04DecisionRecord> _buildDecisions() {
             ? kB04HoldPolicyVersion
             : kB04EnabledPolicyVersion,
         overrideRule: 'user action cannot bypass safety or rewrite history',
-        negativeFixtureId: 'E${id.substring(8)}',
+        negativeFixtureId: _decisionNegativeFixtureId(id),
         affectedTasks: affected[id.substring(8)]!,
+        blocking: true,
       ),
   ];
 }
@@ -1077,10 +1764,9 @@ List<B04EdgeFixture> _buildEdges() {
     edges.add(
       B04EdgeFixture(
         id: id,
-        kind: index < 2 || index == 19
-            ? B04FixtureCaseKind.boundary
-            : B04FixtureCaseKind.negative,
+        kind: _edgeKind(id),
         scenario: scenarios[index],
+        policyVersions: _edgePolicyVersions(id),
         expectedResult: switch (id) {
           'E01' => 'ENABLED-1 inactive; HOLD-1 current; no proposal',
           'E02' => 'eligible when all other gates pass',
@@ -1163,6 +1849,28 @@ List<B04EdgeFixture> _buildEdges() {
   }
   return edges;
 }
+
+B04FixtureCaseKind _edgeKind(String id) => switch (id) {
+  'E01' ||
+  'E03' ||
+  'E04' ||
+  'E14' ||
+  'E31' ||
+  'E32' ||
+  'E33' ||
+  'E35' ||
+  'E37' ||
+  'E38' ||
+  'E41' => B04FixtureCaseKind.negative,
+  'E20' || 'E42' || 'E43' || 'E44' => B04FixtureCaseKind.positive,
+  _ => B04FixtureCaseKind.boundary,
+};
+
+List<String> _edgePolicyVersions(String id) => switch (id) {
+  'E01' || 'E37' => [kB04EnabledPolicyVersion, kB04HoldPolicyVersion],
+  'E32' => [kB04ReadinessHoldPolicyVersion, kB04EnabledPolicyVersion],
+  _ => [kB04EnabledPolicyVersion],
+};
 
 B04AdaptiveCoachingFixtureMatrix _buildCurrentMatrix() {
   final states = [
@@ -1250,6 +1958,78 @@ B04AdaptiveCoachingFixtureMatrix _buildCurrentMatrix() {
       adaptiveDeltaKcal: 0,
       userSetTargetPreserved: true,
     ),
+    const B04StateFixture(
+      id: 'unknown-nutrition-preserved',
+      state: 'unknown',
+      inputCondition: 'unknown nutrient or missing daily evidence',
+      expectedOutcome: B04FixtureOutcome.unavailable,
+      policyVersion: kB04EnabledPolicyVersion,
+      lineage: B04LineageKind.appendOnly,
+      adaptiveDeltaKcal: 0,
+      userSetTargetPreserved: true,
+    ),
+    const B04StateFixture(
+      id: 'range-crosses-decision-boundary',
+      state: 'uncertain_range',
+      inputCondition: 'lower and upper estimates produce different actions',
+      expectedOutcome: B04FixtureOutcome.unavailable,
+      policyVersion: kB04EnabledPolicyVersion,
+      lineage: B04LineageKind.appendOnly,
+      adaptiveDeltaKcal: 0,
+      userSetTargetPreserved: true,
+    ),
+    const B04StateFixture(
+      id: 'missing-provenance-unavailable',
+      state: 'invalid_provenance',
+      inputCondition: 'accepted evidence lacks source, timestamp or timezone',
+      expectedOutcome: B04FixtureOutcome.invalidEvidence,
+      policyVersion: kB04EnabledPolicyVersion,
+      lineage: B04LineageKind.appendOnly,
+      adaptiveDeltaKcal: 0,
+      userSetTargetPreserved: true,
+    ),
+    const B04StateFixture(
+      id: 'timezone-dst-local-date-frozen',
+      state: 'historical_local_date',
+      inputCondition: 'DST transition or travel zone changes device context',
+      expectedOutcome: B04FixtureOutcome.available,
+      policyVersion: kB04EnabledPolicyVersion,
+      lineage: B04LineageKind.appendOnly,
+      adaptiveDeltaKcal: 0,
+      userSetTargetPreserved: true,
+    ),
+    const B04StateFixture(
+      id: 'feedback-acknowledge-append-only',
+      state: 'acknowledge',
+      inputCondition:
+          'low-risk warning acknowledgement preserves evaluator result',
+      expectedOutcome: B04FixtureOutcome.available,
+      policyVersion: kB04EnabledPolicyVersion,
+      lineage: B04LineageKind.appendOnly,
+      adaptiveDeltaKcal: 0,
+      userSetTargetPreserved: true,
+    ),
+    const B04StateFixture(
+      id: 'feedback-override-user-set',
+      state: 'override',
+      inputCondition:
+          'manual override records user-set action without safety bypass',
+      expectedOutcome: B04FixtureOutcome.available,
+      policyVersion: kB04EnabledPolicyVersion,
+      lineage: B04LineageKind.effectiveDated,
+      adaptiveDeltaKcal: 0,
+      userSetTargetPreserved: true,
+    ),
+    const B04StateFixture(
+      id: 'feedback-snooze-presentation-only',
+      state: 'snooze',
+      inputCondition: 'typed snooze period changes presentation only',
+      expectedOutcome: B04FixtureOutcome.available,
+      policyVersion: kB04EnabledPolicyVersion,
+      lineage: B04LineageKind.appendOnly,
+      adaptiveDeltaKcal: 0,
+      userSetTargetPreserved: true,
+    ),
   ];
 
   final outcomes = [
@@ -1258,7 +2038,7 @@ B04AdaptiveCoachingFixtureMatrix _buildCurrentMatrix() {
       owner: 'B04-02 policy gate',
       description: 'Consent, eligibility and safe target control.',
       fixtureIds: ['hold-unavailable-zero-delta', 'E01', 'E02', 'E03'],
-      downstreamTasks: ['B04-01', 'B04-02', 'B04-05', 'B04-07', 'B04-17'],
+      downstreamTasks: ['B04-02', 'B04-05', 'B04-07', 'B04-15'],
     ),
     const B04ContractReference(
       id: 'B04-R02',
@@ -1324,8 +2104,10 @@ B04AdaptiveCoachingFixtureMatrix _buildCurrentMatrix() {
 
   final matrix = B04AdaptiveCoachingFixtureMatrix(
     version: kB04AdaptiveCoachingFixtureContractVersion,
+    enabledPolicy: B04EnabledPolicyContract.current,
     outcomes: outcomes,
     decisions: _buildDecisions(),
+    negativeFixtures: _buildDecisionNegativeFixtures(),
     enabledEdges: _buildEdges(),
     states: states,
     ranges: const [
@@ -1376,6 +2158,40 @@ B04AdaptiveCoachingFixtureMatrix _buildCurrentMatrix() {
         unit: 'kcal/day',
         expectedOutcome: B04FixtureOutcome.invalidEvidence,
         expectedReason: 'unavailable_invalid_range',
+      ),
+      B04RangeFixture(
+        id: 'E41-range-positive-point',
+        lower: '2000',
+        upper: '2000',
+        unit: 'kcal/day',
+        expectedOutcome: B04FixtureOutcome.available,
+        expectedReason: 'positive-midpoint exact range is valid',
+      ),
+      B04RangeFixture(
+        id: 'E41-range-negative-bound',
+        lower: '-1',
+        upper: '2000',
+        unit: 'kcal/day',
+        expectedOutcome: B04FixtureOutcome.invalidEvidence,
+        expectedReason: 'lower bound must be non-negative',
+      ),
+      B04RangeFixture(
+        id: 'E41-range-non-finite',
+        lower: 'NaN',
+        upper: '2000',
+        unit: 'kcal/day',
+        expectedOutcome: B04FixtureOutcome.invalidEvidence,
+        expectedReason: 'all numeric inputs must be finite',
+      ),
+      B04RangeFixture(
+        id: 'E41-range-mismatched-units',
+        lower: '1800',
+        upper: '2200',
+        unit: 'kcal/day',
+        lowerUnit: 'kcal/day',
+        upperUnit: 'grams',
+        expectedOutcome: B04FixtureOutcome.invalidEvidence,
+        expectedReason: 'range bounds must use the same unit',
       ),
     ],
     trends: [
@@ -1495,13 +2311,19 @@ B04AdaptiveCoachingFixtureMatrix _buildCurrentMatrix() {
           'local_date',
           'iana_timezone',
           'actor_source',
+          'related_or_superseded_event_id',
+          'created_at_utc',
         ],
+        indexes: ['unique(portable_event_id)', 'user_id+local_date'],
+        foreignKeys: ['user_id -> users.id', 'related_event_id -> event.id'],
         rejectedRestoreCases: [
           'duplicate_id',
           'cross_user_owner',
           'invalid_event_order',
           'unsupported_policy_version',
         ],
+        correctionRule:
+            'Disablement and corrections affect future proposals only; prior history is retained.',
       ),
       B04DurableAuthorityFixture(
         name: 'coaching_eligibility_evaluations',
@@ -1517,6 +2339,19 @@ B04AdaptiveCoachingFixtureMatrix _buildCurrentMatrix() {
           'evaluation_local_date',
           'iana_timezone',
           'policy_version',
+          'minimum_age_rule_version',
+          'goal_reference',
+          'recommendation_or_attempt_reference',
+          'evidence_fingerprint',
+        ],
+        indexes: [
+          'unique(portable_evaluation_id)',
+          'user_id+evaluation_local_date',
+        ],
+        foreignKeys: [
+          'user_id -> users.id',
+          'goal_reference -> goal_versions.id',
+          'recommendation_reference -> recommendations.id',
         ],
         rejectedRestoreCases: [
           'duplicate_id',
@@ -1524,6 +2359,8 @@ B04AdaptiveCoachingFixtureMatrix _buildCurrentMatrix() {
           'invalid_result_source',
           'unsupported_policy_version',
         ],
+        correctionRule:
+            'Corrections append a future evaluation; historical evaluations remain immutable.',
       ),
     ],
   );
@@ -1630,6 +2467,21 @@ String _string(Map<String, dynamic> json, String key) {
   return value;
 }
 
+String? _optionalString(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is! String || value.trim().isEmpty) {
+    throw FormatException('$key must be a non-empty string when present.');
+  }
+  return value;
+}
+
+String _stringOrDefault(
+  Map<String, dynamic> json,
+  String key,
+  String defaultValue,
+) => json[key] == null ? defaultValue : _string(json, key);
+
 int _int(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value is! int) throw FormatException('$key must be an integer.');
@@ -1656,6 +2508,23 @@ Map<String, String> _stringMap(Map<String, dynamic> json, String key) {
     throw FormatException('$key must contain string values.');
   }
   return Map.unmodifiable(value.cast<String, String>());
+}
+
+bool _sameStrings(Iterable<String> actual, List<String> expected) {
+  final actualList = actual.toList();
+  if (actualList.length != expected.length) return false;
+  for (var index = 0; index < expected.length; index++) {
+    if (actualList[index] != expected[index]) return false;
+  }
+  return true;
+}
+
+bool _sameStringMap(Map<String, String> actual, Map<String, String> expected) {
+  if (actual.length != expected.length) return false;
+  for (final entry in expected.entries) {
+    if (actual[entry.key] != entry.value) return false;
+  }
+  return true;
 }
 
 List<T> _objects<T>(
