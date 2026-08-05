@@ -20,7 +20,7 @@ void main() {
     final second = jsonEncode(backup.nutrition.toJson());
 
     expect(backup.version, 8);
-    expect(backup.schemaVersion, 17);
+    expect(backup.schemaVersion, 18);
     expect(first, second);
     expect(
       backup.nutrition.tables['nutrition_foods']!.map((row) => row['id']),
