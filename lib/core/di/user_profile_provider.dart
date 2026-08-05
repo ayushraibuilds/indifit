@@ -281,15 +281,24 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
               timezoneId: timezoneId,
             ),
           );
+          final today = dates.todayIn(timezoneId);
+          final active = await repository.activeGoal(
+            userId: owner,
+            localDate: today,
+            timezoneId: timezoneId,
+          );
           await repository.recordUserSetGoal(
             NutritionGoalCommand(
               userId: owner,
               goalType: NutritionGoalTypeId.parse(state.userGoal),
-              calorieTargetKcal: calorieGoal,
-              proteinTargetG: proteinGoal,
-              carbsTargetG: carbsGoal,
-              fatTargetG: fatGoal,
-              effectiveFromLocalDate: dates.todayIn(timezoneId),
+              calorieTargetKcal:
+                  calorieGoal ?? active?.calorieTargetKcal ?? state.calorieGoal,
+              proteinTargetG:
+                  proteinGoal ?? active?.proteinTargetG ?? state.proteinGoal,
+              carbsTargetG:
+                  carbsGoal ?? active?.carbsTargetG ?? state.carbsGoal,
+              fatTargetG: fatGoal ?? active?.fatTargetG ?? state.fatGoal,
+              effectiveFromLocalDate: today,
               timezoneId: timezoneId,
               commandId: commandId,
             ),
@@ -421,7 +430,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     final db = _db;
     if (db != null) {
       try {
-        final profiles = await db.select(db.userProfiles).get();
+        var profiles = await db.select(db.userProfiles).get();
         if (profiles.isNotEmpty) {
           await (db.update(
             db.userProfiles,
@@ -435,20 +444,9 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
               activityLevel: activityLevel != null
                   ? Value(activityLevel)
                   : const Value.absent(),
-              goal: goal != null ? Value(goal) : const Value.absent(),
               dietPreference: dietPreference != null
                   ? Value(dietPreference)
                   : const Value.absent(),
-              calorieGoal: calorieGoal != null
-                  ? Value(calorieGoal)
-                  : const Value.absent(),
-              proteinGoal: proteinGoal != null
-                  ? Value(proteinGoal)
-                  : const Value.absent(),
-              carbsGoal: carbsGoal != null
-                  ? Value(carbsGoal)
-                  : const Value.absent(),
-              fatGoal: fatGoal != null ? Value(fatGoal) : const Value.absent(),
               equipmentAccess: equipmentAccess != null
                   ? Value(equipmentAccess)
                   : const Value.absent(),
@@ -469,16 +467,73 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
                   weight: Value(weight ?? 70.0),
                   sex: Value(sex ?? 'male'),
                   activityLevel: Value(activityLevel ?? 'moderate'),
-                  goal: Value(goal ?? 'maintain'),
+                  goal: Value(state.userGoal),
                   dietPreference: Value(dietPreference ?? 'balanced'),
-                  calorieGoal: Value(calorieGoal ?? 2000),
-                  proteinGoal: Value(proteinGoal ?? 140.0),
-                  carbsGoal: Value(carbsGoal ?? 220.0),
-                  fatGoal: Value(fatGoal ?? 60.0),
+                  calorieGoal: Value(state.calorieGoal),
+                  proteinGoal: Value(state.proteinGoal),
+                  carbsGoal: Value(state.carbsGoal),
+                  fatGoal: Value(state.fatGoal),
                   equipmentAccess: Value(equipmentAccess ?? 'full_gym'),
                   injuriesLimitations: Value(injuriesLimitations ?? ''),
                 ),
               );
+          profiles = await db.select(db.userProfiles).get();
+        }
+        if (profiles.isNotEmpty) {
+          final timezoneId = await _readTimezoneId();
+          final dates = LocalScheduleDateService();
+          final owner = profiles.first.id.toString();
+          final repository = NutritionGoalRepository(
+            database: db,
+            dates: dates,
+          );
+          await repository.ensureCompatibilityImport(
+            userId: owner,
+            legacyProfile: NutritionGoalCommand(
+              userId: owner,
+              goalType: NutritionGoalTypeId.parse(profiles.first.goal),
+              calorieTargetKcal: profiles.first.calorieGoal,
+              proteinTargetG: profiles.first.proteinGoal,
+              carbsTargetG: profiles.first.carbsGoal,
+              fatTargetG: profiles.first.fatGoal,
+              effectiveFromLocalDate: dates.todayIn(timezoneId),
+              timezoneId: timezoneId,
+            ),
+          );
+          final goalChangeRequested =
+              goal != null ||
+              calorieGoal != null ||
+              proteinGoal != null ||
+              carbsGoal != null ||
+              fatGoal != null;
+          if (goalChangeRequested) {
+            final today = dates.todayIn(timezoneId);
+            final active = await repository.activeGoal(
+              userId: owner,
+              localDate: today,
+              timezoneId: timezoneId,
+            );
+            await repository.recordUserSetGoal(
+              NutritionGoalCommand(
+                userId: owner,
+                goalType: goal != null
+                    ? NutritionGoalTypeId.parse(goal)
+                    : active?.goalType ??
+                          NutritionGoalTypeId.parse(profiles.first.goal),
+                calorieTargetKcal:
+                    calorieGoal ??
+                    active?.calorieTargetKcal ??
+                    state.calorieGoal,
+                proteinTargetG:
+                    proteinGoal ?? active?.proteinTargetG ?? state.proteinGoal,
+                carbsTargetG:
+                    carbsGoal ?? active?.carbsTargetG ?? state.carbsGoal,
+                fatTargetG: fatGoal ?? active?.fatTargetG ?? state.fatGoal,
+                effectiveFromLocalDate: today,
+                timezoneId: timezoneId,
+              ),
+            );
+          }
         }
       } catch (e, st) {
         AppLogger.warning('updateProfile database write failed: $e');
@@ -487,6 +542,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
           st,
           reason: 'updateProfile db error',
         );
+        rethrow;
       }
     }
 
@@ -502,14 +558,22 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     if (activityLevel != null) {
       await prefs.setString('user_activity_level', activityLevel);
     }
-    if (goal != null) await prefs.setString('user_goal', goal);
+    if (db == null && goal != null) await prefs.setString('user_goal', goal);
     if (dietPreference != null) {
       await prefs.setString('user_diet_preference', dietPreference);
     }
-    if (calorieGoal != null) await prefs.setInt('calorie_goal', calorieGoal);
-    if (proteinGoal != null) await prefs.setDouble('protein_goal', proteinGoal);
-    if (carbsGoal != null) await prefs.setDouble('carbs_goal', carbsGoal);
-    if (fatGoal != null) await prefs.setDouble('fat_goal', fatGoal);
+    if (db == null && calorieGoal != null) {
+      await prefs.setInt('calorie_goal', calorieGoal);
+    }
+    if (db == null && proteinGoal != null) {
+      await prefs.setDouble('protein_goal', proteinGoal);
+    }
+    if (db == null && carbsGoal != null) {
+      await prefs.setDouble('carbs_goal', carbsGoal);
+    }
+    if (db == null && fatGoal != null) {
+      await prefs.setDouble('fat_goal', fatGoal);
+    }
     if (equipmentAccess != null) {
       await prefs.setString('user_equipment', equipmentAccess);
     }

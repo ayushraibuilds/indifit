@@ -1,9 +1,17 @@
+import 'dart:io';
+
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/backup/backup_v9.dart';
+import 'package:indifit/core/di/user_profile_provider.dart';
 import 'package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart';
+import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b04_goal_models.dart';
 import 'package:indifit/data/repositories/coaching_preference_repository.dart';
 import 'package:indifit/data/repositories/nutrition_goal_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -376,6 +384,203 @@ void main() {
           ),
         ),
       );
+
+      final conflictingProposal = AdaptiveGoalProposal(
+        id: 'proposal-conflict',
+        userId: proposal.userId,
+        goalType: proposal.goalType,
+        goalRate: proposal.goalRate,
+        calorieTargetKcal: 1750,
+        policyVersion: proposal.policyVersion,
+        effectiveFromLocalDate: proposal.effectiveFromLocalDate,
+        timezoneId: proposal.timezoneId,
+        evidenceFingerprint: proposal.evidenceFingerprint,
+        exactResultNumerator: proposal.exactResultNumerator,
+        exactResultDenominator: proposal.exactResultDenominator,
+        normalizedMaintenanceKcal: proposal.normalizedMaintenanceKcal,
+      );
+      await expectLater(
+        goals.acceptAdaptiveProposal(
+          proposal: conflictingProposal,
+          adaptiveConsentEnabled: true,
+          ageEligible: true,
+        ),
+        throwsA(
+          isA<B04GoalConflictError>().having(
+            (error) => error.code,
+            'code',
+            'adaptive_acceptance_conflict',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'future effective targets preserve the current legacy mirror and goal retries conflict safely',
+    () async {
+      final profileId = await db
+          .into(db.userProfiles)
+          .insert(
+            UserProfilesCompanion.insert(
+              calorieGoal: const Value(2000),
+              proteinGoal: const Value(140),
+              carbsGoal: const Value(220),
+              fatGoal: const Value(60),
+            ),
+          );
+      final dates = LocalScheduleDateService(
+        nowUtc: () => DateTime.utc(2026, 1, 10, 12),
+      );
+      final repository = NutritionGoalRepository(database: db, dates: dates);
+      await repository.ensureCompatibilityImport(
+        userId: '$profileId',
+        legacyProfile: legacyCommand(userId: '$profileId'),
+      );
+
+      final future = await repository.recordUserSetGoal(
+        const NutritionGoalCommand(
+          userId: '1',
+          goalType: NutritionGoalType.loss,
+          calorieTargetKcal: 1800,
+          effectiveFromLocalDate: '2026-02-01',
+          timezoneId: 'Asia/Kolkata',
+          commandId: 'future-goal-1',
+        ),
+      );
+      expect(future.calorieTargetKcal, 1800);
+      expect(future.proteinTargetG, 140);
+      expect(future.carbsTargetG, 220);
+      expect(future.fatTargetG, 60);
+      final profile = await (db.select(
+        db.userProfiles,
+      )..where((row) => row.id.equals(profileId))).getSingle();
+      expect(profile.calorieGoal, 2000);
+      expect(profile.goal, 'maintain');
+
+      await expectLater(
+        repository.recordUserSetGoal(
+          const NutritionGoalCommand(
+            userId: '1',
+            goalType: NutritionGoalType.loss,
+            calorieTargetKcal: 1700,
+            effectiveFromLocalDate: '2026-02-01',
+            timezoneId: 'Asia/Kolkata',
+            commandId: 'future-goal-1',
+          ),
+        ),
+        throwsA(
+          isA<B04GoalConflictError>().having(
+            (error) => error.code,
+            'code',
+            'goal_command_conflict',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'profile updates use canonical goal history and failed database writes do not update legacy state',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      await db.into(db.userProfiles).insert(UserProfilesCompanion.insert());
+      final profileNotifier = UserProfileNotifier(db);
+      await profileNotifier.loadProfile();
+      await profileNotifier.updateProfile(
+        goal: 'gain',
+        calorieGoal: 2600,
+        proteinGoal: 160,
+      );
+
+      final repository = NutritionGoalRepository(database: db);
+      final versions = await repository.listVersions(userId: '1');
+      expect(versions, hasLength(2));
+      expect(versions.last.source, NutritionGoalSource.userSet);
+      expect(versions.last.goalType, NutritionGoalType.gain);
+      expect(versions.last.calorieTargetKcal, 2600);
+      expect(versions.last.proteinTargetG, 160);
+      expect((await db.select(db.userProfiles).getSingle()).calorieGoal, 2600);
+      expect(
+        (await SharedPreferences.getInstance()).getInt('calorie_goal'),
+        null,
+      );
+
+      final beforeFailure = profileNotifier.state;
+      final closedDb = AppDatabase.memory();
+      final failedNotifier = UserProfileNotifier(closedDb);
+      await closedDb.close();
+      await expectLater(
+        failedNotifier.updateProfile(goal: 'loss', calorieGoal: 1700),
+        throwsA(anything),
+      );
+      expect(profileNotifier.state.calorieGoal, beforeFailure.calorieGoal);
+      expect(profileNotifier.state.userGoal, beforeFailure.userGoal);
+    },
+  );
+
+  test(
+    'goal and consent history survive restart and Backup v9 restore',
+    () async {
+      final directory = await Directory.systemTemp.createTemp('b04-goals-');
+      final file = File('${directory.path}/goals.db');
+      final first = AppDatabase.executor(NativeDatabase(file));
+      await first
+          .into(first.userProfiles)
+          .insert(UserProfilesCompanion.insert());
+      final firstGoals = NutritionGoalRepository(database: first);
+      final firstPreferences = CoachingPreferenceRepository(database: first);
+      await firstGoals.ensureCompatibilityImport(
+        userId: '1',
+        legacyProfile: legacyCommand(userId: '1'),
+      );
+      await firstPreferences.recordConsent(
+        CoachingConsentCommand(
+          userId: '1',
+          category: CoachingConsentCategory.adaptiveCoaching,
+          action: CoachingConsentAction.enable,
+          consentPolicyVersion: kB04EnabledPolicyVersion,
+          copyVersion: 'copy-v1',
+          timestampUtc: DateTime.utc(2026, 1, 1),
+          localDate: '2026-01-01',
+          timezoneId: 'Asia/Kolkata',
+          actorSource: 'settings',
+        ),
+      );
+      await first.close();
+
+      final reopened = AppDatabase.executor(NativeDatabase(file));
+      final reopenedGoals = NutritionGoalRepository(database: reopened);
+      final reopenedPreferences = CoachingPreferenceRepository(
+        database: reopened,
+      );
+      expect(await reopenedGoals.listVersions(userId: '1'), hasLength(1));
+      expect(
+        (await reopenedPreferences.currentPreferences(
+          userId: '1',
+        )).adaptiveCoachingEnabled,
+        isTrue,
+      );
+
+      final backup = await BackupV9Data.createFromDatabase(reopened);
+      final restored = AppDatabase.memory();
+      final decoded = BackupV9Data.fromJson(backup.toJson());
+      await decoded.restoreToDatabase(restored);
+      expect(
+        await NutritionGoalRepository(
+          database: restored,
+        ).listVersions(userId: '1'),
+        hasLength(1),
+      );
+      expect(
+        (await CoachingPreferenceRepository(
+          database: restored,
+        ).currentPreferences(userId: '1')).adaptiveCoachingEnabled,
+        isTrue,
+      );
+      await reopened.close();
+      await restored.close();
+      await directory.delete(recursive: true);
     },
   );
 }

@@ -187,7 +187,10 @@ class NutritionGoalRepository {
                     row.evidenceFingerprint.equals(fingerprint),
               ))
               .getSingleOrNull();
-      if (existing != null) return _fromRow(existing);
+      if (existing != null) {
+        _assertSameAdaptiveProposal(existing, proposal);
+        return _fromRow(existing);
+      }
 
       final previous = await _latestForOwner(owner);
       final versionNumber = (previous?.versionNumber ?? 0) + 1;
@@ -199,7 +202,10 @@ class NutritionGoalRepository {
           await (_db.select(_db.nutritionGoalVersions)
                 ..where((row) => row.userId.equals(owner) & row.id.equals(id)))
               .getSingleOrNull();
-      if (byCommand != null) return _fromRow(byCommand);
+      if (byCommand != null) {
+        _assertSameAdaptiveProposal(byCommand, proposal);
+        return _fromRow(byCommand);
+      }
 
       await _db
           .into(_db.nutritionGoalVersions)
@@ -229,7 +235,10 @@ class NutritionGoalRepository {
               createdAtUtc: Value(_nowUtc().toUtc()),
             ),
           );
-      await _syncLegacyCompatibilityMirror(owner, proposal);
+      await _syncLegacyCompatibilityMirror(
+        owner,
+        timezoneId: proposal.timezoneId,
+      );
       final row = await (_db.select(
         _db.nutritionGoalVersions,
       )..where((row) => row.id.equals(id))).getSingleOrNull();
@@ -300,11 +309,15 @@ class NutritionGoalRepository {
                       row.evidenceFingerprint.equals(fingerprint),
                 ))
                 .getSingleOrNull();
-        if (existing != null) return _fromRow(existing);
+        if (existing != null) {
+          _assertSameGoalCommand(existing, command);
+          return _fromRow(existing);
+        }
       }
       final previous = await _latestForOwner(owner);
+      final completedCommand = _inheritPreviousTargets(command, previous);
       final version = await _insertVersion(
-        command,
+        completedCommand,
         versionNumber: (previous?.versionNumber ?? 0) + 1,
         supersedesGoalVersionId: previous?.id,
         evidenceFingerprint: fingerprint,
@@ -325,7 +338,10 @@ class NutritionGoalRepository {
     final existing = await (_db.select(
       _db.nutritionGoalVersions,
     )..where((row) => row.id.equals(id))).getSingleOrNull();
-    if (existing != null) return _fromRow(existing);
+    if (existing != null) {
+      _assertSameGoalCommand(existing, command);
+      return _fromRow(existing);
+    }
     await _db
         .into(_db.nutritionGoalVersions)
         .insert(
@@ -347,7 +363,10 @@ class NutritionGoalRepository {
             createdAtUtc: Value(_nowUtc().toUtc()),
           ),
         );
-    await _syncLegacyCompatibilityMirror(_owner(command.userId), command);
+    await _syncLegacyCompatibilityMirror(
+      _owner(command.userId),
+      timezoneId: command.timezoneId,
+    );
     final row = await (_db.select(
       _db.nutritionGoalVersions,
     )..where((row) => row.id.equals(id))).getSingleOrNull();
@@ -455,42 +474,110 @@ class NutritionGoalRepository {
 
   static String _owner(String userId) => userId.trim();
 
+  NutritionGoalCommand _inheritPreviousTargets(
+    NutritionGoalCommand command,
+    db.NutritionGoalVersion? previous,
+  ) => NutritionGoalCommand(
+    userId: command.userId,
+    goalType: command.goalType,
+    source: command.source,
+    calorieTargetKcal: command.calorieTargetKcal ?? previous?.calorieTargetKcal,
+    proteinTargetG: command.proteinTargetG ?? previous?.proteinTargetG,
+    carbsTargetG: command.carbsTargetG ?? previous?.carbsTargetG,
+    fatTargetG: command.fatTargetG ?? previous?.fatTargetG,
+    effectiveFromLocalDate: command.effectiveFromLocalDate,
+    timezoneId: command.timezoneId,
+    effectiveToLocalDate: command.effectiveToLocalDate,
+    commandId: command.commandId,
+    id: command.id,
+  );
+
+  void _assertSameGoalCommand(
+    db.NutritionGoalVersion row,
+    NutritionGoalCommand command,
+  ) {
+    final same =
+        row.userId == _owner(command.userId) &&
+        row.goalType == command.goalType.stableId &&
+        row.targetSource == command.source.stableId &&
+        (command.calorieTargetKcal == null ||
+            row.calorieTargetKcal == command.calorieTargetKcal) &&
+        (command.proteinTargetG == null ||
+            row.proteinTargetG == command.proteinTargetG) &&
+        (command.carbsTargetG == null ||
+            row.carbsTargetG == command.carbsTargetG) &&
+        (command.fatTargetG == null || row.fatTargetG == command.fatTargetG) &&
+        row.effectiveFromLocalDate == command.effectiveFromLocalDate &&
+        row.effectiveToLocalDate == command.effectiveToLocalDate &&
+        row.timezoneId == command.timezoneId &&
+        (command.id == null || row.id == command.id);
+    if (!same) {
+      throw const B04GoalConflictError(
+        'goal_command_conflict',
+        'The goal command identity is already used for different content.',
+      );
+    }
+  }
+
+  void _assertSameAdaptiveProposal(
+    db.NutritionGoalVersion row,
+    AdaptiveGoalProposal proposal,
+  ) {
+    final same =
+        row.userId == _owner(proposal.userId) &&
+        row.goalType == proposal.goalType.stableId &&
+        row.targetSource == NutritionGoalSource.adaptive.stableId &&
+        row.calorieTargetKcal == proposal.calorieTargetKcal &&
+        row.proteinTargetG == proposal.proteinTargetG &&
+        row.carbsTargetG == proposal.carbsTargetG &&
+        row.fatTargetG == proposal.fatTargetG &&
+        row.policyVersion == proposal.policyVersion &&
+        row.calculationVersion == proposal.calculationVersion &&
+        row.algorithmVersion == proposal.algorithmVersion &&
+        row.effectiveFromLocalDate == proposal.effectiveFromLocalDate &&
+        row.timezoneId == proposal.timezoneId &&
+        row.evidenceFingerprint ==
+            (proposal.evidenceFingerprint ?? 'proposal:${proposal.id}') &&
+        row.exactResultNumerator == proposal.exactResultNumerator &&
+        row.exactResultDenominator == proposal.exactResultDenominator &&
+        row.normalizedMaintenanceKcal == proposal.normalizedMaintenanceKcal;
+    if (!same) {
+      throw const B04GoalConflictError(
+        'adaptive_acceptance_conflict',
+        'The adaptive acceptance identity is already used for different content.',
+      );
+    }
+  }
+
   Future<void> _syncLegacyCompatibilityMirror(
-    String owner,
-    Object values,
-  ) async {
+    String owner, {
+    required String timezoneId,
+  }) async {
     final profileId = int.tryParse(owner);
     if (profileId == null) return;
-    final calorieTarget = values is AdaptiveGoalProposal
-        ? values.calorieTargetKcal
-        : (values as NutritionGoalCommand).calorieTargetKcal;
-    final proteinTarget = values is AdaptiveGoalProposal
-        ? values.proteinTargetG
-        : (values as NutritionGoalCommand).proteinTargetG;
-    final carbsTarget = values is AdaptiveGoalProposal
-        ? values.carbsTargetG
-        : (values as NutritionGoalCommand).carbsTargetG;
-    final fatTarget = values is AdaptiveGoalProposal
-        ? values.fatTargetG
-        : (values as NutritionGoalCommand).fatTargetG;
-    final goalType = values is AdaptiveGoalProposal
-        ? values.goalType
-        : (values as NutritionGoalCommand).goalType;
+    final active = await activeGoal(
+      userId: owner,
+      localDate: _dates.todayIn(timezoneId),
+      timezoneId: timezoneId,
+    );
+    if (active == null) return;
     await (_db.update(
       _db.userProfiles,
     )..where((row) => row.id.equals(profileId))).write(
       db.UserProfilesCompanion(
-        calorieGoal: calorieTarget == null
+        calorieGoal: active.calorieTargetKcal == null
             ? const Value.absent()
-            : Value(calorieTarget),
-        proteinGoal: proteinTarget == null
+            : Value(active.calorieTargetKcal!),
+        proteinGoal: active.proteinTargetG == null
             ? const Value.absent()
-            : Value(proteinTarget),
-        carbsGoal: carbsTarget == null
+            : Value(active.proteinTargetG!),
+        carbsGoal: active.carbsTargetG == null
             ? const Value.absent()
-            : Value(carbsTarget),
-        fatGoal: fatTarget == null ? const Value.absent() : Value(fatTarget),
-        goal: Value(switch (goalType) {
+            : Value(active.carbsTargetG!),
+        fatGoal: active.fatTargetG == null
+            ? const Value.absent()
+            : Value(active.fatTargetG!),
+        goal: Value(switch (active.goalType) {
           NutritionGoalType.loss => 'lose',
           NutritionGoalType.maintenance => 'maintain',
           NutritionGoalType.gain => 'gain',
