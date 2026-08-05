@@ -49,14 +49,17 @@ runtime activation.
 The following acceptance criteria and deterministic tests apply in addition
 to each task’s base criteria. They define the enabled numerical contract but
 do not authorize implementation from this branch. Until the activation gate
-passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
+passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior. The
+canonical numerical result is calculated once by the policy engine; downstream
+tasks consume its stored exact result and must not independently round or
+recalculate policy values.
 
 | Task | Acceptance criteria | Required deterministic tests |
 |---|---|---|
-| `B04-01` | Contract matrix includes exact `ENABLED-1` eligibility, goal rates, 21-day window, weight/nutrition/maintenance evidence, Theil–Sen trend, deadbands, 100-kcal step, cadence, expiry, aggregate, deficit/surplus, floor/ceiling, rapid-change, future-only activation and replay; task remains not started. | Every edge listed in `VERIFICATION.md`, including `HOLD-1`/`ENABLED-1` policy-version replay. |
-| `B04-02` | Owns the Product Owner selection, version, activation conditions, retained `HOLD-1`, `READINESS-HOLD-1`, exact numeric semantics and fresh independent Sol review packet. | Decision-record completeness; all unit/period/inclusivity/missing-data/version/override fields; no legacy-constant inference; activation remains blocked. |
-| `B04-03` | Planned Schema v18 entities carry policy/algorithm versions, effective dates, evidence links, target lineage and feedback; no new numerical-policy or N8 tables are introduced. | Fresh/v17→v18/idempotent migration ownership and required-field tests; policy/version lineage round trip. |
-| `B04-04` | Planned Backup v9 graph preserves `HOLD-1` and `ENABLED-1` policy-version history, future-only effective dates and evidence lineage; no new N8/raw-payload sections. | Round trip, unsupported policy version, duplicate/cross-user graph, rollback and historical replay tests. |
+| `B04-01` | Contract matrix includes exact `ENABLED-1` eligibility, goal rates, 21-day window, weight/nutrition/maintenance evidence, exact range-width formula and invalid-input behavior, gram normalization, odd/even medians, exact-rational Theil–Sen trend, basis-point thresholds, display-only rounding, whole-kcal maintenance normalization, floor/ceil arithmetic, exact 100-kcal step, cadence, expiry, aggregate, deficit/surplus, floor/ceiling, rapid-change, future-only activation and replay; task remains not started. | Every edge listed in `VERIFICATION.md`, including exact range examples, invalid ranges, odd/even median and slope fixtures, exact boundary arithmetic, display-rounding separation and `HOLD-1`/`ENABLED-1` policy-version replay. |
+| `B04-02` | Owns the Product Owner selection, version, activation conditions, retained `HOLD-1`, `READINESS-HOLD-1`, exact numeric semantics, rational arithmetic contract, canonical `M` normalization and fresh independent Sol review packet. | Decision-record completeness; finite/unit/domain validation; range formula; exact median/slope rules; basis points; rounding; floor/ceil; exact 100-kcal no-clamp rule; aggregate inclusion/exclusion; no legacy-constant inference; activation remains blocked. |
+| `B04-03` | Planned Schema v18 entities carry policy/algorithm versions, effective dates, evidence links, target lineage, canonical exact results and feedback; no new numerical-policy or N8 tables are introduced. | Fresh/v17→v18/idempotent migration ownership and required-field tests; policy/version, rational-result and normalized-`M` lineage round trip. |
+| `B04-04` | Planned Backup v9 graph preserves `HOLD-1`, `ENABLED-1` and canonical numerical-result policy history, future-only effective dates and evidence lineage; no new N8/raw-payload sections. | Round trip, unsupported policy version, duplicate/cross-user graph, rollback, normalized-`M` and exact-result historical replay tests. |
 | `B04-05` | Enforces verified 18+ age, explicit consent, supported rates/defaults, goal versions, user-set labeling, explicit acceptance, idempotency and 21-day reset after goal/target/policy changes. | Exact birthday, underage/unknown/withheld, consent, rate, target acceptance, duplicate command, effective-date and reset edges. |
 | `B04-06` | Preserves readiness provenance and completeness; `READINESS-HOLD-1` yields exactly `0 kcal/day`, `0%` load, `0%` intensity and `0` schedule duration, including complete readiness. | Complete/missing/denied/stale/conflicting readiness and all exact-zero numerical effect cases. |
 | `B04-07` | Implements the pure deterministic calorie engine only after activation; otherwise returns `HOLD-1` unavailable. Enforces all `ENABLED-1` evidence, trend, deadband, direction, delta, cadence, aggregate, deficit/surplus, floor/ceiling and rapid-change rules. | Full numerical edge suite, deterministic replay, no target mutation, explicit acceptance, user/AI bypass rejection and future-only activation. |
@@ -71,6 +74,14 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
 | `B04-16` | Regression proves B01–B03 ownership, HOLD-1 replay, ENABLED-1 future-only activation, readiness hold, legacy constant isolation and timezone/DST correction behavior. | Full cross-batch, migration/backup, legacy-authority, replay and policy-selection tests. |
 | `B04-17` | Release evidence contains Product Owner selection, fresh Sol verdict, branch merge, explicit activation selection, Terra copy review, all numerical edges and no readiness enablement. | Complete matrix, device/accessibility, rollback/idempotency, offline, AI, historical and activation-gate evidence. |
 | `B04-18` (conditional) | Remains outside mandatory B04; no festival/fasting/eating-out/travel inference, schema, backup or calorie-policy dependency is added. | N8 independence and no-inference tests only; separate DAG required for future work. |
+
+Downstream repositories, read models, recommendation consumers and UI tasks
+must consume the policy engine’s stored canonical exact result, normalized
+maintenance integer and policy/algorithm versions. They must not independently
+recalculate range widths, medians, slopes, percentages, floor/ceiling values,
+aggregate deltas or display-rounding decisions. Presentation may apply the
+approved display rounding only after the historical numerical result has been
+stored.
 
 ## B04-01 — Contract and fixture matrix
 
@@ -88,12 +99,17 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
   authority is duplicated; `coaching_consent_events` and
   `coaching_eligibility_evaluations` are represented as append-only durable
   authorities; `B04-D04-01` through `B04-D04-20` each have the required
-  decision fields, affected tasks and deterministic negative fixture; policy
-  gates are marked blocking; this task produces contracts and fixtures only.
+  decision fields, affected tasks and deterministic negative fixture; the
+  `ENABLED-1` arithmetic contract includes finite/unit/domain validation,
+  exact range width/midpoint, exact gram medians and Theil–Sen slopes,
+  basis-point comparisons, display-only rounding, normalized `M`, floor/ceil
+  derivation and exact 100-kcal no-clamp behavior; policy gates are marked
+  blocking; this task produces contracts and fixtures only.
 - **Required tests:** Contract serialization, state-transition and roadmap
   traceability fixtures; negative fixtures for missing evidence, dangling
   lineage, possible/unknown/insufficient dietary evidence and exact
-  `HOLD-1` unavailable/zero-delta behavior; no application implementation.
+  `HOLD-1` unavailable/zero-delta behavior; E13/E16/E41–E47 numerical
+  precision fixtures and policy-version replay; no application implementation.
 - **Explicit exclusions:** No schema migration, UI, engine or AI code.
 - **Parallelizable:** No; it establishes the shared contract baseline.
 
@@ -124,7 +140,12 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
   non-policy. The task records activation gates but does not activate them.
 - **Required tests:** Decision-record completeness; `HOLD-1` unavailable result,
   exact zero upward/downward/aggregate delta, no proposal acceptance and no
-  user/AI bypass; boundary-value policy fixtures only for future approval;
+  user/AI bypass; finite/unit/domain validation; exact range formula and
+  invalid-range behavior; odd/even rational medians and Theil–Sen slopes;
+  basis-point comparisons; display-only rounding; normalized-`M` floor/ceil
+  derivation; exact 100-kcal no-clamp boundary fixtures; aggregate
+  inclusion/exclusion; and boundary-value policy fixtures only for future
+  approval;
   contradictory-goal fixtures; missing-body-metric fixtures; missing
   nutrition/recovery fixtures; consent/withdrawal; hard-block and
   possible/unknown/insufficient/missing/invalid dietary evidence; warning
@@ -216,7 +237,8 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
   and effective-dated; the current consent view is derived; verified age is
   `18` inclusive; below-age/unknown/conflicting/withheld-age/disabled states
   cannot create adaptive output; duplicate acceptance and consent commands are
-  idempotent;
+  idempotent; enabled-policy values and normalized maintenance energy are read
+  from the canonical policy result and are not independently rounded;
   legacy profile fields have one-way compatibility mapping and no competing
   write authority.
 - **Required tests:** Default-off coaching; explicit enable; consent
@@ -276,14 +298,20 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
   target. While `HOLD-1` is active, no adaptive proposal is emitted and all
   adaptive deltas are exactly `0 kcal`. After the separate activation gate
   selects `ENABLED-1`, the engine enforces its exact 21-day/evidence/trend,
-  deadband, `100 kcal/day`, cadence, aggregate, deficit/surplus,
-  floor/ceiling and rapid-change contract. `READINESS-HOLD-1` keeps all
+  deadband, exact-rational arithmetic, `100 kcal/day`, cadence, aggregate,
+  deficit/surplus, floor/ceiling and rapid-change contract. Every numeric input
+  is finite, unit-correct and in domain; range widths use the canonical
+  `L/U/midpoint` formula; weights use exact gram medians and Theil–Sen slopes;
+  maintenance uses normalized whole-integer `M` with the specified floor/ceil
+  derivation. `READINESS-HOLD-1` keeps all
   readiness numerical effects exactly zero. User override and AI cannot bypass
   any policy; training ownership remains B02-owned.
 - **Required tests:** `HOLD-1` emits no adaptive proposal and returns its
   unavailable reason; upward/downward/aggregate delta exactly `0 kcal`; no
   hidden calculation, user override or AI bypass; `ENABLED-1` exact numerical
-  edge matrix; `READINESS-HOLD-1` exact-zero effects; activation gate;
+  edge matrix E01–E47, including invalid ranges, odd/even medians and slopes,
+  exact boundary arithmetic, display-rounding separation and no-clamp
+  boundary crossing; `READINESS-HOLD-1` exact-zero effects; activation gate;
   policy-version replay; append-only correction; timezone/DST; offline
   determinism; and duplicate acceptance idempotency.
 - **Explicit exclusions:** AI-generated targets, medical prescriptions,
@@ -304,7 +332,8 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
   service.
 - **Acceptance criteria:** Context carries local date/timezone, target version,
   totals/lineage, readiness completeness, workload, schedule, constraints,
-  estimates, age/consent/eligibility, missing evidence and N8 absence;
+  estimates, age/consent/eligibility, missing evidence, canonical policy
+  results and N8 absence;
   candidates are explicit local selections; no legacy FoodLogs/meal-plan path
   can become authority.
 - **Required tests:** Daily/weekly context, no-candidate, unknown totals,
@@ -360,9 +389,11 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
   the same engine; priority is deterministic; confirmed hard blocks and
   possible/unknown/insufficient/missing/invalid dietary evidence cannot be
   bypassed; those safety-sensitive recommendation states are unavailable;
-  explanation names evidence and uncertainty; age/consent/policy state,
+  explanation names evidence and uncertainty; age/consent/policy state and
+  canonical numerical result,
   professional wording, target-acceptance state and unavailable reasons are
-  explicit; no AI is required for an authoritative result or may change
+  explicit; no downstream rounding or recalculation occurs; no AI is required
+  for an authoritative result or may change
   targets/safety.
 - **Required tests:** Golden ranking, tie-breaking, priority, no-evidence,
   possible/unknown/insufficient/missing/invalid dietary evidence, low-risk
@@ -383,7 +414,8 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
   schema/backup adapters, graph validators and history read models.
 - **Acceptance criteria:** Issued output freezes context/evidence/rule/model
   versions, immutable eligibility evaluation, consent-event reference and
-  target version; supersession is explicit; acceptance/rejection/dismissal/
+  target version and the canonical exact numerical result; supersession is
+  explicit; acceptance/rejection/dismissal/
   override/snooze feedback is append-only and cannot rewrite history; duplicate
   commands are idempotent; dangling or cross-user references fail closed;
   projections do not create duplicate recommendations.
@@ -434,7 +466,8 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
 - **Acceptance criteria:** Daily uses local civil date; weekly period is
   explicit and timezone-aware; no duplicate recommendation logic; explanation,
   alternatives, missing evidence, durable age-evaluation and consent-derived
-  state, professional wording, target acceptance and feedback are reachable;
+  state, canonical numerical result, professional wording, target acceptance
+  and feedback are reachable;
   below-age/unknown/withheld wording is not punitive or judgmental; no-data,
   policy-hold and offline states are truthful; possible/unknown/insufficient/
   missing/invalid dietary evidence is unavailable for safety-sensitive output.
@@ -490,7 +523,8 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
   responsive layouts.
 - **Acceptance criteria:** User can inspect evidence, uncertainty, opt-in,
   append-only consent-history projection, age/withheld/unknown eligibility,
-  target acceptance, override, dismissal and unavailable states; warnings are
+  target acceptance, canonical exact numerical result, override, dismissal and
+  unavailable states; warnings are
   acknowledgement-capable only for a separately defined low-risk logging
   action and never represent recommendation safety; below-18 users retain
   general app access and descriptive features without punitive wording; no
@@ -521,7 +555,7 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
   `coaching_consent_events` and `coaching_eligibility_evaluations` remain the
   durable historical authorities; no B03 reimplementation; B02 load/readiness
   provenance ownership remains intact; old data and backups remain readable;
-  age/consent/target-acceptance, missing-data, dietary, offline and AI
+  age/consent/target-acceptance, canonical numerical-result, missing-data, dietary, offline and AI
   boundaries are covered; all B04 outcomes trace to the engine/history.
 - **Required tests:** Full regression; duplicate-authority detection; consent
   and eligibility event/evaluation ownership; cross-user and unsupported
@@ -550,7 +584,9 @@ passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior.
   verdict covering the numerical contract are recorded. Branch merge and
   explicit release/feature-policy selection are recorded before any enabled
   activation; `HOLD-1` remains replayable/non-selected and
-  `READINESS-HOLD-1` remains active. The incremental evidence ledger is
+  `READINESS-HOLD-1` remains active; release evidence uses the canonical exact
+  numerical result without downstream rounding or recalculation. The
+  incremental evidence ledger is
   updated immediately after each approved/merged task; Android and iOS
   physical checks are recorded; this planning branch does not begin B04-01 or
   implementation.

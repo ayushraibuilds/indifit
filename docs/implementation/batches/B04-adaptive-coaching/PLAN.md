@@ -281,6 +281,22 @@ aggregate bounds, deficit/surplus boundaries, floor/ceiling behavior and the
 exclusive rapid-change gates are all listed in the decision record and direct
 verification matrix.
 
+All numerical inputs must be finite, unit-correct and within domain; invalid
+values return typed unavailable/invalid-evidence states and never become zero.
+Range width is exactly `U − L`, midpoint is `(L + U) ÷ 2`, and relative width
+is `(U − L) ÷ midpoint`; `L >= 0`, `U >= L` and `midpoint > 0` are required.
+The nutrition and maintenance thresholds are inclusive `20%` and `15%`,
+respectively, and compare the unrounded exact result. Weight evidence is
+normalized to integer grams; odd/even medians and Theil–Sen slopes retain exact
+rational values. Policy percentages use exact basis points and display
+rounding is presentation-only. Maintenance point evidence is normalized once
+to whole-integer `M` kcal/day with nearest rounding and halfway ties away from
+zero; derived deficit/floor/surplus/ceiling calculations use floor/ceil exactly
+as specified in `DECISIONS.md`. Every enabled proposal is exactly `+100` or
+`−100 kcal/day`; a boundary crossing emits no proposal and never a smaller
+clamped delta. Downstream tasks consume the canonical stored result and do not
+independently round or recalculate it.
+
 No activation effective date is assigned by this planning commit. A future
 release/feature-policy selection must record the effective local date/timezone,
 policy version and user/install scope. Existing `HOLD-1` evaluations remain

@@ -117,6 +117,33 @@ active; Product Owner selection alone is not activation:
   timezone and user/installation scope. No activation date is implied by this
   documentation commit.
 
+The numerical fixtures use the following canonical arithmetic contract:
+
+- Every numeric input is finite, unit-correct and within domain. NaN,
+  infinities, wrong-unit, out-of-domain, zero-denominator and other invalid
+  inputs return typed unavailable/invalid-evidence results and never become
+  zero.
+- For bounds `L` and `U`, `width = U − L`, `midpoint = (L + U) ÷ 2`, and
+  `relative_width_percent = ((U − L) ÷ midpoint) × 100`. Require finite,
+  same-unit bounds with `L >= 0`, `U >= L` and `midpoint > 0`. Compare the
+  unrounded value to inclusive `20%` nutrition and `15%` maintenance limits.
+- Weights normalize to integer grams. Odd medians use the middle value; even
+  medians use the exact mean of the two middle values. Theil–Sen creates every
+  pairwise slope, then uses the odd middle or even mean-of-two-middle slope.
+  Weekly rate is `slope_grams_per_day × 7 × 100 ÷ median_window_weight_grams`.
+- Policy percentages use exact basis points and exact rational/decimal
+  comparisons. Displayed weight-trend percentages use nearest two-decimal
+  rounding with halfway ties away from zero; canonical history remains
+  unrounded.
+- Maintenance point evidence is normalized once to whole-integer `M` kcal/day
+  using nearest rounding with halfway ties away from zero. Deficit and surplus
+  caps use `floor`; the percentage floor uses `ceil`; all targets and deltas
+  are whole integer kcal/day values.
+- Every enabled proposal is exactly `+100` or `−100 kcal/day`. A complete step
+  that crosses a boundary emits no proposal, returns
+  `policy_boundary_reached`, and leaves the active target unchanged. No smaller
+  boundary clamp is permitted.
+
 ## `B04-D04-ENABLED-1` direct numerical edge tests
 
 These are required deterministic policy tests, not an implementation claim.
@@ -137,10 +164,10 @@ missing-data result, override behavior and historical evidence references.
 | E10 | Latest valid weight at `4` versus `5` completed local days old | Exactly 4 is fresh enough; 5 is stale and returns unavailable. |
 | E11 | `13` versus `14` nutrition-valid days out of 21 | 13 fails; exactly 14 passes if each day is valid. |
 | E12 | Daily completeness `79.99%`, `80%` and above | 79.99% fails; exactly 80% and higher pass the completeness gate. |
-| E13 | Nutrition range width exactly `20%` versus beyond `20%` of midpoint | Exactly 20% is accepted; beyond 20% returns unavailable. |
+| E13 | Nutrition ranges `1800–2200` and `1799–2201` | Width/midpoint are `400/2000` and `402/2000`; exact 20% passes and exact 20.1% fails. |
 | E14 | Lower and upper nutrition bounds produce different actions | Return `unavailable_uncertain_range`; never choose one bound or exactify it. |
 | E15 | Maintenance estimate age exactly `30` versus `31` completed local days | Exactly 30 is fresh enough; 31 is stale and returns unavailable. |
-| E16 | Maintenance uncertainty exactly `15%` versus beyond `15%` of midpoint | Exactly 15% is accepted; beyond 15% returns unavailable. |
+| E16 | Maintenance ranges `1850–2150` and `1849–2151` | Width/midpoint are `300/2000` and `302/2000`; exact 15% passes and exact 15.1% fails. |
 | E17 | Loss rate at `−0.65%`, `−0.35%` and just outside the `−0.50% ± 0.15` band | Both exact edges are `on_track`; outside the inclusive band selects the specified direction. |
 | E18 | Gain rate at `+0.10%`, `+0.40%` and just outside the `+0.25% ± 0.15` band | Both exact edges are `on_track`; outside the inclusive band selects the specified direction. |
 | E19 | Maintenance at `−0.25%`, `+0.25%` and just outside | Exact edges are `on_track`; below permits `+100 kcal/day`, above permits `−100 kcal/day`. |
@@ -150,7 +177,7 @@ missing-data result, override behavior and historical evidence references.
 | E23 | Rolling aggregate at `+200`/`−200` versus one unit beyond within 42 days | Exact inclusive bounds are allowed; one unit beyond returns `policy_boundary_reached` and leaves target unchanged. |
 | E24 | Loss deficit exactly `500 kcal/day` versus one unit beyond, with the 20% limit non-limiting | Exactly 500 is allowed by this bound; one unit beyond is blocked; when 20% is smaller, the smaller limit governs. |
 | E25 | Loss deficit exactly `20%` of maintenance versus one unit beyond, with the 500-kcal limit non-limiting | Exactly 20% is allowed by this bound; one unit beyond is blocked; when 500 kcal is smaller, the smaller limit governs. |
-| E26 | Loss floor at exact `1200 kcal/day` and exact dynamic `80%` maintenance boundary | Exact permitted boundary is retained; crossing is clamped only when movement is no greater than the 100-kcal step, otherwise no proposal. |
+| E26 | Loss floor at exact `1200 kcal/day` and exact dynamic `80%` maintenance boundary | A complete 100-kcal crossing step emits no proposal, returns `policy_boundary_reached`, and leaves the target unchanged; no smaller clamp is emitted. |
 | E27 | Gain surplus exactly `300 kcal/day` versus one unit beyond, with the 15% limit non-limiting | Exactly 300 is allowed by this bound; one unit beyond is blocked; when 15% is smaller, the smaller limit governs. |
 | E28 | Gain surplus exactly `15%` of maintenance versus one unit beyond, with the 300-kcal limit non-limiting | Exactly 15% is allowed by this bound; one unit beyond is blocked; when 300 kcal is smaller, the smaller limit governs. |
 | E29 | Loss trend exactly `−1.00%` versus faster than `−1.00%` | Exactly −1.00% does not trigger rapid review; faster triggers `rapid_change_review` with no proposal. |
@@ -165,6 +192,13 @@ missing-data result, override behavior and historical evidence references.
 | E38 | Offline with complete local evidence, missing evidence, stale evidence and AI unavailable | Deterministic local result or explicit unavailable state; no invented evidence, queued authoritative change or cached-AI authority. |
 | E39 | Supported goal-rate selection, default and faster-than-supported request | Only listed loss/maintenance/gain rates are accepted; defaults are explicit; unsupported faster rates are unavailable. |
 | E40 | Accepted target change, manual target change, goal-rate change and maintenance-policy version change | Evidence window resets; 21 new completed local civil days are required; pre-change observations are excluded. |
+| E41 | Exact ranges `2000–2000`, `0–0`, negative bounds, reversed bounds and non-finite values | Positive-midpoint exact range is valid; zero midpoint returns `unavailable_invalid_midpoint`; other invalid inputs return typed invalid/unavailable results. |
+| E42 | Maintenance normalization for `M = 2000`, `2001` and `1801` kcal/day | `2000` yields deficit cap `400`, floor `1600`, surplus cap `300`, ceiling `2300`; `2001` yields cap `400`, floor `1601`, surplus cap `300`, ceiling `2301`; `1801` yields cap `360`, floor `1441`, surplus cap `270`, ceiling `2071`. |
+| E43 | Odd/even daily medians and odd/even pairwise-slope counts | Middle values or exact mean of two middle values are retained as exact rationals; no pre-slope rounding occurs. |
+| E44 | Equal slopes, tied weights and fractional rational slopes | The exact rational Theil–Sen result is stable and replayable; equal/tied values do not depend on insertion order. |
+| E45 | Exact deadband/rapid-change boundaries and one rational unit inside/outside | Inclusive/exclusive rules are applied to the unrounded exact weekly rate. |
+| E46 | Display values `0.125%` and `−0.125%` | Display as `0.13%` and `−0.13%`; stored policy result remains unrounded. |
+| E47 | Prospective aggregate with positive/negative engine deltas and manual target changes | Only accepted engine-authored whole-kcal deltas in the rolling 42-day window count; manual changes are excluded; prospective delta is checked before version creation. |
 
 ## Automated verification matrix
 
@@ -187,6 +221,7 @@ missing-data result, override behavior and historical evidence references.
 | HOLD-1 disabled-policy guard | Attempt adaptive calorie/readiness proposals, user acceptance, manual override and AI bypass | Adaptive result is `unavailable`; no proposal is accepted; upward/downward/aggregate deltas are exactly `0 kcal`; no hidden calculation is active. |
 | ENABLED-1 activation gate | Product Owner selection, fresh independent Sol verdict, merged branch and explicit release/feature-policy selection | Policy is inactive until all four conditions are recorded; activation has a future effective local date/timezone and never rewrites HOLD-1 history. |
 | ENABLED-1 numerical contract | Exact eligibility, goal rates, 21-day window, evidence thresholds, Theil–Sen algorithm, deadbands, 100-kcal step, cadence, expiry, aggregate, deficit/surplus, floor/ceiling and rapid-change rules | Same frozen inputs/policy version produce the specified proposal, unavailable reason or boundary state; no legacy constant is authoritative. |
+| ENABLED-1 arithmetic precision | Finite/unit/domain validation, exact range width/midpoint, invalid midpoint/range, rational medians/slopes, basis points, display rounding, normalized `M`, floor/ceil derivation and no-clamp boundary crossing | Policy decisions use unrounded exact arithmetic; stored history is replayable; display rounding cannot alter a decision; invalid numeric evidence is unavailable. |
 | READINESS-HOLD-1 numerical guard | Complete, missing, denied, stale and conflicting readiness under the proposed enabled calorie policy | Calories change exactly `0 kcal/day`; load/intensity change exactly `0%`; schedule duration change exactly `0`; descriptive readiness may remain. |
 | Goal history | User-set, calculated proposal, accepted adaptive proposal, override and reset | Each accepted change is a new version with correct effective date; old reads do not change. |
 | Readiness completeness | Complete, missing, denied, stale and conflicting observations | Completeness/status is explicit; missing is never zero; adaptation is suppressed when required. |

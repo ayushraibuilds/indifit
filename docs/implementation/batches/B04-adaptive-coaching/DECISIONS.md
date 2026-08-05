@@ -312,6 +312,20 @@ with structured reasons; it never becomes zero or a profile default. User-set
 overrides cannot bypass a safety boundary, and AI cannot alter any numerical
 value or state.
 
+Every numeric input used by the policy must be finite, in its expected unit and
+within its domain. NaN, positive infinity, negative infinity, wrong-unit,
+out-of-domain, zero-denominator and otherwise invalid values return a typed
+`unavailable` or `invalid_evidence` result; they are never silently replaced by
+zero or a profile default. Policy arithmetic uses exact decimal or rational
+representation, including range widths, midpoints, pairwise slopes, medians,
+weekly rates, deadband comparisons and percentage-derived calorie boundaries.
+Rounded display values are never policy inputs.
+
+Display rounding is presentation-only. Displayed weight-trend percentages are
+rounded to two decimal places using nearest-value rounding; an exact halfway
+tie is resolved away from zero (`0.125% → 0.13%`, `−0.125% → −0.13%`). The
+canonical unrounded rational result is retained for history and replay.
+
 ### Eligibility and supported goal rates
 
 Adaptive calorie proposals require verified age of at least `18 completed
@@ -360,15 +374,30 @@ Require at least `10` valid weight-measurement days in the window, spanning at
 least `14` local civil days, with at least `3` valid days in the first seven-day
 block and at least `3` in the final seven-day block. The latest valid
 measurement must be no more than `4` completed local days old. All boundaries
-are inclusive. Multiple valid measurements on a local day use the median.
+are inclusive. Accepted weights are normalized to integer grams before trend
+calculation. Multiple valid measurements on a local day are sorted by grams;
+the odd-count median is the middle value and the even-count median is the
+arithmetic mean of the two middle values, preserved as an exact rational value.
 Delete, supersede, structural invalidity, cross-user identity or missing
 accepted timestamp/timezone provenance excludes a measurement. Corrections
 append observations and do not rewrite evaluations.
 
 Use the deterministic Theil–Sen slope over daily representative weights, with
-algorithm version `B04-D04-ENABLED-1-TREND-THEILSEN-V1`:
+algorithm version `B04-D04-ENABLED-1-TREND-THEILSEN-V1`. For every pair of
+representative points `(earlierDay, earlierWeight)` and
+`(laterDay, laterWeight)` where `laterDay > earlierDay`, calculate
 
-`weekly_rate_percent = (slope_kg_per_day × 7 ÷ median_window_weight_kg) × 100`
+`slope = (laterWeight - earlierWeight) ÷ (laterDay - earlierDay)`.
+
+Sort slopes numerically. The odd-count median is the middle slope; the
+even-count median is the arithmetic mean of the two middle slopes. Preserve
+the slope as an exact rational grams-per-day value. Calculate
+
+`weekly_rate_percent = slope_grams_per_day × 7 × 100 ÷ median_window_weight_grams`.
+
+Use the unrounded result for deadband, rapid-change and proposal-direction
+decisions. Persist sufficient numerator/denominator or canonical precision
+metadata for deterministic historical replay.
 
 Persist/link input observation IDs, daily representatives, window start/end,
 evaluation timezone, median window weight, slope, weekly percentage rate,
@@ -377,32 +406,54 @@ are not recomputed with current measurements or a newer algorithm.
 
 ### Nutrition and maintenance-energy evidence
 
+For every accepted range with lower `L` and upper `U`, calculate exactly:
+
+`width = U − L`
+
+`midpoint = (L + U) ÷ 2`
+
+`relative_width = width ÷ midpoint`
+
+`relative_width_percent = relative_width × 100`.
+
+The range is valid only when `L` and `U` are finite, use the same unit,
+`L >= 0`, `U >= L` and `midpoint > 0`. `L == U` is a valid exact range when
+the midpoint is positive. `0–0`, negative bounds, reversed bounds, non-finite
+values and zero/negative midpoints return `unavailable_invalid_midpoint` or
+`unavailable_invalid_range` as applicable. The stored point estimate never
+replaces the midpoint formula. Compare the unrounded percentage with the
+inclusive threshold; do not round before deciding pass/fail.
+
 Require at least `14 nutrition-valid days out of 21` (inclusive). A valid day
 requires completeness at least `80%` (inclusive), total energy not missing,
-no known-zero representation unless it is the actual typed B03 state, accepted
-lower/upper range width no greater than `20%` of midpoint (inclusive), no
-unresolved structural error, historical B03 snapshot authority and local
-date/timezone provenance. Known zero, unknown, not applicable, estimates,
-ranges and partial logging retain B03 semantics. Missing nutrition is never
-zero and current catalogue/recipe data never replaces a historical snapshot.
-Evaluate both range bounds; if they produce different actions, return
-`unavailable_uncertain_range`. Insufficient or stale history is unavailable.
+the exact range-validity rules above, no unresolved structural error,
+historical B03 snapshot authority and local date/timezone provenance. Known
+zero, unknown, not applicable, estimates, ranges and partial logging retain
+B03 semantics. Missing nutrition is never zero and current catalogue/recipe
+data never replaces a historical snapshot. Nutrition evidence passes when
+`relative_width_percent <= 20%`. Evaluate both range bounds; if they produce
+different actions, return `unavailable_uncertain_range`. Insufficient or stale
+history is unavailable.
 
 The versioned maintenance-energy estimate must be no more than `30 completed
 local days` old (inclusive), identify inputs and algorithm version, preserve
-lower/point/upper values, have uncertainty width no greater than `15%` of its
-midpoint (inclusive), use no inferred missing health/activity facts and be
-linked into recommendation evidence. Missing, stale or too-uncertain
-maintenance energy returns unavailable. B04 does not infer its formula.
+the raw lower/point/upper values, satisfy the exact range-validity rules above
+and have `relative_width_percent <= 15%` (inclusive). It must use no inferred
+missing health/activity facts and be linked into recommendation evidence.
+Missing, stale or too-uncertain maintenance energy returns unavailable. B04
+does not infer its formula.
 
 ### Deadbands and proposal step
 
-Loss and gain use an inclusive no-change band of selected target rate plus or
-minus `0.15 percentage points of body weight/week`. Thus loss `−0.50%` is on
-track from `−0.65%` through `−0.35%`, and gain `+0.25%` is on track from
-`+0.10%` through `+0.40%`. Maintenance uses inclusive `−0.25%` through
-`+0.25% body weight/week`. Within a deadband emit no proposal, emit exactly
-`0 kcal/day`, and record `on_track`.
+Configured policy percentages are exact basis-point values: one basis point is
+`0.01 percentage point`, so `0.10% = 10 bp`, `0.15% = 15 bp`, `0.25% = 25 bp`,
+`0.50% = 50 bp` and `1.00% = 100 bp`. Compare the exact calculated weekly
+rate with exact thresholds. Loss and gain use an inclusive no-change band of
+selected target rate plus or minus `0.15 percentage points of body
+weight/week`. Thus loss `−0.50%` is on track from `−0.65%` through `−0.35%`,
+and gain `+0.25%` is on track from `+0.10%` through `+0.40%`. Maintenance uses
+inclusive `−0.25%` through `+0.25% body weight/week`. Within a deadband emit
+no proposal, emit exactly `0 kcal/day`, and record `on_track`.
 
 Every normal proposal changes the daily target by exactly `100 kcal/day`; no
 `50`, `150`, `200` or other event delta is allowed. Losing more slowly than
@@ -410,10 +461,8 @@ the accepted loss band permits `−100 kcal/day`; losing faster permits
 `+100 kcal/day`; gaining more slowly permits `+100 kcal/day`; gaining faster
 permits `−100 kcal/day`; maintenance above `+0.25%` permits `−100 kcal/day`;
 maintenance below `−0.25%` permits `+100 kcal/day`. All safety gates must
-still pass before emission. The loss-floor rule below is the only explicit
-boundary exception: a floor clamp may be shorter than 100 kcal/day only when it
-lands on the exact permitted floor and movement is no greater than the normal
-step; no other non-100 event delta is permitted.
+still pass before emission. No boundary clamp may emit a fractional, 50-kcal
+or otherwise irregular delta.
 
 ### Cadence, cooldown and aggregate boundary
 
@@ -425,30 +474,41 @@ dismissal or expiry leaves the current target unchanged. After acceptance or a
 manual target change, require 21 new completed local civil days and do not
 reuse pre-change evidence.
 
-Within any rolling `42 completed local civil days`, cumulative signed accepted
-adaptive movement from the target active at the start of the period must stay
-within inclusive `+200 kcal/day` and `−200 kcal/day`. No extra unapproved
-absolute-movement rule is added. Manual targets are labelled user-set, create a
-new target version, reset the adaptive window, are not engine-authored deltas,
-cannot be described as policy-approved and cannot change dietary evidence.
+Within any rolling `42 completed local civil days`,
+
+`aggregate_delta = sum of accepted engine-authored target deltas whose effective dates fall within the policy window`.
+
+Include both positive and negative accepted engine-authored whole-integer kcal
+deltas. Exclude manual user-set target changes. Evaluate the prospective
+accepted delta before creating a new target version. The inclusive aggregate
+range is `−200` through `+200 kcal/day`. A manual target change resets the
+evidence window as already decided, is not included in the aggregate arithmetic
+and cannot be described as policy-approved.
 
 ### Deficit, surplus, floor and ceiling
 
-For weight loss, deficit must be no greater than the smaller of inclusive
-`500 kcal/day` and inclusive `20%` of versioned maintenance energy. The
-proposed loss floor is the inclusive exact boundary
-`max(1200 kcal/day, 80% of versioned maintenance energy)`. A crossing step may
-be clamped only to that exact boundary and only when movement remains no more
-than the normal `100 kcal/day` step. Otherwise emit no proposal, return
-`policy_boundary_reached` and keep the target unchanged. The floor is not
-described as medically safe.
+For calorie-boundary calculations, normalize the accepted maintenance-energy
+point once to whole-integer `M` in `kcal/day`, preserving the raw point and the
+normalized value. Round to the nearest whole kcal; exact halfway ties round
+away from zero. Historical replay reuses the recorded normalized `M`. All
+proposed and active B04 calorie targets are whole-integer `kcal/day` values.
 
-For weight gain, surplus must be no greater than the smaller of inclusive
-`300 kcal/day` and inclusive `15%` of maintenance energy. The inclusive
-dynamic ceiling is `maintenance energy + min(300 kcal/day, 15% of maintenance
-energy)`. If a valid `100 kcal/day` step crosses it, emit no proposal, return
-`policy_boundary_reached` and keep the target unchanged. No muscle-gain
-maximization claim is permitted.
+For weight loss, calculate `percentage_deficit_cap = floor(M × 20 ÷ 100)` and
+`maximum_deficit = min(500, percentage_deficit_cap)`. Calculate
+`percentage_floor = ceil(M × 80 ÷ 100)` and
+`target_floor = max(1200, percentage_floor)`. The deficit and floor boundaries
+are inclusive. The floor is not described as medically safe.
+
+For weight gain, calculate `percentage_surplus_cap = floor(M × 15 ÷ 100)`,
+`maximum_surplus = min(300, percentage_surplus_cap)` and
+`target_ceiling = M + maximum_surplus`. The surplus and ceiling boundaries are
+inclusive. No muscle-gain maximization claim is permitted.
+
+Evaluate the exact candidate as the current target plus or minus exactly
+`100 kcal/day`. Apply deficit, surplus, floor, ceiling and aggregate checks.
+If the complete step crosses any boundary, emit no proposal, return
+`policy_boundary_reached` and keep the active target unchanged. Never emit a
+smaller boundary-clamped proposal.
 
 The `1200`, `500`, `300`, `20%`, `15%` and `80%` values are policy values only
 under `ENABLED-1`; legacy constants do not authorize behavior. A current
