@@ -520,6 +520,23 @@ class B04RangeFixture {
         expectedOutcome: _outcome(json['expected_outcome']),
         expectedReason: _string(json, 'expected_reason'),
       );
+
+  void validate() {
+    if (id.isEmpty ||
+        lower.isEmpty ||
+        upper.isEmpty ||
+        unit.isEmpty ||
+        expectedReason.isEmpty) {
+      throw StateError('Range fixture $id is incomplete.');
+    }
+    final valid = _validValues != null;
+    final unavailable =
+        expectedOutcome == B04FixtureOutcome.unavailable ||
+        expectedOutcome == B04FixtureOutcome.invalidEvidence;
+    if (!valid && !unavailable) {
+      throw StateError('Range fixture $id has an invalid expected outcome.');
+    }
+  }
 }
 
 class B04DailyWeightFixture {
@@ -588,32 +605,43 @@ class B04TrendFixture {
         expectedWeeklyRatePercent: B04Rational.fromJson(
           json['expected_weekly_rate_percent'],
         ),
-        policyVersion: _stringOrDefault(
-          json,
-          'policy_version',
-          kB04EnabledPolicyVersion,
-        ),
-        algorithmVersion: _stringOrDefault(
-          json,
-          'algorithm_version',
-          kB04TrendAlgorithmVersion,
-        ),
-        unit: _stringOrDefault(
-          json,
-          'unit',
-          'grams/day and percentage points/week',
-        ),
-        timezone: _stringOrDefault(
-          json,
-          'timezone',
-          'recorded IANA evaluation timezone',
-        ),
-        effectivePeriod: _stringOrDefault(
-          json,
-          'effective_period',
-          'completed local civil days',
-        ),
+        policyVersion: _string(json, 'policy_version'),
+        algorithmVersion: _string(json, 'algorithm_version'),
+        unit: _string(json, 'unit'),
+        timezone: _string(json, 'timezone'),
+        effectivePeriod: _string(json, 'effective_period'),
       );
+
+  void validate() {
+    if (id.isEmpty ||
+        weights.length < 2 ||
+        policyVersion != kB04EnabledPolicyVersion ||
+        algorithmVersion != kB04TrendAlgorithmVersion ||
+        unit != 'grams/day and percentage points/week' ||
+        !timezone.contains('IANA') ||
+        !effectivePeriod.contains('local civil')) {
+      throw StateError('Trend fixture $id is incomplete or changed.');
+    }
+    try {
+      final median = b04Median(
+        weights.map((weight) => B04Rational.fromInt(weight.grams)),
+      );
+      final slope = b04TheilSenSlope(weights);
+      final weekly = b04WeeklyRatePercent(
+        slopeGramsPerDay: slope,
+        medianWindowWeightGrams: median,
+      );
+      if (median != expectedMedianGrams ||
+          slope != expectedSlopeGramsPerDay ||
+          weekly != expectedWeeklyRatePercent) {
+        throw StateError('Trend fixture $id has incorrect exact results.');
+      }
+    } on StateError {
+      rethrow;
+    } catch (_) {
+      throw StateError('Trend fixture $id has invalid weight evidence.');
+    }
+  }
 }
 
 class B04MaintenanceNormalizationFixture {
@@ -664,18 +692,36 @@ class B04MaintenanceNormalizationFixture {
     targetFloor: _int(json, 'target_floor'),
     surplusCap: _int(json, 'surplus_cap'),
     targetCeiling: _int(json, 'target_ceiling'),
-    policyVersion: _stringOrDefault(
-      json,
-      'policy_version',
-      kB04EnabledPolicyVersion,
-    ),
-    unit: _stringOrDefault(json, 'unit', 'kcal/day'),
-    roundingRule: _stringOrDefault(
-      json,
-      'rounding_rule',
-      'nearest whole kcal; halfway ties away from zero',
-    ),
+    policyVersion: _string(json, 'policy_version'),
+    unit: _string(json, 'unit'),
+    roundingRule: _string(json, 'rounding_rule'),
   );
+
+  void validate() {
+    if (id.isEmpty ||
+        policyVersion != kB04EnabledPolicyVersion ||
+        unit != 'kcal/day' ||
+        roundingRule != 'nearest whole kcal; halfway ties away from zero' ||
+        normalizedM <= 0) {
+      throw StateError('Maintenance fixture $id is incomplete or changed.');
+    }
+    final expectedM = b04NormalizedMaintenance(rawPointKcal);
+    final expectedDeficit =
+        (B04Rational.fromInt(expectedM) * B04Rational.fromInts(20, 100))
+            .floorInteger()
+            .toInt();
+    final expectedSurplus =
+        (B04Rational.fromInt(expectedM) * B04Rational.fromInts(15, 100))
+            .floorInteger()
+            .toInt();
+    if (normalizedM != expectedM ||
+        deficitCap != expectedDeficit ||
+        targetFloor != expectedM - expectedDeficit ||
+        surplusCap != expectedSurplus ||
+        targetCeiling != expectedM + expectedSurplus) {
+      throw StateError('Maintenance fixture $id has incorrect exact results.');
+    }
+  }
 }
 
 class B04ContractReference {
@@ -1205,6 +1251,16 @@ class B04AdaptiveCoachingFixtureMatrix {
       if (edge.kind != _edgeKind(edge.id)) {
         throw StateError('Edge ${edge.id} has the wrong fixture kind.');
       }
+    }
+
+    for (final range in ranges) {
+      range.validate();
+    }
+    for (final trend in trends) {
+      trend.validate();
+    }
+    for (final fixture in maintenance) {
+      fixture.validate();
     }
 
     final stateIds = states.map((item) => item.id).toSet();
@@ -2475,12 +2531,6 @@ String? _optionalString(Map<String, dynamic> json, String key) {
   }
   return value;
 }
-
-String _stringOrDefault(
-  Map<String, dynamic> json,
-  String key,
-  String defaultValue,
-) => json[key] == null ? defaultValue : _string(json, key);
 
 int _int(Map<String, dynamic> json, String key) {
   final value = json[key];

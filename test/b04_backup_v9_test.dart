@@ -278,6 +278,25 @@ void main() {
         ),
       );
 
+      final missingB04Table = _copy(valid);
+      final graph = Map<String, dynamic>.from(
+        missingB04Table['b04_graph'] as Map,
+      );
+      final tables = Map<String, dynamic>.from(graph['tables'] as Map);
+      tables.remove('recommendation_feedback');
+      graph['tables'] = tables;
+      missingB04Table['b04_graph'] = graph;
+      expect(
+        () => BackupV9Data.fromJson(missingB04Table),
+        throwsA(
+          isA<BackupV9ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'missing_b04_table',
+          ),
+        ),
+      );
+
       final future = _copy(valid)..['version'] = 10;
       expect(
         () => BackupV9Data.fromJson(future),

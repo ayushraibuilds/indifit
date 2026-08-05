@@ -417,6 +417,176 @@ void main() {
   );
 
   test(
+    'equal-time history uses deterministic creation order and policy lineage',
+    () async {
+      final timestamp = DateTime.utc(2026, 2, 1, 10);
+      await db
+          .into(db.coachingConsentEvents)
+          .insert(
+            CoachingConsentEventsCompanion.insert(
+              id: 'consent-tie-enable',
+              userId: 'user-a',
+              consentCategory: 'adaptive_coaching',
+              action: 'enable',
+              consentPolicyVersion: kB04EnabledPolicyVersion,
+              copyVersion: 'copy-v1',
+              timestampUtc: timestamp,
+              localDate: '2026-02-01',
+              timezoneId: 'Asia/Kolkata',
+              actorSource: 'settings',
+              createdAtUtc: Value(timestamp),
+            ),
+          );
+      await db
+          .into(db.coachingConsentEvents)
+          .insert(
+            CoachingConsentEventsCompanion.insert(
+              id: 'consent-tie-disable',
+              userId: 'user-a',
+              consentCategory: 'adaptive_coaching',
+              action: 'disable',
+              consentPolicyVersion: kB04EnabledPolicyVersion,
+              copyVersion: 'copy-v1',
+              timestampUtc: timestamp,
+              localDate: '2026-02-01',
+              timezoneId: 'Asia/Kolkata',
+              actorSource: 'settings',
+              createdAtUtc: Value(timestamp.add(const Duration(minutes: 1))),
+            ),
+          );
+      final current = await preferences.currentPreferences(
+        userId: 'user-a',
+        atUtc: timestamp,
+      );
+      expect(current.adaptiveCoachingEnabled, isFalse);
+      expect(current.adaptiveCoachingEvent!.id, 'consent-tie-disable');
+      expect(
+        (await preferences.listConsentHistory(
+          userId: 'user-a',
+        )).map((event) => event.id),
+        ['consent-tie-enable', 'consent-tie-disable'],
+      );
+
+      await db
+          .into(db.coachingEligibilityEvaluations)
+          .insert(
+            CoachingEligibilityEvaluationsCompanion.insert(
+              id: 'eligibility-tie-enabled',
+              userId: 'user-a',
+              result: 'eligible',
+              reasonCode: 'eligible',
+              ageInputSource: 'verified_dob',
+              evidenceTimestampUtc: timestamp,
+              evaluationUtc: timestamp,
+              evaluationLocalDate: '2026-02-01',
+              timezoneId: 'Asia/Kolkata',
+              policyVersion: kB04EnabledPolicyVersion,
+              minimumAgeRuleVersion: 'minimum-age-v1',
+              createdAtUtc: Value(timestamp),
+            ),
+          );
+      await db
+          .into(db.coachingEligibilityEvaluations)
+          .insert(
+            CoachingEligibilityEvaluationsCompanion.insert(
+              id: 'eligibility-tie-hold',
+              userId: 'user-a',
+              result: 'underage',
+              reasonCode: 'coaching_unavailable_age',
+              ageInputSource: 'verified_dob',
+              evidenceTimestampUtc: timestamp,
+              evaluationUtc: timestamp,
+              evaluationLocalDate: '2026-02-01',
+              timezoneId: 'Asia/Kolkata',
+              policyVersion: kB04HoldPolicyVersion,
+              minimumAgeRuleVersion: 'minimum-age-v1',
+              createdAtUtc: Value(timestamp.add(const Duration(minutes: 1))),
+            ),
+          );
+      expect(
+        (await preferences.currentEligibility(userId: 'user-a'))!.result,
+        CoachingEligibilityResult.underage,
+      );
+    },
+  );
+
+  test(
+    'eligible HOLD history cannot expose or accept an enabled proposal',
+    () async {
+      await goals.ensureCompatibilityImport(
+        userId: 'user-a',
+        legacyProfile: legacyCommand(),
+      );
+      await preferences.recordConsent(
+        CoachingConsentCommand(
+          userId: 'user-a',
+          category: CoachingConsentCategory.adaptiveCoaching,
+          action: CoachingConsentAction.enable,
+          consentPolicyVersion: kB04EnabledPolicyVersion,
+          copyVersion: 'copy-v1',
+          timestampUtc: DateTime.utc(2026, 2, 1),
+          localDate: '2026-02-01',
+          timezoneId: 'Asia/Kolkata',
+          actorSource: 'settings',
+        ),
+      );
+      await db
+          .into(db.coachingEligibilityEvaluations)
+          .insert(
+            CoachingEligibilityEvaluationsCompanion.insert(
+              id: 'eligible-under-hold',
+              userId: 'user-a',
+              result: 'eligible',
+              reasonCode: 'eligible',
+              ageInputSource: 'verified_dob',
+              evidenceTimestampUtc: DateTime.utc(2026, 2, 1),
+              evaluationUtc: DateTime.utc(2026, 2, 1),
+              evaluationLocalDate: '2026-02-01',
+              timezoneId: 'Asia/Kolkata',
+              policyVersion: kB04HoldPolicyVersion,
+              minimumAgeRuleVersion: 'minimum-age-v1',
+            ),
+          );
+
+      final availability = await preferences.adaptiveAvailability(
+        userId: 'user-a',
+      );
+      expect(availability.available, isFalse);
+      expect(availability.reasonCode, 'adaptive_policy_hold');
+
+      final proposal = AdaptiveGoalProposal(
+        id: 'proposal-under-hold',
+        userId: 'user-a',
+        goalType: NutritionGoalType.loss,
+        goalRate: '-0.50% body weight/week',
+        calorieTargetKcal: 1800,
+        policyVersion: kB04EnabledPolicyVersion,
+        effectiveFromLocalDate: '2026-03-01',
+        timezoneId: 'Asia/Kolkata',
+        evidenceFingerprint: 'hold-result',
+        exactResultNumerator: '1800',
+        exactResultDenominator: '1',
+        normalizedMaintenanceKcal: 2000,
+      );
+      await expectLater(
+        goals.acceptAdaptiveProposal(
+          proposal: proposal,
+          adaptiveConsentEnabled: true,
+          ageEligible: true,
+        ),
+        throwsA(
+          isA<B04GoalValidationError>().having(
+            (error) => error.code,
+            'code',
+            'adaptive_policy_not_enabled',
+          ),
+        ),
+      );
+      expect(await goals.listVersions(userId: 'user-a'), hasLength(1));
+    },
+  );
+
+  test(
     'future effective targets preserve the current legacy mirror and goal retries conflict safely',
     () async {
       final profileId = await db

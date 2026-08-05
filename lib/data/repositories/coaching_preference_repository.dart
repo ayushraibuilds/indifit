@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/fixtures/b04_adaptive_coaching_fixture_matrix.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../database/app_database.dart' as db;
 import '../models/b04_goal_models.dart';
@@ -45,6 +46,12 @@ class CoachingPreferenceRepository {
                   expression: row.timestampUtc,
                   mode: OrderingMode.asc,
                 ),
+                (row) => OrderingTerm(
+                  expression: row.createdAtUtc,
+                  mode: OrderingMode.asc,
+                ),
+                (row) =>
+                    OrderingTerm(expression: row.id, mode: OrderingMode.asc),
               ]))
             .get();
     return List.unmodifiable([for (final row in rows) _fromRow(row)]);
@@ -165,6 +172,12 @@ class CoachingPreferenceRepository {
                   expression: row.timestampUtc,
                   mode: OrderingMode.desc,
                 ),
+                (row) => OrderingTerm(
+                  expression: row.createdAtUtc,
+                  mode: OrderingMode.desc,
+                ),
+                (row) =>
+                    OrderingTerm(expression: row.id, mode: OrderingMode.desc),
               ]))
             .get();
     CoachingConsentEventReadModel? adaptive;
@@ -206,6 +219,12 @@ class CoachingPreferenceRepository {
                   expression: row.evaluationUtc,
                   mode: OrderingMode.desc,
                 ),
+                (row) => OrderingTerm(
+                  expression: row.createdAtUtc,
+                  mode: OrderingMode.desc,
+                ),
+                (row) =>
+                    OrderingTerm(expression: row.id, mode: OrderingMode.desc),
               ]))
             .get();
     if (rows.isEmpty) return null;
@@ -239,6 +258,14 @@ class CoachingPreferenceRepository {
       return CoachingAvailabilityReadModel(
         available: false,
         reasonCode: eligibility?.reasonCode ?? 'coaching_unavailable_age',
+        eligibility: eligibility,
+        preferences: preferences,
+      );
+    }
+    if (eligibility.policyVersion != kB04EnabledPolicyVersion) {
+      return CoachingAvailabilityReadModel(
+        available: false,
+        reasonCode: 'adaptive_policy_hold',
         eligibility: eligibility,
         preferences: preferences,
       );

@@ -319,6 +319,13 @@ class B04BackupGraph {
       }
       tables[table] = [for (final rawRow in rawRows) _copyRow(rawRow, table)];
     }
+    if (tables.length != _b04Specs.length ||
+        !tables.keys.toSet().containsAll(_b04Specs.keys)) {
+      throw BackupV9ValidationException(
+        'missing_b04_table',
+        'Backup-v9 B04 graph must include every schema-v18 B04 table.',
+      );
+    }
     final graph = B04BackupGraph(
       graphVersion: currentGraphVersion,
       tables: _sortedTables(tables),

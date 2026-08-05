@@ -9,9 +9,9 @@ import 'coaching_preference_repository.dart';
 
 /// Sole command/read-model owner for B04 goal and target history.
 ///
-/// The legacy [UserProfiles] goal columns are read only for the initial
-/// compatibility import. Every subsequent goal change is an immutable v18
-/// row; this repository never updates those legacy columns.
+/// The legacy [UserProfiles] goal columns are retained as a one-way
+/// compatibility mirror. Every subsequent goal change is an immutable v18
+/// row; the legacy columns are not a competing command authority.
 class NutritionGoalRepository {
   final db.AppDatabase _db;
   final Uuid _uuid;
@@ -153,30 +153,37 @@ class NutritionGoalRepository {
     String? acceptanceCommandId,
   }) async {
     proposal.validate();
-    final availability = await CoachingPreferenceRepository(
-      database: _db,
-      dates: _dates,
-      nowUtc: _nowUtc,
-    ).adaptiveAvailability(userId: proposal.userId);
-    if (!adaptiveConsentEnabled ||
-        !availability.preferences.adaptiveCoachingEnabled) {
-      throw const B04GoalValidationError(
-        'coaching_consent_required',
-        'Adaptive coaching must be explicitly enabled before acceptance.',
-      );
-    }
-    if (!ageEligible || availability.eligibility?.isEligible != true) {
-      throw const B04GoalValidationError(
-        'coaching_unavailable_age',
-        'Adaptive coaching is unavailable for the current age eligibility state.',
-      );
-    }
     _dates.normalizeLocalDate(proposal.effectiveFromLocalDate);
     _dates.validateTimezone(proposal.timezoneId);
     final owner = _owner(proposal.userId);
     final fingerprint =
         proposal.evidenceFingerprint ?? 'proposal:${proposal.id}';
     return _db.transaction(() async {
+      final availability = await CoachingPreferenceRepository(
+        database: _db,
+        dates: _dates,
+        nowUtc: _nowUtc,
+      ).adaptiveAvailability(userId: proposal.userId);
+      if (!adaptiveConsentEnabled ||
+          !availability.preferences.adaptiveCoachingEnabled) {
+        throw const B04GoalValidationError(
+          'coaching_consent_required',
+          'Adaptive coaching must be explicitly enabled before acceptance.',
+        );
+      }
+      if (!ageEligible || availability.eligibility?.isEligible != true) {
+        throw const B04GoalValidationError(
+          'coaching_unavailable_age',
+          'Adaptive coaching is unavailable for the current age eligibility state.',
+        );
+      }
+      if (!availability.available ||
+          availability.eligibility?.policyVersion != proposal.policyVersion) {
+        throw const B04GoalValidationError(
+          'adaptive_policy_not_enabled',
+          'Adaptive acceptance requires an eligible result under the same enabled policy version.',
+        );
+      }
       final existing =
           await (_db.select(_db.nutritionGoalVersions)..where(
                 (row) =>

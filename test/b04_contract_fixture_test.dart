@@ -74,6 +74,29 @@ void main() {
           () => B04AdaptiveCoachingFixtureMatrix.fromJson(invalidPolicy),
           throwsA(isA<StateError>()),
         );
+
+        final missingTrendMetadata = B04AdaptiveCoachingFixtureMatrix.current
+            .toJson();
+        final trends = (missingTrendMetadata['trends'] as List)
+            .cast<Map<String, dynamic>>();
+        trends.first.remove('policy_version');
+        expect(
+          () => B04AdaptiveCoachingFixtureMatrix.fromJson(missingTrendMetadata),
+          throwsA(isA<FormatException>()),
+        );
+
+        final changedMaintenanceResult = B04AdaptiveCoachingFixtureMatrix
+            .current
+            .toJson();
+        final maintenance = (changedMaintenanceResult['maintenance'] as List)
+            .cast<Map<String, dynamic>>();
+        maintenance.first['normalized_m'] = 2002;
+        expect(
+          () => B04AdaptiveCoachingFixtureMatrix.fromJson(
+            changedMaintenanceResult,
+          ),
+          throwsA(isA<StateError>()),
+        );
       },
     );
 
