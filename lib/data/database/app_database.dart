@@ -1938,6 +1938,41 @@ class AppDatabase extends _$AppDatabase {
     await _ensureTrainingPlanSettings(defaultProfileId: defaultProfileId);
   }
 
+  /// Runs the one narrowly-scoped B04 restore mutation that must replace the
+  /// current immutable projection. Ordinary application writes still use the
+  /// append-only triggers; this seam is called only from the versioned backup
+  /// transaction and recreates every trigger before the transaction can commit.
+  Future<T> withB04RestoreMutation<T>(Future<T> Function() action) async {
+    const appendOnlyTriggers = [
+      'b04_goal_versions_append_only_update',
+      'b04_goal_versions_append_only_delete',
+      'b04_consent_events_append_only_update',
+      'b04_consent_events_append_only_delete',
+      'b04_recovery_observations_append_only_update',
+      'b04_recovery_observations_append_only_delete',
+      'b04_readiness_snapshots_append_only_update',
+      'b04_readiness_snapshots_append_only_delete',
+      'b04_readiness_evidence_append_only_update',
+      'b04_readiness_evidence_append_only_delete',
+      'b04_recommendations_append_only_update',
+      'b04_recommendations_append_only_delete',
+      'b04_recommendation_evidence_append_only_update',
+      'b04_recommendation_evidence_append_only_delete',
+      'b04_eligibility_append_only_update',
+      'b04_eligibility_append_only_delete',
+      'b04_feedback_append_only_update',
+      'b04_feedback_append_only_delete',
+    ];
+    for (final trigger in appendOnlyTriggers) {
+      await customStatement('DROP TRIGGER IF EXISTS $trigger');
+    }
+    try {
+      return await action();
+    } finally {
+      await _createV18Indexes();
+    }
+  }
+
   Future<String?> _importLegacyEquipmentProfile() async {
     final profiles = await (select(
       userProfiles,

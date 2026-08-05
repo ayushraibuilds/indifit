@@ -4119,9 +4119,9 @@ class BackupEnvelope {
     }
 
     final version = (json['version'] as num?)?.toInt();
-    if (version == null || version < 3 || version > 8) {
+    if (version == null || version < 3 || version > 9) {
       throw FormatException(
-        'Unsupported backup envelope version ${json['version']} (latest supported is 8).',
+        'Unsupported backup envelope version ${json['version']} (latest supported is 9).',
       );
     }
 
