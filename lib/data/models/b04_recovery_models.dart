@@ -149,15 +149,50 @@ class RecoveryProvenance {
 
   String encode() => jsonEncode(toJson());
 
+  /// Provider provenance is an opaque reference, not a serialized provider
+  /// response. Structured JSON is rejected at the B04 import boundary so raw
+  /// health payloads cannot be persisted inside the reference field.
+  static void validateReference(String value) {
+    final reference = value.trim();
+    if (reference.isEmpty) {
+      throw const B04RecoveryValidationError(
+        'missing_provenance_reference',
+        'Recovery provenance requires an opaque source reference.',
+      );
+    }
+    try {
+      final decoded = jsonDecode(reference);
+      if (decoded is! String) {
+        throw const B04RecoveryValidationError(
+          'provenance_payload_not_allowed',
+          'Recovery provenance must be an opaque reference, not a provider payload.',
+        );
+      }
+    } on B04RecoveryValidationError {
+      rethrow;
+    } on FormatException {
+      // Ordinary opaque identifiers are not JSON and are accepted.
+    }
+  }
+
   factory RecoveryProvenance.decode(String encoded) {
     try {
       final decoded = jsonDecode(encoded);
       if (decoded is! Map) throw const FormatException();
       final json = Map<String, dynamic>.from(decoded);
+      const allowedKeys = {
+        'contract_version',
+        'permission',
+        'reference',
+        'provider_external_id',
+        'source_version',
+        'correction_of_observation_id',
+      };
       if (json['contract_version'] != contractVersion ||
           json['reference'] is! String ||
           (json['reference'] as String).trim().isEmpty ||
-          json['permission'] is! String) {
+          json['permission'] is! String ||
+          json.keys.any((key) => !allowedKeys.contains(key))) {
         throw const FormatException();
       }
       return RecoveryProvenance(
@@ -192,6 +227,7 @@ class RecoveryProvenance {
     } on B04RecoveryValidationError {
       // v18/v9 accepted fixtures can contain an opaque provenance reference.
       // Preserve it while making permission visible as unknown/fallback.
+      validateReference(encoded);
       return RecoveryProvenance(
         reference: encoded,
         permission: fallbackPermission,
@@ -372,6 +408,24 @@ String b04RecoveryEvidenceFingerprint(
   return _stableFingerprint([
     for (final observation in ordered) observation.id,
     for (final observation in ordered) observation.contentFingerprint,
+  ]);
+}
+
+String b04ReadinessEvaluationFingerprint(
+  Iterable<RecoveryObservationReadModel> observations,
+  Iterable<String> requiredKinds,
+) {
+  final kinds =
+      requiredKinds
+          .map((kind) => kind.trim())
+          .where((kind) => kind.isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort();
+  return _stableFingerprint([
+    'readiness-evaluation-v1',
+    b04RecoveryEvidenceFingerprint(observations),
+    ...kinds,
   ]);
 }
 

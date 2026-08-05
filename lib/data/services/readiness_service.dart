@@ -39,7 +39,6 @@ class ReadinessService {
           sourceVersion: observation.sourceVersion,
         ),
     ];
-    final fingerprint = b04RecoveryEvidenceFingerprint(observations);
     final groups = <String, List<RecoveryObservationReadModel>>{};
     for (final observation in observations) {
       groups.putIfAbsent(observation.kind, () => []).add(observation);
@@ -48,6 +47,10 @@ class ReadinessService {
     final requiredKinds = request.requiredKinds
         .map((kind) => kind.trim())
         .toSet();
+    final fingerprint = b04ReadinessEvaluationFingerprint(
+      observations,
+      requiredKinds,
+    );
     final missing =
         requiredKinds.where((kind) => !groups.containsKey(kind)).toList()
           ..sort();

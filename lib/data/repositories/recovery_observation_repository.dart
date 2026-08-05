@@ -278,6 +278,7 @@ class RecoveryObservationRepository {
         'Recovery observations require kind, unit, source and provenance.',
       );
     }
+    RecoveryProvenance.validateReference(input.provenance);
     if (!input.observedAtUtc.isUtc) {
       throw const B04RecoveryValidationError(
         'observation_timestamp_not_utc',
@@ -337,12 +338,10 @@ class RecoveryObservationRepository {
           );
         }
       case RecoveryObservationStatus.estimated:
-        if (!hasNumericEvidence ||
-            (input.lower == null && input.upper != null) ||
-            (input.lower != null && input.upper == null)) {
+        if (!hasNumericEvidence) {
           throw const B04RecoveryValidationError(
             'estimated_observation_requires_evidence',
-            'Estimated recovery evidence requires a point or complete range.',
+            'Estimated recovery evidence requires a point or at least one bound.',
           );
         }
       case RecoveryObservationStatus.missing:

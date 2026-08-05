@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/database/app_database.dart';
+import '../../data/models/b04_recovery_models.dart';
 import '../fixtures/b04_adaptive_coaching_fixture_matrix.dart';
 import '../services/local_schedule_date_service.dart';
 import 'backup_schema.dart';
@@ -401,6 +402,9 @@ class B04BackupGraph {
         _validateEnums(row, table);
         _validatePolicyVersions(row, table);
         _validateNumericDomains(row, table);
+        if (table == 'recovery_observations') {
+          _validateRecoveryProvenance(row, table);
+        }
         final uniqueKey = spec.uniqueColumns
             .map((column) => row[column])
             .toList(growable: false);
@@ -776,6 +780,28 @@ class B04BackupGraph {
         'invalid_period_range',
         'Backup-v9 $table contains a backwards local period.',
       );
+    }
+  }
+
+  static void _validateRecoveryProvenance(
+    Map<String, dynamic> row,
+    String table,
+  ) {
+    final encoded = _requiredString(row, 'provenance', table);
+    try {
+      final envelope = RecoveryProvenance.decode(encoded);
+      RecoveryProvenance.validateReference(envelope.reference);
+    } on B04RecoveryValidationError {
+      // v18/v9 compatibility rows may carry a plain opaque reference. A
+      // structured or malformed payload must still fail closed.
+      try {
+        RecoveryProvenance.validateReference(encoded);
+      } on B04RecoveryValidationError catch (error) {
+        throw BackupV9ValidationException(
+          error.code,
+          'Backup-v9 $table.provenance is invalid: ${error.message}',
+        );
+      }
     }
   }
 

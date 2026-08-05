@@ -45,6 +45,13 @@ class ReadinessSnapshotRepository {
     required List<String> requiredKinds,
     DateTime? createdAtUtc,
   }) async {
+    final timestamp = createdAtUtc ?? _nowUtc();
+    if (!timestamp.isUtc) {
+      throw const B04RecoveryValidationError(
+        'readiness_timestamp_not_utc',
+        'Readiness snapshot timestamps must be explicit UTC instants.',
+      );
+    }
     final date = _dates.normalizeLocalDate(localDate);
     _dates.validateTimezone(timezoneId);
     final observations = await _observations.listForLocalDate(
@@ -61,7 +68,7 @@ class ReadinessSnapshotRepository {
         timezoneId: timezoneId,
         requiredKinds: requiredKinds,
         observations: observations,
-        createdAtUtc: (createdAtUtc ?? _nowUtc()).toUtc(),
+        createdAtUtc: timestamp,
       ),
     );
   }
@@ -84,6 +91,8 @@ class ReadinessSnapshotRepository {
         localDate: _dates.normalizeLocalDate(request.localDate),
         timezoneId: request.timezoneId.trim(),
         fingerprint: preview.snapshot.evidenceFingerprint,
+        calculationVersion: preview.snapshot.calculationVersion,
+        policyVersion: preview.snapshot.policyVersion,
       );
       if (existing != null) {
         return ReadinessEvaluationResult(
@@ -104,7 +113,6 @@ class ReadinessSnapshotRepository {
         request.calculationVersion.trim(),
         userId: request.userId.trim(),
         localDate: _dates.normalizeLocalDate(request.localDate),
-        timezoneId: request.timezoneId.trim(),
         fingerprint: preview.snapshot.evidenceFingerprint,
       );
       final evaluated = _service.evaluate(
@@ -214,6 +222,8 @@ class ReadinessSnapshotRepository {
     required String localDate,
     required String timezoneId,
     required String? fingerprint,
+    required String calculationVersion,
+    required String policyVersion,
   }) async {
     if (fingerprint == null) return null;
     final rows =
@@ -222,6 +232,8 @@ class ReadinessSnapshotRepository {
                   row.userId.equals(userId) &
                   row.localDate.equals(localDate) &
                   row.timezoneId.equals(timezoneId) &
+                  row.calculationVersion.equals(calculationVersion) &
+                  row.policyVersion.equals(policyVersion) &
                   row.evidenceFingerprint.equals(fingerprint),
             ))
             .get();
@@ -264,15 +276,12 @@ class ReadinessSnapshotRepository {
     String base, {
     required String userId,
     required String localDate,
-    required String timezoneId,
     required String? fingerprint,
   }) async {
     final rows =
         await (_db.select(_db.readinessSnapshots)..where(
               (row) =>
-                  row.userId.equals(userId) &
-                  row.localDate.equals(localDate) &
-                  row.timezoneId.equals(timezoneId),
+                  row.userId.equals(userId) & row.localDate.equals(localDate),
             ))
             .get();
     if (rows.every((row) => row.calculationVersion != base)) return base;

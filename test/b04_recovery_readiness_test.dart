@@ -155,6 +155,32 @@ void main() {
     );
 
     test(
+      'one-sided estimated bounds remain visible as cautious evidence',
+      () async {
+        final result = await evaluate(
+          date: '2026-01-01',
+          requiredKinds: const ['sleep_duration'],
+          inputs: [
+            input(
+              id: 'sleep-lower-bound',
+              status: RecoveryObservationStatus.estimated,
+              value: null,
+              lower: 6.5,
+              providerExternalId: 'sleep-lower-bound',
+            ),
+          ],
+        );
+
+        expect(result.snapshot.completeness, ReadinessCompleteness.complete);
+        expect(result.snapshot.status, ReadinessStatus.cautious);
+        expect(result.snapshot.evidence.single.value, isNull);
+        expect(result.snapshot.evidence.single.lower, 6.5);
+        expect(result.snapshot.evidence.single.upper, isNull);
+        expectHold(result);
+      },
+    );
+
+    test(
       'missing evidence is unavailable and does not backfill a snapshot',
       () async {
         final result = await snapshots.evaluateAndStoreForLocalDate(
@@ -391,6 +417,126 @@ void main() {
     );
 
     test(
+      'snapshot replay keys include required inputs and calculation version',
+      () async {
+        final observation = await observations.importObservation(
+          input(id: 'replay-sleep', providerExternalId: 'replay-sleep'),
+        );
+        final first = await snapshots.store(
+          ReadinessEvaluationRequest(
+            snapshotId: 'replay-first',
+            userId: 'user-a',
+            localDate: '2026-01-01',
+            timezoneId: 'Asia/Kolkata',
+            requiredKinds: const ['sleep_duration'],
+            observations: [observation],
+            createdAtUtc: DateTime.utc(2026, 1, 2, 1),
+          ),
+        );
+        final retry = await snapshots.store(
+          ReadinessEvaluationRequest(
+            snapshotId: 'replay-retry',
+            userId: 'user-a',
+            localDate: '2026-01-01',
+            timezoneId: 'Asia/Kolkata',
+            requiredKinds: const ['sleep_duration'],
+            observations: [observation],
+            createdAtUtc: DateTime.utc(2026, 1, 2, 2),
+          ),
+        );
+        expect(retry.snapshot.id, first.snapshot.id);
+
+        final incomplete = await snapshots.store(
+          ReadinessEvaluationRequest(
+            snapshotId: 'replay-incomplete',
+            userId: 'user-a',
+            localDate: '2026-01-01',
+            timezoneId: 'Asia/Kolkata',
+            requiredKinds: const ['sleep_duration', 'heart_rate_variability'],
+            observations: [observation],
+            createdAtUtc: DateTime.utc(2026, 1, 2, 3),
+          ),
+        );
+        expect(incomplete.snapshot.id, isNot(first.snapshot.id));
+        expect(
+          incomplete.snapshot.completeness,
+          ReadinessCompleteness.incomplete,
+        );
+        expect(incomplete.snapshot.supersedesSnapshotId, first.snapshot.id);
+
+        final versioned = await snapshots.store(
+          ReadinessEvaluationRequest(
+            snapshotId: 'replay-versioned',
+            userId: 'user-a',
+            localDate: '2026-01-01',
+            timezoneId: 'Asia/Kolkata',
+            requiredKinds: const ['sleep_duration'],
+            observations: [observation],
+            calculationVersion: 'B04-06-READINESS-V2',
+            createdAtUtc: DateTime.utc(2026, 1, 2, 4),
+          ),
+        );
+        expect(versioned.snapshot.calculationVersion, 'B04-06-READINESS-V2');
+        expect(versioned.snapshot.id, isNot(first.snapshot.id));
+        expect(versioned.snapshot.supersedesSnapshotId, incomplete.snapshot.id);
+        expect(await snapshots.listForUser(userId: 'user-a'), hasLength(3));
+      },
+    );
+
+    test(
+      'same local date in another timezone receives a distinct calculation version',
+      () async {
+        final asiaObservation = await observations.importObservation(
+          input(
+            id: 'travel-asia',
+            observedAtUtc: DateTime.utc(2026, 1, 2),
+            timezoneId: 'Asia/Kolkata',
+            providerExternalId: 'travel-asia',
+          ),
+        );
+        final newYorkObservation = await observations.importObservation(
+          input(
+            id: 'travel-new-york',
+            observedAtUtc: DateTime.utc(2026, 1, 2, 5),
+            timezoneId: 'America/New_York',
+            providerExternalId: 'travel-new-york',
+          ),
+        );
+
+        final asia = await snapshots.store(
+          ReadinessEvaluationRequest(
+            snapshotId: 'travel-asia-snapshot',
+            userId: 'user-a',
+            localDate: '2026-01-02',
+            timezoneId: 'Asia/Kolkata',
+            requiredKinds: const ['sleep_duration'],
+            observations: [asiaObservation],
+            createdAtUtc: DateTime.utc(2026, 1, 2, 6),
+          ),
+        );
+        final newYork = await snapshots.store(
+          ReadinessEvaluationRequest(
+            snapshotId: 'travel-new-york-snapshot',
+            userId: 'user-a',
+            localDate: '2026-01-02',
+            timezoneId: 'America/New_York',
+            requiredKinds: const ['sleep_duration'],
+            observations: [newYorkObservation],
+            createdAtUtc: DateTime.utc(2026, 1, 2, 7),
+          ),
+        );
+
+        expect(asia.snapshot.timezoneId, 'Asia/Kolkata');
+        expect(newYork.snapshot.timezoneId, 'America/New_York');
+        expect(
+          newYork.snapshot.calculationVersion,
+          startsWith('B04-06-READINESS-V1:'),
+        );
+        expect(await snapshots.listForUser(userId: 'user-a'), hasLength(2));
+      },
+    );
+
+    test(
       'corrections append a new observation and snapshot without rewriting prior lineage',
       () async {
         final original = await observations.importObservation(
@@ -512,6 +658,78 @@ void main() {
         expect(await observations.listForUser(userId: 'user-a'), isEmpty);
       },
     );
+
+    test('structured provider payload provenance is rejected', () async {
+      await expectLater(
+        observations.importObservation(
+          input(
+            id: 'raw-provider-payload',
+            provenance: jsonEncode({'sleep_minutes': 450}),
+            providerExternalId: 'raw-provider-payload',
+          ),
+        ),
+        throwsA(
+          isA<B04RecoveryValidationError>().having(
+            (error) => error.code,
+            'code',
+            'provenance_payload_not_allowed',
+          ),
+        ),
+      );
+      expect(await observations.listForUser(userId: 'user-a'), isEmpty);
+    });
+
+    test('Backup v9 rejects structured recovery provenance payloads', () async {
+      await evaluate(
+        date: '2026-01-01',
+        requiredKinds: const ['sleep_duration'],
+        inputs: [
+          input(
+            id: 'backup-raw-provenance',
+            providerExternalId: 'backup-raw-provenance',
+          ),
+        ],
+      );
+      final graph = await B04BackupGraph.capture(db);
+      graph.tables['recovery_observations']!.single['provenance'] = jsonEncode({
+        'provider_payload': {'sleep_minutes': 450},
+      });
+
+      expect(
+        () => graph.validateStructure(),
+        throwsA(
+          isA<BackupV9ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'provenance_payload_not_allowed',
+          ),
+        ),
+      );
+    });
+
+    test('snapshot evaluation rejects a non-UTC creation timestamp', () async {
+      await observations.importObservation(
+        input(id: 'non-utc-snapshot', providerExternalId: 'non-utc-snapshot'),
+      );
+
+      await expectLater(
+        snapshots.evaluateAndStoreForLocalDate(
+          userId: 'user-a',
+          localDate: '2026-01-01',
+          timezoneId: 'Asia/Kolkata',
+          requiredKinds: const ['sleep_duration'],
+          createdAtUtc: DateTime(2026, 1, 2, 1),
+        ),
+        throwsA(
+          isA<B04RecoveryValidationError>().having(
+            (error) => error.code,
+            'code',
+            'readiness_timestamp_not_utc',
+          ),
+        ),
+      );
+      expect(await db.select(db.readinessSnapshots).get(), isEmpty);
+    });
 
     test(
       'Backup v9 captures typed recovery provenance and frozen readiness evidence',
