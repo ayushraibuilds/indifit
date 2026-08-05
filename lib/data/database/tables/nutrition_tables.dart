@@ -804,3 +804,442 @@ class NutritionSnapshotConstraintResultEvidence extends Table {
     'CHECK (length(trim(version)) > 0)',
   ];
 }
+
+/// B04 durable goal/target history. The active version is derived from these
+/// immutable effective-dated rows; it is not stored as a second authority.
+class NutritionGoalVersions extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  IntColumn get versionNumber => integer()();
+  TextColumn get goalType => text()();
+  TextColumn get targetSource => text()();
+  IntColumn get calorieTargetKcal => integer().nullable()();
+  RealColumn get proteinTargetG => real().nullable()();
+  RealColumn get carbsTargetG => real().nullable()();
+  RealColumn get fatTargetG => real().nullable()();
+  TextColumn get policyVersion => text().nullable()();
+  TextColumn get calculationVersion => text().nullable()();
+  TextColumn get algorithmVersion => text().nullable()();
+  TextColumn get effectiveFromLocalDate => text()();
+  TextColumn get effectiveToLocalDate => text().nullable()();
+  TextColumn get timezoneId => text()();
+  TextColumn get supersedesGoalVersionId =>
+      text().nullable().references(NutritionGoalVersions, #id)();
+  TextColumn get evidenceFingerprint => text().nullable()();
+  TextColumn get exactResultNumerator => text().nullable()();
+  TextColumn get exactResultDenominator => text().nullable()();
+  IntColumn get normalizedMaintenanceKcal => integer().nullable()();
+  DateTimeColumn get createdAtUtc =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {userId, versionNumber},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (length(trim(user_id)) > 0)',
+    'CHECK (version_number >= 1)',
+    "CHECK (goal_type IN ('loss', 'maintenance', 'gain', 'custom'))",
+    "CHECK (target_source IN ('user_set', 'calculated', 'adaptive', 'override', 'compatibility'))",
+    'CHECK (effective_to_local_date IS NULL OR effective_to_local_date >= effective_from_local_date)',
+    'CHECK (length(trim(timezone_id)) > 0)',
+    'CHECK (supersedes_goal_version_id IS NULL OR supersedes_goal_version_id <> id)',
+    'CHECK (exact_result_denominator IS NULL OR exact_result_denominator <> \'0\')',
+    'CHECK (normalized_maintenance_kcal IS NULL OR normalized_maintenance_kcal > 0)',
+  ];
+}
+
+/// Append-only historical authority for adaptive and optional-AI consent.
+class CoachingConsentEvents extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get consentCategory => text()();
+  TextColumn get action => text()();
+  TextColumn get consentPolicyVersion => text()();
+  TextColumn get copyVersion => text()();
+  DateTimeColumn get timestampUtc => dateTime()();
+  TextColumn get localDate => text()();
+  TextColumn get timezoneId => text()();
+  TextColumn get actorSource => text()();
+  TextColumn get relatedOrSupersededEventId =>
+      text().nullable().references(CoachingConsentEvents, #id)();
+  DateTimeColumn get createdAtUtc =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {userId, consentCategory, action, timestampUtc},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (length(trim(user_id)) > 0)',
+    "CHECK (consent_category IN ('adaptive_coaching', 'optional_ai'))",
+    'CHECK ("action" IN (\'enable\', \'disable\', \'withdraw\'))',
+    'CHECK (length(trim(consent_policy_version)) > 0)',
+    'CHECK (length(trim(copy_version)) > 0)',
+    'CHECK (length(trim(local_date)) > 0)',
+    'CHECK (length(trim(timezone_id)) > 0)',
+    'CHECK (length(trim(actor_source)) > 0)',
+    'CHECK (related_or_superseded_event_id IS NULL OR related_or_superseded_event_id <> id)',
+  ];
+}
+
+/// Derived current consent projection. Consent events remain the authority.
+class NutritionCoachingPreferences extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  BoolColumn get adaptiveCoachingEnabled =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get optionalAiEnabled =>
+      boolean().withDefault(const Constant(false))();
+  IntColumn get projectionVersion => integer().withDefault(const Constant(1))();
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAtUtc =>
+      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAtUtc =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {userId},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (length(trim(user_id)) > 0)',
+    'CHECK (projection_version >= 1)',
+  ];
+}
+
+/// Immutable, privacy-minimized recovery observations. Raw provider payloads
+/// are intentionally not represented by this schema.
+class RecoveryObservations extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get kind => text()();
+  DateTimeColumn get observedAtUtc => dateTime()();
+  TextColumn get localDate => text()();
+  TextColumn get timezoneId => text()();
+  TextColumn get status => text()();
+  TextColumn get unit => text()();
+  RealColumn get value => real().nullable()();
+  RealColumn get lower => real().nullable()();
+  RealColumn get upper => real().nullable()();
+  TextColumn get source => text()();
+  TextColumn get provenance => text()();
+  TextColumn get freshness => text()();
+  TextColumn get providerExternalId => text().nullable()();
+  TextColumn get sourceVersion => text().nullable()();
+  DateTimeColumn get evidenceTimestampUtc => dateTime().nullable()();
+  DateTimeColumn get createdAtUtc =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {source, providerExternalId},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (length(trim(user_id)) > 0)',
+    'CHECK (length(trim(kind)) > 0)',
+    'CHECK (length(trim(local_date)) > 0)',
+    'CHECK (length(trim(timezone_id)) > 0)',
+    "CHECK (status IN ('known', 'estimated', 'missing', 'unknown', 'invalid'))",
+    "CHECK (freshness IN ('fresh', 'stale', 'unknown'))",
+    'CHECK (value IS NULL OR value >= 0)',
+    'CHECK (lower IS NULL OR lower >= 0)',
+    'CHECK (upper IS NULL OR upper >= 0)',
+    'CHECK (lower IS NULL OR upper IS NULL OR lower <= upper)',
+    'CHECK (length(trim(source)) > 0)',
+    'CHECK (length(trim(provenance)) > 0)',
+  ];
+}
+
+/// Immutable readiness projection with frozen policy/calculation lineage.
+class ReadinessSnapshots extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get localDate => text()();
+  TextColumn get timezoneId => text()();
+  TextColumn get completeness => text()();
+  TextColumn get status => text()();
+  TextColumn get band => text().nullable()();
+  RealColumn get confidence => real().nullable()();
+  TextColumn get calculationVersion => text()();
+  TextColumn get policyVersion => text().nullable()();
+  TextColumn get unavailableReason => text().nullable()();
+  TextColumn get evidenceFingerprint => text().nullable()();
+  DateTimeColumn get createdAtUtc =>
+      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get supersededAtUtc => dateTime().nullable()();
+  TextColumn get supersedesSnapshotId =>
+      text().nullable().references(ReadinessSnapshots, #id)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {userId, localDate, calculationVersion},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (length(trim(user_id)) > 0)',
+    'CHECK (length(trim(local_date)) > 0)',
+    'CHECK (length(trim(timezone_id)) > 0)',
+    "CHECK (completeness IN ('complete', 'incomplete', 'unknown'))",
+    "CHECK (status IN ('available', 'cautious', 'unavailable'))",
+    'CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1))',
+    'CHECK (length(trim(calculation_version)) > 0)',
+    'CHECK (supersedes_snapshot_id IS NULL OR supersedes_snapshot_id <> id)',
+  ];
+}
+
+/// Frozen observation links used to replay a readiness result.
+class ReadinessSnapshotEvidence extends Table {
+  TextColumn get id => text()();
+  TextColumn get readinessSnapshotId =>
+      text().references(ReadinessSnapshots, #id)();
+  TextColumn get observationId =>
+      text().references(RecoveryObservations, #id)();
+  TextColumn get evidenceKind => text()();
+  TextColumn get status => text()();
+  RealColumn get value => real().nullable()();
+  RealColumn get lower => real().nullable()();
+  RealColumn get upper => real().nullable()();
+  TextColumn get unit => text().nullable()();
+  TextColumn get sourceVersion => text().nullable()();
+  DateTimeColumn get createdAtUtc =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {readinessSnapshotId, observationId},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (length(trim(evidence_kind)) > 0)',
+    'CHECK (length(trim(status)) > 0)',
+    'CHECK (lower IS NULL OR upper IS NULL OR lower <= upper)',
+  ];
+}
+
+/// Immutable, typed recommendation history. Daily/weekly projections are not
+/// stored here; the historical recommendation itself is the durable record.
+class Recommendations extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get scope => text()();
+  TextColumn get localPeriodStart => text()();
+  TextColumn get localPeriodEnd => text()();
+  TextColumn get timezoneId => text()();
+  TextColumn get status => text()();
+  IntColumn get priority => integer()();
+  RealColumn get confidence => real().nullable()();
+  TextColumn get completeness => text().nullable()();
+  TextColumn get action => text()();
+  TextColumn get explanation => text()();
+  TextColumn get missingInputs => text().nullable()();
+  TextColumn get uncertainty => text().nullable()();
+  TextColumn get alternatives => text().nullable()();
+  TextColumn get ruleVersion => text()();
+  TextColumn get calculationVersion => text().nullable()();
+  TextColumn get algorithmVersion => text().nullable()();
+  TextColumn get modelVersion => text().nullable()();
+  TextColumn get providerVersion => text().nullable()();
+  TextColumn get policyVersion => text().nullable()();
+  TextColumn get goalVersionId =>
+      text().nullable().references(NutritionGoalVersions, #id)();
+  TextColumn get readinessSnapshotId =>
+      text().nullable().references(ReadinessSnapshots, #id)();
+  TextColumn get contextFingerprint => text()();
+  TextColumn get evidenceFingerprint => text().nullable()();
+  TextColumn get exactResultNumerator => text().nullable()();
+  TextColumn get exactResultDenominator => text().nullable()();
+  IntColumn get normalizedMaintenanceKcal => integer().nullable()();
+  IntColumn get proposedDeltaKcal => integer().nullable()();
+  DateTimeColumn get createdAtUtc =>
+      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get effectiveAtUtc => dateTime().nullable()();
+  DateTimeColumn get supersededAtUtc => dateTime().nullable()();
+  TextColumn get supersedesRecommendationId =>
+      text().nullable().references(Recommendations, #id)();
+  TextColumn get replayHash => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {userId, replayHash},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (length(trim(user_id)) > 0)',
+    "CHECK (scope IN ('daily', 'weekly', 'training', 'nutrition', 'meal_opportunity'))",
+    'CHECK (length(trim(local_period_start)) > 0)',
+    'CHECK (length(trim(local_period_end)) > 0)',
+    'CHECK (length(trim(timezone_id)) > 0)',
+    "CHECK (status IN ('available', 'cautious', 'confirm', 'unavailable', 'dismissed', 'superseded'))",
+    'CHECK (priority >= 0)',
+    'CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1))',
+    'CHECK (length(trim("action")) > 0)',
+    'CHECK (length(trim(explanation)) > 0)',
+    'CHECK (length(trim(rule_version)) > 0)',
+    'CHECK (length(trim(context_fingerprint)) > 0)',
+    'CHECK (supersedes_recommendation_id IS NULL OR supersedes_recommendation_id <> id)',
+    'CHECK (exact_result_denominator IS NULL OR exact_result_denominator <> \'0\')',
+  ];
+}
+
+/// Typed frozen evidence belonging to one recommendation.
+class RecommendationEvidence extends Table {
+  TextColumn get id => text()();
+  TextColumn get recommendationId => text().references(Recommendations, #id)();
+  TextColumn get userId => text()();
+  TextColumn get evidenceKind => text()();
+  TextColumn get sourceType => text()();
+  TextColumn get sourceId => text().nullable()();
+  TextColumn get sourceVersion => text().nullable()();
+  TextColumn get status => text()();
+  RealColumn get value => real().nullable()();
+  RealColumn get lower => real().nullable()();
+  RealColumn get upper => real().nullable()();
+  TextColumn get unit => text().nullable()();
+  TextColumn get exactResultNumerator => text().nullable()();
+  TextColumn get exactResultDenominator => text().nullable()();
+  IntColumn get normalizedMaintenanceKcal => integer().nullable()();
+  TextColumn get localDate => text().nullable()();
+  TextColumn get timezoneId => text().nullable()();
+  DateTimeColumn get createdAtUtc =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {recommendationId, evidenceKind, sourceId},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (length(trim(user_id)) > 0)',
+    'CHECK (length(trim(evidence_kind)) > 0)',
+    'CHECK (length(trim(source_type)) > 0)',
+    'CHECK (length(trim(status)) > 0)',
+    'CHECK (lower IS NULL OR upper IS NULL OR lower <= upper)',
+    'CHECK (exact_result_denominator IS NULL OR exact_result_denominator <> \'0\')',
+  ];
+}
+
+/// Append-only policy/age eligibility authority. Unknown, withheld and
+/// conflicting inputs remain explicit rather than being inferred or omitted.
+class CoachingEligibilityEvaluations extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get result => text()();
+  TextColumn get reasonCode => text()();
+  TextColumn get ageInputSource => text()();
+  DateTimeColumn get evidenceTimestampUtc => dateTime()();
+  DateTimeColumn get evaluationUtc => dateTime()();
+  TextColumn get evaluationLocalDate => text()();
+  TextColumn get timezoneId => text()();
+  TextColumn get policyVersion => text()();
+  TextColumn get minimumAgeRuleVersion => text()();
+  TextColumn get goalVersionId =>
+      text().nullable().references(NutritionGoalVersions, #id)();
+  TextColumn get recommendationId =>
+      text().nullable().references(Recommendations, #id)();
+  TextColumn get attemptedProposalId => text().nullable()();
+  TextColumn get evidenceFingerprint => text().nullable()();
+  DateTimeColumn get createdAtUtc =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {userId, evaluationUtc, policyVersion},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (length(trim(user_id)) > 0)',
+    "CHECK (result IN ('eligible', 'underage', 'unknown_age', 'conflicting_age', 'withheld_age', 'invalid_evidence', 'policy_unavailable'))",
+    'CHECK (length(trim(reason_code)) > 0)',
+    "CHECK (age_input_source IN ('verified_dob', 'user_entered_dob', 'missing', 'unknown', 'withheld', 'conflicting', 'invalid', 'policy'))",
+    'CHECK (length(trim(evaluation_local_date)) > 0)',
+    'CHECK (length(trim(timezone_id)) > 0)',
+    'CHECK (length(trim(policy_version)) > 0)',
+    'CHECK (length(trim(minimum_age_rule_version)) > 0)',
+    "CHECK ((result = 'eligible' AND age_input_source IN ('verified_dob', 'user_entered_dob')) OR (result = 'underage' AND age_input_source IN ('verified_dob', 'user_entered_dob')) OR (result = 'unknown_age' AND age_input_source IN ('missing', 'unknown')) OR (result = 'conflicting_age' AND age_input_source = 'conflicting') OR (result = 'withheld_age' AND age_input_source = 'withheld') OR (result = 'invalid_evidence' AND age_input_source = 'invalid') OR (result = 'policy_unavailable' AND age_input_source = 'policy'))",
+  ];
+}
+
+/// Append-only user actions against immutable recommendations.
+class RecommendationFeedback extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get recommendationId => text().references(Recommendations, #id)();
+  TextColumn get action => text()();
+  TextColumn get reason => text().nullable()();
+  TextColumn get source => text()();
+  TextColumn get localDate => text()();
+  TextColumn get timezoneId => text()();
+  DateTimeColumn get createdAtUtc =>
+      dateTime().withDefault(currentDateAndTime)();
+  TextColumn get relatedFeedbackId =>
+      text().nullable().references(RecommendationFeedback, #id)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {userId, recommendationId, action, relatedFeedbackId},
+  ];
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (length(trim(id)) > 0)',
+    'CHECK (length(trim(user_id)) > 0)',
+    'CHECK ("action" IN (\'acknowledge\', \'dismiss\', \'accept\', \'override\', \'snooze\', \'not_relevant\'))',
+    'CHECK (length(trim(source)) > 0)',
+    'CHECK (length(trim(local_date)) > 0)',
+    'CHECK (length(trim(timezone_id)) > 0)',
+    'CHECK (related_feedback_id IS NULL OR related_feedback_id <> id)',
+  ];
+}
