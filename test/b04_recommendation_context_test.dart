@@ -14,6 +14,11 @@ import 'package:indifit/data/services/b04_recommendation_context_assembler.dart'
 
 const userId = 'user-a';
 const timezoneId = 'America/New_York';
+const completeCandidateEvidence = B04MealCandidateEvidence.complete(
+  identityReference: 'food-identity-1',
+  nutrientReference: 'nutrition-snapshot-1',
+  constraintReference: 'constraint-evaluation-1',
+);
 
 void main() {
   const timezoneId = 'America/New_York';
@@ -32,6 +37,7 @@ void main() {
           selectionId: 'selection-1',
           source: B04MealCandidateSource.canonicalFood,
           subjectId: 'food-1',
+          evidence: completeCandidateEvidence,
         ),
       ],
     );
@@ -151,6 +157,7 @@ void main() {
             selectionId: 'recipe-selection',
             source: B04MealCandidateSource.publishedRecipeVersion,
             subjectId: 'recipe-v4',
+            evidence: completeCandidateEvidence,
           ),
         ],
       );
@@ -201,6 +208,7 @@ void main() {
               selectionId: '',
               source: B04MealCandidateSource.canonicalFood,
               subjectId: 'food-1',
+              evidence: B04MealCandidateEvidence.unavailable,
             ),
           ],
         ),
@@ -223,6 +231,7 @@ void main() {
                 selectionId: 'selection-1',
                 source: B04MealCandidateSource.canonicalFood,
                 subjectId: 'food-1',
+                evidence: completeCandidateEvidence,
               ),
             ],
           ),
@@ -257,6 +266,7 @@ void main() {
               selectionId: 'selection-1',
               source: B04MealCandidateSource.canonicalFood,
               subjectId: 'food-1',
+              evidence: completeCandidateEvidence,
             ),
           ],
         ),
@@ -268,7 +278,155 @@ void main() {
       );
     },
   );
+
+  test('candidate evidence and duplicate selections fail closed', () {
+    final partial = opportunities.create(
+      currentInstantUtc: evaluatedAt,
+      timezoneId: timezoneId,
+      kind: B04MealOpportunityKind.now,
+      candidates: const [
+        B04MealCandidate(
+          selectionId: 'partial-selection',
+          source: B04MealCandidateSource.savedThali,
+          subjectId: 'thali-v2',
+          evidence: B04MealCandidateEvidence.partial(
+            identityReference: 'thali-identity-2',
+          ),
+        ),
+      ],
+    );
+    final partialContext = assembler.assemble(_input(mealOpportunity: partial));
+
+    expect(partial.reasonCode, 'explicit_candidate_partial_evidence');
+    expect(partialContext.availability, B04ContextAvailability.evidenceLimited);
+    expect(
+      partialContext.missingEvidence.map((item) => item.reasonCode),
+      contains('candidate_evidence_partial'),
+    );
+
+    final unavailable = opportunities.create(
+      currentInstantUtc: evaluatedAt,
+      timezoneId: timezoneId,
+      kind: B04MealOpportunityKind.now,
+      candidates: const [
+        B04MealCandidate(
+          selectionId: 'unavailable-selection',
+          source: B04MealCandidateSource.savedThali,
+          subjectId: 'missing-thali',
+          evidence: B04MealCandidateEvidence.unavailable,
+        ),
+      ],
+    );
+    expect(unavailable.status, B04MealOpportunityStatus.unavailable);
+    expect(unavailable.reasonCode, 'candidate_evidence_unavailable');
+
+    expect(
+      () => opportunities.create(
+        currentInstantUtc: evaluatedAt,
+        timezoneId: timezoneId,
+        kind: B04MealOpportunityKind.now,
+        candidates: const [
+          B04MealCandidate(
+            selectionId: 'duplicate',
+            source: B04MealCandidateSource.canonicalFood,
+            subjectId: 'food-1',
+            evidence: completeCandidateEvidence,
+          ),
+          B04MealCandidate(
+            selectionId: 'duplicate',
+            source: B04MealCandidateSource.savedThali,
+            subjectId: 'thali-v2',
+            evidence: completeCandidateEvidence,
+          ),
+        ],
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('opportunity outside the context period fails closed', () {
+    final opportunity = opportunities.create(
+      currentInstantUtc: DateTime.utc(2026, 3, 9, 12),
+      timezoneId: timezoneId,
+      kind: B04MealOpportunityKind.now,
+      candidates: const [
+        B04MealCandidate(
+          selectionId: 'selection-1',
+          source: B04MealCandidateSource.canonicalFood,
+          subjectId: 'food-1',
+          evidence: completeCandidateEvidence,
+        ),
+      ],
+    );
+
+    expect(
+      () => assembler.assemble(_input(mealOpportunity: opportunity)),
+      throwsArgumentError,
+    );
+  });
+
+  test('goal and eligibility boundaries remain tied to the frozen period', () {
+    final futureGoal = _goal(effectiveFromLocalDate: '2026-03-10');
+    final goalContext = assembler.assemble(_input(activeGoal: futureGoal));
+    expect(goalContext.availability, B04ContextAvailability.unavailable);
+    expect(
+      goalContext.missingEvidence.map((item) => item.reasonCode),
+      contains('goal_not_effective_for_context'),
+    );
+    expect(
+      () => assembler.assemble(
+        _input(activeGoal: _goal(goalTimezoneId: 'Asia/Kolkata')),
+      ),
+      throwsArgumentError,
+    );
+
+    final outsideEligibility = CoachingEligibilityReadModel(
+      userId: userId,
+      result: CoachingEligibilityResult.eligible,
+      reasonCode: 'eligible',
+      policyVersion: 'B04-05-ELIGIBILITY-V1',
+      evaluationLocalDate: '2026-03-09',
+      timezoneId: timezoneId,
+      evaluationUtc: DateTime.utc(2026, 3, 9, 12),
+    );
+    final eligibilityContext = assembler.assemble(
+      _input(eligibility: outsideEligibility),
+    );
+    expect(eligibilityContext.availability, B04ContextAvailability.unavailable);
+    expect(
+      eligibilityContext.missingEvidence.map((item) => item.reasonCode),
+      contains('eligibility_not_evaluated_for_context'),
+    );
+  });
 }
+
+NutritionGoalVersionReadModel _goal({
+  String effectiveFromLocalDate = '2026-03-01',
+  String? effectiveToLocalDate,
+  String goalTimezoneId = 'America/New_York',
+}) => NutritionGoalVersionReadModel(
+  id: 'goal-v7',
+  userId: userId,
+  versionNumber: 7,
+  goalType: NutritionGoalType.maintenance,
+  source: NutritionGoalSource.userSet,
+  calorieTargetKcal: 2000,
+  proteinTargetG: 120,
+  carbsTargetG: 240,
+  fatTargetG: 70,
+  policyVersion: B04AdaptiveTargetPolicy.current.policyVersion,
+  calculationVersion: B04AdaptiveTargetPolicy.current.calculationVersion,
+  algorithmVersion: B04AdaptiveTargetPolicy.current.algorithmVersion,
+  effectiveFromLocalDate: effectiveFromLocalDate,
+  effectiveToLocalDate: effectiveToLocalDate,
+  timezoneId: goalTimezoneId,
+  supersedesGoalVersionId: null,
+  evidenceFingerprint: 'goal-fingerprint',
+  exactResultNumerator: null,
+  exactResultDenominator: null,
+  normalizedMaintenanceKcal: 2000,
+  createdAtUtc: DateTime.utc(2026, 3, 1, 12),
+);
 
 B04RecommendationContextInput _input({
   B04RecommendationPeriod period = B04RecommendationPeriod.daily,
@@ -276,7 +434,21 @@ B04RecommendationContextInput _input({
   String endLocalDate = '2026-03-08',
   List<NutritionDailyReadModel>? nutritionDays,
   B04MealOpportunity? mealOpportunity,
+  NutritionGoalVersionReadModel? activeGoal,
+  CoachingEligibilityReadModel? eligibility,
 }) {
+  final goal = activeGoal ?? _goal();
+  final currentEligibility =
+      eligibility ??
+      CoachingEligibilityReadModel(
+        userId: userId,
+        result: CoachingEligibilityResult.eligible,
+        reasonCode: 'eligible',
+        policyVersion: 'B04-05-ELIGIBILITY-V1',
+        evaluationLocalDate: '2026-03-08',
+        timezoneId: timezoneId,
+        evaluationUtc: DateTime.utc(2026, 3, 8, 12),
+      );
   return B04RecommendationContextInput(
     contextId: 'context-1',
     userId: userId,
@@ -285,29 +457,7 @@ B04RecommendationContextInput _input({
     endLocalDate: endLocalDate,
     timezoneId: timezoneId,
     evaluatedAtUtc: DateTime.utc(2026, 3, 8, 12),
-    activeGoal: NutritionGoalVersionReadModel(
-      id: 'goal-v7',
-      userId: userId,
-      versionNumber: 7,
-      goalType: NutritionGoalType.maintenance,
-      source: NutritionGoalSource.userSet,
-      calorieTargetKcal: 2000,
-      proteinTargetG: 120,
-      carbsTargetG: 240,
-      fatTargetG: 70,
-      policyVersion: B04AdaptiveTargetPolicy.current.policyVersion,
-      calculationVersion: B04AdaptiveTargetPolicy.current.calculationVersion,
-      algorithmVersion: B04AdaptiveTargetPolicy.current.algorithmVersion,
-      effectiveFromLocalDate: '2026-03-01',
-      effectiveToLocalDate: null,
-      timezoneId: timezoneId,
-      supersedesGoalVersionId: null,
-      evidenceFingerprint: 'goal-fingerprint',
-      exactResultNumerator: null,
-      exactResultDenominator: null,
-      normalizedMaintenanceKcal: 2000,
-      createdAtUtc: DateTime.utc(2026, 3, 1, 12),
-    ),
+    activeGoal: goal,
     preferences: const CoachingPreferencesReadModel(
       userId: userId,
       adaptiveCoachingEnabled: true,
@@ -315,15 +465,7 @@ B04RecommendationContextInput _input({
       adaptiveCoachingEvent: null,
       optionalAiEvent: null,
     ),
-    eligibility: CoachingEligibilityReadModel(
-      userId: userId,
-      result: CoachingEligibilityResult.eligible,
-      reasonCode: 'eligible',
-      policyVersion: 'B04-05-ELIGIBILITY-V1',
-      evaluationLocalDate: '2026-03-08',
-      timezoneId: timezoneId,
-      evaluationUtc: DateTime.utc(2026, 3, 8, 12),
-    ),
+    eligibility: currentEligibility,
     readinessSnapshot: ReadinessSnapshotReadModel(
       id: 'readiness-1',
       userId: userId,

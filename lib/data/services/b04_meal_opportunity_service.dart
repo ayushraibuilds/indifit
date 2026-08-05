@@ -50,6 +50,15 @@ class B04MealOpportunityService {
           'Explicit meal candidate selection IDs must be unique.',
         );
       }
+      if (candidate.evidence.isComplete &&
+          (candidate.evidence.identityReference?.trim().isEmpty != false ||
+              candidate.evidence.nutrientReference?.trim().isEmpty != false ||
+              candidate.evidence.constraintReference?.trim().isEmpty !=
+                  false)) {
+        throw ArgumentError(
+          'Complete meal candidates require B03 identity, nutrient, and constraint evidence.',
+        );
+      }
     }
     if (kind == null) {
       return B04MealOpportunity(
@@ -75,6 +84,24 @@ class B04MealOpportunityService {
         reasonCode: 'no_explicit_candidate',
       );
     }
+    if (selected.every(
+      (candidate) =>
+          candidate.evidence.state == B04MealCandidateEvidenceState.unavailable,
+    )) {
+      return B04MealOpportunity(
+        status: B04MealOpportunityStatus.unavailable,
+        kind: kind,
+        currentInstantUtc: currentInstantUtc,
+        localDate: localDate,
+        timezoneId: timezoneId,
+        explicitMealCategory: category,
+        candidates: selected,
+        reasonCode: 'candidate_evidence_unavailable',
+      );
+    }
+    final hasPartial = selected.any(
+      (candidate) => !candidate.evidence.isComplete,
+    );
     return B04MealOpportunity(
       status: B04MealOpportunityStatus.available,
       kind: kind,
@@ -83,7 +110,9 @@ class B04MealOpportunityService {
       timezoneId: timezoneId,
       explicitMealCategory: category,
       candidates: selected,
-      reasonCode: 'explicit_candidate_selected',
+      reasonCode: hasPartial
+          ? 'explicit_candidate_partial_evidence'
+          : 'explicit_candidate_selected',
     );
   }
 }

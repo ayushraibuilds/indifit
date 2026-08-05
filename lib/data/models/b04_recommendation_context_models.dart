@@ -398,6 +398,60 @@ extension B04MealCandidateSourceId on B04MealCandidateSource {
   };
 }
 
+enum B04MealCandidateEvidenceState { complete, partial, unavailable }
+
+extension B04MealCandidateEvidenceStateId on B04MealCandidateEvidenceState {
+  String get stableId => name;
+}
+
+/// Opaque references to B03-owned identity, nutrient and constraint evidence.
+/// B04 carries their state and lineage without recalculating or re-evaluating
+/// any source authority.
+class B04MealCandidateEvidence {
+  final B04MealCandidateEvidenceState state;
+  final String? identityReference;
+  final String? nutrientReference;
+  final String? constraintReference;
+  final List<String> estimateReferences;
+
+  const B04MealCandidateEvidence({
+    required this.state,
+    this.identityReference,
+    this.nutrientReference,
+    this.constraintReference,
+    this.estimateReferences = const [],
+  });
+
+  const B04MealCandidateEvidence.complete({
+    required this.identityReference,
+    required this.nutrientReference,
+    required this.constraintReference,
+    this.estimateReferences = const [],
+  }) : state = B04MealCandidateEvidenceState.complete;
+
+  const B04MealCandidateEvidence.partial({
+    this.identityReference,
+    this.nutrientReference,
+    this.constraintReference,
+    this.estimateReferences = const [],
+  }) : state = B04MealCandidateEvidenceState.partial;
+
+  static const unavailable = B04MealCandidateEvidence(
+    state: B04MealCandidateEvidenceState.unavailable,
+  );
+
+  bool get isComplete => state == B04MealCandidateEvidenceState.complete;
+
+  Map<String, dynamic> toRedactedMap() => {
+    'state': state.stableId,
+    if (identityReference != null) 'identity_reference': identityReference,
+    if (nutrientReference != null) 'nutrient_reference': nutrientReference,
+    if (constraintReference != null)
+      'constraint_reference': constraintReference,
+    'estimate_references': estimateReferences,
+  };
+}
+
 enum B04MealOpportunityStatus { available, noCandidate, unavailable }
 
 extension B04MealOpportunityStatusId on B04MealOpportunityStatus {
@@ -408,17 +462,20 @@ class B04MealCandidate {
   final String selectionId;
   final B04MealCandidateSource source;
   final String subjectId;
+  final B04MealCandidateEvidence evidence;
 
   const B04MealCandidate({
     required this.selectionId,
     required this.source,
     required this.subjectId,
+    required this.evidence,
   });
 
   factory B04MealCandidate.fromSourceId({
     required String selectionId,
     required String sourceId,
     required String subjectId,
+    B04MealCandidateEvidence evidence = B04MealCandidateEvidence.unavailable,
   }) {
     final source = switch (sourceId.trim()) {
       'canonical_food' => B04MealCandidateSource.canonicalFood,
@@ -440,6 +497,7 @@ class B04MealCandidate {
       selectionId: selectionId,
       source: source,
       subjectId: subjectId,
+      evidence: evidence,
     );
   }
 
@@ -447,6 +505,7 @@ class B04MealCandidate {
     'selection_id': selectionId,
     'source': source.stableId,
     'subject_id': subjectId,
+    'evidence': evidence.toRedactedMap(),
   };
 }
 
@@ -472,6 +531,11 @@ class B04MealOpportunity {
   });
 
   bool get hasSelection => status == B04MealOpportunityStatus.available;
+
+  bool get hasCompleteSelection =>
+      hasSelection &&
+      candidates.isNotEmpty &&
+      candidates.every((item) => item.evidence.isComplete);
 
   Map<String, dynamic> toRedactedMap() => {
     'status': status.stableId,

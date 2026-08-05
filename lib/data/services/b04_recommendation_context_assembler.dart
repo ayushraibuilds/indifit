@@ -59,6 +59,28 @@ class B04RecommendationContextAssembler {
         'Meal opportunity timezone must match the frozen context timezone.',
       );
     }
+    if (input.mealOpportunity != null) {
+      _validateMealOpportunity(input.mealOpportunity!, timezoneId);
+      if (!expectedDates.contains(input.mealOpportunity!.localDate)) {
+        throw ArgumentError(
+          'Meal opportunity local date must be inside the frozen context period.',
+        );
+      }
+    }
+
+    _validateGoalPeriod(
+      input.activeGoal,
+      timezoneId: timezoneId,
+      start: start,
+      end: end,
+      missing: missing,
+    );
+    _validateEligibilityPeriod(
+      input.eligibility,
+      timezoneId: timezoneId,
+      expectedDates: expectedDates,
+      missing: missing,
+    );
 
     if (input.activeGoal == null) {
       missing.add(
@@ -170,6 +192,13 @@ class B04RecommendationContextAssembler {
           kind: B04MissingEvidenceKind.mealOpportunity,
           reasonCode:
               opportunity?.reasonCode ?? 'explicit_opportunity_required',
+        ),
+      );
+    } else if (!opportunity.hasCompleteSelection) {
+      missing.add(
+        const B04MissingEvidence(
+          kind: B04MissingEvidenceKind.mealOpportunity,
+          reasonCode: 'candidate_evidence_partial',
         ),
       );
     }
@@ -366,6 +395,103 @@ class B04RecommendationContextAssembler {
       return B04ContextAvailability.evidenceLimited;
     }
     return B04ContextAvailability.available;
+  }
+
+  void _validateGoalPeriod(
+    NutritionGoalVersionReadModel? goal, {
+    required String timezoneId,
+    required String start,
+    required String end,
+    required List<B04MissingEvidence> missing,
+  }) {
+    if (goal == null) return;
+    _dates.validateTimezone(goal.timezoneId);
+    if (goal.timezoneId != timezoneId) {
+      throw ArgumentError(
+        'Goal timezone must match the frozen context timezone.',
+      );
+    }
+    final effectiveFrom = _dates.normalizeLocalDate(
+      goal.effectiveFromLocalDate,
+    );
+    final effectiveTo = goal.effectiveToLocalDate == null
+        ? null
+        : _dates.normalizeLocalDate(goal.effectiveToLocalDate!);
+    if (effectiveTo != null && _dates.compare(effectiveFrom, effectiveTo) > 0) {
+      throw ArgumentError('Goal effective dates must be ordered.');
+    }
+    if (_dates.compare(effectiveFrom, start) > 0 ||
+        (effectiveTo != null && _dates.compare(effectiveTo, end) < 0)) {
+      missing.add(
+        const B04MissingEvidence(
+          kind: B04MissingEvidenceKind.goal,
+          reasonCode: 'goal_not_effective_for_context',
+        ),
+      );
+    }
+  }
+
+  void _validateEligibilityPeriod(
+    CoachingEligibilityReadModel? eligibility, {
+    required String timezoneId,
+    required List<String> expectedDates,
+    required List<B04MissingEvidence> missing,
+  }) {
+    if (eligibility == null) return;
+    _dates.validateTimezone(eligibility.timezoneId);
+    if (eligibility.timezoneId != timezoneId) {
+      throw ArgumentError(
+        'Eligibility timezone must match the frozen context timezone.',
+      );
+    }
+    final evaluationDate = _dates.normalizeLocalDate(
+      eligibility.evaluationLocalDate,
+    );
+    if (!expectedDates.contains(evaluationDate)) {
+      missing.add(
+        const B04MissingEvidence(
+          kind: B04MissingEvidenceKind.eligibility,
+          reasonCode: 'eligibility_not_evaluated_for_context',
+        ),
+      );
+    }
+  }
+
+  void _validateMealOpportunity(
+    B04MealOpportunity opportunity,
+    String timezoneId,
+  ) {
+    if (!opportunity.currentInstantUtc.isUtc) {
+      throw ArgumentError('Meal opportunity instant must be UTC.');
+    }
+    final derivedLocalDate = _dates.localDateFor(
+      opportunity.currentInstantUtc,
+      timezoneId,
+    );
+    if (derivedLocalDate != opportunity.localDate) {
+      throw ArgumentError(
+        'Meal opportunity local date must retain its source instant and timezone.',
+      );
+    }
+    final selectionIds = <String>{};
+    for (final candidate in opportunity.candidates) {
+      if (candidate.selectionId.trim().isEmpty ||
+          candidate.subjectId.trim().isEmpty ||
+          !selectionIds.add(candidate.selectionId.trim())) {
+        throw ArgumentError(
+          'Meal opportunity candidates must be unique and identified.',
+        );
+      }
+      if (candidate.evidence.isComplete &&
+          (candidate.evidence.identityReference?.trim().isEmpty != false ||
+              candidate.evidence.nutrientReference?.trim().isEmpty != false ||
+              candidate.evidence.constraintReference?.trim().isEmpty !=
+                  false)) {
+        throw ArgumentError(
+          'Complete meal candidate evidence must retain all B03 references.',
+        );
+      }
+    }
   }
 
   static void _validateOwner(String owner, String? sourceOwner, String name) {
