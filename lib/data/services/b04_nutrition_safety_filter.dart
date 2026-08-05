@@ -76,9 +76,13 @@ class B04NutritionSafetyFilter {
     final hardBlocks = <String>{};
     final softFilters = <String>{};
     final uncertain = <String>{};
+    var constraintEvidenceUnavailable = evaluation.missingEvidence.isNotEmpty;
     final constraintsById = {
       for (final constraint in constraints) constraint.id: constraint,
     };
+    if (evaluation.missingEvidence.isNotEmpty) {
+      reasons.add('missing_constraint_evidence');
+    }
     final constraintContexts = [
       for (final evaluationItem in evaluation.evaluations)
         if (constraintsById[evaluationItem.constraintId] != null)
@@ -93,6 +97,12 @@ class B04NutritionSafetyFilter {
       );
       missingEvidence.addAll(item.missingEvidence);
       reasons.addAll(_mappedReasons(item));
+      if (item.missingEvidence.isNotEmpty ||
+          (item.outcome == NutritionConstraintOutcome.noKnownConflict &&
+              item.reasonCodes.contains('composition_or_evidence_unknown'))) {
+        constraintEvidenceUnavailable = true;
+        uncertain.add(item.constraintId);
+      }
       switch (item.outcome) {
         case NutritionConstraintOutcome.confirmedConflict:
           if (_isHardBlockType(
@@ -129,6 +139,7 @@ class B04NutritionSafetyFilter {
     final evaluatedDisposition = _disposition(
       hardBlocks: hardBlocks,
       uncertain: uncertain,
+      constraintEvidenceUnavailable: constraintEvidenceUnavailable,
       nutrientUnavailable: nutrientAssessment.unavailable,
       softFilters: softFilters,
     );
@@ -180,11 +191,14 @@ class B04NutritionSafetyFilter {
   B04NutritionSafetyDisposition _disposition({
     required Set<String> hardBlocks,
     required Set<String> uncertain,
+    required bool constraintEvidenceUnavailable,
     required bool nutrientUnavailable,
     required Set<String> softFilters,
   }) {
     if (hardBlocks.isNotEmpty) return B04NutritionSafetyDisposition.hardBlock;
-    if (uncertain.isNotEmpty || nutrientUnavailable) {
+    if (uncertain.isNotEmpty ||
+        constraintEvidenceUnavailable ||
+        nutrientUnavailable) {
       return B04NutritionSafetyDisposition.unavailable;
     }
     if (softFilters.isNotEmpty) return B04NutritionSafetyDisposition.softFilter;
@@ -248,7 +262,13 @@ class B04NutritionSafetyFilter {
     final evidenceIds = <String>{};
     final rangeIds = <String>{};
     final boundaryByNutrient = <String, B04NutritionSafetyNutrientBoundary>{};
-    var structurallyInvalid = false;
+    var structurallyInvalid = _nutrientStructureIssues(
+      nutrientEvidence,
+    ).isNotEmpty;
+    if (structurallyInvalid) {
+      reasonCodes.add('structurally_invalid_nutrient_evidence');
+      missingEvidence.add('nutrient_structure');
+    }
     for (final boundary in boundaries) {
       if (boundaryByNutrient.containsKey(boundary.nutrientId)) {
         structurallyInvalid = true;
@@ -366,6 +386,110 @@ class B04NutritionSafetyFilter {
       rangeIds: rangeIds.toList(),
     );
   }
+
+  Set<String> _nutrientStructureIssues(NutrientAggregationResult evidence) {
+    final issues = <String>{};
+    final facts = evidence.facts;
+    if (facts.keys.any(
+      (key) => key.trim().isEmpty || facts[key]!.nutrientId != key,
+    )) {
+      issues.add('fact_identity');
+    }
+
+    final factIds = facts.keys.toSet();
+    final sourceIds = evidence.sourceLineage.keys.toSet();
+    final versionIds = evidence.factVersionLineage.keys.toSet();
+    if (!sourceIds.containsAll(factIds) ||
+        !factIds.containsAll(sourceIds) ||
+        evidence.sourceLineage.values.any((values) => values.isEmpty)) {
+      issues.add('source_lineage');
+    }
+    if (!versionIds.containsAll(factIds) ||
+        !factIds.containsAll(versionIds) ||
+        evidence.factVersionLineage.values.any((values) => values.isEmpty)) {
+      issues.add('fact_version_lineage');
+    }
+
+    final completeness = evidence.completeness;
+    final requested = completeness.requestedNutrientIds.toSet();
+    final available = completeness.availableNutrientIds.toSet();
+    final missing = completeness.missingNutrientIds.toSet();
+    final estimated = completeness.estimatedNutrientIds.toSet();
+    final notApplicable = completeness.notApplicableNutrientIds.toSet();
+    final partiallyKnown = completeness.partiallyKnownNutrientIds.toSet();
+    if (requested.isEmpty &&
+        completeness.state != NutrientCompletenessState.invalid) {
+      issues.add('completeness_request');
+    }
+    if (!requested.containsAll(available) ||
+        !requested.containsAll(missing) ||
+        !requested.containsAll(estimated) ||
+        !requested.containsAll(notApplicable) ||
+        !requested.containsAll(partiallyKnown) ||
+        _hasOverlappingCompletenessSets([available, missing, notApplicable])) {
+      issues.add('completeness_partition');
+    }
+
+    final expectedAvailable = <String>{};
+    final expectedMissing = <String>{};
+    final expectedEstimated = <String>{};
+    final expectedNotApplicable = <String>{};
+    final expectedPartiallyKnown = <String>{};
+    for (final id in requested) {
+      final fact = facts[id];
+      if (fact == null ||
+          fact.status == NutrientFactStatus.missing ||
+          !fact.isAvailable) {
+        if (fact?.status == NutrientFactStatus.notApplicable) {
+          expectedNotApplicable.add(id);
+        } else {
+          expectedMissing.add(id);
+        }
+        continue;
+      }
+      expectedAvailable.add(id);
+      if (fact.status == NutrientFactStatus.estimated) {
+        expectedEstimated.add(id);
+      }
+      if (fact.coverageIncomplete) {
+        expectedPartiallyKnown.add(id);
+        expectedMissing.add(id);
+      }
+    }
+    if (!_sameSet(available, expectedAvailable) ||
+        !_sameSet(missing, expectedMissing) ||
+        !_sameSet(estimated, expectedEstimated) ||
+        !_sameSet(notApplicable, expectedNotApplicable) ||
+        !_sameSet(partiallyKnown, expectedPartiallyKnown)) {
+      issues.add('completeness_facts');
+    }
+
+    final expectedState = requested.isEmpty
+        ? NutrientCompletenessState.invalid
+        : expectedAvailable.isEmpty &&
+              expectedNotApplicable.length == requested.length
+        ? NutrientCompletenessState.notApplicable
+        : expectedAvailable.isEmpty
+        ? NutrientCompletenessState.unknown
+        : expectedMissing.isNotEmpty || expectedPartiallyKnown.isNotEmpty
+        ? NutrientCompletenessState.partial
+        : NutrientCompletenessState.complete;
+    if (completeness.state != expectedState) {
+      issues.add('completeness_state');
+    }
+    return issues;
+  }
+
+  bool _hasOverlappingCompletenessSets(List<Set<String>> sets) {
+    final seen = <String>{};
+    for (final set in sets) {
+      if (set.any((id) => !seen.add(id))) return true;
+    }
+    return false;
+  }
+
+  bool _sameSet(Set<String> first, Set<String> second) =>
+      first.length == second.length && first.containsAll(second);
 }
 
 class _NutrientAssessment {

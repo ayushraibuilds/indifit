@@ -120,10 +120,7 @@ class B04NutritionSafetyConstraintContext {
 
   Map<String, dynamic> toRedactedMap() => {
     'constraint_id': constraintId,
-    'type': type.stableId,
-    'target_key': targetKey,
     'strictness': strictness.stableId,
-    if (severity != null) 'severity': severity,
     'cross_contact': crossContact,
   };
 }
@@ -270,6 +267,16 @@ class B04NutritionSafetyResult {
   bool get isLowRiskLoggingOnly =>
       disposition == B04NutritionSafetyDisposition.lowRiskLoggingOnly;
 
+  String? get constraintRuleVersion => constraintEvaluation?.ruleVersion;
+
+  int? get constraintTaxonomyVersion => constraintEvaluation?.taxonomyVersion;
+
+  DateTime? get constraintEvaluatedAtUtc =>
+      constraintEvaluation?.evaluatedAtUtc;
+
+  String? get constraintEvaluationFingerprint =>
+      constraintEvaluation?.fingerprint;
+
   /// Exact approved semantic text for the safety states. No-known-conflict is
   /// deliberately not phrased as safe or guaranteed.
   String get wording => switch (disposition) {
@@ -286,7 +293,6 @@ class B04NutritionSafetyResult {
   };
 
   Map<String, dynamic> toRedactedMap() => {
-    'user_id': userId,
     'subject_id': subjectId,
     'output': output.stableId,
     'disposition': disposition.stableId,
@@ -296,7 +302,7 @@ class B04NutritionSafetyResult {
     'policy_version': policyVersion,
     'reason_codes': reasonCodes,
     'evidence_ids': evidenceIds,
-    'missing_evidence': missingEvidence,
+    'missing_evidence_count': missingEvidence.length,
     'hard_block_constraint_ids': hardBlockConstraintIds,
     'soft_filter_constraint_ids': softFilterConstraintIds,
     'uncertain_constraint_ids': uncertainConstraintIds,
@@ -304,6 +310,15 @@ class B04NutritionSafetyResult {
     'constraint_contexts': constraintContexts
         .map((item) => item.toRedactedMap())
         .toList(),
+    if (constraintRuleVersion != null)
+      'constraint_rule_version': constraintRuleVersion,
+    if (constraintTaxonomyVersion != null)
+      'constraint_taxonomy_version': constraintTaxonomyVersion,
+    if (constraintEvaluatedAtUtc != null)
+      'constraint_evaluated_at_utc': constraintEvaluatedAtUtc!
+          .toIso8601String(),
+    if (constraintEvaluationFingerprint != null)
+      'constraint_evaluation_fingerprint': constraintEvaluationFingerprint,
     if (invalidEvidenceCode != null)
       'invalid_evidence_code': invalidEvidenceCode,
     'acknowledgement_requested': acknowledgementRequested,

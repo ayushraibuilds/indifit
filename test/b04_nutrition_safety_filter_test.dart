@@ -395,6 +395,124 @@ void main() {
   );
 
   test(
+    'structurally inconsistent nutrient evidence fails closed as unavailable',
+    () {
+      final malformed = NutrientAggregationResult(
+        facts: {
+          'energy': NutrientFact.known(
+            nutrientId: 'protein',
+            point: NutrientAmount(
+              value: QuantityAmount.fromString('20'),
+              unit: NutrientUnit.gram,
+            ),
+            basis: NutrientBasis(NutrientBasisKind.absolute),
+            source: NutrientSourceType.reviewedCatalogue,
+          ),
+        },
+        completeness: NutrientCompleteness(
+          state: NutrientCompletenessState.complete,
+          requestedNutrientIds: const ['energy'],
+          availableNutrientIds: const ['energy'],
+          missingNutrientIds: const [],
+          estimatedNutrientIds: const [],
+          notApplicableNutrientIds: const [],
+          partiallyKnownNutrientIds: const [],
+        ),
+        sourceLineage: const {
+          'energy': [NutrientSourceType.reviewedCatalogue],
+        },
+        factVersionLineage: const {
+          'energy': ['1'],
+        },
+      );
+
+      final result = filter.mapEvaluation(
+        evaluation: _noKnownEvaluation(),
+        output: B04NutritionSafetyOutput.eatNow,
+        nutrientEvidence: malformed,
+      );
+
+      expect(result.disposition, B04NutritionSafetyDisposition.unavailable);
+      expect(
+        result.reasonCodes,
+        contains('structurally_invalid_nutrient_evidence'),
+      );
+      expect(result.missingEvidence, contains('nutrient_structure'));
+    },
+  );
+
+  test(
+    'missing constraint evidence remains unavailable even if a result claims no-known conflict',
+    () {
+      final base = _noKnownEvaluation();
+      final inconsistent = NutritionConstraintEvaluationResult(
+        userId: base.userId,
+        subjectId: base.subjectId,
+        foodId: base.foodId,
+        recipeVersionId: base.recipeVersionId,
+        thaliId: base.thaliId,
+        outcome: base.outcome,
+        evaluations: base.evaluations,
+        missingEvidence: const ['food-1:allergen|peanut'],
+        provenanceSummary: base.provenanceSummary,
+        ruleVersion: base.ruleVersion,
+        taxonomyVersion: base.taxonomyVersion,
+        evaluatedAtUtc: base.evaluatedAtUtc,
+      );
+
+      final result = filter.mapEvaluation(
+        evaluation: inconsistent,
+        output: B04NutritionSafetyOutput.weeklyCoaching,
+      );
+
+      expect(result.disposition, B04NutritionSafetyDisposition.unavailable);
+      expect(result.isUnavailable, isTrue);
+      expect(result.reasonCodes, contains('missing_constraint_evidence'));
+    },
+  );
+
+  test(
+    'redacted output omits dietary targets while preserving B03 replay lineage',
+    () {
+      final constraint = _constraint(
+        id: 'constraint-1',
+        type: NutritionConstraintType.allergy,
+        target: _target(NutritionConstraintTargetType.allergen, 'peanut'),
+      );
+      final evaluation = _evaluate(
+        type: NutritionConstraintType.allergy,
+        constraintTarget: _target(
+          NutritionConstraintTargetType.allergen,
+          'peanut',
+        ),
+      );
+      final result = filter.mapEvaluation(
+        evaluation: evaluation,
+        constraints: [constraint],
+        output: B04NutritionSafetyOutput.eatNow,
+      );
+      final redacted = result.toRedactedMap();
+
+      expect(redacted.toString(), isNot(contains('peanut')));
+      expect(redacted, isNot(contains('user_id')));
+      expect(redacted['missing_evidence_count'], 1);
+      expect(redacted['constraint_rule_version'], evaluation.ruleVersion);
+      expect(
+        redacted['constraint_taxonomy_version'],
+        evaluation.taxonomyVersion,
+      );
+      expect(
+        redacted['constraint_evaluation_fingerprint'],
+        evaluation.fingerprint,
+      );
+      expect(
+        redacted['constraint_evaluated_at_utc'],
+        evaluation.evaluatedAtUtc.toIso8601String(),
+      );
+    },
+  );
+
+  test(
     'acknowledgement and override cannot change safety; logging stays separate',
     () {
       final evaluation = _evaluate(
