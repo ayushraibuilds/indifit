@@ -57062,6 +57062,1977 @@ class RecommendationFeedbackCompanion
   }
 }
 
+class $DashboardModulePreferencesTable extends DashboardModulePreferences
+    with
+        TableInfo<$DashboardModulePreferencesTable, DashboardModulePreference> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DashboardModulePreferencesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _moduleIdMeta = const VerificationMeta(
+    'moduleId',
+  );
+  @override
+  late final GeneratedColumn<String> moduleId = GeneratedColumn<String>(
+    'module_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ordinalMeta = const VerificationMeta(
+    'ordinal',
+  );
+  @override
+  late final GeneratedColumn<int> ordinal = GeneratedColumn<int>(
+    'ordinal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isVisibleMeta = const VerificationMeta(
+    'isVisible',
+  );
+  @override
+  late final GeneratedColumn<bool> isVisible = GeneratedColumn<bool>(
+    'is_visible',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_visible" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _isCollapsedMeta = const VerificationMeta(
+    'isCollapsed',
+  );
+  @override
+  late final GeneratedColumn<bool> isCollapsed = GeneratedColumn<bool>(
+    'is_collapsed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_collapsed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    moduleId,
+    ordinal,
+    isVisible,
+    isCollapsed,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'dashboard_module_preferences';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DashboardModulePreference> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('module_id')) {
+      context.handle(
+        _moduleIdMeta,
+        moduleId.isAcceptableOrUnknown(data['module_id']!, _moduleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_moduleIdMeta);
+    }
+    if (data.containsKey('ordinal')) {
+      context.handle(
+        _ordinalMeta,
+        ordinal.isAcceptableOrUnknown(data['ordinal']!, _ordinalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ordinalMeta);
+    }
+    if (data.containsKey('is_visible')) {
+      context.handle(
+        _isVisibleMeta,
+        isVisible.isAcceptableOrUnknown(data['is_visible']!, _isVisibleMeta),
+      );
+    }
+    if (data.containsKey('is_collapsed')) {
+      context.handle(
+        _isCollapsedMeta,
+        isCollapsed.isAcceptableOrUnknown(
+          data['is_collapsed']!,
+          _isCollapsedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, moduleId},
+  ];
+  @override
+  DashboardModulePreference map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DashboardModulePreference(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      moduleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}module_id'],
+      )!,
+      ordinal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ordinal'],
+      )!,
+      isVisible: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_visible'],
+      )!,
+      isCollapsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_collapsed'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $DashboardModulePreferencesTable createAlias(String alias) {
+    return $DashboardModulePreferencesTable(attachedDatabase, alias);
+  }
+}
+
+class DashboardModulePreference extends DataClass
+    implements Insertable<DashboardModulePreference> {
+  final String id;
+  final String userId;
+  final String moduleId;
+  final int ordinal;
+  final bool isVisible;
+  final bool isCollapsed;
+  final DateTime updatedAtUtc;
+  const DashboardModulePreference({
+    required this.id,
+    required this.userId,
+    required this.moduleId,
+    required this.ordinal,
+    required this.isVisible,
+    required this.isCollapsed,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['module_id'] = Variable<String>(moduleId);
+    map['ordinal'] = Variable<int>(ordinal);
+    map['is_visible'] = Variable<bool>(isVisible);
+    map['is_collapsed'] = Variable<bool>(isCollapsed);
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  DashboardModulePreferencesCompanion toCompanion(bool nullToAbsent) {
+    return DashboardModulePreferencesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      moduleId: Value(moduleId),
+      ordinal: Value(ordinal),
+      isVisible: Value(isVisible),
+      isCollapsed: Value(isCollapsed),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory DashboardModulePreference.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DashboardModulePreference(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      moduleId: serializer.fromJson<String>(json['moduleId']),
+      ordinal: serializer.fromJson<int>(json['ordinal']),
+      isVisible: serializer.fromJson<bool>(json['isVisible']),
+      isCollapsed: serializer.fromJson<bool>(json['isCollapsed']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'moduleId': serializer.toJson<String>(moduleId),
+      'ordinal': serializer.toJson<int>(ordinal),
+      'isVisible': serializer.toJson<bool>(isVisible),
+      'isCollapsed': serializer.toJson<bool>(isCollapsed),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  DashboardModulePreference copyWith({
+    String? id,
+    String? userId,
+    String? moduleId,
+    int? ordinal,
+    bool? isVisible,
+    bool? isCollapsed,
+    DateTime? updatedAtUtc,
+  }) => DashboardModulePreference(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    moduleId: moduleId ?? this.moduleId,
+    ordinal: ordinal ?? this.ordinal,
+    isVisible: isVisible ?? this.isVisible,
+    isCollapsed: isCollapsed ?? this.isCollapsed,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  DashboardModulePreference copyWithCompanion(
+    DashboardModulePreferencesCompanion data,
+  ) {
+    return DashboardModulePreference(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      moduleId: data.moduleId.present ? data.moduleId.value : this.moduleId,
+      ordinal: data.ordinal.present ? data.ordinal.value : this.ordinal,
+      isVisible: data.isVisible.present ? data.isVisible.value : this.isVisible,
+      isCollapsed: data.isCollapsed.present
+          ? data.isCollapsed.value
+          : this.isCollapsed,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DashboardModulePreference(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('moduleId: $moduleId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('isVisible: $isVisible, ')
+          ..write('isCollapsed: $isCollapsed, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    moduleId,
+    ordinal,
+    isVisible,
+    isCollapsed,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DashboardModulePreference &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.moduleId == this.moduleId &&
+          other.ordinal == this.ordinal &&
+          other.isVisible == this.isVisible &&
+          other.isCollapsed == this.isCollapsed &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class DashboardModulePreferencesCompanion
+    extends UpdateCompanion<DashboardModulePreference> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> moduleId;
+  final Value<int> ordinal;
+  final Value<bool> isVisible;
+  final Value<bool> isCollapsed;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const DashboardModulePreferencesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.moduleId = const Value.absent(),
+    this.ordinal = const Value.absent(),
+    this.isVisible = const Value.absent(),
+    this.isCollapsed = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DashboardModulePreferencesCompanion.insert({
+    required String id,
+    required String userId,
+    required String moduleId,
+    required int ordinal,
+    this.isVisible = const Value.absent(),
+    this.isCollapsed = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       moduleId = Value(moduleId),
+       ordinal = Value(ordinal);
+  static Insertable<DashboardModulePreference> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? moduleId,
+    Expression<int>? ordinal,
+    Expression<bool>? isVisible,
+    Expression<bool>? isCollapsed,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (moduleId != null) 'module_id': moduleId,
+      if (ordinal != null) 'ordinal': ordinal,
+      if (isVisible != null) 'is_visible': isVisible,
+      if (isCollapsed != null) 'is_collapsed': isCollapsed,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DashboardModulePreferencesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? moduleId,
+    Value<int>? ordinal,
+    Value<bool>? isVisible,
+    Value<bool>? isCollapsed,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return DashboardModulePreferencesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      moduleId: moduleId ?? this.moduleId,
+      ordinal: ordinal ?? this.ordinal,
+      isVisible: isVisible ?? this.isVisible,
+      isCollapsed: isCollapsed ?? this.isCollapsed,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (moduleId.present) {
+      map['module_id'] = Variable<String>(moduleId.value);
+    }
+    if (ordinal.present) {
+      map['ordinal'] = Variable<int>(ordinal.value);
+    }
+    if (isVisible.present) {
+      map['is_visible'] = Variable<bool>(isVisible.value);
+    }
+    if (isCollapsed.present) {
+      map['is_collapsed'] = Variable<bool>(isCollapsed.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DashboardModulePreferencesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('moduleId: $moduleId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('isVisible: $isVisible, ')
+          ..write('isCollapsed: $isCollapsed, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EducationContentProgressTable extends EducationContentProgress
+    with
+        TableInfo<$EducationContentProgressTable, EducationContentProgressRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EducationContentProgressTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentIdMeta = const VerificationMeta(
+    'contentId',
+  );
+  @override
+  late final GeneratedColumn<String> contentId = GeneratedColumn<String>(
+    'content_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentVersionMeta = const VerificationMeta(
+    'contentVersion',
+  );
+  @override
+  late final GeneratedColumn<String> contentVersion = GeneratedColumn<String>(
+    'content_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    contentId,
+    contentVersion,
+    state,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'education_content_progress';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EducationContentProgressRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('content_id')) {
+      context.handle(
+        _contentIdMeta,
+        contentId.isAcceptableOrUnknown(data['content_id']!, _contentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentIdMeta);
+    }
+    if (data.containsKey('content_version')) {
+      context.handle(
+        _contentVersionMeta,
+        contentVersion.isAcceptableOrUnknown(
+          data['content_version']!,
+          _contentVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_contentVersionMeta);
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stateMeta);
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, contentId, contentVersion},
+  ];
+  @override
+  EducationContentProgressRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EducationContentProgressRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      contentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_id'],
+      )!,
+      contentVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_version'],
+      )!,
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $EducationContentProgressTable createAlias(String alias) {
+    return $EducationContentProgressTable(attachedDatabase, alias);
+  }
+}
+
+class EducationContentProgressRow extends DataClass
+    implements Insertable<EducationContentProgressRow> {
+  final String id;
+  final String userId;
+  final String contentId;
+  final String contentVersion;
+  final String state;
+  final DateTime updatedAtUtc;
+  const EducationContentProgressRow({
+    required this.id,
+    required this.userId,
+    required this.contentId,
+    required this.contentVersion,
+    required this.state,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['content_id'] = Variable<String>(contentId);
+    map['content_version'] = Variable<String>(contentVersion);
+    map['state'] = Variable<String>(state);
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  EducationContentProgressCompanion toCompanion(bool nullToAbsent) {
+    return EducationContentProgressCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      contentId: Value(contentId),
+      contentVersion: Value(contentVersion),
+      state: Value(state),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory EducationContentProgressRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EducationContentProgressRow(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      contentId: serializer.fromJson<String>(json['contentId']),
+      contentVersion: serializer.fromJson<String>(json['contentVersion']),
+      state: serializer.fromJson<String>(json['state']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'contentId': serializer.toJson<String>(contentId),
+      'contentVersion': serializer.toJson<String>(contentVersion),
+      'state': serializer.toJson<String>(state),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  EducationContentProgressRow copyWith({
+    String? id,
+    String? userId,
+    String? contentId,
+    String? contentVersion,
+    String? state,
+    DateTime? updatedAtUtc,
+  }) => EducationContentProgressRow(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    contentId: contentId ?? this.contentId,
+    contentVersion: contentVersion ?? this.contentVersion,
+    state: state ?? this.state,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  EducationContentProgressRow copyWithCompanion(
+    EducationContentProgressCompanion data,
+  ) {
+    return EducationContentProgressRow(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      contentId: data.contentId.present ? data.contentId.value : this.contentId,
+      contentVersion: data.contentVersion.present
+          ? data.contentVersion.value
+          : this.contentVersion,
+      state: data.state.present ? data.state.value : this.state,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EducationContentProgressRow(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('contentId: $contentId, ')
+          ..write('contentVersion: $contentVersion, ')
+          ..write('state: $state, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, userId, contentId, contentVersion, state, updatedAtUtc);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EducationContentProgressRow &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.contentId == this.contentId &&
+          other.contentVersion == this.contentVersion &&
+          other.state == this.state &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class EducationContentProgressCompanion
+    extends UpdateCompanion<EducationContentProgressRow> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> contentId;
+  final Value<String> contentVersion;
+  final Value<String> state;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const EducationContentProgressCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.contentId = const Value.absent(),
+    this.contentVersion = const Value.absent(),
+    this.state = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EducationContentProgressCompanion.insert({
+    required String id,
+    required String userId,
+    required String contentId,
+    required String contentVersion,
+    required String state,
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       contentId = Value(contentId),
+       contentVersion = Value(contentVersion),
+       state = Value(state);
+  static Insertable<EducationContentProgressRow> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? contentId,
+    Expression<String>? contentVersion,
+    Expression<String>? state,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (contentId != null) 'content_id': contentId,
+      if (contentVersion != null) 'content_version': contentVersion,
+      if (state != null) 'state': state,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EducationContentProgressCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? contentId,
+    Value<String>? contentVersion,
+    Value<String>? state,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return EducationContentProgressCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      contentId: contentId ?? this.contentId,
+      contentVersion: contentVersion ?? this.contentVersion,
+      state: state ?? this.state,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (contentId.present) {
+      map['content_id'] = Variable<String>(contentId.value);
+    }
+    if (contentVersion.present) {
+      map['content_version'] = Variable<String>(contentVersion.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EducationContentProgressCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('contentId: $contentId, ')
+          ..write('contentVersion: $contentVersion, ')
+          ..write('state: $state, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MediaPackPreferencesTable extends MediaPackPreferences
+    with TableInfo<$MediaPackPreferencesTable, MediaPackPreference> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MediaPackPreferencesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packIdMeta = const VerificationMeta('packId');
+  @override
+  late final GeneratedColumn<String> packId = GeneratedColumn<String>(
+    'pack_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _manifestIdentityMeta = const VerificationMeta(
+    'manifestIdentity',
+  );
+  @override
+  late final GeneratedColumn<String> manifestIdentity = GeneratedColumn<String>(
+    'manifest_identity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastKnownInstalledVersionMeta =
+      const VerificationMeta('lastKnownInstalledVersion');
+  @override
+  late final GeneratedColumn<String> lastKnownInstalledVersion =
+      GeneratedColumn<String>(
+        'last_known_installed_version',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _downloadPreferenceMeta =
+      const VerificationMeta('downloadPreference');
+  @override
+  late final GeneratedColumn<String> downloadPreference =
+      GeneratedColumn<String>(
+        'download_preference',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('manual'),
+      );
+  static const VerificationMeta _deletionChoiceMeta = const VerificationMeta(
+    'deletionChoice',
+  );
+  @override
+  late final GeneratedColumn<String> deletionChoice = GeneratedColumn<String>(
+    'deletion_choice',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _contentAcknowledgementMeta =
+      const VerificationMeta('contentAcknowledgement');
+  @override
+  late final GeneratedColumn<String> contentAcknowledgement =
+      GeneratedColumn<String>(
+        'content_acknowledgement',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    packId,
+    manifestIdentity,
+    lastKnownInstalledVersion,
+    downloadPreference,
+    deletionChoice,
+    contentAcknowledgement,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'media_pack_preferences';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MediaPackPreference> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('pack_id')) {
+      context.handle(
+        _packIdMeta,
+        packId.isAcceptableOrUnknown(data['pack_id']!, _packIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_packIdMeta);
+    }
+    if (data.containsKey('manifest_identity')) {
+      context.handle(
+        _manifestIdentityMeta,
+        manifestIdentity.isAcceptableOrUnknown(
+          data['manifest_identity']!,
+          _manifestIdentityMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_manifestIdentityMeta);
+    }
+    if (data.containsKey('last_known_installed_version')) {
+      context.handle(
+        _lastKnownInstalledVersionMeta,
+        lastKnownInstalledVersion.isAcceptableOrUnknown(
+          data['last_known_installed_version']!,
+          _lastKnownInstalledVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('download_preference')) {
+      context.handle(
+        _downloadPreferenceMeta,
+        downloadPreference.isAcceptableOrUnknown(
+          data['download_preference']!,
+          _downloadPreferenceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deletion_choice')) {
+      context.handle(
+        _deletionChoiceMeta,
+        deletionChoice.isAcceptableOrUnknown(
+          data['deletion_choice']!,
+          _deletionChoiceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('content_acknowledgement')) {
+      context.handle(
+        _contentAcknowledgementMeta,
+        contentAcknowledgement.isAcceptableOrUnknown(
+          data['content_acknowledgement']!,
+          _contentAcknowledgementMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, packId},
+  ];
+  @override
+  MediaPackPreference map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MediaPackPreference(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      packId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pack_id'],
+      )!,
+      manifestIdentity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manifest_identity'],
+      )!,
+      lastKnownInstalledVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_known_installed_version'],
+      ),
+      downloadPreference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}download_preference'],
+      )!,
+      deletionChoice: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deletion_choice'],
+      ),
+      contentAcknowledgement: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_acknowledgement'],
+      ),
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $MediaPackPreferencesTable createAlias(String alias) {
+    return $MediaPackPreferencesTable(attachedDatabase, alias);
+  }
+}
+
+class MediaPackPreference extends DataClass
+    implements Insertable<MediaPackPreference> {
+  final String id;
+  final String userId;
+  final String packId;
+  final String manifestIdentity;
+  final String? lastKnownInstalledVersion;
+  final String downloadPreference;
+  final String? deletionChoice;
+  final String? contentAcknowledgement;
+  final DateTime updatedAtUtc;
+  const MediaPackPreference({
+    required this.id,
+    required this.userId,
+    required this.packId,
+    required this.manifestIdentity,
+    this.lastKnownInstalledVersion,
+    required this.downloadPreference,
+    this.deletionChoice,
+    this.contentAcknowledgement,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['pack_id'] = Variable<String>(packId);
+    map['manifest_identity'] = Variable<String>(manifestIdentity);
+    if (!nullToAbsent || lastKnownInstalledVersion != null) {
+      map['last_known_installed_version'] = Variable<String>(
+        lastKnownInstalledVersion,
+      );
+    }
+    map['download_preference'] = Variable<String>(downloadPreference);
+    if (!nullToAbsent || deletionChoice != null) {
+      map['deletion_choice'] = Variable<String>(deletionChoice);
+    }
+    if (!nullToAbsent || contentAcknowledgement != null) {
+      map['content_acknowledgement'] = Variable<String>(contentAcknowledgement);
+    }
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  MediaPackPreferencesCompanion toCompanion(bool nullToAbsent) {
+    return MediaPackPreferencesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      packId: Value(packId),
+      manifestIdentity: Value(manifestIdentity),
+      lastKnownInstalledVersion:
+          lastKnownInstalledVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastKnownInstalledVersion),
+      downloadPreference: Value(downloadPreference),
+      deletionChoice: deletionChoice == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletionChoice),
+      contentAcknowledgement: contentAcknowledgement == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contentAcknowledgement),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory MediaPackPreference.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MediaPackPreference(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      packId: serializer.fromJson<String>(json['packId']),
+      manifestIdentity: serializer.fromJson<String>(json['manifestIdentity']),
+      lastKnownInstalledVersion: serializer.fromJson<String?>(
+        json['lastKnownInstalledVersion'],
+      ),
+      downloadPreference: serializer.fromJson<String>(
+        json['downloadPreference'],
+      ),
+      deletionChoice: serializer.fromJson<String?>(json['deletionChoice']),
+      contentAcknowledgement: serializer.fromJson<String?>(
+        json['contentAcknowledgement'],
+      ),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'packId': serializer.toJson<String>(packId),
+      'manifestIdentity': serializer.toJson<String>(manifestIdentity),
+      'lastKnownInstalledVersion': serializer.toJson<String?>(
+        lastKnownInstalledVersion,
+      ),
+      'downloadPreference': serializer.toJson<String>(downloadPreference),
+      'deletionChoice': serializer.toJson<String?>(deletionChoice),
+      'contentAcknowledgement': serializer.toJson<String?>(
+        contentAcknowledgement,
+      ),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  MediaPackPreference copyWith({
+    String? id,
+    String? userId,
+    String? packId,
+    String? manifestIdentity,
+    Value<String?> lastKnownInstalledVersion = const Value.absent(),
+    String? downloadPreference,
+    Value<String?> deletionChoice = const Value.absent(),
+    Value<String?> contentAcknowledgement = const Value.absent(),
+    DateTime? updatedAtUtc,
+  }) => MediaPackPreference(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    packId: packId ?? this.packId,
+    manifestIdentity: manifestIdentity ?? this.manifestIdentity,
+    lastKnownInstalledVersion: lastKnownInstalledVersion.present
+        ? lastKnownInstalledVersion.value
+        : this.lastKnownInstalledVersion,
+    downloadPreference: downloadPreference ?? this.downloadPreference,
+    deletionChoice: deletionChoice.present
+        ? deletionChoice.value
+        : this.deletionChoice,
+    contentAcknowledgement: contentAcknowledgement.present
+        ? contentAcknowledgement.value
+        : this.contentAcknowledgement,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  MediaPackPreference copyWithCompanion(MediaPackPreferencesCompanion data) {
+    return MediaPackPreference(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      packId: data.packId.present ? data.packId.value : this.packId,
+      manifestIdentity: data.manifestIdentity.present
+          ? data.manifestIdentity.value
+          : this.manifestIdentity,
+      lastKnownInstalledVersion: data.lastKnownInstalledVersion.present
+          ? data.lastKnownInstalledVersion.value
+          : this.lastKnownInstalledVersion,
+      downloadPreference: data.downloadPreference.present
+          ? data.downloadPreference.value
+          : this.downloadPreference,
+      deletionChoice: data.deletionChoice.present
+          ? data.deletionChoice.value
+          : this.deletionChoice,
+      contentAcknowledgement: data.contentAcknowledgement.present
+          ? data.contentAcknowledgement.value
+          : this.contentAcknowledgement,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaPackPreference(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('packId: $packId, ')
+          ..write('manifestIdentity: $manifestIdentity, ')
+          ..write('lastKnownInstalledVersion: $lastKnownInstalledVersion, ')
+          ..write('downloadPreference: $downloadPreference, ')
+          ..write('deletionChoice: $deletionChoice, ')
+          ..write('contentAcknowledgement: $contentAcknowledgement, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    packId,
+    manifestIdentity,
+    lastKnownInstalledVersion,
+    downloadPreference,
+    deletionChoice,
+    contentAcknowledgement,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MediaPackPreference &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.packId == this.packId &&
+          other.manifestIdentity == this.manifestIdentity &&
+          other.lastKnownInstalledVersion == this.lastKnownInstalledVersion &&
+          other.downloadPreference == this.downloadPreference &&
+          other.deletionChoice == this.deletionChoice &&
+          other.contentAcknowledgement == this.contentAcknowledgement &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class MediaPackPreferencesCompanion
+    extends UpdateCompanion<MediaPackPreference> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> packId;
+  final Value<String> manifestIdentity;
+  final Value<String?> lastKnownInstalledVersion;
+  final Value<String> downloadPreference;
+  final Value<String?> deletionChoice;
+  final Value<String?> contentAcknowledgement;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const MediaPackPreferencesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.packId = const Value.absent(),
+    this.manifestIdentity = const Value.absent(),
+    this.lastKnownInstalledVersion = const Value.absent(),
+    this.downloadPreference = const Value.absent(),
+    this.deletionChoice = const Value.absent(),
+    this.contentAcknowledgement = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MediaPackPreferencesCompanion.insert({
+    required String id,
+    required String userId,
+    required String packId,
+    required String manifestIdentity,
+    this.lastKnownInstalledVersion = const Value.absent(),
+    this.downloadPreference = const Value.absent(),
+    this.deletionChoice = const Value.absent(),
+    this.contentAcknowledgement = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       packId = Value(packId),
+       manifestIdentity = Value(manifestIdentity);
+  static Insertable<MediaPackPreference> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? packId,
+    Expression<String>? manifestIdentity,
+    Expression<String>? lastKnownInstalledVersion,
+    Expression<String>? downloadPreference,
+    Expression<String>? deletionChoice,
+    Expression<String>? contentAcknowledgement,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (packId != null) 'pack_id': packId,
+      if (manifestIdentity != null) 'manifest_identity': manifestIdentity,
+      if (lastKnownInstalledVersion != null)
+        'last_known_installed_version': lastKnownInstalledVersion,
+      if (downloadPreference != null) 'download_preference': downloadPreference,
+      if (deletionChoice != null) 'deletion_choice': deletionChoice,
+      if (contentAcknowledgement != null)
+        'content_acknowledgement': contentAcknowledgement,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MediaPackPreferencesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? packId,
+    Value<String>? manifestIdentity,
+    Value<String?>? lastKnownInstalledVersion,
+    Value<String>? downloadPreference,
+    Value<String?>? deletionChoice,
+    Value<String?>? contentAcknowledgement,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return MediaPackPreferencesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      packId: packId ?? this.packId,
+      manifestIdentity: manifestIdentity ?? this.manifestIdentity,
+      lastKnownInstalledVersion:
+          lastKnownInstalledVersion ?? this.lastKnownInstalledVersion,
+      downloadPreference: downloadPreference ?? this.downloadPreference,
+      deletionChoice: deletionChoice ?? this.deletionChoice,
+      contentAcknowledgement:
+          contentAcknowledgement ?? this.contentAcknowledgement,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (packId.present) {
+      map['pack_id'] = Variable<String>(packId.value);
+    }
+    if (manifestIdentity.present) {
+      map['manifest_identity'] = Variable<String>(manifestIdentity.value);
+    }
+    if (lastKnownInstalledVersion.present) {
+      map['last_known_installed_version'] = Variable<String>(
+        lastKnownInstalledVersion.value,
+      );
+    }
+    if (downloadPreference.present) {
+      map['download_preference'] = Variable<String>(downloadPreference.value);
+    }
+    if (deletionChoice.present) {
+      map['deletion_choice'] = Variable<String>(deletionChoice.value);
+    }
+    if (contentAcknowledgement.present) {
+      map['content_acknowledgement'] = Variable<String>(
+        contentAcknowledgement.value,
+      );
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaPackPreferencesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('packId: $packId, ')
+          ..write('manifestIdentity: $manifestIdentity, ')
+          ..write('lastKnownInstalledVersion: $lastKnownInstalledVersion, ')
+          ..write('downloadPreference: $downloadPreference, ')
+          ..write('deletionChoice: $deletionChoice, ')
+          ..write('contentAcknowledgement: $contentAcknowledgement, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $WorkoutPlaylistPreferencesTable extends WorkoutPlaylistPreferences
+    with
+        TableInfo<$WorkoutPlaylistPreferencesTable, WorkoutPlaylistPreference> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WorkoutPlaylistPreferencesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _providerIdMeta = const VerificationMeta(
+    'providerId',
+  );
+  @override
+  late final GeneratedColumn<String> providerId = GeneratedColumn<String>(
+    'provider_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _playlistReferenceMeta = const VerificationMeta(
+    'playlistReference',
+  );
+  @override
+  late final GeneratedColumn<String> playlistReference =
+      GeneratedColumn<String>(
+        'playlist_reference',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _displayLabelMeta = const VerificationMeta(
+    'displayLabel',
+  );
+  @override
+  late final GeneratedColumn<String> displayLabel = GeneratedColumn<String>(
+    'display_label',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    providerId,
+    playlistReference,
+    displayLabel,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'workout_playlist_preferences';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WorkoutPlaylistPreference> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('provider_id')) {
+      context.handle(
+        _providerIdMeta,
+        providerId.isAcceptableOrUnknown(data['provider_id']!, _providerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_providerIdMeta);
+    }
+    if (data.containsKey('playlist_reference')) {
+      context.handle(
+        _playlistReferenceMeta,
+        playlistReference.isAcceptableOrUnknown(
+          data['playlist_reference']!,
+          _playlistReferenceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_playlistReferenceMeta);
+    }
+    if (data.containsKey('display_label')) {
+      context.handle(
+        _displayLabelMeta,
+        displayLabel.isAcceptableOrUnknown(
+          data['display_label']!,
+          _displayLabelMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId},
+  ];
+  @override
+  WorkoutPlaylistPreference map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WorkoutPlaylistPreference(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      providerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider_id'],
+      )!,
+      playlistReference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}playlist_reference'],
+      )!,
+      displayLabel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_label'],
+      ),
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $WorkoutPlaylistPreferencesTable createAlias(String alias) {
+    return $WorkoutPlaylistPreferencesTable(attachedDatabase, alias);
+  }
+}
+
+class WorkoutPlaylistPreference extends DataClass
+    implements Insertable<WorkoutPlaylistPreference> {
+  final String id;
+  final String userId;
+  final String providerId;
+  final String playlistReference;
+  final String? displayLabel;
+  final DateTime updatedAtUtc;
+  const WorkoutPlaylistPreference({
+    required this.id,
+    required this.userId,
+    required this.providerId,
+    required this.playlistReference,
+    this.displayLabel,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['provider_id'] = Variable<String>(providerId);
+    map['playlist_reference'] = Variable<String>(playlistReference);
+    if (!nullToAbsent || displayLabel != null) {
+      map['display_label'] = Variable<String>(displayLabel);
+    }
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  WorkoutPlaylistPreferencesCompanion toCompanion(bool nullToAbsent) {
+    return WorkoutPlaylistPreferencesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      providerId: Value(providerId),
+      playlistReference: Value(playlistReference),
+      displayLabel: displayLabel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(displayLabel),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory WorkoutPlaylistPreference.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WorkoutPlaylistPreference(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      providerId: serializer.fromJson<String>(json['providerId']),
+      playlistReference: serializer.fromJson<String>(json['playlistReference']),
+      displayLabel: serializer.fromJson<String?>(json['displayLabel']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'providerId': serializer.toJson<String>(providerId),
+      'playlistReference': serializer.toJson<String>(playlistReference),
+      'displayLabel': serializer.toJson<String?>(displayLabel),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  WorkoutPlaylistPreference copyWith({
+    String? id,
+    String? userId,
+    String? providerId,
+    String? playlistReference,
+    Value<String?> displayLabel = const Value.absent(),
+    DateTime? updatedAtUtc,
+  }) => WorkoutPlaylistPreference(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    providerId: providerId ?? this.providerId,
+    playlistReference: playlistReference ?? this.playlistReference,
+    displayLabel: displayLabel.present ? displayLabel.value : this.displayLabel,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  WorkoutPlaylistPreference copyWithCompanion(
+    WorkoutPlaylistPreferencesCompanion data,
+  ) {
+    return WorkoutPlaylistPreference(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      providerId: data.providerId.present
+          ? data.providerId.value
+          : this.providerId,
+      playlistReference: data.playlistReference.present
+          ? data.playlistReference.value
+          : this.playlistReference,
+      displayLabel: data.displayLabel.present
+          ? data.displayLabel.value
+          : this.displayLabel,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkoutPlaylistPreference(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('providerId: $providerId, ')
+          ..write('playlistReference: $playlistReference, ')
+          ..write('displayLabel: $displayLabel, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    providerId,
+    playlistReference,
+    displayLabel,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WorkoutPlaylistPreference &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.providerId == this.providerId &&
+          other.playlistReference == this.playlistReference &&
+          other.displayLabel == this.displayLabel &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class WorkoutPlaylistPreferencesCompanion
+    extends UpdateCompanion<WorkoutPlaylistPreference> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> providerId;
+  final Value<String> playlistReference;
+  final Value<String?> displayLabel;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const WorkoutPlaylistPreferencesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.providerId = const Value.absent(),
+    this.playlistReference = const Value.absent(),
+    this.displayLabel = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WorkoutPlaylistPreferencesCompanion.insert({
+    required String id,
+    required String userId,
+    required String providerId,
+    required String playlistReference,
+    this.displayLabel = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       providerId = Value(providerId),
+       playlistReference = Value(playlistReference);
+  static Insertable<WorkoutPlaylistPreference> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? providerId,
+    Expression<String>? playlistReference,
+    Expression<String>? displayLabel,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (providerId != null) 'provider_id': providerId,
+      if (playlistReference != null) 'playlist_reference': playlistReference,
+      if (displayLabel != null) 'display_label': displayLabel,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WorkoutPlaylistPreferencesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? providerId,
+    Value<String>? playlistReference,
+    Value<String?>? displayLabel,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return WorkoutPlaylistPreferencesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      providerId: providerId ?? this.providerId,
+      playlistReference: playlistReference ?? this.playlistReference,
+      displayLabel: displayLabel ?? this.displayLabel,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (providerId.present) {
+      map['provider_id'] = Variable<String>(providerId.value);
+    }
+    if (playlistReference.present) {
+      map['playlist_reference'] = Variable<String>(playlistReference.value);
+    }
+    if (displayLabel.present) {
+      map['display_label'] = Variable<String>(displayLabel.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkoutPlaylistPreferencesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('providerId: $providerId, ')
+          ..write('playlistReference: $playlistReference, ')
+          ..write('displayLabel: $displayLabel, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -57231,6 +59202,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   coachingEligibilityEvaluations = $CoachingEligibilityEvaluationsTable(this);
   late final $RecommendationFeedbackTable recommendationFeedback =
       $RecommendationFeedbackTable(this);
+  late final $DashboardModulePreferencesTable dashboardModulePreferences =
+      $DashboardModulePreferencesTable(this);
+  late final $EducationContentProgressTable educationContentProgress =
+      $EducationContentProgressTable(this);
+  late final $MediaPackPreferencesTable mediaPackPreferences =
+      $MediaPackPreferencesTable(this);
+  late final $WorkoutPlaylistPreferencesTable workoutPlaylistPreferences =
+      $WorkoutPlaylistPreferencesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -57320,6 +59299,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     recommendationEvidence,
     coachingEligibilityEvaluations,
     recommendationFeedback,
+    dashboardModulePreferences,
+    educationContentProgress,
+    mediaPackPreferences,
+    workoutPlaylistPreferences,
   ];
 }
 
@@ -83160,6 +85143,741 @@ class $$RecommendationFeedbackTableOrderingComposer
   }
 }
 
+typedef $$DashboardModulePreferencesTableCreateCompanionBuilder =
+    DashboardModulePreferencesCompanion Function({
+      required String id,
+      required String userId,
+      required String moduleId,
+      required int ordinal,
+      Value<bool> isVisible,
+      Value<bool> isCollapsed,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$DashboardModulePreferencesTableUpdateCompanionBuilder =
+    DashboardModulePreferencesCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> moduleId,
+      Value<int> ordinal,
+      Value<bool> isVisible,
+      Value<bool> isCollapsed,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$DashboardModulePreferencesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DashboardModulePreferencesTable,
+          DashboardModulePreference,
+          $$DashboardModulePreferencesTableFilterComposer,
+          $$DashboardModulePreferencesTableOrderingComposer,
+          $$DashboardModulePreferencesTableCreateCompanionBuilder,
+          $$DashboardModulePreferencesTableUpdateCompanionBuilder
+        > {
+  $$DashboardModulePreferencesTableTableManager(
+    _$AppDatabase db,
+    $DashboardModulePreferencesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$DashboardModulePreferencesTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$DashboardModulePreferencesTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> moduleId = const Value.absent(),
+                Value<int> ordinal = const Value.absent(),
+                Value<bool> isVisible = const Value.absent(),
+                Value<bool> isCollapsed = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DashboardModulePreferencesCompanion(
+                id: id,
+                userId: userId,
+                moduleId: moduleId,
+                ordinal: ordinal,
+                isVisible: isVisible,
+                isCollapsed: isCollapsed,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String moduleId,
+                required int ordinal,
+                Value<bool> isVisible = const Value.absent(),
+                Value<bool> isCollapsed = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DashboardModulePreferencesCompanion.insert(
+                id: id,
+                userId: userId,
+                moduleId: moduleId,
+                ordinal: ordinal,
+                isVisible: isVisible,
+                isCollapsed: isCollapsed,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$DashboardModulePreferencesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $DashboardModulePreferencesTable> {
+  $$DashboardModulePreferencesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get moduleId => $state.composableBuilder(
+    column: $state.table.moduleId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get ordinal => $state.composableBuilder(
+    column: $state.table.ordinal,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get isVisible => $state.composableBuilder(
+    column: $state.table.isVisible,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get isCollapsed => $state.composableBuilder(
+    column: $state.table.isCollapsed,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+}
+
+class $$DashboardModulePreferencesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $DashboardModulePreferencesTable> {
+  $$DashboardModulePreferencesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get moduleId => $state.composableBuilder(
+    column: $state.table.moduleId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get ordinal => $state.composableBuilder(
+    column: $state.table.ordinal,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get isVisible => $state.composableBuilder(
+    column: $state.table.isVisible,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get isCollapsed => $state.composableBuilder(
+    column: $state.table.isCollapsed,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$EducationContentProgressTableCreateCompanionBuilder =
+    EducationContentProgressCompanion Function({
+      required String id,
+      required String userId,
+      required String contentId,
+      required String contentVersion,
+      required String state,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$EducationContentProgressTableUpdateCompanionBuilder =
+    EducationContentProgressCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> contentId,
+      Value<String> contentVersion,
+      Value<String> state,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$EducationContentProgressTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EducationContentProgressTable,
+          EducationContentProgressRow,
+          $$EducationContentProgressTableFilterComposer,
+          $$EducationContentProgressTableOrderingComposer,
+          $$EducationContentProgressTableCreateCompanionBuilder,
+          $$EducationContentProgressTableUpdateCompanionBuilder
+        > {
+  $$EducationContentProgressTableTableManager(
+    _$AppDatabase db,
+    $EducationContentProgressTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$EducationContentProgressTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$EducationContentProgressTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> contentId = const Value.absent(),
+                Value<String> contentVersion = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EducationContentProgressCompanion(
+                id: id,
+                userId: userId,
+                contentId: contentId,
+                contentVersion: contentVersion,
+                state: state,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String contentId,
+                required String contentVersion,
+                required String state,
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EducationContentProgressCompanion.insert(
+                id: id,
+                userId: userId,
+                contentId: contentId,
+                contentVersion: contentVersion,
+                state: state,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$EducationContentProgressTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $EducationContentProgressTable> {
+  $$EducationContentProgressTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get contentId => $state.composableBuilder(
+    column: $state.table.contentId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get contentVersion => $state.composableBuilder(
+    column: $state.table.contentVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get state => $state.composableBuilder(
+    column: $state.table.state,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+}
+
+class $$EducationContentProgressTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $EducationContentProgressTable> {
+  $$EducationContentProgressTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get contentId => $state.composableBuilder(
+    column: $state.table.contentId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get contentVersion => $state.composableBuilder(
+    column: $state.table.contentVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get state => $state.composableBuilder(
+    column: $state.table.state,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$MediaPackPreferencesTableCreateCompanionBuilder =
+    MediaPackPreferencesCompanion Function({
+      required String id,
+      required String userId,
+      required String packId,
+      required String manifestIdentity,
+      Value<String?> lastKnownInstalledVersion,
+      Value<String> downloadPreference,
+      Value<String?> deletionChoice,
+      Value<String?> contentAcknowledgement,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$MediaPackPreferencesTableUpdateCompanionBuilder =
+    MediaPackPreferencesCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> packId,
+      Value<String> manifestIdentity,
+      Value<String?> lastKnownInstalledVersion,
+      Value<String> downloadPreference,
+      Value<String?> deletionChoice,
+      Value<String?> contentAcknowledgement,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$MediaPackPreferencesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MediaPackPreferencesTable,
+          MediaPackPreference,
+          $$MediaPackPreferencesTableFilterComposer,
+          $$MediaPackPreferencesTableOrderingComposer,
+          $$MediaPackPreferencesTableCreateCompanionBuilder,
+          $$MediaPackPreferencesTableUpdateCompanionBuilder
+        > {
+  $$MediaPackPreferencesTableTableManager(
+    _$AppDatabase db,
+    $MediaPackPreferencesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$MediaPackPreferencesTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$MediaPackPreferencesTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> packId = const Value.absent(),
+                Value<String> manifestIdentity = const Value.absent(),
+                Value<String?> lastKnownInstalledVersion = const Value.absent(),
+                Value<String> downloadPreference = const Value.absent(),
+                Value<String?> deletionChoice = const Value.absent(),
+                Value<String?> contentAcknowledgement = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MediaPackPreferencesCompanion(
+                id: id,
+                userId: userId,
+                packId: packId,
+                manifestIdentity: manifestIdentity,
+                lastKnownInstalledVersion: lastKnownInstalledVersion,
+                downloadPreference: downloadPreference,
+                deletionChoice: deletionChoice,
+                contentAcknowledgement: contentAcknowledgement,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String packId,
+                required String manifestIdentity,
+                Value<String?> lastKnownInstalledVersion = const Value.absent(),
+                Value<String> downloadPreference = const Value.absent(),
+                Value<String?> deletionChoice = const Value.absent(),
+                Value<String?> contentAcknowledgement = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MediaPackPreferencesCompanion.insert(
+                id: id,
+                userId: userId,
+                packId: packId,
+                manifestIdentity: manifestIdentity,
+                lastKnownInstalledVersion: lastKnownInstalledVersion,
+                downloadPreference: downloadPreference,
+                deletionChoice: deletionChoice,
+                contentAcknowledgement: contentAcknowledgement,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$MediaPackPreferencesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $MediaPackPreferencesTable> {
+  $$MediaPackPreferencesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get packId => $state.composableBuilder(
+    column: $state.table.packId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get manifestIdentity => $state.composableBuilder(
+    column: $state.table.manifestIdentity,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get lastKnownInstalledVersion =>
+      $state.composableBuilder(
+        column: $state.table.lastKnownInstalledVersion,
+        builder: (column, joinBuilders) =>
+            ColumnFilters(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnFilters<String> get downloadPreference => $state.composableBuilder(
+    column: $state.table.downloadPreference,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get deletionChoice => $state.composableBuilder(
+    column: $state.table.deletionChoice,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get contentAcknowledgement => $state.composableBuilder(
+    column: $state.table.contentAcknowledgement,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+}
+
+class $$MediaPackPreferencesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $MediaPackPreferencesTable> {
+  $$MediaPackPreferencesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get packId => $state.composableBuilder(
+    column: $state.table.packId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get manifestIdentity => $state.composableBuilder(
+    column: $state.table.manifestIdentity,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get lastKnownInstalledVersion =>
+      $state.composableBuilder(
+        column: $state.table.lastKnownInstalledVersion,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<String> get downloadPreference => $state.composableBuilder(
+    column: $state.table.downloadPreference,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get deletionChoice => $state.composableBuilder(
+    column: $state.table.deletionChoice,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get contentAcknowledgement =>
+      $state.composableBuilder(
+        column: $state.table.contentAcknowledgement,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$WorkoutPlaylistPreferencesTableCreateCompanionBuilder =
+    WorkoutPlaylistPreferencesCompanion Function({
+      required String id,
+      required String userId,
+      required String providerId,
+      required String playlistReference,
+      Value<String?> displayLabel,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$WorkoutPlaylistPreferencesTableUpdateCompanionBuilder =
+    WorkoutPlaylistPreferencesCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> providerId,
+      Value<String> playlistReference,
+      Value<String?> displayLabel,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$WorkoutPlaylistPreferencesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WorkoutPlaylistPreferencesTable,
+          WorkoutPlaylistPreference,
+          $$WorkoutPlaylistPreferencesTableFilterComposer,
+          $$WorkoutPlaylistPreferencesTableOrderingComposer,
+          $$WorkoutPlaylistPreferencesTableCreateCompanionBuilder,
+          $$WorkoutPlaylistPreferencesTableUpdateCompanionBuilder
+        > {
+  $$WorkoutPlaylistPreferencesTableTableManager(
+    _$AppDatabase db,
+    $WorkoutPlaylistPreferencesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$WorkoutPlaylistPreferencesTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$WorkoutPlaylistPreferencesTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> providerId = const Value.absent(),
+                Value<String> playlistReference = const Value.absent(),
+                Value<String?> displayLabel = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorkoutPlaylistPreferencesCompanion(
+                id: id,
+                userId: userId,
+                providerId: providerId,
+                playlistReference: playlistReference,
+                displayLabel: displayLabel,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String providerId,
+                required String playlistReference,
+                Value<String?> displayLabel = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorkoutPlaylistPreferencesCompanion.insert(
+                id: id,
+                userId: userId,
+                providerId: providerId,
+                playlistReference: playlistReference,
+                displayLabel: displayLabel,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$WorkoutPlaylistPreferencesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $WorkoutPlaylistPreferencesTable> {
+  $$WorkoutPlaylistPreferencesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get providerId => $state.composableBuilder(
+    column: $state.table.providerId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get playlistReference => $state.composableBuilder(
+    column: $state.table.playlistReference,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get displayLabel => $state.composableBuilder(
+    column: $state.table.displayLabel,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+}
+
+class $$WorkoutPlaylistPreferencesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $WorkoutPlaylistPreferencesTable> {
+  $$WorkoutPlaylistPreferencesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get providerId => $state.composableBuilder(
+    column: $state.table.providerId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get playlistReference => $state.composableBuilder(
+    column: $state.table.playlistReference,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get displayLabel => $state.composableBuilder(
+    column: $state.table.displayLabel,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -83451,5 +86169,24 @@ class $AppDatabaseManager {
       $$RecommendationFeedbackTableTableManager(
         _db,
         _db.recommendationFeedback,
+      );
+  $$DashboardModulePreferencesTableTableManager
+  get dashboardModulePreferences =>
+      $$DashboardModulePreferencesTableTableManager(
+        _db,
+        _db.dashboardModulePreferences,
+      );
+  $$EducationContentProgressTableTableManager get educationContentProgress =>
+      $$EducationContentProgressTableTableManager(
+        _db,
+        _db.educationContentProgress,
+      );
+  $$MediaPackPreferencesTableTableManager get mediaPackPreferences =>
+      $$MediaPackPreferencesTableTableManager(_db, _db.mediaPackPreferences);
+  $$WorkoutPlaylistPreferencesTableTableManager
+  get workoutPlaylistPreferences =>
+      $$WorkoutPlaylistPreferencesTableTableManager(
+        _db,
+        _db.workoutPlaylistPreferences,
       );
 }

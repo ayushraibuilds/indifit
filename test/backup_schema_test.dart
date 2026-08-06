@@ -371,17 +371,18 @@ void main() {
       );
     });
 
-    test('Rejects unsupported future backup envelope headers after v9', () {
+    test('Rejects unsupported future backup envelope headers after v10', () {
       expect(
         () => BackupEnvelope.fromJson({
           'format_identifier': 'INDIFIT_BACKUP_ENVELOPE',
-          'version': 10,
+          'version': 11,
+          'payload': '{}',
         }),
         throwsA(
           isA<FormatException>().having(
             (e) => e.message,
             'message',
-            contains('Unsupported backup envelope version 10'),
+            contains('Unsupported backup envelope version 11'),
           ),
         ),
       );
