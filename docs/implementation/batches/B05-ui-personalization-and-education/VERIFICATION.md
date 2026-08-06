@@ -147,8 +147,8 @@ aid, not a compliance register.
 | Task | Implementation commit | Final verdict | Merge commit | Known follow-ups |
 |---|---|---|---|---|
 | B05-01 | 794bfd5, 5f436c1 | Approved with remediation | 1c82e0c | Media/provider approval packet and final top-20 assets remain required before B05-08; managed remote downloads are deferred. |
-| B05-02 | — | Planned | — | — |
-| B05-03 | — | Planned | — | — |
+| B05-02 | 1762c5c, e33cada | Approved with remediation | 5048884 | None; semantic primitives are the contract consumed by later B05 presentation tasks. |
+| B05-03 | 179a505, cc6e244 | Approved with remediation | 3cc2691 | None; Today composition consumes the stable registry/repository contract in B05-04. |
 | B05-04 | — | Planned | — | — |
 | B05-05 | — | Planned | — | — |
 | B05-06 | — | Planned | — | — |
