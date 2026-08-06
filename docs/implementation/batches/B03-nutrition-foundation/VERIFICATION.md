@@ -925,3 +925,26 @@ implementation remains outside this authorization.
 **Final verdict: Passed with non-blocking follow-up.**
 
 **B03 is authorized for final merge with recorded non-blocking follow-ups.**
+
+## Post-r3 Backup-v7 timezone correction
+
+Recorded on 2026-08-05 after the d85e8a1 final-acceptance commit. The checked-in
+Backup-v7 JSON fixtures contained offset-less wall-clock timestamps, so the
+accepted r3 tree was not deterministic across UTC and `Asia/Kolkata`.
+
+The complete correction is `78a43f9` (`fix(b03): make backup timestamps
+timezone deterministic`), based directly on d85e8a1. It canonicalizes the
+legacy fixture timestamps to explicit UTC, normalizes legacy parsing and new
+serialization, updates fixture checksums, and adds the focused UTC regression
+test. The earlier partial working-tree attempt was not used.
+
+| Command | Result |
+|---|---|
+| `TZ=UTC flutter test test/b03_backup_v8_test.dart` | Pass — 8 tests |
+| `TZ=Asia/Kolkata flutter test test/b03_backup_v8_test.dart` | Pass — 8 tests |
+| `TZ=UTC flutter test test/b03_backup_utc_test.dart` | Pass — 5 tests |
+| `TZ=Asia/Kolkata flutter test test/b03_backup_utc_test.dart` | Pass — 5 tests |
+
+The B03 branch is therefore merge-ready at 78a43f9, with the existing
+non-blocking r3 follow-ups unchanged. The named pre-existing stash remains
+untouched and is not part of the B03 baseline.

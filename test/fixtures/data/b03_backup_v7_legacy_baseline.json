@@ -18,13 +18,13 @@
     "name": "Fixture User",
     "equipment_access": "full_gym",
     "injuries_limitations": "",
-    "updated_at": "2026-01-15T14:00:00.000"
+    "updated_at": "2026-01-15T08:30:00.000Z"
   },
   "user_settings": [
     {
       "key": "fixture_nutrition_mode",
       "value": "legacy-compatible",
-      "updated_at": "2026-01-15T14:00:00.000"
+      "updated_at": "2026-01-15T08:30:00.000Z"
     }
   ],
   "user_preferences": {
@@ -63,7 +63,7 @@
       "serving_logged": 1.0,
       "serving_unit": "bowl",
       "meal_type": "lunch",
-      "logged_at": "2026-01-15T14:00:00.000",
+      "logged_at": "2026-01-15T08:30:00.000Z",
       "is_synced": false,
       "meal_group_id": "fixture-meal-group-lunch",
       "uuid": "fixture-food-log-custom-7001"
@@ -79,7 +79,7 @@
       "serving_logged": 0.5,
       "serving_unit": "serving",
       "meal_type": "breakfast",
-      "logged_at": "2026-01-16T14:00:00.000",
+      "logged_at": "2026-01-16T08:30:00.000Z",
       "is_synced": true,
       "meal_group_id": null,
       "uuid": "fixture-food-log-seeded-7002"
@@ -95,7 +95,7 @@
       "serving_logged": 1.0,
       "serving_unit": "unknown portion",
       "meal_type": "dinner",
-      "logged_at": "2026-01-17T14:00:00.000",
+      "logged_at": "2026-01-17T08:30:00.000Z",
       "is_synced": false,
       "meal_group_id": null,
       "uuid": "fixture-food-log-imported-7003"
@@ -106,7 +106,7 @@
       "id": 3001,
       "name": "Fixture Two-Day Meal Template",
       "default_meal_type": "breakfast",
-      "created_at": "2026-01-15T14:00:00.000"
+      "created_at": "2026-01-15T08:30:00.000Z"
     }
   ],
   "meal_template_items": [
@@ -143,7 +143,7 @@
       "total_volume": 1200.0,
       "duration_seconds": 1800,
       "estimated_calories": 180,
-      "completed_at": "2026-01-15T15:00:00.000",
+      "completed_at": "2026-01-15T09:30:00.000Z",
       "is_synced": false,
       "uuid": "fixture-workout-session-4101",
       "scheduled_occurrence_id": null,
@@ -159,7 +159,7 @@
       "total_volume": 0.0,
       "duration_seconds": 1500,
       "estimated_calories": 210,
-      "completed_at": "2026-01-18T14:00:00.000",
+      "completed_at": "2026-01-18T08:30:00.000Z",
       "is_synced": true,
       "uuid": "fixture-workout-session-4102",
       "scheduled_occurrence_id": null,
@@ -201,7 +201,7 @@
       "current_set_index": 1,
       "elapsed_seconds": 600,
       "logged_sets_json": "[{\"exercise\":\"Fixture Custom Movement\",\"reps\":6}]",
-      "updated_at": "2026-01-15T16:00:00.000",
+      "updated_at": "2026-01-15T10:30:00.000Z",
       "scheduled_occurrence_id": null,
       "execution_snapshot_json": null,
       "draft_schema_version": 1,
@@ -217,7 +217,7 @@
       "provider": "health_connect",
       "external_id": "fixture-health-external-4301",
       "source_name": "Fixture Health Provider",
-      "imported_at": "2026-01-18T15:00:00.000",
+      "imported_at": "2026-01-18T09:30:00.000Z",
       "local_session_id": 4102,
       "fingerprint": "fixture-health-fingerprint-4301"
     }

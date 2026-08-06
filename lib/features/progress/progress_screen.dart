@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../coaching/b04_production_surface_widgets.dart';
 import 'achievements_screen.dart';
 import 'b02_progress_widgets.dart';
 import 'widgets/progress_bmi_health_card.dart';
@@ -111,6 +112,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const B02ProgressOverview(),
+                    const SizedBox(height: 20),
+                    const B04WeeklyReviewCard(),
                     const SizedBox(height: 20),
                     // 1. GitHub-style activity calendar heatmap (last 12 weeks)
                     const Text(
