@@ -70,6 +70,40 @@ class B04NutritionSafetyFilter {
     bool acknowledgementRequested = false,
     bool userOverrideRequested = false,
   }) {
+    final constraintsById = <String, NutritionUserConstraint>{};
+    final evaluationByConstraintId = {
+      for (final item in evaluation.evaluations) item.constraintId: item,
+    };
+    for (final constraint in constraints) {
+      if (constraintsById.containsKey(constraint.id)) {
+        return B04NutritionSafetyResult.invalidEvidence(
+          userId: evaluation.userId,
+          subjectId: evaluation.subjectId,
+          output: output,
+          errorCode: 'duplicate_constraint_context',
+          nutrientEvidence: nutrientEvidence,
+          acknowledgementRequested: acknowledgementRequested,
+          userOverrideRequested: userOverrideRequested,
+        );
+      }
+      constraintsById[constraint.id] = constraint;
+      final evaluated = evaluationByConstraintId[constraint.id];
+      if (evaluated != null &&
+          (constraint.userId != evaluation.userId ||
+              constraint.type != evaluated.type ||
+              constraint.targetKey != evaluated.targetKey ||
+              !constraint.isEffectiveAt(evaluation.evaluatedAtUtc))) {
+        return B04NutritionSafetyResult.invalidEvidence(
+          userId: evaluation.userId,
+          subjectId: evaluation.subjectId,
+          output: output,
+          errorCode: 'constraint_context_mismatch',
+          nutrientEvidence: nutrientEvidence,
+          acknowledgementRequested: acknowledgementRequested,
+          userOverrideRequested: userOverrideRequested,
+        );
+      }
+    }
     final reasons = <String>{};
     final missingEvidence = <String>{...evaluation.missingEvidence};
     final evidenceIds = <String>{};
@@ -77,9 +111,6 @@ class B04NutritionSafetyFilter {
     final softFilters = <String>{};
     final uncertain = <String>{};
     var constraintEvidenceUnavailable = evaluation.missingEvidence.isNotEmpty;
-    final constraintsById = {
-      for (final constraint in constraints) constraint.id: constraint,
-    };
     if (evaluation.missingEvidence.isNotEmpty) {
       reasons.add('missing_constraint_evidence');
     }

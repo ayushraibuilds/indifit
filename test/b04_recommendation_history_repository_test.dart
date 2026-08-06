@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/backup/backup_v9.dart';
 import 'package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart';
@@ -223,6 +224,32 @@ void main() {
   );
 
   test(
+    'issue rejects a consent event that contradicts the evaluation state',
+    () async {
+      final lineage = await _seedLineage(db);
+
+      await expectLater(
+        history.issue(
+          _command(
+            consentState: B04RecommendationConsentState.disabled,
+            consentEventId: lineage.consentId,
+            eligibilityEvaluationId: lineage.eligibilityId,
+            goalVersionId: lineage.goalId,
+          ),
+        ),
+        throwsA(
+          isA<B04RecommendationHistoryError>().having(
+            (error) => error.code,
+            'code',
+            'invalid_consent_state',
+          ),
+        ),
+      );
+      expect(await db.select(db.recommendations).get(), isEmpty);
+    },
+  );
+
+  test(
     'dismissed immutable state is hidden from the current projection',
     () async {
       final lineage = await _seedLineage(db);
@@ -342,6 +369,46 @@ void main() {
       }
     },
   );
+
+  test('issue rejects readiness lineage outside the frozen period', () async {
+    final lineage = await _seedLineage(db);
+    await db
+        .into(db.readinessSnapshots)
+        .insert(
+          ReadinessSnapshotsCompanion.insert(
+            id: 'readiness-outside-period',
+            userId: _userId,
+            localDate: '2026-08-05',
+            timezoneId: _timezoneId,
+            completeness: 'complete',
+            status: 'available',
+            band: const Value('ready'),
+            confidence: const Value(1.0),
+            calculationVersion: 'B04-06-READINESS-V1',
+            policyVersion: const Value('READINESS-HOLD-1'),
+            createdAtUtc: Value(_issuedAt),
+          ),
+        );
+
+    await expectLater(
+      history.issue(
+        _command(
+          readinessSnapshotId: 'readiness-outside-period',
+          consentEventId: lineage.consentId,
+          eligibilityEvaluationId: lineage.eligibilityId,
+          goalVersionId: lineage.goalId,
+        ),
+      ),
+      throwsA(
+        isA<B04RecommendationHistoryError>().having(
+          (error) => error.code,
+          'code',
+          'invalid_readiness_reference',
+        ),
+      ),
+    );
+    expect(await db.select(db.recommendations).get(), isEmpty);
+  });
 
   test(
     'duplicate issue and feedback commands are idempotent without rewriting history',
@@ -682,6 +749,43 @@ void main() {
       expect(await restored.listCurrent(userId: _userId), isEmpty);
     },
   );
+
+  test(
+    'feedback rejects a local date that disagrees with its UTC instant',
+    () async {
+      final lineage = await _seedLineage(db);
+      final issued = (await history.issue(
+        _command(
+          consentEventId: lineage.consentId,
+          eligibilityEvaluationId: lineage.eligibilityId,
+          goalVersionId: lineage.goalId,
+        ),
+      )).single;
+
+      await expectLater(
+        history.recordFeedback(
+          B04RecommendationFeedbackCommand(
+            userId: _userId,
+            recommendationId: issued.id,
+            action: B04RecommendationFeedbackAction.dismiss,
+            source: 'recommendation_card',
+            localDate: '2026-08-06',
+            timezoneId: _timezoneId,
+            createdAtUtc: DateTime.utc(2026, 8, 6, 19),
+            id: 'feedback-wrong-local-date',
+          ),
+        ),
+        throwsA(
+          isA<B04RecommendationHistoryError>().having(
+            (error) => error.code,
+            'code',
+            'feedback_local_date_mismatch',
+          ),
+        ),
+      );
+      expect(await db.select(db.recommendationFeedback).get(), isEmpty);
+    },
+  );
 }
 
 class _Lineage {
@@ -751,6 +855,8 @@ B04RecommendationHistoryCommand _command({
   String evidenceId = 'training-source',
   String? explanation,
   B04RecommendationState? state,
+  B04RecommendationConsentState consentState =
+      B04RecommendationConsentState.enabled,
   Iterable<String> missingEvidence = const [],
   Iterable<String> uncertaintyCodes = const [],
   Iterable<String> alternativeIds = const [],
@@ -758,6 +864,7 @@ B04RecommendationHistoryCommand _command({
   required String consentEventId,
   required String eligibilityEvaluationId,
   String? goalVersionId,
+  String? readinessSnapshotId,
   String? supersedes,
   Iterable<B04RecommendationEvidenceInput>? evidence,
 }) => B04RecommendationHistoryCommand(
@@ -772,6 +879,7 @@ B04RecommendationHistoryCommand _command({
     evidenceId: evidenceId,
     explanation: explanation,
     state: state,
+    consentState: consentState,
     missingEvidence: missingEvidence,
     uncertaintyCodes: uncertaintyCodes,
     alternativeIds: alternativeIds,
@@ -781,6 +889,7 @@ B04RecommendationHistoryCommand _command({
   consentEventId: consentEventId,
   eligibilityEvaluationId: eligibilityEvaluationId,
   goalVersionId: goalVersionId,
+  readinessSnapshotId: readinessSnapshotId,
   evidenceByRecommendationId: {
     id:
         evidence ??
@@ -812,6 +921,8 @@ B04RecommendationEvaluation _evaluation({
   String evidenceId = 'training-source',
   String? explanation,
   B04RecommendationState? state,
+  B04RecommendationConsentState consentState =
+      B04RecommendationConsentState.enabled,
   Iterable<String> missingEvidence = const [],
   Iterable<String> uncertaintyCodes = const [],
   Iterable<String> alternativeIds = const [],
@@ -826,7 +937,7 @@ B04RecommendationEvaluation _evaluation({
   timezoneId: _timezoneId,
   evaluatedAtUtc: evaluatedAtUtc ?? _issuedAt,
   eligibilityState: B04RecommendationEligibilityState.eligible,
-  consentState: B04RecommendationConsentState.enabled,
+  consentState: consentState,
   policyState: B04RecommendationPolicyState.enabled,
   policyVersion: kB04EnabledPolicyVersion,
   recommendations: [
@@ -857,7 +968,7 @@ B04RecommendationEvaluation _evaluation({
           ? const ['test-unavailable']
           : const [],
       eligibilityState: B04RecommendationEligibilityState.eligible,
-      consentState: B04RecommendationConsentState.enabled,
+      consentState: consentState,
       policyState: B04RecommendationPolicyState.enabled,
       policyVersion: kB04EnabledPolicyVersion,
       ruleVersion: kB04RecommendationRuleVersion,

@@ -319,6 +319,39 @@ void main() {
     },
   );
 
+  test('unowned constraint context cannot alter a B03 safety result', () {
+    final evaluation = _evaluate(
+      type: NutritionConstraintType.allergy,
+      constraintTarget: _target(
+        NutritionConstraintTargetType.allergen,
+        'peanut',
+      ),
+      evidence: [
+        _evidence(
+          id: 'confirmed-peanut',
+          target: _target(NutritionConstraintTargetType.allergen, 'peanut'),
+          status: NutritionConstraintEvidenceStatus.confirmed,
+        ),
+      ],
+    );
+    final mismatched = _constraint(
+      id: 'constraint-1',
+      userId: 'other-user',
+      type: NutritionConstraintType.allergy,
+      target: _target(NutritionConstraintTargetType.allergen, 'peanut'),
+    );
+
+    final result = filter.mapEvaluation(
+      evaluation: evaluation,
+      constraints: [mismatched],
+      output: B04NutritionSafetyOutput.eatNow,
+    );
+
+    expect(result.invalidEvidenceCode, 'constraint_context_mismatch');
+    expect(result.disposition, B04NutritionSafetyDisposition.unavailable);
+    expect(result.recommendationAllowed, isFalse);
+  });
+
   test(
     'unknown nutrients remain visible and unavailable without exactification',
     () {
@@ -641,6 +674,7 @@ NutritionConstraintEvaluationResult _evaluate({
 
 NutritionUserConstraint _constraint({
   required String id,
+  String userId = 'user-1',
   required NutritionConstraintType type,
   required NutritionConstraintTarget target,
   bool crossContact = false,
@@ -651,7 +685,7 @@ NutritionUserConstraint _constraint({
   final timestamp = DateTime.utc(2026, 8, 1);
   return NutritionUserConstraint(
     id: id,
-    userId: 'user-1',
+    userId: userId,
     definitionId: definition.id,
     type: type,
     target: target,

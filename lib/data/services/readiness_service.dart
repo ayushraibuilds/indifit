@@ -236,9 +236,14 @@ class ReadinessService {
     final localDate = _dates.normalizeLocalDate(request.localDate);
     final timezone = request.timezoneId.trim();
     for (final observation in request.observations) {
+      final derivedLocalDate = _dates.localDateFor(
+        observation.observedAtUtc,
+        observation.timezoneId,
+      );
       if (observation.userId != owner ||
           observation.localDate != localDate ||
-          observation.timezoneId != timezone) {
+          observation.timezoneId != timezone ||
+          observation.localDate != derivedLocalDate) {
         throw const B04RecoveryValidationError(
           'readiness_evidence_context_mismatch',
           'Readiness evidence must retain its recorded user, local date and IANA timezone.',

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
+import '../../core/services/local_schedule_date_service.dart';
 import '../models/b04_adaptive_target_models.dart';
 import '../models/b04_goal_models.dart';
 import '../models/b04_nutrition_safety_models.dart';
@@ -274,7 +275,7 @@ class B04RecommendationEngine {
       targetAcceptanceState: targetAcceptance,
       canonicalAdaptiveTarget: canonicalAdaptiveTarget,
       canonicalTrainingRecommendation: candidate.trainingRecommendation,
-      safetyDisposition: safety?.disposition,
+      safetyDisposition: safety?.evaluatedDisposition,
       safetyConstraintIds: safetyConstraintIds,
       safetyNutrientRangeIds: safety?.nutrientRangeIds ?? const [],
     );
@@ -476,9 +477,21 @@ class B04RecommendationEngine {
     if (!context.evaluatedAtUtc.isUtc) {
       throw ArgumentError('Recommendation evaluation must use UTC.');
     }
-    if (context.window.timezoneId.trim().isEmpty) {
+    final dates = LocalScheduleDateService();
+    final timezoneId = context.window.timezoneId.trim();
+    dates.validateTimezone(timezoneId);
+    final start = dates.normalizeLocalDate(context.window.startLocalDate);
+    final end = dates.normalizeLocalDate(context.window.endLocalDate);
+    if (context.window.period == B04RecommendationPeriod.daily &&
+        start != end) {
       throw ArgumentError(
-        'Recommendation evaluation requires an IANA timezone.',
+        'A daily recommendation must cover exactly one civil date.',
+      );
+    }
+    if (context.window.period == B04RecommendationPeriod.weekly &&
+        dates.addCalendarDays(start, timezoneId, 6) != end) {
+      throw ArgumentError(
+        'A weekly recommendation must cover exactly seven civil dates.',
       );
     }
     if (context.activeGoal != null &&

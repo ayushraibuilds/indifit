@@ -7,6 +7,7 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b04_recovery_models.dart';
 import 'package:indifit/data/repositories/readiness_snapshot_repository.dart';
 import 'package:indifit/data/repositories/recovery_observation_repository.dart';
+import 'package:indifit/data/services/readiness_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -677,6 +678,77 @@ void main() {
         ),
       );
       expect(await observations.listForUser(userId: 'user-a'), isEmpty);
+    });
+
+    test('typed provenance envelopes reject structured references', () {
+      final encoded = jsonEncode({
+        'contract_version': RecoveryProvenance.contractVersion,
+        'permission': 'granted',
+        'reference': jsonEncode({
+          'provider_payload': {'sleep_minutes': 450},
+        }),
+      });
+
+      expect(
+        () => RecoveryProvenance.decode(encoded),
+        throwsA(
+          isA<B04RecoveryValidationError>().having(
+            (error) => error.code,
+            'code',
+            'provenance_payload_not_allowed',
+          ),
+        ),
+      );
+    });
+
+    test('readiness rejects forged observation local dates', () async {
+      final stored = await observations.importObservation(
+        input(id: 'forged-local-date', providerExternalId: 'forged-local-date'),
+      );
+      final forged = RecoveryObservationReadModel(
+        id: stored.id,
+        userId: stored.userId,
+        kind: stored.kind,
+        observedAtUtc: stored.observedAtUtc,
+        localDate: '2025-12-31',
+        timezoneId: stored.timezoneId,
+        status: stored.status,
+        unit: stored.unit,
+        value: stored.value,
+        lower: stored.lower,
+        upper: stored.upper,
+        source: stored.source,
+        provenance: stored.provenance,
+        provenanceEnvelope: stored.provenanceEnvelope,
+        permission: stored.permission,
+        freshness: stored.freshness,
+        providerExternalId: stored.providerExternalId,
+        sourceVersion: stored.sourceVersion,
+        correctionOfObservationId: stored.correctionOfObservationId,
+        evidenceTimestampUtc: stored.evidenceTimestampUtc,
+        createdAtUtc: stored.createdAtUtc,
+      );
+
+      expect(
+        () => ReadinessService().evaluate(
+          ReadinessEvaluationRequest(
+            snapshotId: 'forged-readiness',
+            userId: 'user-a',
+            localDate: '2025-12-31',
+            timezoneId: 'Asia/Kolkata',
+            requiredKinds: const ['sleep_duration'],
+            observations: [forged],
+            createdAtUtc: createdAt,
+          ),
+        ),
+        throwsA(
+          isA<B04RecoveryValidationError>().having(
+            (error) => error.code,
+            'code',
+            'readiness_evidence_context_mismatch',
+          ),
+        ),
+      );
     });
 
     test('Backup v9 rejects structured recovery provenance payloads', () async {

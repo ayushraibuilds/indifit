@@ -639,6 +639,15 @@ class B04RecommendationHistoryRepository {
         'An enabled recommendation must reference an enable consent event.',
       );
     }
+    if (command.evaluation.consentState ==
+            B04RecommendationConsentState.disabled &&
+        row.action != 'disable' &&
+        row.action != 'withdraw') {
+      throw const B04RecommendationHistoryError(
+        'invalid_consent_state',
+        'A disabled recommendation must reference a disable or withdraw consent event.',
+      );
+    }
     final current =
         await (_db.select(_db.coachingConsentEvents)..where(
               (item) =>
@@ -763,6 +772,26 @@ class B04RecommendationHistoryRepository {
       throw const B04RecommendationHistoryError(
         'cross_user_reference',
         'Recommendation history readiness lineage must belong to the same user.',
+      );
+    }
+    try {
+      _dates.validateTimezone(row.timezoneId);
+      final localDate = _dates.normalizeLocalDate(row.localDate);
+      final evaluation = command.evaluation;
+      if (row.timezoneId != evaluation.timezoneId ||
+          _dates.compare(localDate, evaluation.startLocalDate) < 0 ||
+          _dates.compare(localDate, evaluation.endLocalDate) > 0) {
+        throw const B04RecommendationHistoryError(
+          'invalid_readiness_reference',
+          'Readiness lineage must belong to the issued recommendation period and timezone.',
+        );
+      }
+    } on B04RecommendationHistoryError {
+      rethrow;
+    } catch (_) {
+      throw const B04RecommendationHistoryError(
+        'invalid_readiness_reference',
+        'Readiness lineage must carry a valid local date and IANA timezone.',
       );
     }
     return row;
@@ -997,6 +1026,15 @@ class B04RecommendationHistoryRepository {
     try {
       _dates.normalizeLocalDate(command.localDate);
       _dates.validateTimezone(command.timezoneId);
+      if (_dates.localDateFor(command.createdAtUtc, command.timezoneId) !=
+          command.localDate) {
+        throw const B04RecommendationHistoryError(
+          'feedback_local_date_mismatch',
+          'Feedback local date must be derived from its UTC timestamp and IANA timezone.',
+        );
+      }
+    } on B04RecommendationHistoryError {
+      rethrow;
     } catch (_) {
       throw const B04RecommendationHistoryError(
         'invalid_feedback',

@@ -195,6 +195,7 @@ class RecoveryProvenance {
           json.keys.any((key) => !allowedKeys.contains(key))) {
         throw const FormatException();
       }
+      validateReference((json['reference'] as String).trim());
       return RecoveryProvenance(
         reference: (json['reference'] as String).trim(),
         permission: RecoveryPermissionStateId.parse(

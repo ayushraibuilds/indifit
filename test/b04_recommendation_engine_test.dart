@@ -92,6 +92,40 @@ void main() {
     },
   );
 
+  test(
+    'direct engine input validates IANA timezone and civil period shape',
+    () {
+      expect(
+        () => engine.evaluate(
+          context: _context(timezoneId: 'Not/IANA'),
+          candidates: [
+            _candidate(
+              id: 'training-invalid-time',
+              action: B04RecommendationAction.training,
+            ),
+          ],
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => engine.evaluate(
+          context: _context(
+            period: B04RecommendationPeriod.weekly,
+            startLocalDate: '2026-08-03',
+            endLocalDate: '2026-08-08',
+          ),
+          candidates: [
+            _candidate(
+              id: 'training-invalid-week',
+              action: B04RecommendationAction.training,
+            ),
+          ],
+        ),
+        throwsArgumentError,
+      );
+    },
+  );
+
   test('ties use a stable candidate ID tie-breaker, never input order', () {
     final first = engine.evaluate(
       context: _context(),
@@ -250,6 +284,10 @@ void main() {
       expect(
         result.recommendations.first.unavailableReasons,
         contains('dietary_hard_block'),
+      );
+      expect(
+        result.recommendations.first.safetyDisposition,
+        B04NutritionSafetyDisposition.hardBlock,
       );
     },
   );
@@ -513,6 +551,7 @@ B04RecommendationContext _context({
   B04RecommendationPeriod period = B04RecommendationPeriod.daily,
   String startLocalDate = '2026-08-06',
   String endLocalDate = '2026-08-06',
+  String timezoneId = _timezoneId,
   CoachingEligibilityResult eligibilityResult =
       CoachingEligibilityResult.eligible,
   bool adaptiveConsentEnabled = true,
@@ -523,7 +562,7 @@ B04RecommendationContext _context({
     period: period,
     startLocalDate: startLocalDate,
     endLocalDate: endLocalDate,
-    timezoneId: _timezoneId,
+    timezoneId: timezoneId,
     targetEvaluationWindowDays: 21,
     aggregateWindowDays: 42,
   ),
