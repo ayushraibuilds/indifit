@@ -8,6 +8,7 @@ import '../../data/repositories/b04_briefing_read_repositories.dart';
 import '../../data/repositories/b04_recommendation_history_repository.dart';
 import '../../data/repositories/coaching_preference_repository.dart';
 import '../../data/repositories/nutrition_goal_repository.dart';
+import '../../data/services/b04_production_recommendation_orchestrator.dart';
 
 enum B04DailyBriefingControllerStatus {
   idle,
@@ -64,6 +65,8 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
   final B04RecommendationHistoryRepository? _history;
   final NutritionGoalRepository? _goals;
   final CoachingPreferenceRepository? _preferences;
+  final Future<B04ProductionRecommendationOrchestrator> Function()?
+  _loadOrchestrator;
   final LocalScheduleDateService _dates;
   String? _userId;
   String? _localDate;
@@ -76,10 +79,13 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
     NutritionGoalRepository? goals,
     CoachingPreferenceRepository? preferences,
     LocalScheduleDateService? dates,
+    Future<B04ProductionRecommendationOrchestrator> Function()?
+    loadOrchestrator,
   }) : _repository = repository,
        _history = history,
        _goals = goals,
        _preferences = preferences,
+       _loadOrchestrator = loadOrchestrator,
        _dates = dates ?? LocalScheduleDateService(),
        super(const B04DailyBriefingState());
 
@@ -100,11 +106,18 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
       retryable: false,
     );
     try {
-      final briefing = await _repository.read(
-        userId: userId,
-        localDate: localDate,
-        timezoneId: timezoneId,
-      );
+      final loadOrchestrator = _loadOrchestrator;
+      final briefing = loadOrchestrator == null
+          ? await _repository.read(
+              userId: userId,
+              localDate: localDate,
+              timezoneId: timezoneId,
+            )
+          : await (await loadOrchestrator()).loadDaily(
+              userId: userId,
+              localDate: localDate,
+              timezoneId: timezoneId,
+            );
       if (!mounted || generation != _generation) return;
       final status = switch (briefing.status) {
         B04BriefingReadStatus.available =>

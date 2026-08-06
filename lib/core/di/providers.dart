@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
+import '../../data/repositories/b02_progress_read_repository.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/b04_briefing_read_repositories.dart';
 import '../../data/repositories/b04_recommendation_history_repository.dart';
@@ -30,11 +31,17 @@ import '../../data/repositories/nutrition_thali_repository.dart';
 import '../../data/repositories/nutrition_transformation_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
+import '../../data/repositories/readiness_snapshot_repository.dart';
 import '../../data/repositories/travel_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../../data/services/b04_adaptive_target_engine.dart';
 import '../../data/services/b04_current_food_guidance_service.dart';
+import '../../data/services/b04_meal_opportunity_service.dart';
+import '../../data/services/b04_nutrition_safety_filter.dart';
 import '../../data/services/b04_optional_ai_assistance.dart';
+import '../../data/services/b04_production_recommendation_orchestrator.dart';
+import '../../data/services/b04_recommendation_context_assembler.dart';
 import '../../features/coaching/b04_production_surface_controller.dart';
 import '../../features/dashboard/b04_daily_briefing_controller.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
@@ -254,6 +261,8 @@ final b04CurrentFoodControllerProvider =
     >(
       (ref) => B04CurrentFoodController(
         service: ref.watch(b04CurrentFoodGuidanceServiceProvider),
+        loadOrchestrator: () =>
+            ref.read(b04ProductionRecommendationOrchestratorProvider.future),
       ),
     );
 
@@ -289,9 +298,9 @@ final b04ProductionRecommendationContextProvider =
           dates: ref.watch(localScheduleDateServiceProvider),
           timezones: ref.watch(localTimezoneServiceProvider),
         ),
-        goals: ref.watch(nutritionGoalRepositoryProvider),
-        preferences: ref.watch(coachingPreferenceRepositoryProvider),
         dates: ref.watch(localScheduleDateServiceProvider),
+        loadOrchestrator: () =>
+            ref.read(b04ProductionRecommendationOrchestratorProvider.future),
       ).load();
     });
 
@@ -333,6 +342,47 @@ final b04WeeklyReviewReadRepositoryProvider =
       ),
     );
 
+final b04ProductionRecommendationOrchestratorProvider =
+    FutureProvider.autoDispose<B04ProductionRecommendationOrchestrator>((
+      ref,
+    ) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      final recipeLogging = await ref.watch(
+        nutritionRecipeLogCoordinatorProvider.future,
+      );
+      final thalis = await ref.watch(nutritionThaliRepositoryProvider.future);
+      final nutrition = await ref.watch(
+        nutritionReadModelRepositoryProvider.future,
+      );
+      final database = ref.watch(databaseProvider);
+      final dates = ref.watch(localScheduleDateServiceProvider);
+      return B04ProductionRecommendationOrchestrator(
+        goals: ref.watch(nutritionGoalRepositoryProvider),
+        preferences: ref.watch(coachingPreferenceRepositoryProvider),
+        nutrition: nutrition,
+        constraints: ref.watch(nutritionConstraintRepositoryProvider),
+        recipes: ref.watch(nutritionRecipeRepositoryProvider),
+        recipeLogging: recipeLogging,
+        thalis: thalis,
+        readiness: ReadinessSnapshotRepository(
+          database: database,
+          dates: dates,
+        ),
+        progress: B02ProgressReadRepository(database, civilDates: dates),
+        calendar: CalendarReadRepository(database, dates: dates),
+        targetEngine: B04AdaptiveTargetEngine(dates: dates),
+        assembler: B04RecommendationContextAssembler(dates: dates),
+        history: ref.watch(b04RecommendationHistoryRepositoryProvider),
+        dailyRead: ref.watch(b04DailyBriefingReadRepositoryProvider),
+        weeklyRead: ref.watch(b04WeeklyReviewReadRepositoryProvider),
+        currentFood: ref.watch(b04CurrentFoodGuidanceServiceProvider),
+        opportunities: B04MealOpportunityService(dates: dates),
+        safety: const B04NutritionSafetyFilter(),
+        registry: registry,
+        dates: dates,
+      );
+    });
+
 final b04DailyBriefingControllerProvider =
     StateNotifierProvider.autoDispose<
       B04DailyBriefingController,
@@ -344,6 +394,8 @@ final b04DailyBriefingControllerProvider =
         goals: ref.watch(nutritionGoalRepositoryProvider),
         preferences: ref.watch(coachingPreferenceRepositoryProvider),
         dates: ref.watch(localScheduleDateServiceProvider),
+        loadOrchestrator: () =>
+            ref.read(b04ProductionRecommendationOrchestratorProvider.future),
       ),
     );
 
@@ -358,6 +410,8 @@ final b04WeeklyReviewControllerProvider =
         goals: ref.watch(nutritionGoalRepositoryProvider),
         preferences: ref.watch(coachingPreferenceRepositoryProvider),
         dates: ref.watch(localScheduleDateServiceProvider),
+        loadOrchestrator: () =>
+            ref.read(b04ProductionRecommendationOrchestratorProvider.future),
       ),
     );
 

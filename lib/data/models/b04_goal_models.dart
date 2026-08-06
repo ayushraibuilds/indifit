@@ -322,6 +322,7 @@ class CoachingPreferencesReadModel {
 }
 
 class CoachingEligibilityReadModel {
+  final String? id;
   final String userId;
   final CoachingEligibilityResult result;
   final String reasonCode;
@@ -331,6 +332,7 @@ class CoachingEligibilityReadModel {
   final DateTime evaluationUtc;
 
   const CoachingEligibilityReadModel({
+    this.id,
     required this.userId,
     required this.result,
     required this.reasonCode,
