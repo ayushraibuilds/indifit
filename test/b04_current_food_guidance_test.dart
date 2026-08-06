@@ -76,6 +76,40 @@ void main() {
     );
   });
 
+  test(
+    'filters partial candidate evidence independently from complete candidates',
+    () {
+      final complete = _selection('selection-complete', 'food-complete');
+      final partial = B04MealCandidate.fromSourceId(
+        selectionId: 'selection-partial',
+        sourceId: 'canonical_food',
+        subjectId: 'food-partial',
+        evidence: const B04MealCandidateEvidence.partial(
+          identityReference: 'identity-food-partial',
+        ),
+      );
+      final guidance = service.evaluate(
+        context: _context(opportunity: _opportunity([complete, partial])),
+        candidates: [
+          _candidate(selection: complete, energy: 300),
+          _candidate(selection: partial, energy: 300),
+        ],
+      );
+
+      expect(guidance.status, B04CurrentFoodGuidanceStatus.available);
+      expect(guidance.cards.map((item) => item.selectionId), [
+        'selection-complete',
+      ]);
+      expect(guidance.excludedCandidates.map((item) => item.selectionId), [
+        'selection-partial',
+      ]);
+      expect(
+        guidance.excludedCandidates.single.reasonCodes,
+        contains('candidate_evidence_partial'),
+      );
+    },
+  );
+
   test('returns no candidate without inventing an available food', () {
     final guidance = service.evaluate(
       context: _context(opportunity: _opportunity(const [])),
@@ -324,6 +358,18 @@ void main() {
 
       await controller.retry();
       expect(controller.state.status, B04CurrentFoodControllerStatus.ready);
+
+      final invalidSelection = _selection(
+        'selection-not-in-opportunity',
+        'food-not-in-opportunity',
+      );
+      await controller.load(
+        context: _context(opportunity: _opportunity([selection])),
+        candidates: [_candidate(selection: invalidSelection, energy: 300)],
+      );
+      expect(controller.state.status, B04CurrentFoodControllerStatus.failure);
+      expect(controller.state.guidance, isNull);
+      expect(controller.state.retryable, isTrue);
     },
   );
 

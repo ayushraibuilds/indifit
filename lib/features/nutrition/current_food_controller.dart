@@ -74,6 +74,7 @@ class B04CurrentFoodController extends StateNotifier<B04CurrentFoodState> {
     _lastCandidates = List.unmodifiable(candidates);
     state = state.copyWith(
       status: B04CurrentFoodControllerStatus.loading,
+      guidance: null,
       errorCode: null,
       errorMessage: null,
       retryable: false,
@@ -104,6 +105,7 @@ class B04CurrentFoodController extends StateNotifier<B04CurrentFoodState> {
       final typed = error is B04CurrentFoodError ? error : null;
       state = state.copyWith(
         status: B04CurrentFoodControllerStatus.failure,
+        guidance: null,
         errorCode: typed?.code ?? 'current_food_guidance_failed',
         errorMessage:
             typed?.message ??

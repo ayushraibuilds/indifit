@@ -221,8 +221,12 @@ class B04RecommendationEngine {
       }
     }
 
+    final partialEvidenceUnavailable =
+        scope == B04RecommendationEvaluationScope.mealOpportunity &&
+        candidate.evidence.state == B04RecommendationEvidenceState.partial;
     if (candidate.evidence.state == B04RecommendationEvidenceState.missing ||
-        candidate.evidence.state == B04RecommendationEvidenceState.unknown) {
+        candidate.evidence.state == B04RecommendationEvidenceState.unknown ||
+        partialEvidenceUnavailable) {
       unavailableReasons.add(
         'candidate_evidence_${candidate.evidence.state.stableId}',
       );
@@ -479,8 +483,6 @@ class B04RecommendationEngine {
       final opportunity = context.mealOpportunity;
       if (opportunity == null || !opportunity.hasSelection) {
         reasons.add(opportunity?.reasonCode ?? 'explicit_opportunity_required');
-      } else if (!opportunity.hasCompleteSelection) {
-        reasons.add('candidate_evidence_partial');
       }
       return reasons.toList()..sort();
     }

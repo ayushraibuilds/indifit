@@ -376,14 +376,19 @@ class B04CurrentFoodGuidanceService {
     }
     if (input.nutrientEvidence == null) {
       missing.add('candidate_nutrient_evidence_missing');
-    } else if (input.nutrientEvidence!.completeness.state ==
-            NutrientCompletenessState.invalid ||
-        input.nutrientEvidence!.completeness.state ==
-            NutrientCompletenessState.unknown) {
-      uncertainty.add('candidate_nutrient_evidence_unknown');
-    } else if (input.nutrientEvidence!.completeness.state ==
-        NutrientCompletenessState.partial) {
-      uncertainty.add('candidate_nutrient_evidence_partial');
+    } else {
+      switch (input.nutrientEvidence!.completeness.state) {
+        case NutrientCompletenessState.invalid:
+          uncertainty.add('candidate_nutrient_evidence_invalid');
+        case NutrientCompletenessState.unknown:
+          uncertainty.add('candidate_nutrient_evidence_unknown');
+        case NutrientCompletenessState.notApplicable:
+          uncertainty.add('candidate_nutrient_evidence_not_applicable');
+        case NutrientCompletenessState.partial:
+          uncertainty.add('candidate_nutrient_evidence_partial');
+        case NutrientCompletenessState.complete:
+          break;
+      }
     }
     if (evidenceIds.isEmpty) missing.add('candidate_evidence_unidentified');
     if (missing.isNotEmpty) {
