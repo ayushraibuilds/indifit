@@ -230,6 +230,7 @@ class CoachingPreferenceRepository {
     if (rows.isEmpty) return null;
     final row = rows.first;
     return CoachingEligibilityReadModel(
+      id: row.id,
       userId: row.userId,
       result: _eligibilityResult(row.result),
       reasonCode: row.reasonCode,

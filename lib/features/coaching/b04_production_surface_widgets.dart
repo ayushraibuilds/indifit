@@ -381,7 +381,7 @@ class _B04CurrentFoodCardState extends ConsumerState<B04CurrentFoodCard> {
       if (!mounted) return;
       ref
           .read(b04CurrentFoodControllerProvider.notifier)
-          .load(context: context, candidates: const []);
+          .loadProduction(context: context);
     });
   }
 

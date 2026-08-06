@@ -9,7 +9,7 @@ import '../../data/models/b04_goal_models.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
 import '../../data/repositories/coaching_preference_repository.dart';
 import '../../data/repositories/nutrition_goal_repository.dart';
-import '../../data/services/b04_recommendation_context_assembler.dart';
+import '../../data/services/b04_production_recommendation_orchestrator.dart';
 
 /// Version identifiers for the reviewed adaptive-coaching disclosure.
 ///
@@ -65,56 +65,25 @@ class B04ProductionUserContextLoader {
 /// intentionally remains unavailable rather than being filled with defaults.
 class B04ProductionRecommendationContextLoader {
   final B04ProductionUserContextLoader _users;
-  final NutritionGoalRepository _goals;
-  final CoachingPreferenceRepository _preferences;
   final LocalScheduleDateService _dates;
-  final B04RecommendationContextAssembler _assembler;
+  final Future<B04ProductionRecommendationOrchestrator> Function()
+  _loadOrchestrator;
 
   B04ProductionRecommendationContextLoader({
     required B04ProductionUserContextLoader users,
-    required NutritionGoalRepository goals,
-    required CoachingPreferenceRepository preferences,
     required LocalScheduleDateService dates,
-    B04RecommendationContextAssembler? assembler,
+    required Future<B04ProductionRecommendationOrchestrator> Function()
+    loadOrchestrator,
   }) : _users = users,
-       _goals = goals,
-       _preferences = preferences,
        _dates = dates,
-       _assembler = assembler ?? B04RecommendationContextAssembler();
+       _loadOrchestrator = loadOrchestrator;
 
   Future<B04RecommendationContext> load() async {
     final user = await _users.load();
-    final activeGoal = await _goals.activeGoal(
+    return (await _loadOrchestrator()).loadCurrentFoodContext(
       userId: user.userId,
       localDate: user.localDate,
       timezoneId: user.timezoneId,
-    );
-    final preferences = await _preferences.currentPreferences(
-      userId: user.userId,
-    );
-    final eligibility = await _preferences.currentEligibility(
-      userId: user.userId,
-    );
-    return _assembler.assemble(
-      B04RecommendationContextInput(
-        contextId: 'b04-production-current-food:${user.localDate}',
-        userId: user.userId,
-        period: B04RecommendationPeriod.daily,
-        startLocalDate: user.localDate,
-        endLocalDate: user.localDate,
-        timezoneId: user.timezoneId,
-        evaluatedAtUtc: DateTime.now().toUtc(),
-        activeGoal: activeGoal,
-        preferences: preferences,
-        eligibility: eligibility,
-        readinessSnapshot: null,
-        progress: null,
-        schedule: null,
-        nutritionDays: const [],
-        constraintEvaluations: null,
-        targetResult: null,
-        mealOpportunity: null,
-      ),
     );
   }
 

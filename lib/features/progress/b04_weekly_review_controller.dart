@@ -8,6 +8,7 @@ import '../../data/repositories/b04_briefing_read_repositories.dart';
 import '../../data/repositories/b04_recommendation_history_repository.dart';
 import '../../data/repositories/coaching_preference_repository.dart';
 import '../../data/repositories/nutrition_goal_repository.dart';
+import '../../data/services/b04_production_recommendation_orchestrator.dart';
 
 enum B04WeeklyReviewControllerStatus {
   idle,
@@ -64,6 +65,8 @@ class B04WeeklyReviewController extends StateNotifier<B04WeeklyReviewState> {
   final B04RecommendationHistoryRepository? _history;
   final NutritionGoalRepository? _goals;
   final CoachingPreferenceRepository? _preferences;
+  final Future<B04ProductionRecommendationOrchestrator> Function()?
+  _loadOrchestrator;
   final LocalScheduleDateService _dates;
   String? _userId;
   String? _startLocalDate;
@@ -77,10 +80,13 @@ class B04WeeklyReviewController extends StateNotifier<B04WeeklyReviewState> {
     NutritionGoalRepository? goals,
     CoachingPreferenceRepository? preferences,
     LocalScheduleDateService? dates,
+    Future<B04ProductionRecommendationOrchestrator> Function()?
+    loadOrchestrator,
   }) : _repository = repository,
        _history = history,
        _goals = goals,
        _preferences = preferences,
+       _loadOrchestrator = loadOrchestrator,
        _dates = dates ?? LocalScheduleDateService(),
        super(const B04WeeklyReviewState());
 
@@ -103,12 +109,20 @@ class B04WeeklyReviewController extends StateNotifier<B04WeeklyReviewState> {
       retryable: false,
     );
     try {
-      final review = await _repository.read(
-        userId: userId,
-        startLocalDate: startLocalDate,
-        endLocalDate: endLocalDate,
-        timezoneId: timezoneId,
-      );
+      final loadOrchestrator = _loadOrchestrator;
+      final review = loadOrchestrator == null
+          ? await _repository.read(
+              userId: userId,
+              startLocalDate: startLocalDate,
+              endLocalDate: endLocalDate,
+              timezoneId: timezoneId,
+            )
+          : await (await loadOrchestrator()).loadWeekly(
+              userId: userId,
+              startLocalDate: startLocalDate,
+              endLocalDate: endLocalDate,
+              timezoneId: timezoneId,
+            );
       if (!mounted || generation != _generation) return;
       final status = switch (review.status) {
         B04BriefingReadStatus.available =>

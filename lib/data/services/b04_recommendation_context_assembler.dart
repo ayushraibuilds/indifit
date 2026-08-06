@@ -1,3 +1,4 @@
+import '../../core/fixtures/b04_adaptive_coaching_fixture_matrix.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../models/b04_adaptive_target_models.dart';
@@ -174,9 +175,7 @@ class B04RecommendationContextAssembler {
           reasonCode: 'target_policy_unavailable',
         ),
       );
-    } else if (input.targetResult!.policyVersion != policy.policyVersion ||
-        input.targetResult!.calculationVersion != policy.calculationVersion ||
-        input.targetResult!.algorithmVersion != policy.algorithmVersion) {
+    } else if (!_targetLineageMatches(input.targetResult!)) {
       missing.add(
         const B04MissingEvidence(
           kind: B04MissingEvidenceKind.targetPolicy,
@@ -186,15 +185,14 @@ class B04RecommendationContextAssembler {
     }
 
     final opportunity = input.mealOpportunity;
-    if (opportunity == null || !opportunity.hasSelection) {
+    if (opportunity != null && !opportunity.hasSelection) {
       missing.add(
         B04MissingEvidence(
           kind: B04MissingEvidenceKind.mealOpportunity,
-          reasonCode:
-              opportunity?.reasonCode ?? 'explicit_opportunity_required',
+          reasonCode: opportunity.reasonCode,
         ),
       );
-    } else if (!opportunity.hasCompleteSelection) {
+    } else if (opportunity != null && !opportunity.hasCompleteSelection) {
       missing.add(
         const B04MissingEvidence(
           kind: B04MissingEvidenceKind.mealOpportunity,
@@ -391,7 +389,7 @@ class B04RecommendationContextAssembler {
     if (missing.isNotEmpty ||
         nutrition.isEvidenceLimited ||
         readiness == null ||
-        opportunity?.hasSelection != true) {
+        (opportunity != null && !opportunity.hasSelection)) {
       return B04ContextAvailability.evidenceLimited;
     }
     return B04ContextAvailability.available;
@@ -498,5 +496,17 @@ class B04RecommendationContextAssembler {
     if (sourceOwner != null && sourceOwner != owner) {
       throw ArgumentError('$name read model owner does not match context.');
     }
+  }
+
+  bool _targetLineageMatches(B04AdaptiveTargetResult target) {
+    if (target.policyVersion == policy.policyVersion &&
+        target.calculationVersion == policy.calculationVersion &&
+        target.algorithmVersion == policy.algorithmVersion) {
+      return true;
+    }
+    return target.reasonCode == 'adaptive_policy_hold' &&
+        target.policyVersion == kB04HoldPolicyVersion &&
+        target.calculationVersion == 'B04-07-TARGET-HOLD-V1' &&
+        target.algorithmVersion == kB04HoldPolicyVersion;
   }
 }
