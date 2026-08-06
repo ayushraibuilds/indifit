@@ -146,7 +146,7 @@ aid, not a compliance register.
 
 | Task | Implementation commit | Final verdict | Merge commit | Known follow-ups |
 |---|---|---|---|---|
-| B05-01 | — | Planned | — | Contract/template only; media/provider approval packet required before B05-08. |
+| B05-01 | 794bfd5, 5f436c1 | Approved with remediation | 1c82e0c | Media/provider approval packet and final top-20 assets remain required before B05-08; managed remote downloads are deferred. |
 | B05-02 | — | Planned | — | — |
 | B05-03 | — | Planned | — | — |
 | B05-04 | — | Planned | — | — |
