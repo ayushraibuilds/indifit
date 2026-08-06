@@ -8,6 +8,18 @@ const String kB04RecommendationRuleVersion = 'B04-10-RECOMMENDATION-V1';
 const String kB04RecommendationAlgorithmVersion = 'B04-10-PRIORITY-V1';
 const String kB04RecommendationCopyVersion = 'B04-D04-13-COPY-V1';
 
+/// Consumers can share the same deterministic engine while keeping
+/// adaptive-policy gates separate from explicit meal-opportunity guidance.
+enum B04RecommendationEvaluationScope { coaching, mealOpportunity }
+
+extension B04RecommendationEvaluationScopeId
+    on B04RecommendationEvaluationScope {
+  String get stableId => switch (this) {
+    B04RecommendationEvaluationScope.coaching => 'coaching',
+    B04RecommendationEvaluationScope.mealOpportunity => 'meal_opportunity',
+  };
+}
+
 enum B04RecommendationAction {
   training,
   nutritionTarget,
@@ -429,6 +441,7 @@ class B04Recommendation {
 class B04RecommendationEvaluation {
   final String contextId;
   final String userId;
+  final B04RecommendationEvaluationScope scope;
   final B04RecommendationPeriod period;
   final String startLocalDate;
   final String endLocalDate;
@@ -449,6 +462,7 @@ class B04RecommendationEvaluation {
   B04RecommendationEvaluation({
     required String contextId,
     required String userId,
+    this.scope = B04RecommendationEvaluationScope.coaching,
     required this.period,
     required this.startLocalDate,
     required this.endLocalDate,
@@ -492,6 +506,7 @@ class B04RecommendationEvaluation {
 
   Map<String, dynamic> toRedactedMap() => {
     'context_id': contextId,
+    'scope': scope.stableId,
     'period': period.stableId,
     'start_local_date': startLocalDate,
     'end_local_date': endLocalDate,
