@@ -303,23 +303,43 @@ void main() {
         ),
       )).single;
       expect(original.id, isNotEmpty);
-      await expectLater(
-        history.issue(
-          _command(
-            explanation: 'Changed after issue',
-            consentEventId: lineage.consentId,
-            eligibilityEvaluationId: lineage.eligibilityId,
-            goalVersionId: lineage.goalId,
-          ),
+      for (final changed in [
+        _command(
+          explanation: 'Changed after issue',
+          consentEventId: lineage.consentId,
+          eligibilityEvaluationId: lineage.eligibilityId,
+          goalVersionId: lineage.goalId,
         ),
-        throwsA(
-          isA<B04RecommendationHistoryError>().having(
-            (error) => error.code,
-            'code',
-            'replay_conflict',
-          ),
+        _command(
+          missingEvidence: ['changed-missing-input'],
+          consentEventId: lineage.consentId,
+          eligibilityEvaluationId: lineage.eligibilityId,
+          goalVersionId: lineage.goalId,
         ),
-      );
+        _command(
+          uncertaintyCodes: ['changed-uncertainty'],
+          consentEventId: lineage.consentId,
+          eligibilityEvaluationId: lineage.eligibilityId,
+          goalVersionId: lineage.goalId,
+        ),
+        _command(
+          alternativeIds: ['changed-alternative'],
+          consentEventId: lineage.consentId,
+          eligibilityEvaluationId: lineage.eligibilityId,
+          goalVersionId: lineage.goalId,
+        ),
+      ]) {
+        await expectLater(
+          history.issue(changed),
+          throwsA(
+            isA<B04RecommendationHistoryError>().having(
+              (error) => error.code,
+              'code',
+              'replay_conflict',
+            ),
+          ),
+        );
+      }
     },
   );
 
@@ -479,6 +499,34 @@ void main() {
             (error) => error.code,
             'code',
             'forbidden_payload',
+          ),
+        ),
+      );
+      expect(await db.select(db.recommendations).get(), isEmpty);
+
+      await expectLater(
+        history.issue(
+          _command(
+            fingerprint: 'missing-source-id',
+            state: B04RecommendationState.unavailable,
+            recommendationEvidenceIds: const [],
+            evidence: const [
+              B04RecommendationEvidenceInput(
+                evidenceKind: 'training',
+                sourceType: 'b02_load_target',
+                status: 'confirmed',
+              ),
+            ],
+            consentEventId: lineage.consentId,
+            eligibilityEvaluationId: lineage.eligibilityId,
+            goalVersionId: lineage.goalId,
+          ),
+        ),
+        throwsA(
+          isA<B04RecommendationHistoryError>().having(
+            (error) => error.code,
+            'code',
+            'missing_source_id',
           ),
         ),
       );
@@ -703,6 +751,10 @@ B04RecommendationHistoryCommand _command({
   String evidenceId = 'training-source',
   String? explanation,
   B04RecommendationState? state,
+  Iterable<String> missingEvidence = const [],
+  Iterable<String> uncertaintyCodes = const [],
+  Iterable<String> alternativeIds = const [],
+  Iterable<String>? recommendationEvidenceIds,
   required String consentEventId,
   required String eligibilityEvaluationId,
   String? goalVersionId,
@@ -720,6 +772,10 @@ B04RecommendationHistoryCommand _command({
     evidenceId: evidenceId,
     explanation: explanation,
     state: state,
+    missingEvidence: missingEvidence,
+    uncertaintyCodes: uncertaintyCodes,
+    alternativeIds: alternativeIds,
+    recommendationEvidenceIds: recommendationEvidenceIds,
   ),
   scope: B04RecommendationHistoryScope.daily,
   consentEventId: consentEventId,
@@ -756,6 +812,10 @@ B04RecommendationEvaluation _evaluation({
   String evidenceId = 'training-source',
   String? explanation,
   B04RecommendationState? state,
+  Iterable<String> missingEvidence = const [],
+  Iterable<String> uncertaintyCodes = const [],
+  Iterable<String> alternativeIds = const [],
+  Iterable<String>? recommendationEvidenceIds,
   B04AdaptiveTargetResult? target,
 }) => B04RecommendationEvaluation(
   contextId: 'context-id',
@@ -789,7 +849,13 @@ B04RecommendationEvaluation _evaluation({
               : 'Use the planned training session.'),
       confidence: B04RecommendationConfidence.high,
       completeness: B04RecommendationCompleteness.complete,
-      evidenceIds: [evidenceId],
+      evidenceIds: recommendationEvidenceIds ?? [evidenceId],
+      missingEvidence: missingEvidence,
+      uncertaintyCodes: uncertaintyCodes,
+      alternativeIds: alternativeIds,
+      unavailableReasons: state == B04RecommendationState.unavailable
+          ? const ['test-unavailable']
+          : const [],
       eligibilityState: B04RecommendationEligibilityState.eligible,
       consentState: B04RecommendationConsentState.enabled,
       policyState: B04RecommendationPolicyState.enabled,
