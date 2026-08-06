@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../utils/app_logger.dart';
 import 'app_colors_extension.dart';
+import 'b05_semantic_colors.dart';
 import 'colors.dart';
 
 class AppTheme {
@@ -11,7 +12,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
-      extensions: const [AppColorsExtension.dark],
+      extensions: const [AppColorsExtension.dark, B05SemanticColors.dark],
 
       // Color Scheme
       colorScheme: const ColorScheme.dark(
@@ -64,7 +65,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-      extensions: const [AppColorsExtension.light],
+      extensions: const [AppColorsExtension.light, B05SemanticColors.light],
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         surface: Colors.white,
