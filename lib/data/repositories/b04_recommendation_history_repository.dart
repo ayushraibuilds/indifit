@@ -9,12 +9,20 @@ import '../models/b04_recommendation_context_models.dart';
 import '../models/b04_recommendation_history_models.dart';
 import '../models/b04_recommendation_models.dart';
 
+/// Read-only history boundary consumed by derived B04 daily/weekly views.
+abstract interface class B04BriefingHistorySource {
+  Future<List<B04HistoricalRecommendation>> listHistory({
+    required String userId,
+    B04RecommendationHistoryScope? scope,
+  });
+}
+
 /// Durable command/read owner for B04 recommendation lineage and feedback.
 ///
 /// A recommendation row is an immutable issued result. The repository only
 /// appends rows and derives current visibility from the feedback stream; it
 /// never stores a daily or weekly cache and never stores provider payloads.
-class B04RecommendationHistoryRepository {
+class B04RecommendationHistoryRepository implements B04BriefingHistorySource {
   final db.AppDatabase _db;
   final LocalScheduleDateService _dates;
 
@@ -311,6 +319,7 @@ class B04RecommendationHistoryRepository {
     });
   }
 
+  @override
   Future<List<B04HistoricalRecommendation>> listHistory({
     required String userId,
     B04RecommendationHistoryScope? scope,
