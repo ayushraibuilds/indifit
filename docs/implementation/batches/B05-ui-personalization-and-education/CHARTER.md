@@ -29,8 +29,8 @@ screen for visual consistency alone.
 | Dashboard personalization | Stable module IDs support deterministic default order, user reordering, hiding, collapsing, and portable persistence. |
 | Design-system modernization | Semantic light/dark tokens, an 8/10/12 px radius scale, reduced direct `AppColors` use in B05-owned surfaces, restrained hierarchy, consistent typography/spacing/icons, and meal-specific accents. |
 | Responsive and accessible UI | Compact-width and large-text layouts, labelled semantics, focus order, touch-target rules, reduced-motion behavior, and Android/iOS-consistent interactions on B05-owned surfaces. |
-| Swipe interactions | Contextual edit/copy/delete food actions and complete/skip workout actions, each routed through an existing domain command with visible undo for a destructive state change. |
-| Exercise education | A licensed offline top-20 exercise media pack, optional verified downloads where appropriate, accessible interactive muscle diagrams, contribution labels, checklists, and contextual cues. |
+| Swipe interactions | Contextual edit/copy/delete food actions and complete/skip workout actions, each routed through an existing domain command with visible undo only when that owner exposes a valid inverse/restore. |
+| Exercise education | A licensed bundled offline top-20 exercise media pack, accessible interactive muscle diagrams, contribution labels, checklists, and contextual cues. Remote downloadable-pack lifecycle is a deliberately deferred follow-up. |
 | Mini lessons | Versioned offline lessons for RPE, progressive overload, protein, energy balance, and recovery, with portable progress. |
 | Adaptive onboarding | A goal-declared lesson path that saves and resumes progress, preserves completed sections, and commits through existing profile/routine authorities. |
 | Playlist launcher | A persisted provider/playlist preference and safe external launcher on relevant workout surfaces, with no provider account, streaming, or token integration. |
@@ -48,12 +48,13 @@ screen for visual consistency alone.
    radii through semantic presentation primitives in light and dark modes.
    Their layout remains usable on compact screens and at large text scales.
 4. Food and workout swipe actions invoke only existing B03/B01 commands,
-   expose a clear undo window for destructive state changes, and preserve
-   error, offline, and accessibility behavior.
+   expose a clear undo window only for owner-supported reversible destructive
+   state changes, and preserve error, offline, and accessibility behavior.
 5. The five named mini lessons, contextual cues, form checklists, primary /
-   secondary / stabilizing muscle labels, and top-20 exercise media work
-   offline once their approved pack is installed or bundled. A labelled text
-   fallback remains available when visual media is unavailable.
+   secondary / stabilizing muscle labels, and bundled top-20 exercise media
+   work offline. A labelled text fallback remains available when visual media
+   is unavailable; missing media never removes lessons, checklists, cues or
+   muscle labels and never blocks a workout.
 6. Media and diagrams use approved, traceable licensing and packaging. B05
    does not complete with placeholder, scraped, copyrighted, or unverified
    assets.
@@ -72,21 +73,23 @@ screen for visual consistency alone.
 |---|---|---|
 | Required B05 product work | All nine requested feature groups; M19 portable preferences/content state; E6/F5; E7/F6 educational experience | Mandatory in the B05 task DAG. |
 | Required B05 delivery gate | Approved top-20 media/diagram rights and source manifest; v19/v10 migration/restore; E8 platform, privacy/offline, accessibility, performance and build checks | B05 can start before approval, but cannot claim complete until the media gate and release evidence are satisfied. |
-| Optional within B05 | Extra module variants, additional non-core animations, extra download packs, haptics, and secondary screen polish | May ship only after required work; never substitutes for a required outcome. |
-| Post-launch | Media beyond the selected top 20, social/community/gamification, provider account or streaming integration, cloud sync, a full exercise-catalogue media rollout, N8/P3/P4/P6 roadmap work | Separate product decision and task DAG. |
+| Optional within B05 | Extra module variants, additional non-core animations, haptics, and secondary screen polish | May ship only after required work; never substitutes for a required outcome. |
+| Post-launch | Remote downloadable-media lifecycle (including resumable/background download, partial packs, cleanup and retry orchestration), media beyond the selected top 20, social/community/gamification, provider account or streaming integration, cloud sync, a full exercise-catalogue media rollout, N8/P3/P4/P6 roadmap work | Separate product decision and task DAG. |
 | Explicitly excluded | B01–B04 domain rebuilds, a second dashboard authority, widget-side nutrition/coaching calculation, indiscriminate screen redesign, unlicensed media, web/desktop release, legal certification, marketing and infrastructure scaling | Not admitted through B05 polish work. |
 
 ## Media and provider gate
 
 The top-20 offline media pack and interactive diagrams are required B05
-features, not an optional future idea. Before B05-08 starts, the product owner
-must approve:
+features, not an optional future idea. B05-01 requires only the contract,
+registry shape and acceptance template below; it does not require the final
+assets or rights package and must not hold up B05-02 through B05-07. Before
+B05-08 starts, the product owner must approve:
 
 - the exact 20 stable exercise IDs;
 - a source, license, attribution/retention rules, and permitted distribution
   method for every clip, animation, and anatomy diagram;
-- the package budget, checksum/signing approach, offline fallback, and optional
-  download/delete behavior; and
+- the package budget, checksum/signing approach, offline fallback, and
+  forward-compatible download/deletion preference semantics; and
 - the supported provider allowlist and playlist-reference formats for the
   launcher.
 
@@ -103,7 +106,7 @@ post-launch.
 | Activity, health and muscles | B02 activity/progress/muscle repositories and `HealthService` | Render typed activity, canonical mappings and primary/secondary/stabilizing labels | Reclassify activity, fabricate health values, create a second muscle taxonomy, or calculate volume |
 | Nutrition and safety | B03 `NutritionReadModelRepository`, food/recipe repositories, `NutritionConstraintEvaluator` | Render totals/status; invoke existing food edit/copy/delete commands | Recalculate nutrients, replace safety filtering, or infer exact values from unknown/range states |
 | Goals and coaching | B04 production orchestrator/controllers and goal/preferences repositories | Render briefing/current-food/review results, action links, and policy states | Rank recommendations, mutate targets, or create a coaching authority |
-| Dashboard and content state | New B05 v19 repositories, central module/content registries | Persist declared module preferences, lesson progress, media manifests, playlist preferences | Dynamically construct arbitrary modules, persist media binaries/paths, or store raw provider data/tokens |
+| Dashboard and content state | New B05 v19 repositories, central module/content registries | Persist declared module preferences, lesson progress, media-pack preference/manifest identity, playlist preferences | Dynamically construct arbitrary modules, persist media binaries/paths, trust restored physical availability, or store raw provider data/tokens |
 | Navigation and settings | GoRouter, theme/privacy/settings controllers | Add durable destinations and present settings through existing owners | Build a screen-local router or a second settings store |
 | Durable contracts | `AppDatabase` and transactional backup/restore graph | Make one v19 migration and Backup v10 extension | Add a parallel restore pipeline or partial restore semantics |
 
@@ -113,12 +116,13 @@ B05 is complete only when:
 
 - every required task has a fresh `Approved` or `Approved with non-blocking
   follow-up` review-and-resolve verdict;
-- dashboard, education, media-manifest, and playlist preferences pass v19 /
+- dashboard, education, media-pack preference/identity, and playlist
+  preferences pass v19 /
   Backup v10 direct, chained, and rollback-safe verification;
-- the approved, licensed top-20 offline pack and accessible muscle diagrams are
-  present and mapped to the selected stable exercise IDs;
+- the approved, licensed top-20 offline pack is bundled and accessible muscle
+  diagrams are present and mapped to the selected stable exercise IDs; and
 - Today, swipe actions, mini lessons, onboarding, playlist launch, reduced
   motion, compact/large-text, semantics/focus, strict-offline and Android/iOS
   checks meet the verification matrix; and
-- a fresh Sol review of the clean integration head finds no unresolved
-  launch-critical defect.
+- a fresh read-only Sol review of the clean integration head finds no
+  unresolved launch-critical defect.

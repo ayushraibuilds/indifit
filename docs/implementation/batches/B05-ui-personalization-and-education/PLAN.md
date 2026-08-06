@@ -31,7 +31,7 @@ complete until the asset/license gate in CHARTER.md is satisfied.
                                                                       │       │
                                               ┌───────────────────────┘       └───────────────────┐
                                               ▼                                                    ▼
-                               v19 content progress / media manifest             approved top-20 media pack
+                               v19 content progress / pack preferences           approved bundled top-20 media pack
                                                                                    + canonical B02 mappings
 
        v19 playlist preference ──► provider/reference validator ──► safe external launcher
@@ -52,7 +52,7 @@ dietary conditions.
 |---|---|---|
 | Dashboard module preferences | One row per known stable module ID: ordinal, visible, collapsed, updated-at | Defaults are deterministic. Unknown/malformed rows never construct UI; restore validates IDs and normalizes collisions deterministically. |
 | Education content progress | Stable content ID, content version, explicit state, updated-at | Completion is version-aware. New content revisions can intentionally request re-read while preserving historical completion. |
-| Downloaded media manifests | Approved pack/asset IDs, version, checksum, availability, updated-at | Records package availability only. Restore never transports clips, local file paths, auth, or download bytes. A local reconciler verifies the pack after restore. |
+| Media pack preferences | Selected/requested pack ID, manifest identity, advisory last-known installed version, download preference, deletion choice, acknowledgement, updated-at | Restores intent and identity only. It never asserts physical availability; a device-local reconciler derives available/absent/invalid after restore. |
 | Workout playlist preference | Allowlisted provider ID, validated playlist reference, optional display label, updated-at | No OAuth/session data. Invalid or obsolete references render an editable unavailable state and cannot trigger a launch. |
 
 The database has a single local user profile today, so preferences use the same
@@ -66,6 +66,11 @@ retains the current all-or-nothing restore model. B05-01 owns all schema,
 generated code, migration, backup adapter, fixtures, and documentation changes
 that flow from this contract.
 
+The future-oriented download/deletion fields record user intent only. B05 does
+not implement a network downloader or deletion lifecycle around the bundled
+top-20 pack, and those fields must never drive an “available” UI state without
+device-local reconciliation.
+
 ### Central registries, not user-provided behavior
 
 The following registries are immutable packaged data/code and are the only
@@ -77,26 +82,28 @@ source of identifiers:
 | Education registry | Stable lesson/checklist IDs, version, topic, body, relevance tags, completion policy, exercise linkage | The five lesson topics are exactly RPE, progressive overload, protein, energy balance, and recovery. |
 | Top-20 media registry | Exact stable exercise ID, pack ID, media/checklist asset IDs, content version, checksum, source/license/attribution identifier, still/reduced-motion fallback | No item is published without approved rights and a verified checksum. |
 | Muscle visual registry | Canonical B02 muscle IDs mapped to approved diagram regions/labels and text order | The diagram is a visual projection of B02 data; the accessible list is always available. |
-| Playlist provider registry | Provider ID, allowed URI/deep-link/URL formats, display name, platform fallback | No arbitrary scheme/URL launch and no provider credential handling. |
+| Playlist provider registry | Provider ID, permitted URI schemes, HTTPS hosts, accepted path/identifier form, normalization, max length, denied query parameters and platform fallback | Parse to a typed provider reference; no arbitrary scheme/URL launch or provider credential handling. |
 
 ### Media packaging and licensing flow
 
-1. Product owner approves the exact 20 exercise IDs, rights/source terms,
-   attribution, permitted derivative/use, and visual diagram source.
-2. B05-01 records the signed-off manifest shape, package budget, checksum
-   policy, optional-download/delete behavior, and offline/reduced-motion
-   fallback.
+1. B05-01 defines the registry schema, manifest validator, acceptance template,
+   attribution/checksum format, package budget and offline/reduced-motion
+   fallback. It does not wait for final files or licenses.
+2. Product owner approves the exact 20 exercise IDs, rights/source terms,
+   attribution, permitted derivative/use, and visual diagram source before
+   B05-08 starts.
 3. B05-08 validates the delivered assets against that manifest, bundles the
-   required offline core or installs a verified optional pack, and makes a
-   text/list/still fallback available before playback.
-4. On launch and after restore, the manifest reconciler distinguishes
-   available, absent, invalid, and download-pending content without blocking
-   exercise cues or workouts.
+   required offline core, and makes a text/list/still fallback available before
+   playback.
+4. On launch and after restore, a local reconciler derives available, absent or
+   invalid state from assets physically present on that device. Restored
+   metadata never claims that bytes are installed.
 
 No unapproved YouTube/embed, scraped clip, copied anatomy art, remote
-auto-fetch, or user-generated package can enter the core path. Optional
-downloads are a convenience, never a prerequisite for checklists or coaching
-cues, and must honor strict-offline mode.
+auto-fetch, or user-generated package can enter the core path. Managed remote
+downloads, partial-pack recovery, cleanup, background work and retry
+orchestration are intentionally deferred from B05. The portable pack-preference
+contract is a safe seam for that future work, never a claim of local presence.
 
 ## Presentation, accessibility, and platform contract
 
@@ -166,6 +173,13 @@ modules use deterministic defaults. The old “size” concept is explicitly out
 of this batch because it was not requested and complicates the responsive
 contract.
 
+Normalization is one shared algorithm: ignore unknown IDs; keep the first valid
+duplicate; sort remaining stored entries by ordinal then stable ID; append new
+descriptors in registry-default order; apply descriptor defaults for missing
+visibility/collapse values; force non-collapsible modules open; and persist the
+normalized result only after an explicit user mutation or dedicated
+reconciliation step.
+
 ### Contextual swipe actions
 
 Food rows offer labelled edit, copy, and delete actions. Workout-item rows
@@ -175,8 +189,10 @@ equivalent. A mutation:
 - invokes its B03 or B01 owner, not a widget-local list edit;
 - disables/reconciles duplicate input while pending;
 - presents success/failure honestly;
-- provides an undo affordance for deletion or other destructive state change,
-  using a repository-supported inverse/restore command; and
+- provides food-deletion undo only through a B03-supported restore or
+  append-only correction command;
+- provides workout complete/skip undo only where B01 exposes an inverse that
+  remains valid after downstream execution events; and
 - never hides an irreversible/safety-sensitive operation behind a swipe.
 
 ### Education and exercise insight
@@ -188,10 +204,11 @@ primary, secondary, and stabilizing roles separately; it does not represent an
 unknown mapping as zero contribution.
 
 The top-20 approved media experience contains a reduced-motion still or
-non-animated alternative, transcript/cue/checklist equivalent, optional
-verified download behavior where approved, and an accessible diagram/list
-toggle. The diagram has semantic region labels and is never the only way to
-learn a muscle role.
+non-animated alternative, transcript/cue/checklist equivalent, and an
+accessible diagram/list toggle. The diagram has semantic region labels and is
+never the only way to learn a muscle role. B05-07 lessons, cues, checklists and
+muscle labels are independently valuable and releasable: a missing/invalid
+media pack never hides them or blocks a workout.
 
 ### Goal-aware onboarding
 
@@ -207,12 +224,14 @@ is introduced.
 ### Playlist launcher
 
 Settings lets the user choose a provider from the packaged allowlist and enter
-or select a validated playlist reference. Relevant workout surfaces show a
-clear launch action only for a valid preference. The app opens the external
-provider through the existing launcher mechanism and handles unavailable apps,
-malformed references, strict-offline mode, and launch failure without blocking
-the workout. It stores no provider sign-in/session/token and does not browse
-or control third-party playback.
+or select a provider-specific reference. The registry parser normalizes input
+to a typed reference using that provider’s allowed schemes, HTTPS hosts,
+path/identifier form, maximum length and denied query parameters; only the
+normalized value persists. Relevant workout surfaces reconstruct an approved
+launch URI and show a clear action only for a valid preference. The app handles
+unavailable apps, malformed references, strict-offline mode, and launch failure
+without blocking the workout. It stores no provider sign-in/session/token and
+does not browse or control third-party playback.
 
 ## Dependency graph and merge order
 
@@ -225,27 +244,34 @@ B05-01 durable/content/media/playlist foundation
     │     └── B05-07 lessons/cues/muscle labels
     ├── B05-03 module registry + personalization
     │     └── B05-04 Today action surface
-    └── B05-07 lessons/cues/muscle labels
+    └── media contract only
 
-B05-05 + B05-07 + approved media/provider gate ──► B05-08 media, diagrams, playlist
-B05-07 + B05-04 ─────────────────────────────────► B05-09 adaptive onboarding
+B05-01 + B05-02 + B05-05 + B05-07 + approved real asset package ──► B05-08 media, diagrams, playlist
+B05-01 + B05-07 ───────────────────────────────────────────────────► B05-09 adaptive onboarding
+                                                               └─────► final handoff tested after B05-04
 B05-04…B05-09 ───────────────────────────────────► B05-10 E8 release assurance
 B05-10 ──────────────────────────────────────────► B05-11 final Sol disposition
 ~~~
 
 | Wave | Tasks | Merge / concurrency rule |
 |---|---|---|
-| 0 | B05-01 | Serial; sole writer of schema, backup, content contracts, and package gate. |
+| 0 | B05-01 | Serial; sole writer of schema, backup, content contracts and the media acceptance template. It does not wait for final assets/licenses. |
 | 1 | B05-02, B05-03 | May run in parallel after B05-01 because theme primitives and module repository have disjoint ownership; serialize any shared app shell edit. |
 | 2 | B05-04, B05-05 | May run in parallel after Wave 1. Today owns dashboard/controller files; workout owns calendar/player action files. |
 | 3 | B05-06, B05-07 | May run in parallel after B05-02 and their prerequisites. Food owns food-log paths; education owns exercise/content paths. |
-| 4 | B05-08, then B05-09 | Normally serial: B05-08 owns settings/playlist/exercise-media integration; B05-09 owns onboarding/router. Parallelize only if file ownership is confirmed disjoint after Wave 3. |
+| 4 | B05-08 and B05-09 | May run in parallel after their own prerequisites when settings/exercise/workout files for B05-08 and onboarding/router files for B05-09 are confirmed disjoint. B05-09 tests final handoff after B05-04 has merged. |
 | 5 | B05-10 | Serial clean-integration verification/remediation only. |
 | 6 | B05-11 | Serial final fresh review. |
 
 Never run more than two implementation tasks concurrently. Schema/backup,
 shared semantic primitives, app shell/router, dashboard controller, and
 settings preference files have one explicit owner per wave.
+
+B05-10 is implementation-owned: it prepares the release candidate, runs the
+full automated/build matrix and repairs real integration defects. B05-11 is
+independent and read-only: it reviews that clean candidate and returns a
+verdict. A B05-11 blocker creates one scoped remediation task, then a fresh
+B05-11 review; the reviewer does not silently edit code.
 
 ## Task routing
 
@@ -267,7 +293,8 @@ settings preference files have one explicit owner per wave.
 
 - Merge B05-01 only after direct v18→v19, supported chained migration,
   v5–v10 backup import/export, malformed payload, restore rollback, and
-  no-media-binary tests pass.
+  no-media-binary/path/availability-trust tests pass. Its acceptance needs the
+  media contract/template, not the final asset package.
 - Merge a presentation task only after its compact, large-text, semantics,
   focus, touch target, light/dark and reduced-motion checks pass.
 - Merge Today only after its four questions, module ordering/visibility/
@@ -277,7 +304,12 @@ settings preference files have one explicit owner per wave.
   failure, undo, assistive alternative, and strict-offline state tests pass.
 - Merge B05-08 only with the approved manifest, verifiable licenses/checksums,
   all 20 selected IDs, diagram text equivalent, reduced-motion fallback,
-  optional download lifecycle, and playlist launch failure/offline handling.
+  device-local availability reconciliation, provider-specific typed-reference
+  validation, and playlist launch failure/offline handling. Managed remote
+  download lifecycle is not a B05 acceptance condition.
+- B05-11 changes no application code. If it identifies a blocker, create one
+  bounded remediation task, rerun affected checks, and request a fresh final
+  disposition.
 - Treat unavailable signing credentials or a physical device as an external
   limitation unless they expose an actual defect. Record the attempted command
   and result; never invent success.

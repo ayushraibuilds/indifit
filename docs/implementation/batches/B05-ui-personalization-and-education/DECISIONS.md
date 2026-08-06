@@ -23,8 +23,9 @@ repository/controller.
    updated-at;
 2. education content progress: stable content ID, version, explicit state,
    updated-at;
-3. downloaded media manifest: approved pack/asset IDs, version, checksum,
-   availability, updated-at; and
+3. media-pack preference/identity: selected or requested pack ID, manifest
+   identity, advisory last-known installed version, user download preference,
+   user deletion choice, content acknowledgement and updated-at; and
 4. playlist preference: allowlisted provider ID, validated playlist reference,
    optional display label, updated-at.
 
@@ -32,9 +33,12 @@ repository/controller.
 restore. Existing B01 exercise setup/personal-cue records already own their
 state and must be reused.
 
-**Implication:** Backup v10 contains no media bytes, local paths, raw provider
-payload, telemetry, free-text prompts, OAuth/session/token data, or second
-exercise preference aggregate. v5–v9 imports produce safe empty B05 state.
+**Implication:** Backup v10 contains no media bytes, local paths, actual
+availability, verified-on-this-device state, temporary progress/cache status,
+raw provider payload, telemetry, free-text prompts, OAuth/session/token data,
+or second exercise preference aggregate. After restore, a local reconciler
+derives available/absent/invalid from physical files on that device. v5–v9
+imports produce safe empty B05 state.
 
 ## D03 — Stable dashboard descriptors own personalization
 
@@ -48,7 +52,11 @@ modules evolve. They prevent persisted data from choosing arbitrary widgets.
 
 **Implication:** The prior planning notion of module “size” is removed.
 Unknown/deleted IDs never execute/render arbitrary behavior; they are safely
-ignored or normalized to registry defaults.
+normalized by one exact algorithm: ignore unknown IDs; keep the first valid
+duplicate; sort the remainder by stored ordinal then stable ID; append new
+descriptors in registry-default order; apply defaults for missing visibility
+and collapse; force non-collapsible modules open; and persist the normalized
+result only after an explicit mutation or dedicated reconciliation step.
 
 ## D04 — Semantic tokens and an 8/10/12 radius scale are mandatory on B05 surfaces
 
@@ -108,8 +116,11 @@ handle failure/pending/duplicate input explicitly.
 existing immutability, audit, safety or transaction guarantees.
 
 **Implication:** No list-local removal, silent completion, or undocumented
-inverse mutation. If an existing command cannot support safe undo, the UI uses
-a confirmation or omits the destructive swipe rather than fabricating one.
+inverse mutation. Food deletion may undo only through a B03-supported restore
+or append-only correction. Workout complete/skip may undo only when B01 says
+the inverse remains valid after any downstream execution event. If an existing
+command cannot support safe undo, the UI uses a confirmation or omits the
+destructive swipe rather than fabricating one.
 
 ## D08 — Educational content is versioned, offline and explicit
 
@@ -123,21 +134,25 @@ completion without duplicating exercise or muscle facts.
 
 **Implication:** Content completion is version-aware. Unknown B02 mappings
 remain unknown. Personal cues remain visibly distinct from catalogue guidance.
+Lessons, cues, checklists and muscle labels are independently shippable B05-07
+content: a missing or invalid media pack never hides them or blocks a workout.
 
 ## D09 — Top-20 media and diagrams are required but license-gated
 
-**Decision:** B05 ships approved offline clips/animations for exactly 20
-stable exercise IDs, optional verified downloads where approved, and an
-interactive diagram mapped to B02 muscle IDs with a labelled text equivalent.
+**Decision:** B05 ships bundled approved offline clips/animations for exactly
+20 stable exercise IDs and an interactive diagram mapped to B02 muscle IDs
+with a labelled text equivalent. Managed remote download lifecycle is a
+post-B05 follow-up, not a first-release requirement.
 
 **Why:** The product explicitly requests it, while the audit found no current
 asset rights, media manifest or diagram source authority.
 
-**Implication:** Product approval must define IDs, source/license/attribution,
-distribution/retention rights, package budget, checksums, diagram mapping and
-fallback before implementation. B05 cannot close without this pack. It may
-never substitute copyrighted remote media, scraped assets or a full catalogue
-rollout.
+**Implication:** B05-01 defines the registry/acceptance template without
+waiting for final files. B05-08 requires product approval of IDs,
+source/license/attribution, distribution/retention rights, package budget,
+checksums, diagram mapping and fallback. B05 cannot close without this bundle.
+It may never substitute copyrighted remote media, scraped assets or a full
+catalogue rollout.
 
 ## D10 — Onboarding adapts to a declared goal and resumes state
 
@@ -161,16 +176,20 @@ relevant workout surfaces.
 
 **Why:** Users need a quick launch, not account integration or in-app music.
 
-**Implication:** B05 stores no account, OAuth, token, catalog, playback state
-or arbitrary URL. Invalid, unavailable-app, strict-offline and launch-failure
+**Implication:** The provider registry defines allowed URI schemes, HTTPS
+hosts, path/identifier form, normalization, maximum length, disallowed query
+parameters and platform fallback. Input is parsed into a typed provider
+reference, normalized before persistence, and used to reconstruct an approved
+launch URI. B05 stores no account, OAuth, token, catalog, playback state or
+arbitrary URL. Invalid, unavailable-app, strict-offline and launch-failure
 states stay editable and never block a workout.
 
-## D12 — E8 evidence is integrated and honest
+## D12 — B05-10 owns integrated assurance and remediation
 
-**Decision:** Final B05 verification covers migration/backup, compact/large
-text/semantics/focus/reduced motion, strict offline/privacy, media/launcher
-failure states, Android release and iOS no-code-sign build attempts, plus
-focused B01–B04 regressions.
+**Decision:** B05-10 is implementation-owned release assurance. It runs the
+full automated matrix, Android/iOS build attempts, targeted performance checks,
+nearby B01–B04 regressions and actual defect remediation to produce a clean
+release candidate.
 
 **Why:** B05 is the final planned batch and must prove its integrations on the
 actual current head.
@@ -178,3 +197,16 @@ actual current head.
 **Implication:** Missing credentials or physical devices are recorded as
 external limitations unless a real defect is demonstrated. Secrets, signing
 material and fabricated device evidence are prohibited.
+
+## D13 — B05-11 is an independent read-only final disposition
+
+**Decision:** B05-11 reviews the clean release candidate, inspects production
+wiring and remaining risk, runs or verifies important gates, and records an
+evidence-backed verdict. It does not modify application code.
+
+**Why:** The final reviewer must not silently implement its own fixes while
+issuing approval; B05-10 already owns integration remediation.
+
+**Implication:** A concrete B05-11 blocker creates one scoped remediation
+task/branch. That task fixes the defect, reruns affected checks, and returns to
+a fresh B05-11 disposition.
