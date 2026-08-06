@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
+import '../../data/repositories/b04_briefing_read_repositories.dart';
+import '../../data/repositories/b04_recommendation_history_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
@@ -29,11 +31,13 @@ import '../../data/repositories/travel_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../../data/services/b04_current_food_guidance_service.dart';
+import '../../features/dashboard/b04_daily_briefing_controller.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
 import '../../features/food_log/nutrition_thali_controller.dart';
 import '../../features/food_log/saved_recipe_log_controller.dart';
 import '../../features/nutrition/current_food_controller.dart';
 import '../../features/nutrition/protein_distribution_controller.dart';
+import '../../features/progress/b04_weekly_review_controller.dart';
 import '../../features/settings/nutrition_constraint_review_controller.dart';
 import '../../features/settings/nutrition_constraints_controller.dart';
 import '../config/app_config.dart';
@@ -245,6 +249,49 @@ final b04CurrentFoodControllerProvider =
     >(
       (ref) => B04CurrentFoodController(
         service: ref.watch(b04CurrentFoodGuidanceServiceProvider),
+      ),
+    );
+
+final b04RecommendationHistoryRepositoryProvider =
+    Provider<B04RecommendationHistoryRepository>(
+      (ref) => B04RecommendationHistoryRepository(
+        database: ref.watch(databaseProvider),
+      ),
+    );
+
+final b04DailyBriefingReadRepositoryProvider =
+    Provider<B04DailyBriefingReadRepository>(
+      (ref) => B04DailyBriefingReadRepository(
+        history: ref.watch(b04RecommendationHistoryRepositoryProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
+      ),
+    );
+
+final b04WeeklyReviewReadRepositoryProvider =
+    Provider<B04WeeklyReviewReadRepository>(
+      (ref) => B04WeeklyReviewReadRepository(
+        history: ref.watch(b04RecommendationHistoryRepositoryProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
+      ),
+    );
+
+final b04DailyBriefingControllerProvider =
+    StateNotifierProvider.autoDispose<
+      B04DailyBriefingController,
+      B04DailyBriefingState
+    >(
+      (ref) => B04DailyBriefingController(
+        repository: ref.watch(b04DailyBriefingReadRepositoryProvider),
+      ),
+    );
+
+final b04WeeklyReviewControllerProvider =
+    StateNotifierProvider.autoDispose<
+      B04WeeklyReviewController,
+      B04WeeklyReviewState
+    >(
+      (ref) => B04WeeklyReviewController(
+        repository: ref.watch(b04WeeklyReviewReadRepositoryProvider),
       ),
     );
 
