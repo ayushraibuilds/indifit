@@ -1,7 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/services/local_schedule_date_service.dart';
 import '../../data/models/b04_briefing_read_models.dart';
+import '../../data/models/b04_goal_models.dart';
+import '../../data/models/b04_recommendation_history_models.dart';
 import '../../data/repositories/b04_briefing_read_repositories.dart';
+import '../../data/repositories/b04_recommendation_history_repository.dart';
+import '../../data/repositories/coaching_preference_repository.dart';
+import '../../data/repositories/nutrition_goal_repository.dart';
 
 enum B04DailyBriefingControllerStatus {
   idle,
@@ -55,6 +61,10 @@ const _unset = Object();
 /// in the read repository.
 class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
   final B04DailyBriefingReadRepository _repository;
+  final B04RecommendationHistoryRepository? _history;
+  final NutritionGoalRepository? _goals;
+  final CoachingPreferenceRepository? _preferences;
+  final LocalScheduleDateService _dates;
   String? _userId;
   String? _localDate;
   String? _timezoneId;
@@ -62,7 +72,15 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
 
   B04DailyBriefingController({
     required B04DailyBriefingReadRepository repository,
+    B04RecommendationHistoryRepository? history,
+    NutritionGoalRepository? goals,
+    CoachingPreferenceRepository? preferences,
+    LocalScheduleDateService? dates,
   }) : _repository = repository,
+       _history = history,
+       _goals = goals,
+       _preferences = preferences,
+       _dates = dates ?? LocalScheduleDateService(),
        super(const B04DailyBriefingState());
 
   Future<void> load({
@@ -123,5 +141,111 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
     final timezoneId = _timezoneId;
     if (userId == null || localDate == null || timezoneId == null) return;
     await load(userId: userId, localDate: localDate, timezoneId: timezoneId);
+  }
+
+  Future<void> recordFeedback({
+    required String recommendationId,
+    required B04RecommendationFeedbackAction action,
+    String? reason,
+  }) async {
+    final history = _history;
+    final userId = _userId;
+    final localDate = _localDate;
+    final timezoneId = _timezoneId;
+    if (history == null ||
+        userId == null ||
+        localDate == null ||
+        timezoneId == null) {
+      return;
+    }
+    try {
+      final createdAtUtc = DateTime.now().toUtc();
+      await history.recordFeedback(
+        B04RecommendationFeedbackCommand(
+          userId: userId,
+          recommendationId: recommendationId,
+          action: action,
+          reason: reason,
+          source: 'daily_briefing',
+          localDate: _dates.localDateFor(createdAtUtc, timezoneId),
+          timezoneId: timezoneId,
+          createdAtUtc: createdAtUtc,
+        ),
+      );
+      await load(userId: userId, localDate: localDate, timezoneId: timezoneId);
+    } catch (error) {
+      if (!mounted) return;
+      final typed = error is B04RecommendationHistoryError ? error : null;
+      state = state.copyWith(
+        status: B04DailyBriefingControllerStatus.failure,
+        errorCode: typed?.code ?? 'daily_briefing_feedback_failed',
+        errorMessage:
+            typed?.message ?? 'That feedback could not be recorded. Retry.',
+        retryable: true,
+      );
+    }
+  }
+
+  Future<void> acceptTarget(B04BriefingRecommendation recommendation) async {
+    final goals = _goals;
+    final preferences = _preferences;
+    final history = _history;
+    final userId = _userId;
+    final localDate = _localDate;
+    final timezoneId = _timezoneId;
+    final proposal =
+        recommendation.engineRecommendation?.canonicalAdaptiveTarget?.proposal;
+    if (goals == null ||
+        preferences == null ||
+        history == null ||
+        userId == null ||
+        localDate == null ||
+        timezoneId == null ||
+        proposal == null) {
+      return;
+    }
+    try {
+      final createdAtUtc = DateTime.now().toUtc();
+      final availability = await preferences.adaptiveAvailability(
+        userId: userId,
+      );
+      await goals.acceptAdaptiveProposal(
+        proposal: proposal,
+        adaptiveConsentEnabled:
+            availability.preferences.adaptiveCoachingEnabled,
+        ageEligible: availability.eligibility?.isEligible == true,
+        acceptanceCommandId: recommendation.id,
+      );
+      await history.recordFeedback(
+        B04RecommendationFeedbackCommand(
+          userId: userId,
+          recommendationId: recommendation.id,
+          action: B04RecommendationFeedbackAction.accept,
+          source: 'daily_briefing',
+          localDate: _dates.localDateFor(createdAtUtc, timezoneId),
+          timezoneId: timezoneId,
+          createdAtUtc: createdAtUtc,
+        ),
+      );
+      await load(userId: userId, localDate: localDate, timezoneId: timezoneId);
+    } catch (error) {
+      if (!mounted) return;
+      var errorCode = 'daily_briefing_target_acceptance_failed';
+      var errorMessage =
+          'The target was not accepted. No proposal was changed.';
+      if (error is B04GoalValidationError) {
+        errorCode = error.code;
+        errorMessage = error.message;
+      } else if (error is B04RecommendationHistoryError) {
+        errorCode = error.code;
+        errorMessage = error.toString();
+      }
+      state = state.copyWith(
+        status: B04DailyBriefingControllerStatus.failure,
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+        retryable: true,
+      );
+    }
   }
 }

@@ -15,6 +15,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../activity/b02_activity_controller.dart';
+import '../coaching/b04_production_surface_widgets.dart';
 import '../food_log/ai_meal_planner_screen.dart';
 import '../nutrition/protein_distribution_screen.dart';
 import '../settings/settings_screen.dart';
@@ -442,6 +443,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 eatenCarbs: eatenCarbs,
                                 eatenFat: eatenFat,
                               ),
+                              const SizedBox(height: 16),
+                              const B04DailyBriefingCard(),
+                              const SizedBox(height: 16),
+                              const B04CurrentFoodCard(),
                               const SizedBox(height: 16),
                               DashboardMealSection(
                                 logs: logs,

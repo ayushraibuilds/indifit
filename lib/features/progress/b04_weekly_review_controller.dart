@@ -1,7 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/services/local_schedule_date_service.dart';
 import '../../data/models/b04_briefing_read_models.dart';
+import '../../data/models/b04_goal_models.dart';
+import '../../data/models/b04_recommendation_history_models.dart';
 import '../../data/repositories/b04_briefing_read_repositories.dart';
+import '../../data/repositories/b04_recommendation_history_repository.dart';
+import '../../data/repositories/coaching_preference_repository.dart';
+import '../../data/repositories/nutrition_goal_repository.dart';
 
 enum B04WeeklyReviewControllerStatus {
   idle,
@@ -55,15 +61,28 @@ const _unset = Object();
 /// calendar week.
 class B04WeeklyReviewController extends StateNotifier<B04WeeklyReviewState> {
   final B04WeeklyReviewReadRepository _repository;
+  final B04RecommendationHistoryRepository? _history;
+  final NutritionGoalRepository? _goals;
+  final CoachingPreferenceRepository? _preferences;
+  final LocalScheduleDateService _dates;
   String? _userId;
   String? _startLocalDate;
   String? _endLocalDate;
   String? _timezoneId;
   int _generation = 0;
 
-  B04WeeklyReviewController({required B04WeeklyReviewReadRepository repository})
-    : _repository = repository,
-      super(const B04WeeklyReviewState());
+  B04WeeklyReviewController({
+    required B04WeeklyReviewReadRepository repository,
+    B04RecommendationHistoryRepository? history,
+    NutritionGoalRepository? goals,
+    CoachingPreferenceRepository? preferences,
+    LocalScheduleDateService? dates,
+  }) : _repository = repository,
+       _history = history,
+       _goals = goals,
+       _preferences = preferences,
+       _dates = dates ?? LocalScheduleDateService(),
+       super(const B04WeeklyReviewState());
 
   Future<void> load({
     required String userId,
@@ -134,5 +153,125 @@ class B04WeeklyReviewController extends StateNotifier<B04WeeklyReviewState> {
       endLocalDate: end,
       timezoneId: timezoneId,
     );
+  }
+
+  Future<void> recordFeedback({
+    required String recommendationId,
+    required B04RecommendationFeedbackAction action,
+    String? reason,
+  }) async {
+    final history = _history;
+    final userId = _userId;
+    final start = _startLocalDate;
+    final end = _endLocalDate;
+    final timezoneId = _timezoneId;
+    if (history == null ||
+        userId == null ||
+        start == null ||
+        end == null ||
+        timezoneId == null) {
+      return;
+    }
+    try {
+      final createdAtUtc = DateTime.now().toUtc();
+      await history.recordFeedback(
+        B04RecommendationFeedbackCommand(
+          userId: userId,
+          recommendationId: recommendationId,
+          action: action,
+          reason: reason,
+          source: 'weekly_review',
+          localDate: _dates.localDateFor(createdAtUtc, timezoneId),
+          timezoneId: timezoneId,
+          createdAtUtc: createdAtUtc,
+        ),
+      );
+      await load(
+        userId: userId,
+        startLocalDate: start,
+        endLocalDate: end,
+        timezoneId: timezoneId,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      final typed = error is B04RecommendationHistoryError ? error : null;
+      state = state.copyWith(
+        status: B04WeeklyReviewControllerStatus.failure,
+        errorCode: typed?.code ?? 'weekly_review_feedback_failed',
+        errorMessage:
+            typed?.message ?? 'That feedback could not be recorded. Retry.',
+        retryable: true,
+      );
+    }
+  }
+
+  Future<void> acceptTarget(B04BriefingRecommendation recommendation) async {
+    final goals = _goals;
+    final preferences = _preferences;
+    final history = _history;
+    final userId = _userId;
+    final start = _startLocalDate;
+    final end = _endLocalDate;
+    final timezoneId = _timezoneId;
+    final proposal =
+        recommendation.engineRecommendation?.canonicalAdaptiveTarget?.proposal;
+    if (goals == null ||
+        preferences == null ||
+        history == null ||
+        userId == null ||
+        start == null ||
+        end == null ||
+        timezoneId == null ||
+        proposal == null) {
+      return;
+    }
+    try {
+      final createdAtUtc = DateTime.now().toUtc();
+      final availability = await preferences.adaptiveAvailability(
+        userId: userId,
+      );
+      await goals.acceptAdaptiveProposal(
+        proposal: proposal,
+        adaptiveConsentEnabled:
+            availability.preferences.adaptiveCoachingEnabled,
+        ageEligible: availability.eligibility?.isEligible == true,
+        acceptanceCommandId: recommendation.id,
+      );
+      await history.recordFeedback(
+        B04RecommendationFeedbackCommand(
+          userId: userId,
+          recommendationId: recommendation.id,
+          action: B04RecommendationFeedbackAction.accept,
+          source: 'weekly_review',
+          localDate: _dates.localDateFor(createdAtUtc, timezoneId),
+          timezoneId: timezoneId,
+          createdAtUtc: createdAtUtc,
+        ),
+      );
+      await load(
+        userId: userId,
+        startLocalDate: start,
+        endLocalDate: end,
+        timezoneId: timezoneId,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      var errorCode = 'weekly_review_target_acceptance_failed';
+      var errorMessage =
+          'The target was not accepted. No proposal was changed.';
+      if (error is B04GoalValidationError) {
+        errorCode = error.code;
+        errorMessage = error.message;
+      } else if (error is B04RecommendationHistoryError) {
+        errorCode = error.code;
+        errorMessage = error.toString();
+      }
+      state = state.copyWith(
+        status: B04WeeklyReviewControllerStatus.failure,
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+        retryable: true,
+      );
+    }
   }
 }
