@@ -287,7 +287,7 @@ but must not reconstruct prior reviews from memory or from a final matrix.
 | `B04-13` | — | — | — | — | — | — | — | — | Not started |
 | `B04-14` (optional) | `06921dc0ea7d57c55d303acc4b4e078ad17b0383` | GPT-5 Codex | Pass after remediation | — | `5d22db2c734ea2e90b9bfa62754e6bffe64421b5` | `5d22db2c734ea2e90b9bfa62754e6bffe64421b5` | `dd5592d3e51a359e7eee7e4987fd0587b6af60ab` | focused AI test (9 passed); nearby regressions (97 passed); full suite (950 passed) | Merged |
 | `B04-15` | — | — | — | — | — | — | — | — | Not started |
-| `B04-16` | — | — | — | — | — | — | — | — | Not started |
+| `B04-16` | `117c0673f8a2fe7c36ad15cf2862367091c9097f` | GPT-5 Codex | Pass after remediation | — | `f04b9108e9fc4103bd437f4d8cde8c19de368fa7` | `f04b9108e9fc4103bd437f4d8cde8c19de368fa7` | `1d82f85cfda66ae4fcfe872ce9f90cdee8f223ea` | integration regression (6 passed); full suite (969 passed) | Merged |
 | `B04-17` | — | — | — | — | — | — | — | — | Not started |
 | `B04-18` (conditional) | — | — | — | — | — | — | — | — | Not started |
 
