@@ -283,7 +283,7 @@ class B04ProductionRecommendationOrchestrator {
     final end = _dates.normalizeLocalDate(endLocalDate);
     final zone = timezoneId.trim();
     _dates.validateTimezone(zone);
-    final now = _nowUtc().toUtc();
+    final now = _evaluationTimestamp(_nowUtc().toUtc());
     final initial = await _buildPeriod(
       scope: scope,
       userId: owner,
@@ -295,9 +295,12 @@ class B04ProductionRecommendationOrchestrator {
       includeMealCandidates: includeMealCandidates,
     );
     final rows = initial.periodRows;
-    final replayRow = _latestMatchingContext(rows, initial.evaluation);
-    if (replayRow != null &&
-        _dates.localDateFor(replayRow.createdAtUtc, zone) == end) {
+    final replayRows = rows.toList(growable: false)
+      ..sort((left, right) {
+        final time = right.createdAtUtc.compareTo(left.createdAtUtc);
+        return time == 0 ? right.id.compareTo(left.id) : time;
+      });
+    for (final replayRow in replayRows) {
       final replay = await _buildPeriod(
         scope: scope,
         userId: owner,
@@ -508,13 +511,18 @@ class B04ProductionRecommendationOrchestrator {
         guidance?.recommendationEvaluation ??
         _engine.evaluate(
           context: context,
-          candidates: [
-            _targetCandidate(
-              target: target,
-              scope: scope,
-              contextUserId: userId,
-            ),
-          ],
+          candidates: includeMealCandidates
+              ? const []
+              : [
+                  _targetCandidate(
+                    target: target,
+                    scope: scope,
+                    contextUserId: userId,
+                  ),
+                ],
+          scope: includeMealCandidates
+              ? B04RecommendationEvaluationScope.mealOpportunity
+              : B04RecommendationEvaluationScope.coaching,
         );
     return _ProductionPeriod(
       scope: scope,
@@ -954,6 +962,7 @@ class B04ProductionRecommendationOrchestrator {
   }
 
   Future<bool> _issueIfAllowed(_ProductionPeriod period) async {
+    if (period.evaluation.recommendations.isEmpty) return false;
     final preferences = period.context.preferences;
     final eligibility = period.context.eligibility;
     final consentEventId = preferences?.adaptiveCoachingEvent?.id;
@@ -1063,26 +1072,6 @@ class B04ProductionRecommendationOrchestrator {
     );
   }
 
-  B04HistoricalRecommendation? _latestMatchingContext(
-    List<B04HistoricalRecommendation> rows,
-    B04RecommendationEvaluation evaluation,
-  ) {
-    final matching =
-        rows
-            .where(
-              (row) =>
-                  row.contextFingerprint == evaluation.contextFingerprint &&
-                  row.action ==
-                      evaluation.recommendations.firstOrNull?.action.stableId,
-            )
-            .toList()
-          ..sort((left, right) {
-            final time = right.createdAtUtc.compareTo(left.createdAtUtc);
-            return time == 0 ? right.id.compareTo(left.id) : time;
-          });
-    return matching.firstOrNull;
-  }
-
   String _contextId({
     required B04RecommendationHistoryScope scope,
     required String startLocalDate,
@@ -1093,6 +1082,15 @@ class B04ProductionRecommendationOrchestrator {
 
   static DateTime _later(DateTime left, DateTime right) =>
       left.isAfter(right) ? left : right;
+
+  static DateTime _evaluationTimestamp(DateTime value) => DateTime.utc(
+    value.year,
+    value.month,
+    value.day,
+    value.hour,
+    value.minute,
+    value.second,
+  );
 
   Future<T?> _readOrNull<T>(Future<T> Function() read) async {
     try {

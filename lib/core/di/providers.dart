@@ -343,9 +343,7 @@ final b04WeeklyReviewReadRepositoryProvider =
     );
 
 final b04ProductionRecommendationOrchestratorProvider =
-    FutureProvider.autoDispose<B04ProductionRecommendationOrchestrator>((
-      ref,
-    ) async {
+    FutureProvider<B04ProductionRecommendationOrchestrator>((ref) async {
       final registry = await ref.watch(nutritionRegistryProvider.future);
       final recipeLogging = await ref.watch(
         nutritionRecipeLogCoordinatorProvider.future,

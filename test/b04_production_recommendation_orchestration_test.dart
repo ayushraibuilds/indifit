@@ -6,6 +6,7 @@ import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_constraints.dart';
 import 'package:indifit/core/nutrition_consumption_snapshots.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
+import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b04_briefing_read_models.dart';
@@ -190,6 +191,100 @@ void main() {
   );
 
   test(
+    'production context provider and current-food controller use the live provider path',
+    () async {
+      final scenario = await _seedScenario(
+        db: db,
+        registry: registry,
+        userId: '1',
+      );
+      await db.into(db.userProfiles).insert(UserProfilesCompanion.insert());
+      container = _container(db: db, registry: registry);
+
+      final context = await container!.read(
+        b04ProductionRecommendationContextProvider.future,
+      );
+      expect(context.userId, scenario.userId);
+
+      final controller = container!.read(
+        b04CurrentFoodControllerProvider.notifier,
+      );
+      await controller.loadProduction(context: context);
+
+      expect(controller.state.status, B04CurrentFoodControllerStatus.ready);
+      expect(controller.state.guidance!.cards, hasLength(1));
+      expect(controller.state.guidance!.cards.single.subjectId, 'food-1');
+    },
+  );
+
+  test(
+    'production history deduplication survives orchestrator recreation',
+    () async {
+      final scenario = await _seedScenario(db: db, registry: registry);
+      container = _container(db: db, registry: registry);
+
+      final first = await container!.read(
+        b04ProductionRecommendationOrchestratorProvider.future,
+      );
+      await first.loadDaily(
+        userId: scenario.userId,
+        localDate: scenario.localDate,
+        timezoneId: scenario.timezoneId,
+      );
+
+      container!.invalidate(b04ProductionRecommendationOrchestratorProvider);
+      final second = await container!.read(
+        b04ProductionRecommendationOrchestratorProvider.future,
+      );
+      await second.loadDaily(
+        userId: scenario.userId,
+        localDate: scenario.localDate,
+        timezoneId: scenario.timezoneId,
+      );
+
+      final history = B04RecommendationHistoryRepository(database: db);
+      expect(
+        await history.listHistory(
+          userId: scenario.userId,
+          scope: B04RecommendationHistoryScope.daily,
+        ),
+        hasLength(1),
+      );
+    },
+  );
+
+  test(
+    'production eat-now with no candidates does not issue a target recommendation',
+    () async {
+      final scenario = await _seedScenario(
+        db: db,
+        registry: registry,
+        includeConsumption: false,
+      );
+      container = _container(db: db, registry: registry);
+
+      final orchestrator = await container!.read(
+        b04ProductionRecommendationOrchestratorProvider.future,
+      );
+      final current = await orchestrator.loadCurrentFood(
+        userId: scenario.userId,
+        localDate: scenario.localDate,
+        timezoneId: scenario.timezoneId,
+      );
+
+      expect(current.guidance.status, B04CurrentFoodGuidanceStatus.noCandidate);
+      expect(current.guidance.recommendationEvaluation, isNull);
+      expect(
+        await B04RecommendationHistoryRepository(database: db).listHistory(
+          userId: scenario.userId,
+          scope: B04RecommendationHistoryScope.mealOpportunity,
+        ),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
     'production missing consent, eligibility, and nutrition evidence stays typed and offline',
     () async {
       final nowUtc = DateTime.now().toUtc();
@@ -230,15 +325,19 @@ ProviderContainer _container({
   overrides: [
     databaseProvider.overrideWithValue(db),
     nutritionRegistryProvider.overrideWith((ref) async => registry),
+    localTimezoneServiceProvider.overrideWithValue(
+      LocalTimezoneService(read: () async => 'Asia/Kolkata'),
+    ),
   ],
 );
 
 Future<_Scenario> _seedScenario({
   required AppDatabase db,
   required NutrientRegistry registry,
+  String userId = 'user-1',
+  bool includeConsumption = true,
   bool addAllergyWithoutFoodEvidence = false,
 }) async {
-  const userId = 'user-1';
   const timezoneId = 'Asia/Kolkata';
   final dates = LocalScheduleDateService();
   final nowUtc = DateTime.now().toUtc();
@@ -309,40 +408,42 @@ Future<_Scenario> _seedScenario({
           lifecycle: 'active',
         ),
       );
-  final consumption = NutritionConsumptionRepository(
-    db: db,
-    registry: registry,
-    nowUtc: () => nowUtc,
-  );
-  for (var index = 0; index < 7; index++) {
-    final date = dates.addCalendarDays(weekStart, timezoneId, index);
-    await consumption.finalizeConsumption(
-      NutritionConsumptionFinalizeRequest(
-        userId: userId,
-        consumptionId: 'consumption-$index',
-        commandId: 'command-$index',
-        loggedAtUtc: nowUtc.subtract(Duration(days: 6 - index)),
-        mealCategory: 'lunch',
-        sourceType: 'direct_food',
-        localDate: date,
-        timezoneId: timezoneId,
-        calculatorVersion: 'test-snapshot-v1',
-        items: [
-          NutritionConsumptionItemInput(
-            id: 'item-$index',
-            position: 0,
-            sourceType: 'direct_food',
-            foodId: 'food-1',
-            displayLabel: 'Local food',
-            quantity: Quantity.fromDecimal(
-              amount: '100',
-              unit: QuantityUnit.gram,
-            ),
-            calculation: _completeCalculation(registry),
-          ),
-        ],
-      ),
+  if (includeConsumption) {
+    final consumption = NutritionConsumptionRepository(
+      db: db,
+      registry: registry,
+      nowUtc: () => nowUtc,
     );
+    for (var index = 0; index < 7; index++) {
+      final date = dates.addCalendarDays(weekStart, timezoneId, index);
+      await consumption.finalizeConsumption(
+        NutritionConsumptionFinalizeRequest(
+          userId: userId,
+          consumptionId: 'consumption-$index',
+          commandId: 'command-$index',
+          loggedAtUtc: nowUtc.subtract(Duration(days: 6 - index)),
+          mealCategory: 'lunch',
+          sourceType: 'direct_food',
+          localDate: date,
+          timezoneId: timezoneId,
+          calculatorVersion: 'test-snapshot-v1',
+          items: [
+            NutritionConsumptionItemInput(
+              id: 'item-$index',
+              position: 0,
+              sourceType: 'direct_food',
+              foodId: 'food-1',
+              displayLabel: 'Local food',
+              quantity: Quantity.fromDecimal(
+                amount: '100',
+                unit: QuantityUnit.gram,
+              ),
+              calculation: _completeCalculation(registry),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   if (addAllergyWithoutFoodEvidence) {
