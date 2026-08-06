@@ -94,6 +94,36 @@ void main() {
       ).readAsStringSync(),
       isNot(contains('TdeeCalculator')),
     );
+
+    final providers = File('lib/core/di/providers.dart').readAsStringSync();
+    expect(providers, contains('nutritionReadModelRepositoryProvider'));
+    expect(providers, contains('nutritionGoalRepositoryProvider'));
+    expect(providers, contains('coachingPreferenceRepositoryProvider'));
+    expect(providers, contains('b04RecommendationHistoryRepositoryProvider'));
+    expect(providers, contains('b04DailyBriefingReadRepositoryProvider'));
+    expect(providers, contains('b04WeeklyReviewReadRepositoryProvider'));
+
+    final dailyController = File(
+      'lib/features/dashboard/b04_daily_briefing_controller.dart',
+    ).readAsStringSync();
+    final weeklyController = File(
+      'lib/features/progress/b04_weekly_review_controller.dart',
+    ).readAsStringSync();
+    for (final source in [dailyController, weeklyController]) {
+      expect(source, contains('B04RecommendationHistoryRepository'));
+      expect(source, contains('NutritionGoalRepository'));
+      expect(source, contains('CoachingPreferenceRepository'));
+    }
+
+    final briefingReads = File(
+      'lib/data/repositories/b04_briefing_read_repositories.dart',
+    ).readAsStringSync();
+    expect(briefingReads, contains('B04BriefingRecommendation.fromHistory'));
+    expect(
+      briefingReads,
+      isNot(contains('B04AdaptiveTargetEngine')),
+      reason: 'daily/weekly reads must not become a second target engine',
+    );
   });
 
   test(
@@ -227,6 +257,42 @@ void main() {
     expect(afterActivation.proposal, isNull);
   });
 
+  test('unsupported policy and cross-user evidence fail closed', () {
+    final engine = B04AdaptiveTargetEngine();
+    final active = B04ActivationMetadata.enabled(
+      effectiveFromLocalDate: '2026-03-01',
+      timezoneId: 'Asia/Kolkata',
+      scopeUserId: 'user-a',
+      mergedBranch: 'batch/b04-adaptive-coaching',
+      releaseSelection: 'b04-16-test',
+    );
+
+    final unsupported = engine.evaluate(
+      _request(activation: active, storedPolicyVersion: 'future-policy'),
+    );
+    expect(unsupported.status, B04AdaptiveTargetStatus.invalidEvidence);
+    expect(unsupported.reasonCode, 'unsupported_policy_version');
+    expect(unsupported.adaptiveDeltaKcal, 0);
+
+    final crossUser = engine.evaluate(
+      _request(
+        activation: active,
+        eligibility: CoachingEligibilityReadModel(
+          userId: 'user-b',
+          result: CoachingEligibilityResult.eligible,
+          reasonCode: 'eligible',
+          policyVersion: kB04EnabledPolicyVersion,
+          evaluationLocalDate: '2026-03-15',
+          timezoneId: 'Asia/Kolkata',
+          evaluationUtc: _crossUserEvaluationAt,
+        ),
+      ),
+    );
+    expect(crossUser.status, B04AdaptiveTargetStatus.invalidEvidence);
+    expect(crossUser.reasonCode, 'eligibility_lineage_invalid');
+    expect(crossUser.adaptiveDeltaKcal, 0);
+  });
+
   test(
     'readiness hold and safety uncertainty never create numerical output',
     () {
@@ -288,18 +354,28 @@ void main() {
 B04AdaptiveTargetRequest _request({
   B04ActivationMetadata activation = const B04ActivationMetadata(),
   String evaluationLocalDate = '2026-03-15',
+  String? storedPolicyVersion,
+  CoachingEligibilityReadModel? eligibility,
 }) => B04AdaptiveTargetRequest(
   evaluationId: 'b04-16-evaluation',
   userId: 'user-a',
   evaluationLocalDate: evaluationLocalDate,
   timezoneId: 'Asia/Kolkata',
-  evaluatedAtUtc: DateTime.utc(2026, 3, 15, 10),
+  evaluatedAtUtc: _evaluationTimestamp(evaluationLocalDate),
   explicitlyInitiated: true,
   adaptiveConsentEnabled: true,
+  storedPolicyVersion: storedPolicyVersion,
   activation: activation,
-  eligibility: null,
+  eligibility: eligibility,
   activeGoal: null,
   goalRate: null,
   bodyMetrics: null,
   maintenanceEvidence: null,
 );
+
+DateTime _evaluationTimestamp(String localDate) {
+  final date = DateTime.parse(localDate);
+  return DateTime.utc(date.year, date.month, date.day, 10);
+}
+
+final _crossUserEvaluationAt = DateTime.utc(2026, 3, 15, 10);
