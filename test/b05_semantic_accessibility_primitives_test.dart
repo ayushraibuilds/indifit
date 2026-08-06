@@ -87,6 +87,30 @@ void main() {
   });
 
   group('B05 accessibility primitives', () {
+    testWidgets('typography helpers resolve semantic text tokens', (
+      tester,
+    ) async {
+      late TextStyle title;
+      late TextStyle body;
+      late TextStyle label;
+      await tester.pumpWidget(
+        _app(
+          child: Builder(
+            builder: (context) {
+              title = B05Typography.title(context);
+              body = B05Typography.body(context);
+              label = B05Typography.label(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+
+      expect(title.color, B05SemanticColors.light.textPrimary);
+      expect(body.color, B05SemanticColors.light.textSecondary);
+      expect(label.color, B05SemanticColors.light.textPrimary);
+    });
+
     testWidgets('status includes a non-colour semantic state, value and hint', (
       tester,
     ) async {

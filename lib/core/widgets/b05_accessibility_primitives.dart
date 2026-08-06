@@ -62,9 +62,10 @@ abstract final class B05Typography {
   }
 
   static TextStyle label(BuildContext context) {
-    return Theme.of(
-      context,
-    ).textTheme.labelLarge!.copyWith(fontWeight: FontWeight.w600);
+    return Theme.of(context).textTheme.labelLarge!.copyWith(
+      color: context.b05Colors.textPrimary,
+      fontWeight: FontWeight.w600,
+    );
   }
 }
 
