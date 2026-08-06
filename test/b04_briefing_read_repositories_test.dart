@@ -340,6 +340,69 @@ void main() {
       },
     );
 
+    test(
+      'historical target state distinguishes unchanged from a proposal and preserves reasons',
+      () async {
+        final unchanged = _historyRow(
+          id: 'unchanged-target',
+          scope: B04RecommendationHistoryScope.daily,
+          start: '2026-08-07',
+          end: '2026-08-07',
+          action: B04RecommendationAction.nutritionTarget.stableId,
+          policyVersion: kB04EnabledPolicyVersion,
+          proposedDeltaKcal: 0,
+        );
+        final proposal = _historyRow(
+          id: 'proposal-target',
+          scope: B04RecommendationHistoryScope.daily,
+          start: '2026-08-07',
+          end: '2026-08-07',
+          action: B04RecommendationAction.nutritionTarget.stableId,
+          state: B04RecommendationState.confirm,
+          policyVersion: kB04EnabledPolicyVersion,
+          proposedDeltaKcal: 100,
+          missingInputs: const ['missing-maintenance'],
+          unavailableReasons: const [],
+        );
+        final unavailable = _historyRow(
+          id: 'unavailable-reason',
+          scope: B04RecommendationHistoryScope.daily,
+          start: '2026-08-07',
+          end: '2026-08-07',
+          state: B04RecommendationState.unavailable,
+          missingInputs: const ['missing-maintenance'],
+          unavailableReasons: const ['rapid_change_review'],
+        );
+
+        final unchangedRead = await B04DailyBriefingReadRepository(
+          history: _FakeHistory([unchanged]),
+        ).read(userId: _userId, localDate: '2026-08-07', timezoneId: 'UTC');
+        final proposalRead = await B04DailyBriefingReadRepository(
+          history: _FakeHistory([proposal]),
+        ).read(userId: _userId, localDate: '2026-08-07', timezoneId: 'UTC');
+        final unavailableRead = await B04DailyBriefingReadRepository(
+          history: _FakeHistory([unavailable]),
+        ).read(userId: _userId, localDate: '2026-08-07', timezoneId: 'UTC');
+
+        expect(
+          unchangedRead.recommendations.single.targetAcceptanceState,
+          B04BriefingTargetAcceptanceState.unchanged,
+        );
+        expect(
+          proposalRead.recommendations.single.targetAcceptanceState,
+          B04BriefingTargetAcceptanceState.proposalAvailable,
+        );
+        expect(
+          proposalRead.recommendations.single.missingEvidence,
+          contains('missing-maintenance'),
+        );
+        expect(
+          unavailableRead.recommendations.single.missingEvidence,
+          containsAll(['missing-maintenance', 'rapid_change_review']),
+        );
+      },
+    );
+
     test('forged target acceptance feedback fails closed', () async {
       final row = _historyRow(
         id: 'forged-target',
@@ -621,6 +684,7 @@ B04HistoricalRecommendation _historyRow({
   B04RecommendationState state = B04RecommendationState.available,
   String policyVersion = kB04HoldPolicyVersion,
   List<String> missingInputs = const [],
+  List<String> unavailableReasons = const [],
   String? goalVersionId,
   String? readinessSnapshotId,
   int? proposedDeltaKcal,
@@ -646,6 +710,7 @@ B04HistoricalRecommendation _historyRow({
   action: action,
   explanation: 'Review this meal or training evidence.',
   missingInputs: missingInputs,
+  unavailableReasons: unavailableReasons,
   uncertainty: const [],
   alternatives: const ['alternative-1'],
   ruleVersion: kB04RecommendationRuleVersion,

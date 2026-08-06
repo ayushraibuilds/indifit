@@ -514,6 +514,54 @@ void main() {
   );
 
   test(
+    'issue persists unavailable reason lineage and rejects a reason-changing replay',
+    () async {
+      final lineage = await _seedLineage(db);
+      final first = (await history.issue(
+        _command(
+          state: B04RecommendationState.unavailable,
+          missingEvidence: const ['missing-maintenance'],
+          unavailableReasons: const ['rapid_change_review'],
+          consentEventId: lineage.consentId,
+          eligibilityEvaluationId: lineage.eligibilityId,
+          goalVersionId: lineage.goalId,
+        ),
+      )).single;
+
+      expect(
+        first.missingInputs,
+        containsAll(['missing-maintenance', 'rapid_change_review']),
+      );
+      expect(first.unavailableReasons, contains('rapid_change_review'));
+      final stored = await db.select(db.recommendations).getSingle();
+      expect(
+        jsonDecode(stored.missingInputs!) as List<dynamic>,
+        containsAll(['missing-maintenance', 'rapid_change_review']),
+      );
+
+      await expectLater(
+        history.issue(
+          _command(
+            state: B04RecommendationState.unavailable,
+            missingEvidence: const ['missing-maintenance'],
+            unavailableReasons: const ['different_reason'],
+            consentEventId: lineage.consentId,
+            eligibilityEvaluationId: lineage.eligibilityId,
+            goalVersionId: lineage.goalId,
+          ),
+        ),
+        throwsA(
+          isA<B04RecommendationHistoryError>().having(
+            (error) => error.code,
+            'code',
+            'replay_conflict',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
     'invalid evidence rolls back the recommendation and rejects cross-user lineage',
     () async {
       final lineage = await _seedLineage(db);
@@ -858,6 +906,7 @@ B04RecommendationHistoryCommand _command({
   B04RecommendationConsentState consentState =
       B04RecommendationConsentState.enabled,
   Iterable<String> missingEvidence = const [],
+  Iterable<String> unavailableReasons = const [],
   Iterable<String> uncertaintyCodes = const [],
   Iterable<String> alternativeIds = const [],
   Iterable<String>? recommendationEvidenceIds,
@@ -881,6 +930,7 @@ B04RecommendationHistoryCommand _command({
     state: state,
     consentState: consentState,
     missingEvidence: missingEvidence,
+    unavailableReasons: unavailableReasons,
     uncertaintyCodes: uncertaintyCodes,
     alternativeIds: alternativeIds,
     recommendationEvidenceIds: recommendationEvidenceIds,
@@ -924,6 +974,7 @@ B04RecommendationEvaluation _evaluation({
   B04RecommendationConsentState consentState =
       B04RecommendationConsentState.enabled,
   Iterable<String> missingEvidence = const [],
+  Iterable<String> unavailableReasons = const [],
   Iterable<String> uncertaintyCodes = const [],
   Iterable<String> alternativeIds = const [],
   Iterable<String>? recommendationEvidenceIds,
@@ -964,9 +1015,11 @@ B04RecommendationEvaluation _evaluation({
       missingEvidence: missingEvidence,
       uncertaintyCodes: uncertaintyCodes,
       alternativeIds: alternativeIds,
-      unavailableReasons: state == B04RecommendationState.unavailable
+      unavailableReasons:
+          unavailableReasons.isEmpty &&
+              state == B04RecommendationState.unavailable
           ? const ['test-unavailable']
-          : const [],
+          : unavailableReasons,
       eligibilityState: B04RecommendationEligibilityState.eligible,
       consentState: consentState,
       policyState: B04RecommendationPolicyState.enabled,

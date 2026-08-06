@@ -122,6 +122,7 @@ class B04RecommendationHistoryRepository implements B04BriefingHistorySource {
         );
         final target = recommendation.canonicalAdaptiveTarget;
         final proposal = target?.proposal;
+        final reasonCodes = _recommendationReasonCodes(recommendation);
         final recommendationId =
             'recommendation-${replayHash.substring(0, 32)}';
         await _db
@@ -140,9 +141,7 @@ class B04RecommendationHistoryRepository implements B04BriefingHistorySource {
                 completeness: Value(recommendation.completeness.stableId),
                 action: recommendation.action.stableId,
                 explanation: recommendation.explanation,
-                missingInputs: Value(
-                  _encodeList(recommendation.missingEvidence),
-                ),
+                missingInputs: Value(_encodeList(reasonCodes)),
                 uncertainty: Value(
                   _encodeList(recommendation.uncertaintyCodes),
                 ),
@@ -415,6 +414,8 @@ class B04RecommendationHistoryRepository implements B04BriefingHistorySource {
                   (item) => OrderingTerm(expression: item.id),
                 ]))
               .get();
+      final state = _state(row.status);
+      final missingInputs = _decodeList(row.missingInputs);
       result.add(
         B04HistoricalRecommendation(
           id: row.id,
@@ -423,7 +424,7 @@ class B04RecommendationHistoryRepository implements B04BriefingHistorySource {
           localPeriodStart: row.localPeriodStart,
           localPeriodEnd: row.localPeriodEnd,
           timezoneId: row.timezoneId,
-          state: _state(row.status),
+          state: state,
           priority: _priority(row.priority),
           confidence: row.confidence,
           completeness: row.completeness == null
@@ -431,7 +432,10 @@ class B04RecommendationHistoryRepository implements B04BriefingHistorySource {
               : _completeness(row.completeness!),
           action: row.action,
           explanation: row.explanation,
-          missingInputs: _decodeList(row.missingInputs),
+          missingInputs: missingInputs,
+          unavailableReasons: state == B04RecommendationState.unavailable
+              ? missingInputs
+              : const [],
           uncertainty: _decodeList(row.uncertainty),
           alternatives: _decodeList(row.alternatives),
           ruleVersion: row.ruleVersion,
@@ -1068,7 +1072,8 @@ class B04RecommendationHistoryRepository implements B04BriefingHistorySource {
         row.confidence != _confidence(recommendation.confidence) ||
         row.completeness != recommendation.completeness.stableId ||
         row.explanation != recommendation.explanation ||
-        row.missingInputs != _encodeList(recommendation.missingEvidence) ||
+        row.missingInputs !=
+            _encodeList(_recommendationReasonCodes(recommendation)) ||
         row.uncertainty != _encodeList(recommendation.uncertaintyCodes) ||
         row.alternatives != _encodeList(recommendation.alternativeIds) ||
         row.ruleVersion != recommendation.ruleVersion ||
@@ -1206,6 +1211,14 @@ String _encodeList(Iterable<String> values) =>
     values.map((item) => item.trim()).toList().isEmpty
     ? '[]'
     : jsonEncode(values.map((item) => item.trim()).toList());
+
+List<String> _recommendationReasonCodes(B04Recommendation recommendation) {
+  final values = <String>{
+    ...recommendation.missingEvidence,
+    ...recommendation.unavailableReasons,
+  }.where((value) => value.trim().isNotEmpty).toList()..sort();
+  return List.unmodifiable(values);
+}
 
 List<String> _decodeList(String? value) {
   if (value == null || value.trim().isEmpty) return const [];

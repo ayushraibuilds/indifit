@@ -1,3 +1,4 @@
+import '../../core/fixtures/b04_adaptive_coaching_fixture_matrix.dart';
 import 'b04_recommendation_models.dart';
 
 /// Durable scope for a recommendation history row. Daily and weekly rows are
@@ -329,6 +330,7 @@ class B04HistoricalRecommendation {
   final String action;
   final String explanation;
   final List<String> missingInputs;
+  final List<String> unavailableReasons;
   final List<String> uncertainty;
   final List<String> alternatives;
   final String ruleVersion;
@@ -367,6 +369,7 @@ class B04HistoricalRecommendation {
     required this.action,
     required this.explanation,
     Iterable<String> missingInputs = const [],
+    Iterable<String> unavailableReasons = const [],
     Iterable<String> uncertainty = const [],
     Iterable<String> alternatives = const [],
     required this.ruleVersion,
@@ -391,6 +394,7 @@ class B04HistoricalRecommendation {
     Iterable<B04RecommendationEvidenceRecord> evidence = const [],
     Iterable<B04RecommendationFeedbackRecord> feedback = const [],
   }) : missingInputs = List.unmodifiable(missingInputs),
+       unavailableReasons = List.unmodifiable(unavailableReasons),
        uncertainty = List.unmodifiable(uncertainty),
        alternatives = List.unmodifiable(alternatives),
        evidence = List.unmodifiable(evidence),
@@ -399,6 +403,40 @@ class B04HistoricalRecommendation {
   String? get consentEventId => _sourceId('consent');
 
   String? get eligibilityEvaluationId => _sourceId('eligibility');
+
+  /// All portable reason identifiers attached to this historical result. The
+  /// v18 column is named `missing_inputs`, but it is the reason-lineage bucket
+  /// for both missing evidence and unavailable output reasons.
+  List<String> get reasonCodes {
+    final values = <String>{
+      ...missingInputs,
+      ...unavailableReasons,
+    }.where((value) => value.trim().isNotEmpty).toList()..sort();
+    return List.unmodifiable(values);
+  }
+
+  /// The target-acceptance state frozen by the historical recommendation.
+  /// A non-null delta alone is not enough: a zero-delta on-track result is
+  /// unchanged, while only an actual proposal may be accepted.
+  B04RecommendationTargetAcceptanceState get targetAcceptanceState {
+    if (action != B04RecommendationAction.nutritionTarget.stableId) {
+      return B04RecommendationTargetAcceptanceState.notApplicable;
+    }
+    if (state == B04RecommendationState.unavailable ||
+        state == B04RecommendationState.dismissed ||
+        state == B04RecommendationState.superseded ||
+        policyVersion != kB04EnabledPolicyVersion ||
+        proposedDeltaKcal == null) {
+      return B04RecommendationTargetAcceptanceState.unavailable;
+    }
+    if (state != B04RecommendationState.confirm &&
+        state != B04RecommendationState.available) {
+      return B04RecommendationTargetAcceptanceState.unavailable;
+    }
+    return state == B04RecommendationState.confirm || proposedDeltaKcal != 0
+        ? B04RecommendationTargetAcceptanceState.proposalAvailable
+        : B04RecommendationTargetAcceptanceState.unchanged;
+  }
 
   bool get isDismissed => _foldVisibility(feedback) == false;
 
@@ -416,6 +454,8 @@ class B04HistoricalRecommendation {
     'action': action,
     'explanation': explanation,
     'missing_inputs': missingInputs,
+    'unavailable_reasons': unavailableReasons,
+    'reason_codes': reasonCodes,
     'uncertainty': uncertainty,
     'alternatives': alternatives,
     'rule_version': ruleVersion,
@@ -432,6 +472,7 @@ class B04HistoricalRecommendation {
     'exact_result_denominator': exactResultDenominator,
     'normalized_maintenance_kcal': normalizedMaintenanceKcal,
     'proposed_delta_kcal': proposedDeltaKcal,
+    'target_acceptance_state': targetAcceptanceState.stableId,
     'created_at_utc': createdAtUtc.toIso8601String(),
     'effective_at_utc': effectiveAtUtc?.toIso8601String(),
     'superseded_at_utc': supersededAtUtc?.toIso8601String(),

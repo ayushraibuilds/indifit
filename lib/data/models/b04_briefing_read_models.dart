@@ -219,7 +219,7 @@ class B04BriefingRecommendation {
       completeness: recommendation.completeness,
       explanation: recommendation.explanation,
       alternatives: recommendation.alternatives,
-      missingEvidence: recommendation.missingInputs,
+      missingEvidence: recommendation.reasonCodes,
       uncertainty: recommendation.uncertainty,
       evidenceIds: [
         ...recommendation.evidence.map((item) => item.sourceId),
@@ -429,14 +429,18 @@ B04BriefingTargetAcceptanceState _targetAcceptanceFromEngine(
 B04BriefingTargetAcceptanceState _targetAcceptanceFromHistory(
   B04HistoricalRecommendation recommendation,
 ) {
-  if (recommendation.action !=
-      B04RecommendationAction.nutritionTarget.stableId) {
-    return B04BriefingTargetAcceptanceState.notApplicable;
-  }
-  if (recommendation.state == B04RecommendationState.unavailable ||
-      recommendation.policyVersion != kB04EnabledPolicyVersion ||
-      recommendation.proposedDeltaKcal == null) {
-    return B04BriefingTargetAcceptanceState.unavailable;
+  final baseState = switch (recommendation.targetAcceptanceState) {
+    B04RecommendationTargetAcceptanceState.notApplicable =>
+      B04BriefingTargetAcceptanceState.notApplicable,
+    B04RecommendationTargetAcceptanceState.unavailable =>
+      B04BriefingTargetAcceptanceState.unavailable,
+    B04RecommendationTargetAcceptanceState.unchanged =>
+      B04BriefingTargetAcceptanceState.unchanged,
+    B04RecommendationTargetAcceptanceState.proposalAvailable =>
+      B04BriefingTargetAcceptanceState.proposalAvailable,
+  };
+  if (baseState != B04BriefingTargetAcceptanceState.proposalAvailable) {
+    return baseState;
   }
   final acceptedEvents = recommendation.feedback
       .where((item) => item.action == B04RecommendationFeedbackAction.accept)
@@ -451,7 +455,7 @@ B04BriefingTargetAcceptanceState _targetAcceptanceFromHistory(
   if (acceptedEvents.isNotEmpty) {
     return B04BriefingTargetAcceptanceState.accepted;
   }
-  return B04BriefingTargetAcceptanceState.proposalAvailable;
+  return baseState;
 }
 
 B04BriefingNumericalResult? _historicalNumericalResult(
