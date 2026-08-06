@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/privacy/privacy_policy.dart';
-import '../models/b04_nutrition_safety_models.dart';
 import '../models/b04_recommendation_context_models.dart';
 import '../models/b04_recommendation_models.dart';
 import '../repositories/coaching_preference_repository.dart';
@@ -43,6 +42,7 @@ class B04OptionalAiWordingResponse {
     required Object? raw,
     required String expectedFingerprint,
     required Set<String> allowedRecommendationIds,
+    required Map<String, String> approvedWordingByRecommendationId,
   }) {
     if (raw is! Map) {
       throw const FormatException('AI response must be an object.');
@@ -90,7 +90,17 @@ class B04OptionalAiWordingResponse {
           'AI returned duplicate recommendation IDs.',
         );
       }
-      final wording = _validatedWording(suggestion['wording']);
+      final approvedWording =
+          approvedWordingByRecommendationId[recommendationId];
+      if (approvedWording == null) {
+        throw const FormatException(
+          'AI wording has no deterministic approved copy.',
+        );
+      }
+      final wording = _validatedWording(
+        suggestion['wording'],
+        approvedWording: approvedWording,
+      );
       suggestions.add(
         B04OptionalAiWordingSuggestion(
           recommendationId: recommendationId,
@@ -147,6 +157,8 @@ class B04OptionalAiRedactedEnvelope {
   final String endLocalDate;
   final String policyVersion;
   final List<Map<String, dynamic>> recommendations;
+  final Map<String, String> recommendationIdByToken;
+  final Map<String, String> approvedWordingByToken;
 
   const B04OptionalAiRedactedEnvelope({
     required this.evaluationFingerprint,
@@ -157,15 +169,24 @@ class B04OptionalAiRedactedEnvelope {
     required this.endLocalDate,
     required this.policyVersion,
     required this.recommendations,
+    this.recommendationIdByToken = const {},
+    this.approvedWordingByToken = const {},
   });
 
   factory B04OptionalAiRedactedEnvelope.fromEvaluation(
     B04RecommendationEvaluation evaluation,
   ) {
-    final recommendations = [
-      for (final recommendation in evaluation.recommendations)
-        _recommendationMap(recommendation),
-    ];
+    final recommendationIdByToken = <String, String>{};
+    final approvedWordingByToken = <String, String>{};
+    final recommendations = <Map<String, dynamic>>[];
+    var tokenIndex = 0;
+    for (final recommendation in evaluation.recommendations) {
+      if (!_isWordingEligible(recommendation)) continue;
+      final token = 'recommendation-${++tokenIndex}';
+      recommendationIdByToken[token] = recommendation.id;
+      approvedWordingByToken[token] = recommendation.explanation;
+      recommendations.add(_recommendationMap(recommendation, token: token));
+    }
     return B04OptionalAiRedactedEnvelope(
       evaluationFingerprint: evaluation.fingerprint,
       contextFingerprint: evaluation.contextFingerprint,
@@ -175,6 +196,8 @@ class B04OptionalAiRedactedEnvelope {
       endLocalDate: evaluation.endLocalDate,
       policyVersion: evaluation.policyVersion,
       recommendations: List.unmodifiable(recommendations),
+      recommendationIdByToken: Map.unmodifiable(recommendationIdByToken),
+      approvedWordingByToken: Map.unmodifiable(approvedWordingByToken),
     );
   }
 
@@ -321,16 +344,25 @@ class B04OptionalAiAssistanceService {
       final response = B04OptionalAiWordingResponse.parse(
         raw: rawResponse,
         expectedFingerprint: evaluation.fingerprint,
-        allowedRecommendationIds: _allowedRecommendationIds(evaluation),
+        allowedRecommendationIds: envelope.recommendationIdByToken.keys.toSet(),
+        approvedWordingByRecommendationId: envelope.approvedWordingByToken,
       );
+      final wordingByRecommendationId = <String, String>{};
+      for (final suggestion in response.suggestions) {
+        final recommendationId =
+            envelope.recommendationIdByToken[suggestion.recommendationId];
+        if (recommendationId == null) {
+          throw const FormatException(
+            'AI wording token has no local recommendation identity.',
+          );
+        }
+        wordingByRecommendationId[recommendationId] = suggestion.wording;
+      }
       return B04OptionalAiAssistanceResult(
         deterministicEvaluation: evaluation,
         status: B04OptionalAiAssistanceStatus.applied,
         reasonCode: 'ai_wording_applied',
-        wordingByRecommendationId: {
-          for (final suggestion in response.suggestions)
-            suggestion.recommendationId: suggestion.wording,
-        },
+        wordingByRecommendationId: wordingByRecommendationId,
         providerVersion: response.providerVersion,
       );
     } on Object {
@@ -354,35 +386,24 @@ class B04OptionalAiAssistanceService {
   }
 }
 
-Map<String, dynamic> _recommendationMap(B04Recommendation recommendation) {
-  final wordingEligible = _isWordingEligible(recommendation);
+Map<String, dynamic> _recommendationMap(
+  B04Recommendation recommendation, {
+  required String token,
+}) {
   return {
-    'id': recommendation.id,
+    'id': token,
     'action': recommendation.action.stableId,
     'state': recommendation.state.stableId,
     'priority': recommendation.priority.stableId,
-    'rationale_code': recommendation.rationaleCode,
     'confidence': recommendation.confidence.stableId,
     'completeness': recommendation.completeness.stableId,
-    'missing_evidence': recommendation.missingEvidence,
-    'uncertainty_codes': recommendation.uncertaintyCodes,
-    'unavailable_reasons': recommendation.unavailableReasons,
-    'alternative_ids': recommendation.alternativeIds,
     'eligibility_state': recommendation.eligibilityState.stableId,
     'consent_state': recommendation.consentState.stableId,
     'policy_state': recommendation.policyState.stableId,
     'target_acceptance_state': recommendation.targetAcceptanceState.stableId,
-    'wording_allowed': wordingEligible,
-    if (recommendation.safetyDisposition != null)
-      'safety_disposition': recommendation.safetyDisposition!.stableId,
+    'wording_allowed': true,
   };
 }
-
-Set<String> _allowedRecommendationIds(B04RecommendationEvaluation evaluation) =>
-    {
-      for (final recommendation in evaluation.recommendations)
-        if (_isWordingEligible(recommendation)) recommendation.id,
-    };
 
 bool _isWordingEligible(B04Recommendation recommendation) =>
     recommendation.state == B04RecommendationState.available ||
@@ -393,49 +414,15 @@ bool _isWordingEligible(B04Recommendation recommendation) =>
           recommendation.safetyDisposition == null
     : false;
 
-String _validatedWording(Object? value) {
+String _validatedWording(Object? value, {required String approvedWording}) {
   if (value is! String) {
     throw const FormatException('AI wording must be text.');
   }
   final wording = value.trim();
-  if (wording.isEmpty || wording.length > 280) {
-    throw const FormatException('AI wording length is outside the bound.');
-  }
-  if (wording.codeUnits.any((unit) => unit < 0x20)) {
-    throw const FormatException('AI wording contains control characters.');
-  }
-  final lower = wording.toLowerCase();
-  final forbidden = <String>[
-    'ignore previous',
-    'disregard previous',
-    'system prompt',
-    'developer message',
-    'diagnos',
-    'prescri',
-    'treat',
-    'cure',
-    'guarante',
-    'safe',
-    'unsafe',
-    'allerg',
-    'intoler',
-    'cross-contact',
-    'ingredient',
-    'meal',
-    'food',
-    'eat ',
-    'consume',
-    'calorie',
-    'kcal',
-    'target',
-    'delta',
-    'deficit',
-    'surplus',
-    'confidence',
-    'range',
-  ];
-  if (forbidden.any(lower.contains) || RegExp(r'\d|%|<|>').hasMatch(lower)) {
-    throw const FormatException('AI wording crosses a protected boundary.');
+  if (wording.isEmpty || wording != approvedWording.trim()) {
+    throw const FormatException(
+      'AI wording must match the deterministic approved explanation.',
+    );
   }
   return wording;
 }
