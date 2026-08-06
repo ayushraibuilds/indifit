@@ -1,11 +1,10 @@
 # B04 — Implementation Task DAG
 
-Status: planning only. No task below has started. The DAG uses the concrete
-B04 integration baseline `741aa18972ebc1b61cd65c0bf12b442b10b50890`, whose
-parent contains accepted B03. Numerical-policy authoring baseline is
+Status: implementation task DAG and acceptance checklist. The DAG uses the
+concrete B04 integration baseline `741aa18972ebc1b61cd65c0bf12b442b10b50890`,
+whose parent contains accepted B03. Numerical-policy authoring baseline is
 `61cac3dd35579fde01118626b5fa009024a04a7f`. `B04-D04-ENABLED-1` is proposed
-but inactive; this branch does not authorize B04-01, application work or
-runtime activation.
+but inactive until its documented activation conditions are satisfied.
 
 ## Task rules
 
@@ -13,13 +12,23 @@ runtime activation.
 - “Parallelizable” means the stated dependencies are merged, ownership is
   isolated, no shared migration/central controller is being edited, and no
   decision gate remains open.
-- Every critical task has a required Sol High review. Terra High reviews
-  production state ownership, navigation, wording and accessibility.
+- Every task uses one fresh review-and-resolve session after focused tests,
+  formatting, analysis and `git diff --check`. The session reviews actual
+  implementation correctness, production wiring, required tests, schema and
+  backup safety, historical/timezone behavior, nutrition uncertainty,
+  dietary safety, privacy, AI authority boundaries and unrelated regressions.
+  Review-focus labels below describe coverage, not mandatory separate
+  reviewers.
+- The session fixes task-scoped findings, adds regression tests where useful,
+  and returns `Approved` or `Approved with non-blocking follow-up` before
+  merge. A second review is not required unless a concrete blocker remains.
+- Schema, backup, target-engine, safety and privacy tasks retain their stronger
+  focused-test expectations while using the same single review cycle.
 - `B04-02` is the sole owner of the D04 policy packet. No implementation task
   may choose an unrecorded age, evidence threshold, cadence, bound, wording or
   N8 semantic. `B04-D04-ENABLED-1` is the only proposed enabled calorie
-  numerical contract; its activation requires fresh independent Sol High
-  approval, branch merge and explicit release/feature-policy selection.
+  numerical contract; its activation requires a successful review, branch
+  merge and explicit release/feature-policy selection.
 - `B04-D04-HOLD-1` remains retained for historical replay and for
   installations/users that do not select `ENABLED-1`; until activation it is
   the current/default behavior. It blocks adaptive calorie proposals,
@@ -37,18 +46,23 @@ runtime activation.
   explicit target acceptance, no background automatic activation, typed
   missing-data behavior, dietary hard blocks, reviewed wording boundaries,
   offline/AI limits and conditional N8. The proposed numerical values are
-  recorded only in `B04-D04-ENABLED-1`; they are not active until the fresh
-  Sol/merge/release activation gate passes. `HOLD-1` remains retained for
+  recorded only in `B04-D04-ENABLED-1`; they are not active until the
+  successful Sol/merge/release activation gate passes. `HOLD-1` remains retained for
   replay and non-selection.
 - `B04-18` is a conditional product/scope gate only. It is not required for
   B04 completion and must not create an implementation branch without a new
   roadmap decision.
 
+The lightweight record of implementation commit, final verdict, merge commit
+and known follow-ups is maintained in `VERIFICATION.md`. Missing transcripts,
+stale review hashes, incomplete ledger metadata and unavailable physical-device
+coverage are not task blockers unless they expose an actual defect.
+
 ## `B04-D04-ENABLED-1` task acceptance overlay
 
 The following acceptance criteria and deterministic tests apply in addition
 to each task’s base criteria. They define the enabled numerical contract but
-do not authorize implementation from this branch. Until the activation gate
+do not activate runtime policy from this document. Until the activation gate
 passes, tasks must exercise `HOLD-1` and `READINESS-HOLD-1` behavior. The
 canonical numerical result is calculated once by the policy engine; downstream
 tasks consume its stored exact result and must not independently round or
@@ -56,8 +70,8 @@ recalculate policy values.
 
 | Task | Acceptance criteria | Required deterministic tests |
 |---|---|---|
-| `B04-01` | Contract matrix includes exact `ENABLED-1` eligibility, goal rates, 21-day window, weight/nutrition/maintenance evidence, exact range-width formula and invalid-input behavior, gram normalization, odd/even medians, exact-rational Theil–Sen trend, basis-point thresholds, display-only rounding, whole-kcal maintenance normalization, floor/ceil arithmetic, exact 100-kcal step, cadence, expiry, aggregate, deficit/surplus, floor/ceiling, rapid-change, future-only activation and replay; task remains not started. | Every edge listed in `VERIFICATION.md`, including exact range examples, invalid ranges, odd/even median and slope fixtures, exact boundary arithmetic, display-rounding separation and `HOLD-1`/`ENABLED-1` policy-version replay. |
-| `B04-02` | Owns the Product Owner selection, version, activation conditions, retained `HOLD-1`, `READINESS-HOLD-1`, exact numeric semantics, rational arithmetic contract, canonical `M` normalization and fresh independent Sol review packet. | Decision-record completeness; finite/unit/domain validation; range formula; exact median/slope rules; basis points; rounding; floor/ceil; exact 100-kcal no-clamp rule; aggregate inclusion/exclusion; no legacy-constant inference; activation remains blocked. |
+| `B04-01` | Contract matrix includes exact `ENABLED-1` eligibility, goal rates, 21-day window, weight/nutrition/maintenance evidence, exact range-width formula and invalid-input behavior, gram normalization, odd/even medians, exact-rational Theil–Sen trend, basis-point thresholds, display-only rounding, whole-kcal maintenance normalization, floor/ceil arithmetic, exact 100-kcal step, cadence, expiry, aggregate, deficit/surplus, floor/ceiling, rapid-change, future-only activation and replay. | Every edge listed in `VERIFICATION.md`, including exact range examples, invalid ranges, odd/even median and slope fixtures, exact boundary arithmetic, display-rounding separation and `HOLD-1`/`ENABLED-1` policy-version replay. |
+| `B04-02` | Owns the Product Owner selection, version, activation conditions, retained `HOLD-1`, `READINESS-HOLD-1`, exact numeric semantics, rational arithmetic contract, canonical `M` normalization and the review packet. | Decision-record completeness; finite/unit/domain validation; range formula; exact median/slope rules; basis points; rounding; floor/ceil; exact 100-kcal no-clamp rule; aggregate inclusion/exclusion; no legacy-constant inference; activation remains blocked. |
 | `B04-03` | Planned Schema v18 entities carry policy/algorithm versions, effective dates, evidence links, target lineage, canonical exact results and feedback; no new numerical-policy or N8 tables are introduced. | Fresh/v17→v18/idempotent migration ownership and required-field tests; policy/version, rational-result and normalized-`M` lineage round trip. |
 | `B04-04` | Planned Backup v9 graph preserves `HOLD-1`, `ENABLED-1` and canonical numerical-result policy history, future-only effective dates and evidence lineage; no new N8/raw-payload sections. | Round trip, unsupported policy version, duplicate/cross-user graph, rollback, normalized-`M` and exact-result historical replay tests. |
 | `B04-05` | Enforces verified 18+ age, explicit consent, supported rates/defaults, goal versions, user-set labeling, explicit acceptance, idempotency and 21-day reset after goal/target/policy changes. | Exact birthday, underage/unknown/withheld, consent, rate, target acceptance, duplicate command, effective-date and reset edges. |
@@ -72,7 +86,7 @@ recalculate policy values.
 | `B04-14` (optional) | AI is separately consented, redacted and wording-only; it cannot alter any `ENABLED-1` or readiness-hold value/state. | AI consent, redaction, provider failure, malformed output, offline and numerical non-effect tests. |
 | `B04-15` | UI renders exact units/edges, user-set labels, unavailable/boundary/rapid-change states, non-medical wording and no hidden activation accessibly. | Exact edge presentation, accessibility, compact/large text, offline, consent and no-bypass tests. |
 | `B04-16` | Regression proves B01–B03 ownership, HOLD-1 replay, ENABLED-1 future-only activation, readiness hold, legacy constant isolation and timezone/DST correction behavior. | Full cross-batch, migration/backup, legacy-authority, replay and policy-selection tests. |
-| `B04-17` | Release evidence contains Product Owner selection, fresh Sol verdict, branch merge, explicit activation selection, Terra copy review, all numerical edges and no readiness enablement. | Complete matrix, device/accessibility, rollback/idempotency, offline, AI, historical and activation-gate evidence. |
+| `B04-17` | Final review covers the current clean integration `HEAD`, Product Owner selection, Sol verdict, branch merge, explicit activation selection, production wording, all numerical edges and no readiness enablement. | Complete matrix, rollback/idempotency, offline, AI, historical and activation-gate evidence; device checks are recommended follow-up evidence. |
 | `B04-18` (conditional) | Remains outside mandatory B04; no festival/fasting/eating-out/travel inference, schema, backup or calorie-policy dependency is added. | N8 independence and no-inference tests only; separate DAG required for future work. |
 
 Downstream repositories, read models, recommendation consumers and UI tasks
@@ -91,7 +105,7 @@ stored.
 - **Dependencies:** None for planning; implementation baseline must contain
   accepted B01–B03.
 - **Risk / size:** High / M.
-- **Primary model / required reviewer:** GPT Luna / Sol High.
+- **Review focus (one session):** Contract, fixture and dependency correctness.
 - **Likely files or domains:** B04 docs, `lib/core` contract fixtures,
   existing B02/B03 model and repository tests.
 - **Acceptance criteria:** Every B04 outcome has an owner and fixture set;
@@ -117,13 +131,13 @@ stored.
 
 - **Objective:** Record the Product Owner-authorized qualitative D04 contract,
   the proposed `B04-D04-ENABLED-1` calorie policy and retained
-  `B04-D04-READINESS-HOLD-1`, then prepare the complete packet for fresh
-  independent Sol High review. This is documentation-only policy work and does
-  not activate or implement the engine.
+  `B04-D04-READINESS-HOLD-1`, then prepare the packet for one review-and-resolve
+  session. This is documentation-only policy work and does not activate or
+  implement the engine.
 - **Dependencies:** `B04-01`.
 - **Risk / size:** Critical / M.
-- **Primary model / required reviewer:** Sol High / Product Owner and Sol High;
-  Terra High for copy and accessibility.
+- **Review focus (one session):** Policy, safety, wording and numerical-contract
+  correctness.
 - **Likely files or domains:** Decision register, target-policy fixtures,
   safety wording catalog and release checklist.
 - **Acceptance criteria:** `B04-D04-01` through `B04-D04-20` retain the
@@ -152,8 +166,8 @@ stored.
   preservation for low-risk logging only; professional-wording; offline/AI
   redaction; and N8 non-inference tests.
 - **Explicit exclusions:** No target engine, UI, schema, migration or backup
-  implementation; no B04-01 start; no runtime activation before the fresh
-  independent Sol verdict, branch merge and explicit release selection.
+  implementation; no runtime activation before the successful review, branch
+  merge and explicit release selection.
 - **Parallelizable:** No; it gates all safety-sensitive implementation.
 
 ## B04-03 — Schema v18 migration contract
@@ -164,7 +178,8 @@ stored.
   snapshots/evidence, recommendations/evidence and feedback.
 - **Dependencies:** `B04-01`, `B04-02`, accepted B03 integration baseline.
 - **Risk / size:** Critical / L.
-- **Primary model / required reviewer:** Sol High / Sol High.
+- **Review focus (one session):** Schema, migration and historical ownership
+  correctness.
 - **Likely files or domains:** `lib/data/database/app_database.dart`,
   `nutrition_tables.dart`, migration tests, foreign keys and indexes.
 - **Acceptance criteria:** v17→v18 and fresh creation are deterministic;
@@ -194,7 +209,7 @@ stored.
   transactional restore, compatibility and relationship validation.
 - **Dependencies:** `B04-03`.
 - **Risk / size:** Critical / L.
-- **Primary model / required reviewer:** GPT Luna / Sol High.
+- **Review focus (one session):** Backup graph, restore and rollback correctness.
 - **Likely files or domains:** `lib/core/backup/backup_schema.dart`, backup
   envelope/manifest code, restore coordinator, backup fixtures and tests.
 - **Acceptance criteria:** Backup v9 round-trips the durable B04 data,
@@ -225,8 +240,8 @@ stored.
   adaptive opt-in/consent.
 - **Dependencies:** `B04-03`, `B04-04`, `B04-02`.
 - **Risk / size:** High / L.
-- **Primary model / required reviewer:** GPT Luna / Sol High; Terra High for
-  production settings integration.
+- **Review focus (one session):** Goal/consent state ownership, settings wiring
+  and usability.
 - **Likely files or domains:** New goal models/repository, profile/settings
   controllers, `UserProfileNotifier`, `TdeeCalculator` adapter boundary,
   nutrition-goal screens and fixtures.
@@ -258,7 +273,8 @@ stored.
   inputs as zero.
 - **Dependencies:** `B04-03`, `B04-04`, accepted B02 health/activity contracts.
 - **Risk / size:** Critical / XL.
-- **Primary model / required reviewer:** Sol High / Sol High.
+- **Review focus (one session):** Recovery provenance, completeness and
+  readiness hold.
 - **Likely files or domains:** New recovery/readiness models and repositories,
   B02 health provenance/read models, `ReadinessService`, fixtures and backup
   tests.
@@ -286,7 +302,8 @@ stored.
   versions.
 - **Dependencies:** `B04-02`, `B04-05`, `B04-06`, accepted B02/B03 integration.
 - **Risk / size:** Critical / XL.
-- **Primary model / required reviewer:** Sol High / Sol High.
+- **Review focus (one session):** Deterministic target arithmetic and boundary
+  behavior.
 - **Likely files or domains:** New pure target engine, policy/rule version
   contracts, B02 load evidence adapters, B03 totals/estimate read models,
   calculation fixtures.
@@ -325,7 +342,8 @@ stored.
   windows.
 - **Dependencies:** `B04-05`, `B04-06`, `B04-07`, accepted B01–B03 contracts.
 - **Risk / size:** High / L.
-- **Primary model / required reviewer:** GPT Luna / Sol High.
+- **Review focus (one session):** Evidence context, local periods, nutrition
+  uncertainty and N8 boundary.
 - **Likely files or domains:** New context/meal-opportunity contracts,
   `NutritionReadModelRepository`, `NutritionConsumptionRepository`, B02
   calendar/activity/readiness adapters, recipe/thali reads and local time
@@ -353,7 +371,8 @@ stored.
 - **Dependencies:** `B04-08`, `B04-02`, accepted B03 constraint/estimate
   contracts.
 - **Risk / size:** Critical / L.
-- **Primary model / required reviewer:** Sol High / Sol High.
+- **Review focus (one session):** B03 safety mapping, uncertainty and fail-closed
+  behavior.
 - **Likely files or domains:** B03 constraint repository/evaluator,
   `nutrition_constraints.dart`, estimate facts/ranges, new B04 policy mapper
   and safety fixtures.
@@ -382,7 +401,7 @@ stored.
   alternatives, missing evidence and rule versions.
 - **Dependencies:** `B04-07`, `B04-08`, `B04-09`.
 - **Risk / size:** Critical / XL.
-- **Primary model / required reviewer:** Sol High / Sol High.
+- **Review focus (one session):** Deterministic engine, ranking and AI boundary.
 - **Likely files or domains:** New recommendation/evidence models, pure engine,
   prioritization policy, deterministic fixtures and UI state DTOs.
 - **Acceptance criteria:** Daily, weekly, training and nutrition consumers call
@@ -409,7 +428,8 @@ stored.
   feedback while keeping daily/weekly projections recomputable.
 - **Dependencies:** `B04-03`, `B04-04`, `B04-10`.
 - **Risk / size:** Critical / L.
-- **Primary model / required reviewer:** GPT Luna / Sol High.
+- **Review focus (one session):** Historical lineage, feedback and backup
+  persistence.
 - **Likely files or domains:** Recommendation/evidence/feedback repositories,
   schema/backup adapters, graph validators and history read models.
 - **Acceptance criteria:** Issued output freezes context/evidence/rule/model
@@ -434,7 +454,8 @@ stored.
   using the remaining-target read model and explicit meal opportunity.
 - **Dependencies:** `B04-08`, `B04-09`, `B04-10`, `B04-11`.
 - **Risk / size:** High / L.
-- **Primary model / required reviewer:** Sol High / Sol High.
+- **Review focus (one session):** Local candidate sources, target context and
+  safety filtering.
 - **Likely files or domains:** Nutrition food/recipe/thali providers,
   consumption/totals read model, new current-food controller/state, candidate
   cards and fixtures.
@@ -459,7 +480,8 @@ stored.
   feedback states.
 - **Dependencies:** `B04-10`, `B04-11`, `B04-12`.
 - **Risk / size:** High / XL.
-- **Primary model / required reviewer:** Terra High / Sol High and Terra High.
+- **Review focus (one session):** Daily/weekly orchestration, offline states and
+  wording.
 - **Likely files or domains:** Today/dashboard controllers and providers,
   weekly review/progress read models, local period service and accessibility
   state components.
@@ -489,7 +511,8 @@ stored.
   explanation only after deterministic results are available.
 - **Dependencies:** `B04-10`, `B04-12`, `B04-13`; explicit AI consent policy.
 - **Risk / size:** Critical / M.
-- **Primary model / required reviewer:** Sol High / Sol High.
+- **Review focus (one session):** AI consent, redaction and deterministic
+  fallback.
 - **Likely files or domains:** AI adapter/provider boundary, privacy redaction,
   `meal_plan_service.dart` and weekly-report legacy isolation, offline/error
   states and privacy tests.
@@ -517,7 +540,8 @@ stored.
 - **Dependencies:** `B04-05`, `B04-12`, `B04-13`; `B04-14` only if optional AI
   wording is exposed.
 - **Risk / size:** High / XL.
-- **Primary model / required reviewer:** Terra High / Terra High and Sol High.
+- **Review focus (one session):** Production UI state ownership, navigation and
+  accessibility.
 - **Likely files or domains:** Goal/settings screens, Today/dashboard, food and
   report screens, providers/controllers, navigation, semantic labels and
   responsive layouts.
@@ -547,7 +571,8 @@ stored.
 - **Dependencies:** `B04-03` through `B04-15` as applicable; accepted B03
   integration; `B04-14` if included.
 - **Risk / size:** Critical / L.
-- **Primary model / required reviewer:** Terra High / Sol High and Terra High.
+- **Review focus (one session):** Cross-batch authority, legacy isolation and
+  regression coverage.
 - **Likely files or domains:** Repository ownership map, providers/controllers,
   legacy `FoodRepository`, `TdeeCalculator`, AI meal-plan/weekly-report paths,
   migration/backup and integration tests.
@@ -570,29 +595,30 @@ stored.
 ## B04-17 — Final verification and release gate
 
 - **Objective:** Execute the complete B04 verification matrix and make the
-  Sol release disposition, including physical-device and accessibility checks.
+  Sol release disposition against the current clean integration `HEAD`.
 - **Dependencies:** `B04-16`.
 - **Risk / size:** Critical / L.
-- **Primary model / required reviewer:** Sol High / Sol High; Terra High for
-  production UI and accessibility evidence.
+- **Review focus (one session):** Full review of clean integration `HEAD`,
+  release gates and production behavior.
 - **Likely files or domains:** `VERIFICATION.md`, CI/build configuration,
   migration/backup fixtures, Android/iOS artifacts and manual evidence.
 - **Acceptance criteria:** All required gates pass or have explicitly
   accepted non-blocking follow-ups; no unresolved safety/privacy/historical
   blocker; Product Owner qualitative authorization, Product Owner selection of
-  proposed `ENABLED-1`, Terra copy review and a fresh independent Sol High
-  verdict covering the numerical contract are recorded. Branch merge and
-  explicit release/feature-policy selection are recorded before any enabled
-  activation; `HOLD-1` remains replayable/non-selected and
-  `READINESS-HOLD-1` remains active; release evidence uses the canonical exact
-  numerical result without downstream rounding or recalculation. The
-  incremental evidence ledger is
-  updated immediately after each approved/merged task; Android and iOS
-  physical checks are recorded; this planning branch does not begin B04-01 or
-  implementation.
+  proposed `ENABLED-1`, and one final Sol review of the current clean
+  integration `HEAD` are recorded. Branch merge and explicit
+  release/feature-policy selection are recorded before any enabled activation;
+  `HOLD-1` remains replayable/non-selected and `READINESS-HOLD-1` remains
+  active; release evidence uses the canonical exact numerical result without
+  downstream rounding or recalculation. The lightweight task record is
+  updated when implementation and merge details are available. Physical-device
+  checks are recommended and recorded when performed, but are not a batch
+  blocker by themselves.
 - **Required tests:** Full matrix in `VERIFICATION.md`, direct task-level D04
-  acceptance tests, manual journeys, release builds and rollback/idempotency
-  evidence; ledger completeness is itself a release check.
+  acceptance tests, release builds and rollback/idempotency evidence. Manual
+  smoke journeys, simulators and physical-device checks add confidence when
+  available; missing administrative or device evidence is a follow-up unless
+  it exposes an actual defect.
 - **Explicit exclusions:** Feature changes during verification without a
   reviewed remediation task; B05 scope.
 - **Parallelizable:** No; final gate follows the integrated baseline.
@@ -604,8 +630,7 @@ stored.
   privacy and persistence contracts before implementation.
 - **Dependencies:** `B04-01`, `B04-02`, and a new roadmap/product decision.
 - **Risk / size:** Critical / M planning only.
-- **Primary model / required reviewer:** Sol High / Product Owner and Sol High;
-  Terra High for wording.
+- **Review focus (one session):** N8 scope and non-inference boundary.
 - **Likely files or domains:** Decision register, context contract and privacy
   review only.
 - **Acceptance criteria:** Context ownership, effective dates, no-inference
@@ -638,23 +663,25 @@ B04-01 + B04-02 + new N8 decision -> B04-18 (conditional, outside release DAG)
 The waves are deliberately conservative and never exceed three concurrent
 implementation tasks.
 
-| Wave | Tasks / branches | Shared baseline | Expected merge order | Combined review |
-|---|---|---|---|---|
-| 0 | `B04-01`, then `B04-02` | Concrete B04 integration baseline, accepted B01–B03 contract evidence and independent Sol approval of this remediation | Contract matrix before policy gate | Sol; Product Owner; Terra for copy |
-| 1 | `B04-03` | Accepted B03 integration parent | Schema first | Sol schema gate |
-| 2 | `B04-04` | Schema v18 merged | Backup graph after migration | GPT Luna implementation, Sol restore gate |
-| 3 | `B04-05` and `B04-06` | Schema/backup baseline | Merge repositories independently, then shared fixtures | Sol; Terra only for settings surface |
-| 4 | `B04-07` | Goal/preferences and readiness contracts | Target engine before context | Sol critical algorithm review |
-| 5 | `B04-08`, then `B04-09` | Target/context contracts | Context before safety mapper | Sol safety and provenance review |
-| 6 | `B04-10` | Safety and target contracts | Engine before all consumers | Sol critical engine review |
-| 7 | `B04-11` | Engine and schema/backup | History before current-food and briefing consumers | Sol lineage review |
-| 8 | `B04-12` | History, context and safety | Current-food read model | Sol safety review |
-| 9 | `B04-13` and optional `B04-14` | Engine/history/current-food contracts | Core read models before optional AI; AI cannot block deterministic core | Sol; Terra for UI/orchestration |
-| 10 | `B04-15` | Production read models and optional AI contract | UI after state ownership review | Terra + Sol |
-| 11 | `B04-16` | All implementation waves merged | Regression/authority sweep | Terra + Sol |
-| 12 | `B04-17` | Regression-clean integration branch | Final verification only | Sol release gate |
+| Wave | Tasks / branches | Dependency note |
+|---|---|---|
+| 0 | `B04-01`, then `B04-02` | Start from the concrete B04 integration baseline. |
+| 1 | `B04-03` | Merge after the contract and policy dependencies. |
+| 2 | `B04-04` | Follow the Schema v18 contract. |
+| 3 | `B04-05` and `B04-06` | Use the schema/backup baseline and shared fixtures. |
+| 4 | `B04-07` | Use goal and readiness contracts. |
+| 5 | `B04-08`, then `B04-09` | Complete context before safety mapping. |
+| 6 | `B04-10` | Complete safety and target dependencies first. |
+| 7 | `B04-11` | Complete engine and persistence dependencies first. |
+| 8 | `B04-12` | Use history, context and safety outputs. |
+| 9 | `B04-13` and optional `B04-14` | Complete core read models before optional AI. |
+| 10 | `B04-15` | Integrate production UI after state ownership is settled. |
+| 11 | `B04-16` | Run the regression and legacy-authority sweep. |
+| 12 | `B04-17` | Review the current clean integration `HEAD`. |
 
-Branches are conceptual task branches. B04-01 may be created only after the
-independent Sol High verdict approves this remediation and the accepted parent
-is used; every later branch requires its own DAG dependencies and review
-evidence. No task is marked implemented by this planning document.
+Branches are task branches. Create or select the documented branch once its
+dependencies are available, preserve its commits for traceability and
+reversion, and complete one implementation/test/review/resolve/merge cycle.
+No second review is required after an approved verdict unless a concrete
+unresolved blocker remains. No task is marked implemented by this planning
+document.

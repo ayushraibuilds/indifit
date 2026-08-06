@@ -1,8 +1,8 @@
 # B04 — Verification Plan
 
-Status: verification plan only. No B04 implementation or verification run has
-started. This branch records the B04-D04 documentation gate and the proposed
-`B04-D04-ENABLED-1` numerical policy; no activation is authorized here.
+Status: active verification checklist. The final review evaluates the current
+clean integration `HEAD`; this document records the B04-D04 policy gate and
+the proposed `B04-D04-ENABLED-1` numerical policy without activating it.
 
 The concrete B04 integration baseline is
 `741aa18972ebc1b61cd65c0bf12b442b10b50890`; its implementation parent is
@@ -15,13 +15,13 @@ numerical-policy authoring baseline is
 `e19ae5d512bea0d46143ca5bda842425a46df0a8`, recorded as
 `B04_D04_FINAL_COMMIT`.
 
-The focused independent Sol High numerical-precision review is **Approved** at
+The focused Sol High numerical-precision review is **Approved** at
 `B04_D04_FINAL_COMMIT` for range-width arithmetic, Theil–Sen medians and ties,
 exact decision precision, kcal normalization, directional floor/ceiling
 rounding, exact ±100 kcal proposal behavior and deterministic edge fixtures.
 This approval does not activate `ENABLED-1`; it remains inactive until the D04
-branch is merged and an explicit release/feature-policy selection records a
-future effective date, timezone and scope.
+implementation is reviewed and merged and an explicit release/feature-policy
+selection records a future effective date, timezone and scope.
 
 ## Verification gate
 
@@ -31,36 +31,37 @@ accepted B03 integration parent; B03 schema v17 and Backup v8 are present
 there. The planning branch is schema v16/backup v7 and is not a verification
 baseline. B04’s proposed durable change remains schema v18/Backup v9.
 
-This branch does not begin B04-01. Foundational work remains subject to the
-accepted task DAG and its own gates. `HOLD-1` remains the current/default
+Foundational work follows the accepted task DAG and its own gates. `HOLD-1`
+remains the current/default
 policy for historical replay and installations/users not selecting
 `ENABLED-1`; it does not block contracts, fixtures, Schema v18 or Backup v9
 foundations, goals, consent, eligibility, readiness, safety, lineage, feedback
 or deterministic unavailable states. `ENABLED-1` is not active until Product
-Owner approval, a fresh independent Sol High verdict, branch merge and
-explicit release/feature-policy selection are all recorded.
+Owner approval, a successful Sol review of the current implementation, branch
+merge and explicit release/feature-policy selection are all recorded.
 
-Required reviewers:
+Review responsibilities:
 
-- **Sol High:** target policy, readiness, recommendation determinism,
-  historical lineage, schema/backup, safety, privacy/AI and final release.
-- **Terra High:** production controllers/providers, navigation, UI ownership,
-  copy, compact layouts, large text and accessibility.
+- **One Sol review session:** target policy, readiness, recommendation
+  determinism, historical lineage, schema/backup, safety, privacy/AI,
+  production wiring and final release.
+- **Same-session UI coverage:** production controllers/providers, navigation,
+  UI ownership, copy, compact layouts, large text and accessibility.
 - **Product Owner:** qualitative adaptive opt-in, age, consent, safety,
   wording, N8 boundary and the proposed `ENABLED-1` numerical selection.
-  Product Owner approval does not replace the fresh independent Sol verdict or
-  activation/merge gate. `READINESS-HOLD-1` remains selected for all readiness
-  numerical effects.
+  Product Owner approval remains separate from policy activation and merge.
+  `READINESS-HOLD-1` remains selected for all readiness numerical effects.
 
 Any unresolved dependency, safety, privacy, historical-immutability,
-unknown/range, offline or platform/accessibility failure is a release blocker.
-Only reproducible CI/documentation follow-up may be non-blocking, with an
-owner and explicit Sol acceptance.
+unknown/range, offline or runtime/platform failure is a release blocker. A
+task-history gap, stale hash, missing transcript, imperfect metadata or
+unavailable physical-device coverage is a non-blocking follow-up unless it
+reveals an actual defect.
 
 For D04 specifically, `B04-D04-01` through `B04-D04-20` must each have an
 authorized Product Owner qualitative selection, and the versioned
 `B04-D04-ENABLED-1` record must contain the explicit numerical selection and
-all boundary metadata, plus a fresh independent Sol High verdict. `HOLD-1`
+all boundary metadata, plus a successful Sol review. `HOLD-1`
 remains retained for replay/non-selection; under it adaptive output is
 `unavailable`, all adaptive deltas are exactly `0 kcal`, no proposal may be
 accepted and user override or AI cannot bypass the hold. `READINESS-HOLD-1`
@@ -83,7 +84,7 @@ active; Product Owner selection alone is not activation:
   period; missing-data behavior; policy/version ID; override rule; and
   deterministic boundary tests. No record may use “reasonable,” “moderate” or
   “periodic” as a substitute for a value.
-- Independent Sol High review of the selected policy, B03 mapping, B02 health
+- Sol review of the selected policy, B03 mapping, B02 health
   provenance/readiness boundary, copy catalog, offline/AI redaction and
   historical lineage. Product Owner approval alone cannot close the gate.
 - A negative `HOLD-1` fixture proving that the current policy emits no adaptive
@@ -228,13 +229,13 @@ missing-data result, override behavior and historical evidence references.
 | Backup invalid graph | Duplicate IDs, dangling evidence, invalid supersession, unknown future records | Restore fails closed and leaves the destination unchanged. |
 | Backup idempotency | Repeat restore/export and compare canonical payloads | No duplicated durable entities or feedback events. |
 | HOLD-1 disabled-policy guard | Attempt adaptive calorie/readiness proposals, user acceptance, manual override and AI bypass | Adaptive result is `unavailable`; no proposal is accepted; upward/downward/aggregate deltas are exactly `0 kcal`; no hidden calculation is active. |
-| ENABLED-1 activation gate | Product Owner selection, fresh independent Sol verdict, merged branch and explicit release/feature-policy selection | Policy is inactive until all four conditions are recorded; activation has a future effective local date/timezone and never rewrites HOLD-1 history. |
+| ENABLED-1 activation gate | Product Owner selection, successful Sol review, merged branch and explicit release/feature-policy selection | Policy is inactive until all four conditions are recorded; activation has a future effective local date/timezone and never rewrites HOLD-1 history. |
 | ENABLED-1 numerical contract | Exact eligibility, goal rates, 21-day window, evidence thresholds, Theil–Sen algorithm, deadbands, 100-kcal step, cadence, expiry, aggregate, deficit/surplus, floor/ceiling and rapid-change rules | Same frozen inputs/policy version produce the specified proposal, unavailable reason or boundary state; no legacy constant is authoritative. |
 | ENABLED-1 arithmetic precision | Finite/unit/domain validation, exact range width/midpoint, invalid midpoint/range, rational medians/slopes, basis points, display rounding, normalized `M`, floor/ceil derivation and no-clamp boundary crossing | Policy decisions use unrounded exact arithmetic; stored history is replayable; display rounding cannot alter a decision; invalid numeric evidence is unavailable. |
 | READINESS-HOLD-1 numerical guard | Complete, missing, denied, stale and conflicting readiness under the proposed enabled calorie policy | Calories change exactly `0 kcal/day`; load/intensity change exactly `0%`; schedule duration change exactly `0`; descriptive readiness may remain. |
 | Goal history | User-set, calculated proposal, accepted adaptive proposal, override and reset | Each accepted change is a new version with correct effective date; old reads do not change. |
 | Readiness completeness | Complete, missing, denied, stale and conflicting observations | Completeness/status is explicit; missing is never zero; adaptation is suppressed when required. |
-| D04 decision completeness | `B04-D04-01` through `B04-D04-20`, exact qualitative approval, `ENABLED-1` selection/metadata, retained HOLD-1 and READINESS-HOLD-1, durable-owner contract, direct task-test trace and fresh Sol verdict | No unresolved policy record is hidden; missing Sol/merge/explicit activation keeps ENABLED-1 inactive and HOLD-1 behavior current. |
+| D04 decision completeness | `B04-D04-01` through `B04-D04-20`, exact qualitative approval, `ENABLED-1` selection/metadata, retained HOLD-1 and READINESS-HOLD-1, durable-owner contract, direct task-test trace and successful Sol review | No unresolved policy record is hidden; missing Sol/merge/explicit activation keeps ENABLED-1 inactive and HOLD-1 behavior current. |
 | Age eligibility | Verified `18 completed years`, inclusive birthday, below-age user, unknown/invalid/conflicting/withheld age, correction and no inference | `coaching_eligibility_evaluations` is append-only; below-18 returns `coaching_unavailable_age`; unknown/invalid/conflicting/withheld age returns typed unavailable; logging/history/user-set targets remain available; historical evaluations are retained. |
 | Opt-in and consent | Default off, explicit disclosure/action, append-only enable/disable/withdrawal events, separate AI consent, effective date, copy/version/timestamp and withdrawal | `coaching_consent_events` is the historical authority; no implicit consent; disablement stops new coaching; historical recommendations, accepted targets and feedback remain readable. |
 | Target acceptance | Read-only proposal, explicit accept/reject/dismiss, duplicate acceptance and effective-dated target version | No silent replacement; acceptance is idempotent; rejection/dismissal does not mutate the current target. |
@@ -263,39 +264,43 @@ missing-data result, override behavior and historical evidence references.
 | Accessibility | Semantics, focus order, announcements, dynamic text, contrast | Unknown/conflict/estimate/unavailable states are distinguishable and usable. |
 | Platform builds | Android release build and iOS release build/no-code-sign path as CI permits | Both build from the clean implementation branch with no platform-specific errors. |
 
-## Incremental per-task evidence ledger
+## Lightweight task record
 
-This ledger is part of the live verification record. Update the row for a task
-immediately after that task is approved and merged, including focused test
-evidence and any remediation/re-review. `B04-17` may verify ledger completeness
-but must not reconstruct prior reviews from memory or from a final matrix.
+Keep only the commit and outcome information useful for tracing or reverting a
+task. Record the row when implementation and merge details are available. The
+record is not a compliance ledger, does not require a preserved transcript,
+and does not block review because of missing or stale metadata. New final
+verdicts use `Approved` or `Approved with non-blocking follow-up`.
 
-| Task | Implementation commit | Primary reviewer | Verdict | Terra review | Remediation | Re-review | Merge commit | Focused tests | Status |
-|---|---|---|---|---|---|---|---|---|---|
-| `B04-01` | `ea8ecdf7832db430f0bb5381a01d2c85c8ecd94d` | GPT-5 Codex | Pass after remediation | — | `cb94eabf3d3736a169fd2be8f137aafa0199135b` | `cb94eabf3d3736a169fd2be8f137aafa0199135b` | `db4cae01bb75fa15987ae8f02e9a04d1ecc013e9` | `flutter test test/b04_contract_fixture_test.dart` (22 passed) | Merged |
-| `B04-02` | — | — | — | — | — | — | — | — | Not started |
-| `B04-03` | — | — | — | — | — | — | — | — | Not started |
-| `B04-04` | — | — | — | — | — | — | — | — | Not started |
-| `B04-05` | — | — | — | — | — | — | — | — | Not started |
-| `B04-06` | — | — | — | — | — | — | — | — | Not started |
-| `B04-07` | — | — | — | — | — | — | — | — | Not started |
-| `B04-08` | — | — | — | — | — | — | — | — | Not started |
-| `B04-09` | — | — | — | — | — | — | — | — | Not started |
-| `B04-10` | — | — | — | — | — | — | — | — | Not started |
-| `B04-11` | — | — | — | — | — | — | — | — | Not started |
-| `B04-12` | — | — | — | — | — | — | — | — | Not started |
-| `B04-13` | — | — | — | — | — | — | — | — | Not started |
-| `B04-14` (optional) | `06921dc0ea7d57c55d303acc4b4e078ad17b0383` | GPT-5 Codex | Pass after remediation | — | `5d22db2c734ea2e90b9bfa62754e6bffe64421b5` | `5d22db2c734ea2e90b9bfa62754e6bffe64421b5` | `dd5592d3e51a359e7eee7e4987fd0587b6af60ab` | focused AI test (9 passed); nearby regressions (97 passed); full suite (950 passed) | Merged |
-| `B04-15` | — | — | — | — | — | — | — | — | Not started |
-| `B04-16` | `117c0673f8a2fe7c36ad15cf2862367091c9097f` | GPT-5 Codex | Pass after remediation | — | `f04b9108e9fc4103bd437f4d8cde8c19de368fa7` | `f04b9108e9fc4103bd437f4d8cde8c19de368fa7` | `1d82f85cfda66ae4fcfe872ce9f90cdee8f223ea` | integration regression (6 passed); full suite (969 passed) | Merged |
-| `B04-17` | — | — | — | — | — | — | — | — | Not started |
-| `B04-18` (conditional) | — | — | — | — | — | — | — | — | Not started |
+| Task | Implementation commit | Final verdict | Merge commit | Known follow-ups |
+|---|---|---|---|---|
+| `B04-01` | `ea8ecdf7832db430f0bb5381a01d2c85c8ecd94d` | Pass after remediation | `db4cae01bb75fa15987ae8f02e9a04d1ecc013e9` | — |
+| `B04-02` | — | — | — | Record when reviewed and merged |
+| `B04-03` | — | — | — | Record when reviewed and merged |
+| `B04-04` | — | — | — | Record when reviewed and merged |
+| `B04-05` | — | — | — | Record when reviewed and merged |
+| `B04-06` | — | — | — | Record when reviewed and merged |
+| `B04-07` | — | — | — | Record when reviewed and merged |
+| `B04-08` | — | — | — | Record when reviewed and merged |
+| `B04-09` | — | — | — | Record when reviewed and merged |
+| `B04-10` | — | — | — | Record when reviewed and merged |
+| `B04-11` | — | — | — | Record when reviewed and merged |
+| `B04-12` | — | — | — | Record when reviewed and merged |
+| `B04-13` | — | — | — | Record when reviewed and merged |
+| `B04-14` (optional) | `06921dc0ea7d57c55d303acc4b4e078ad17b0383` | Pass after remediation | `dd5592d3e51a359e7eee7e4987fd0587b6af60ab` | — |
+| `B04-15` | — | — | — | Record when reviewed and merged |
+| `B04-16` | `117c0673f8a2fe7c36ad15cf2862367091c9097f` | Pass after remediation | `1d82f85cfda66ae4fcfe872ce9f90cdee8f223ea` | — |
+| `B04-17` | — | — | — | Final review record |
+| `B04-18` (conditional) | — | — | — | Outside mandatory B04 scope |
 
-## Required physical-device checks
+## Recommended physical-device checks
 
-These checks are required before the final gate, not deferred to a post-release
-manual pass. Record device model, OS, app build, timezone, network state,
-permissions, input fixture and result.
+Record device model, OS, app build, timezone, network state, permissions, input
+fixture and result when checks are performed. Physical-device coverage is
+recommended for this solo-development stage, but missing coverage is a
+follow-up rather than a batch blocker unless it exposes a known device-specific
+defect. Simulators, automated tests and manual smoke testing may provide
+interim confidence.
 
 | ID | Journey | Android and iOS evidence |
 |---|---|---|
@@ -340,49 +345,39 @@ permissions, input fixture and result.
 
 ## Evidence package and release disposition
 
-The final verification package must include:
+The final verification package should include:
 
-- branch and remediation/current commit, concrete integration baseline
+- the current clean integration `HEAD`, concrete integration baseline
   `741aa18972ebc1b61cd65c0bf12b442b10b50890`, implementation parent
-  `f976542e395a3e082f1ab5cdfdfd87e969910766`, planning commit
-  `9102092fd1b18e38beff500e2654ece6a191f66`, accepted B03 commit
-  `d85e8a16566735e7f6b7fe15cd2a97edb5677178`, timezone correction
-  `78a43f909bae58dc5e509da97af426ad960c9190`, B03 merge commit
-  `f976542e395a3e082f1ab5cdfdfd87e969910766`, and schema/backup versions;
-- formatter, analyzer, focused/full test and build logs;
-- fresh/direct/chained migration and rollback evidence;
-- backup v5–v9 compatibility, graph validation and idempotency evidence;
-- deterministic target/recommendation fixture outputs;
+  `f976542e395a3e082f1ab5cdfdfd87e969910766`, accepted B03 lineage and schema/
+  backup versions;
+- formatter, analyzer, focused/full test and build results;
+- fresh/direct/chained migration and rollback results;
+- Backup v5–v9 compatibility, graph validation and idempotency results;
+- deterministic target/recommendation fixtures and policy-version replay;
 - Product Owner authorization for qualitative D04 policy and the exact
-  `HOLD-1` numerical guard fixture. The approval evidence is: “I approve the
-  qualitative B04-D04 policy decisions recorded at the approved D04 commit,
-  including the 18+ eligibility rule for adaptive calorie and readiness-driven
-  proposals.
+  `HOLD-1` numerical guard fixture. The approval evidence remains: “I approve
+  the qualitative B04-D04 policy decisions recorded at the approved D04
+  commit, including the 18+ eligibility rule for adaptive calorie and
+  readiness-driven proposals. Numerical adaptation cadence, evidence
+  thresholds, calorie adjustment bounds, deficit/surplus limits, and calorie
+  floors or ceilings remain under B04-D04-HOLD-1 and are not approved for
+  enabled adaptation.”;
+- the lightweight task record and known follow-ups;
+- safety, unknown/range, medical-wording, historical, offline and AI privacy
+  results;
+- physical-device records when performed.
 
-  Numerical adaptation cadence, evidence thresholds, calorie adjustment bounds,
-  deficit/surplus limits, and calorie floors or ceilings remain under
-  B04-D04-HOLD-1 and are not approved for enabled adaptation.” Source: Product
-  Owner; date `2026-08-05`; approved commit `750ef0999153a7cc41a2493cb6305d2a833b1f12`;
-  scope: qualitative decisions only; numerical scope remains held; independent
-  Sol review required;
-- append-only consent-event and eligibility-evaluation owner evidence,
-  restore-order/rollback evidence and the incrementally maintained task ledger;
-- independent fresh Sol High verdict covering the authorized policy,
-  `ENABLED-1` numerical contract, `READINESS-HOLD-1`, inherited B01–B03
-  boundaries, v18/v9 ownership, safety, privacy, wording and HOLD-1 behavior;
-- safety, unknown/range, medical-wording and AI privacy results;
-- Android/iOS physical-device and accessibility records;
-- manual journey results, known follow-ups, owners and due dates.
-
-Sol High records one of: **Passed**, **Passed with explicitly accepted
-non-blocking follow-up**, or **Blocked**. A blocked dependency must never be
-reported as accepted. A passing fresh verdict does not itself activate
-`ENABLED-1`: the policy branch must also be merged and the release or
-feature-policy activation must explicitly select the version with a future
-effective local date/timezone and user/installation scope. This branch still
-does not begin B04-01 or implementation. Until those activation conditions
-pass, HOLD-1 remains current and all adaptive deltas are zero. Even after
-ENABLED-1 activation, readiness-driven numerical target/training changes,
+One Sol review-and-resolve session records one of: **Approved**, **Approved
+with non-blocking follow-up**, or **Blocked**. A task or batch is blocked by an
+actual build, analysis, test, migration, backup, safety, target, historical,
+privacy or runtime defect. Missing transcripts, stale hashes, imperfect task
+metadata and unavailable device coverage are follow-ups unless they expose such
+a defect. A successful review does not itself activate `ENABLED-1`: the policy
+branch must also be merged and the release or feature-policy activation must
+explicitly select the version with a future effective local date/timezone and
+user/installation scope. Until those activation conditions pass, `HOLD-1`
+remains current and all adaptive deltas are zero. Even after `ENABLED-1`
+activation, readiness-driven numerical target/training changes,
 medical/youth/clinical adaptation and AI numerical authority remain blocked by
-`READINESS-HOLD-1` and the qualitative policy. B04 release still requires all
-hard gates above and explicit Terra evidence for production surfaces.
+`READINESS-HOLD-1` and the qualitative policy.

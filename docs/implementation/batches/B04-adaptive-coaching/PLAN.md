@@ -1,11 +1,12 @@
 # B04 — Adaptive Coaching Plan
 
-Status: planning-only package. This document authorizes design and review
-work only. `B04-D04-ENABLED-1` is the Product Owner-selected proposed first
-enabled calorie policy, but it is inactive pending independent fresh Sol High
-approval, branch merge and explicit release/feature-policy selection. This
-branch does not authorize B04-01 or runtime implementation. `HOLD-1` remains
-retained for historical replay and non-selected installations/users.
+Status: implementation and review workflow package. This document defines the
+scope, dependencies and solo-development release process for B04.
+`B04-D04-ENABLED-1` remains the Product Owner-selected proposed first enabled
+calorie policy, but it is inactive pending a successful Sol review, branch
+merge and explicit release/feature-policy selection. This document does not
+activate runtime policy. `HOLD-1` remains retained for historical replay and
+non-selected installations/users.
 
 ## Gate and authority
 
@@ -20,7 +21,7 @@ Task 8, and the N9/N10/P1/P2/P7/P9 dependency entries.
 | Planning branch | `batch/b04-planning` at `12ce1b05c7626d3fb37eedc37fc0dd4d7af94d8a` | Documentation only; no feature branch is created. |
 | Integration baseline | `main` at the same commit; schema v16, backup v7 | This is the accepted B02 parent available to the planning worktree. |
 | B04 implementation parent | `f976542e395a3e082f1ab5cdfdfd87e969910766` | Accepted B03 merge; schema v17 and Backup v8 are the dependency baseline. |
-| B04 integration baseline | `741aa18972ebc1b61cd65c0bf12b442b10b50890` | B04 planning package merged onto the accepted B03 parent; no B04-01 branch starts before independent Sol approval of this remediation. |
+| B04 integration baseline | `741aa18972ebc1b61cd65c0bf12b442b10b50890` | B04 planning package merged onto the accepted B03 parent; task branches start from this accepted dependency baseline or its documented descendants. |
 | Numerical-policy authoring baseline | `61cac3dd35579fde01118626b5fa009024a04a7f` | Current documentation baseline for the proposed `B04-D04-ENABLED-1` calorie contract; not a runtime activation. |
 | B01 | Final verification passed; B01 lineage is in `main` | B04 may consume programs, occurrences, local-date/timezone and immutable execution contracts. |
 | B02 | Final verification passed and B02 is integrated in `main` | B04 may consume activity history, load evidence, health provenance and typed optional recovery inputs. |
@@ -30,20 +31,19 @@ Task 8, and the N9/N10/P1/P2/P7/P9 dependency entries.
 The dependency status is therefore:
 
 - **B04 planning allowed:** yes.
-- **B04-01 implementation allowed from this branch:** only after this D04
-  remediation receives independent Sol approval and the clean implementation
-  parent is used.
-- **Foundational B04 implementation:** allowed after that approval and the
-  accepted DAG dependencies pass. `HOLD-1` does not block contracts, fixtures,
+- **B04-01 implementation allowed from this branch:** after the clean
+  implementation parent is used and the task branch is selected.
+- **Foundational B04 implementation:** allowed after the accepted DAG
+  dependencies pass. `HOLD-1` does not block contracts, fixtures,
   schema v18, Backup v9, persistence, unavailable states, goals, consent,
   readiness, safety, lineage, feedback, descriptive behavior or user-set
   targets.
-- **Enabled adaptive implementation:** not authorized from this branch. The
-  proposed `B04-D04-ENABLED-1` policy may be implemented only after the fresh
-  independent Sol High verdict, branch merge and explicit release/
-  feature-policy selection. Until then `HOLD-1` remains the active/default
-  behavior, with no adaptive proposal or non-zero delta. Readiness numerical
-  effects remain under `B04-D04-READINESS-HOLD-1`.
+- **Enabled adaptive implementation:** the proposed `B04-D04-ENABLED-1`
+  policy may be implemented and tested, but it remains inactive until the
+  successful review, branch merge and explicit release/feature-policy
+  selection. Until then `HOLD-1` remains the active/default behavior, with no
+  adaptive proposal or non-zero delta. Readiness numerical effects remain
+  under `B04-D04-READINESS-HOLD-1`.
 
 The implementation parent must be a clean branch containing accepted B01,
 B02 and B03. It must not be inferred from the planning branch’s schema v16/v7
@@ -107,14 +107,14 @@ criteria and Task 8. They are the only required B04 product outcomes.
 ### Open decisions
 
 The first enabled numerical calorie policy is now defined as a proposed,
-future-only contract. Its independent safety/readiness review and runtime
-activation gate remain open. Readiness-driven numerical changes remain a
+future-only contract. Its safety/readiness review and runtime activation gate
+remain open. Readiness-driven numerical changes remain a
 separate hold, and conditional N8 scope remains outside mandatory B04.
 
 | Decision | Why it remains open | Required gate |
 |---|---|---|
-| `B04-D04-ENABLED-1` activation and implementation | Product Owner selected the explicit first enabled calorie contract; fresh independent Sol High safety/implementation-readiness verdict, branch merge and explicit release/feature-policy selection are still required. It is not active and never applies retroactively. | Product Owner + independent Sol High; release policy owner for explicit selection. |
-| Readiness-driven numerical policy | `B04-D04-READINESS-HOLD-1` retains exactly zero calorie/training numerical effect; descriptive completeness-aware guidance only. | Separate Product Owner selection + independent Sol review before any future readiness numerical policy. |
+| `B04-D04-ENABLED-1` activation and implementation | Product Owner selected the explicit first enabled calorie contract; successful Sol safety/implementation-readiness review, branch merge and explicit release/feature-policy selection are still required. It is not active and never applies retroactively. | Product Owner + Sol review; release policy owner for explicit selection. |
+| Readiness-driven numerical policy | `B04-D04-READINESS-HOLD-1` retains exactly zero calorie/training numerical effect; descriptive completeness-aware guidance only. | Separate Product Owner selection + Sol review before any future readiness numerical policy. |
 | N8 context semantics and ownership | Roadmap makes festival/travel/eating-out/fasting a separate product-owner decision. | Product Owner decision; Sol architecture/safety review before any persistence. |
 | Future external lookup | N10 does not authorize a cloud food-search authority. | Reopen scope and privacy review; not a B04 implementation dependency. |
 
@@ -216,10 +216,10 @@ feedback/intent only; it cannot turn a conflict into a safe result.
 | Missing/denied/conflicting health input | Readiness is incomplete/unknown; no readiness-driven target or training-change proposal. | Unavailable for readiness-driven adaptation |
 | AI unavailable or offline | Use deterministic local result or return unavailable; never invent food, consumption, safety or confidence. | Deterministic fallback/unavailable |
 
-These rules require Sol review at `B04-02`, `B04-07`, `B04-09`, `B04-10`,
-`B04-14` and the final gate. Terra reviews user-facing wording, low-risk
-logging acknowledgement, dismissal and accessibility at the production
-integration.
+These rules are part of the focused tests and one review-and-resolve session
+for `B04-02`, `B04-07`, `B04-09`, `B04-10`, `B04-14` and the final gate. The
+session must inspect user-facing wording, low-risk logging acknowledgement,
+dismissal, accessibility and production wiring where applicable.
 
 ## Policy and historical-boundary events
 
@@ -254,18 +254,19 @@ deterministic unavailable-state behavior, descriptive or historical features,
 or valid user-set targets. Under the hold, the adaptive result is
 `unavailable`; upward, downward and aggregate deltas are exactly `0 kcal`; no
 adaptive proposal may be accepted; user override and AI cannot bypass the
-hold. This documentation branch does not begin B04-01. The proposed
+hold. This planning document does not activate B04-01 or runtime policy. The
+proposed
 `ENABLED-1` policy is separately recorded with units, periods, boundaries,
 missing-data behavior, versioning, override rules and deterministic tests; it
-remains inactive until fresh independent Sol approval, branch merge and
-explicit release/feature-policy selection. Later tasks follow the accepted
-DAG and their own dependencies.
+remains inactive until the successful review, branch merge and explicit
+release/feature-policy selection. Later tasks follow the accepted DAG and
+their own dependencies.
 
 ## Proposed `B04-D04-ENABLED-1` numerical activation contract
 
 The Product Owner has selected the explicit first enabled calorie policy in
-`DECISIONS.md` as a proposed policy, subject to an independent fresh Sol High
-safety and implementation-readiness verdict. It enables only adult,
+`DECISIONS.md` as a proposed policy, subject to a Sol safety and
+implementation-readiness review. It enables only adult,
 consented, evidence-sufficient calorie proposals for the supported loss,
 maintenance and gain rates, with explicit user acceptance. It never enables
 automatic activation, readiness-driven numerical changes, medical or clinical
@@ -318,3 +319,33 @@ evidence after its effective date and never rewrites prior results.
 Every outcome has at least one implementation owner and a final verification
 gate. Conditional N8 work is isolated in `B04-18` and is not required to
 declare B04 complete.
+
+## Solo implementation and review workflow
+
+For each task:
+
+1. Create or select the documented task branch from the accepted dependency
+   baseline.
+2. Implement the documented acceptance criteria without changing B04 scope or
+   inherited B01–B03 authorities.
+3. Run focused tests, formatting, analysis and `git diff --check`.
+4. Use one fresh review-and-resolve session. The session inspects actual
+   production wiring, required tests, schema/backup safety, historical and
+   timezone behavior, nutrition uncertainty, dietary safety, privacy, AI
+   boundaries and unrelated regressions.
+5. Resolve task-scoped findings, add regression tests where useful, and record
+   one final verdict.
+6. Merge when the verdict is `Approved` or
+   `Approved with non-blocking follow-up`.
+
+Schema, backup, target-engine, safety and privacy tasks retain their stronger
+focused-test requirements, but they use the same single review-and-resolve
+cycle. A second review is not required after a successful cycle unless a
+concrete unresolved blocker remains. Missing transcripts, stale administrative
+hashes, incomplete evidence metadata and unavailable physical-device coverage
+are follow-ups unless they reveal an actual correctness, safety, migration,
+backup, privacy or runtime defect.
+
+Preserve task branches and commits so a regression can be traced, reverted and
+fixed without repeating the entire review history. The lightweight task
+record in `VERIFICATION.md` is sufficient; it is not a release gate by itself.
