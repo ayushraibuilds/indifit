@@ -13,6 +13,7 @@ import '../../data/repositories/b04_briefing_read_repositories.dart';
 import '../../data/repositories/b04_recommendation_history_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
+import '../../data/repositories/coaching_preference_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/nutrition_constraint_repository.dart';
@@ -31,6 +32,7 @@ import '../../data/repositories/travel_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../../data/services/b04_current_food_guidance_service.dart';
+import '../../data/services/b04_optional_ai_assistance.dart';
 import '../../features/dashboard/b04_daily_briefing_controller.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
 import '../../features/food_log/nutrition_thali_controller.dart';
@@ -294,6 +296,19 @@ final b04WeeklyReviewControllerProvider =
         repository: ref.watch(b04WeeklyReviewReadRepositoryProvider),
       ),
     );
+
+final b04OptionalAiAssistanceProvider =
+    Provider<B04OptionalAiAssistanceService>((ref) {
+      final preferences = CoachingPreferenceRepository(
+        database: ref.watch(databaseProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
+      );
+      return B04OptionalAiAssistanceService(
+        consent: CoachingPreferenceOptionalAiConsentReader(preferences),
+        provider: B04DioOptionalAiProvider(dio: ref.watch(dioProvider)),
+        privacyPolicy: ref.watch(privacyPolicyProvider),
+      );
+    });
 
 final nutritionProteinDistributionRepositoryProvider =
     FutureProvider<NutritionProteinDistributionRepository>((ref) async {
