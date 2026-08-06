@@ -299,13 +299,19 @@ class _B04BriefingReadProjection {
   B04RecommendationPolicyState? _historyPolicyState(
     Iterable<B04HistoricalRecommendation> rows,
   ) {
-    if (rows.any((item) => item.policyVersion == kB04HoldPolicyVersion)) {
-      return B04RecommendationPolicyState.hold;
-    }
-    if (rows.any((item) => item.policyVersion == kB04EnabledPolicyVersion)) {
-      return B04RecommendationPolicyState.enabled;
-    }
-    return null;
+    final ordered = rows.toList()
+      ..sort((left, right) {
+        final leftTime = left.effectiveAtUtc ?? left.createdAtUtc;
+        final rightTime = right.effectiveAtUtc ?? right.createdAtUtc;
+        final time = leftTime.compareTo(rightTime);
+        return time == 0 ? left.id.compareTo(right.id) : time;
+      });
+    final latest = ordered.isEmpty ? null : ordered.last;
+    return switch (latest?.policyVersion) {
+      kB04HoldPolicyVersion => B04RecommendationPolicyState.hold,
+      kB04EnabledPolicyVersion => B04RecommendationPolicyState.enabled,
+      _ => null,
+    };
   }
 
   B04RecommendationConsentState? _historyConsentState(

@@ -10,6 +10,7 @@ import 'package:indifit/data/models/b04_recovery_models.dart';
 import 'package:indifit/data/repositories/b04_briefing_read_repositories.dart';
 import 'package:indifit/data/repositories/b04_recommendation_history_repository.dart';
 import 'package:indifit/features/dashboard/b04_daily_briefing_controller.dart';
+import 'package:indifit/features/progress/b04_weekly_review_controller.dart';
 
 const _userId = 'briefing-user';
 const _timezoneId = 'America/New_York';
@@ -51,6 +52,30 @@ void main() {
         expect(
           result.recommendations.single.readinessSnapshotId,
           'readiness-daily',
+        );
+        expect(
+          result.recommendations.single.confidence,
+          B04RecommendationConfidence.high,
+        );
+        expect(
+          result.recommendations.single.completeness,
+          B04RecommendationCompleteness.complete,
+        );
+        expect(
+          result.recommendations.single.ruleVersion,
+          kB04RecommendationRuleVersion,
+        );
+        expect(
+          result.recommendations.single.algorithmVersion,
+          kB04RecommendationAlgorithmVersion,
+        );
+        expect(
+          result.recommendations.single.eligibilityState,
+          B04RecommendationEligibilityState.eligible,
+        );
+        expect(
+          result.recommendations.single.consentState,
+          B04RecommendationConsentState.enabled,
         );
         expect(result.recommendations.single.explanation, contains('meal'));
         expect(result.accessibilityLabel, contains('2026-03-08'));
@@ -180,6 +205,8 @@ void main() {
           expect(result.policyState, B04RecommendationPolicyState.hold);
           expect(result.consentState, B04RecommendationConsentState.disabled);
           expect(result.eligibilityState, entry.value);
+          expect(item.consentState, B04RecommendationConsentState.disabled);
+          expect(item.eligibilityState, entry.value);
           expect(
             item.targetAcceptanceState,
             B04BriefingTargetAcceptanceState.unavailable,
@@ -240,6 +267,7 @@ void main() {
           (item) => item.id == 'accepted-target',
         );
         expect(result.recommendations, hasLength(2));
+        expect(result.visibleRecommendations, hasLength(1));
         expect(dismissedItem.feedbackState, B04BriefingFeedbackState.dismissed);
         expect(dismissedItem.isVisible, isFalse);
         expect(dismissedItem.goalVersionId, 'goal-old');
@@ -252,6 +280,92 @@ void main() {
         expect(acceptedItem.goalVersionId, 'goal-new');
       },
     );
+
+    test(
+      'historical policy state follows the latest issued row in a mixed period',
+      () async {
+        final held = _historyRow(
+          id: 'held-first',
+          scope: B04RecommendationHistoryScope.weekly,
+          start: '2026-08-03',
+          end: '2026-08-09',
+          policyVersion: kB04HoldPolicyVersion,
+          createdAt: DateTime.utc(2026, 8, 3),
+        );
+        final enabled = _historyRow(
+          id: 'enabled-later',
+          scope: B04RecommendationHistoryScope.weekly,
+          start: '2026-08-03',
+          end: '2026-08-09',
+          policyVersion: kB04EnabledPolicyVersion,
+          createdAt: DateTime.utc(2026, 8, 8),
+        );
+
+        final result =
+            await B04WeeklyReviewReadRepository(
+              history: _FakeHistory([held, enabled]),
+            ).read(
+              userId: _userId,
+              startLocalDate: '2026-08-03',
+              endLocalDate: '2026-08-09',
+              timezoneId: 'UTC',
+            );
+
+        expect(result.policyState, B04RecommendationPolicyState.enabled);
+      },
+    );
+
+    test(
+      'HOLD-1 target history cannot expose a proposal or numerical result',
+      () async {
+        final row = _historyRow(
+          id: 'held-target-with-delta',
+          scope: B04RecommendationHistoryScope.daily,
+          start: '2026-08-07',
+          end: '2026-08-07',
+          action: B04RecommendationAction.nutritionTarget.stableId,
+          policyVersion: kB04HoldPolicyVersion,
+          proposedDeltaKcal: 100,
+        );
+        final result = await B04DailyBriefingReadRepository(
+          history: _FakeHistory([row]),
+        ).read(userId: _userId, localDate: '2026-08-07', timezoneId: 'UTC');
+
+        final item = result.recommendations.single;
+        expect(
+          item.targetAcceptanceState,
+          B04BriefingTargetAcceptanceState.unavailable,
+        );
+        expect(item.canonicalResult, isNull);
+      },
+    );
+
+    test('forged target acceptance feedback fails closed', () async {
+      final row = _historyRow(
+        id: 'forged-target',
+        scope: B04RecommendationHistoryScope.daily,
+        start: '2026-08-07',
+        end: '2026-08-07',
+        action: B04RecommendationAction.nutritionTarget.stableId,
+        policyVersion: kB04EnabledPolicyVersion,
+        proposedDeltaKcal: 100,
+        feedback: [
+          _feedback(
+            'forged-accept',
+            B04RecommendationFeedbackAction.accept,
+            userId: 'another-user',
+          ),
+        ],
+      );
+      final result = await B04DailyBriefingReadRepository(
+        history: _FakeHistory([row]),
+      ).read(userId: _userId, localDate: '2026-08-07', timezoneId: 'UTC');
+
+      expect(
+        result.recommendations.single.targetAcceptanceState,
+        B04BriefingTargetAcceptanceState.unavailable,
+      );
+    });
 
     test(
       'live projection delegates to the canonical engine and preserves its explanation',
@@ -287,6 +401,32 @@ void main() {
         ]);
       },
     );
+
+    test('replaying the same daily projection is deterministic', () {
+      final repository = B04DailyBriefingReadRepository(
+        history: _FakeHistory(const []),
+      );
+      final candidate = B04RecommendationCandidate(
+        id: 'replay-education',
+        action: B04RecommendationAction.education,
+        rationaleCode: 'evidence_review',
+        evidence: B04RecommendationEvidence(
+          state: B04RecommendationEvidenceState.complete,
+          evidenceIds: const ['replay-evidence'],
+        ),
+      );
+
+      final first = repository.evaluate(
+        context: _context(),
+        candidates: [candidate],
+      );
+      final second = repository.evaluate(
+        context: _context(),
+        candidates: [candidate],
+      );
+
+      expect(first.toRedactedMap(), second.toRedactedMap());
+    });
 
     test(
       'missing nutrition and readiness evidence remains unavailable, never zero',
@@ -335,6 +475,43 @@ void main() {
     );
 
     test(
+      'safety uncertainty states remain unavailable in the historical projection',
+      () async {
+        const reasons = [
+          'possible_conflict',
+          'unknown_conflict',
+          'insufficient_evidence',
+          'missing_ingredient_evidence',
+          'possible_cross_contact',
+          'structurally_invalid_evidence',
+        ];
+        final rows = [
+          for (final reason in reasons)
+            _historyRow(
+              id: 'safety-$reason',
+              scope: B04RecommendationHistoryScope.daily,
+              start: '2026-08-07',
+              end: '2026-08-07',
+              state: B04RecommendationState.unavailable,
+              missingInputs: [reason],
+            ),
+        ];
+
+        final result = await B04DailyBriefingReadRepository(
+          history: _FakeHistory(rows),
+        ).read(userId: _userId, localDate: '2026-08-07', timezoneId: 'UTC');
+
+        expect(result.status, B04BriefingReadStatus.unavailable);
+        expect(result.unavailableReasons, containsAll(reasons));
+        expect(result.recommendations, hasLength(reasons.length));
+        expect(
+          result.recommendations.every((item) => item.canonicalResult == null),
+          isTrue,
+        );
+      },
+    );
+
+    test(
       'controller exposes failure instead of converting a read error to empty data',
       () async {
         final repository = B04DailyBriefingReadRepository(
@@ -354,6 +531,32 @@ void main() {
         );
         expect(controller.state.errorCode, 'history_offline');
         expect(controller.state.retryable, isTrue);
+      },
+    );
+
+    test(
+      'weekly controller preserves the explicit period across a retry',
+      () async {
+        final history = _RetryingHistory();
+        final controller = B04WeeklyReviewController(
+          repository: B04WeeklyReviewReadRepository(history: history),
+        );
+
+        await controller.load(
+          userId: _userId,
+          startLocalDate: '2026-08-03',
+          endLocalDate: '2026-08-09',
+          timezoneId: 'UTC',
+        );
+        expect(
+          controller.state.status,
+          B04WeeklyReviewControllerStatus.failure,
+        );
+        expect(controller.state.retryable, isTrue);
+
+        await controller.retry();
+        expect(controller.state.status, B04WeeklyReviewControllerStatus.noData);
+        expect(history.calls, 2);
       },
     );
   });
@@ -389,6 +592,25 @@ class _HistoryOfflineError implements Exception {
   const _HistoryOfflineError();
 }
 
+class _RetryingHistory implements B04BriefingHistorySource {
+  var calls = 0;
+
+  @override
+  Future<List<B04HistoricalRecommendation>> listHistory({
+    required String userId,
+    B04RecommendationHistoryScope? scope,
+  }) async {
+    calls++;
+    if (calls == 1) {
+      throw const B04BriefingReadRepositoryError(
+        'history_offline',
+        'History is unavailable offline.',
+      );
+    }
+    return const [];
+  }
+}
+
 B04HistoricalRecommendation _historyRow({
   required String id,
   required B04RecommendationHistoryScope scope,
@@ -405,6 +627,7 @@ B04HistoricalRecommendation _historyRow({
   String consentStatus = 'enable',
   String eligibilityStatus = 'eligible',
   List<B04RecommendationFeedbackRecord> feedback = const [],
+  DateTime? createdAt,
 }) => B04HistoricalRecommendation(
   id: id,
   userId: _userId,
@@ -439,8 +662,8 @@ B04HistoricalRecommendation _historyRow({
   exactResultDenominator: proposedDeltaKcal == null ? null : '1',
   normalizedMaintenanceKcal: proposedDeltaKcal == null ? null : 2000,
   proposedDeltaKcal: proposedDeltaKcal,
-  createdAtUtc: _createdAt,
-  effectiveAtUtc: _createdAt,
+  createdAtUtc: createdAt ?? _createdAt,
+  effectiveAtUtc: createdAt ?? _createdAt,
   supersededAtUtc: null,
   supersedesRecommendationId: null,
   replayHash: 'replay-$id',
@@ -492,10 +715,11 @@ B04RecommendationEvidenceRecord _evidence({
 
 B04RecommendationFeedbackRecord _feedback(
   String id,
-  B04RecommendationFeedbackAction action,
-) => B04RecommendationFeedbackRecord(
+  B04RecommendationFeedbackAction action, {
+  String userId = _userId,
+}) => B04RecommendationFeedbackRecord(
   id: id,
-  userId: _userId,
+  userId: userId,
   recommendationId: id.startsWith('dismissed')
       ? 'dismissed'
       : 'accepted-target',
