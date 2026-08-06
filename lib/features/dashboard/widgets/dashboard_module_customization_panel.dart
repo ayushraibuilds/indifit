@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../dashboard_module_registry.dart';
 import '../dashboard_personalization_controller.dart';
+
+const _minimumDashboardControlSize = Size(48, 48);
 
 /// The non-drag dashboard customization surface. It gives keyboard and screen
 /// reader users the same reorder, visibility, and collapse operations a later
@@ -70,18 +74,30 @@ class DashboardModuleCustomizationList extends StatelessWidget {
         child: SizedBox.shrink(),
       );
     }
+    final savingOffset = isSaving ? 1 : 0;
     return FocusTraversalGroup(
       policy: OrderedTraversalPolicy(),
       child: ListView.builder(
         shrinkWrap: true,
-        itemCount: layout.length,
+        itemCount: layout.length + savingOffset,
         itemBuilder: (context, index) {
-          final item = layout[index];
+          if (isSaving && index == 0) {
+            return Semantics(
+              liveRegion: true,
+              label: 'Saving dashboard customization',
+              child: const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: LinearProgressIndicator(),
+              ),
+            );
+          }
+          final layoutIndex = index - savingOffset;
+          final item = layout[layoutIndex];
           return FocusTraversalOrder(
-            order: NumericFocusOrder(index.toDouble()),
+            order: NumericFocusOrder(layoutIndex.toDouble()),
             child: _DashboardModuleCustomizationRow(
               item: item,
-              index: index,
+              index: layoutIndex,
               count: layout.length,
               enabled: !isSaving,
               onMove: onMove,
@@ -148,12 +164,20 @@ class _DashboardModuleCustomizationRow extends StatelessWidget {
                   hint: 'Moves this module one position earlier.',
                   button: true,
                   enabled: enabled && index > 0,
+                  onTap: enabled && index > 0
+                      ? () => unawaited(onMove(item.moduleId, index - 1))
+                      : null,
                   excludeSemantics: true,
                   child: IconButton(
                     onPressed: enabled && index > 0
                         ? () => onMove(item.moduleId, index - 1)
                         : null,
                     icon: const Icon(Icons.arrow_upward),
+                    tooltip: 'Move ${descriptor.customizationLabel} up',
+                    constraints: const BoxConstraints.tightFor(
+                      width: 48,
+                      height: 48,
+                    ),
                   ),
                 ),
                 Semantics(
@@ -161,12 +185,20 @@ class _DashboardModuleCustomizationRow extends StatelessWidget {
                   hint: 'Moves this module one position later.',
                   button: true,
                   enabled: enabled && index < count - 1,
+                  onTap: enabled && index < count - 1
+                      ? () => unawaited(onMove(item.moduleId, index + 1))
+                      : null,
                   excludeSemantics: true,
                   child: IconButton(
                     onPressed: enabled && index < count - 1
                         ? () => onMove(item.moduleId, index + 1)
                         : null,
                     icon: const Icon(Icons.arrow_downward),
+                    tooltip: 'Move ${descriptor.customizationLabel} down',
+                    constraints: const BoxConstraints.tightFor(
+                      width: 48,
+                      height: 48,
+                    ),
                   ),
                 ),
                 Semantics(
@@ -174,6 +206,11 @@ class _DashboardModuleCustomizationRow extends StatelessWidget {
                       '${item.isVisible ? 'Hide' : 'Show'} ${descriptor.customizationLabel}',
                   button: true,
                   enabled: enabled,
+                  onTap: enabled
+                      ? () => unawaited(
+                          onVisibilityChanged(item.moduleId, !item.isVisible),
+                        )
+                      : null,
                   excludeSemantics: true,
                   child: OutlinedButton(
                     onPressed: enabled
@@ -182,6 +219,9 @@ class _DashboardModuleCustomizationRow extends StatelessWidget {
                             !item.isVisible,
                           )
                         : null,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: _minimumDashboardControlSize,
+                    ),
                     child: Text(item.isVisible ? 'Hide' : 'Show'),
                   ),
                 ),
@@ -191,6 +231,14 @@ class _DashboardModuleCustomizationRow extends StatelessWidget {
                         '${item.isCollapsed ? 'Expand' : 'Collapse'} ${descriptor.customizationLabel}',
                     button: true,
                     enabled: enabled,
+                    onTap: enabled
+                        ? () => unawaited(
+                            onCollapsedChanged(
+                              item.moduleId,
+                              !item.isCollapsed,
+                            ),
+                          )
+                        : null,
                     excludeSemantics: true,
                     child: OutlinedButton(
                       onPressed: enabled
@@ -199,6 +247,9 @@ class _DashboardModuleCustomizationRow extends StatelessWidget {
                               !item.isCollapsed,
                             )
                           : null,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: _minimumDashboardControlSize,
+                      ),
                       child: Text(item.isCollapsed ? 'Expand' : 'Collapse'),
                     ),
                   ),
@@ -226,7 +277,13 @@ class _CustomizationError extends StatelessWidget {
       children: [
         Text(message),
         const SizedBox(height: 8),
-        OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+        OutlinedButton(
+          onPressed: onRetry,
+          style: OutlinedButton.styleFrom(
+            minimumSize: _minimumDashboardControlSize,
+          ),
+          child: const Text('Retry'),
+        ),
       ],
     ),
   );

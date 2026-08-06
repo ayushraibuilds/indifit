@@ -71,6 +71,24 @@ void main() {
       expect(find.bySemanticsLabel('Collapse Meals'), findsOneWidget);
       expect(find.bySemanticsLabel('Collapse Next action'), findsNothing);
       expect(find.byType(FocusTraversalGroup), findsAtLeastNWidgets(1));
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Move Meals up')),
+        matchesSemantics(
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasTapAction: true,
+          label: 'Move Meals up',
+        ),
+      );
+      expect(
+        tester.getSize(find.byType(IconButton).first).height,
+        greaterThanOrEqualTo(48),
+      );
+      expect(
+        tester.getSize(find.byType(OutlinedButton).first).height,
+        greaterThanOrEqualTo(48),
+      );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       expect(FocusManager.instance.primaryFocus, isNotNull);
@@ -85,4 +103,61 @@ void main() {
       semantics.dispose();
     },
   );
+
+  testWidgets('saving state is announced and disables repeat commands', (
+    tester,
+  ) async {
+    final registry = DashboardModuleRegistry([
+      const DashboardModuleDescriptor(
+        id: 'workout',
+        defaultOrdinal: 0,
+        label: 'Workout',
+        customizationLabel: 'Workout',
+        eligibility: DashboardModuleEligibility.workout,
+      ),
+      const DashboardModuleDescriptor(
+        id: 'meals',
+        defaultOrdinal: 1,
+        label: 'Meals',
+        customizationLabel: 'Meals',
+        eligibility: DashboardModuleEligibility.nutrition,
+      ),
+    ]);
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 240,
+              height: 800,
+              child: DashboardModuleCustomizationList(
+                layout: registry.normalize(const []),
+                isSaving: true,
+                onMove: (_, _) => Future<void>.value(),
+                onVisibilityChanged: (_, _) => Future<void>.value(),
+                onCollapsedChanged: (_, _) => Future<void>.value(),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.bySemanticsLabel('Saving dashboard customization'),
+        findsOneWidget,
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Move Meals up')),
+        matchesSemantics(
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+          hasTapAction: false,
+        ),
+      );
+    } finally {
+      semantics.dispose();
+    }
+  });
 }
