@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
+import '../../data/models/b04_recommendation_context_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/b04_briefing_read_repositories.dart';
 import '../../data/repositories/b04_recommendation_history_repository.dart';
@@ -19,6 +20,7 @@ import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/nutrition_constraint_repository.dart';
 import '../../data/repositories/nutrition_consumption_repository.dart';
 import '../../data/repositories/nutrition_estimate_repository.dart';
+import '../../data/repositories/nutrition_goal_repository.dart';
 import '../../data/repositories/nutrition_household_measure_repository.dart';
 import '../../data/repositories/nutrition_protein_distribution_repository.dart';
 import '../../data/repositories/nutrition_read_model_repository.dart';
@@ -33,6 +35,7 @@ import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../../data/services/b04_current_food_guidance_service.dart';
 import '../../data/services/b04_optional_ai_assistance.dart';
+import '../../features/coaching/b04_production_surface_controller.dart';
 import '../../features/dashboard/b04_daily_briefing_controller.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
 import '../../features/food_log/nutrition_thali_controller.dart';
@@ -254,6 +257,59 @@ final b04CurrentFoodControllerProvider =
       ),
     );
 
+final nutritionGoalRepositoryProvider = Provider<NutritionGoalRepository>(
+  (ref) => NutritionGoalRepository(
+    database: ref.watch(databaseProvider),
+    dates: ref.watch(localScheduleDateServiceProvider),
+  ),
+);
+
+final coachingPreferenceRepositoryProvider =
+    Provider<CoachingPreferenceRepository>(
+      (ref) => CoachingPreferenceRepository(
+        database: ref.watch(databaseProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
+      ),
+    );
+
+final b04ProductionUserContextProvider =
+    FutureProvider.autoDispose<B04ProductionUserContext>((ref) async {
+      return B04ProductionUserContextLoader(
+        database: ref.watch(databaseProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
+        timezones: ref.watch(localTimezoneServiceProvider),
+      ).load();
+    });
+
+final b04ProductionRecommendationContextProvider =
+    FutureProvider.autoDispose<B04RecommendationContext>((ref) async {
+      return B04ProductionRecommendationContextLoader(
+        users: B04ProductionUserContextLoader(
+          database: ref.watch(databaseProvider),
+          dates: ref.watch(localScheduleDateServiceProvider),
+          timezones: ref.watch(localTimezoneServiceProvider),
+        ),
+        goals: ref.watch(nutritionGoalRepositoryProvider),
+        preferences: ref.watch(coachingPreferenceRepositoryProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
+      ).load();
+    });
+
+final b04GoalSettingsControllerProvider =
+    StateNotifierProvider.autoDispose<
+      B04GoalSettingsController,
+      B04GoalSettingsState
+    >((ref) {
+      final controller = B04GoalSettingsController(
+        loadContext: () => ref.read(b04ProductionUserContextProvider.future),
+        goals: ref.watch(nutritionGoalRepositoryProvider),
+        preferences: ref.watch(coachingPreferenceRepositoryProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
+      );
+      unawaited(controller.load());
+      return controller;
+    });
+
 final b04RecommendationHistoryRepositoryProvider =
     Provider<B04RecommendationHistoryRepository>(
       (ref) => B04RecommendationHistoryRepository(
@@ -284,6 +340,9 @@ final b04DailyBriefingControllerProvider =
     >(
       (ref) => B04DailyBriefingController(
         repository: ref.watch(b04DailyBriefingReadRepositoryProvider),
+        history: ref.watch(b04RecommendationHistoryRepositoryProvider),
+        goals: ref.watch(nutritionGoalRepositoryProvider),
+        preferences: ref.watch(coachingPreferenceRepositoryProvider),
       ),
     );
 
@@ -294,6 +353,9 @@ final b04WeeklyReviewControllerProvider =
     >(
       (ref) => B04WeeklyReviewController(
         repository: ref.watch(b04WeeklyReviewReadRepositoryProvider),
+        history: ref.watch(b04RecommendationHistoryRepositoryProvider),
+        goals: ref.watch(nutritionGoalRepositoryProvider),
+        preferences: ref.watch(coachingPreferenceRepositoryProvider),
       ),
     );
 
