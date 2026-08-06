@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/services/local_schedule_date_service.dart';
 import '../../data/models/b04_briefing_read_models.dart';
 import '../../data/models/b04_goal_models.dart';
 import '../../data/models/b04_recommendation_history_models.dart';
@@ -63,6 +64,7 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
   final B04RecommendationHistoryRepository? _history;
   final NutritionGoalRepository? _goals;
   final CoachingPreferenceRepository? _preferences;
+  final LocalScheduleDateService _dates;
   String? _userId;
   String? _localDate;
   String? _timezoneId;
@@ -73,10 +75,12 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
     B04RecommendationHistoryRepository? history,
     NutritionGoalRepository? goals,
     CoachingPreferenceRepository? preferences,
+    LocalScheduleDateService? dates,
   }) : _repository = repository,
        _history = history,
        _goals = goals,
        _preferences = preferences,
+       _dates = dates ?? LocalScheduleDateService(),
        super(const B04DailyBriefingState());
 
   Future<void> load({
@@ -155,6 +159,7 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
       return;
     }
     try {
+      final createdAtUtc = DateTime.now().toUtc();
       await history.recordFeedback(
         B04RecommendationFeedbackCommand(
           userId: userId,
@@ -162,9 +167,9 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
           action: action,
           reason: reason,
           source: 'daily_briefing',
-          localDate: localDate,
+          localDate: _dates.localDateFor(createdAtUtc, timezoneId),
           timezoneId: timezoneId,
-          createdAtUtc: DateTime.now().toUtc(),
+          createdAtUtc: createdAtUtc,
         ),
       );
       await load(userId: userId, localDate: localDate, timezoneId: timezoneId);
@@ -200,6 +205,7 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
       return;
     }
     try {
+      final createdAtUtc = DateTime.now().toUtc();
       final availability = await preferences.adaptiveAvailability(
         userId: userId,
       );
@@ -216,9 +222,9 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
           recommendationId: recommendation.id,
           action: B04RecommendationFeedbackAction.accept,
           source: 'daily_briefing',
-          localDate: localDate,
+          localDate: _dates.localDateFor(createdAtUtc, timezoneId),
           timezoneId: timezoneId,
-          createdAtUtc: DateTime.now().toUtc(),
+          createdAtUtc: createdAtUtc,
         ),
       );
       await load(userId: userId, localDate: localDate, timezoneId: timezoneId);

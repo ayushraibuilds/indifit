@@ -319,26 +319,134 @@ class B04GoalSettingsController extends StateNotifier<B04GoalSettingsState> {
 String b04ProductionStateCopy(String reasonCode) => switch (reasonCode) {
   'coaching_consent_required' =>
     'Adaptive coaching is off. Review the disclosure before enabling it.',
+  'adaptive_consent_disabled' || 'adaptive_consent_missing' =>
+    'Adaptive coaching is off. Review the disclosure before enabling it.',
   'coaching_unavailable_age' || 'underage' =>
     'Adaptive coaching is unavailable for this age state. Logging, history and user-set targets remain available.',
   'unknown_age' || 'withheld_age' || 'conflicting_age' || 'invalid_evidence' =>
     'Adaptive coaching is unavailable until age eligibility is verified. No target is inferred or changed.',
+  'eligibility_underage' =>
+    'Adaptive coaching is unavailable for this age state. Logging, history and user-set targets remain available.',
+  'eligibility_unknown_age' ||
+  'eligibility_withheld_age' ||
+  'eligibility_conflicting_age' ||
+  'eligibility_invalid_evidence' ||
+  'eligibility_policy_unavailable' =>
+    'Adaptive coaching is unavailable until age eligibility is verified. No target is inferred or changed.',
   'adaptive_policy_hold' =>
     'Adaptive target proposals are unavailable while the current policy is on hold. Your user-set target is unchanged.',
+  'adaptive_policy_inactive' =>
+    'Adaptive coaching is not active for this local date. No target is inferred or changed.',
+  'adaptive_policy_not_enabled' || 'adaptive_policy_scope_mismatch' =>
+    'Adaptive target proposals are unavailable in this surface. No target is inferred or changed.',
+  'unsupported_policy_version' ||
+  'target_policy_unavailable' ||
+  'target_policy_missing' ||
+  'target_policy_lineage_mismatch' ||
+  'policy_unavailable' =>
+    'The current target policy is unavailable or unsupported. No adaptive target is changed.',
+  'policy_boundary_reached' || 'user_target_outside_supported_policy' =>
+    'The requested change reached a supported policy boundary. Your current target remains unchanged.',
+  'rapid_change_review' =>
+    'Recent change evidence needs review before adaptive guidance is shown. Your current target remains unchanged.',
+  'unsupported_goal_rate' ||
+  'unsupported_goal_type' ||
+  'invalid_goal_type' ||
+  'invalid_policy_result' ||
+  'invalid_exact_result' ||
+  'missing_proposal_identity' ||
+  'goal_target_invalid' ||
+  'adaptive_goal_unsupported_pregnancy_or_breastfeeding' ||
+  'clinician_managed_plan' =>
+    'This goal or request is outside supported adaptive coaching. No adaptive target is changed.',
   'eligibility_unavailable' =>
     'Adaptive coaching is unavailable because age eligibility has not been recorded.',
-  'goal_unavailable' =>
+  'eligibility_not_evaluated_for_context' =>
+    'Age eligibility is unavailable for this local period. No target is inferred or changed.',
+  'goal_unavailable' || 'goal_missing' || 'goal_target_missing' =>
     'A canonical goal version is unavailable. Set a user target to continue.',
-  'readiness_incomplete' =>
+  'goal_owner_mismatch' ||
+  'goal_timezone_mismatch' ||
+  'goal_not_effective' ||
+  'goal_not_effective_for_context' =>
+    'The canonical goal is not valid for this local period. No adaptive target is changed.',
+  'readiness_incomplete' ||
+  'readiness_unavailable' ||
+  'readiness_incomplete_or_unavailable' ||
+  'missing_readiness_evidence' =>
     'Readiness evidence is incomplete. No readiness-based change is presented.',
+  'workload_unavailable' || 'schedule_unavailable' =>
+    'Required local activity or schedule evidence is unavailable. No adaptive change is presented.',
+  'constraint_evaluation_unavailable' || 'dietary_restriction_unavailable' =>
+    'Dietary constraint evidence is unavailable. Safety-sensitive guidance is withheld.',
   'dietary_safety_evidence_missing' ||
   'dietary_evidence_missing' ||
   'dietary_safety_scope_mismatch' ||
   'possible_conflict' ||
   'unknown_conflict' ||
+  'insufficient_evidence' ||
   'missing_ingredient_evidence' ||
-  'possible_cross_contact' =>
+  'possible_cross_contact' ||
+  'candidate_evidence_missing' ||
+  'candidate_evidence_unavailable' ||
+  'candidate_evidence_unidentified' ||
+  'candidate_evidence_unknown' ||
+  'candidate_evidence_partial' ||
+  'candidate_evidence_invalid' ||
+  'candidate_nutrient_evidence_missing' ||
+  'candidate_nutrient_evidence_not_applicable' ||
+  'candidate_nutrient_evidence_unknown' ||
+  'candidate_nutrient_evidence_partial' ||
+  'candidate_nutrient_evidence_invalid' ||
+  'structurally_invalid_evidence' ||
+  'structurally_invalid_nutrient_evidence' ||
+  'insufficient_nutrient_evidence' ||
+  'nutrient_range_crosses_boundary' ||
+  'nutrient_boundary_exceeded' ||
+  'safety_evidence_missing' ||
+  'safety_evidence_unavailable' ||
+  'dietary_unavailable' ||
+  'candidate_unavailable' =>
     'Safety-sensitive guidance is unavailable because dietary evidence is missing or uncertain.',
+  'daily_totals_unavailable' ||
+  'daily_totals_unknown' ||
+  'daily_totals_partial' ||
+  'daily_totals_missing' ||
+  'daily_totals_limited' ||
+  'consumed_totals_partial' ||
+  'consumed_totals_unknown' ||
+  'nutrition_totals_unknown' ||
+  'remaining_energy_missing' ||
+  'remaining_energy_unknown' ||
+  'remaining_energy_invalid' ||
+  'candidate_energy_unknown' ||
+  'candidate_nutrient_unknown' ||
+  'remaining_target_unavailable' =>
+    'Nutrition evidence is incomplete or uncertain, so remaining targets are unavailable.',
+  'no_explicit_candidate' ||
+  'explicit_opportunity_required' ||
+  'no_candidate' ||
+  'no_candidate_after_filter' =>
+    'No explicit local meal opportunity or candidate is available. No food is inferred.',
+  'target_fit_unavailable' ||
+  'target_range_uncertain' ||
+  'exceeds_remaining_target' =>
+    'This candidate cannot be presented as a suitable target match from the available nutrition evidence.',
+  'guidance_unavailable' =>
+    'Current-food guidance is unavailable until the required local evidence is complete.',
+  'confirmed_conflict' ||
+  'dietary_confirmed_conflict' ||
+  'dietary_hard_block' ||
+  'constraint_conflict' =>
+    'This item conflicts with a recorded dietary constraint and is not presented as guidance.',
+  'medical_restriction' ||
+  'medical_decision_required' ||
+  'consult_professional' =>
+    'This feature does not make medical or treatment decisions. Consider a qualified healthcare professional for those decisions.',
+  'emergency_out_of_scope' || 'severe_symptoms_out_of_scope' =>
+    'Severe or emergency symptoms are outside this feature. Seek local emergency help.',
+  'no_known_conflict' =>
+    'No known conflict detected for the checked evidence. This is not a safety guarantee.',
   _ =>
     'This guidance is unavailable because the required evidence is incomplete.',
 };

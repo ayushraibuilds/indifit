@@ -1,20 +1,29 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart';
+import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b04_adaptive_target_models.dart';
 import 'package:indifit/data/models/b04_briefing_read_models.dart';
 import 'package:indifit/data/models/b04_current_food_models.dart';
 import 'package:indifit/data/models/b04_goal_models.dart';
+import 'package:indifit/data/models/b04_nutrition_safety_models.dart';
+import 'package:indifit/data/models/b04_recommendation_context_models.dart';
 import 'package:indifit/data/models/b04_recommendation_history_models.dart';
 import 'package:indifit/data/models/b04_recommendation_models.dart';
+import 'package:indifit/data/repositories/b04_briefing_read_repositories.dart';
+import 'package:indifit/data/repositories/b04_recommendation_history_repository.dart';
 import 'package:indifit/data/repositories/coaching_preference_repository.dart';
 import 'package:indifit/data/repositories/nutrition_goal_repository.dart';
 import 'package:indifit/features/coaching/b04_production_surface_controller.dart';
 import 'package:indifit/features/coaching/b04_production_surface_widgets.dart';
 import 'package:indifit/features/dashboard/b04_daily_briefing_controller.dart';
 import 'package:indifit/features/nutrition/current_food_controller.dart';
+import 'package:indifit/features/progress/b04_weekly_review_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -378,6 +387,335 @@ void main() {
       expect(actions, contains(B04RecommendationFeedbackAction.accept));
     },
   );
+
+  testWidgets('dismissed briefing projections are not rendered', (
+    tester,
+  ) async {
+    final dismissed = B04BriefingRecommendation(
+      id: 'dismissed-recommendation',
+      action: 'education',
+      state: B04RecommendationState.dismissed,
+      priority: B04RecommendationPriority.education,
+      rationaleCode: 'dismissed',
+      confidence: B04RecommendationConfidence.high,
+      completeness: B04RecommendationCompleteness.complete,
+      explanation: 'This explanation must not be shown after dismissal.',
+      alternatives: const [],
+      missingEvidence: const [],
+      uncertainty: const [],
+      evidenceIds: const ['evidence-1'],
+      goalVersionId: null,
+      readinessSnapshotId: null,
+      consentEventId: null,
+      eligibilityEvaluationId: null,
+      policyVersion: null,
+      calculationVersion: null,
+      ruleVersion: null,
+      algorithmVersion: null,
+      modelVersion: null,
+      providerVersion: null,
+      copyVersion: null,
+      eligibilityState: null,
+      consentState: null,
+      canonicalResult: null,
+      targetAcceptanceState: B04BriefingTargetAcceptanceState.notApplicable,
+      feedbackState: B04BriefingFeedbackState.dismissed,
+      feedback: const [],
+      isVisible: false,
+      engineRecommendation: null,
+      historicalRecommendation: null,
+    );
+    final read = B04DailyBriefingReadModel(
+      scope: B04RecommendationHistoryScope.daily,
+      userId: 'user-a',
+      startLocalDate: '2026-08-06',
+      endLocalDate: '2026-08-06',
+      timezoneId: 'Asia/Kolkata',
+      status: B04BriefingReadStatus.available,
+      unavailableReasons: const [],
+      eligibilityState: null,
+      consentState: null,
+      policyState: null,
+      missingEvidence: const [],
+      recommendations: [dismissed],
+      lowRiskWarnings: const [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: B04DailyBriefingContent(
+            state: B04DailyBriefingState(
+              status: B04DailyBriefingControllerStatus.ready,
+              briefing: read,
+            ),
+            onRetry: _noop,
+            onAction: _ignoreAction,
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.text(
+        'No current guidance is visible. Dismissed guidance remains in history.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('This explanation must not be shown after dismissal.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('current-food surface exposes ranges and candidate evidence', (
+    tester,
+  ) async {
+    final remaining = B04RemainingTargetReadModel(
+      userId: 'user-a',
+      localDate: '2026-08-06',
+      timezoneId: 'Asia/Kolkata',
+      goalVersionId: 'goal-v1',
+      goalSource: 'user_set',
+      goalEffectiveFromLocalDate: '2026-08-01',
+      targets: [
+        B04CurrentFoodNutrientValue(
+          nutrientId: 'energy',
+          unit: NutrientUnit.kilocalorie,
+          state: B04CurrentFoodValueState.known,
+          point: '1200',
+          sourceType: 'b03_daily_totals',
+          sourceIds: const ['totals-v1'],
+        ),
+        B04CurrentFoodNutrientValue(
+          nutrientId: 'protein',
+          unit: NutrientUnit.gram,
+          state: B04CurrentFoodValueState.range,
+          lower: '40',
+          upper: '60',
+          sourceType: 'b03_daily_totals',
+          sourceIds: const ['totals-v1'],
+        ),
+      ],
+    );
+    final card = B04CurrentFoodCandidateCard(
+      selectionId: 'food-1',
+      subjectId: 'food-1',
+      source: B04MealCandidateSource.canonicalFood,
+      displayLabel: 'Local bowl',
+      recommendation: _mealRecommendation(),
+      targetFit: B04CurrentFoodTargetFit(
+        state: B04CurrentFoodTargetFitState.fits,
+        rank: 0,
+        reasonCode: 'target_fit',
+        nutrientId: 'energy',
+        evidenceIds: const ['totals-v1', 'candidate-v1'],
+      ),
+      nutrientFacts: [
+        B04CurrentFoodNutrientValue(
+          nutrientId: 'energy',
+          unit: NutrientUnit.kilocalorie,
+          state: B04CurrentFoodValueState.known,
+          point: '450',
+          sourceType: 'b03_candidate_facts',
+          sourceIds: const ['candidate-v1'],
+        ),
+      ],
+    );
+    final guidance = B04CurrentFoodGuidance(
+      status: B04CurrentFoodGuidanceStatus.available,
+      userId: 'user-a',
+      localDate: '2026-08-06',
+      timezoneId: 'Asia/Kolkata',
+      evaluatedAtUtc: DateTime.utc(2026, 8, 6, 10),
+      remainingTargets: remaining,
+      cards: [card],
+      recommendationEvaluation: null,
+      reasonCodes: const ['candidate_guidance_available'],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: B04CurrentFoodContent(
+            state: B04CurrentFoodState(
+              status: B04CurrentFoodControllerStatus.ready,
+              guidance: guidance,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.textContaining('energy: 1200 kcal'), findsOneWidget);
+    expect(find.textContaining('protein: 40–60 g'), findsOneWidget);
+    expect(find.textContaining('Evidence: candidate-v1'), findsOneWidget);
+  });
+
+  testWidgets('current-food failures expose retry', (tester) async {
+    var retryCount = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: B04CurrentFoodContent(
+            state: const B04CurrentFoodState(
+              status: B04CurrentFoodControllerStatus.failure,
+              errorMessage: 'History is unavailable offline.',
+            ),
+            onRetry: () => retryCount++,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Retry'), findsOneWidget);
+    await tester.tap(find.text('Retry'));
+    expect(retryCount, 1);
+  });
+
+  testWidgets('production context failures expose provider retries', (
+    tester,
+  ) async {
+    var dailyAttempts = 0;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        key: const ValueKey('daily-context-error'),
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          b04ProductionUserContextProvider.overrideWith((ref) async {
+            dailyAttempts++;
+            throw StateError('offline');
+          }),
+        ],
+        child: const MaterialApp(home: B04DailyBriefingCard()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Retry'), findsOneWidget);
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(dailyAttempts, 2);
+
+    var weeklyAttempts = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        key: const ValueKey('weekly-context-error'),
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          b04ProductionUserContextProvider.overrideWith((ref) async {
+            weeklyAttempts++;
+            throw StateError('offline');
+          }),
+        ],
+        child: const MaterialApp(home: B04WeeklyReviewCard()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Retry'), findsOneWidget);
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(weeklyAttempts, 2);
+
+    var foodContextAttempts = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        key: const ValueKey('current-food-context-error'),
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          b04ProductionRecommendationContextProvider.overrideWith((ref) async {
+            foodContextAttempts++;
+            throw StateError('offline');
+          }),
+        ],
+        child: const MaterialApp(home: B04CurrentFoodCard()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Retry'), findsOneWidget);
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(foodContextAttempts, 2);
+  });
+
+  test('production copy identifies boundary and rapid-change holds', () {
+    expect(
+      b04ProductionStateCopy('policy_boundary_reached'),
+      contains('policy boundary'),
+    );
+    expect(
+      b04ProductionStateCopy('rapid_change_review'),
+      contains('Recent change evidence'),
+    );
+    expect(
+      b04ProductionStateCopy('readiness_incomplete_or_unavailable'),
+      contains('Readiness evidence is incomplete'),
+    );
+    expect(
+      b04ProductionStateCopy('candidate_evidence_unavailable'),
+      contains('Safety-sensitive guidance is unavailable'),
+    );
+    expect(
+      b04ProductionStateCopy('no_candidate_after_filter'),
+      contains('No explicit local meal opportunity'),
+    );
+  });
+
+  test(
+    'weekly feedback uses the action local date, not the displayed period',
+    () async {
+      final history = B04RecommendationHistoryRepository(database: db);
+      final actionDate = _dates.localDateFor(
+        DateTime.now().toUtc(),
+        'Asia/Kolkata',
+      );
+      final periodEnd = _dates.addCalendarDays(actionDate, 'Asia/Kolkata', -1);
+      final periodStart = _dates.addCalendarDays(periodEnd, 'Asia/Kolkata', -6);
+      await db
+          .into(db.recommendations)
+          .insert(
+            RecommendationsCompanion.insert(
+              id: 'weekly-feedback-recommendation',
+              userId: 'user-a',
+              scope: 'weekly',
+              localPeriodStart: periodStart,
+              localPeriodEnd: periodEnd,
+              timezoneId: 'Asia/Kolkata',
+              status: 'available',
+              priority: 5,
+              action: 'education',
+              explanation: 'A historical weekly explanation.',
+              ruleVersion: kB04RecommendationRuleVersion,
+              contextFingerprint: 'context-weekly-feedback',
+              replayHash: const Value('replay-weekly-feedback'),
+              createdAtUtc: Value(DateTime.now().toUtc()),
+              effectiveAtUtc: Value(DateTime.now().toUtc()),
+            ),
+          );
+      final controller = B04WeeklyReviewController(
+        repository: B04WeeklyReviewReadRepository(history: history),
+        history: history,
+        dates: _dates,
+      );
+
+      await controller.load(
+        userId: 'user-a',
+        startLocalDate: periodStart,
+        endLocalDate: periodEnd,
+        timezoneId: 'Asia/Kolkata',
+      );
+      expect(controller.state.status, B04WeeklyReviewControllerStatus.ready);
+
+      await controller.recordFeedback(
+        recommendationId: 'weekly-feedback-recommendation',
+        action: B04RecommendationFeedbackAction.dismiss,
+      );
+
+      expect(controller.state.status, B04WeeklyReviewControllerStatus.ready);
+      final feedback = await db.select(db.recommendationFeedback).getSingle();
+      expect(feedback.localDate, actionDate);
+    },
+  );
 }
 
 final _dates = LocalScheduleDateService();
@@ -446,6 +784,29 @@ B04Recommendation _engineTargetRecommendation() {
 }
 
 void _noop() {}
+
+B04Recommendation _mealRecommendation() => B04Recommendation(
+  id: 'meal-recommendation-1',
+  action: B04RecommendationAction.nutritionMeal,
+  state: B04RecommendationState.available,
+  priority: B04RecommendationPriority.nutrition,
+  rationaleCode: 'meal_opportunity_target_fit',
+  explanation: 'This local candidate fits the recorded target evidence.',
+  confidence: B04RecommendationConfidence.high,
+  completeness: B04RecommendationCompleteness.complete,
+  evidenceIds: const ['candidate-v1'],
+  eligibilityState: B04RecommendationEligibilityState.missing,
+  consentState: B04RecommendationConsentState.disabled,
+  policyState: B04RecommendationPolicyState.missing,
+  policyVersion: kB04HoldPolicyVersion,
+  ruleVersion: kB04RecommendationRuleVersion,
+  algorithmVersion: kB04RecommendationAlgorithmVersion,
+  copyVersion: kB04RecommendationCopyVersion,
+  targetAcceptanceState: B04RecommendationTargetAcceptanceState.notApplicable,
+  canonicalAdaptiveTarget: null,
+  canonicalTrainingRecommendation: null,
+  safetyDisposition: B04NutritionSafetyDisposition.noKnownConflict,
+);
 
 Future<void> _ignoreAction(
   B04BriefingRecommendation recommendation,

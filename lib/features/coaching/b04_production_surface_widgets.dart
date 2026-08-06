@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/nutrients.dart';
 import '../../core/theme/colors.dart';
 import '../../data/models/b04_briefing_read_models.dart';
 import '../../data/models/b04_current_food_models.dart';
@@ -46,10 +47,14 @@ class _B04DailyBriefingCardState extends ConsumerState<B04DailyBriefingCard> {
     final state = ref.watch(b04DailyBriefingControllerProvider);
     return userContext.when(
       loading: () => const B04LoadingCard(label: 'Daily guidance'),
-      error: (_, _) => const B04ReadStatusCard(
+      error: (_, _) => B04ReadStatusCard(
         title: 'Daily guidance unavailable',
         message:
             'Your profile is not ready for this local view. Try again later.',
+        action: TextButton(
+          onPressed: () => ref.invalidate(b04ProductionUserContextProvider),
+          child: const Text('Retry'),
+        ),
       ),
       data: (value) {
         _load(value);
@@ -139,10 +144,14 @@ class _B04WeeklyReviewCardState extends ConsumerState<B04WeeklyReviewCard> {
     final state = ref.watch(b04WeeklyReviewControllerProvider);
     return userContext.when(
       loading: () => const B04LoadingCard(label: 'Weekly review'),
-      error: (_, _) => const B04ReadStatusCard(
+      error: (_, _) => B04ReadStatusCard(
         title: 'Weekly review unavailable',
         message:
             'Your profile is not ready for this local view. Try again later.',
+        action: TextButton(
+          onPressed: () => ref.invalidate(b04ProductionUserContextProvider),
+          child: const Text('Retry'),
+        ),
       ),
       data: (value) {
         _load(value);
@@ -239,7 +248,7 @@ class _B04BriefingContent extends StatelessWidget {
       return B04ReadStatusCard(
         title: title,
         message: 'No guidance has been recorded for this local period yet.',
-        detail: '${read.startLocalDate} · ${read.timezoneId}',
+        detail: _briefingDetail(read),
       );
     }
     if (read.status == B04BriefingReadStatus.unavailable) {
@@ -248,7 +257,15 @@ class _B04BriefingContent extends StatelessWidget {
         message: read.unavailableReasons.isEmpty
             ? 'This guidance is unavailable because the required evidence is incomplete.'
             : read.unavailableReasons.map(b04ProductionStateCopy).join(' '),
-        detail: _periodLabel(read),
+        detail: _briefingDetail(read),
+      );
+    }
+    if (read.visibleRecommendations.isEmpty) {
+      return B04ReadStatusCard(
+        title: title,
+        message:
+            'No current guidance is visible. Dismissed guidance remains in history.',
+        detail: _briefingDetail(read),
       );
     }
     return Card(
@@ -292,8 +309,15 @@ class _B04BriefingContent extends StatelessWidget {
                   ],
                 ),
               ],
+              if (read.missingEvidence.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Evidence limits: ${read.missingEvidence.join(', ')}',
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+              ],
               const SizedBox(height: 12),
-              ...read.recommendations.map(
+              ...read.visibleRecommendations.map(
                 (item) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _B04RecommendationTile(
@@ -315,6 +339,29 @@ class _B04BriefingContent extends StatelessWidget {
       read.scope == B04RecommendationHistoryScope.daily
       ? '${read.startLocalDate} · ${read.timezoneId}'
       : '${read.startLocalDate} – ${read.endLocalDate} · ${read.timezoneId}';
+
+  String _briefingDetail(B04BriefingReadModel read) {
+    final values = <String>[_periodLabel(read)];
+    if (read.policyState != null) {
+      values.add(
+        'Policy: ${b04ProductionStateLabel(read.policyState!.stableId)}',
+      );
+    }
+    if (read.consentState != null) {
+      values.add(
+        'Consent: ${b04ProductionStateLabel(read.consentState!.stableId)}',
+      );
+    }
+    if (read.eligibilityState != null) {
+      values.add(
+        'Eligibility: ${b04ProductionStateLabel(read.eligibilityState!.stableId)}',
+      );
+    }
+    if (read.missingEvidence.isNotEmpty) {
+      values.add('Evidence limits: ${read.missingEvidence.join(', ')}');
+    }
+    return values.join(' · ');
+  }
 }
 
 class B04CurrentFoodCard extends ConsumerStatefulWidget {
@@ -344,14 +391,23 @@ class _B04CurrentFoodCardState extends ConsumerState<B04CurrentFoodCard> {
     final state = ref.watch(b04CurrentFoodControllerProvider);
     return contextAsync.when(
       loading: () => const B04LoadingCard(label: 'What can I eat now?'),
-      error: (_, _) => const B04ReadStatusCard(
+      error: (_, _) => B04ReadStatusCard(
         title: 'What can I eat now?',
         message:
             'Current-food guidance is unavailable until local evidence is ready.',
+        action: TextButton(
+          onPressed: () =>
+              ref.invalidate(b04ProductionRecommendationContextProvider),
+          child: const Text('Retry'),
+        ),
       ),
       data: (value) {
         _load(value);
-        return B04CurrentFoodContent(state: state);
+        return B04CurrentFoodContent(
+          state: state,
+          onRetry: () =>
+              ref.read(b04CurrentFoodControllerProvider.notifier).retry(),
+        );
       },
     );
   }
@@ -359,8 +415,9 @@ class _B04CurrentFoodCardState extends ConsumerState<B04CurrentFoodCard> {
 
 class B04CurrentFoodContent extends StatelessWidget {
   final B04CurrentFoodState state;
+  final VoidCallback? onRetry;
 
-  const B04CurrentFoodContent({super.key, required this.state});
+  const B04CurrentFoodContent({super.key, required this.state, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -377,9 +434,12 @@ class B04CurrentFoodContent extends StatelessWidget {
             ? state.errorMessage ??
                   'Current-food guidance is unavailable until nutrition and safety evidence is complete.'
             : reasons.map(b04ProductionStateCopy).join(' '),
-        detail: guidance == null
-            ? null
-            : '${guidance.localDate} · ${guidance.timezoneId}',
+        detail: guidance == null ? null : _currentFoodDetail(guidance),
+        action:
+            state.status == B04CurrentFoodControllerStatus.failure &&
+                onRetry != null
+            ? TextButton(onPressed: onRetry, child: const Text('Retry'))
+            : null,
       );
     }
     return Card(
@@ -401,22 +461,61 @@ class B04CurrentFoodContent extends StatelessWidget {
                 style: const TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 12),
-              ...guidance.cards.map(
-                (card) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(card.displayLabel),
-                  subtitle: Text(card.recommendation.explanation),
-                  trailing: Text(
-                    b04ProductionStateLabel(card.targetFit.state.stableId),
-                  ),
-                ),
+              _B04EvidenceLines(
+                title: 'Remaining targets and evidence',
+                lines: _currentFoodTargetLines(guidance.remainingTargets),
               ),
+              const SizedBox(height: 12),
+              for (final card in guidance.cards)
+                _B04CurrentFoodCandidateTile(card: card),
+              if (guidance.excludedCandidates.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Candidates not shown as guidance',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                for (final excluded in guidance.excludedCandidates)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(excluded.displayLabel),
+                    subtitle: Text(
+                      excluded.reasonCodes
+                          .map(b04ProductionStateCopy)
+                          .join(' '),
+                    ),
+                  ),
+              ],
               if (guidance.lowRiskWarnings.isNotEmpty)
                 _B04WarningList(warnings: guidance.lowRiskWarnings),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _B04CurrentFoodCandidateTile extends StatelessWidget {
+  final B04CurrentFoodCandidateCard card;
+
+  const _B04CurrentFoodCandidateTile({required this.card});
+
+  @override
+  Widget build(BuildContext context) {
+    final facts = card.nutrientFacts.map(_currentFoodValueLabel).join(' · ');
+    final evidence = card.recommendation.evidenceIds.join(', ');
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(card.displayLabel),
+      subtitle: Text(
+        [
+          card.recommendation.explanation,
+          'Target fit: ${b04ProductionStateLabel(card.targetFit.state.stableId)}',
+          if (facts.isNotEmpty) 'Nutrient evidence: $facts',
+          if (evidence.isNotEmpty) 'Evidence: $evidence',
+        ].join('\n'),
+      ),
+      trailing: Text(b04ProductionStateLabel(card.targetFit.state.stableId)),
     );
   }
 }
@@ -600,6 +699,54 @@ class _B04WarningList extends StatelessWidget {
         ),
     ],
   );
+}
+
+class _B04EvidenceLines extends StatelessWidget {
+  final String title;
+  final List<String> lines;
+
+  const _B04EvidenceLines({required this.title, required this.lines});
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox(height: 4),
+      for (final line in lines)
+        Padding(padding: const EdgeInsets.only(bottom: 2), child: Text(line)),
+    ],
+  );
+}
+
+List<String> _currentFoodTargetLines(B04RemainingTargetReadModel targets) {
+  final lines = <String>[
+    if (targets.goalVersionId != null)
+      'Goal: ${targets.goalSource ?? 'unknown'} · ${targets.goalVersionId}',
+    for (final value in targets.targets) _currentFoodValueLabel(value),
+    if (targets.missingEvidence.isNotEmpty)
+      'Missing evidence: ${targets.missingEvidence.join(', ')}',
+  ];
+  if (lines.isEmpty) lines.add('No remaining target values are available.');
+  return lines;
+}
+
+String _currentFoodDetail(B04CurrentFoodGuidance guidance) => [
+  '${guidance.localDate} · ${guidance.timezoneId}',
+  ..._currentFoodTargetLines(guidance.remainingTargets),
+].join(' · ');
+
+String _currentFoodValueLabel(B04CurrentFoodNutrientValue value) {
+  final amount = switch (value.state) {
+    B04CurrentFoodValueState.known => value.point ?? 'unknown',
+    B04CurrentFoodValueState.range =>
+      '${value.lower ?? 'at least'}–${value.upper ?? 'at most'}',
+    B04CurrentFoodValueState.unknown => 'unknown',
+    B04CurrentFoodValueState.missing => 'missing',
+    B04CurrentFoodValueState.invalid => 'invalid',
+  };
+  final reason = value.reasonCode == null ? '' : ' (${value.reasonCode})';
+  return '${value.nutrientId}: $amount ${value.unit.symbol} · ${value.state.stableId}$reason · evidence ${value.sourceIds.join(', ')}';
 }
 
 class B04LoadingCard extends StatelessWidget {

@@ -343,6 +343,7 @@ final b04DailyBriefingControllerProvider =
         history: ref.watch(b04RecommendationHistoryRepositoryProvider),
         goals: ref.watch(nutritionGoalRepositoryProvider),
         preferences: ref.watch(coachingPreferenceRepositoryProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
       ),
     );
 
@@ -356,6 +357,7 @@ final b04WeeklyReviewControllerProvider =
         history: ref.watch(b04RecommendationHistoryRepositoryProvider),
         goals: ref.watch(nutritionGoalRepositoryProvider),
         preferences: ref.watch(coachingPreferenceRepositoryProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
       ),
     );
 
