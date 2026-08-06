@@ -116,7 +116,10 @@ void main() {
           envelopeJson,
         );
         expect(inspection.isEncrypted, isFalse);
-        expect(inspection.schemaVersion, equals(db.schemaVersion));
+        // BackupData is the legacy v7 payload.  B05's portable B05 graph is
+        // carried by BackupV10Data; the legacy schema marker remains capped at
+        // v18 for compatibility with the pre-B05 format.
+        expect(inspection.schemaVersion, equals(18));
 
         // Test checksum tampering detection
         final envMap = jsonDecode(envelopeJson) as Map<String, dynamic>;

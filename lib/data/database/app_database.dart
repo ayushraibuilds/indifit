@@ -21,6 +21,7 @@ import '../models/b02_execution_models.dart';
 import 'b01_legacy_import_support.dart';
 import 'tables/achievement_tables.dart';
 import 'tables/b02_activity_tables.dart';
+import 'tables/b05_ui_tables.dart';
 import 'tables/food_tables.dart';
 import 'tables/health_tables.dart';
 import 'tables/hydration_tables.dart';
@@ -72,6 +73,16 @@ enum V18MigrationFailureStage {
 
 typedef V18MigrationFailureStageInjector =
     Future<void> Function(V18MigrationFailureStage stage);
+
+/// Test-only boundaries for the v18 -> v19 B05 foundation migration.
+enum V19MigrationFailureStage {
+  validation,
+  ddlAndDataMutation,
+  beforeTransactionCommit,
+}
+
+typedef V19MigrationFailureStageInjector =
+    Future<void> Function(V19MigrationFailureStage stage);
 
 @DriftDatabase(
   tables: [
@@ -159,6 +170,10 @@ typedef V18MigrationFailureStageInjector =
     RecommendationEvidence,
     CoachingEligibilityEvaluations,
     RecommendationFeedback,
+    DashboardModulePreferences,
+    EducationContentProgress,
+    MediaPackPreferences,
+    WorkoutPlaylistPreferences,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -168,6 +183,7 @@ class AppDatabase extends _$AppDatabase {
       v16MigrationFailureStageInjector = null,
       v17MigrationFailureStageInjector = null,
       v18MigrationFailureStageInjector = null,
+      v19MigrationFailureStageInjector = null,
       schemaVersionOverride = null,
       super(_openConnection());
   AppDatabase.memory({this.schemaVersionOverride})
@@ -176,6 +192,7 @@ class AppDatabase extends _$AppDatabase {
       v16MigrationFailureStageInjector = null,
       v17MigrationFailureStageInjector = null,
       v18MigrationFailureStageInjector = null,
+      v19MigrationFailureStageInjector = null,
       super(NativeDatabase.memory());
   AppDatabase.executor(
     super.executor, {
@@ -184,6 +201,7 @@ class AppDatabase extends _$AppDatabase {
     this.v16MigrationFailureStageInjector,
     this.v17MigrationFailureStageInjector,
     this.v18MigrationFailureStageInjector,
+    this.v19MigrationFailureStageInjector,
     this.schemaVersionOverride,
   });
 
@@ -206,16 +224,19 @@ class AppDatabase extends _$AppDatabase {
   /// Typed test-only seam for proving each supported v17 -> v18 boundary.
   final V18MigrationFailureStageInjector? v18MigrationFailureStageInjector;
 
+  /// Typed test-only seam for proving each supported v18 -> v19 boundary.
+  final V19MigrationFailureStageInjector? v19MigrationFailureStageInjector;
+
   /// Test-only read boundary for immutable schema fixtures. It allows
   /// baseline harnesses to inspect a legacy file without triggering the next
   /// migration; production instances always use the current version.
   final int? schemaVersionOverride;
 
-  /// Schema v18 retains the complete v17 graph and adds the B04 durable
-  /// persistence boundary.
+  /// Schema v19 retains the complete B04 graph and adds the B05 durable
+  /// personalization, education, media-preference, and playlist boundary.
   /// B01 program, occurrence, routine, set, and draft compatibility fields.
   @override
-  int get schemaVersion => schemaVersionOverride ?? 18;
+  int get schemaVersion => schemaVersionOverride ?? 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -295,6 +316,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 18 && to >= 18) {
         await _migrateV17ToV18(m);
       }
+      if (from < 19 && to >= 19) {
+        await _migrateV18ToV19(m);
+      }
     },
 
     onCreate: (m) async {
@@ -317,10 +341,16 @@ class AppDatabase extends _$AppDatabase {
         await _seedReviewedMuscleCatalogIfPossible();
         return;
       }
+      if (schemaVersionOverride == 18) {
+        await _dropV19GraphForLegacyFixture();
+        await _createV18Indexes();
+        return;
+      }
       final contracts = await _loadV17Contracts();
       await _createV16IndexesAndTriggers();
       await _createV17Indexes();
       await _createV18Indexes();
+      await _createV19Indexes();
       await _seedV17NutrientRegistry(contracts.registry);
       await _seedV17ConstraintTaxonomy();
       await _seedV17FoodIdentity(contracts.manifest);
@@ -779,6 +809,29 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  Future<void> _migrateV18ToV19(Migrator m) async {
+    final stageInjector = v19MigrationFailureStageInjector;
+    if (stageInjector != null) {
+      await stageInjector(V19MigrationFailureStage.validation);
+    }
+
+    await transaction(() async {
+      // B05 stores only portable user intent and versioned content progress.
+      // Physical media availability, paths, bytes, and cache state remain
+      // device-local derived state and are intentionally absent here.
+      await m.createTable(dashboardModulePreferences);
+      await m.createTable(educationContentProgress);
+      await m.createTable(mediaPackPreferences);
+      await m.createTable(workoutPlaylistPreferences);
+      await _createV19Indexes();
+
+      if (stageInjector != null) {
+        await stageInjector(V19MigrationFailureStage.ddlAndDataMutation);
+        await stageInjector(V19MigrationFailureStage.beforeTransactionCommit);
+      }
+    });
+  }
+
   /// Validates both release contracts before a v17 graph can be created or
   /// seeded. This is validation only: migration deliberately does not create
   /// canonical food rows from legacy display names.
@@ -998,10 +1051,15 @@ class AppDatabase extends _$AppDatabase {
     for (final table in tables) {
       await customStatement('DROP TABLE IF EXISTS $table');
     }
+    await _dropV18GraphForLegacyFixture();
   }
 
   Future<void> _dropV18GraphForLegacyFixture() async {
     const tables = [
+      'workout_playlist_preferences',
+      'media_pack_preferences',
+      'education_content_progress',
+      'dashboard_module_preferences',
       'recommendation_feedback',
       'coaching_eligibility_evaluations',
       'recommendation_evidence',
@@ -1012,6 +1070,18 @@ class AppDatabase extends _$AppDatabase {
       'nutrition_coaching_preferences',
       'coaching_consent_events',
       'nutrition_goal_versions',
+    ];
+    for (final table in tables) {
+      await customStatement('DROP TABLE IF EXISTS $table');
+    }
+  }
+
+  Future<void> _dropV19GraphForLegacyFixture() async {
+    const tables = [
+      'workout_playlist_preferences',
+      'media_pack_preferences',
+      'education_content_progress',
+      'dashboard_module_preferences',
     ];
     for (final table in tables) {
       await customStatement('DROP TABLE IF EXISTS $table');
@@ -1459,6 +1529,18 @@ class AppDatabase extends _$AppDatabase {
            (SELECT 1 FROM recommendation_feedback
             WHERE id = NEW.related_feedback_id AND user_id = NEW.user_id))
          BEGIN SELECT RAISE(ABORT, 'Feedback ownership is invalid'); END''',
+    ];
+    for (final statement in statements) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _createV19Indexes() async {
+    const statements = [
+      'CREATE INDEX IF NOT EXISTS b05_dashboard_module_preferences_user_ordinal_idx ON dashboard_module_preferences(user_id, ordinal, module_id)',
+      'CREATE INDEX IF NOT EXISTS b05_education_content_progress_user_updated_idx ON education_content_progress(user_id, updated_at_utc, content_id)',
+      'CREATE INDEX IF NOT EXISTS b05_media_pack_preferences_user_updated_idx ON media_pack_preferences(user_id, updated_at_utc, pack_id)',
+      'CREATE INDEX IF NOT EXISTS b05_workout_playlist_preferences_user_provider_idx ON workout_playlist_preferences(user_id, provider_id)',
     ];
     for (final statement in statements) {
       await customStatement(statement);
