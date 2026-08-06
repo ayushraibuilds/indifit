@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/services/local_schedule_date_service.dart';
 import '../database/app_database.dart' as db;
+import '../models/b04_recommendation_context_models.dart';
 import '../models/b04_recommendation_history_models.dart';
 import '../models/b04_recommendation_models.dart';
 
@@ -348,6 +349,7 @@ class B04RecommendationHistoryRepository {
       history.where(
         (row) =>
             row.state != B04RecommendationState.superseded &&
+            row.state != B04RecommendationState.dismissed &&
             !superseded.contains(row.id) &&
             !row.isDismissed,
       ),
@@ -592,8 +594,10 @@ class B04RecommendationHistoryRepository {
           exactResultNumerator: _trimmedOrNull(input.exactResultNumerator),
           exactResultDenominator: _trimmedOrNull(input.exactResultDenominator),
           normalizedMaintenanceKcal: input.normalizedMaintenanceKcal,
-          localDate: input.localDate,
-          timezoneId: input.timezoneId,
+          localDate: input.localDate == null
+              ? null
+              : _dates.normalizeLocalDate(input.localDate!),
+          timezoneId: input.timezoneId?.trim(),
           createdAtUtc: command.evaluation.evaluatedAtUtc,
         ),
       );
@@ -627,6 +631,31 @@ class B04RecommendationHistoryRepository {
         'Consent must precede the issued recommendation.',
       );
     }
+    if (command.evaluation.consentState ==
+            B04RecommendationConsentState.enabled &&
+        row.action != 'enable') {
+      throw const B04RecommendationHistoryError(
+        'invalid_consent_state',
+        'An enabled recommendation must reference an enable consent event.',
+      );
+    }
+    final current =
+        await (_db.select(_db.coachingConsentEvents)..where(
+              (item) =>
+                  item.userId.equals(owner) &
+                  item.consentCategory.equals('adaptive_coaching') &
+                  item.timestampUtc.isSmallerOrEqualValue(
+                    command.evaluation.evaluatedAtUtc.toUtc(),
+                  ),
+            ))
+            .get();
+    current.sort(_consentOrder);
+    if (current.isEmpty || current.first.id != row.id) {
+      throw const B04RecommendationHistoryError(
+        'stale_consent_reference',
+        'Recommendation history must reference the consent state effective at issue time.',
+      );
+    }
     return row;
   }
 
@@ -658,6 +687,22 @@ class B04RecommendationHistoryRepository {
         'The eligibility authority must describe the issued evaluation.',
       );
     }
+    final current =
+        await (_db.select(_db.coachingEligibilityEvaluations)..where(
+              (item) =>
+                  item.userId.equals(owner) &
+                  item.evaluationUtc.isSmallerOrEqualValue(
+                    command.evaluation.evaluatedAtUtc.toUtc(),
+                  ),
+            ))
+            .get();
+    current.sort(_eligibilityOrder);
+    if (current.isEmpty || current.first.id != row.id) {
+      throw const B04RecommendationHistoryError(
+        'stale_eligibility_reference',
+        'Recommendation history must reference the eligibility state effective at issue time.',
+      );
+    }
     return row;
   }
 
@@ -680,6 +725,20 @@ class B04RecommendationHistoryRepository {
       throw const B04RecommendationHistoryError(
         'cross_user_reference',
         'Recommendation history goal lineage must belong to the same user.',
+      );
+    }
+    if (row.effectiveFromLocalDate.compareTo(
+              command.evaluation.startLocalDate,
+            ) >
+            0 ||
+        (row.effectiveToLocalDate != null &&
+            row.effectiveToLocalDate!.compareTo(
+                  command.evaluation.endLocalDate,
+                ) <
+                0)) {
+      throw const B04RecommendationHistoryError(
+        'goal_not_effective',
+        'The referenced goal version must cover the recommendation period.',
       );
     }
     return row;
@@ -770,6 +829,25 @@ class B04RecommendationHistoryRepository {
         'Recommendation history periods must be ordered.',
       );
     }
+    if (evaluation.period == B04RecommendationPeriod.daily &&
+        evaluation.startLocalDate != evaluation.endLocalDate) {
+      throw const B04RecommendationHistoryError(
+        'invalid_period',
+        'A daily recommendation must cover one local civil date.',
+      );
+    }
+    if (evaluation.period == B04RecommendationPeriod.weekly &&
+        _dates.addCalendarDays(
+              evaluation.startLocalDate,
+              evaluation.timezoneId,
+              6,
+            ) !=
+            evaluation.endLocalDate) {
+      throw const B04RecommendationHistoryError(
+        'invalid_period',
+        'A weekly recommendation must cover seven local civil dates.',
+      );
+    }
     if (evaluation.userId.trim().isEmpty ||
         evaluation.contextFingerprint.trim().isEmpty ||
         evaluation.fingerprint.trim().isEmpty) {
@@ -793,10 +871,17 @@ class B04RecommendationHistoryRepository {
         'Typed recommendation evidence requires kind, source and status.',
       );
     }
+    final sourceId = input.sourceId?.trim();
+    if (sourceId == null || sourceId.isEmpty) {
+      throw const B04RecommendationHistoryError(
+        'missing_source_id',
+        'Typed recommendation evidence requires a portable source ID.',
+      );
+    }
     _validateBounded(kind, 'evidence kind', 128);
     _validateBounded(source, 'evidence source', 128);
     _validateBounded(status, 'evidence status', 128);
-    _validateBounded(input.sourceId, 'evidence source ID', 128);
+    _validateBounded(sourceId, 'evidence source ID', 128);
     _validateBounded(input.sourceVersion, 'evidence source version', 128);
     _validateBounded(input.unit, 'evidence unit', 32);
     _validateBounded(input.exactResultNumerator, 'exact numerator', 128);
@@ -809,6 +894,12 @@ class B04RecommendationHistoryRepository {
       throw const B04RecommendationHistoryError(
         'forbidden_payload',
         'Raw prompts, images, provider payloads and sensitive payloads are not durable evidence.',
+      );
+    }
+    if (RegExp(r'[\{\}\[\]"\r\n]').hasMatch(sourceId)) {
+      throw const B04RecommendationHistoryError(
+        'forbidden_payload',
+        'Evidence source IDs must be identifiers, not structured payloads.',
       );
     }
     for (final value in [input.value, input.lower, input.upper]) {
@@ -930,6 +1021,9 @@ class B04RecommendationHistoryRepository {
         row.confidence != _confidence(recommendation.confidence) ||
         row.completeness != recommendation.completeness.stableId ||
         row.explanation != recommendation.explanation ||
+        row.missingInputs != _encodeList(recommendation.missingEvidence) ||
+        row.uncertainty != _encodeList(recommendation.uncertaintyCodes) ||
+        row.alternatives != _encodeList(recommendation.alternativeIds) ||
         row.ruleVersion != recommendation.ruleVersion ||
         row.calculationVersion !=
             (target?.calculationVersion ?? proposal?.calculationVersion) ||
@@ -1125,6 +1219,25 @@ B04RecommendationCompleteness _completeness(String value) => switch (value) {
 String? _trimmedOrNull(String? value) {
   final trimmed = value?.trim();
   return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
+
+int _consentOrder(db.CoachingConsentEvent left, db.CoachingConsentEvent right) {
+  final timestamp = right.timestampUtc.compareTo(left.timestampUtc);
+  if (timestamp != 0) return timestamp;
+  final created = right.createdAtUtc.compareTo(left.createdAtUtc);
+  if (created != 0) return created;
+  return right.id.compareTo(left.id);
+}
+
+int _eligibilityOrder(
+  db.CoachingEligibilityEvaluation left,
+  db.CoachingEligibilityEvaluation right,
+) {
+  final timestamp = right.evaluationUtc.compareTo(left.evaluationUtc);
+  if (timestamp != 0) return timestamp;
+  final created = right.createdAtUtc.compareTo(left.createdAtUtc);
+  if (created != 0) return created;
+  return right.id.compareTo(left.id);
 }
 
 void _validateBounded(String? value, String label, int maximum) {

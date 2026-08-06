@@ -133,6 +133,197 @@ void main() {
   );
 
   test(
+    'issue rejects stale consent and eligibility authorities at the issue time',
+    () async {
+      final lineage = await _seedLineage(db);
+      await CoachingPreferenceRepository(database: db).recordConsent(
+        CoachingConsentCommand(
+          userId: _userId,
+          category: CoachingConsentCategory.adaptiveCoaching,
+          action: CoachingConsentAction.disable,
+          consentPolicyVersion: kB04EnabledPolicyVersion,
+          copyVersion: 'copy-v1',
+          timestampUtc: DateTime.utc(2026, 8, 6, 11),
+          localDate: '2026-08-06',
+          timezoneId: _timezoneId,
+          actorSource: 'settings',
+          eventId: 'consent-disable-before-issue',
+          relatedOrSupersededEventId: lineage.consentId,
+        ),
+      );
+      await expectLater(
+        history.issue(
+          _command(
+            evaluatedAtUtc: DateTime.utc(2026, 8, 6, 12),
+            consentEventId: lineage.consentId,
+            eligibilityEvaluationId: lineage.eligibilityId,
+            goalVersionId: lineage.goalId,
+          ),
+        ),
+        throwsA(
+          isA<B04RecommendationHistoryError>().having(
+            (error) => error.code,
+            'code',
+            'stale_consent_reference',
+          ),
+        ),
+      );
+
+      await CoachingPreferenceRepository(database: db).recordConsent(
+        CoachingConsentCommand(
+          userId: _userId,
+          category: CoachingConsentCategory.adaptiveCoaching,
+          action: CoachingConsentAction.enable,
+          consentPolicyVersion: kB04EnabledPolicyVersion,
+          copyVersion: 'copy-v1',
+          timestampUtc: DateTime.utc(2026, 8, 6, 11, 30),
+          localDate: '2026-08-06',
+          timezoneId: _timezoneId,
+          actorSource: 'settings',
+          eventId: 'consent-enable-before-age-correction',
+          relatedOrSupersededEventId: 'consent-disable-before-issue',
+        ),
+      );
+      await db
+          .into(db.coachingEligibilityEvaluations)
+          .insert(
+            CoachingEligibilityEvaluationsCompanion.insert(
+              id: 'eligibility-underage-before-issue',
+              userId: _userId,
+              result: 'underage',
+              reasonCode: 'age_changed',
+              ageInputSource: 'verified_dob',
+              evidenceTimestampUtc: DateTime.utc(2026, 8, 6, 11, 30),
+              evaluationUtc: DateTime.utc(2026, 8, 6, 11, 30),
+              evaluationLocalDate: '2026-08-06',
+              timezoneId: _timezoneId,
+              policyVersion: kB04EnabledPolicyVersion,
+              minimumAgeRuleVersion: 'minimum-age-v1',
+            ),
+          );
+      await expectLater(
+        history.issue(
+          _command(
+            fingerprint: 'stale-age',
+            evaluatedAtUtc: DateTime.utc(2026, 8, 6, 12),
+            consentEventId: 'consent-enable-before-age-correction',
+            eligibilityEvaluationId: lineage.eligibilityId,
+            goalVersionId: lineage.goalId,
+          ),
+        ),
+        throwsA(
+          isA<B04RecommendationHistoryError>().having(
+            (error) => error.code,
+            'code',
+            'stale_eligibility_reference',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'dismissed immutable state is hidden from the current projection',
+    () async {
+      final lineage = await _seedLineage(db);
+      await history.issue(
+        _command(
+          state: B04RecommendationState.dismissed,
+          consentEventId: lineage.consentId,
+          eligibilityEvaluationId: lineage.eligibilityId,
+          goalVersionId: lineage.goalId,
+        ),
+      );
+      expect(
+        (await history.listHistory(userId: _userId)).single.state,
+        B04RecommendationState.dismissed,
+      );
+      expect(await history.listCurrent(userId: _userId), isEmpty);
+    },
+  );
+
+  test(
+    'history validates civil period, goal effectiveness and replay content',
+    () async {
+      final lineage = await _seedLineage(db);
+      await expectLater(
+        history.issue(
+          _command(
+            period: B04RecommendationPeriod.weekly,
+            startLocalDate: '2026-08-03',
+            endLocalDate: '2026-08-08',
+            consentEventId: lineage.consentId,
+            eligibilityEvaluationId: lineage.eligibilityId,
+            goalVersionId: lineage.goalId,
+          ),
+        ),
+        throwsA(
+          isA<B04RecommendationHistoryError>().having(
+            (error) => error.code,
+            'code',
+            'invalid_period',
+          ),
+        ),
+      );
+
+      final laterGoal = await NutritionGoalRepository(database: db)
+          .recordUserSetGoal(
+            const NutritionGoalCommand(
+              userId: _userId,
+              goalType: NutritionGoalType.loss,
+              source: NutritionGoalSource.userSet,
+              calorieTargetKcal: 1800,
+              effectiveFromLocalDate: '2026-08-07',
+              timezoneId: _timezoneId,
+            ),
+          );
+      await expectLater(
+        history.issue(
+          _command(
+            fingerprint: 'future-goal',
+            consentEventId: lineage.consentId,
+            eligibilityEvaluationId: lineage.eligibilityId,
+            goalVersionId: laterGoal.id,
+          ),
+        ),
+        throwsA(
+          isA<B04RecommendationHistoryError>().having(
+            (error) => error.code,
+            'code',
+            'goal_not_effective',
+          ),
+        ),
+      );
+
+      final original = (await history.issue(
+        _command(
+          consentEventId: lineage.consentId,
+          eligibilityEvaluationId: lineage.eligibilityId,
+          goalVersionId: lineage.goalId,
+        ),
+      )).single;
+      expect(original.id, isNotEmpty);
+      await expectLater(
+        history.issue(
+          _command(
+            explanation: 'Changed after issue',
+            consentEventId: lineage.consentId,
+            eligibilityEvaluationId: lineage.eligibilityId,
+            goalVersionId: lineage.goalId,
+          ),
+        ),
+        throwsA(
+          isA<B04RecommendationHistoryError>().having(
+            (error) => error.code,
+            'code',
+            'replay_conflict',
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
     'duplicate issue and feedback commands are idempotent without rewriting history',
     () async {
       final lineage = await _seedLineage(db);
@@ -273,6 +464,26 @@ void main() {
       expect(await db.select(db.recommendations).get(), isEmpty);
       expect(await db.select(db.recommendationEvidence).get(), isEmpty);
 
+      await expectLater(
+        history.issue(
+          _command(
+            fingerprint: 'structured-source',
+            evidenceId: '{"raw":1}',
+            consentEventId: lineage.consentId,
+            eligibilityEvaluationId: lineage.eligibilityId,
+            goalVersionId: lineage.goalId,
+          ),
+        ),
+        throwsA(
+          isA<B04RecommendationHistoryError>().having(
+            (error) => error.code,
+            'code',
+            'forbidden_payload',
+          ),
+        ),
+      );
+      expect(await db.select(db.recommendations).get(), isEmpty);
+
       await db
           .into(db.coachingEligibilityEvaluations)
           .insert(
@@ -397,6 +608,13 @@ void main() {
         ),
       );
       expect(await history.listCurrent(userId: _userId), isEmpty);
+      await expectLater(
+        db.customStatement(
+          "DELETE FROM recommendations WHERE id = '${issued.id}'",
+        ),
+        throwsA(isA<Exception>()),
+      );
+      expect(await db.select(db.recommendations).get(), hasLength(1));
       final sourceBackup = await BackupV9Data.createFromDatabase(db);
       final targetDb = AppDatabase.memory();
       addTearDown(targetDb.close);
@@ -479,7 +697,12 @@ B04RecommendationHistoryCommand _command({
   String fingerprint = 'evaluation-v1',
   String contextFingerprint = 'context-v1',
   DateTime? evaluatedAtUtc,
+  B04RecommendationPeriod period = B04RecommendationPeriod.daily,
+  String startLocalDate = '2026-08-06',
+  String endLocalDate = '2026-08-06',
   String evidenceId = 'training-source',
+  String? explanation,
+  B04RecommendationState? state,
   required String consentEventId,
   required String eligibilityEvaluationId,
   String? goalVersionId,
@@ -491,7 +714,12 @@ B04RecommendationHistoryCommand _command({
     fingerprint: fingerprint,
     contextFingerprint: contextFingerprint,
     evaluatedAtUtc: evaluatedAtUtc ?? _issuedAt,
+    period: period,
+    startLocalDate: startLocalDate,
+    endLocalDate: endLocalDate,
     evidenceId: evidenceId,
+    explanation: explanation,
+    state: state,
   ),
   scope: B04RecommendationHistoryScope.daily,
   consentEventId: consentEventId,
@@ -521,15 +749,20 @@ B04RecommendationEvaluation _evaluation({
   String fingerprint = 'evaluation-v1',
   String contextFingerprint = 'context-v1',
   DateTime? evaluatedAtUtc,
+  B04RecommendationPeriod period = B04RecommendationPeriod.daily,
+  String startLocalDate = '2026-08-06',
+  String endLocalDate = '2026-08-06',
   B04RecommendationAction action = B04RecommendationAction.training,
   String evidenceId = 'training-source',
+  String? explanation,
+  B04RecommendationState? state,
   B04AdaptiveTargetResult? target,
 }) => B04RecommendationEvaluation(
   contextId: 'context-id',
   userId: _userId,
-  period: B04RecommendationPeriod.daily,
-  startLocalDate: '2026-08-06',
-  endLocalDate: '2026-08-06',
+  period: period,
+  startLocalDate: startLocalDate,
+  endLocalDate: endLocalDate,
   timezoneId: _timezoneId,
   evaluatedAtUtc: evaluatedAtUtc ?? _issuedAt,
   eligibilityState: B04RecommendationEligibilityState.eligible,
@@ -540,16 +773,20 @@ B04RecommendationEvaluation _evaluation({
     B04Recommendation(
       id: id,
       action: action,
-      state: action == B04RecommendationAction.nutritionTarget
-          ? B04RecommendationState.confirm
-          : B04RecommendationState.available,
+      state:
+          state ??
+          (action == B04RecommendationAction.nutritionTarget
+              ? B04RecommendationState.confirm
+              : B04RecommendationState.available),
       priority: action == B04RecommendationAction.nutritionTarget
           ? B04RecommendationPriority.nutrition
           : B04RecommendationPriority.training,
       rationaleCode: 'evidence_backed',
-      explanation: action == B04RecommendationAction.nutritionTarget
-          ? 'Use the proposed nutrition target.'
-          : 'Use the planned training session.',
+      explanation:
+          explanation ??
+          (action == B04RecommendationAction.nutritionTarget
+              ? 'Use the proposed nutrition target.'
+              : 'Use the planned training session.'),
       confidence: B04RecommendationConfidence.high,
       completeness: B04RecommendationCompleteness.complete,
       evidenceIds: [evidenceId],
