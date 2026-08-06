@@ -21,6 +21,8 @@ class B04RecommendationEngine {
   B04RecommendationEvaluation evaluate({
     required B04RecommendationContext context,
     required Iterable<B04RecommendationCandidate> candidates,
+    B04RecommendationEvaluationScope scope =
+        B04RecommendationEvaluationScope.coaching,
   }) {
     _validateContext(context);
     final orderedCandidates = candidates.toList();
@@ -42,6 +44,7 @@ class B04RecommendationEngine {
       eligibilityState: eligibilityState,
       consentState: consentState,
       policyState: policyState,
+      scope: scope,
     );
 
     final evaluatedCandidates = <_CandidateEvaluation>[
@@ -54,6 +57,7 @@ class B04RecommendationEngine {
           policyState: policyState,
           policyVersion: policyVersion,
           globalReasons: globalReasons,
+          scope: scope,
         ),
     ];
     final evaluated = <B04Recommendation>[
@@ -111,6 +115,7 @@ class B04RecommendationEngine {
     return B04RecommendationEvaluation(
       contextId: context.contextId,
       userId: context.userId,
+      scope: scope,
       period: context.window.period,
       startLocalDate: context.window.startLocalDate,
       endLocalDate: context.window.endLocalDate,
@@ -135,6 +140,7 @@ class B04RecommendationEngine {
     required B04RecommendationPolicyState policyState,
     required String policyVersion,
     required List<String> globalReasons,
+    required B04RecommendationEvaluationScope scope,
   }) {
     final missingEvidence = <String>{
       ...context.missingEvidence.map((item) => item.reasonCode),
@@ -191,6 +197,9 @@ class B04RecommendationEngine {
 
     B04AdaptiveTargetResult? canonicalAdaptiveTarget;
     if (candidate.action == B04RecommendationAction.nutritionTarget) {
+      if (scope == B04RecommendationEvaluationScope.mealOpportunity) {
+        unavailableReasons.add('adaptive_policy_scope_mismatch');
+      }
       canonicalAdaptiveTarget = context.targetResult;
       final target = context.targetResult;
       if (target == null) {
@@ -213,8 +222,12 @@ class B04RecommendationEngine {
       }
     }
 
+    final partialEvidenceUnavailable =
+        scope == B04RecommendationEvaluationScope.mealOpportunity &&
+        candidate.evidence.state == B04RecommendationEvidenceState.partial;
     if (candidate.evidence.state == B04RecommendationEvidenceState.missing ||
-        candidate.evidence.state == B04RecommendationEvidenceState.unknown) {
+        candidate.evidence.state == B04RecommendationEvidenceState.unknown ||
+        partialEvidenceUnavailable) {
       unavailableReasons.add(
         'candidate_evidence_${candidate.evidence.state.stableId}',
       );
@@ -450,8 +463,30 @@ class B04RecommendationEngine {
     required B04RecommendationEligibilityState eligibilityState,
     required B04RecommendationConsentState consentState,
     required B04RecommendationPolicyState policyState,
+    required B04RecommendationEvaluationScope scope,
   }) {
     final reasons = <String>{};
+    if (scope == B04RecommendationEvaluationScope.mealOpportunity) {
+      for (final item in context.missingEvidence) {
+        if (item.kind == B04MissingEvidenceKind.nutritionTotals ||
+            item.kind == B04MissingEvidenceKind.mealOpportunity) {
+          reasons.add(item.reasonCode);
+        }
+      }
+      if (context.nutrition.missingLocalDates.isNotEmpty) {
+        reasons.add('daily_totals_unavailable');
+      }
+      if (context.nutrition.hasUnknownTotals) {
+        reasons.add('daily_totals_unknown');
+      } else if (context.nutrition.isEvidenceLimited) {
+        reasons.add('daily_totals_partial');
+      }
+      final opportunity = context.mealOpportunity;
+      if (opportunity == null || !opportunity.hasSelection) {
+        reasons.add(opportunity?.reasonCode ?? 'explicit_opportunity_required');
+      }
+      return reasons.toList()..sort();
+    }
     if (context.availability != B04ContextAvailability.available) {
       reasons.add('context_${context.availability.stableId}');
       reasons.addAll(context.missingEvidence.map((item) => item.reasonCode));

@@ -28,9 +28,11 @@ import '../../data/repositories/program_repository.dart';
 import '../../data/repositories/travel_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../../data/services/b04_current_food_guidance_service.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
 import '../../features/food_log/nutrition_thali_controller.dart';
 import '../../features/food_log/saved_recipe_log_controller.dart';
+import '../../features/nutrition/current_food_controller.dart';
 import '../../features/nutrition/protein_distribution_controller.dart';
 import '../../features/settings/nutrition_constraint_review_controller.dart';
 import '../../features/settings/nutrition_constraints_controller.dart';
@@ -230,6 +232,21 @@ final nutritionReadModelRepositoryProvider =
         legacyUserId: kLocalNutritionUserScopeId,
       );
     });
+
+final b04CurrentFoodGuidanceServiceProvider =
+    Provider<B04CurrentFoodGuidanceService>(
+      (_) => const B04CurrentFoodGuidanceService(),
+    );
+
+final b04CurrentFoodControllerProvider =
+    StateNotifierProvider.autoDispose<
+      B04CurrentFoodController,
+      B04CurrentFoodState
+    >(
+      (ref) => B04CurrentFoodController(
+        service: ref.watch(b04CurrentFoodGuidanceServiceProvider),
+      ),
+    );
 
 final nutritionProteinDistributionRepositoryProvider =
     FutureProvider<NutritionProteinDistributionRepository>((ref) async {
