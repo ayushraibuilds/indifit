@@ -57691,7 +57691,7 @@ class $EducationContentProgressTable extends EducationContentProgress
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   List<Set<GeneratedColumn>> get uniqueKeys => [
-    {userId, contentId},
+    {userId, contentId, contentVersion},
   ];
   @override
   EducationContentProgressRow map(

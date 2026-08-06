@@ -46,7 +46,10 @@ class EducationContentProgress extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {userId, contentId},
+    // Progress is intentionally versioned. A new lesson revision may request
+    // re-read without overwriting the user's completed history for an older
+    // packaged version.
+    {userId, contentId, contentVersion},
   ];
 
   @override

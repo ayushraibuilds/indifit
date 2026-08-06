@@ -801,7 +801,7 @@ const _b05Specs = <String, _B05TableSpec>{
       'state',
       'updated_at_utc',
     ],
-    uniqueColumns: ['user_id', 'content_id'],
+    uniqueColumns: ['user_id', 'content_id', 'content_version'],
   ),
   'media_pack_preferences': _B05TableSpec(
     columns: [

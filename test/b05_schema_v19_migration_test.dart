@@ -166,5 +166,24 @@ void main() {
       '''),
       throwsA(isA<Exception>()),
     );
+    await db.customStatement('''
+      INSERT INTO education_content_progress
+        (id, user_id, content_id, content_version, state)
+      VALUES ('lesson-v1', 'user-1', 'rpe', '1', 'completed')
+    ''');
+    await db.customStatement('''
+      INSERT INTO education_content_progress
+        (id, user_id, content_id, content_version, state)
+      VALUES ('lesson-v2', 'user-1', 'rpe', '2', 'notStarted')
+    ''');
+    expect(await db.select(db.educationContentProgress).get(), hasLength(2));
+    await expectLater(
+      db.customStatement('''
+        INSERT INTO education_content_progress
+          (id, user_id, content_id, content_version, state)
+        VALUES ('lesson-v2-duplicate', 'user-1', 'rpe', '2', 'completed')
+      '''),
+      throwsA(isA<Exception>()),
+    );
   });
 }

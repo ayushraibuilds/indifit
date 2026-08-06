@@ -41,7 +41,7 @@ void main() {
       );
       expect(
         await target.select(target.educationContentProgress).get(),
-        hasLength(1),
+        hasLength(2),
       );
       expect(
         await target.select(target.mediaPackPreferences).get(),
@@ -159,7 +159,11 @@ void main() {
       final source = AppDatabase.memory();
       addTearDown(source.close);
       await _populateB05(source);
-      final payload = (await BackupV10Data.createFromDatabase(source)).toJson();
+      final validPayload = (await BackupV10Data.createFromDatabase(
+        source,
+      )).toJson();
+      final payload =
+          jsonDecode(jsonEncode(validPayload)) as Map<String, dynamic>;
       final graph = payload['b05_graph'] as Map<String, dynamic>;
       final tables = graph['tables'] as Map<String, dynamic>;
       final playlist =
@@ -178,17 +182,41 @@ void main() {
         ),
       );
 
-      final invalid = jsonDecode(jsonEncode(payload)) as Map<String, dynamic>;
+      final invalid =
+          jsonDecode(jsonEncode(validPayload)) as Map<String, dynamic>;
       final invalidTables =
           (invalid['b05_graph'] as Map<String, dynamic>)['tables']
               as Map<String, dynamic>;
       final education =
-          (invalidTables['education_content_progress'] as List).single
+          (invalidTables['education_content_progress'] as List).first
               as Map<String, dynamic>;
       education['state'] = 'unknown';
       await expectLater(
         () => BackupV10Data.fromJson(invalid),
         throwsA(isA<BackupV10ValidationException>()),
+      );
+
+      final duplicate =
+          jsonDecode(jsonEncode(validPayload)) as Map<String, dynamic>;
+      final duplicateTables =
+          (duplicate['b05_graph'] as Map<String, dynamic>)['tables']
+              as Map<String, dynamic>;
+      final firstProgress =
+          (duplicateTables['education_content_progress'] as List).first
+              as Map<String, dynamic>;
+      duplicateTables['education_content_progress'] = [
+        firstProgress,
+        {...firstProgress, 'id': 'lesson-duplicate'},
+      ];
+      await expectLater(
+        () => BackupV10Data.fromJson(duplicate),
+        throwsA(
+          isA<BackupV10ValidationException>().having(
+            (error) => error.code,
+            'code',
+            'duplicate_unique_relationship',
+          ),
+        ),
       );
     },
   );
@@ -223,6 +251,17 @@ Future<void> _populateB05(AppDatabase db) async {
           contentId: 'rpe',
           contentVersion: '2026.1',
           state: 'completed',
+        ),
+      );
+  await db
+      .into(db.educationContentProgress)
+      .insert(
+        EducationContentProgressCompanion.insert(
+          id: 'lesson-2',
+          userId: 'user-1',
+          contentId: 'rpe',
+          contentVersion: '2026.2',
+          state: 'notStarted',
         ),
       );
   await db
