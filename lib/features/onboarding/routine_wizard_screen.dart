@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +8,7 @@ import '../../core/theme/colors.dart';
 import '../../data/repositories/ai_routine_service.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
+import 'b05_adaptive_onboarding.dart';
 
 class RoutineWizardScreen extends ConsumerStatefulWidget {
   final String? initialGoal;
@@ -29,7 +32,10 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
 
   bool _loading = false;
   bool _profileLoaded = false;
+  bool _draftLoaded = false;
+  bool _savingRoutine = false;
   GeneratedRoutineResult? _generatedRoutine;
+  final B05OnboardingDraftStore _draftStore = const B05OnboardingDraftStore();
 
   @override
   void initState() {
@@ -37,6 +43,39 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
     if (widget.initialGoal != null && widget.initialGoal!.isNotEmpty) {
       _selectedGoal = widget.initialGoal!;
     }
+    unawaited(_loadDraft());
+  }
+
+  Future<void> _loadDraft() async {
+    final draft = await _draftStore.readRoutineDraft();
+    if (!mounted) return;
+    if (draft != null) {
+      setState(() {
+        _currentStep = draft.currentStep.clamp(0, 4).toInt();
+        _selectedGoal = draft.selectedGoal;
+        _selectedEquipment = draft.selectedEquipment;
+        _daysPerWeek = draft.daysPerWeek;
+        _selectedExperience = draft.selectedExperience;
+        _injuryController.text = draft.injuries;
+      });
+    }
+    _draftLoaded = true;
+  }
+
+  void _saveDraft() {
+    if (!_draftLoaded) return;
+    unawaited(
+      _draftStore.saveRoutineDraft(
+        B05RoutineWizardDraft(
+          currentStep: _currentStep.clamp(0, 4).toInt(),
+          selectedGoal: _selectedGoal,
+          selectedEquipment: _selectedEquipment,
+          daysPerWeek: _daysPerWeek,
+          selectedExperience: _selectedExperience,
+          injuries: _injuryController.text,
+        ),
+      ),
+    );
   }
 
   @override
@@ -63,16 +102,20 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   void _nextStep() {
     if (_currentStep < 5) {
       setState(() => _currentStep++);
+      _saveDraft();
     }
   }
 
   void _prevStep() {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
+      _saveDraft();
     }
   }
 
   Future<void> _generateRoutine() async {
+    if (_loading) return;
+    _saveDraft();
     setState(() => _loading = true);
 
     try {
@@ -91,6 +134,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
         _generatedRoutine = result;
         _loading = false;
         _currentStep = 5; // Preview step
+        _saveDraft();
       });
     } catch (e) {
       setState(() => _loading = false);
@@ -106,7 +150,8 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   }
 
   Future<void> _saveAndApplyRoutine() async {
-    if (_generatedRoutine == null) return;
+    if (_generatedRoutine == null || _savingRoutine) return;
+    setState(() => _savingRoutine = true);
 
     try {
       final selection = await ref
@@ -131,6 +176,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
         notes: _generatedRoutine!.notes,
         days: _generatedRoutine!.days,
       );
+      await _draftStore.clearRoutineDraft();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -150,6 +196,8 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _savingRoutine = false);
     }
   }
 
@@ -162,7 +210,11 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
         elevation: 0,
         actions: [
           TextButton(
-            onPressed: () => context.go('/'),
+            onPressed: () async {
+              final router = GoRouter.of(context);
+              await _draftStore.clearRoutineDraft();
+              if (mounted) router.go('/');
+            },
             child: const Text(
               'Skip',
               style: TextStyle(color: AppColors.textMuted),
@@ -281,6 +333,8 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
             'Higher density, moderate weights & cardio integration',
             Icons.local_fire_department_rounded,
           ),
+          const SizedBox(height: 20),
+          B05AdaptiveLessonPath(selectedGoal: _selectedGoal),
         ],
       ),
     );
@@ -347,7 +401,10 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
             children: [3, 4, 5, 6].map((days) {
               final isSelected = _daysPerWeek == days;
               return GestureDetector(
-                onTap: () => setState(() => _daysPerWeek = days),
+                onTap: () {
+                  setState(() => _daysPerWeek = days);
+                  _saveDraft();
+                },
                 child: Container(
                   width: 60,
                   height: 60,
@@ -445,6 +502,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           TextField(
             controller: _injuryController,
             maxLines: 3,
+            onChanged: (_) => _saveDraft(),
             decoration: InputDecoration(
               hintText:
                   'e.g. Lower back pain, shoulder impingement, weak knees (or leave blank if none)',
@@ -569,6 +627,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
             if (optionType == 'equip') _selectedEquipment = val;
             if (optionType == 'exp') _selectedExperience = val;
           });
+          _saveDraft();
         },
         borderRadius: BorderRadius.circular(14),
         child: Container(
@@ -637,15 +696,17 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           ],
           Expanded(
             child: ElevatedButton(
-              onPressed: () {
-                if (_currentStep == 4) {
-                  _generateRoutine();
-                } else if (_currentStep == 5) {
-                  _saveAndApplyRoutine();
-                } else {
-                  _nextStep();
-                }
-              },
+              onPressed: _savingRoutine
+                  ? null
+                  : () {
+                      if (_currentStep == 4) {
+                        _generateRoutine();
+                      } else if (_currentStep == 5) {
+                        _saveAndApplyRoutine();
+                      } else {
+                        _nextStep();
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

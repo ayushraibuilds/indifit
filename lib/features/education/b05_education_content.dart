@@ -16,6 +16,8 @@ import '../../data/models/b02_execution_models.dart';
 import '../../data/models/b02_muscle_volume_models.dart';
 import '../../data/repositories/b02_muscle_volume_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
+import '../media/b05_media_bundle.dart';
+import '../media/b05_muscle_diagram.dart';
 
 /// The five bundled, offline lessons shipped in B05.  Lesson text is
 /// packaged content; progress is the only user-owned value persisted by the
@@ -1051,6 +1053,13 @@ class _B05ExerciseEducationPanelState
                 (cue) => _bullet(context, cue, personal: true),
               ),
             const SizedBox(height: B05Layout.space12),
+            B05ExerciseMediaPanel(
+              exerciseId: model.stableExerciseId,
+              textFallback: model.checklist
+                  .map((item) => item.label)
+                  .toList(growable: false),
+            ),
+            const SizedBox(height: B05Layout.space12),
             _sectionHeading(context, 'Muscle contribution'),
             if (model.muscles.isUnknown && model.muscles.labels.isEmpty)
               const B05StatusMessage(
@@ -1077,6 +1086,8 @@ class _B05ExerciseEducationPanelState
                   .where((label) => label.role == null)
                   .map((label) => _unknownMuscleLabel(context, label)),
             ],
+            const SizedBox(height: B05Layout.space12),
+            B05InteractiveMuscleDiagram(muscles: model.muscles),
           ],
         ),
       ),

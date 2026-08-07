@@ -7,6 +7,7 @@ import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
+import '../media/b05_playlist_launcher.dart';
 import 'calendar_controller.dart';
 import 'workout_contextual_action_controller.dart';
 import 'workout_contextual_launcher.dart';
@@ -439,19 +440,14 @@ class _WorkoutContextualActionsState
   };
 }
 
-/// Reserved non-functional placement for B05-08's playlist launcher. No
-/// arbitrary URL or provider payload is persisted or launched by B05-05.
+/// B05-08 owns the playlist behavior; this retained slot keeps the launcher
+/// in the contextual workout action group without changing B01 occurrence
+/// semantics.
 class WorkoutPlaylistLauncherSlot extends StatelessWidget {
   const WorkoutPlaylistLauncherSlot({super.key});
 
   @override
-  Widget build(BuildContext context) => const B05IconAction(
-    icon: Icons.music_note_outlined,
-    label: 'Playlist launcher',
-    hint: 'A saved playlist will be available here when configured.',
-    onPressed: null,
-    focusOrder: 3,
-  );
+  Widget build(BuildContext context) => const B05PlaylistLauncherButton();
 }
 
 class _SwipeBackground extends StatelessWidget {

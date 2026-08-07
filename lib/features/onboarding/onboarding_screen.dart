@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +9,9 @@ import '../../core/di/providers.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/tdee_calculator.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/workout_repository.dart';
+import 'b05_adaptive_onboarding.dart';
 import 'widgets/onboarding_step_widgets.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -51,6 +55,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String? _ageError;
   String? _heightError;
   String? _weightError;
+  var _isCompleting = false;
 
   @override
   void initState() {
@@ -63,6 +68,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _loadDraft() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     final draftPage = prefs.getInt('onboarding_draft_page');
     if (draftPage != null) {
       setState(() {
@@ -90,8 +96,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           'onboarding_draft_target_weight',
         )!;
       }
-      if (_currentPage > 0 && _pageController.hasClients) {
-        _pageController.jumpToPage(_currentPage);
+      if (_currentPage > 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _pageController.hasClients) {
+            _pageController.jumpToPage(_currentPage);
+          }
+        });
       }
     }
   }
@@ -158,6 +168,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _nextPage() {
+    if (_isCompleting) return;
     if (_currentPage == 0 && _sex == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -199,10 +210,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _saveDraft();
 
     if (_currentPage < _totalPages - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      final nextPage = _currentPage + 1;
+      if (B05MotionPolicy.reduceMotion(context)) {
+        _pageController.jumpToPage(nextPage);
+      } else {
+        _pageController.nextPage(
+          duration: B05MotionPolicy.transitionDuration(context),
+          curve: Curves.easeInOut,
+        );
+      }
     } else {
       _completeOnboarding();
     }
@@ -210,15 +226,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _prevPage() {
     if (_currentPage > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      final previousPage = _currentPage - 1;
+      if (B05MotionPolicy.reduceMotion(context)) {
+        _pageController.jumpToPage(previousPage);
+      } else {
+        _pageController.previousPage(
+          duration: B05MotionPolicy.transitionDuration(context),
+          curve: Curves.easeInOut,
+        );
+      }
     }
   }
 
   // Mifflin-St Jeor formula for BMR + TDEE multiplier + deficit/surplus adjustments
   Future<void> _completeOnboarding() async {
+    if (_isCompleting) return;
+    setState(() => _isCompleting = true);
+    try {
+      await _completeOnboardingOnce();
+    } finally {
+      if (mounted) setState(() => _isCompleting = false);
+    }
+  }
+
+  Future<void> _completeOnboardingOnce() async {
     // Parse final text controllers
     _age = int.tryParse(_ageController.text) ?? 25;
     _height = double.tryParse(_heightController.text) ?? 170.0;
@@ -382,6 +413,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 onPageChanged: (page) {
                   setState(() => _currentPage = page);
+                  unawaited(_saveDraft());
                 },
                 children: [
                   _buildSexPage(),
@@ -413,9 +445,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                     elevation: 0,
                   ),
-                  onPressed: _nextPage,
+                  onPressed: _isCompleting ? null : _nextPage,
                   child: Text(
-                    _currentPage == _totalPages - 1
+                    _isCompleting
+                        ? 'Saving your profile…'
+                        : _currentPage == _totalPages - 1
                         ? 'Calculate My Plan'
                         : 'Next Step',
                     style: TextStyle(
@@ -611,6 +645,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             selected: _goal == 'gain',
             onTap: () => setState(() => _goal = 'gain'),
           ),
+          const SizedBox(height: 20),
+          B05AdaptiveLessonPath(selectedGoal: _goal),
         ],
       ),
     );
