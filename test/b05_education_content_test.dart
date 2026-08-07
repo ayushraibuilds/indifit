@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/backup/backup_v10.dart';
 import 'package:indifit/core/fixtures/b05_foundation_registry.dart';
+import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/b02_muscle_volume_models.dart';
 import 'package:indifit/features/education/b05_education_content.dart';
+import 'package:indifit/features/exercise_library/exercise_details_sheet.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -350,4 +352,50 @@ void main() {
       semantics.dispose();
     },
   );
+
+  testWidgets('exercise detail production surface includes education panel', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final model = B05ExerciseEducationModel(
+      exerciseName: 'Bench press',
+      stableExerciseId: 'bench',
+      catalogueCues: const ['Keep your feet grounded.'],
+      catalogueMistakes: const ['Do not bounce the bar.'],
+      personalCues: const [],
+      checklist: const [
+        B05ExerciseChecklistItem(id: 'setup', label: 'Set up consistently.'),
+      ],
+      muscles: const B05MuscleLabelSet(labels: [], isUnknown: true),
+    );
+    const exercise = Exercise(
+      id: 1,
+      stableId: 'bench',
+      name: 'Bench press',
+      muscleGroups: 'Chest',
+      equipment: 'Barbell',
+      difficulty: 'Intermediate',
+      formCues: 'Keep your feet grounded.',
+      commonMistakes: 'Do not bounce the bar.',
+      isCustom: false,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          privacyPolicyProvider.overrideWith((ref) => PrivacyPolicyNotifier()),
+          b05ExerciseEducationProvider.overrideWith(
+            (ref, query) async => model,
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const Scaffold(body: ExerciseDetailsSheet(exercise: exercise)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Exercise education'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
 }
