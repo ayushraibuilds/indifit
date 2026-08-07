@@ -145,6 +145,85 @@ passes:
 | Migration/data portability | v19/v10, old backup compatibility, rollback and idempotency | Downgrade support for an older binary that cannot read v19/v10. |
 | Privacy/platform builds | Offline/network/permission/launcher truthfulness; Android release and iOS no-code-sign attempts | Legal certification, secret provisioning and signing key custody. |
 
+## B05-10 release-assurance evidence
+
+The integrated release-assurance head was `1b89e05` on
+`b05/t10-e8-release-assurance`, with the same commit selected by
+`batch/b05-ui-personalization-education`. No application defect was
+demonstrated, so B05-10 made no production-code change.
+
+The required automated checks passed:
+
+```sh
+flutter test \
+  test/b05_adaptive_onboarding_test.dart \
+  test/b05_backup_v10_test.dart \
+  test/b05_dashboard_module_customization_panel_test.dart \
+  test/b05_dashboard_personalization_repository_test.dart \
+  test/b05_education_content_test.dart \
+  test/b05_food_contextual_actions_test.dart \
+  test/b05_foundation_registry_test.dart \
+  test/b05_media_playlist_test.dart \
+  test/b05_schema_v19_migration_test.dart \
+  test/b05_semantic_accessibility_primitives_test.dart \
+  test/b05_today_daily_action_surface_test.dart \
+  test/b05_workout_contextual_actions_test.dart \
+  --reporter compact
+# 77 passed
+
+flutter test --reporter compact
+# 1,052 passed
+
+flutter test test/privacy_policy_enforcement_test.dart test/crash_reporting_test.dart test/health_state_controller_test.dart test/phase5_notifications_test.dart test/app_config_test.dart --reporter compact
+# 26 passed
+
+flutter test test/b01_program_calendar_widget_test.dart test/b01_equipment_preferences_widget_test.dart test/b02_progress_widget_test.dart test/b02_player_activity_widget_test.dart test/b03_constraint_review_test.dart test/b04_production_ui_test.dart --reporter compact
+# 28 passed
+
+flutter test test/b05_schema_v19_migration_test.dart test/b05_backup_v10_test.dart test/b05_education_content_test.dart test/b05_media_playlist_test.dart test/b05_adaptive_onboarding_test.dart test/b05_semantic_accessibility_primitives_test.dart --reporter compact
+# 48 passed
+
+/usr/bin/time -p flutter test test/b05_media_playlist_test.dart test/b05_adaptive_onboarding_test.dart test/b05_semantic_accessibility_primitives_test.dart --reporter compact
+# 30 passed; real 6.89s
+
+dart format --output=none --set-exit-if-changed lib test
+# passed; 425 files, 0 changed
+flutter analyze
+# passed; no issues found
+git diff --check
+# passed
+```
+
+Privacy/offline tests confirmed that strict-offline network attempts are
+blocked by policy, and permission-denied, unavailable and retry states remain
+typed. The B05-08 approval packet is still absent; media, graphical diagram
+and provider activation therefore remain fail-closed and truthfully
+unavailable. No remote or unlicensed substitute was added.
+
+Platform/toolchain evidence:
+
+```text
+xcodebuild -version — Xcode 26.6, Build version 17F113
+flutter doctor -v — Flutter 3.41.4; Xcode available; Android SDK 36.0.0
+```
+
+The Android toolchain is incomplete because `cmdline-tools` is missing and
+Android license status is unknown. `INDIFIT_API_KEY` was not supplied;
+`android/key.properties` exists, is ignored by `android/.gitignore`, and was
+not read. Consequently these release commands were not run with invented
+inputs:
+
+```text
+flutter build apk --release --dart-define=INDIFIT_API_KEY=<provided-secret>
+flutter build ios --release --no-codesign --dart-define=INDIFIT_API_KEY=<provided-secret>
+```
+
+No physical iPhone was available for evidence (Flutter reported the discovered
+iPhone as unavailable with connection code `-27`), and no device result was
+fabricated. Supplying the release API key, completing Android command-line
+tools/licenses, and obtaining a usable iOS device remain external follow-ups;
+they are not application defects.
+
 ## Lightweight task ledger
 
 Update only when implementation/merge information exists. This is a rollback
@@ -161,7 +240,7 @@ aid, not a compliance register.
 | B05-07 | 601fb24, 48c3985, 00f4995, 3e03438 | Approved with remediation | 9c4a537 | None; mixed reviewed mappings preserve known B02 labels alongside an explicit unknown state; text education remains independent of media. |
 | B05-08 | 1692370, 2cf2fb4 |  |  | Software infrastructure is complete with fail-closed unavailable/fallback behavior; external media, graphical diagram and enabled provider content activation is deferred until the approval packet is supplied. |
 | B05-09 | 1692370, 2cf2fb4 |  |  | Not blocked by deferred B05-08 content; final review/integration disposition remains with the B05 release-assurance task. |
-| B05-10 | — | Planned | — | Build credentials/device availability recorded honestly. |
+| B05-10 | — |  | — | Automated release matrix passes with no demonstrated defect. Android/iOS build attempts remain pending supplied API key and Android toolchain; no physical-device evidence. External B05-08 content activation remains deferred. |
 | B05-11 | — | Planned | — | — |
 
 ## Final review checklist
