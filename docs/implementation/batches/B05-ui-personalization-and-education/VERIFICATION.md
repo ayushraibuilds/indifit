@@ -250,9 +250,9 @@ aid, not a compliance register.
 | B05-05 | c88a1a3 | Approved | 67a1371 | None; playlist launch remains a reserved B05-08 slot and no playlist preference is persisted here. |
 | B05-06 | 676a2ac, 7b99f52 | Approved with remediation | a252686 | None; B03 exposes no valid deletion inverse, so production delete remains confirmation-only while supported adapters can offer timed undo. |
 | B05-07 | 601fb24, 48c3985, 00f4995, 3e03438 | Approved with remediation | 9c4a537 | None; mixed reviewed mappings preserve known B02 labels alongside an explicit unknown state; text education remains independent of media. |
-| B05-08 | 1692370, 2cf2fb4 |  |  | Software infrastructure is complete with fail-closed unavailable/fallback behavior; external media, graphical diagram and enabled provider content activation is deferred until the approval packet is supplied. |
-| B05-09 | 1692370, 2cf2fb4 |  |  | Not blocked by deferred B05-08 content; final review/integration disposition remains with the B05 release-assurance task. |
-| B05-10 | 7504692, 8b98a68, ec9af90 |  |  | Initial E8 matrix passed; fresh review found and fixed stale restored playlist-provider handling. Android/iOS build attempts remain pending supplied API key and Android toolchain; no physical-device evidence. External B05-08 content activation remains deferred. |
+| B05-08 | 1692370, 2cf2fb4 | Approved with non-blocking follow-up | 1b89e05 | Software infrastructure is complete with fail-closed unavailable/fallback behavior; external media, graphical diagram and enabled provider content activation is deferred until the approval packet is supplied. |
+| B05-09 | 1692370, 2cf2fb4 | Approved with non-blocking follow-up | 1b89e05 | Not blocked by deferred B05-08 content; release-assurance review found no additional onboarding defect. |
+| B05-10 | 7504692, 8b98a68, ec9af90 | Approved with non-blocking follow-up | 1362621 | Initial E8 matrix passed; fresh review found and fixed stale restored playlist-provider handling. Android/iOS build attempts remain pending supplied API key and Android toolchain; no physical-device evidence. External B05-08 content activation remains deferred. |
 | B05-11 | — | Planned | — | — |
 
 ## Final review checklist
