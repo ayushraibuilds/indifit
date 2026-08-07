@@ -169,6 +169,60 @@ void main() {
     container.dispose();
     await database.close();
   });
+
+  test(
+    'production action gateway delegates mutations to B03 repository',
+    () async {
+      final database = AppDatabase.memory();
+      addTearDown(database.close);
+      final repository = FoodRepository(database);
+      final loggedAt = DateTime(2026, 8, 7, 8);
+      await repository.logFoodEntry(
+        name: 'Oats',
+        calories: 250,
+        proteinG: 10,
+        carbsG: 40,
+        fatG: 5,
+        servingLogged: 1,
+        servingUnit: 'bowl',
+        mealType: 'breakfast',
+        loggedAt: loggedAt,
+      );
+      final source = (await database.select(database.foodLogs).get()).single;
+      final gateway = FoodRepositoryContextualActionGateway(repository);
+
+      await gateway.edit(
+        id: source.id,
+        values: const FoodLogEditValues(
+          name: 'Overnight oats',
+          calories: 260,
+          proteinG: 11,
+          carbsG: 42,
+          fatG: 5,
+          servingLogged: 1,
+        ),
+      );
+      expect(
+        await database.select(database.nutritionUserCorrections).get(),
+        hasLength(1),
+      );
+
+      await gateway.copy(
+        source: source,
+        targetDate: loggedAt,
+        targetMealType: 'breakfast',
+      );
+      expect(await database.select(database.foodLogs).get(), hasLength(2));
+
+      expect(gateway.supportsRestore, isFalse);
+      expect(
+        () => gateway.restore(source),
+        throwsA(isA<FoodContextualUnavailableException>()),
+      );
+      await gateway.delete(source);
+      expect(await database.select(database.foodLogs).get(), hasLength(1));
+    },
+  );
 }
 
 FoodLog _log() => FoodLog(
