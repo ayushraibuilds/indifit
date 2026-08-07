@@ -213,7 +213,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         },
         onCustomize: _openCustomization,
         onOpenWorkoutPlan: () => context.push('/calendar'),
-        onLogMeal: () => context.push('/food'),
+        onLogMeal: () {
+          final date = state.selectedDate;
+          final dateValue =
+              '${date.year.toString().padLeft(4, '0')}-'
+              '${date.month.toString().padLeft(2, '0')}-'
+              '${date.day.toString().padLeft(2, '0')}';
+          final route = Uri(
+            path: '/food',
+            queryParameters: {'mealType': 'breakfast', 'date': dateValue},
+          );
+          context.push(route.toString());
+        },
       ),
     );
   }
