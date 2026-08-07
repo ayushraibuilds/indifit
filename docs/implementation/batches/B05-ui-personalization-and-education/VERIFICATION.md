@@ -147,10 +147,16 @@ passes:
 
 ## B05-10 release-assurance evidence
 
-The integrated release-assurance head was `1b89e05` on
-`b05/t10-e8-release-assurance`, with the same commit selected by
-`batch/b05-ui-personalization-education`. No application defect was
-demonstrated, so B05-10 made no production-code change.
+B05-10 began from the clean integration head `1b89e05` on
+`b05/t10-e8-release-assurance`, with the same baseline selected by
+`batch/b05-ui-personalization-education`. The initial E8 matrix did not
+demonstrate an application defect. A fresh Luna Max review then reproduced a
+stale restored playlist-provider state: the settings dropdown could receive an
+unapproved provider ID, and the workout launcher could still expose an active
+launch path for that invalid preference. The targeted remediation in
+`ec9af90` validates the complete saved reference against the current approved
+registry, keeps stale preferences editable through settings, and adds a
+production-boundary regression test.
 
 The required automated checks passed:
 
@@ -169,10 +175,16 @@ flutter test \
   test/b05_today_daily_action_surface_test.dart \
   test/b05_workout_contextual_actions_test.dart \
   --reporter compact
-# 77 passed
+# 77 passed at the initial E8 candidate
+
+# The same 12-file B05 command was rerun after the playlist remediation.
+# 78 passed
+
+flutter test test/b05_media_playlist_test.dart --reporter compact
+# 11 passed after remediation
 
 flutter test --reporter compact
-# 1,052 passed
+# 1,053 passed after remediation
 
 flutter test test/privacy_policy_enforcement_test.dart test/crash_reporting_test.dart test/health_state_controller_test.dart test/phase5_notifications_test.dart test/app_config_test.dart --reporter compact
 # 26 passed
@@ -240,7 +252,7 @@ aid, not a compliance register.
 | B05-07 | 601fb24, 48c3985, 00f4995, 3e03438 | Approved with remediation | 9c4a537 | None; mixed reviewed mappings preserve known B02 labels alongside an explicit unknown state; text education remains independent of media. |
 | B05-08 | 1692370, 2cf2fb4 |  |  | Software infrastructure is complete with fail-closed unavailable/fallback behavior; external media, graphical diagram and enabled provider content activation is deferred until the approval packet is supplied. |
 | B05-09 | 1692370, 2cf2fb4 |  |  | Not blocked by deferred B05-08 content; final review/integration disposition remains with the B05 release-assurance task. |
-| B05-10 | 7504692 |  | — | Automated release matrix passes with no demonstrated defect. Android/iOS build attempts remain pending supplied API key and Android toolchain; no physical-device evidence. External B05-08 content activation remains deferred. |
+| B05-10 | 7504692, 8b98a68, ec9af90 |  |  | Initial E8 matrix passed; fresh review found and fixed stale restored playlist-provider handling. Android/iOS build attempts remain pending supplied API key and Android toolchain; no physical-device evidence. External B05-08 content activation remains deferred. |
 | B05-11 | — | Planned | — | — |
 
 ## Final review checklist
