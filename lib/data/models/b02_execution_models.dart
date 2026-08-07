@@ -579,6 +579,17 @@ class B02StrengthExecutionSlot {
   final int? targetRpe;
   final double? targetLoadKg;
   final B02LoadBasis? targetLoadBasis;
+  final int? prescribedRestSeconds;
+  final int? memberTransitionRestSeconds;
+  final int? groupRestAfterRoundSeconds;
+  final int? templateDefaultRestSeconds;
+  final int? exercisePreferenceRestSeconds;
+  final B02EffortMode effortMode;
+  final bool endedAtFailure;
+  final B02ExerciseExecutionPreference? executionPreference;
+  final double? effectiveItemIncrementKg;
+  final double? profileDefaultIncrementKg;
+  final bool isDeloadWeek;
 
   const B02StrengthExecutionSlot({
     required this.id,
@@ -597,9 +608,58 @@ class B02StrengthExecutionSlot {
     required this.targetRpe,
     required this.targetLoadKg,
     required this.targetLoadBasis,
+    this.prescribedRestSeconds,
+    this.memberTransitionRestSeconds,
+    this.groupRestAfterRoundSeconds,
+    this.templateDefaultRestSeconds,
+    this.exercisePreferenceRestSeconds,
+    this.effortMode = B02EffortMode.standard,
+    this.endedAtFailure = false,
+    this.executionPreference,
+    this.effectiveItemIncrementKg,
+    this.profileDefaultIncrementKg,
+    this.isDeloadWeek = false,
   });
 
   bool get hasCanonicalExercise => exerciseId?.trim().isNotEmpty == true;
+
+  B02StrengthExecutionSlot copyWith({
+    int? targetRepsMin,
+    int? targetRepsMax,
+    int? targetRpe,
+    double? targetLoadKg,
+    B02LoadBasis? targetLoadBasis,
+  }) {
+    return B02StrengthExecutionSlot(
+      id: id,
+      groupId: groupId,
+      groupType: groupType,
+      groupLabel: groupLabel,
+      groupOrdinal: groupOrdinal,
+      roundOrdinal: roundOrdinal,
+      memberOrdinal: memberOrdinal,
+      prescriptionId: prescriptionId,
+      exerciseId: exerciseId,
+      exerciseNameSnapshot: exerciseNameSnapshot,
+      plannedSets: plannedSets,
+      targetRepsMin: targetRepsMin ?? this.targetRepsMin,
+      targetRepsMax: targetRepsMax ?? this.targetRepsMax,
+      targetRpe: targetRpe ?? this.targetRpe,
+      targetLoadKg: targetLoadKg ?? this.targetLoadKg,
+      targetLoadBasis: targetLoadBasis ?? this.targetLoadBasis,
+      prescribedRestSeconds: prescribedRestSeconds,
+      memberTransitionRestSeconds: memberTransitionRestSeconds,
+      groupRestAfterRoundSeconds: groupRestAfterRoundSeconds,
+      templateDefaultRestSeconds: templateDefaultRestSeconds,
+      exercisePreferenceRestSeconds: exercisePreferenceRestSeconds,
+      effortMode: effortMode,
+      endedAtFailure: endedAtFailure,
+      executionPreference: executionPreference,
+      effectiveItemIncrementKg: effectiveItemIncrementKg,
+      profileDefaultIncrementKg: profileDefaultIncrementKg,
+      isDeloadWeek: isDeloadWeek,
+    );
+  }
 
   String get groupDescription {
     final type = groupType?.dbValue ?? 'standalone';
@@ -1195,6 +1255,75 @@ class B02TargetRecommendation {
       wasOverridden: wasOverridden ?? this.wasOverridden,
     );
   }
+}
+
+/// A current-session target choice. The offered recommendation remains frozen
+/// beside this value; this object only records what the user selected for the
+/// next performed set(s).
+class B02TargetOverride {
+  final double? loadKg;
+  final B02LoadBasis? loadBasis;
+  final int? targetRepsMin;
+  final int? targetRepsMax;
+  final int? targetRpe;
+
+  B02TargetOverride({
+    this.loadKg,
+    this.loadBasis,
+    this.targetRepsMin,
+    this.targetRepsMax,
+    this.targetRpe,
+  }) {
+    _nonNegative(loadKg, 'target override load');
+    if (targetRepsMin != null && targetRepsMin! < 1) {
+      throw B02ValidationException(
+        'Target override minimum reps must be positive.',
+      );
+    }
+    if (targetRepsMax != null && targetRepsMax! < 1) {
+      throw B02ValidationException(
+        'Target override maximum reps must be positive.',
+      );
+    }
+    if (targetRepsMin != null &&
+        targetRepsMax != null &&
+        targetRepsMin! > targetRepsMax!) {
+      throw B02ValidationException(
+        'Target override minimum reps exceed maximum reps.',
+      );
+    }
+    if (targetRpe != null && (targetRpe! < 1 || targetRpe! > 10)) {
+      throw B02ValidationException(
+        'Target override RPE must be between 1 and 10.',
+      );
+    }
+  }
+
+  factory B02TargetOverride.fromJson(Map<String, dynamic> json) {
+    return B02TargetOverride(
+      loadKg: _optionalDouble(json['loadKg'], 'target override load'),
+      loadBasis: json['loadBasis'] == null
+          ? null
+          : B02LoadBasis.parse(json['loadBasis']),
+      targetRepsMin: _optionalInt(
+        json['targetRepsMin'],
+        'target override minimum reps',
+      ),
+      targetRepsMax: _optionalInt(
+        json['targetRepsMax'],
+        'target override maximum reps',
+      ),
+      targetRpe: _optionalInt(json['targetRpe'], 'target override RPE'),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    if (loadKg != null) 'loadKg': loadKg,
+    if (loadBasis != null) 'loadBasis': loadBasis!.dbValue,
+    if (targetRepsMin != null) 'targetRepsMin': targetRepsMin,
+    if (targetRepsMax != null) 'targetRepsMax': targetRepsMax,
+    if (targetRpe != null) 'targetRpe': targetRpe,
+  };
 }
 
 class B02RestPeriod {
@@ -1854,6 +1983,28 @@ enum B02WarmupPreference {
   }
 }
 
+enum B02WarmupDecision {
+  offered('offered'),
+  accepted('accepted'),
+  edited('edited'),
+  skipped('skipped');
+
+  final String dbValue;
+
+  const B02WarmupDecision(this.dbValue);
+
+  static B02WarmupDecision parse(Object? raw) {
+    if (raw is! String) {
+      throw B02ValidationException('Warm-up decision must be a string.');
+    }
+    return values.firstWhere(
+      (value) => value.dbValue == raw,
+      orElse: () =>
+          throw B02ValidationException('Unsupported warm-up decision "$raw".'),
+    );
+  }
+}
+
 enum B02WarmupTargetSource {
   userEditedDraft('userEditedDraft'),
   targetRecommendation('targetRecommendation'),
@@ -2003,6 +2154,8 @@ class B02WarmupRecommendation {
   final String reason;
   final Map<String, bool> completeness;
   final List<B02WarmupSetProposal> proposals;
+  final B02WarmupDecision decision;
+  final List<B02WarmupSetProposal> selectedProposals;
 
   B02WarmupRecommendation({
     required this.availability,
@@ -2016,7 +2169,11 @@ class B02WarmupRecommendation {
     required this.reason,
     required this.completeness,
     required this.proposals,
-  }) {
+    this.decision = B02WarmupDecision.offered,
+    List<B02WarmupSetProposal>? selectedProposals,
+  }) : selectedProposals = List.unmodifiable(
+         selectedProposals ?? const <B02WarmupSetProposal>[],
+       ) {
     if (requestedCount < 1 || requestedCount > 4) {
       throw B02ValidationException(
         'Warm-up request count must be between 1 and 4.',
@@ -2098,6 +2255,20 @@ class B02WarmupRecommendation {
       reason: _requiredString(json['reason'], 'warm-up reason'),
       completeness: completeness,
       proposals: proposals,
+      decision: json['decision'] == null
+          ? B02WarmupDecision.offered
+          : B02WarmupDecision.parse(json['decision']),
+      selectedProposals:
+          _list(
+                json['selectedProposals'] ?? const [],
+                'selected warm-up proposals',
+              )
+              .map(
+                (raw) => B02WarmupSetProposal.fromJson(
+                  _object(raw, 'selected warm-up proposal'),
+                ),
+              )
+              .toList(growable: false),
     );
   }
 
@@ -2114,7 +2285,33 @@ class B02WarmupRecommendation {
     'reason': reason,
     'completeness': completeness,
     'proposals': proposals.map((proposal) => proposal.toJson()).toList(),
+    'decision': decision.dbValue,
+    if (selectedProposals.isNotEmpty)
+      'selectedProposals': selectedProposals
+          .map((proposal) => proposal.toJson())
+          .toList(),
   };
+
+  B02WarmupRecommendation copyWith({
+    B02WarmupDecision? decision,
+    List<B02WarmupSetProposal>? selectedProposals,
+  }) {
+    return B02WarmupRecommendation(
+      availability: availability,
+      preference: preference,
+      selectedSource: selectedSource,
+      loadBasis: loadBasis,
+      workingLoadKg: workingLoadKg,
+      requestedCount: requestedCount,
+      incrementKg: incrementKg,
+      incrementUnavailable: incrementUnavailable,
+      reason: reason,
+      completeness: completeness,
+      proposals: proposals,
+      decision: decision ?? this.decision,
+      selectedProposals: selectedProposals ?? this.selectedProposals,
+    );
+  }
 }
 
 class B02ExerciseExecutionPreference {
@@ -2153,8 +2350,11 @@ class B02ExecutionDraftState {
   final int currentSetOrdinal;
   final List<B02ExerciseGroup> groups;
   final List<B02PerformedExerciseDraft> performedExercises;
+  final Map<String, B02TargetRecommendation> targetRecommendations;
+  final Map<String, B02TargetOverride> targetOverrides;
   final List<B02RestPeriod> restPeriods;
   final B02WarmupRecommendation? warmupRecommendation;
+  final String? warmupSlotId;
   final B02CardioSessionDetail? cardioDetail;
   final B02MobilitySessionDetail? mobilityDetail;
 
@@ -2172,11 +2372,15 @@ class B02ExecutionDraftState {
     required this.currentSetOrdinal,
     this.groups = const [],
     this.performedExercises = const [],
+    Map<String, B02TargetRecommendation> targetRecommendations = const {},
+    Map<String, B02TargetOverride> targetOverrides = const {},
     this.restPeriods = const [],
     this.warmupRecommendation,
+    this.warmupSlotId,
     this.cardioDetail,
     this.mobilityDetail,
-  }) {
+  }) : targetRecommendations = Map.unmodifiable(targetRecommendations),
+       targetOverrides = Map.unmodifiable(targetOverrides) {
     _requiredString(snapshotId, 'snapshot id');
     _atLeast(snapshotVersion, 1, 'snapshot version');
     _requiredString(routineName, 'routine name');
@@ -2235,6 +2439,12 @@ class B02ExecutionDraftState {
       performedExercises.map((exercise) => exercise.ordinal),
       'Performed exercise',
     );
+    for (final key in this.targetRecommendations.keys) {
+      _requiredString(key, 'target recommendation slot id');
+    }
+    for (final key in this.targetOverrides.keys) {
+      _requiredString(key, 'target override slot id');
+    }
   }
 
   factory B02ExecutionDraftState.fromJson(Map<String, dynamic> json) {
@@ -2249,6 +2459,29 @@ class B02ExecutionDraftState {
               ),
             )
             .toList(growable: false);
+    final targetRecommendations = <String, B02TargetRecommendation>{};
+    final rawRecommendations = json['targetRecommendations'];
+    if (rawRecommendations != null) {
+      final recommendations = _object(
+        rawRecommendations,
+        'target recommendations',
+      );
+      for (final entry in recommendations.entries) {
+        targetRecommendations[entry.key] = B02TargetRecommendation.fromJson(
+          _object(entry.value, 'target recommendation'),
+        );
+      }
+    }
+    final targetOverrides = <String, B02TargetOverride>{};
+    final rawOverrides = json['targetOverrides'];
+    if (rawOverrides != null) {
+      final overrides = _object(rawOverrides, 'target overrides');
+      for (final entry in overrides.entries) {
+        targetOverrides[entry.key] = B02TargetOverride.fromJson(
+          _object(entry.value, 'target override'),
+        );
+      }
+    }
     final restPeriods = _list(json['restPeriods'] ?? const [], 'rest periods')
         .map((raw) => B02RestPeriod.fromJson(_object(raw, 'rest period')))
         .toList(growable: false);
@@ -2302,8 +2535,11 @@ class B02ExecutionDraftState {
       ),
       groups: groups,
       performedExercises: performedExercises,
+      targetRecommendations: targetRecommendations,
+      targetOverrides: targetOverrides,
       restPeriods: restPeriods,
       warmupRecommendation: warmupRecommendation,
+      warmupSlotId: _optionalString(json['warmupSlotId'], 'warm-up slot id'),
       cardioDetail: cardioDetail,
       mobilityDetail: mobilityDetail,
     );
@@ -2318,8 +2554,11 @@ class B02ExecutionDraftState {
     int? currentExerciseOrdinal,
     int? currentSetOrdinal,
     List<B02PerformedExerciseDraft>? performedExercises,
+    Map<String, B02TargetRecommendation>? targetRecommendations,
+    Map<String, B02TargetOverride>? targetOverrides,
     List<B02RestPeriod>? restPeriods,
     B02WarmupRecommendation? warmupRecommendation,
+    String? warmupSlotId,
     B02CardioSessionDetail? cardioDetail,
     B02MobilitySessionDetail? mobilityDetail,
   }) {
@@ -2338,8 +2577,12 @@ class B02ExecutionDraftState {
       currentSetOrdinal: currentSetOrdinal ?? this.currentSetOrdinal,
       groups: groups,
       performedExercises: performedExercises ?? this.performedExercises,
+      targetRecommendations:
+          targetRecommendations ?? this.targetRecommendations,
+      targetOverrides: targetOverrides ?? this.targetOverrides,
       restPeriods: restPeriods ?? this.restPeriods,
       warmupRecommendation: warmupRecommendation ?? this.warmupRecommendation,
+      warmupSlotId: warmupSlotId ?? this.warmupSlotId,
       cardioDetail: cardioDetail ?? this.cardioDetail,
       mobilityDetail: mobilityDetail ?? this.mobilityDetail,
     );
@@ -2363,9 +2606,18 @@ class B02ExecutionDraftState {
     'performedExercises': performedExercises
         .map((exercise) => exercise.toJson())
         .toList(),
+    if (targetRecommendations.isNotEmpty)
+      'targetRecommendations': targetRecommendations.map(
+        (key, recommendation) => MapEntry(key, recommendation.toJson()),
+      ),
+    if (targetOverrides.isNotEmpty)
+      'targetOverrides': targetOverrides.map(
+        (key, override) => MapEntry(key, override.toJson()),
+      ),
     'restPeriods': restPeriods.map((period) => period.toJson()).toList(),
     if (warmupRecommendation != null)
       'warmupRecommendation': warmupRecommendation!.toJson(),
+    if (warmupSlotId != null) 'warmupSlotId': warmupSlotId,
     if (cardioDetail != null) 'cardioDetail': cardioDetail!.toJson(),
     if (mobilityDetail != null) 'mobilityDetail': mobilityDetail!.toJson(),
   };

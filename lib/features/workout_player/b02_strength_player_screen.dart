@@ -117,7 +117,23 @@ class _B02StrengthPlayerScreenState
         _GroupProgressCard(launch: launch, slots: slots),
         const SizedBox(height: 12),
         if (launch.state.warmupRecommendation != null)
-          _WarmupCard(recommendation: launch.state.warmupRecommendation!),
+          _WarmupCard(
+            recommendation: launch.state.warmupRecommendation!,
+            onAccept: ui.isBusy
+                ? null
+                : () => ref
+                      .read(provider.notifier)
+                      .chooseWarmup(B02WarmupDecision.accepted),
+            onSkip: ui.isBusy
+                ? null
+                : () => ref
+                      .read(provider.notifier)
+                      .chooseWarmup(B02WarmupDecision.skipped),
+            onEdit: ui.isBusy
+                ? null
+                : () =>
+                      _editWarmup(provider, launch.state.warmupRecommendation!),
+          ),
         if (launch.state.warmupRecommendation == null)
           const Card(
             child: ListTile(
@@ -149,7 +165,13 @@ class _B02StrengthPlayerScreenState
               : (value) => setState(() => _selectedSlotId = value),
         ),
         const SizedBox(height: 12),
-        _TargetCard(slot: selected, state: launch.state),
+        _TargetCard(
+          slot: selected,
+          state: launch.state,
+          onOverride: ui.isBusy
+              ? null
+              : () => _overrideTarget(provider, selected),
+        ),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -216,6 +238,9 @@ class _B02StrengthPlayerScreenState
           slot: selected,
           state: launch.state,
           onBegin: () => ref.read(provider.notifier).beginRest(selected),
+          onCustom: (seconds) => ref
+              .read(provider.notifier)
+              .beginRest(selected, selectedSeconds: seconds),
           onExtend: (periodId) =>
               ref.read(provider.notifier).extendRest(periodId),
           onSkip: (periodId) => ref.read(provider.notifier).skipRest(periodId),
@@ -277,6 +302,94 @@ class _B02StrengthPlayerScreenState
           rpe: int.tryParse(_rpes[slot.id] ?? ''),
           role: _warmup ? B02SetRole.warmup : B02SetRole.working,
         );
+  }
+
+  Future<void> _overrideTarget(
+    dynamic provider,
+    B02StrengthExecutionSlot slot,
+  ) async {
+    final controller = TextEditingController(
+      text: slot.targetLoadKg?.toString() ?? '',
+    );
+    final value = await showDialog<double>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Override target load'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Load (kg)'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => context.pop(double.tryParse(controller.text)),
+            child: const Text('Use target'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value == null || value < 0 || !mounted) return;
+    await ref.read(provider.notifier).overrideTarget(slot, loadKg: value);
+  }
+
+  Future<void> _editWarmup(
+    dynamic provider,
+    B02WarmupRecommendation recommendation,
+  ) async {
+    if (recommendation.proposals.isEmpty) {
+      await ref.read(provider.notifier).chooseWarmup(B02WarmupDecision.skipped);
+      return;
+    }
+    final first = recommendation.proposals.first;
+    if (first.loadKg == null) {
+      await ref.read(provider.notifier).editWarmup(recommendation.proposals);
+      return;
+    }
+    final controller = TextEditingController(text: first.loadKg!.toString());
+    final value = await showDialog<double>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit first warm-up load'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Load (kg)'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => context.pop(double.tryParse(controller.text)),
+            child: const Text('Save edit'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value == null || value <= 0 || !mounted) return;
+    final edited = [
+      for (var index = 0; index < recommendation.proposals.length; index++)
+        index == 0
+            ? B02WarmupSetProposal(
+                ordinal: 0,
+                percentageOfWorkingLoad:
+                    recommendation.proposals.first.percentageOfWorkingLoad,
+                loadKg: value,
+                loadBasis: first.loadBasis,
+                reps: first.reps,
+              )
+            : recommendation.proposals[index],
+    ];
+    await ref.read(provider.notifier).editWarmup(edited);
   }
 
   Future<void> _discard(dynamic provider) async {
@@ -357,8 +470,13 @@ class _GroupProgressCard extends StatelessWidget {
 class _TargetCard extends StatelessWidget {
   final B02StrengthExecutionSlot slot;
   final B02ExecutionDraftState state;
+  final VoidCallback? onOverride;
 
-  const _TargetCard({required this.slot, required this.state});
+  const _TargetCard({
+    required this.slot,
+    required this.state,
+    required this.onOverride,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -376,13 +494,21 @@ class _TargetCard extends StatelessWidget {
         : slot.targetRepsMin == slot.targetRepsMax
         ? '${slot.targetRepsMin}'
         : '${slot.targetRepsMin}-${slot.targetRepsMax}';
+    final recommendation = state.targetRecommendations[slot.id];
+    final load = slot.targetLoadKg == null
+        ? 'load unknown'
+        : '${slot.targetLoadKg} kg ${slot.targetLoadBasis?.dbValue ?? ''}';
+    final confidence = recommendation?.confidence.dbValue ?? 'unavailable';
     return Card(
       child: ListTile(
         leading: const Icon(Icons.flag_outlined),
-        title: Text('Target vs actual · $target reps'),
+        title: Text('Target vs actual · $target reps · $load'),
         subtitle: Text(
-          'Actual reps logged: $actual · target data is preserved, never overwritten.',
+          'Actual reps logged: $actual · ${recommendation == null ? 'no recommendation' : 'B02 ${recommendation.ruleVersion} · $confidence confidence'} · offered target stays separate from performed values.',
         ),
+        trailing: recommendation == null
+            ? null
+            : TextButton(onPressed: onOverride, child: const Text('Override')),
       ),
     );
   }
@@ -390,17 +516,55 @@ class _TargetCard extends StatelessWidget {
 
 class _WarmupCard extends StatelessWidget {
   final B02WarmupRecommendation recommendation;
-  const _WarmupCard({required this.recommendation});
+  final VoidCallback? onAccept;
+  final VoidCallback? onEdit;
+  final VoidCallback? onSkip;
+
+  const _WarmupCard({
+    required this.recommendation,
+    required this.onAccept,
+    required this.onEdit,
+    required this.onSkip,
+  });
 
   @override
   Widget build(BuildContext context) => Card(
-    child: ListTile(
-      leading: const Icon(Icons.whatshot_outlined),
-      title: Text('Warm-up · ${recommendation.reason}'),
-      subtitle: Text(
-        recommendation.proposals.isEmpty
-            ? 'No warm-up target is available; choose manually.'
-            : '${recommendation.proposals.length} proposed ramp set(s) · editable for this session',
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.whatshot_outlined),
+            title: Text(
+              'Warm-up · ${recommendation.decision.dbValue} · ${recommendation.reason}',
+            ),
+            subtitle: Text(
+              recommendation.proposals.isEmpty
+                  ? 'No warm-up target is available; choose manually.'
+                  : '${recommendation.proposals.length} proposed ramp set(s) · ${recommendation.selectedProposals.length} selected',
+            ),
+          ),
+          if (recommendation.proposals.isNotEmpty)
+            Text(
+              recommendation.proposals
+                  .map(
+                    (proposal) =>
+                        '${proposal.loadKg ?? 'bodyweight'} × ${proposal.reps}',
+                  )
+                  .join('  ·  '),
+            ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              OutlinedButton(onPressed: onAccept, child: const Text('Accept')),
+              OutlinedButton(onPressed: onEdit, child: const Text('Edit')),
+              TextButton(onPressed: onSkip, child: const Text('Skip')),
+            ],
+          ),
+        ],
       ),
     ),
   );
@@ -410,6 +574,7 @@ class _RestCard extends StatelessWidget {
   final B02StrengthExecutionSlot slot;
   final B02ExecutionDraftState state;
   final VoidCallback onBegin;
+  final ValueChanged<int> onCustom;
   final ValueChanged<String> onExtend;
   final ValueChanged<String> onSkip;
 
@@ -417,6 +582,7 @@ class _RestCard extends StatelessWidget {
     required this.slot,
     required this.state,
     required this.onBegin,
+    required this.onCustom,
     required this.onExtend,
     required this.onSkip,
   });
@@ -442,7 +608,46 @@ class _RestCard extends StatelessWidget {
               : 'Transition rest follows the ${slot.groupType!.dbValue} member order. Manual +30/skip is session-only.',
         ),
         trailing: period == null
-            ? TextButton(onPressed: onBegin, child: const Text('Start 90s'))
+            ? Wrap(
+                spacing: 2,
+                children: [
+                  TextButton(onPressed: onBegin, child: const Text('Start')),
+                  IconButton(
+                    tooltip: 'Choose rest duration',
+                    onPressed: () async {
+                      final controller = TextEditingController();
+                      final value = await showDialog<int>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Custom rest'),
+                          content: TextField(
+                            controller: controller,
+                            autofocus: true,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Seconds',
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => context.pop(),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              onPressed: () =>
+                                  context.pop(int.tryParse(controller.text)),
+                              child: const Text('Start'),
+                            ),
+                          ],
+                        ),
+                      );
+                      controller.dispose();
+                      if (value != null && value >= 0) onCustom(value);
+                    },
+                    icon: const Icon(Icons.tune),
+                  ),
+                ],
+              )
             : Wrap(
                 spacing: 2,
                 children: [
