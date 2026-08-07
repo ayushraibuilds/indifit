@@ -10,6 +10,7 @@ import '../../data/repositories/food_api_service.dart';
 import '../../data/repositories/food_repository.dart';
 import 'barcode_scanner_screen.dart';
 import 'custom_food_editor_screen.dart';
+import 'food_log_surface.dart';
 import 'meal_templates_screen.dart';
 import 'saved_recipe_log_screen.dart';
 
@@ -435,6 +436,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           children: [
+            FoodLogEntriesPanel(date: logDate),
+            const SizedBox(height: 12),
             // Search Input Field
             TextField(
               controller: _searchController,
