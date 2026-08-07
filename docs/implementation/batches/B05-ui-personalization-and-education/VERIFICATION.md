@@ -149,8 +149,8 @@ aid, not a compliance register.
 | B05-01 | 794bfd5, 5f436c1 | Approved with remediation | 1c82e0c | Media/provider approval packet and final top-20 assets remain required before B05-08; managed remote downloads are deferred. |
 | B05-02 | 1762c5c, e33cada | Approved with remediation | 5048884 | None; semantic primitives are the contract consumed by later B05 presentation tasks. |
 | B05-03 | 179a505, cc6e244 | Approved with remediation | 3cc2691 | None; Today composition consumes the stable registry/repository contract in B05-04. |
-| B05-04 | — | Planned | — | — |
-| B05-05 | — | Planned | — | — |
+| B05-04 | fe5529e, d36d16a | Approved with remediation | edcf4a4 | None; Today read failures render typed unavailable/retry states without replacing B01–B04 authorities. |
+| B05-05 | c88a1a3 | Approved | 67a1371 | None; playlist launch remains a reserved B05-08 slot and no playlist preference is persisted here. |
 | B05-06 | — | Planned | — | — |
 | B05-07 | — | Planned | — | — |
 | B05-08 | — | Planned | — | Mandatory bundled asset/license/provider gate; remote downloads deferred. |
