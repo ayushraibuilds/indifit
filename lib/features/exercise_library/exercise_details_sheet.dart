@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
+import '../education/b05_education_content.dart';
 import 'exercise_history_screen.dart';
 
 class ExerciseDetailsSheet extends ConsumerWidget {
@@ -268,6 +269,13 @@ class ExerciseDetailsSheet extends ConsumerWidget {
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 12),
+            B05ExerciseEducationPanel(
+              exerciseName: exercise.name,
+              stableExerciseId: exercise.stableId,
+              catalogueCues: cues,
+              catalogueMistakes: mistakes,
             ),
             const SizedBox(height: 20),
           ],
