@@ -4,6 +4,7 @@ import '../../core/theme/colors.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../education/b05_education_content.dart';
 import 'exercise_details_sheet.dart';
 
 class ExerciseLibraryScreen extends ConsumerStatefulWidget {
@@ -123,6 +124,27 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
         elevation: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
+        actions: [
+          Semantics(
+            button: true,
+            label: 'Mini lessons',
+            hint: 'Opens offline lessons about training and nutrition.',
+            child: IconButton(
+              tooltip: 'Mini lessons',
+              icon: const Icon(Icons.school_outlined),
+              onPressed: () => showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) => SafeArea(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: const B05MiniLessonsPanel(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),

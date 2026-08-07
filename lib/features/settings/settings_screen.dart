@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/theme_provider.dart';
 import '../../core/theme/colors.dart';
+import '../media/b05_playlist_launcher.dart';
 import '../profile/profile_screen.dart';
 import 'data_management_sub_screen.dart';
 import 'health_sync_hub_screen.dart';
@@ -130,6 +131,21 @@ class SettingsScreen extends ConsumerWidget {
                             context,
                             MaterialPageRoute(
                               builder: (_) => const ProfileScreen(),
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1, color: AppColors.border),
+                        _buildSettingTile(
+                          context,
+                          icon: Icons.music_note_outlined,
+                          iconColor: AppColors.primary,
+                          title: 'Workout Playlist',
+                          subtitle:
+                              'Save a validated playlist for quick workout launch',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const B05PlaylistSettingsScreen(),
                             ),
                           ),
                         ),

@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/di/providers.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/ai_routine_service.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
+import 'b05_adaptive_onboarding.dart';
 
 class RoutineWizardScreen extends ConsumerStatefulWidget {
   final String? initialGoal;
@@ -29,7 +35,14 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
 
   bool _loading = false;
   bool _profileLoaded = false;
+  bool _draftLoaded = false;
+  bool _draftLoading = true;
+  String? _draftError;
+  bool _savingRoutine = false;
+  bool _skipping = false;
   GeneratedRoutineResult? _generatedRoutine;
+  final B05OnboardingDraftStore _draftStore = const B05OnboardingDraftStore();
+  Future<void> _draftWrite = Future<void>.value();
 
   @override
   void initState() {
@@ -37,6 +50,59 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
     if (widget.initialGoal != null && widget.initialGoal!.isNotEmpty) {
       _selectedGoal = widget.initialGoal!;
     }
+    unawaited(_loadDraft());
+  }
+
+  Future<void> _loadDraft() async {
+    if (mounted && !_draftLoading) {
+      setState(() {
+        _draftLoading = true;
+        _draftError = null;
+      });
+    }
+    try {
+      final draft = await _draftStore.readRoutineDraft();
+      if (!mounted) return;
+      if (draft != null) {
+        setState(() {
+          _currentStep = draft.currentStep.clamp(0, 4).toInt();
+          _selectedGoal = draft.selectedGoal;
+          _selectedEquipment = draft.selectedEquipment;
+          _daysPerWeek = draft.daysPerWeek;
+          _selectedExperience = draft.selectedExperience;
+          _injuryController.text = draft.injuries;
+        });
+      }
+      setState(() {
+        _draftLoading = false;
+        _draftLoaded = true;
+        _draftError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _draftLoading = false;
+        _draftLoaded = false;
+        _draftError = error.toString();
+      });
+    }
+  }
+
+  Future<void> _saveDraft() {
+    if (!_draftLoaded) return Future<void>.value();
+    final draft = B05RoutineWizardDraft(
+      currentStep: _currentStep.clamp(0, 4).toInt(),
+      selectedGoal: _selectedGoal,
+      selectedEquipment: _selectedEquipment,
+      daysPerWeek: _daysPerWeek,
+      selectedExperience: _selectedExperience,
+      injuries: _injuryController.text,
+    );
+    final next = _draftWrite
+        .catchError((_) {})
+        .then((_) => _draftStore.saveRoutineDraft(draft));
+    _draftWrite = next;
+    return next;
   }
 
   @override
@@ -45,10 +111,14 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
     if (!_profileLoaded) {
       final p = ref.watch(userProfileProvider);
       if (p.equipmentAccess.isNotEmpty) {
-        _selectedEquipment = p.equipmentAccess;
+        _selectedEquipment = B05OnboardingDraftStore.normalizeEquipment(
+          p.equipmentAccess,
+        );
       }
       if (p.injuriesLimitations.isNotEmpty && _injuryController.text.isEmpty) {
-        _injuryController.text = p.injuriesLimitations;
+        _injuryController.text = B05OnboardingDraftStore.normalizeInjuries(
+          p.injuriesLimitations,
+        );
       }
       _profileLoaded = true;
     }
@@ -63,17 +133,33 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   void _nextStep() {
     if (_currentStep < 5) {
       setState(() => _currentStep++);
+      unawaited(_saveDraft().catchError((_) {}));
     }
   }
 
   void _prevStep() {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
+      unawaited(_saveDraft().catchError((_) {}));
     }
   }
 
   Future<void> _generateRoutine() async {
+    if (_loading) return;
+    final draftWrite = _saveDraft();
     setState(() => _loading = true);
+
+    try {
+      await draftWrite;
+    } catch (error) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save routine draft: $error')),
+        );
+      }
+      return;
+    }
 
     try {
       final aiService = ref.read(aiRoutineServiceProvider);
@@ -106,9 +192,11 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   }
 
   Future<void> _saveAndApplyRoutine() async {
-    if (_generatedRoutine == null) return;
+    if (_generatedRoutine == null || _savingRoutine || _skipping) return;
+    setState(() => _savingRoutine = true);
 
     try {
+      await _draftWrite;
       final selection = await ref
           .read(legacyProgramCompatibilityAdapterProvider)
           .resolveActivePlanSelection();
@@ -131,6 +219,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
         notes: _generatedRoutine!.notes,
         days: _generatedRoutine!.days,
       );
+      await _draftStore.clearRoutineDraft();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -150,6 +239,26 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _savingRoutine = false);
+    }
+  }
+
+  Future<void> _skipOnboarding() async {
+    if (_skipping || _savingRoutine || _loading) return;
+    setState(() => _skipping = true);
+    try {
+      await _draftWrite;
+      await _draftStore.clearRoutineDraft();
+      if (mounted) GoRouter.of(context).go('/');
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not skip onboarding: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _skipping = false);
     }
   }
 
@@ -162,7 +271,10 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
         elevation: 0,
         actions: [
           TextButton(
-            onPressed: () => context.go('/'),
+            onPressed:
+                _draftLoaded && !_skipping && !_savingRoutine && !_loading
+                ? _skipOnboarding
+                : null,
             child: const Text(
               'Skip',
               style: TextStyle(color: AppColors.textMuted),
@@ -170,7 +282,9 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           ),
         ],
       ),
-      body: _loading
+      body: !_draftLoaded
+          ? _buildDraftRestoreState()
+          : _loading
           ? _buildLoadingState()
           : Column(
               children: [
@@ -184,6 +298,41 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
                 _buildBottomNavigation(),
               ],
             ),
+    );
+  }
+
+  Widget _buildDraftRestoreState() {
+    final hasError = _draftError != null;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            B05StatusMessage(
+              status: hasError
+                  ? B05SemanticStatus.danger
+                  : B05SemanticStatus.info,
+              label: hasError
+                  ? 'Routine draft could not be restored'
+                  : 'Restoring your routine answers',
+              value: hasError
+                  ? _draftError
+                  : 'Your answers stay on this device.',
+            ),
+            if (hasError) ...[
+              const SizedBox(height: 12),
+              B05ActionButton(
+                label: 'Retry draft restore',
+                icon: Icons.refresh_rounded,
+                emphasis: B05ActionEmphasis.secondary,
+                hint: 'Try reading the saved routine answers again.',
+                onPressed: _draftLoading ? null : _loadDraft,
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -281,6 +430,8 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
             'Higher density, moderate weights & cardio integration',
             Icons.local_fire_department_rounded,
           ),
+          const SizedBox(height: 20),
+          B05AdaptiveLessonPath(selectedGoal: _selectedGoal),
         ],
       ),
     );
@@ -346,25 +497,48 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [3, 4, 5, 6].map((days) {
               final isSelected = _daysPerWeek == days;
-              return GestureDetector(
-                onTap: () => setState(() => _daysPerWeek = days),
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : AppColors.surface,
+              return Semantics(
+                container: true,
+                button: true,
+                selected: isSelected,
+                label: '$days days per week',
+                hint: 'Choose $days training days per week.',
+                onTap: () {
+                  setState(() => _daysPerWeek = days);
+                  unawaited(_saveDraft().catchError((_) {}));
+                },
+                child: ExcludeSemantics(
+                  child: InkWell(
+                    onTap: () {
+                      setState(() => _daysPerWeek = days);
+                      unawaited(_saveDraft().catchError((_) {}));
+                    },
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.border,
-                    ),
-                  ),
-                  child: Text(
-                    '$days',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : AppColors.textPrimary,
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.border,
+                        ),
+                      ),
+                      child: Text(
+                        '$days',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textPrimary,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -445,6 +619,8 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           TextField(
             controller: _injuryController,
             maxLines: 3,
+            maxLength: 512,
+            onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
             decoration: InputDecoration(
               hintText:
                   'e.g. Lower back pain, shoulder impingement, weak knees (or leave blank if none)',
@@ -562,60 +738,69 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            if (optionType == 'goal') _selectedGoal = val;
-            if (optionType == 'equip') _selectedEquipment = val;
-            if (optionType == 'exp') _selectedExperience = val;
-          });
-        },
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.08)
-                : AppColors.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border,
-              width: isSelected ? 2 : 1,
+      child: Semantics(
+        container: true,
+        button: true,
+        selected: isSelected,
+        label: title,
+        value: desc,
+        hint: 'Select $title.',
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              if (optionType == 'goal') _selectedGoal = val;
+              if (optionType == 'equip') _selectedEquipment = val;
+              if (optionType == 'exp') _selectedExperience = val;
+            });
+            unawaited(_saveDraft().catchError((_) {}));
+          },
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.08)
+                  : AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isSelected ? AppColors.primary : AppColors.border,
+                width: isSelected ? 2 : 1,
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                color: isSelected ? AppColors.primary : AppColors.textMuted,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      desc,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? AppColors.primary : AppColors.textMuted,
                 ),
-              ),
-            ],
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        desc,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -637,15 +822,17 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           ],
           Expanded(
             child: ElevatedButton(
-              onPressed: () {
-                if (_currentStep == 4) {
-                  _generateRoutine();
-                } else if (_currentStep == 5) {
-                  _saveAndApplyRoutine();
-                } else {
-                  _nextStep();
-                }
-              },
+              onPressed: _savingRoutine
+                  ? null
+                  : () {
+                      if (_currentStep == 4) {
+                        _generateRoutine();
+                      } else if (_currentStep == 5) {
+                        _saveAndApplyRoutine();
+                      } else {
+                        _nextStep();
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,

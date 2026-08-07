@@ -20,9 +20,9 @@ void main() {
     await db.close();
   });
 
-  group('Data Quality Gap 1 & Schema v18 Tests', () {
-    test('AppDatabase initializes with schema version 18', () {
-      expect(db.schemaVersion, equals(18));
+  group('Data Quality Gap 1 & Schema v19 Tests', () {
+    test('AppDatabase initializes with schema version 19', () {
+      expect(db.schemaVersion, equals(19));
     });
 
     test(

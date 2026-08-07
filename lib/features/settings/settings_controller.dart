@@ -8,6 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/backup/backup_file_adapter.dart';
 import '../../core/backup/backup_schema.dart';
+import '../../core/backup/backup_v10.dart';
+import '../../core/backup/backup_v8.dart';
+import '../../core/backup/backup_v9.dart';
 import '../../core/di/providers.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../core/services/crash_reporting_service.dart';
@@ -176,9 +179,9 @@ class SettingsController extends StateNotifier<SettingsState> {
     try {
       final db = _ref.read(databaseProvider);
       final prefs = await SharedPreferences.getInstance();
-      final backupData = await BackupData.createFromDatabase(db, prefs);
+      final backupData = await BackupV10Data.createFromDatabase(db, prefs);
 
-      final envelopeJson = BackupFileAdapter.exportToEnvelopeJson(
+      final envelopeJson = BackupFileAdapter.exportV10ToEnvelopeJson(
         data: backupData,
         password: password,
       );
@@ -211,15 +214,21 @@ class SettingsController extends StateNotifier<SettingsState> {
     _isRestoring = true;
     state = state.copyWith(loading: true);
     try {
-      // 1. Validate and parse payload before any database or preference mutations
-      final backupData = BackupData.fromJson(data);
-
-      // 2. Execute single atomic transaction (rollbacks completely on error)
+      // 1. Validate and parse payload before any database or preference mutations.
+      final version = (data['version'] as num?)?.toInt() ?? 0;
       final db = _ref.read(databaseProvider);
       final prefs = await SharedPreferences.getInstance();
-      await backupData.restoreToDatabase(db, prefs);
+      if (version >= BackupV10Data.currentVersion) {
+        await BackupV10Data.fromJson(data).restoreToDatabase(db, prefs);
+      } else if (version >= BackupV9Data.currentVersion) {
+        await BackupV9Data.fromJson(data).restoreToDatabase(db, prefs);
+      } else if (version >= BackupV8Data.currentVersion) {
+        await BackupV8Data.fromJson(data).restoreToDatabase(db, prefs);
+      } else {
+        await BackupData.fromJson(data).restoreToDatabase(db, prefs);
+      }
 
-      // 3. Refresh providers post-commit on successful completion
+      // 2. Refresh providers post-commit on successful completion
       _ref.invalidate(userProfileProvider);
       await _ref.read(waterProvider.notifier).loadState();
     } catch (e) {

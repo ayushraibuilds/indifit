@@ -261,7 +261,7 @@ class DataManagementSection extends ConsumerWidget {
                     try {
                       await ref
                           .read(settingsControllerProvider.notifier)
-                          .performRestore(result.backupData.toJson());
+                          .performRestore(result.payload);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -359,7 +359,7 @@ class DataManagementSection extends ConsumerWidget {
       if (confirm == true && context.mounted) {
         await ref
             .read(settingsControllerProvider.notifier)
-            .performRestore(inspection.backupData.toJson());
+            .performRestore(inspection.payload);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Auto-backup restored successfully!')),

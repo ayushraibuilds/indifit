@@ -1,30 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
+import '../education/b05_education_content.dart';
 import 'exercise_history_screen.dart';
 
-class ExerciseDetailsSheet extends ConsumerWidget {
+class ExerciseDetailsSheet extends StatelessWidget {
   final Exercise exercise;
 
   const ExerciseDetailsSheet({super.key, required this.exercise});
 
-  Future<void> _launchYouTube() async {
-    if (exercise.youtubeId == null) return;
-
-    final url = Uri.parse(
-      'https://www.youtube.com/watch?v=${exercise.youtubeId}',
-    );
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
-  }
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isOffline = ref.watch(privacyPolicyProvider).isOfflineOnly;
+  Widget build(BuildContext context) {
     final List<String> muscles = exercise.muscleGroups.split(',');
     final List<String> cues = exercise.formCues.split('\n');
     final List<String> mistakes = exercise.commonMistakes.split('\n');
@@ -158,48 +144,6 @@ class ExerciseDetailsSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
 
-            // YouTube Video Link
-            if (exercise.youtubeId != null) ...[
-              const Text(
-                'INSTRUCTION VIDEO',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: isOffline ? null : _launchYouTube,
-                child: Container(
-                  height: 160,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(16),
-                    image: isOffline
-                        ? null
-                        : DecorationImage(
-                            image: NetworkImage(
-                              'https://img.youtube.com/vi/${exercise.youtubeId}/0.jpg',
-                            ),
-                            fit: BoxFit.cover,
-                            opacity: 0.65,
-                          ),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.play_circle_fill_rounded,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-
             // Form Cues List
             const Text(
               'FORM CUES',
@@ -268,6 +212,13 @@ class ExerciseDetailsSheet extends ConsumerWidget {
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 12),
+            B05ExerciseEducationPanel(
+              exerciseName: exercise.name,
+              stableExerciseId: exercise.stableId,
+              catalogueCues: cues,
+              catalogueMistakes: mistakes,
             ),
             const SizedBox(height: 20),
           ],

@@ -39,6 +39,27 @@ import '../../features/workout_player/workout_summary_screen.dart';
 /// SharedPreferences in main.dart and updated when onboarding finishes.
 final onboardingCompletedProvider = StateProvider<bool>((ref) => false);
 
+/// Parses the food route's local civil date without applying a timezone or
+/// silently substituting the current day. The dashboard emits this exact
+/// `yyyy-MM-dd` form so the selected Today date survives navigation.
+DateTime? parseFoodRouteDate(String? raw) {
+  final value = raw?.trim();
+  if (value == null || !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
+    return null;
+  }
+  final parts = value.split('-');
+  final year = int.tryParse(parts[0]);
+  final month = int.tryParse(parts[1]);
+  final day = int.tryParse(parts[2]);
+  if (year == null || month == null || day == null) return null;
+
+  final parsed = DateTime(year, month, day);
+  if (parsed.year != year || parsed.month != month || parsed.day != day) {
+    return null;
+  }
+  return parsed;
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
@@ -82,7 +103,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/food',
         builder: (context, state) {
           final mealType = state.uri.queryParameters['mealType'] ?? 'breakfast';
-          return AiMealLoggerScreen(mealType: mealType);
+          final selectedDate = parseFoodRouteDate(
+            state.uri.queryParameters['date'],
+          );
+          return AiMealLoggerScreen(
+            mealType: mealType,
+            selectedDate: selectedDate,
+          );
         },
       ),
       GoRoute(
