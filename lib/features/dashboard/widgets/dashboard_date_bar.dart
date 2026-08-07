@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../core/theme/colors.dart';
 
+import '../../../core/widgets/b05_accessibility_primitives.dart';
+
+/// Date navigation for Today. It uses civil-day comparisons so the page keeps
+/// its historic past/today/future behaviour without deriving schedule state.
 class DashboardDateBar extends StatelessWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDateChanged;
@@ -12,108 +15,86 @@ class DashboardDateBar extends StatelessWidget {
     required this.onDateChanged,
   });
 
-  String get _formattedLabel {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final target = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-    );
+  String _formattedLabel(DateTime now) {
+    final today = _day(now);
+    final target = _day(selectedDate);
     final diff = target.difference(today).inDays;
-
-    final dateStr = DateFormat('EEE, MMM d').format(selectedDate);
-    if (diff == 0) return 'Today ($dateStr)';
-    if (diff == -1) return 'Yesterday ($dateStr)';
-    if (diff == 1) return 'Tomorrow ($dateStr)';
-    return dateStr;
+    final date = DateFormat('EEE, MMM d').format(selectedDate);
+    return switch (diff) {
+      0 => 'Today ($date)',
+      -1 => 'Yesterday ($date)',
+      1 => 'Tomorrow ($date)',
+      _ => date,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final target = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-    );
-    final isToday = !target.isBefore(today);
-
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    final today = _day(now);
+    final target = _day(selectedDate);
+    final canMoveForward = target.isBefore(today);
+    return B05Surface(
+      padding: const EdgeInsets.symmetric(horizontal: B05Layout.space8),
+      radius: B05SurfaceRadius.small,
+      subtle: true,
+      child: FocusTraversalGroup(
+        policy: OrderedTraversalPolicy(),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Previous day button
-            IconButton(
-              icon: const Icon(Icons.chevron_left_rounded, size: 22),
-              tooltip: 'Previous day',
-              onPressed: () {
-                onDateChanged(selectedDate.subtract(const Duration(days: 1)));
-              },
-            ),
-
-            // Date picker button
-            InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: selectedDate.isAfter(now) ? now : selectedDate,
-                  firstDate: DateTime(2020),
-                  lastDate: now,
-                );
-                if (picked != null) {
-                  onDateChanged(picked);
-                }
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+            B05IconAction(
+              icon: Icons.chevron_left_rounded,
+              label: 'Previous day',
+              hint: 'Shows the previous day on Today.',
+              onPressed: () => onDateChanged(
+                DateTime(
+                  selectedDate.year,
+                  selectedDate.month,
+                  selectedDate.day - 1,
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_today_rounded,
-                      size: 16,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _formattedLabel,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+              ),
+              focusOrder: 0,
+            ),
+            Expanded(
+              child: B05ActionButton(
+                label: _formattedLabel(now),
+                hint: 'Choose a date to view.',
+                icon: Icons.calendar_today_outlined,
+                emphasis: B05ActionEmphasis.secondary,
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: target.isAfter(today) ? today : target,
+                    firstDate: DateTime(2020),
+                    lastDate: today,
+                  );
+                  if (picked != null) onDateChanged(picked);
+                },
+                focusOrder: 1,
+              ),
+            ),
+            B05IconAction(
+              icon: Icons.chevron_right_rounded,
+              label: canMoveForward ? 'Next day' : 'Future dates unavailable',
+              hint: canMoveForward
+                  ? 'Shows the next day on Today.'
+                  : 'Today is the latest available day.',
+              onPressed: canMoveForward
+                  ? () => onDateChanged(
+                      DateTime(
+                        selectedDate.year,
+                        selectedDate.month,
+                        selectedDate.day + 1,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Next day button
-            IconButton(
-              icon: Icon(
-                Icons.chevron_right_rounded,
-                size: 22,
-                color: isToday
-                    ? AppColors.textMuted.withValues(alpha: 0.3)
-                    : null,
-              ),
-              tooltip: isToday ? 'Cannot select future date' : 'Next day',
-              onPressed: isToday
-                  ? null
-                  : () {
-                      onDateChanged(selectedDate.add(const Duration(days: 1)));
-                    },
+                    )
+                  : null,
+              focusOrder: 2,
             ),
           ],
         ),
       ),
     );
   }
+
+  DateTime _day(DateTime value) => DateTime(value.year, value.month, value.day);
 }

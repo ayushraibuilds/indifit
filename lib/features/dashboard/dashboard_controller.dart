@@ -88,8 +88,12 @@ class DashboardState {
 class DashboardController extends StateNotifier<DashboardState> {
   final Ref _ref;
 
-  DashboardController(this._ref) : super(DashboardState()) {
-    loadStateData();
+  DashboardController(
+    this._ref, {
+    DashboardState? initialState,
+    bool loadOnInit = true,
+  }) : super(initialState ?? DashboardState()) {
+    if (loadOnInit) loadStateData();
   }
 
   void setSelectedDate(DateTime date) {
