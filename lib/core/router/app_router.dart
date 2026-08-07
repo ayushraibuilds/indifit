@@ -16,6 +16,7 @@ import '../../features/equipment/exercise_preference_editor_screen.dart';
 import '../../features/food_log/ai_meal_logger_screen.dart';
 import '../../features/food_log/ai_meal_planner_screen.dart';
 import '../../features/food_log/nutrition_estimate_review_screen.dart';
+import '../../features/food_log/nutrition_recipe_editor_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/routine_wizard_screen.dart';
 import '../../features/program_authoring/program_author_screen.dart';
@@ -123,6 +124,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           }
           return NutritionEstimateReviewScreen(estimateId: estimateId);
         },
+      ),
+      GoRoute(
+        path: '/food/recipes/edit',
+        builder: (context, state) => NutritionRecipeEditorScreen(
+          recipeId: state.uri.queryParameters['recipeId'],
+          draftVersionId: state.uri.queryParameters['draftVersionId'],
+        ),
       ),
       GoRoute(
         path: '/settings',

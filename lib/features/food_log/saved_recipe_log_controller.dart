@@ -24,6 +24,7 @@ enum SavedRecipeLogStatus {
 class SavedRecipeLogState {
   final SavedRecipeLogStatus status;
   final List<NutritionRecipeModel> recipes;
+  final List<NutritionRecipeDraftModel> drafts;
   final List<NutritionRecipeVersionModel> versions;
   final String query;
   final NutritionRecipeModel? selectedRecipe;
@@ -39,6 +40,7 @@ class SavedRecipeLogState {
   const SavedRecipeLogState({
     this.status = SavedRecipeLogStatus.idle,
     this.recipes = const [],
+    this.drafts = const [],
     this.versions = const [],
     this.query = '',
     this.selectedRecipe,
@@ -55,6 +57,7 @@ class SavedRecipeLogState {
   SavedRecipeLogState copyWith({
     SavedRecipeLogStatus? status,
     List<NutritionRecipeModel>? recipes,
+    List<NutritionRecipeDraftModel>? drafts,
     List<NutritionRecipeVersionModel>? versions,
     String? query,
     Object? selectedRecipe = _unset,
@@ -69,6 +72,7 @@ class SavedRecipeLogState {
   }) => SavedRecipeLogState(
     status: status ?? this.status,
     recipes: recipes ?? this.recipes,
+    drafts: drafts ?? this.drafts,
     versions: versions ?? this.versions,
     query: query ?? this.query,
     selectedRecipe: selectedRecipe == _unset
@@ -125,9 +129,14 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
         userId: userId,
         query: nextQuery,
       );
+      final drafts = await (await _coordinatorFuture).listDrafts(
+        userId: userId,
+        query: nextQuery,
+      );
       state = state.copyWith(
         status: SavedRecipeLogStatus.ready,
         recipes: recipes,
+        drafts: drafts,
         query: nextQuery,
         errorCode: null,
         errorMessage: null,

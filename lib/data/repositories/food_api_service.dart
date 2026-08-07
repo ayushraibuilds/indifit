@@ -11,10 +11,10 @@ final foodApiServiceProvider = Provider<FoodApiService>((ref) {
 
 class FoodApiResult {
   final String name;
-  final int calories;
-  final double protein;
-  final double carbs;
-  final double fat;
+  final double? calories;
+  final double? protein;
+  final double? carbs;
+  final double? fat;
   final double servingSize;
   final String servingUnit;
   final String? barcode;
@@ -67,16 +67,12 @@ class FoodApiService {
           final name = p['product_name'] ?? 'Unknown Product';
 
           // Get values per 100g
-          final double kcal =
-              (nutriments['energy-kcal_100g'] ??
-                      nutriments['energy-kcal'] ??
-                      0.0)
-                  .toDouble();
-          final double protein = (nutriments['proteins_100g'] ?? 0.0)
-              .toDouble();
-          final double carbs = (nutriments['carbohydrates_100g'] ?? 0.0)
-              .toDouble();
-          final double fat = (nutriments['fat_100g'] ?? 0.0).toDouble();
+          final double? kcal = _readNumber(
+            nutriments['energy-kcal_100g'] ?? nutriments['energy-kcal'],
+          );
+          final double? protein = _readNumber(nutriments['proteins_100g']);
+          final double? carbs = _readNumber(nutriments['carbohydrates_100g']);
+          final double? fat = _readNumber(nutriments['fat_100g']);
 
           // Serving size info
           final servingQtyText = p['serving_quantity']?.toString() ?? '100';
@@ -85,7 +81,7 @@ class FoodApiService {
 
           return FoodApiResult(
             name: name,
-            calories: kcal.round(),
+            calories: kcal,
             protein: protein,
             carbs: carbs,
             fat: fat,
@@ -131,13 +127,10 @@ class FoodApiService {
           final nutriments = p['nutriments'] ?? {};
           final name = p['product_name'] ?? 'Unknown Product';
 
-          final double kcal = (nutriments['energy-kcal_100g'] ?? 0.0)
-              .toDouble();
-          final double protein = (nutriments['proteins_100g'] ?? 0.0)
-              .toDouble();
-          final double carbs = (nutriments['carbohydrates_100g'] ?? 0.0)
-              .toDouble();
-          final double fat = (nutriments['fat_100g'] ?? 0.0).toDouble();
+          final double? kcal = _readNumber(nutriments['energy-kcal_100g']);
+          final double? protein = _readNumber(nutriments['proteins_100g']);
+          final double? carbs = _readNumber(nutriments['carbohydrates_100g']);
+          final double? fat = _readNumber(nutriments['fat_100g']);
 
           final servingQtyText = p['serving_quantity']?.toString() ?? '100';
           final servingSize = double.tryParse(servingQtyText) ?? 100.0;
@@ -145,12 +138,13 @@ class FoodApiService {
 
           return FoodApiResult(
             name: name,
-            calories: kcal.round(),
+            calories: kcal,
             protein: protein,
             carbs: carbs,
             fat: fat,
             servingSize: servingSize,
             servingUnit: servingUnit,
+            barcode: _readReference(p['code'] ?? p['id']),
           );
         }).toList();
       }
@@ -158,5 +152,20 @@ class FoodApiService {
     } on DioException {
       rethrow;
     }
+  }
+
+  static double? _readNumber(Object? raw) {
+    if (raw is num && raw.isFinite) return raw.toDouble();
+    if (raw is String) {
+      final parsed = double.tryParse(raw.trim());
+      return parsed != null && parsed.isFinite ? parsed : null;
+    }
+    return null;
+  }
+
+  static String? _readReference(Object? raw) {
+    if (raw == null) return null;
+    final value = raw.toString().trim();
+    return value.isEmpty ? null : value;
   }
 }

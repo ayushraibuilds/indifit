@@ -8,6 +8,7 @@ import '../../core/nutrients.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
+import 'nutrition_recipe_editor_screen.dart';
 import 'saved_recipe_log_controller.dart';
 
 class SavedRecipeLogScreen extends ConsumerStatefulWidget {
@@ -61,6 +62,28 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
         title: Text(selected == null ? 'Saved Recipes' : 'Log Recipe'),
         backgroundColor: AppColors.surface,
         elevation: 0,
+        actions: [
+          if (selected == null)
+            IconButton(
+              tooltip: 'Create recipe',
+              icon: const Icon(Icons.add_box_outlined),
+              onPressed: () async {
+                await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NutritionRecipeEditorScreen(),
+                  ),
+                );
+                if (mounted) {
+                  unawaited(
+                    ref
+                        .read(savedRecipeLogControllerProvider.notifier)
+                        .loadRecipes(),
+                  );
+                }
+              },
+            ),
+        ],
       ),
       body: selected == null
           ? _buildRecipeList(context, state)
@@ -95,12 +118,30 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
               state,
               onRetry: () => controller.loadRecipes(),
             ),
+          if (state.drafts.isNotEmpty) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'DRAFT RECIPES',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...state.drafts.map(
+              (draft) => _buildDraftCard(context, draft, controller),
+            ),
+            const SizedBox(height: 12),
+          ],
           Expanded(
             child:
                 state.status == SavedRecipeLogStatus.loadingRecipes ||
                     state.status == SavedRecipeLogStatus.idle
                 ? const Center(child: CircularProgressIndicator())
-                : state.recipes.isEmpty
+                : state.recipes.isEmpty && state.drafts.isEmpty
                 ? _buildEmptyRecipes(state.query)
                 : ListView.separated(
                     padding: const EdgeInsets.only(top: 4, bottom: 24),
@@ -113,6 +154,43 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDraftCard(
+    BuildContext context,
+    NutritionRecipeDraftModel draft,
+    SavedRecipeLogController controller,
+  ) {
+    return Card(
+      key: ValueKey('recipe_draft_${draft.version.id}'),
+      color: AppColors.primary.withValues(alpha: 0.06),
+      child: ListTile(
+        leading: const CircleAvatar(
+          backgroundColor: Color(0xFFE8F5E9),
+          child: Icon(Icons.edit_note_rounded, color: AppColors.primary),
+        ),
+        title: Text(
+          draft.recipe.name,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Text(
+          '${draft.version.ingredients.length} ingredient${draft.version.ingredients.length == 1 ? '' : 's'} · Draft not yet published',
+        ),
+        trailing: const Icon(Icons.edit_outlined, color: AppColors.primary),
+        onTap: () async {
+          await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => NutritionRecipeEditorScreen(
+                recipeId: draft.recipe.id,
+                draftVersionId: draft.version.id,
+              ),
+            ),
+          );
+          if (context.mounted) unawaited(controller.loadRecipes());
+        },
       ),
     );
   }
@@ -138,7 +216,26 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
               ? 'No published version'
               : 'Current published version available',
         ),
-        trailing: const Icon(Icons.chevron_right_rounded),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Edit recipe',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () async {
+                await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        NutritionRecipeEditorScreen(recipeId: recipe.id),
+                  ),
+                );
+                if (context.mounted) unawaited(controller.loadRecipes());
+              },
+            ),
+            const Icon(Icons.chevron_right_rounded),
+          ],
+        ),
         onTap: () => controller.selectRecipe(recipe),
       ),
     );

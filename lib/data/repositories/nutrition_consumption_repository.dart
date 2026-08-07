@@ -1256,12 +1256,58 @@ class NutritionConsumptionRepository {
               'Transformation $transformationId was not found.',
             );
           }
-          if (row.foodId != item.foodId ||
-              row.preparationId != item.preparationId) {
-            _invalid(
-              'transformation_identity_mismatch',
-              'Transformation evidence does not belong to the consumed food and preparation.',
-            );
+          final sourceFoodId = transformation['source_food_id'];
+          final sourcePreparationId = transformation['source_preparation_id'];
+          final targetFoodId = transformation['target_food_id'];
+          final targetPreparationId = transformation['target_preparation_id'];
+          if (sourceFoodId == null &&
+              sourcePreparationId == null &&
+              targetFoodId == null &&
+              targetPreparationId == null) {
+            // Legacy evidence recorded the consumed identity only. Preserve
+            // that compatibility contract for older snapshots.
+            if (row.foodId != item.foodId ||
+                row.preparationId != item.preparationId) {
+              _invalid(
+                'transformation_identity_mismatch',
+                'Transformation evidence does not belong to the consumed food and preparation.',
+              );
+            }
+          } else {
+            if (sourceFoodId is! String ||
+                (sourcePreparationId != null &&
+                    sourcePreparationId is! String) ||
+                targetFoodId is! String ||
+                (targetPreparationId != null &&
+                    targetPreparationId is! String)) {
+              _invalid(
+                'invalid_transformation_evidence',
+                'Transformation source and target identities are malformed.',
+              );
+            }
+            Map<String, dynamic> storedProvenance;
+            try {
+              final decoded = jsonDecode(row.source);
+              if (decoded is! Map) throw const FormatException();
+              storedProvenance = Map<String, dynamic>.from(decoded);
+            } catch (_) {
+              _invalid(
+                'invalid_transformation_evidence',
+                'Stored transformation provenance is malformed.',
+              );
+            }
+            if (row.foodId != sourceFoodId ||
+                row.preparationId != sourcePreparationId ||
+                item.foodId != targetFoodId ||
+                item.preparationId != targetPreparationId ||
+                storedProvenance['target_food_id'] != targetFoodId ||
+                storedProvenance['target_preparation_id'] !=
+                    targetPreparationId) {
+              _invalid(
+                'transformation_identity_mismatch',
+                'Transformation source and target identities do not match the consumed item.',
+              );
+            }
           }
           final expectedVersion =
               transformation['rule_version'] ?? transformation['version'];

@@ -22,6 +22,8 @@ import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/nutrition_constraint_repository.dart';
 import '../../data/repositories/nutrition_consumption_repository.dart';
 import '../../data/repositories/nutrition_estimate_repository.dart';
+import '../../data/repositories/nutrition_food_catalog_repository.dart';
+import '../../data/repositories/nutrition_food_logging_coordinator.dart';
 import '../../data/repositories/nutrition_goal_repository.dart';
 import '../../data/repositories/nutrition_household_measure_repository.dart';
 import '../../data/repositories/nutrition_protein_distribution_repository.dart';
@@ -137,6 +139,30 @@ final nutritionConsumptionRepositoryProvider =
       return NutritionConsumptionRepository(
         db: ref.watch(databaseProvider),
         registry: registry,
+      );
+    });
+
+final nutritionFoodCatalogRepositoryProvider =
+    FutureProvider<NutritionFoodCatalogRepository>((ref) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      return NutritionFoodCatalogRepository(
+        db: ref.watch(databaseProvider),
+        registry: registry,
+      );
+    });
+
+final nutritionFoodLoggingCoordinatorProvider =
+    FutureProvider<NutritionFoodLoggingCoordinator>((ref) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      return NutritionFoodLoggingCoordinator(
+        db: ref.watch(databaseProvider),
+        registry: registry,
+        catalog: await ref.watch(nutritionFoodCatalogRepositoryProvider.future),
+        calculator: ref.watch(nutritionCalculationServiceProvider),
+        consumption: await ref.watch(
+          nutritionConsumptionRepositoryProvider.future,
+        ),
+        transformations: ref.watch(nutritionTransformationRepositoryProvider),
       );
     });
 

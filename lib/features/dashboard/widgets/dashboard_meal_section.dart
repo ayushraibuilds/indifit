@@ -522,14 +522,37 @@ class _MealCard extends ConsumerWidget {
     final canonicalRecords = unifiedDay?.records
         .where((record) => !record.isLegacy && record.mealCategory == type)
         .toList(growable: false);
-    final canonicalCalories = canonicalRecords?.fold<double>(
-      0,
-      (sum, record) =>
-          sum + (record.totals.facts['energy']?.point?.value.asDouble ?? 0),
-    );
+    var canonicalCalories = 0.0;
+    var canonicalEnergyLower = 0.0;
+    var canonicalEnergyUpper = 0.0;
+    var canonicalEnergyUnknown = false;
+    var canonicalEnergyRange = false;
+    for (final record in canonicalRecords ?? const []) {
+      final fact = record.totals.facts['energy'];
+      if (fact == null || !fact.isAvailable) {
+        canonicalEnergyUnknown = true;
+        continue;
+      }
+      final lower = fact.lower?.value.asDouble ?? fact.point?.value.asDouble;
+      final upper = fact.upper?.value.asDouble ?? fact.point?.value.asDouble;
+      if (lower == null || upper == null) {
+        canonicalEnergyUnknown = true;
+        continue;
+      }
+      canonicalEnergyLower += lower;
+      canonicalEnergyUpper += upper;
+      canonicalCalories += fact.point?.value.asDouble ?? 0;
+      canonicalEnergyRange = canonicalEnergyRange || lower != upper;
+    }
     final totalCals =
         mealLogs.fold(0, (sum, item) => sum + item.calories) +
-        (canonicalCalories?.round() ?? 0);
+        canonicalCalories.round();
+    final legacyCalories = mealLogs.fold(0, (sum, item) => sum + item.calories);
+    final energyLabel = canonicalEnergyUnknown
+        ? 'Energy unknown'
+        : canonicalEnergyRange
+        ? '${(legacyCalories + canonicalEnergyLower).round()}–${(legacyCalories + canonicalEnergyUpper).round()} kcal'
+        : '$totalCals kcal';
 
     Color accentColor = AppColors.primary;
     IconData mealIcon = Icons.restaurant_rounded;
@@ -565,7 +588,7 @@ class _MealCard extends ConsumerWidget {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             Text(
-              '$totalCals kcal',
+              energyLabel,
               style: TextStyle(
                 color: accentColor,
                 fontWeight: FontWeight.bold,
