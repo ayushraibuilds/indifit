@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/fixtures/b02_muscle_catalog.dart';
 import 'package:indifit/core/fixtures/b05_foundation_registry.dart';
@@ -56,6 +57,58 @@ void main() {
       throwsA(isA<B05RegistryValidationException>()),
     );
   });
+
+  testWidgets(
+    'stale saved provider remains editable when the approved registry changes',
+    (tester) async {
+      final database = AppDatabase.memory();
+      addTearDown(database.close);
+      await tester.runAsync(() async {
+        await database
+            .into(database.workoutPlaylistPreferences)
+            .insert(
+              WorkoutPlaylistPreferencesCompanion.insert(
+                id: 'stale-playlist',
+                userId: 'local-user-v1',
+                providerId: 'retired-provider',
+                playlistReference: 'https://retired.example/playlist/abc',
+              ),
+            );
+      });
+      final controller = B05PlaylistController(
+        repository: B05PlaylistPreferenceRepository(database: database),
+        registry: _playlistRegistry(),
+        userId: 'local-user-v1',
+      );
+      await tester.runAsync(controller.load);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            b05PlaylistControllerProvider.overrideWith((ref) => controller),
+            b05PlaylistProviderRegistryProvider.overrideWithValue(
+              _playlistRegistry(),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const Scaffold(
+              body: SingleChildScrollView(child: B05PlaylistSettingsPanel()),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Playlist reference'), findsOneWidget);
+      expect(find.text('Save playlist'), findsOneWidget);
+      expect(
+        find.textContaining('Saved playlist preference is unavailable'),
+        findsOneWidget,
+      );
+    },
+  );
 
   test(
     'packaged media probe distinguishes available, absent and invalid',

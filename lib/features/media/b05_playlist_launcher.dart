@@ -33,6 +33,18 @@ class B05PlaylistPreferenceRecord {
   });
 }
 
+bool _isValidPlaylistPreference(
+  B05PlaylistProviderRegistry registry,
+  B05PlaylistPreferenceRecord preference,
+) {
+  try {
+    registry.normalize(preference.providerId, preference.normalizedReference);
+    return true;
+  } on Object {
+    return false;
+  }
+}
+
 class B05PlaylistPreferenceRepository {
   final AppDatabase _database;
   final Uuid _uuid;
@@ -253,8 +265,8 @@ class B05PlaylistController extends StateNotifier<B05PlaylistControllerState> {
       if (!mounted) return;
       final message =
           preference != null &&
-              !_registry.providers.containsKey(preference.providerId)
-          ? 'Saved playlist provider is not available in this build.'
+              !_isValidPlaylistPreference(_registry, preference)
+          ? 'Saved playlist preference is unavailable in this build. Choose an approved provider and reference.'
           : null;
       state = B05PlaylistControllerState(
         status: B05PlaylistControllerStatus.ready,
@@ -402,6 +414,7 @@ class B05PlaylistLauncherButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(b05PlaylistControllerProvider);
+    final registry = ref.watch(b05PlaylistProviderRegistryProvider);
     final controller = ref.read(b05PlaylistControllerProvider.notifier);
     final preference = state.preference;
     if (state.status == B05PlaylistControllerStatus.loading ||
@@ -414,11 +427,14 @@ class B05PlaylistLauncherButton extends ConsumerWidget {
         focusOrder: 3,
       );
     }
-    if (preference == null) {
+    if (preference == null ||
+        !_isValidPlaylistPreference(registry, preference)) {
       return B05IconAction(
         icon: Icons.playlist_add_outlined,
         label: 'Playlist launcher',
-        hint: 'Opens settings to choose an approved playlist provider.',
+        hint:
+            state.message ??
+            'Saved playlist is unavailable. Open settings to choose an approved playlist provider.',
         onPressed: () => context.push('/settings'),
         focusOrder: 3,
       );
@@ -470,7 +486,13 @@ class _B05PlaylistSettingsPanelState
     ref.listen(b05PlaylistControllerProvider, (previous, next) {
       final preference = next.preference;
       if (!mounted || preference == null) return;
-      _providerId ??= preference.providerId;
+      if (registry.providers.isNotEmpty &&
+          (_providerId == null ||
+              !registry.providers.containsKey(_providerId))) {
+        _providerId = registry.providers.containsKey(preference.providerId)
+            ? preference.providerId
+            : registry.providers.keys.first;
+      }
       if (_referenceController.text.isEmpty) {
         _referenceController.text = preference.normalizedReference;
       }
@@ -514,11 +536,14 @@ class _B05PlaylistSettingsPanelState
         ],
       );
     }
+    final savedProvider = state.preference?.providerId;
     final provider =
-        _providerId ??
-        state.preference?.providerId ??
-        registry.providers.keys.first;
-    _providerId ??= provider;
+        _providerId != null && registry.providers.containsKey(_providerId)
+        ? _providerId!
+        : savedProvider != null && registry.providers.containsKey(savedProvider)
+        ? savedProvider
+        : registry.providers.keys.first;
+    _providerId = provider;
     return B05Surface(
       child: FocusTraversalGroup(
         policy: OrderedTraversalPolicy(),
