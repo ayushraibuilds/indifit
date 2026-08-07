@@ -153,8 +153,8 @@ aid, not a compliance register.
 | B05-05 | c88a1a3 | Approved | 67a1371 | None; playlist launch remains a reserved B05-08 slot and no playlist preference is persisted here. |
 | B05-06 | 676a2ac, 7b99f52 | Approved with remediation | a252686 | None; B03 exposes no valid deletion inverse, so production delete remains confirmation-only while supported adapters can offer timed undo. |
 | B05-07 | 601fb24, 48c3985, 00f4995, 3e03438 | Approved with remediation | 9c4a537 | None; mixed reviewed mappings preserve known B02 labels alongside an explicit unknown state; text education remains independent of media. |
-| B05-08 | — | Planned | — | Mandatory bundled asset/license/provider gate; remote downloads deferred. |
-| B05-09 | — | Planned | — | — |
+| B05-08 | 1692370 |  |  | Mandatory approved bundled asset/license/provider packet is still required; remote downloads deferred. |
+| B05-09 | 1692370 |  |  | Final review/integration disposition remains with the B05 release-assurance task. |
 | B05-10 | — | Planned | — | Build credentials/device availability recorded honestly. |
 | B05-11 | — | Planned | — | — |
 
