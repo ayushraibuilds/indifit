@@ -25,9 +25,11 @@ class _NutritionGoalsSubScreenState
   late final TextEditingController _proteinController;
   late final TextEditingController _carbsController;
   late final TextEditingController _fatController;
+  late final TextEditingController _dateOfBirthController;
   NutritionGoalType _goalType = NutritionGoalType.maintenance;
   bool _seeded = false;
   bool _saving = false;
+  bool _savingEligibility = false;
 
   @override
   void initState() {
@@ -36,6 +38,7 @@ class _NutritionGoalsSubScreenState
     _proteinController = TextEditingController();
     _carbsController = TextEditingController();
     _fatController = TextEditingController();
+    _dateOfBirthController = TextEditingController();
   }
 
   @override
@@ -44,6 +47,7 @@ class _NutritionGoalsSubScreenState
     _proteinController.dispose();
     _carbsController.dispose();
     _fatController.dispose();
+    _dateOfBirthController.dispose();
     super.dispose();
   }
 
@@ -139,6 +143,22 @@ class _NutritionGoalsSubScreenState
     }
   }
 
+  Future<void> _saveEligibility() async {
+    setState(() => _savingEligibility = true);
+    try {
+      await ref
+          .read(b04GoalSettingsControllerProvider.notifier)
+          .recordEligibility(dateOfBirthLocalDate: _dateOfBirthController.text);
+      if (mounted) {
+        _showMessage('Age eligibility evidence saved for adaptive coaching.');
+      }
+    } catch (error) {
+      if (mounted) _showMessage(_errorMessage(error));
+    } finally {
+      if (mounted) setState(() => _savingEligibility = false);
+    }
+  }
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(
       context,
@@ -185,6 +205,8 @@ class _NutritionGoalsSubScreenState
         _buildCanonicalTargetCard(active),
         const SizedBox(height: 16),
         _buildGoalForm(),
+        const SizedBox(height: 16),
+        _buildEligibilityCard(),
         const SizedBox(height: 16),
         _buildConsentCard(state, enabled),
         const SizedBox(height: 16),
@@ -377,6 +399,49 @@ class _NutritionGoalsSubScreenState
                 child: const Text('Withdraw adaptive coaching consent'),
               ),
             ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _buildEligibilityCard() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Age eligibility evidence',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Adaptive calorie and readiness proposals require explicit age evidence. IndiFit does not infer age from your profile, activity or food logs. Enter a civil date in YYYY-MM-DD format; leave it blank to record that age evidence is missing.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _dateOfBirthController,
+            keyboardType: TextInputType.datetime,
+            decoration: const InputDecoration(
+              labelText: 'Date of birth',
+              hintText: 'YYYY-MM-DD',
+              helperText: 'Only the resulting eligibility state is retained.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _savingEligibility ? null : _saveEligibility,
+              icon: const Icon(Icons.verified_outlined),
+              label: Text(
+                _savingEligibility
+                    ? 'Saving…'
+                    : 'Save age eligibility evidence',
+              ),
+            ),
+          ),
         ],
       ),
     ),

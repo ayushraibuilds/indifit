@@ -96,8 +96,8 @@ class B04RecommendationEvidenceInput {
 class B04RecommendationHistoryCommand {
   final B04RecommendationEvaluation evaluation;
   final B04RecommendationHistoryScope scope;
-  final String consentEventId;
-  final String eligibilityEvaluationId;
+  final String? consentEventId;
+  final String? eligibilityEvaluationId;
   final String? goalVersionId;
   final String? readinessSnapshotId;
   final Map<String, List<B04RecommendationEvidenceInput>>
@@ -107,16 +107,20 @@ class B04RecommendationHistoryCommand {
   B04RecommendationHistoryCommand({
     required this.evaluation,
     required this.scope,
-    required String consentEventId,
-    required String eligibilityEvaluationId,
+    String? consentEventId,
+    String? eligibilityEvaluationId,
     this.goalVersionId,
     this.readinessSnapshotId,
     Map<String, Iterable<B04RecommendationEvidenceInput>>
         evidenceByRecommendationId =
         const {},
     Map<String, String?> supersedesByRecommendationId = const {},
-  }) : consentEventId = consentEventId.trim(),
-       eligibilityEvaluationId = eligibilityEvaluationId.trim(),
+  }) : consentEventId = consentEventId?.trim().isEmpty == true
+           ? null
+           : consentEventId?.trim(),
+       eligibilityEvaluationId = eligibilityEvaluationId?.trim().isEmpty == true
+           ? null
+           : eligibilityEvaluationId?.trim(),
        evidenceByRecommendationId = Map.unmodifiable(
          <String, List<B04RecommendationEvidenceInput>>{
            for (final entry in evidenceByRecommendationId.entries)
@@ -128,7 +132,10 @@ class B04RecommendationHistoryCommand {
          for (final entry in supersedesByRecommendationId.entries)
            entry.key.trim(): entry.value?.trim(),
        }) {
-    if (this.consentEventId.isEmpty || this.eligibilityEvaluationId.isEmpty) {
+    final requiresAdaptiveLineage =
+        scope != B04RecommendationHistoryScope.mealOpportunity;
+    if (requiresAdaptiveLineage &&
+        (this.consentEventId == null || this.eligibilityEvaluationId == null)) {
       throw const B04RecommendationHistoryError(
         'missing_lineage_reference',
         'Recommendation history requires consent and eligibility references.',

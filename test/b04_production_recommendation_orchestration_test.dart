@@ -285,6 +285,68 @@ void main() {
   );
 
   test(
+    'current-food issuance is independent of adaptive consent and deduplicates history',
+    () async {
+      final scenario = await _seedScenario(
+        db: db,
+        registry: registry,
+        includeAdaptiveLineage: false,
+      );
+      container = _container(db: db, registry: registry);
+
+      final orchestrator = await container!.read(
+        b04ProductionRecommendationOrchestratorProvider.future,
+      );
+      final first = await orchestrator.loadCurrentFood(
+        userId: scenario.userId,
+        localDate: scenario.localDate,
+        timezoneId: scenario.timezoneId,
+      );
+      expect(first.guidance.status, B04CurrentFoodGuidanceStatus.available);
+
+      final history = B04RecommendationHistoryRepository(database: db);
+      final issued = await history.listHistory(
+        userId: scenario.userId,
+        scope: B04RecommendationHistoryScope.mealOpportunity,
+      );
+      expect(issued, hasLength(1));
+      expect(issued.single.consentEventId, isNull);
+      expect(issued.single.eligibilityEvaluationId, isNull);
+
+      final second = await orchestrator.reloadCurrentFood(
+        userId: scenario.userId,
+        localDate: scenario.localDate,
+        timezoneId: scenario.timezoneId,
+      );
+      expect(second.guidance.status, B04CurrentFoodGuidanceStatus.available);
+      expect(
+        await history.listHistory(
+          userId: scenario.userId,
+          scope: B04RecommendationHistoryScope.mealOpportunity,
+        ),
+        hasLength(1),
+      );
+
+      await history.recordFeedback(
+        B04RecommendationFeedbackCommand(
+          userId: scenario.userId,
+          recommendationId: issued.single.id,
+          action: B04RecommendationFeedbackAction.acknowledge,
+          source: 'test',
+          localDate: scenario.localDate,
+          timezoneId: scenario.timezoneId,
+          createdAtUtc: DateTime.now().toUtc(),
+        ),
+      );
+      final withFeedback = await history.listHistory(
+        userId: scenario.userId,
+        scope: B04RecommendationHistoryScope.mealOpportunity,
+      );
+      expect(withFeedback.single.feedback, hasLength(1));
+    },
+  );
+
+  test(
     'production missing consent, eligibility, and nutrition evidence stays typed and offline',
     () async {
       final nowUtc = DateTime.now().toUtc();
@@ -337,6 +399,7 @@ Future<_Scenario> _seedScenario({
   String userId = 'user-1',
   bool includeConsumption = true,
   bool addAllergyWithoutFoodEvidence = false,
+  bool includeAdaptiveLineage = true,
 }) async {
   const timezoneId = 'Asia/Kolkata';
   final dates = LocalScheduleDateService();
@@ -358,43 +421,45 @@ Future<_Scenario> _seedScenario({
   );
 
   final eligibilityAt = nowUtc.subtract(const Duration(hours: 1));
-  await db
-      .into(db.coachingEligibilityEvaluations)
-      .insert(
-        CoachingEligibilityEvaluationsCompanion.insert(
-          id: 'eligibility-1',
-          userId: userId,
-          result: 'eligible',
-          reasonCode: 'eligible',
-          ageInputSource: 'verified_dob',
-          evidenceTimestampUtc: eligibilityAt,
-          evaluationUtc: eligibilityAt,
-          evaluationLocalDate: dates.localDateFor(eligibilityAt, timezoneId),
-          timezoneId: timezoneId,
-          policyVersion: kB04EnabledPolicyVersion,
-          minimumAgeRuleVersion: 'minimum-age-v1',
-        ),
-      );
+  if (includeAdaptiveLineage) {
+    await db
+        .into(db.coachingEligibilityEvaluations)
+        .insert(
+          CoachingEligibilityEvaluationsCompanion.insert(
+            id: 'eligibility-1',
+            userId: userId,
+            result: 'eligible',
+            reasonCode: 'eligible',
+            ageInputSource: 'verified_dob',
+            evidenceTimestampUtc: eligibilityAt,
+            evaluationUtc: eligibilityAt,
+            evaluationLocalDate: dates.localDateFor(eligibilityAt, timezoneId),
+            timezoneId: timezoneId,
+            policyVersion: kB04EnabledPolicyVersion,
+            minimumAgeRuleVersion: 'minimum-age-v1',
+          ),
+        );
 
-  final preferences = CoachingPreferenceRepository(
-    database: db,
-    dates: dates,
-    nowUtc: () => nowUtc,
-  );
-  await preferences.recordConsent(
-    CoachingConsentCommand(
-      userId: userId,
-      category: CoachingConsentCategory.adaptiveCoaching,
-      action: CoachingConsentAction.enable,
-      consentPolicyVersion: kB04AdaptiveConsentPolicyVersion,
-      copyVersion: kB04AdaptiveConsentCopyVersion,
-      timestampUtc: eligibilityAt,
-      localDate: dates.localDateFor(eligibilityAt, timezoneId),
-      timezoneId: timezoneId,
-      actorSource: 'test',
-      eventId: 'consent-1',
-    ),
-  );
+    final preferences = CoachingPreferenceRepository(
+      database: db,
+      dates: dates,
+      nowUtc: () => nowUtc,
+    );
+    await preferences.recordConsent(
+      CoachingConsentCommand(
+        userId: userId,
+        category: CoachingConsentCategory.adaptiveCoaching,
+        action: CoachingConsentAction.enable,
+        consentPolicyVersion: kB04AdaptiveConsentPolicyVersion,
+        copyVersion: kB04AdaptiveConsentCopyVersion,
+        timestampUtc: eligibilityAt,
+        localDate: dates.localDateFor(eligibilityAt, timezoneId),
+        timezoneId: timezoneId,
+        actorSource: 'test',
+        eventId: 'consent-1',
+      ),
+    );
+  }
 
   await db
       .into(db.nutritionFoods)

@@ -218,6 +218,46 @@ void main() {
     },
   );
 
+  test(
+    'settings controller appends invalid and corrected age evidence through production state',
+    () async {
+      final preferences = CoachingPreferenceRepository(
+        database: db,
+        dates: _dates,
+        nowUtc: () => DateTime.utc(2026, 8, 6, 10),
+      );
+      final controller = B04GoalSettingsController(
+        loadContext: () async => const B04ProductionUserContext(
+          userId: 'user-a',
+          localDate: '2026-08-06',
+          timezoneId: 'Asia/Kolkata',
+        ),
+        goals: NutritionGoalRepository(database: db, dates: _dates),
+        preferences: preferences,
+        dates: _dates,
+        nowUtc: () => DateTime.utc(2026, 8, 6, 10),
+      );
+
+      await controller.load();
+      await controller.recordEligibility(dateOfBirthLocalDate: '2000-02-30');
+      expect(
+        controller.state.availability!.eligibility!.result,
+        CoachingEligibilityResult.invalidEvidence,
+      );
+
+      await controller.recordEligibility(dateOfBirthLocalDate: '2000-02-29');
+      expect(
+        controller.state.availability!.eligibility!.result,
+        CoachingEligibilityResult.eligible,
+      );
+      expect(
+        await db.select(db.coachingEligibilityEvaluations).get(),
+        hasLength(2),
+      );
+      controller.dispose();
+    },
+  );
+
   testWidgets('unavailable policy state exposes reason and compact semantics', (
     tester,
   ) async {
