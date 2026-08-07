@@ -719,7 +719,12 @@ class B05MiniLessonsPanel extends ConsumerWidget {
               container: true,
               header: true,
               label: 'Mini lessons',
-              child: Text('Mini lessons', style: B05Typography.title(context)),
+              child: ExcludeSemantics(
+                child: Text(
+                  'Mini lessons',
+                  style: B05Typography.title(context),
+                ),
+              ),
             ),
             const SizedBox(height: B05Layout.space12),
             for (var index = 0; index < state.lessons.length; index++)
