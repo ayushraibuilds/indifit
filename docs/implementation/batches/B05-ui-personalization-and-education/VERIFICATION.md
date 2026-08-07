@@ -240,7 +240,7 @@ aid, not a compliance register.
 | B05-07 | 601fb24, 48c3985, 00f4995, 3e03438 | Approved with remediation | 9c4a537 | None; mixed reviewed mappings preserve known B02 labels alongside an explicit unknown state; text education remains independent of media. |
 | B05-08 | 1692370, 2cf2fb4 |  |  | Software infrastructure is complete with fail-closed unavailable/fallback behavior; external media, graphical diagram and enabled provider content activation is deferred until the approval packet is supplied. |
 | B05-09 | 1692370, 2cf2fb4 |  |  | Not blocked by deferred B05-08 content; final review/integration disposition remains with the B05 release-assurance task. |
-| B05-10 | — |  | — | Automated release matrix passes with no demonstrated defect. Android/iOS build attempts remain pending supplied API key and Android toolchain; no physical-device evidence. External B05-08 content activation remains deferred. |
+| B05-10 | 7504692 |  | — | Automated release matrix passes with no demonstrated defect. Android/iOS build attempts remain pending supplied API key and Android toolchain; no physical-device evidence. External B05-08 content activation remains deferred. |
 | B05-11 | — | Planned | — | — |
 
 ## Final review checklist
