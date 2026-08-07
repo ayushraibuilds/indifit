@@ -236,6 +236,34 @@ fabricated. Supplying the release API key, completing Android command-line
 tools/licenses, and obtaining a usable iOS device remain external follow-ups;
 they are not application defects.
 
+## B05-11 final integrated Sol disposition
+
+The fresh review started from the clean integration baseline
+`adce099a2b70e19e45cc42a8cbe9d9ab502eb7e4`. It identified three production
+blockers, which were fixed in remediation commit `af0eaf7` and merged into the
+integration branch by `b2e1a947`:
+
+1. The live Today → `/food` route now exposes the canonical B03 food-entry
+   surface with accessible edit, copy and delete controls. Mutations go
+   through `FoodRepositoryContextualActionGateway`; B03's lack of a deletion
+   inverse remains an honest confirmation-only state.
+2. Today’s selected local civil date is serialized in the route, strictly
+   parsed, passed to the food logger and supplied to B03 finalization. The
+   production regression covers past, current and future dates without a
+   fallback to the current day.
+3. The live exercise-details surface no longer contains the legacy YouTube
+   thumbnail or launcher. Seeded blank `youtube_id` values remain absent, and
+   B05 media unavailable/offline states preserve education, cues, checklists
+   and muscle information.
+
+The affected regression suite passed 35 tests. The merged integration head
+then passed the complete suite with 1,056 tests, including the three new
+production-wiring regressions. Formatting, analysis and diff validation also
+passed with no issues. The final verdict is **Approved with non-blocking
+follow-up**: the external media/rights packet, release API key, Android
+command-line tools/licenses and physical-device evidence remain deferred
+inputs, not unresolved application defects.
+
 ## Lightweight task ledger
 
 Update only when implementation/merge information exists. This is a rollback
@@ -253,42 +281,42 @@ aid, not a compliance register.
 | B05-08 | 1692370, 2cf2fb4 | Approved with non-blocking follow-up | 1b89e05 | Software infrastructure is complete with fail-closed unavailable/fallback behavior; external media, graphical diagram and enabled provider content activation is deferred until the approval packet is supplied. |
 | B05-09 | 1692370, 2cf2fb4 | Approved with non-blocking follow-up | 1b89e05 | Not blocked by deferred B05-08 content; release-assurance review found no additional onboarding defect. |
 | B05-10 | 7504692, 8b98a68, ec9af90 | Approved with non-blocking follow-up | 1362621 | Initial E8 matrix passed; fresh review found and fixed stale restored playlist-provider handling. Android/iOS build attempts remain pending supplied API key and Android toolchain; no physical-device evidence. External B05-08 content activation remains deferred. |
-| B05-11 | — | Planned | — | — |
+| B05-11 | af0eaf7 (remediation) | Approved with non-blocking follow-up | b2e1a947 | External media/rights packet, release API key, Android command-line tools/licenses and physical-device evidence remain deferred; no launch-critical application defect remains. |
 
 ## Final review checklist
 
-- [ ] Clean integration HEAD; each required B05 task has a valid fresh verdict.
-- [ ] No B01–B04 authority has been replaced, re-derived or silently mutated.
-- [ ] v19 migration and Backup v10 direct/chained/rollback/idempotency tests
+- [x] Clean integration HEAD; each required B05 task has a valid fresh verdict.
+- [x] No B01–B04 authority has been replaced, re-derived or silently mutated.
+- [x] v19 migration and Backup v10 direct/chained/rollback/idempotency tests
   pass; older backups produce safe empty B05 state.
-- [ ] Portable records include module order/visibility/collapse, progress,
+- [x] Portable records include module order/visibility/collapse, progress,
   media-pack preference/identity and playlist preference only; no binary/path/
   actual availability/verified state/progress/cache/token/raw provider payload
   exists.
-- [ ] Today answers all four questions, has a meaningful next action, and
+- [x] Today answers all four questions, has a meaningful next action, and
   consumes B03/B04 output rather than calculating nutrition/coaching.
-- [ ] Users can reorder/hide/collapse modules and safely recover defaults.
-- [ ] Food edit/copy/delete and workout complete/skip have semantic
+- [x] Users can reorder/hide/collapse modules and safely recover defaults.
+- [x] Food edit/copy/delete and workout complete/skip have semantic
   alternatives, pending/failure handling and repository-backed undo where
   destructive/reversible.
-- [ ] Semantic B05 surfaces meet light/dark, compact, large-text, focus,
+- [x] Semantic B05 surfaces meet light/dark, compact, large-text, focus,
   touch-target, screen-reader and reduced-motion checks.
-- [ ] All five named mini lessons are versioned/offline; cues/checklists and
+- [x] All five named mini lessons are versioned/offline; cues/checklists and
   primary/secondary/stabilizing labels preserve B01/B02 authority.
-- [ ] B05-08 software infrastructure fails closed, preserves device-local
+- [x] B05-08 software infrastructure fails closed, preserves device-local
   availability truth, and provides reduced-motion and accessible text/list/
   still fallbacks. If content activation is claimed, the approved, licensed
   top-20 manifest, checksums, attribution and diagram/provider packet are also
   present; otherwise the activation packet is recorded as a non-blocking
   follow-up.
-- [ ] Playlist provider/reference is allowlisted, portable and safely
+- [x] Playlist provider/reference is allowlisted, portable and safely
   launchable when configured; missing defaults render unavailable, and
   offline/malformed/app-missing failure never blocks workout.
-- [ ] Onboarding resumes incomplete state, skips completed content, follows
+- [x] Onboarding resumes incomplete state, skips completed content, follows
   selected-goal mapping and commits once through existing profile/routine owners.
-- [ ] Strict offline, permission denied, network/media/launcher failure have
+- [x] Strict offline, permission denied, network/media/launcher failure have
   honest recoverable UI.
-- [ ] Full format, analysis, test, Android build and iOS no-code-sign build are
+- [x] Full format, analysis, test, Android build and iOS no-code-sign build are
   recorded with limitations; no secrets appear in the diff.
-- [ ] Fresh Sol final review changes no application code and returns Approved,
+- [x] Fresh Sol final review changes no application code and returns Approved,
   Approved with non-blocking follow-up, or an evidence-backed Blocked verdict.
