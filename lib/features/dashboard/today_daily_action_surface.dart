@@ -214,6 +214,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                           snapshotLoading:
                               snapshotAsync.isLoading &&
                               !snapshotAsync.hasError,
+                          snapshotUnavailable: snapshotAsync.hasError,
                           relation: relation,
                         ),
                       ),
@@ -234,23 +235,45 @@ class TodayDailyActionSurface extends ConsumerWidget {
     required DashboardModuleLayoutItem item,
     required TodaySurfaceSnapshot? snapshot,
     required bool snapshotLoading,
+    required bool snapshotUnavailable,
     required TodayDateRelation relation,
   }) {
+    final calendarRead =
+        snapshot?.calendar ??
+        (snapshotUnavailable
+            ? const TodayDomainRead<CalendarReadSnapshot>.unavailable(
+                'Today information is unavailable right now. Try again.',
+              )
+            : null);
+    final nutritionRead =
+        snapshot?.nutrition ??
+        (snapshotUnavailable
+            ? const TodayDomainRead<NutritionDailyReadModel>.unavailable(
+                'Today information is unavailable right now. Try again.',
+              )
+            : null);
+    final progressRead =
+        snapshot?.progress ??
+        (snapshotUnavailable
+            ? const TodayDomainRead<B02ProgressReadModel>.unavailable(
+                'Today information is unavailable right now. Try again.',
+              )
+            : null);
     return switch (item.moduleId) {
       'today.workout' => _WorkoutModuleBody(
-        read: snapshot?.calendar,
+        read: calendarRead,
         loading: snapshotLoading,
         showBriefing: relation == TodayDateRelation.today,
         onOpenWorkoutPlan: onOpenWorkoutPlan,
       ),
       'today.meals' => _MealsModuleBody(
-        read: snapshot?.nutrition,
+        read: nutritionRead,
         loading: snapshotLoading,
         showCurrentFood: relation == TodayDateRelation.today,
         onLogMeal: onLogMeal,
       ),
       'today.progress' => _ProgressModuleBody(
-        read: snapshot?.progress,
+        read: progressRead,
         loading: snapshotLoading,
         showReview: relation == TodayDateRelation.today,
       ),
