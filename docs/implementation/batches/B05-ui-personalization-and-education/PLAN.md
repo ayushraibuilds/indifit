@@ -9,9 +9,10 @@ calculators. Every visible fact arrives through the established repository or
 controller that owns it; B05 decides only how it is composed, labelled, and
 acted upon.
 
-The approved top-20 media/diagram package is a required B05 deliverable. Work
-can start with its durable contract and text fallback, but the batch cannot be
-complete until the asset/license gate in CHARTER.md is satisfied.
+The approved top-20 media/diagram package is required for content activation,
+but the solo-development exception lets B05 complete its fail-closed software
+infrastructure and truthful fallbacks before those external inputs exist. Work
+must never substitute unapproved or arbitrary remote content.
 
 ## Target architecture
 
@@ -32,7 +33,7 @@ complete until the asset/license gate in CHARTER.md is satisfied.
                                               ┌───────────────────────┘       └───────────────────┐
                                               ▼                                                    ▼
                                v19 content progress / pack preferences           approved bundled top-20 media pack
-                                                                                   + canonical B02 mappings
+                                                                                   when supplied + canonical B02 mappings
 
        v19 playlist preference ──► provider/reference validator ──► safe external launcher
 
@@ -91,10 +92,11 @@ source of identifiers:
    fallback. It does not wait for final files or licenses.
 2. Product owner approves the exact 20 exercise IDs, rights/source terms,
    attribution, permitted derivative/use, and visual diagram source before
-   B05-08 starts.
-3. B05-08 validates the delivered assets against that manifest, bundles the
-   required offline core, and makes a text/list/still fallback available before
-   playback.
+   any B05-08 content activation. The B05-08 software boundary does not wait
+   for those external inputs under the solo-development exception.
+3. B05-08 validates any delivered assets against that manifest, bundles the
+   required offline core when supplied, and always makes a text/list/still
+   fallback available before playback. Missing content remains unavailable.
 4. On launch and after restore, a local reconciler derives available, absent or
    invalid state from assets physically present on that device. Restored
    metadata never claims that bytes are installed.
@@ -223,8 +225,8 @@ is introduced.
 
 ### Playlist launcher
 
-Settings lets the user choose a provider from the packaged allowlist and enter
-or select a provider-specific reference. The registry parser normalizes input
+When an enabled provider exists in the packaged allowlist, settings lets the
+user choose it and enter or select a provider-specific reference. The registry parser normalizes input
 to a typed reference using that provider’s allowed schemes, HTTPS hosts,
 path/identifier form, maximum length and denied query parameters; only the
 normalized value persists. Relevant workout surfaces reconstruct an approved
@@ -246,7 +248,8 @@ B05-01 durable/content/media/playlist foundation
     │     └── B05-04 Today action surface
     └── media contract only
 
-B05-01 + B05-02 + B05-05 + B05-07 + approved real asset package ──► B05-08 media, diagrams, playlist
+B05-01 + B05-02 + B05-05 + B05-07 ────────────────────────────────► B05-08 media/diagram/playlist infrastructure
+approved real asset/provider package ────────────────────────────► deferred B05-08 content activation
 B05-01 + B05-07 ───────────────────────────────────────────────────► B05-09 adaptive onboarding
                                                                └─────► final handoff tested after B05-04
 B05-04…B05-09 ───────────────────────────────────► B05-10 E8 release assurance
@@ -259,7 +262,7 @@ B05-10 ────────────────────────�
 | 1 | B05-02, B05-03 | May run in parallel after B05-01 because theme primitives and module repository have disjoint ownership; serialize any shared app shell edit. |
 | 2 | B05-04, B05-05 | May run in parallel after Wave 1. Today owns dashboard/controller files; workout owns calendar/player action files. |
 | 3 | B05-06, B05-07 | May run in parallel after B05-02 and their prerequisites. Food owns food-log paths; education owns exercise/content paths. |
-| 4 | B05-08 and B05-09 | May run in parallel after their own prerequisites when settings/exercise/workout files for B05-08 and onboarding/router files for B05-09 are confirmed disjoint. B05-09 tests final handoff after B05-04 has merged. |
+| 4 | B05-08 and B05-09 | May run in parallel after their software prerequisites when settings/exercise/workout files for B05-08 and onboarding/router files for B05-09 are confirmed disjoint. B05-09 tests final handoff after B05-04 has merged and is not blocked by deferred content activation. |
 | 5 | B05-10 | Serial clean-integration verification/remediation only. |
 | 6 | B05-11 | Serial final fresh review. |
 
@@ -284,7 +287,7 @@ B05-11 review; the reviewer does not silently edit code.
 | B05-05 | Terra High | Terra High | Workout gesture behavior and B01 command integration |
 | B05-06 | Terra High | Terra High | Food gesture behavior, undo, and B03 safety presentation |
 | B05-07 | Terra High | Terra High | Offline content/cue/muscle presentation |
-| B05-08 | Sol High | Sol High | Asset verification, privacy, external launch and mandatory license gate |
+| B05-08 | Sol High | Sol High | Fail-closed asset validation, privacy, external launch and deferred activation gate |
 | B05-09 | Terra High | Terra High | Goal-aware, resumable UI flow bounded by existing owners |
 | B05-10 | Sol High | Sol High | Integrated E8 release evidence/remediation |
 | B05-11 | Sol High | Sol High | Final production-wiring and launch-risk disposition |
@@ -302,11 +305,13 @@ B05-11 review; the reviewer does not silently edit code.
   tests prove it remains a consumer.
 - Merge swipes only after action, cancellation, duplicate tap, repository
   failure, undo, assistive alternative, and strict-offline state tests pass.
-- Merge B05-08 only with the approved manifest, verifiable licenses/checksums,
-  all 20 selected IDs, diagram text equivalent, reduced-motion fallback,
-  device-local availability reconciliation, provider-specific typed-reference
-  validation, and playlist launch failure/offline handling. Managed remote
-  download lifecycle is not a B05 acceptance condition.
+- Merge B05-08 software infrastructure only after fail-closed validation,
+  diagram text/list equivalence, reduced-motion fallback, device-local
+  availability reconciliation, provider-specific typed-reference validation,
+  and playlist launch failure/offline handling pass. The approved manifest,
+  verifiable licenses/checksums and all 20 selected IDs are required before
+  later content activation, not before the infrastructure can complete.
+  Managed remote download lifecycle is not a B05 acceptance condition.
 - B05-11 changes no application code. If it identifies a blocker, create one
   bounded remediation task, rerun affected checks, and request a fresh final
   disposition.

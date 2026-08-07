@@ -30,10 +30,10 @@ screen for visual consistency alone.
 | Design-system modernization | Semantic light/dark tokens, an 8/10/12 px radius scale, reduced direct `AppColors` use in B05-owned surfaces, restrained hierarchy, consistent typography/spacing/icons, and meal-specific accents. |
 | Responsive and accessible UI | Compact-width and large-text layouts, labelled semantics, focus order, touch-target rules, reduced-motion behavior, and Android/iOS-consistent interactions on B05-owned surfaces. |
 | Swipe interactions | Contextual edit/copy/delete food actions and complete/skip workout actions, each routed through an existing domain command with visible undo only when that owner exposes a valid inverse/restore. |
-| Exercise education | A licensed bundled offline top-20 exercise media pack, accessible interactive muscle diagrams, contribution labels, checklists, and contextual cues. Remote downloadable-pack lifecycle is a deliberately deferred follow-up. |
+| Exercise education | Fail-closed bundled-media and diagram infrastructure with accessible contribution labels, checklists, contextual cues and fallbacks. Approved top-20 media and graphical diagram content may be activated later when the external packet is supplied; remote downloadable-pack lifecycle is deferred. |
 | Mini lessons | Versioned offline lessons for RPE, progressive overload, protein, energy balance, and recovery, with portable progress. |
 | Adaptive onboarding | A goal-declared lesson path that saves and resumes progress, preserves completed sections, and commits through existing profile/routine authorities. |
-| Playlist launcher | A persisted provider/playlist preference and safe external launcher on relevant workout surfaces, with no provider account, streaming, or token integration. |
+| Playlist launcher | A persisted allowlisted provider/playlist preference and safe external launcher on relevant workout surfaces, with no provider account, streaming, or token integration. Enabled provider defaults may be deferred until their approved configuration exists. |
 | Required foundations | Stable module registry, semantic tokens, exercise/muscle metadata, versioned content, media licensing/packaging contract, and accessibility/reduced-motion contract land before dependent feature work. |
 
 ## Required outcomes
@@ -51,19 +51,21 @@ screen for visual consistency alone.
    expose a clear undo window only for owner-supported reversible destructive
    state changes, and preserve error, offline, and accessibility behavior.
 5. The five named mini lessons, contextual cues, form checklists, primary /
-   secondary / stabilizing muscle labels, and bundled top-20 exercise media
+   secondary / stabilizing muscle labels, and B05-08 media/diagram fallbacks
    work offline. A labelled text fallback remains available when visual media
    is unavailable; missing media never removes lessons, checklists, cues or
    muscle labels and never blocks a workout.
-6. Media and diagrams use approved, traceable licensing and packaging. B05
-   does not complete with placeholder, scraped, copyrighted, or unverified
-   assets.
+6. B05-08 media, diagram and playlist infrastructure fails closed for missing,
+   malformed or unapproved content. Any content activated later uses approved,
+   traceable licensing and packaging; B05 may complete with that external
+   content honestly unavailable and recorded as a non-blocking follow-up.
 7. Onboarding adapts only from an explicitly selected goal and saved content
    progress. It resumes incomplete work, skips completed sections, and does
    not infer health, dietary, safety, or coaching conditions.
-8. Users can choose and persist a supported music provider plus playlist
-   reference, then launch it from a workout surface without storing provider
-   credentials or requiring network for the rest of the workout.
+8. When a supported provider is configured, users can choose and persist its
+   playlist reference, then launch it from a workout surface without storing
+   provider credentials or requiring network for the rest of the workout.
+   Missing enabled defaults remain an honest unavailable, non-blocking state.
 9. v19/Backup v10 migration, restore, strict-offline, privacy, accessibility,
    and Android/iOS release evidence pass on the integrated B05 head.
 
@@ -72,18 +74,20 @@ screen for visual consistency alone.
 | Classification | Items | B05 disposition |
 |---|---|---|
 | Required B05 product work | All nine requested feature groups; M19 portable preferences/content state; E6/F5; E7/F6 educational experience | Mandatory in the B05 task DAG. |
-| Required B05 delivery gate | Approved top-20 media/diagram rights and source manifest; v19/v10 migration/restore; E8 platform, privacy/offline, accessibility, performance and build checks | B05 can start before approval, but cannot claim complete until the media gate and release evidence are satisfied. |
+| Required B05 delivery gate | B05-08 fail-closed media/diagram/provider infrastructure; v19/v10 migration/restore; E8 platform, privacy/offline, accessibility, performance and build checks | B05 may complete with externally supplied content unavailable when the infrastructure and release evidence pass. The rights/source packet remains required before any content activation. |
 | Optional within B05 | Extra module variants, additional non-core animations, haptics, and secondary screen polish | May ship only after required work; never substitutes for a required outcome. |
 | Post-launch | Remote downloadable-media lifecycle (including resumable/background download, partial packs, cleanup and retry orchestration), media beyond the selected top 20, social/community/gamification, provider account or streaming integration, cloud sync, a full exercise-catalogue media rollout, N8/P3/P4/P6 roadmap work | Separate product decision and task DAG. |
 | Explicitly excluded | B01–B04 domain rebuilds, a second dashboard authority, widget-side nutrition/coaching calculation, indiscriminate screen redesign, unlicensed media, web/desktop release, legal certification, marketing and infrastructure scaling | Not admitted through B05 polish work. |
 
 ## Media and provider gate
 
-The top-20 offline media pack and interactive diagrams are required B05
-features, not an optional future idea. B05-01 requires only the contract,
-registry shape and acceptance template below; it does not require the final
-assets or rights package and must not hold up B05-02 through B05-07. Before
-B05-08 starts, the product owner must approve:
+The top-20 offline media pack and interactive diagrams remain required product
+outcomes, but the solo-development exception separates their software boundary
+from external content activation. B05-01 requires only the contract, registry
+shape and acceptance template below and must not hold up B05-02 through
+B05-07. B05-08 infrastructure may be implemented and released with truthful
+unavailable/fallback states before the product owner supplies the activation
+packet. Before any content is activated, the product owner must approve:
 
 - the exact 20 stable exercise IDs;
 - a source, license, attribution/retention rules, and permitted distribution
@@ -93,10 +97,11 @@ B05-08 starts, the product owner must approve:
 - the supported provider allowlist and playlist-reference formats for the
   launcher.
 
-The implementation must use that approved manifest. If approval is unavailable,
-the batch remains planned/incomplete at the media gate; it must not silently
-replace the required media with copyrighted remote content or declare it
-post-launch.
+The implementation must use that approved manifest whenever content is
+activated. If approval or assets are unavailable, the software must remain
+truthfully unavailable and the content activation is a non-blocking follow-up;
+it must not silently replace the required media with copyrighted remote content
+or declare arbitrary content approved.
 
 ## Inherited authorities
 
@@ -119,8 +124,10 @@ B05 is complete only when:
 - dashboard, education, media-pack preference/identity, and playlist
   preferences pass v19 /
   Backup v10 direct, chained, and rollback-safe verification;
-- the approved, licensed top-20 offline pack is bundled and accessible muscle
-  diagrams are present and mapped to the selected stable exercise IDs; and
+- B05-08 software infrastructure validates and fails closed for media,
+  diagrams and playlist providers, with usable text/list/still fallbacks;
+  supplied content may be activated only after the external packet is
+  validated against the retained contract; and
 - Today, swipe actions, mini lessons, onboarding, playlist launch, reduced
   motion, compact/large-text, semantics/focus, strict-offline and Android/iOS
   checks meet the verification matrix; and

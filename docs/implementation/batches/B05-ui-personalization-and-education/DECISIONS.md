@@ -137,22 +137,26 @@ remain unknown. Personal cues remain visibly distinct from catalogue guidance.
 Lessons, cues, checklists and muscle labels are independently shippable B05-07
 content: a missing or invalid media pack never hides them or blocks a workout.
 
-## D09 — Top-20 media and diagrams are required but license-gated
+## D09 — Top-20 media and diagrams are required contracts with gated activation
 
-**Decision:** B05 ships bundled approved offline clips/animations for exactly
-20 stable exercise IDs and an interactive diagram mapped to B02 muscle IDs
-with a labelled text equivalent. Managed remote download lifecycle is a
-post-B05 follow-up, not a first-release requirement.
+**Decision:** B05 owns fail-closed infrastructure for bundled media, an
+interactive diagram mapped to B02 muscle IDs with a labelled text equivalent,
+and the privacy-minimal playlist launcher. Approved offline clips/animations
+for exactly 20 stable exercise IDs and graphical diagram content may be
+activated when the external approval packet is supplied. Managed remote
+download lifecycle is a post-B05 follow-up, not a first-release requirement.
 
 **Why:** The product explicitly requests it, while the audit found no current
 asset rights, media manifest or diagram source authority.
 
 **Implication:** B05-01 defines the registry/acceptance template without
-waiting for final files. B05-08 requires product approval of IDs,
-source/license/attribution, distribution/retention rights, package budget,
-checksums, diagram mapping and fallback. B05 cannot close without this bundle.
-It may never substitute copyrighted remote media, scraped assets or a full
-catalogue rollout.
+waiting for final files. B05-08 software is complete when registries and
+validators fail closed, missing content is truthfully unavailable, fallbacks
+remain usable, and arbitrary providers or URLs cannot launch. Any later
+activation requires product approval of IDs, source/license/attribution,
+distribution/retention rights, package budget, checksums, diagram mapping and
+fallback. It may never substitute copyrighted remote media, scraped assets or
+a full catalogue rollout.
 
 ## D10 — Onboarding adapts to a declared goal and resumes state
 
@@ -210,3 +214,22 @@ issuing approval; B05-10 already owns integration remediation.
 **Implication:** A concrete B05-11 blocker creates one scoped remediation
 task/branch. That task fixes the defect, reruns affected checks, and returns to
 a fresh B05-11 disposition.
+
+## D14 — Solo-development exception defers external content activation
+
+**Decision:** For the solo-development scope, B05-08 completion covers the
+software infrastructure and truthful unavailable/fallback behavior. The final
+approved 20-item media package, graphical diagram assets and optional enabled
+playlist-provider defaults are deferred product-content inputs. B05-09 is not
+blocked by their absence.
+
+**Why:** These inputs do not exist in the repository and cannot be invented
+without weakening the product, licensing or privacy contracts.
+
+**Implication:** The absence of the packet is a non-blocking B05 follow-up
+unless it exposes an actual runtime defect. When supplied later, every input
+must still satisfy the exact stable-ID, source/license/attribution,
+distribution-rights, checksum, package-budget, provider-allowlist,
+reduced-motion, accessible-alternative, offline and privacy requirements. No
+scraped media, copied anatomy artwork, arbitrary URL, unverified provider or
+unapproved scheme may be used as a substitute.

@@ -7,8 +7,10 @@ focused verification. A task may merge with an Approved or Approved with
 non-blocking follow-up verdict. An actual unresolved defect creates a scoped
 remediation before continuing; a historical administrative gap does not.
 
-The approved media/provider package gate is an input to B05-08. It is not
-optional and may not be bypassed with unlicensed remote assets.
+The approved media/provider package is required for any later content
+activation. Under the solo-development exception it is not a prerequisite for
+B05-08 software infrastructure, and it may not be bypassed with unlicensed
+remote assets.
 
 ## B05-01 — Durable personalization, content, media and playlist foundation
 
@@ -112,14 +114,14 @@ optional and may not be bypassed with unlicensed remote assets.
 
 | Field | Definition |
 |---|---|
-| **Objective** | Deliver the approved bundled top-20 offline animation/clip pack, an accessible interactive muscle diagram, and persisted provider/playlist launch from relevant workout surfaces. Remote download lifecycle is explicitly deferred. |
-| **Dependencies** | B05-01, B05-02, B05-05 and B05-07; accepted product-owner media/diagram/provider approval record. |
+| **Objective** | Implement fail-closed bundled top-20 media, interactive-diagram and playlist-launch infrastructure from relevant workout surfaces. Activation of externally supplied media, graphical diagram assets and provider defaults is deferred until its approval packet exists; remote download lifecycle is explicitly deferred. |
+| **Dependencies** | B05-01, B05-02, B05-05 and B05-07. The product-owner media/diagram/provider approval record is required before later content activation, not before the software boundary can complete. |
 | **Existing authority** | B05 registries/media-manifest and playlist-preference repositories; B02 muscle IDs/mappings; B01 exercise IDs; existing external URL launcher; strict-offline/privacy settings. |
-| **Likely files** | Approved bundled asset files and attribution manifest; pubspec asset declarations; device-local media resolver; exercise detail/player media widgets; diagram renderer and text equivalent; playlist preference settings and workout action wiring; tests. |
-| **Acceptance criteria** | Exactly the approved 20 stable exercise IDs resolve to bundled assets with verified checksum/source/license/attribution. Restored pack preference is reconciled against physical assets on this device and never trusted as availability. Diagram regions map only to B02 IDs, have semantic labels and a text/list equivalent. Reduced motion uses still/non-animated alternatives. Users persist an allowlisted provider/reference parsed and normalized by provider-specific scheme/host/path/length/query rules, launch only reconstructed approved URIs from workout surfaces and receive honest invalid/app-missing/offline/failure states. |
-| **Focused tests** | 20-ID manifest completeness; checksum/license/attribution validation; local available/absent/invalid reconciliation after restore; strict-offline; reduced-motion fallback; diagram region and text labels; unknown mapping; provider-specific scheme/host/path/length/query validator and normalization; external-launch success/failure/app-missing/offline; v10 playlist/pack-preference restore. |
+| **Likely files** | Media manifest/validator and attribution contract; optional approved bundled asset declarations; device-local media resolver; exercise detail/player media widgets; diagram renderer and text equivalent; playlist preference settings and workout action wiring; tests. |
+| **Acceptance criteria** | Registries and validators reject invalid or unapproved content; missing content produces truthful unavailable states; exercise cues/checklists/text education remain usable; reduced motion uses still/non-animated alternatives; diagram regions map only to B02 IDs and retain semantic text/list equivalents; workouts do not depend on media; users persist only allowlisted provider references parsed and normalized by provider-specific scheme/host/path/length/query rules; arbitrary URLs/providers cannot launch; strict-offline, app-missing and launch-failure states remain editable and non-blocking. When supplied later, the exact approved 20 stable IDs, checksums, source/license/attribution, package budget, graphical assets and provider defaults must pass the same contracts before activation. |
+| **Focused tests** | Missing/invalid/unapproved manifest and provider content fails closed; local available/absent/invalid reconciliation after restore; strict-offline; reduced-motion fallback; diagram region and text labels; unknown mapping; provider-specific scheme/host/path/length/query validator and normalization; external-launch success/failure/app-missing/offline; v10 playlist/pack-preference restore. When the external packet is supplied, add exact-20 ID, checksum/license/attribution and package-budget activation evidence. |
 | **Model / reviewer** | Sol High / fresh Sol High. |
-| **Parallelizable** | Yes, with B05-09 only when its settings/exercise/workout files are disjoint from onboarding/router files. It depends on the approved product asset input. |
+| **Parallelizable** | Yes, with B05-09 only when its settings/exercise/workout files are disjoint from onboarding/router files. Deferred external content activation is not a B05-09 dependency. |
 | **Exclusions** | Remote download lifecycle, interrupted/background downloads, partial-pack recovery, storage cleanup, retry orchestration, media beyond the approved 20, arbitrary remote embeds, third-party playback/catalog/auth/account integration, user-uploaded media, full-catalogue rollout, diagram-derived muscle calculations and social/community features. |
 
 ## B05-09 — Goal-aware, resumable adaptive onboarding
@@ -127,7 +129,7 @@ optional and may not be bypassed with unlicensed remote assets.
 | Field | Definition |
 |---|---|
 | **Objective** | Make onboarding choose only goal-relevant educational concepts, save/resume incomplete progress, skip completed sections, and hand off once through existing profile/routine authorities. |
-| **Dependencies** | B05-01 and B05-07. Final handoff verification waits for B05-04. |
+| **Dependencies** | B05-01 and B05-07. Final handoff verification waits for B05-04. Deferred B05-08 content activation does not block this task. |
 | **Existing authority** | OnboardingScreen, RoutineWizardScreen, UserProfileNotifier, existing local onboarding-draft convention, GoRouter and B05 content progress. |
 | **Likely files** | lib/features/onboarding/onboarding_screen.dart; routine_wizard_screen.dart; onboarding draft/progress adapter; scoped app_router.dart changes; profile/provider adapters; onboarding/router tests. |
 | **Acceptance criteria** | A declarative selected-goal mapping chooses relevant lesson IDs. Draft answers and current step resume after interruption; prior completed content is skipped but revisitable. Back/forward correction and validation are accessible, offline and idempotent. Profile/routine writes occur exactly once through current owners. The flow never infers medical, dietary, readiness or coaching state. Its final completion handoff is tested after B05-04 merges, but the onboarding implementation does not wait for the Today redesign. |
@@ -144,7 +146,7 @@ optional and may not be bypassed with unlicensed remote assets.
 | **Dependencies** | B05-01 through B05-09 merged on one clean integration head. |
 | **Existing authority** | Existing privacy/network guard, crash-reporting opt-in filter, health/notification permission state, build configuration, migration/backup harnesses and B01–B04 regression suites. |
 | **Likely files** | B05 verification fixtures/tests and, only for a demonstrated defect, the smallest relevant lib/android/ios/configuration file. |
-| **Acceptance criteria** | Integrated flows have truthful empty/error/retry/permission-denied/strict-offline/app-missing states. v19/v10 migration/restore pass. Top-20 bundle, diagram, playlist and onboarding contracts meet their matrix. All actual integration defects are fixed with focused regressions before the clean release candidate is handed to B05-11. Android release and iOS no-code-sign builds are attempted with supplied inputs; device evidence is recorded honestly. No secret/signing material enters source. |
+| **Acceptance criteria** | Integrated flows have truthful empty/error/retry/permission-denied/strict-offline/app-missing states. v19/v10 migration/restore pass. B05-08 infrastructure, its unavailable/fallback behavior, diagram/list contract, playlist validation and onboarding contracts meet their matrix; supplied media/provider content is checked against the retained packet before activation. The absence of that packet is non-blocking unless it causes an actual runtime defect. All actual integration defects are fixed with focused regressions before the clean release candidate is handed to B05-11. Android release and iOS no-code-sign builds are attempted with supplied inputs; device evidence is recorded honestly. No secret/signing material enters source. |
 | **Focused tests** | Complete B05 matrix; v19/v10 suite; B01–B04 nearby regression suites; privacy/offline/network interceptor checks; permissions; media/launcher failure tests; startup/config tests; build commands; targeted performance smoke measurement. |
 | **Model / reviewer** | Sol High / fresh Sol High. |
 | **Parallelizable** | No. It observes shared integration/native/configuration state. |
@@ -156,9 +158,9 @@ optional and may not be bypassed with unlicensed remote assets.
 |---|---|
 | **Objective** | Independently review the clean B05 release candidate and record an evidence-backed final disposition. Do not modify application code. |
 | **Dependencies** | B05-10. |
-| **Existing authority** | Accepted task contracts, integrated source, verification matrix, media/license approval record and B01–B04 ownership boundaries. |
+| **Existing authority** | Accepted task contracts, integrated source, verification matrix, media/license approval record when activation is claimed, the B05-08 fail-closed contract and B01–B04 ownership boundaries. |
 | **Likely files** | VERIFICATION.md task ledger/final evidence only. A real blocker creates a separate narrowly scoped remediation task/branch; B05-11 itself changes no application code. |
-| **Acceptance criteria** | Fresh review covers production wiring, four-question Today semantics, personalization persistence, v19/v10 safety, top-20 rights/manifest, external launcher/privacy, onboarding resume, accessibility/reduced motion, platform builds and regressions. Verdict is Approved, Approved with non-blocking follow-up, or evidence-backed Blocked. A blocker triggers one scoped remediation, affected-check rerun and a fresh B05-11 disposition rather than reviewer-authored implementation. |
+| **Acceptance criteria** | Fresh review covers production wiring, four-question Today semantics, personalization persistence, v19/v10 safety, B05-08 fail-closed infrastructure and unavailable/fallback behavior, top-20 rights/manifest when activation is claimed, external launcher/privacy, onboarding resume, accessibility/reduced motion, platform builds and regressions. Deferred external content is recorded as a non-blocking follow-up unless a runtime defect is evidenced. Verdict is Approved, Approved with non-blocking follow-up, or evidence-backed Blocked. A blocker triggers one scoped remediation, affected-check rerun and a fresh B05-11 disposition rather than reviewer-authored implementation. |
 | **Focused tests** | Full command matrix in VERIFICATION.md, B05-focused suites, migration/backup suite, format/analyze/full test, Android release and iOS no-code-sign build when inputs permit, final diff review. |
 | **Model / reviewer** | Sol High / fresh Sol High. |
 | **Parallelizable** | No. It must examine one clean integration head. |

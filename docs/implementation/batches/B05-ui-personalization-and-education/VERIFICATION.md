@@ -8,10 +8,12 @@ non-blocking follow-up. A new review is necessary only after a concrete
 remediation; historical transcript gaps do not create speculative rework.
 
 The approved rights/source/manifest record for the top-20 media, anatomy
-diagram and playlist-provider formats is required evidence for B05-08 and the
-final gate. B05-01 needs only the contract/template that will validate that
-record; it does not wait for final files/licenses. Their absence leaves B05
-incomplete rather than converting the feature to optional polish.
+diagram and playlist-provider formats is required before any corresponding
+content activation. B05-08 infrastructure is verified independently through
+its fail-closed, unavailable, fallback, reduced-motion, offline and privacy
+matrix. B05-01 needs only the contract/template that will validate the record;
+the external packet may remain a non-blocking follow-up when no activation is
+claimed.
 
 ## Required commands
 
@@ -71,15 +73,17 @@ available, record the attempted command and limitation honestly.
 | Food swipe actions | Edit/copy/delete swipe and button/menu equivalent; cancel; pending/double input; delete restore/correction undo/expiry/failure; unsupported-undo confirmation; meal icon/accent mapping | B03 remains authoritative; deletion undo uses a supported restore or append-only correction, never list-local rollback; no fabricated totals; accents come from registered semantics; strict-offline/retry remains usable. |
 | Lessons, cues and checklists | Five exact topics; stable ID/version; complete/dismiss/revisit/revision; personal/catalogue cue overlay; contextual checklist | Lessons work offline; progress is versioned/portable; personal vs catalogue guidance is clear; content does not infer health/diet/coaching state. |
 | Muscle labels and diagrams | Primary/secondary/stabilizing/unknown mapping; approved B02-ID-to-region registry; semantic diagram region; labelled text/list equivalent; reduced motion | Diagram and list agree with canonical mappings; unknown remains unknown; visual is never the only representation or a new taxonomy/calculation. |
-| Top-20 media bundle | Exact 20 stable exercise IDs; signed-off source/license/attribution; checksum; bundled/local available/absent/invalid reconciliation after restore; strict offline | All 20 approved items resolve from the bundled assets offline; missing/invalid local state has honest still/text/checklist fallback; restored metadata never asserts physical availability; no unverified remote fetch or binary backup. |
+| Top-20 media bundle | Fail-closed exact-20 manifest/validator boundary; bundled/local available/absent/invalid reconciliation after restore; strict offline; reduced-motion and text/checklist fallback | Missing, malformed or unapproved content remains truthfully unavailable; cues/checklists/text education remain usable; restored metadata never asserts physical availability; no unverified remote fetch or binary backup. When the external packet is supplied, a separate activation check proves all 20 approved IDs, source/license/attribution, checksums and package budget. |
 | Playlist launcher | Provider allowlist; scheme/host/path/identifier/length/query contract; typed-reference normalization; preference persistence/restore; valid launch; malformed reference; app missing; strict offline; launcher failure | Only normalized, reconstructed provider URIs launch; failure is editable/non-blocking; no token/account/catalog/playback data persists. |
 | Adaptive onboarding | First run; each selected-goal mapping; draft interruption/resume; completed step skip/revisit; correction/back; invalid field; duplicate submission; profile/routine handoff; offline/deep route | Goal mapping is declarative; incomplete state resumes; completed work is not forced again; existing profile/routine path executes once; no inferred condition/coach state. |
 | Privacy/offline/platform | Strict-offline flag/network interceptor; external media/URL attempt; photo/telemetry state; Health/notification denied/granted/unavailable; Android/iOS configuration | Core daily, education and onboarding flows remain locally useful; user sees truthful permission/launch/network state; raw photos/prompts/paths/binaries/tokens are not persisted or exported. |
 
-## Media and licensing evidence packet
+## Deferred media and licensing activation packet
 
-B05-08 cannot be marked complete until the following are available in the
-implementation evidence:
+The following packet is required before externally supplied media, graphical
+diagram content or enabled provider defaults are activated. Its absence does
+not block B05-08 software completion when the fail-closed and fallback matrix
+passes:
 
 - [ ] The approved list of exactly 20 stable exercise IDs.
 - [ ] Per asset and diagram source, license, permitted distribution/derivative
@@ -107,14 +111,16 @@ implementation evidence:
    undo behavior against their actual B01/B03 commands.
 5. After B05-07, verify all five named lessons, versioned progress, offline
    cues/checklists and muscle contribution labels.
-6. Before B05-08, review the complete media/provider approval packet. After
-   it, verify all 20 IDs, checksum/source/license state, device-local
-   reconciliation after restore, bundled offline behavior, diagram fallback,
-   reduced motion and launcher failure/offline handling. Managed remote
-   downloads are not a B05 test obligation.
+6. Before any B05-08 content activation, review the complete media/provider
+   approval packet. Independently verify the infrastructure's missing/invalid
+   states, device-local reconciliation after restore, diagram fallback,
+   reduced motion and launcher failure/offline handling. When the packet is
+   supplied, verify all 20 IDs and checksum/source/license state before
+   activation. Managed remote downloads are not a B05 test obligation.
 7. B05-09 may implement after B05-01 and B05-07. After B05-04 merges, run its
    final interruption/resume/skip/revisit and profile/routine handoff tests
-   across each declared goal mapping.
+   across each declared goal mapping; deferred B05-08 content does not block
+   this verification.
 8. B05-10 owns the full B05 matrix, B01–B04 nearby regressions, build attempts
    and actual integration-defect remediation on a clean integration head.
 9. During B05-10, record Android/iOS build results, current physical-device
@@ -132,7 +138,7 @@ implementation evidence:
 |---|---|---|
 | Today and personalization | Four-question action surface; stable reorder/hide/collapse; preference restore/fallback | New dashboard product domains or arbitrary user widgets. |
 | Food and workout actions | Repository-backed gestures, alternatives, undo/failure/strict-offline behavior | New B01/B03 mutation semantics or nutrition/workout algorithms. |
-| Education and media | Versioned five-topic lessons; approved bundled offline top-20 pack; accessible diagrams; local reconciliation that never trusts restored availability | Remote download lifecycle, content/media beyond 20, or rights/procurement input not supplied by product owner. |
+| Education and media | Versioned five-topic lessons; fail-closed bundled-media/diagram infrastructure; accessible text/list/still fallbacks; local reconciliation that never trusts restored availability | External top-20 assets, graphical diagram content, provider defaults and rights/procurement packet are deferred until activation; remote download lifecycle and content/media beyond 20 remain out of scope. |
 | Playlist launch | Persisted allowlisted provider/reference and external launch failure states | Provider account/auth/catalog/streaming or arbitrary URL support. |
 | Onboarding | Goal-declared relevance, draft resume, completion skip/revisit, profile/routine handoff | Behavioral/medical/dietary/coaching inference or a second profile store. |
 | Accessibility and compact layout | Shared semantics/focus/touch/motion contract plus scoped widget matrix | Fabricated physical-device acceptance; unscoped full-app restyle. |
@@ -146,15 +152,15 @@ aid, not a compliance register.
 
 | Task | Implementation commit | Final verdict | Merge commit | Known follow-ups |
 |---|---|---|---|---|
-| B05-01 | 794bfd5, 5f436c1 | Approved with remediation | 1c82e0c | Media/provider approval packet and final top-20 assets remain required before B05-08; managed remote downloads are deferred. |
+| B05-01 | 794bfd5, 5f436c1 | Approved with remediation | 1c82e0c | External media/provider content activation remains deferred; managed remote downloads are deferred. |
 | B05-02 | 1762c5c, e33cada | Approved with remediation | 5048884 | None; semantic primitives are the contract consumed by later B05 presentation tasks. |
 | B05-03 | 179a505, cc6e244 | Approved with remediation | 3cc2691 | None; Today composition consumes the stable registry/repository contract in B05-04. |
 | B05-04 | fe5529e, d36d16a | Approved with remediation | edcf4a4 | None; Today read failures render typed unavailable/retry states without replacing B01–B04 authorities. |
 | B05-05 | c88a1a3 | Approved | 67a1371 | None; playlist launch remains a reserved B05-08 slot and no playlist preference is persisted here. |
 | B05-06 | 676a2ac, 7b99f52 | Approved with remediation | a252686 | None; B03 exposes no valid deletion inverse, so production delete remains confirmation-only while supported adapters can offer timed undo. |
 | B05-07 | 601fb24, 48c3985, 00f4995, 3e03438 | Approved with remediation | 9c4a537 | None; mixed reviewed mappings preserve known B02 labels alongside an explicit unknown state; text education remains independent of media. |
-| B05-08 | 1692370, 2cf2fb4 |  |  | Mandatory approved bundled asset/license/provider packet is still required; remote downloads deferred. |
-| B05-09 | 1692370, 2cf2fb4 |  |  | Final review/integration disposition remains with the B05 release-assurance task. |
+| B05-08 | 1692370, 2cf2fb4 |  |  | Software infrastructure is complete with fail-closed unavailable/fallback behavior; external media, graphical diagram and enabled provider content activation is deferred until the approval packet is supplied. |
+| B05-09 | 1692370, 2cf2fb4 |  |  | Not blocked by deferred B05-08 content; final review/integration disposition remains with the B05 release-assurance task. |
 | B05-10 | — | Planned | — | Build credentials/device availability recorded honestly. |
 | B05-11 | — | Planned | — | — |
 
@@ -178,11 +184,15 @@ aid, not a compliance register.
   touch-target, screen-reader and reduced-motion checks.
 - [ ] All five named mini lessons are versioned/offline; cues/checklists and
   primary/secondary/stabilizing labels preserve B01/B02 authority.
-- [ ] The approved, licensed bundled top-20 asset manifest, checksums,
-  attribution, device-local availability reconciliation, reduced-motion
-  fallback and accessible diagram text equivalent are present.
+- [ ] B05-08 software infrastructure fails closed, preserves device-local
+  availability truth, and provides reduced-motion and accessible text/list/
+  still fallbacks. If content activation is claimed, the approved, licensed
+  top-20 manifest, checksums, attribution and diagram/provider packet are also
+  present; otherwise the activation packet is recorded as a non-blocking
+  follow-up.
 - [ ] Playlist provider/reference is allowlisted, portable and safely
-  launchable; offline/malformed/app-missing failure never blocks workout.
+  launchable when configured; missing defaults render unavailable, and
+  offline/malformed/app-missing failure never blocks workout.
 - [ ] Onboarding resumes incomplete state, skips completed content, follows
   selected-goal mapping and commits once through existing profile/routine owners.
 - [ ] Strict offline, permission denied, network/media/launcher failure have
