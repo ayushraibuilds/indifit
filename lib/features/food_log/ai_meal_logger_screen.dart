@@ -17,6 +17,7 @@ import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/utils/natural_meal_parser.dart';
+import 'food_log_surface.dart';
 
 class AiMealLoggerScreen extends ConsumerStatefulWidget {
   final String mealType; // "breakfast", "lunch", "dinner", "snack"
@@ -671,6 +672,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                             fontSize: 13,
                           ),
                         ),
+                        const SizedBox(height: 20),
+
+                        // Keep the existing B03 log reachable from the live
+                        // route so corrections apply to persisted entries.
+                        FoodLogEntriesPanel(date: logDate),
                         const SizedBox(height: 20),
 
                         // 1. Text Estimator Input Card

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/backup/backup_v10.dart';
+import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/fixtures/b05_foundation_registry.dart';
 import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/theme/app_theme.dart';
@@ -12,7 +13,9 @@ import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/b02_muscle_volume_models.dart';
 import 'package:indifit/features/education/b05_education_content.dart';
 import 'package:indifit/features/exercise_library/exercise_details_sheet.dart';
+import 'package:indifit/features/media/b05_media_bundle.dart';
 import 'package:indifit/features/media/b05_muscle_diagram.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -408,6 +411,7 @@ void main() {
       difficulty: 'Intermediate',
       formCues: 'Keep your feet grounded.',
       commonMistakes: 'Do not bounce the bar.',
+      youtubeId: '',
       isCustom: false,
     );
     await tester.pumpWidget(
@@ -437,7 +441,80 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Exercise education'), findsOneWidget);
     expect(find.text('Interactive muscle diagram'), findsOneWidget);
+    expect(find.text('INSTRUCTION VIDEO'), findsNothing);
+    expect(find.byIcon(Icons.play_circle_fill_rounded), findsNothing);
+    expect(find.byType(Image), findsNothing);
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });
+
+  testWidgets(
+    'seeded blank youtube ids stay offline and keep education guidance',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        PrivacyPolicyNotifier.prefOfflineOnly: true,
+      });
+      final database = AppDatabase.memory();
+      addTearDown(database.close);
+      late Exercise exercise;
+      await tester.runAsync(() async {
+        await database.upsertSeededExercisesFromAsset();
+        exercise = (await database.select(database.exercises).get()).first;
+      });
+      expect(exercise.youtubeId, '');
+
+      final cues = exercise.formCues.split('\n');
+      final mistakes = exercise.commonMistakes.split('\n');
+      final model = B05ExerciseEducationModel(
+        exerciseName: exercise.name,
+        stableExerciseId: exercise.stableId ?? exercise.name,
+        catalogueCues: cues,
+        catalogueMistakes: mistakes,
+        personalCues: const [],
+        checklist: [B05ExerciseChecklistItem(id: 'setup', label: cues.first)],
+        muscles: const B05MuscleLabelSet(labels: [], isUnknown: true),
+      );
+      final prefs = await SharedPreferences.getInstance();
+      final offlinePolicy = PrivacyPolicyNotifier(prefs);
+      final mediaController =
+          B05MediaBundleController(
+              source: const B05NoApprovedMediaManifestSource(),
+              preferenceRepository: B05MediaPackPreferenceRepository(
+                database: database,
+              ),
+              userId: 'seeded-test-user',
+            )
+            ..state = const B05MediaBundleState(
+              status: B05MediaBundleStatus.unavailable,
+              message: 'Approved media is unavailable in this test build.',
+            );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            privacyPolicyProvider.overrideWith((ref) => offlinePolicy),
+            b05MediaBundleControllerProvider.overrideWith(
+              (ref) => mediaController,
+            ),
+            b05ExerciseEducationProvider.overrideWith(
+              (ref, query) async => model,
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(body: ExerciseDetailsSheet(exercise: exercise)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Exercise education'), findsOneWidget);
+      expect(find.text('Offline exercise media'), findsOneWidget);
+      expect(find.text('Exercise media is unavailable'), findsOneWidget);
+      expect(find.text('INSTRUCTION VIDEO'), findsNothing);
+      expect(find.byIcon(Icons.play_circle_fill_rounded), findsNothing);
+      expect(find.byType(Image), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
