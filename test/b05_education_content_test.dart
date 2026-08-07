@@ -208,6 +208,36 @@ void main() {
     expect(unknown.labels, isEmpty);
   });
 
+  test('mixed reviewed mappings retain known labels beside unknown IDs', () {
+    final mapper = const B05MuscleLabelMapper();
+    final mixed = mapper.map(
+      B02MuscleVolumeMapping(
+        exerciseId: 'bench',
+        status: B02MappingStatus.reviewed,
+        source: 'b02-test',
+        catalogVersion: 1,
+        contributions: [
+          B02MuscleContribution(
+            muscleId: 'chest',
+            role: B02MuscleRole.primary,
+            contributionBasisPoints: 5000,
+          ),
+          B02MuscleContribution(
+            muscleId: 'future-muscle',
+            role: B02MuscleRole.secondary,
+            contributionBasisPoints: 5000,
+          ),
+        ],
+      ),
+    );
+    expect(mixed.isUnknown, isTrue);
+    expect(mixed.forRole(B02MuscleRole.primary).single.displayName, 'Chest');
+    expect(
+      mixed.labels.where((label) => label.role == null).single.displayName,
+      'Unknown muscle',
+    );
+  });
+
   test(
     'lesson controller exposes explicit lifecycle actions without duplicate rows',
     () async {

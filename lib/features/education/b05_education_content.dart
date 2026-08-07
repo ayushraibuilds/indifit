@@ -1052,14 +1052,20 @@ class _B05ExerciseEducationPanelState
               ),
             const SizedBox(height: B05Layout.space12),
             _sectionHeading(context, 'Muscle contribution'),
-            if (model.muscles.isUnknown)
+            if (model.muscles.isUnknown && model.muscles.labels.isEmpty)
               const B05StatusMessage(
                 status: B05SemanticStatus.unavailable,
                 label: 'Muscle contribution is unknown',
                 value:
                     'No reviewed B02 mapping is available for this exercise.',
               )
-            else
+            else ...[
+              if (model.muscles.isUnknown)
+                const B05StatusMessage(
+                  status: B05SemanticStatus.warning,
+                  label: 'Some muscle contributions are unknown',
+                  value: 'Known reviewed B02 labels are shown below.',
+                ),
               ...B02MuscleRole.values.map((role) {
                 final labels = model.muscles
                     .forRole(role)
@@ -1067,6 +1073,10 @@ class _B05ExerciseEducationPanelState
                 if (labels.isEmpty) return const SizedBox.shrink();
                 return _muscleRoleGroup(context, role, labels);
               }),
+              ...model.muscles.labels
+                  .where((label) => label.role == null)
+                  .map((label) => _unknownMuscleLabel(context, label)),
+            ],
           ],
         ),
       ),
@@ -1163,6 +1173,21 @@ class _B05ExerciseEducationPanelState
       ),
     ),
   );
+
+  Widget _unknownMuscleLabel(BuildContext context, B05MuscleLabel label) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: B05Layout.space8),
+        child: Semantics(
+          container: true,
+          label: 'Unknown muscle contribution',
+          value: label.displayName,
+          child: B05StatusMessage(
+            status: B05SemanticStatus.unavailable,
+            label: 'Unknown muscle contribution',
+            value: label.displayName,
+          ),
+        ),
+      );
 
   static String _title(String value) =>
       value.isEmpty ? value : '${value[0].toUpperCase()}${value.substring(1)}';
