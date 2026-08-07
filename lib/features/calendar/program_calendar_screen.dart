@@ -10,6 +10,7 @@ import '../travel/travel_controller.dart';
 import 'calendar_controller.dart';
 import 'calendar_read_model.dart';
 import 'occurrence_actions_sheet.dart';
+import 'workout_contextual_actions.dart';
 
 /// Calendar MVP for dated B01 occurrences. The selected date and view are
 /// Riverpod-memory state; occurrence data remains repository-owned.
@@ -86,66 +87,18 @@ class ProgramCalendarScreen extends ConsumerWidget {
     CalendarView.month => 'Month',
   };
 
-  Color _statusColor(String status, bool isDeload) {
-    if (isDeload) return Colors.purple;
-    return switch (status) {
-      'completed' => Colors.green,
-      'partiallyCompleted' => Colors.teal,
-      'inProgress' => Colors.cyan,
-      'rescheduled' => Colors.amber,
-      'skipped' => Colors.grey,
-      'cancelled' => Colors.red,
-      _ => AppColors.primary,
-    };
-  }
-
   Widget _buildOccurrenceCard(
     BuildContext context,
     CalendarOccurrenceReadItem item, {
     required bool hasTravelOverride,
-  }) {
-    final occurrence = item.occurrence;
-    final color = _statusColor(occurrence.status, item.isDeload);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      color: AppColors.cardBackground,
-      child: ListTile(
-        onTap: () => _showActions(context, item),
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.2),
-          child: Icon(
-            occurrence.status == 'completed'
-                ? Icons.check_circle_rounded
-                : occurrence.status == 'inProgress'
-                ? Icons.play_circle_fill_rounded
-                : Icons.fitness_center_rounded,
-            color: color,
-          ),
-        ),
-        title: Text(
-          item.template.name,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontFamily: GoogleFonts.outfit().fontFamily,
-          ),
-        ),
-        subtitle: Text(
-          '${occurrence.effectiveLocalDate} • ${item.block.name} • Week ${item.week.programWeekOrdinal + 1}${item.isDeload ? ' • Deload' : ''}${hasTravelOverride ? ' • Travel equipment' : ''}${item.isOverdue ? ' • Overdue' : ''}',
-          style: TextStyle(
-            color: item.isOverdue ? Colors.orange : Colors.grey,
-            fontWeight: item.isOverdue ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        trailing: Semantics(
-          label: 'Status ${occurrence.status}',
-          child: Text(
-            occurrence.status,
-            style: TextStyle(color: color, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
-    );
-  }
+  }) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: WorkoutContextualActions(
+      item: item,
+      hasTravelOverride: hasTravelOverride,
+      onOpenDetails: () => _showActions(context, item),
+    ),
+  );
 
   Widget _buildOccurrences(
     BuildContext context,

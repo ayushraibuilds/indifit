@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
-import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
-import '../workout_player/b02_strength_execution_controller.dart';
 import 'calendar_controller.dart';
+import 'workout_contextual_launcher.dart';
 
 /// Modal action sheet for calendar occurrences exposing B01 domain actions.
 class OccurrenceActionsSheet extends ConsumerStatefulWidget {
@@ -28,11 +26,12 @@ class _OccurrenceActionsSheetState
 
   Future<void> _startWorkout() async {
     final occurrence = widget.occurrenceItem.occurrence;
-    final dates = ref.read(localScheduleDateServiceProvider);
-    final startsOutsideEffectiveDate =
-        dates.todayIn(occurrence.effectiveTimezoneId) !=
-        occurrence.effectiveLocalDate;
-    if (startsOutsideEffectiveDate) {
+    final needsConfirmation =
+        WorkoutContextualLauncher.requiresDateConfirmation(
+          ref,
+          widget.occurrenceItem,
+        );
+    if (needsConfirmation) {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -56,65 +55,15 @@ class _OccurrenceActionsSheetState
     }
     setState(() => _isLoading = true);
     try {
-      final activityType = B02ActivityType.parse(
-        widget.occurrenceItem.template.activityType,
+      final target = await WorkoutContextualLauncher.prepare(
+        ref: ref,
+        item: widget.occurrenceItem,
+        confirmedOutsideEffectiveDate: needsConfirmation,
       );
-      final isStrength = activityType == B02ActivityType.strength;
-      if (isStrength) {
-        final coverage = await ref
-            .read(strengthExecutionCompatibilityAdapterProvider)
-            .checkScheduledCoverage(occurrence.id);
-        if (coverage.supported) {
-          final b02 = ref.read(b02StrengthExecutionControllerProvider.notifier);
-          if (occurrence.status == 'inProgress') {
-            await b02.resumeScheduled(occurrence.id);
-          } else {
-            await b02.startScheduled(
-              occurrenceId: occurrence.id,
-              commandId: 'b02-start-${DateTime.now().millisecondsSinceEpoch}',
-              confirmedOutsideEffectiveDate: startsOutsideEffectiveDate,
-            );
-          }
-          final b02State = ref.read(b02StrengthExecutionControllerProvider);
-          if (b02State.status == B02StrengthExecutionStatus.ready &&
-              b02State.launch != null &&
-              mounted) {
-            Navigator.pop(context);
-            await context.push(
-              '/b02-strength-player',
-              extra: {'launch': b02State.launch},
-            );
-            return;
-          }
-          // In-progress v1 drafts intentionally remain on the retained B01
-          // route; the successor reports this as recovery rather than guessing.
-          if (b02State.status != B02StrengthExecutionStatus.recovery) {
-            throw StateError(
-              b02State.errorMessage ??
-                  'B02 strength draft could not be started.',
-            );
-          }
-        }
-      } else if (activityType != B02ActivityType.legacy) {
-        throw StateError(
-          'Scheduled ${activityType.dbValue} activity uses the typed activity flow; it must not open the legacy strength player.',
-        );
-      }
-      final adapter = ref.read(workoutExecutionCompatibilityAdapterProvider);
-      final launchData = occurrence.status == 'inProgress'
-          ? await adapter.resumeScheduledOccurrence(occurrence.id)
-          : await adapter.startScheduledOccurrence(
-              occurrenceId: occurrence.id,
-              commandId: 'cmd-start-${DateTime.now().millisecondsSinceEpoch}',
-              confirmedOutsideEffectiveDate: startsOutsideEffectiveDate,
-            );
 
       if (mounted) {
-        Navigator.pop(context); // Close sheet
-        await context.push(
-          '/workout-player',
-          extra: {'scheduledLaunch': launchData},
-        );
+        Navigator.pop(context);
+        await WorkoutContextualLauncher.push(context, target);
       }
     } catch (e) {
       if (mounted) {
