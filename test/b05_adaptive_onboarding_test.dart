@@ -6,6 +6,7 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/features/education/b05_education_content.dart';
 import 'package:indifit/features/onboarding/b05_adaptive_onboarding.dart';
+import 'package:indifit/features/onboarding/widgets/onboarding_step_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -104,13 +105,14 @@ void main() {
   });
 
   test('routine draft store restores bounded fields and clears them', () async {
+    final longInjuryNote = List.filled(600, 'x').join();
     SharedPreferences.setMockInitialValues({
       'onboarding_draft_routine_step': 99,
       'onboarding_draft_routine_goal': 'strength',
-      'onboarding_draft_routine_equipment': 'gym',
+      'onboarding_draft_routine_equipment': 'full_gym',
       'onboarding_draft_routine_days': 5,
       'onboarding_draft_routine_experience': 'advanced',
-      'onboarding_draft_routine_injuries': 'none',
+      'onboarding_draft_routine_injuries': longInjuryNote,
     });
     const store = B05OnboardingDraftStore();
 
@@ -118,10 +120,118 @@ void main() {
     expect(restored, isNotNull);
     expect(restored!.currentStep, 4);
     expect(restored.selectedGoal, 'strength');
+    expect(restored.selectedEquipment, 'gym');
     expect(restored.daysPerWeek, 5);
+    expect(restored.injuries, hasLength(512));
 
     await store.clearRoutineDraft();
     expect(await store.readRoutineDraft(), isNull);
+  });
+
+  test('profile draft restores only bounded, recognized values', () async {
+    SharedPreferences.setMockInitialValues({
+      'onboarding_draft_page': 99,
+      'onboarding_draft_sex': 'unspecified',
+      'onboarding_draft_name': List.filled(140, 'n').join(),
+      'onboarding_draft_age': List.filled(30, '9').join(),
+      'onboarding_draft_activity': 'adaptive',
+      'onboarding_draft_goal': 'coach-inferred',
+      'onboarding_draft_diet': 'unknown',
+    });
+    const store = B05OnboardingDraftStore();
+
+    final restored = await store.readProfileDraft();
+
+    expect(restored, isNotNull);
+    expect(restored!.currentPage, 7);
+    expect(restored.sex, isNull);
+    expect(restored.name, hasLength(100));
+    expect(restored.age, hasLength(16));
+    expect(restored.activityLevel, 'moderate');
+    expect(restored.goal, 'maintain');
+    expect(restored.dietPreference, 'veg');
+  });
+
+  test(
+    'profile draft save removes a stale sex answer and can be cleared',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'onboarding_draft_page': 1,
+        'onboarding_draft_sex': 'male',
+      });
+      const store = B05OnboardingDraftStore();
+
+      await store.saveProfileDraft(
+        const B05ProfileOnboardingDraft(
+          currentPage: 6,
+          sex: null,
+          name: '  Priya  ',
+          age: '31',
+          height: '165',
+          weight: '62',
+          activityLevel: 'light',
+          goal: 'lose',
+          targetWeight: '58',
+          dietPreference: 'vegan',
+        ),
+      );
+
+      final restored = await store.readProfileDraft();
+      expect(restored!.currentPage, 6);
+      expect(restored.sex, isNull);
+      expect(restored.name, 'Priya');
+      expect(restored.goal, 'lose');
+
+      await store.clearProfileDraft();
+      expect(await store.readProfileDraft(), isNull);
+    },
+  );
+
+  testWidgets('onboarding choice semantics and reduced motion remain usable', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    var tapped = false;
+    try {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp(
+            home: Scaffold(
+              body: OnboardingSelectionCard(
+                title: 'Male',
+                icon: Icons.male,
+                selected: true,
+                onTap: () => tapped = true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Male')),
+        matchesSemantics(
+          isButton: true,
+          hasSelectedState: true,
+          isSelected: true,
+          hasTapAction: true,
+          label: 'Male',
+          hint: 'Select Male.',
+        ),
+      );
+      expect(
+        tester
+            .widget<AnimatedContainer>(find.byType(AnimatedContainer))
+            .duration,
+        Duration.zero,
+      );
+
+      await tester.tap(find.byType(OnboardingSelectionCard));
+      expect(tapped, isTrue);
+    } finally {
+      semantics.dispose();
+    }
   });
 
   testWidgets('goal lesson path exposes semantic non-gesture actions', (

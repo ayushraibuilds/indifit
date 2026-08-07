@@ -985,6 +985,7 @@ class _B05ExerciseEducationPanelState
       catalogueMistakes: widget.catalogueMistakes,
     );
     final state = ref.watch(b05ExerciseEducationProvider(query));
+    final visualRegistry = ref.watch(b05MuscleVisualRegistryProvider);
     return Semantics(
       container: true,
       label: 'Exercise education',
@@ -1000,13 +1001,17 @@ class _B05ExerciseEducationPanelState
             label: 'Exercise education is unavailable',
             value: error.toString(),
           ),
-          data: (model) => _buildContent(context, model),
+          data: (model) => _buildContent(context, model, visualRegistry),
         ),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, B05ExerciseEducationModel model) {
+  Widget _buildContent(
+    BuildContext context,
+    B05ExerciseEducationModel model,
+    B05MuscleVisualRegistry? visualRegistry,
+  ) {
     return Material(
       type: MaterialType.transparency,
       child: SingleChildScrollView(
@@ -1087,7 +1092,10 @@ class _B05ExerciseEducationPanelState
                   .map((label) => _unknownMuscleLabel(context, label)),
             ],
             const SizedBox(height: B05Layout.space12),
-            B05InteractiveMuscleDiagram(muscles: model.muscles),
+            B05InteractiveMuscleDiagram(
+              muscles: model.muscles,
+              visualRegistry: visualRegistry,
+            ),
           ],
         ),
       ),

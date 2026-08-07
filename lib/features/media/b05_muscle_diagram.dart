@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/fixtures/b02_muscle_catalog.dart';
 import '../../core/fixtures/b05_foundation_registry.dart';
@@ -30,6 +31,13 @@ class B05MuscleDiagramValidator {
     }
   }
 }
+
+/// Product supplies the approved packaged diagram registry. Until that
+/// rights/mapping packet exists, the null default keeps the canonical text
+/// equivalent visible and makes the diagram honestly unavailable.
+final b05MuscleVisualRegistryProvider = Provider<B05MuscleVisualRegistry?>(
+  (_) => null,
+);
 
 /// Interactive region/list projection for canonical B02 labels. The visual
 /// region packet is injected because its source and rights are product input;

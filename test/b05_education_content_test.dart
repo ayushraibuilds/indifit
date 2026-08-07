@@ -12,6 +12,7 @@ import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/b02_muscle_volume_models.dart';
 import 'package:indifit/features/education/b05_education_content.dart';
 import 'package:indifit/features/exercise_library/exercise_details_sheet.dart';
+import 'package:indifit/features/media/b05_muscle_diagram.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -416,6 +417,16 @@ void main() {
           b05ExerciseEducationProvider.overrideWith(
             (ref, query) async => model,
           ),
+          b05MuscleVisualRegistryProvider.overrideWithValue(
+            B05MuscleVisualRegistry([
+              const B05MuscleDiagramRegion(
+                regionId: 'chest-region',
+                muscleId: 'chest',
+                label: 'Chest',
+                textOrder: 0,
+              ),
+            ]),
+          ),
         ],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
@@ -425,6 +436,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Exercise education'), findsOneWidget);
+    expect(find.text('Interactive muscle diagram'), findsOneWidget);
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });

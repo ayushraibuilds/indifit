@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/providers.dart';
 import '../../core/router/app_router.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -55,6 +56,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String? _ageError;
   String? _heightError;
   String? _weightError;
+  String? _targetWeightError;
+  final B05OnboardingDraftStore _draftStore = const B05OnboardingDraftStore();
+  Future<void> _draftWrite = Future<void>.value();
+  var _draftLoading = true;
+  var _draftLoaded = false;
+  String? _draftError;
   var _isCompleting = false;
 
   @override
@@ -63,64 +70,75 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _ageController.addListener(_validateAge);
     _heightController.addListener(_validateHeight);
     _weightController.addListener(_validateWeight);
+    _targetWeightController.addListener(_validateTargetWeight);
     _loadDraft();
   }
 
   Future<void> _loadDraft() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    final draftPage = prefs.getInt('onboarding_draft_page');
-    if (draftPage != null) {
+    if (mounted && !_draftLoading) {
       setState(() {
-        _currentPage = draftPage.clamp(0, _totalPages - 1);
-        _sex = prefs.getString('onboarding_draft_sex');
-        _activityLevel =
-            prefs.getString('onboarding_draft_activity') ?? 'moderate';
-        _goal = prefs.getString('onboarding_draft_goal') ?? 'maintain';
-        _dietPreference = prefs.getString('onboarding_draft_diet') ?? 'veg';
+        _draftLoading = true;
+        _draftError = null;
       });
-      if (prefs.containsKey('onboarding_draft_name')) {
-        _nameController.text = prefs.getString('onboarding_draft_name')!;
-      }
-      if (prefs.containsKey('onboarding_draft_age')) {
-        _ageController.text = prefs.getString('onboarding_draft_age')!;
-      }
-      if (prefs.containsKey('onboarding_draft_height')) {
-        _heightController.text = prefs.getString('onboarding_draft_height')!;
-      }
-      if (prefs.containsKey('onboarding_draft_weight')) {
-        _weightController.text = prefs.getString('onboarding_draft_weight')!;
-      }
-      if (prefs.containsKey('onboarding_draft_target_weight')) {
-        _targetWeightController.text = prefs.getString(
-          'onboarding_draft_target_weight',
-        )!;
-      }
-      if (_currentPage > 0) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _pageController.hasClients) {
-            _pageController.jumpToPage(_currentPage);
-          }
+    }
+    try {
+      final draft = await _draftStore.readProfileDraft();
+      if (!mounted) return;
+      if (draft != null) {
+        setState(() {
+          _currentPage = draft.currentPage.clamp(0, _totalPages - 1);
+          _sex = draft.sex;
+          _activityLevel = draft.activityLevel;
+          _goal = draft.goal;
+          _dietPreference = draft.dietPreference;
         });
+        _nameController.text = draft.name;
+        _ageController.text = draft.age;
+        _heightController.text = draft.height;
+        _weightController.text = draft.weight;
+        _targetWeightController.text = draft.targetWeight;
+        if (_currentPage > 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _pageController.hasClients) {
+              _pageController.jumpToPage(_currentPage);
+            }
+          });
+        }
       }
+      setState(() {
+        _draftLoading = false;
+        _draftLoaded = true;
+        _draftError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _draftLoading = false;
+        _draftLoaded = false;
+        _draftError = error.toString();
+      });
     }
   }
 
-  Future<void> _saveDraft() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('onboarding_draft_page', _currentPage);
-    if (_sex != null) await prefs.setString('onboarding_draft_sex', _sex!);
-    await prefs.setString('onboarding_draft_name', _nameController.text);
-    await prefs.setString('onboarding_draft_age', _ageController.text);
-    await prefs.setString('onboarding_draft_height', _heightController.text);
-    await prefs.setString('onboarding_draft_weight', _weightController.text);
-    await prefs.setString('onboarding_draft_activity', _activityLevel);
-    await prefs.setString('onboarding_draft_goal', _goal);
-    await prefs.setString(
-      'onboarding_draft_target_weight',
-      _targetWeightController.text,
+  Future<void> _saveDraft() {
+    if (!_draftLoaded) return Future<void>.value();
+    final draft = B05ProfileOnboardingDraft(
+      currentPage: _currentPage,
+      sex: _sex,
+      name: _nameController.text,
+      age: _ageController.text,
+      height: _heightController.text,
+      weight: _weightController.text,
+      activityLevel: _activityLevel,
+      goal: _goal,
+      targetWeight: _targetWeightController.text,
+      dietPreference: _dietPreference,
     );
-    await prefs.setString('onboarding_draft_diet', _dietPreference);
+    final next = _draftWrite
+        .catchError((_) {})
+        .then((_) => _draftStore.saveProfileDraft(draft));
+    _draftWrite = next;
+    return next;
   }
 
   void _validateAge() {
@@ -152,6 +170,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _weightError = 'Enter weight between 25 and 350 kg.';
       } else {
         _weightError = null;
+      }
+    });
+  }
+
+  void _validateTargetWeight() {
+    final v = double.tryParse(_targetWeightController.text);
+    setState(() {
+      if (v == null || v < 25 || v > 350) {
+        _targetWeightError = 'Enter target weight between 25 and 350 kg.';
+      } else {
+        _targetWeightError = null;
       }
     });
   }
@@ -191,6 +220,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(_weightError!)));
       return;
+    } else if (_currentPage == 6 && _targetWeightError != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_targetWeightError!)));
+      return;
     }
 
     // Smart pre-fill for target weight when leaving weight page
@@ -207,7 +241,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
     }
 
-    _saveDraft();
+    unawaited(_saveDraft().catchError((_) {}));
 
     if (_currentPage < _totalPages - 1) {
       final nextPage = _currentPage + 1;
@@ -243,7 +277,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (_isCompleting) return;
     setState(() => _isCompleting = true);
     try {
+      await _saveDraft();
       await _completeOnboardingOnce();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not finish onboarding: $error')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isCompleting = false);
     }
@@ -333,17 +374,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Notify router that onboarding is now complete
     ref.read(onboardingCompletedProvider.notifier).state = true;
 
-    // Clear onboarding draft keys
-    await prefs.remove('onboarding_draft_page');
-    await prefs.remove('onboarding_draft_sex');
-    await prefs.remove('onboarding_draft_name');
-    await prefs.remove('onboarding_draft_age');
-    await prefs.remove('onboarding_draft_height');
-    await prefs.remove('onboarding_draft_weight');
-    await prefs.remove('onboarding_draft_activity');
-    await prefs.remove('onboarding_draft_goal');
-    await prefs.remove('onboarding_draft_target_weight');
-    await prefs.remove('onboarding_draft_diet');
+    // Clear onboarding draft keys after the existing owners have accepted the
+    // profile. The save queue was awaited by _completeOnboarding.
+    await _draftStore.clearProfileDraft();
 
     // Chain to RoutineWizardScreen with mapped training goal
     final trainingGoal = switch (_goal) {
@@ -359,6 +392,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_draftLoaded) return _buildDraftRestoreState();
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -413,7 +447,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 onPageChanged: (page) {
                   setState(() => _currentPage = page);
-                  unawaited(_saveDraft());
+                  unawaited(_saveDraft().catchError((_) {}));
                 },
                 children: [
                   _buildSexPage(),
@@ -468,6 +502,45 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  Widget _buildDraftRestoreState() {
+    final hasError = _draftError != null;
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(B05Layout.space24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                B05StatusMessage(
+                  status: hasError
+                      ? B05SemanticStatus.danger
+                      : B05SemanticStatus.info,
+                  label: hasError
+                      ? 'Onboarding draft could not be restored'
+                      : 'Restoring your onboarding draft',
+                  value: hasError
+                      ? _draftError
+                      : 'Your answers stay on this device.',
+                ),
+                if (hasError) ...[
+                  const SizedBox(height: B05Layout.space12),
+                  B05ActionButton(
+                    label: 'Retry draft restore',
+                    icon: Icons.refresh_rounded,
+                    emphasis: B05ActionEmphasis.secondary,
+                    hint: 'Try reading the saved onboarding answers again.',
+                    onPressed: _draftLoading ? null : _loadDraft,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSexPage() {
     return OnboardingPageContainer(
       title: 'Welcome to IndiFit!',
@@ -477,6 +550,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         children: [
           TextField(
             controller: _nameController,
+            maxLength: 100,
+            onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 16,
@@ -517,14 +592,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             title: 'Male',
             icon: Icons.male,
             selected: _sex == 'male',
-            onTap: () => setState(() => _sex = 'male'),
+            onTap: () {
+              setState(() => _sex = 'male');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
             title: 'Female',
             icon: Icons.female,
             selected: _sex == 'female',
-            onTap: () => setState(() => _sex = 'female'),
+            onTap: () {
+              setState(() => _sex = 'female');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
         ],
       ),
@@ -541,6 +622,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         suffix: 'years',
         icon: Icons.calendar_today,
         errorText: _ageError,
+        onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
       ),
     );
   }
@@ -555,6 +637,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         suffix: 'cm',
         icon: Icons.height,
         errorText: _heightError,
+        onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
       ),
     );
   }
@@ -569,6 +652,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         suffix: 'kg',
         icon: Icons.scale,
         errorText: _weightError,
+        onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
       ),
     );
   }
@@ -585,7 +669,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Little or no exercise (desk job)',
             icon: Icons.chair,
             selected: _activityLevel == 'sedentary',
-            onTap: () => setState(() => _activityLevel = 'sedentary'),
+            onTap: () {
+              setState(() => _activityLevel = 'sedentary');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
@@ -593,7 +680,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Light workouts 1-3 days/week',
             icon: Icons.directions_walk,
             selected: _activityLevel == 'light',
-            onTap: () => setState(() => _activityLevel = 'light'),
+            onTap: () {
+              setState(() => _activityLevel = 'light');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
@@ -601,7 +691,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Moderate gym training 3-5 days/week',
             icon: Icons.fitness_center,
             selected: _activityLevel == 'moderate',
-            onTap: () => setState(() => _activityLevel = 'moderate'),
+            onTap: () {
+              setState(() => _activityLevel = 'moderate');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
@@ -609,7 +702,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Heavy exercise/sports 6-7 days/week',
             icon: Icons.bolt,
             selected: _activityLevel == 'active',
-            onTap: () => setState(() => _activityLevel = 'active'),
+            onTap: () {
+              setState(() => _activityLevel = 'active');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
         ],
       ),
@@ -627,7 +723,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Burn fat with a healthy calorie deficit',
             icon: Icons.trending_down,
             selected: _goal == 'lose',
-            onTap: () => setState(() => _goal = 'lose'),
+            onTap: () {
+              setState(() => _goal = 'lose');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
@@ -635,7 +734,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Stay active, stay fit, and lock in current weight',
             icon: Icons.compare_arrows,
             selected: _goal == 'maintain',
-            onTap: () => setState(() => _goal = 'maintain'),
+            onTap: () {
+              setState(() => _goal = 'maintain');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
@@ -643,7 +745,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Build lean bulk with a caloric surplus',
             icon: Icons.trending_up,
             selected: _goal == 'gain',
-            onTap: () => setState(() => _goal = 'gain'),
+            onTap: () {
+              setState(() => _goal = 'gain');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
           const SizedBox(height: 20),
           B05AdaptiveLessonPath(selectedGoal: _goal),
@@ -661,6 +766,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         label: 'Target Weight',
         suffix: 'kg',
         icon: Icons.track_changes,
+        errorText: _targetWeightError,
+        onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
       ),
     );
   }
@@ -676,7 +783,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Pure veg, dairy products allowed',
             icon: Icons.eco,
             selected: _dietPreference == 'veg',
-            onTap: () => setState(() => _dietPreference = 'veg'),
+            onTap: () {
+              setState(() => _dietPreference = 'veg');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
@@ -684,7 +794,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Chicken, fish, eggs, meat included',
             icon: Icons.restaurant,
             selected: _dietPreference == 'non-veg',
-            onTap: () => setState(() => _dietPreference = 'non-veg'),
+            onTap: () {
+              setState(() => _dietPreference = 'non-veg');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
@@ -692,7 +805,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: '100% plant-based, no animal products',
             icon: Icons.spa,
             selected: _dietPreference == 'vegan',
-            onTap: () => setState(() => _dietPreference = 'vegan'),
+            onTap: () {
+              setState(() => _dietPreference = 'vegan');
+              unawaited(_saveDraft().catchError((_) {}));
+            },
           ),
         ],
       ),

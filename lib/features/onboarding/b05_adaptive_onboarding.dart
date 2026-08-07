@@ -258,7 +258,44 @@ class B05RoutineWizardDraft {
   });
 }
 
+class B05ProfileOnboardingDraft {
+  final int currentPage;
+  final String? sex;
+  final String name;
+  final String age;
+  final String height;
+  final String weight;
+  final String activityLevel;
+  final String goal;
+  final String targetWeight;
+  final String dietPreference;
+
+  const B05ProfileOnboardingDraft({
+    required this.currentPage,
+    required this.sex,
+    required this.name,
+    required this.age,
+    required this.height,
+    required this.weight,
+    required this.activityLevel,
+    required this.goal,
+    required this.targetWeight,
+    required this.dietPreference,
+  });
+}
+
 class B05OnboardingDraftStore {
+  static const _profilePageKey = 'onboarding_draft_page';
+  static const _profileSexKey = 'onboarding_draft_sex';
+  static const _profileNameKey = 'onboarding_draft_name';
+  static const _profileAgeKey = 'onboarding_draft_age';
+  static const _profileHeightKey = 'onboarding_draft_height';
+  static const _profileWeightKey = 'onboarding_draft_weight';
+  static const _profileActivityKey = 'onboarding_draft_activity';
+  static const _profileGoalKey = 'onboarding_draft_goal';
+  static const _profileTargetWeightKey = 'onboarding_draft_target_weight';
+  static const _profileDietKey = 'onboarding_draft_diet';
+
   static const _routineStepKey = 'onboarding_draft_routine_step';
   static const _routineGoalKey = 'onboarding_draft_routine_goal';
   static const _routineEquipmentKey = 'onboarding_draft_routine_equipment';
@@ -268,6 +305,89 @@ class B05OnboardingDraftStore {
 
   const B05OnboardingDraftStore();
 
+  Future<B05ProfileOnboardingDraft?> readProfileDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!prefs.containsKey(_profilePageKey)) return null;
+    return B05ProfileOnboardingDraft(
+      currentPage: _validProfilePage(prefs.getInt(_profilePageKey)),
+      sex: _choiceOrNull(prefs.getString(_profileSexKey), const {
+        'male',
+        'female',
+      }),
+      name: _bounded(prefs.getString(_profileNameKey) ?? '', maxLength: 100),
+      age: _bounded(prefs.getString(_profileAgeKey) ?? '25', maxLength: 16),
+      height: _bounded(
+        prefs.getString(_profileHeightKey) ?? '170',
+        maxLength: 16,
+      ),
+      weight: _bounded(
+        prefs.getString(_profileWeightKey) ?? '70',
+        maxLength: 16,
+      ),
+      activityLevel: normalizeActivity(prefs.getString(_profileActivityKey)),
+      goal: normalizeProfileGoal(prefs.getString(_profileGoalKey)),
+      targetWeight: _bounded(
+        prefs.getString(_profileTargetWeightKey) ?? '70',
+        maxLength: 16,
+      ),
+      dietPreference: normalizeDiet(prefs.getString(_profileDietKey)),
+    );
+  }
+
+  Future<void> saveProfileDraft(B05ProfileOnboardingDraft draft) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_profilePageKey, _validProfilePage(draft.currentPage));
+    if (draft.sex == null) {
+      await prefs.remove(_profileSexKey);
+    } else {
+      await prefs.setString(
+        _profileSexKey,
+        _choiceOrNull(draft.sex, const {'male', 'female'})!,
+      );
+    }
+    await prefs.setString(
+      _profileNameKey,
+      _bounded(draft.name, maxLength: 100),
+    );
+    await prefs.setString(_profileAgeKey, _bounded(draft.age, maxLength: 16));
+    await prefs.setString(
+      _profileHeightKey,
+      _bounded(draft.height, maxLength: 16),
+    );
+    await prefs.setString(
+      _profileWeightKey,
+      _bounded(draft.weight, maxLength: 16),
+    );
+    await prefs.setString(
+      _profileActivityKey,
+      normalizeActivity(draft.activityLevel),
+    );
+    await prefs.setString(_profileGoalKey, normalizeProfileGoal(draft.goal));
+    await prefs.setString(
+      _profileTargetWeightKey,
+      _bounded(draft.targetWeight, maxLength: 16),
+    );
+    await prefs.setString(_profileDietKey, normalizeDiet(draft.dietPreference));
+  }
+
+  Future<void> clearProfileDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in const [
+      _profilePageKey,
+      _profileSexKey,
+      _profileNameKey,
+      _profileAgeKey,
+      _profileHeightKey,
+      _profileWeightKey,
+      _profileActivityKey,
+      _profileGoalKey,
+      _profileTargetWeightKey,
+      _profileDietKey,
+    ]) {
+      await prefs.remove(key);
+    }
+  }
+
   Future<B05RoutineWizardDraft?> readRoutineDraft() async {
     final prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey(_routineStepKey) &&
@@ -275,23 +395,39 @@ class B05OnboardingDraftStore {
       return null;
     }
     return B05RoutineWizardDraft(
-      currentStep: ((prefs.getInt(_routineStepKey) ?? 0).clamp(0, 4)).toInt(),
-      selectedGoal: prefs.getString(_routineGoalKey) ?? 'hypertrophy',
-      selectedEquipment: prefs.getString(_routineEquipmentKey) ?? 'gym',
+      currentStep: _validRoutineStep(prefs.getInt(_routineStepKey)),
+      selectedGoal: normalizeRoutineGoal(prefs.getString(_routineGoalKey)),
+      selectedEquipment: normalizeEquipment(
+        prefs.getString(_routineEquipmentKey),
+      ),
       daysPerWeek: _validDays(prefs.getInt(_routineDaysKey)),
-      selectedExperience: prefs.getString(_routineExperienceKey) ?? 'beginner',
-      injuries: prefs.getString(_routineInjuriesKey) ?? '',
+      selectedExperience: normalizeExperience(
+        prefs.getString(_routineExperienceKey),
+      ),
+      injuries: normalizeInjuries(prefs.getString(_routineInjuriesKey)),
     );
   }
 
   Future<void> saveRoutineDraft(B05RoutineWizardDraft draft) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_routineStepKey, draft.currentStep.clamp(0, 4).toInt());
-    await prefs.setString(_routineGoalKey, draft.selectedGoal);
-    await prefs.setString(_routineEquipmentKey, draft.selectedEquipment);
+    await prefs.setInt(_routineStepKey, _validRoutineStep(draft.currentStep));
+    await prefs.setString(
+      _routineGoalKey,
+      normalizeRoutineGoal(draft.selectedGoal),
+    );
+    await prefs.setString(
+      _routineEquipmentKey,
+      normalizeEquipment(draft.selectedEquipment),
+    );
     await prefs.setInt(_routineDaysKey, _validDays(draft.daysPerWeek));
-    await prefs.setString(_routineExperienceKey, draft.selectedExperience);
-    await prefs.setString(_routineInjuriesKey, draft.injuries);
+    await prefs.setString(
+      _routineExperienceKey,
+      normalizeExperience(draft.selectedExperience),
+    );
+    await prefs.setString(
+      _routineInjuriesKey,
+      normalizeInjuries(draft.injuries),
+    );
   }
 
   Future<void> clearRoutineDraft() async {
@@ -307,6 +443,73 @@ class B05OnboardingDraftStore {
       await prefs.remove(key);
     }
   }
+
+  static String normalizeActivity(String? value) => _choice(value, const {
+    'sedentary',
+    'light',
+    'moderate',
+    'active',
+  }, fallback: 'moderate');
+
+  static String normalizeProfileGoal(String? value) =>
+      _choice(value, const {'lose', 'maintain', 'gain'}, fallback: 'maintain');
+
+  static String normalizeDiet(String? value) =>
+      _choice(value, const {'veg', 'non-veg', 'vegan'}, fallback: 'veg');
+
+  static String normalizeRoutineGoal(String? value) => _choice(value, const {
+    'hypertrophy',
+    'strength',
+    'weight_loss',
+  }, fallback: 'hypertrophy');
+
+  static String normalizeEquipment(String? value) {
+    final normalized = value?.trim().toLowerCase();
+    return switch (normalized) {
+      'full_gym' || 'gym' => 'gym',
+      'dumbbells' => 'dumbbells',
+      'bodyweight' => 'bodyweight',
+      _ => 'gym',
+    };
+  }
+
+  static String normalizeExperience(String? value) => _choice(value, const {
+    'beginner',
+    'intermediate',
+    'advanced',
+  }, fallback: 'beginner');
+
+  static String normalizeInjuries(String? value) =>
+      _bounded(value ?? '', maxLength: 512);
+
+  static String _choice(
+    String? value,
+    Set<String> allowed, {
+    required String fallback,
+  }) {
+    final normalized = value?.trim().toLowerCase();
+    return normalized != null && allowed.contains(normalized)
+        ? normalized
+        : fallback;
+  }
+
+  static String? _choiceOrNull(String? value, Set<String> allowed) {
+    final normalized = value?.trim().toLowerCase();
+    return normalized != null && allowed.contains(normalized)
+        ? normalized
+        : null;
+  }
+
+  static String _bounded(String value, {required int maxLength}) {
+    final normalized = value.trim();
+    return normalized.length <= maxLength
+        ? normalized
+        : normalized.substring(0, maxLength);
+  }
+
+  static int _validProfilePage(int? value) => (value ?? 0).clamp(0, 7).toInt();
+
+  static int _validRoutineStep(int? value) => (value ?? 0).clamp(0, 4).toInt();
 
   static int _validDays(int? value) =>
       value != null && value >= 3 && value <= 6 ? value : 3;

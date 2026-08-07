@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../../core/theme/colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 
 class OnboardingPageContainer extends StatelessWidget {
   final String title;
@@ -68,73 +70,87 @@ class OnboardingSelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return Semantics(
+      container: true,
+      button: true,
+      selected: selected,
+      label: title,
+      hint: 'Select $title.',
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.primary.withValues(alpha: 0.04)
-              : AppColors.cardBackground,
+      child: ExcludeSemantics(
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-            width: selected ? 2.0 : 1.0,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: selected
-                    ? AppColors.primary.withValues(alpha: 0.12)
-                    : const Color(0x1F223250),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: selected ? AppColors.primary : AppColors.textSecondary,
-                size: 24,
+          child: AnimatedContainer(
+            duration: B05MotionPolicy.reduceMotion(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.primary.withValues(alpha: 0.04)
+                  : AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected ? AppColors.primary : AppColors.border,
+                width: selected ? 2.0 : 1.0,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
-                    ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.primary.withValues(alpha: 0.12)
+                        : const Color(0x1F223250),
+                    shape: BoxShape.circle,
                   ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle!,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        fontFamily: GoogleFonts.outfit().fontFamily,
+                  child: Icon(
+                    icon,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: GoogleFonts.outfit().fontFamily,
+                        ),
                       ),
-                    ),
-                  ],
-                ],
-              ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle!,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            fontFamily: GoogleFonts.outfit().fontFamily,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (selected)
+                  const Icon(
+                    Icons.check_circle,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+              ],
             ),
-            if (selected)
-              const Icon(
-                Icons.check_circle,
-                color: AppColors.primary,
-                size: 24,
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -147,6 +163,7 @@ class OnboardingNumberInputField extends StatelessWidget {
   final String suffix;
   final IconData icon;
   final String? errorText;
+  final ValueChanged<String>? onChanged;
 
   const OnboardingNumberInputField({
     super.key,
@@ -155,6 +172,7 @@ class OnboardingNumberInputField extends StatelessWidget {
     required this.suffix,
     required this.icon,
     this.errorText,
+    this.onChanged,
   });
 
   @override
@@ -187,6 +205,8 @@ class OnboardingNumberInputField extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: controller,
+                  onChanged: onChanged,
+                  maxLength: 16,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
