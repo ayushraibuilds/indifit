@@ -149,7 +149,9 @@ class _DashboardModuleCustomizationRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.drag_handle_rounded),
+          // Reordering is exposed through the accessible overflow actions.
+          // Avoid a drag affordance when the row itself is not draggable.
+          leading: const Icon(Icons.widgets_outlined),
           title: Text(descriptor.label),
           subtitle: Text(
             [

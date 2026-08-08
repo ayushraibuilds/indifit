@@ -352,19 +352,33 @@ class _B04CurrentFoodSummaryState extends ConsumerState<B04CurrentFoodSummary> {
     final state = ref.watch(b04CurrentFoodControllerProvider);
     return contextAsync.when(
       loading: () => const _B04CompactProgress(),
-      error: (_, _) => const _B04CompactGuidanceUnavailable(),
+      error: (_, _) => _B04CompactGuidanceUnavailable(
+        onRetry: () =>
+            ref.invalidate(b04ProductionRecommendationContextProvider),
+      ),
       data: (value) {
+        final needsLoad = _loadedContextId != value.contextId;
         _load(value);
-        return B04CurrentFoodSummaryContent(state: state);
+        if (needsLoad) return const _B04CompactProgress();
+        return B04CurrentFoodSummaryContent(
+          state: state,
+          onRetry: () =>
+              ref.read(b04CurrentFoodControllerProvider.notifier).retry(),
+        );
       },
     );
   }
 }
 
 class B04CurrentFoodSummaryContent extends StatefulWidget {
-  const B04CurrentFoodSummaryContent({required this.state, super.key});
+  const B04CurrentFoodSummaryContent({
+    required this.state,
+    required this.onRetry,
+    super.key,
+  });
 
   final B04CurrentFoodState state;
+  final VoidCallback onRetry;
 
   @override
   State<B04CurrentFoodSummaryContent> createState() =>
@@ -381,6 +395,9 @@ class _B04CurrentFoodSummaryContentState
     if (state.status == B04CurrentFoodControllerStatus.loading ||
         state.status == B04CurrentFoodControllerStatus.idle) {
       return const _B04CompactProgress();
+    }
+    if (state.status == B04CurrentFoodControllerStatus.failure) {
+      return _B04CompactGuidanceUnavailable(onRetry: widget.onRetry);
     }
     final guidance = state.guidance;
     if (guidance == null || !guidance.isAvailable || guidance.cards.isEmpty) {
@@ -491,19 +508,31 @@ class _B04CompactUnavailable extends StatelessWidget {
 }
 
 class _B04CompactGuidanceUnavailable extends StatelessWidget {
-  const _B04CompactGuidanceUnavailable();
+  const _B04CompactGuidanceUnavailable({required this.onRetry});
+
+  final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) => const _B04CompactUnavailable(
-    presentation: B04CurrentFoodPresentation(
-      periodLabel: 'Today',
-      status: 'Suggestions are taking a moment',
-      explanation: 'Log a meal to continue.',
-      targetValues: [],
-      why: 'Your meal guidance is not ready yet.',
-    ),
-    showWhy: false,
-    onWhy: _noop,
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Meal suggestions are unavailable',
+        style: B05Typography.label(context),
+      ),
+      const SizedBox(height: B05Layout.space4),
+      Text(
+        'Try again to load a suggestion for today.',
+        style: B05Typography.body(context),
+      ),
+      const SizedBox(height: B05Layout.space8),
+      B05ActionButton(
+        label: 'Retry',
+        icon: Icons.refresh_rounded,
+        emphasis: B05ActionEmphasis.secondary,
+        onPressed: onRetry,
+      ),
+    ],
   );
 }
 
@@ -531,8 +560,6 @@ class _B04CompactProgress extends StatelessWidget {
     ),
   );
 }
-
-void _noop() {}
 
 class _B04CurrentFoodCardState extends ConsumerState<B04CurrentFoodCard> {
   String? _loadedContextId;

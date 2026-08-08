@@ -265,33 +265,30 @@ class TodayProgressPresentation {
         detail: 'Complete a workout to start seeing your week take shape.',
       );
     }
-    final sessions = history.length;
-    final duration = history.fold<int>(
-      0,
-      (total, item) => total + item.durationSeconds,
-    );
-    final minutes = duration ~/ 60;
+    // The B02 read model owns progress facts. Today only distinguishes an
+    // available non-empty history from an empty or unavailable one; it does
+    // not re-aggregate sessions or duration into a second progress authority.
     return TodayProgressPresentation(
       state: TodayPresentationState.ready,
-      headline: '$sessions ${sessions == 1 ? 'session' : 'sessions'} this week',
-      detail: minutes == 0
-          ? 'Nice work keeping your momentum going.'
-          : '$minutes minutes of movement recorded this week.',
+      headline: 'Your recent activity is ready',
+      detail: 'Review your recent activity to see your week take shape.',
       supporting: B02ProgressPresentation.range(read.value!.query),
     );
   }
 }
 
 class TodayFocusPresentation {
+  final TodayPresentationState state;
   final String title;
   final String detail;
-  final String actionLabel;
-  final TodayNextAction action;
+  final String? actionLabel;
+  final TodayNextAction? action;
 
   const TodayFocusPresentation({
+    required this.state,
     required this.title,
     required this.detail,
-    required this.actionLabel,
+    this.actionLabel,
     required this.action,
   });
 }
@@ -299,27 +296,53 @@ class TodayFocusPresentation {
 TodayFocusPresentation todayFocusPresentation({
   required TodayDateRelation dateRelation,
   TodaySurfaceSnapshot? snapshot,
+  bool loading = false,
+  bool unavailable = false,
 }) {
   if (dateRelation == TodayDateRelation.future) {
     return const TodayFocusPresentation(
+      state: TodayPresentationState.ready,
       title: 'Plan ahead',
       detail: 'Future dates are for planning. Come back today to get moving.',
       actionLabel: 'Return to today',
       action: TodayNextAction.returnToToday,
     );
   }
-  final hasWorkout = snapshot?.calendar.value?.rangeOccurrences.isNotEmpty;
+  if (loading) {
+    return const TodayFocusPresentation(
+      state: TodayPresentationState.loading,
+      title: 'Getting your daily focus ready',
+      detail: 'Your plan will appear here in a moment.',
+      action: null,
+    );
+  }
+  if (unavailable ||
+      snapshot == null ||
+      (!snapshot.calendar.isAvailable &&
+          !snapshot.nutrition.isAvailable &&
+          !snapshot.progress.isAvailable)) {
+    return const TodayFocusPresentation(
+      state: TodayPresentationState.unavailable,
+      title: 'Your daily focus is unavailable',
+      detail: 'Try again to load a safe next step.',
+      actionLabel: 'Retry',
+      action: null,
+    );
+  }
+  final hasWorkout = snapshot.calendar.value?.rangeOccurrences.isNotEmpty;
   if (hasWorkout == true) {
     return const TodayFocusPresentation(
+      state: TodayPresentationState.ready,
       title: 'Your workout is up next',
       detail: 'A focused session is waiting in your plan.',
       actionLabel: 'View today’s workout',
       action: TodayNextAction.openWorkoutPlan,
     );
   }
-  final hasMeals = snapshot?.nutrition.value?.records.isNotEmpty ?? false;
-  if (!hasMeals) {
+  final hasNoMeals = snapshot.nutrition.value?.records.isEmpty == true;
+  if (hasNoMeals) {
     return const TodayFocusPresentation(
+      state: TodayPresentationState.ready,
       title: 'Start with one small win',
       detail: 'Log your first meal and make today easier to follow.',
       actionLabel: 'Log your first meal',
@@ -327,6 +350,7 @@ TodayFocusPresentation todayFocusPresentation({
     );
   }
   return const TodayFocusPresentation(
+    state: TodayPresentationState.ready,
     title: 'Choose your next move',
     detail: 'Open your plan to pick a workout or take a recovery day.',
     actionLabel: 'Open workout plan',
