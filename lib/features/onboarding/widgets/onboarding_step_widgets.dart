@@ -164,6 +164,7 @@ class OnboardingNumberInputField extends StatelessWidget {
   final IconData icon;
   final String? errorText;
   final ValueChanged<String>? onChanged;
+  final VoidCallback? onEditingComplete;
 
   const OnboardingNumberInputField({
     super.key,
@@ -173,6 +174,7 @@ class OnboardingNumberInputField extends StatelessWidget {
     required this.icon,
     this.errorText,
     this.onChanged,
+    this.onEditingComplete,
   });
 
   @override
@@ -206,10 +208,12 @@ class OnboardingNumberInputField extends StatelessWidget {
                 child: TextField(
                   controller: controller,
                   onChanged: onChanged,
+                  onEditingComplete: onEditingComplete,
                   maxLength: 16,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  textInputAction: TextInputAction.done,
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 18,

@@ -3,15 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/nutrition_constraints.dart';
 import 'package:indifit/core/presentation/diet_preference_presentation.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/widgets/indi_fit_bottom_sheet.dart';
 import 'package:indifit/core/widgets/responsive_form_primitives.dart';
-import 'package:indifit/data/database/app_database.dart';
+import 'package:indifit/data/database/app_database.dart'
+    hide NutritionConstraintDefinition, NutritionUserConstraint;
+import 'package:indifit/data/repositories/nutrition_constraint_repository.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
 import 'package:indifit/features/onboarding/b05_adaptive_onboarding.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
+import 'package:indifit/features/settings/nutrition_constraints_controller.dart';
+import 'package:indifit/features/settings/nutrition_constraints_screen.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
+import 'package:indifit/features/workout_player/widgets/plate_calculator_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -63,6 +69,13 @@ void main() {
         ),
         'legacy-unknown',
       );
+      expect(
+        DietPreferencePresentation.persistedValueFor(
+          originalValue: 'legacy-unknown',
+          uiValue: null,
+        ),
+        'legacy-unknown',
+      );
     });
 
     testWidgets('dropdown is safe for every legacy, unknown, and null value', (
@@ -94,6 +107,28 @@ void main() {
           reason: 'diet value $rawValue must not assert',
         );
       }
+    });
+
+    testWidgets('unknown persisted value renders as an unselected choice', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: DietPreferenceDropdown(
+              persistedValue: 'legacy-unknown',
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      final dropdown = tester.widget<DropdownButtonFormField<String>>(
+        find.byType(DropdownButtonFormField<String>),
+      );
+      expect(dropdown.initialValue, isNull);
+      expect(tester.takeException(), isNull);
     });
   });
 
@@ -192,6 +227,131 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'manual log sheet keeps its save action usable on a compact keyboard',
+    (tester) async {
+      addTearDown(tester.view.reset);
+      final database = AppDatabase.memory();
+      addTearDown(database.close);
+      final repository = _FakeWorkoutRepository(database);
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            workoutRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showIndiFitBottomSheet<void>(
+                    context: context,
+                    builder: (_) =>
+                        ManualLogSheet(selectedDate: DateTime(2026, 8, 8)),
+                  ),
+                  child: const Text('Open manual log'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open manual log'));
+      await tester.pumpAndSettle();
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(find.byType(IndiFitBottomSheet), findsOneWidget);
+      expect(find.text('Save Workout Session'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('plate calculator sheet scrolls at compact large text', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    final media = MediaQueryData.fromView(
+      tester.view,
+    ).copyWith(textScaler: const TextScaler.linear(2));
+
+    await tester.pumpWidget(
+      MediaQuery(
+        data: media,
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showIndiFitBottomSheet<void>(
+                  context: context,
+                  builder: (_) => const PlateCalculatorSheet(targetWeight: 180),
+                ),
+                child: const Text('Open plate calculator'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open plate calculator'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(IndiFitBottomSheet), findsOneWidget);
+    expect(find.byTooltip('Close plate calculator'), findsOneWidget);
+    expect(find.text('LOADING PER SIDE'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'constraint editor stacks safely on a compact large-text device',
+    (tester) async {
+      addTearDown(tester.view.reset);
+      final database = AppDatabase.memory();
+      addTearDown(database.close);
+      final repository = _ConstraintTestRepository(database: database);
+      final controller = NutritionConstraintManagementController(
+        repository: repository,
+        userId: 'user-1',
+      );
+      await controller.load();
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      final media = MediaQueryData.fromView(
+        tester.view,
+      ).copyWith(textScaler: const TextScaler.linear(2));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            nutritionConstraintManagementControllerProvider.overrideWith(
+              (ref) => controller,
+            ),
+          ],
+          child: MediaQuery(
+            data: media,
+            child: const MaterialApp(home: NutritionConstraintsScreen()),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Add a constraint').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add dietary constraint'), findsOneWidget);
+      expect(find.byType(IndiFitResponsiveFieldGroup), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('manual workout logging preserves editable set state', (
     tester,
   ) async {
@@ -284,6 +444,56 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('onboarding choices and numeric submission clear input focus', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(database)],
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: const OnboardingScreen(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 250));
+
+    await tester.tap(find.byType(TextField).first);
+    await tester.enterText(find.byType(TextField).first, 'Priya');
+    expect(FocusManager.instance.primaryFocus, isNotNull);
+
+    await tester.tap(find.text('Female'));
+    await tester.pump();
+    final focusedChoiceEditable = find.byType(EditableText).evaluate().where((
+      element,
+    ) {
+      return Focus.maybeOf(element)?.hasPrimaryFocus ?? false;
+    });
+    expect(focusedChoiceEditable, isEmpty);
+
+    await tester.tap(find.text('Next Step'));
+    await tester.pumpAndSettle();
+    expect(find.text('How old are you?'), findsOneWidget);
+
+    await tester.tap(find.byType(TextField).first);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    final focusedEditable = find.byType(EditableText).evaluate().where((
+      element,
+    ) {
+      return Focus.maybeOf(element)?.hasPrimaryFocus ?? false;
+    });
+    expect(focusedEditable, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('navigation themes provide explicit light and dark states', (
     tester,
   ) async {
@@ -317,8 +527,50 @@ void main() {
       expect(theme.navigationBarTheme.backgroundColor, isNotNull);
       expect(theme.navigationBarTheme.iconTheme, isNotNull);
       expect(theme.navigationBarTheme.labelTextStyle, isNotNull);
+      final background = theme.navigationBarTheme.backgroundColor!;
+      final selectedStates = <WidgetState>{WidgetState.selected};
+      final unselectedStates = <WidgetState>{};
+      final selectedIcon = theme.navigationBarTheme.iconTheme!
+          .resolve(selectedStates)!
+          .color!;
+      final unselectedIcon = theme.navigationBarTheme.iconTheme!
+          .resolve(unselectedStates)!
+          .color!;
+      final selectedLabel = theme.navigationBarTheme.labelTextStyle!
+          .resolve(selectedStates)!
+          .color!;
+      final unselectedLabel = theme.navigationBarTheme.labelTextStyle!
+          .resolve(unselectedStates)!
+          .color!;
+      expect(
+        _contrastRatio(selectedIcon, background),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(unselectedIcon, background),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(selectedLabel, background),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(unselectedLabel, background),
+        greaterThanOrEqualTo(4.5),
+      );
     }
   });
+}
+
+double _contrastRatio(Color first, Color second) {
+  final firstLuminance = first.computeLuminance();
+  final secondLuminance = second.computeLuminance();
+  return (firstLuminance > secondLuminance
+          ? firstLuminance + 0.05
+          : secondLuminance + 0.05) /
+      (firstLuminance > secondLuminance
+          ? secondLuminance + 0.05
+          : firstLuminance + 0.05);
 }
 
 class _FakeWorkoutRepository extends WorkoutRepository {
@@ -340,4 +592,17 @@ class _FakeWorkoutRepository extends WorkoutRepository {
       ),
     ];
   }
+}
+
+class _ConstraintTestRepository extends NutritionConstraintRepository {
+  _ConstraintTestRepository({required super.database});
+
+  @override
+  Future<List<NutritionConstraintDefinition>> listTaxonomy() async =>
+      NutritionConstraintTaxonomy.definitions;
+
+  @override
+  Future<List<NutritionUserConstraint>> listAllConstraints({
+    required String userId,
+  }) async => const [];
 }

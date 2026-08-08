@@ -24,7 +24,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String _selectedSex = 'male';
   String _selectedGoal = 'maintain';
   String _selectedActivity = 'moderate';
-  String _selectedDiet = 'veg';
+  String? _selectedDiet;
   String? _dietPreferenceSourceValue;
   var _dietPreferenceChanged = false;
   String _selectedEquipment = 'full_gym';
@@ -61,8 +61,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _selectedActivity = p.userActivityLevel;
       _dietPreferenceSourceValue = p.dietPreference;
       _dietPreferenceChanged = false;
-      _selectedDiet =
-          DietPreferencePresentation.uiValueFor(p.dietPreference) ?? 'veg';
+      _selectedDiet = DietPreferencePresentation.uiValueFor(p.dietPreference);
       _selectedEquipment = p.equipmentAccess;
 
       _initialized = true;
@@ -422,6 +421,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: DietPreferenceDropdown(
                   selectedUiValue: _selectedDiet,
+                  decoration: InputDecoration(
+                    labelText: 'Diet Choice',
+                    helperText: _selectedDiet == null
+                        ? 'Choose your dietary preference.'
+                        : null,
+                    prefixIcon: const Icon(Icons.restaurant_rounded),
+                  ),
                   onChanged: (value) {
                     if (value != null) {
                       setState(() {

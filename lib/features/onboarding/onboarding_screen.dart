@@ -146,6 +146,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     FocusManager.instance.primaryFocus?.unfocus();
   }
 
+  void _selectOnboardingChoice(VoidCallback selection) {
+    _dismissInputFocus();
+    setState(selection);
+    unawaited(_saveDraft().catchError((_) {}));
+  }
+
   void _validateAge() {
     final v = int.tryParse(_ageController.text);
     setState(() {
@@ -573,20 +579,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             title: 'Male',
             icon: Icons.male,
             selected: _sex == 'male',
-            onTap: () {
-              setState(() => _sex = 'male');
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () => _selectOnboardingChoice(() => _sex = 'male'),
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
             title: 'Female',
             icon: Icons.female,
             selected: _sex == 'female',
-            onTap: () {
-              setState(() => _sex = 'female');
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () => _selectOnboardingChoice(() => _sex = 'female'),
           ),
           const SizedBox(height: 24),
           TextField(
@@ -636,6 +636,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         icon: Icons.calendar_today,
         errorText: _ageError,
         onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
+        onEditingComplete: _dismissInputFocus,
       ),
     );
   }
@@ -651,6 +652,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         icon: Icons.height,
         errorText: _heightError,
         onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
+        onEditingComplete: _dismissInputFocus,
       ),
     );
   }
@@ -666,6 +668,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         icon: Icons.scale,
         errorText: _weightError,
         onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
+        onEditingComplete: _dismissInputFocus,
       ),
     );
   }
@@ -682,10 +685,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Little or no exercise (desk job)',
             icon: Icons.chair,
             selected: _activityLevel == 'sedentary',
-            onTap: () {
-              setState(() => _activityLevel = 'sedentary');
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () =>
+                _selectOnboardingChoice(() => _activityLevel = 'sedentary'),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
@@ -693,10 +694,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Light workouts 1-3 days/week',
             icon: Icons.directions_walk,
             selected: _activityLevel == 'light',
-            onTap: () {
-              setState(() => _activityLevel = 'light');
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () =>
+                _selectOnboardingChoice(() => _activityLevel = 'light'),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
@@ -704,10 +703,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Moderate gym training 3-5 days/week',
             icon: Icons.fitness_center,
             selected: _activityLevel == 'moderate',
-            onTap: () {
-              setState(() => _activityLevel = 'moderate');
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () =>
+                _selectOnboardingChoice(() => _activityLevel = 'moderate'),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
@@ -715,10 +712,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Heavy exercise/sports 6-7 days/week',
             icon: Icons.bolt,
             selected: _activityLevel == 'active',
-            onTap: () {
-              setState(() => _activityLevel = 'active');
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () =>
+                _selectOnboardingChoice(() => _activityLevel = 'active'),
           ),
         ],
       ),
@@ -736,10 +731,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Burn fat with a healthy calorie deficit',
             icon: Icons.trending_down,
             selected: _goal == 'lose',
-            onTap: () {
-              setState(() => _goal = 'lose');
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () => _selectOnboardingChoice(() => _goal = 'lose'),
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
@@ -747,10 +739,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Stay active, stay fit, and lock in current weight',
             icon: Icons.compare_arrows,
             selected: _goal == 'maintain',
-            onTap: () {
-              setState(() => _goal = 'maintain');
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () => _selectOnboardingChoice(() => _goal = 'maintain'),
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
@@ -758,10 +747,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             subtitle: 'Build lean bulk with a caloric surplus',
             icon: Icons.trending_up,
             selected: _goal == 'gain',
-            onTap: () {
-              setState(() => _goal = 'gain');
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () => _selectOnboardingChoice(() => _goal = 'gain'),
           ),
           const SizedBox(height: 20),
           B05AdaptiveLessonPath(selectedGoal: _goal),
@@ -781,6 +767,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         icon: Icons.track_changes,
         errorText: _targetWeightError,
         onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
+        onEditingComplete: _dismissInputFocus,
       ),
     );
   }
@@ -797,13 +784,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             icon: Icons.eco,
             selected:
                 DietPreferencePresentation.uiValueFor(_dietPreference) == 'veg',
-            onTap: () {
-              setState(
-                () => _dietPreference =
-                    DietPreferencePresentation.normalizeForOnboarding('veg'),
-              );
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () => _selectOnboardingChoice(
+              () => _dietPreference =
+                  DietPreferencePresentation.normalizeForOnboarding('veg'),
+            ),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
@@ -813,15 +797,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             selected:
                 DietPreferencePresentation.uiValueFor(_dietPreference) ==
                 'non_veg',
-            onTap: () {
-              setState(
-                () => _dietPreference =
-                    DietPreferencePresentation.normalizeForOnboarding(
-                      'non_veg',
-                    ),
-              );
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () => _selectOnboardingChoice(
+              () => _dietPreference =
+                  DietPreferencePresentation.normalizeForOnboarding('non_veg'),
+            ),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
@@ -831,13 +810,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             selected:
                 DietPreferencePresentation.uiValueFor(_dietPreference) ==
                 'vegan',
-            onTap: () {
-              setState(
-                () => _dietPreference =
-                    DietPreferencePresentation.normalizeForOnboarding('vegan'),
-              );
-              unawaited(_saveDraft().catchError((_) {}));
-            },
+            onTap: () => _selectOnboardingChoice(
+              () => _dietPreference =
+                  DietPreferencePresentation.normalizeForOnboarding('vegan'),
+            ),
           ),
         ],
       ),

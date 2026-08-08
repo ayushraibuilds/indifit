@@ -77,12 +77,13 @@ abstract final class DietPreferencePresentation {
   /// preserves historical identities until a user explicitly changes a value.
   static String persistedValueFor({
     required String? originalValue,
-    required String uiValue,
+    required String? uiValue,
     bool userChanged = false,
   }) {
     final option = optionForUiValue(uiValue);
-    if (option == null) return originalValue ?? 'veg';
-    if (!userChanged && originalValue != null) return originalValue.trim();
+    final original = originalValue?.trim();
+    if (!userChanged && original?.isNotEmpty == true) return original!;
+    if (option == null) return original?.isNotEmpty == true ? original! : 'veg';
     if (option.accepts(originalValue)) return originalValue!.trim();
     return option.preferredPersistedValue;
   }

@@ -48,8 +48,7 @@ class IndiFitBottomSheet extends StatelessWidget {
                   if (showHandle)
                     Padding(
                       padding: const EdgeInsets.only(top: 10, bottom: 4),
-                      child: Semantics(
-                        label: 'Sheet drag handle',
+                      child: ExcludeSemantics(
                         child: Container(
                           width: 36,
                           height: 4,

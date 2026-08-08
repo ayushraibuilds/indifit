@@ -129,6 +129,12 @@ class AppTheme {
     final colors = brightness == Brightness.dark
         ? B05SemanticColors.dark
         : B05SemanticColors.light;
+    // The dark semantic action token is appropriate for filled controls, but
+    // it falls below the required contrast for a small navigation label on a
+    // dark surface. Keep the brand colour for this text/icon treatment.
+    final selectedColor = brightness == Brightness.dark
+        ? AppColors.primary
+        : colors.action;
     return NavigationBarThemeData(
       backgroundColor: colors.surface,
       indicatorColor: colors.action.withValues(alpha: 0.18),
@@ -136,14 +142,14 @@ class AppTheme {
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return TextStyle(
-          color: selected ? colors.action : colors.textSecondary,
+          color: selected ? selectedColor : colors.textSecondary,
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
         );
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return IconThemeData(
-          color: selected ? colors.action : colors.textSecondary,
+          color: selected ? selectedColor : colors.textSecondary,
           size: 24,
         );
       }),

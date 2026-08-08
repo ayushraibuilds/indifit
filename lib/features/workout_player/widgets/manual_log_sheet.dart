@@ -315,81 +315,87 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Log Completed Workout',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-              ),
-              Chip(
-                label: Text(
-                  dateStr,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                backgroundColor: AppColors.primaryGlow,
-                labelStyle: const TextStyle(color: AppColors.primary),
-              ),
-              IconButton(
-                tooltip: 'Close',
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          IndiFitResponsiveFieldGroup(
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Workout Title',
-                  isDense: true,
-                ),
-              ),
-              TextField(
-                controller: _durationController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Duration (min)',
-                  isDense: true,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              const Text(
-                'EXERCISES LOGGED',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textMuted,
-                ),
-              ),
-              TextButton.icon(
-                onPressed: _addExercise,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text(
-                  'Add Exercise',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ),
-            ],
-          ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.only(bottom: 4),
-              child: _exercises.isEmpty
-                  ? SizedBox(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Log Completed Workout',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      Chip(
+                        label: Text(
+                          dateStr,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        backgroundColor: AppColors.primaryGlow,
+                        labelStyle: const TextStyle(color: AppColors.primary),
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  IndiFitResponsiveFieldGroup(
+                    children: [
+                      TextField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Workout Title',
+                          isDense: true,
+                        ),
+                      ),
+                      TextField(
+                        controller: _durationController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Duration (min)',
+                          isDense: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const Text(
+                        'EXERCISES LOGGED',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _addExercise,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text(
+                          'Add Exercise',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_exercises.isEmpty)
+                    SizedBox(
                       height: 160,
                       child: Center(
                         child: TextButton.icon(
@@ -399,12 +405,15 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                         ),
                       ),
                     )
-                  : Column(
+                  else
+                    Column(
                       children: [
                         for (var index = 0; index < _exercises.length; index++)
                           _buildExerciseCard(_exercises[index], index),
                       ],
                     ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 12),

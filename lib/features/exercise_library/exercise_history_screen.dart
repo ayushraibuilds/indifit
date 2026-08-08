@@ -430,7 +430,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                           DropdownButtonFormField<double>(
                             initialValue: _barWeight,
                             isExpanded: true,
-                            dropdownColor: AppColors.surface,
+                            dropdownColor: Theme.of(
+                              context,
+                            ).colorScheme.surface,
                             decoration: const InputDecoration(
                               contentPadding: EdgeInsets.symmetric(
                                 horizontal: 12,
