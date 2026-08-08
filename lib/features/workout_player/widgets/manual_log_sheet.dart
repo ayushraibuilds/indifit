@@ -56,6 +56,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
 
     await showIndiFitBottomSheet(
       context: context,
+      semanticLabel: 'Choose exercise',
       builder: (ctx) {
         String query = '';
         return StatefulBuilder(

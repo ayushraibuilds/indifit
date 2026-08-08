@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,6 +22,7 @@ import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/profile/profile_screen.dart';
 import 'package:indifit/features/progress/progress_screen.dart';
 import 'package:indifit/features/settings/nutrition_constraints_screen.dart';
+import 'package:indifit/features/workout_player/routine_display_screen.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
 import 'package:indifit/features/workout_player/widgets/plate_calculator_sheet.dart';
 import 'package:indifit/features/workout_player/workout_player_screen.dart';
@@ -56,6 +58,7 @@ void main() {
           ),
         ),
       ),
+      _CertificationRoute('workouts tab', () => const RoutineDisplayScreen()),
       _CertificationRoute(
         'workout player',
         () => WorkoutPlayerScreen(
@@ -139,6 +142,12 @@ void main() {
             child: ManualLogSheet(selectedDate: DateTime(2026, 8, 8)),
           ),
         ),
+      ),
+      _GoldenRoute(
+        name: 'workouts tab loading light',
+        fileName: 'ux_w06_workouts_tab_empty_light.png',
+        brightness: Brightness.light,
+        builder: () => const RoutineDisplayScreen(),
       ),
       _GoldenRoute(
         name: 'workout player dark',
@@ -284,8 +293,85 @@ void main() {
           expect(colors.inset, isNot(colors.selected));
           expect(colors.selected, isNot(colors.interactive));
         }
+
+        for (final theme in [AppTheme.darkTheme, AppTheme.lightTheme]) {
+          expect(
+            _contrast(theme.colorScheme.onError, theme.colorScheme.error),
+            greaterThanOrEqualTo(4.5),
+            reason: 'Error actions need readable foreground text',
+          );
+        }
       },
     );
+
+    testWidgets('skeleton lists announce one useful loading status', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          _app(
+            theme: AppTheme.darkTheme,
+            media: const MediaQueryData(disableAnimations: true),
+            child: const Scaffold(body: SkeletonList(count: 4)),
+          ),
+        );
+
+        expect(find.bySemanticsLabel('Loading content'), findsOneWidget);
+        expect(find.bySemanticsLabel('Loading'), findsNothing);
+      } finally {
+        semantics.dispose();
+      }
+    });
+
+    testWidgets('bottom sheet takes focus and returns it to its opener', (
+      tester,
+    ) async {
+      final openerFocus = FocusNode(debugLabel: 'sheet opener');
+      final closeFocus = FocusNode(debugLabel: 'sheet close');
+      addTearDown(openerFocus.dispose);
+      addTearDown(closeFocus.dispose);
+
+      await tester.pumpWidget(
+        _app(
+          theme: AppTheme.darkTheme,
+          media: const MediaQueryData(disableAnimations: true),
+          child: Scaffold(
+            body: Builder(
+              builder: (context) => FilledButton(
+                focusNode: openerFocus,
+                onPressed: () => showIndiFitBottomSheet<void>(
+                  context: context,
+                  semanticLabel: 'Certification focus sheet',
+                  builder: (sheetContext) => TextButton(
+                    focusNode: closeFocus,
+                    autofocus: true,
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    child: const Text('Close sheet'),
+                  ),
+                ),
+                child: const Text('Open focus sheet'),
+              ),
+            ),
+          ),
+        ),
+      );
+      openerFocus.requestFocus();
+      await tester.pump();
+      expect(openerFocus.hasFocus, isTrue);
+
+      await tester.tap(find.text('Open focus sheet'));
+      await tester.pumpAndSettle();
+      expect(
+        find.bySemanticsLabel('Certification focus sheet'),
+        findsOneWidget,
+      );
+      expect(closeFocus.hasFocus, isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(openerFocus.hasFocus, isTrue);
+    });
 
     testWidgets(
       'surface, action, loading and sheet primitives honour motion, touch and semantics',
@@ -313,7 +399,6 @@ void main() {
           await tester.tap(find.text('Open sheet'));
           await tester.pumpAndSettle();
           expect(find.byType(IndiFitBottomSheet), findsOneWidget);
-          expect(find.bySemanticsLabel('Visual system sheet'), findsOneWidget);
           expect(tester.takeException(), isNull);
         } finally {
           semantics.dispose();
@@ -749,9 +834,21 @@ class _VisualSystemPreview extends StatelessWidget {
               onPressed: () => showIndiFitBottomSheet<void>(
                 context: context,
                 semanticLabel: 'Visual system sheet',
-                builder: (_) => const Padding(
-                  padding: EdgeInsets.all(B05Layout.space20),
-                  child: Text('A calm, opaque, keyboard-aware sheet.'),
+                builder: (sheetContext) => Padding(
+                  padding: const EdgeInsets.all(B05Layout.space20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('A calm, opaque, keyboard-aware sheet.'),
+                      const SizedBox(height: B05Layout.space12),
+                      TextButton(
+                        autofocus: true,
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        child: const Text('Close'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

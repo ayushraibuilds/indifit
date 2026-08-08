@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/di/providers.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
@@ -104,8 +105,6 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Training Split'),
-        backgroundColor: AppColors.background,
-        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.directions_run_rounded),
@@ -114,24 +113,19 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
           ),
           if (_activeRoutine != null) ...[
             IconButton(
-              icon: const Icon(
-                Icons.history_rounded,
-                color: AppColors.textPrimary,
-              ),
+              icon: const Icon(Icons.history_rounded),
               tooltip: 'Log Past Workout',
               onPressed: () {
                 showIndiFitBottomSheet(
                   context: context,
+                  semanticLabel: 'Log completed workout',
                   builder: (context) =>
                       ManualLogSheet(selectedDate: DateTime.now()),
                 ).then((_) => _loadActiveRoutine());
               },
             ),
             IconButton(
-              icon: const Icon(
-                Icons.edit_note_rounded,
-                color: AppColors.textPrimary,
-              ),
+              icon: const Icon(Icons.edit_note_rounded),
               tooltip: 'Edit Split',
               onPressed: () async {
                 final success = await context.push<bool>('/routine-editor');
@@ -141,10 +135,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               },
             ),
             IconButton(
-              icon: const Icon(
-                Icons.psychology_rounded,
-                color: AppColors.primary,
-              ),
+              icon: const Icon(Icons.psychology_rounded),
               tooltip: 'Re-generate Split with AI',
               onPressed: () async {
                 final success = await context.push<bool>('/routine-wizard');
@@ -170,28 +161,25 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   }
 
   Widget _buildActiveProgramState() {
+    final colors = context.b05Colors;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.calendar_month_rounded,
-              size: 56,
-              color: AppColors.primary,
-            ),
+            Icon(Icons.calendar_month_rounded, size: 56, color: colors.action),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'A scheduled training program is active',
               textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: B05Typography.title(context),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Legacy split editing is unavailable while this program is active. Your scheduled workouts remain separate from older routines.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+              style: B05Typography.body(context),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
@@ -206,6 +194,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   }
 
   Widget _buildEmptyState() {
+    final colors = context.b05Colors;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28.0),
@@ -214,45 +203,37 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: AppColors.primaryGlow,
+                color: colors.selected,
                 borderRadius: BorderRadius.circular(40),
               ),
               padding: const EdgeInsets.all(20),
-              child: const Icon(
+              child: Icon(
                 Icons.psychology_rounded,
                 size: 56,
-                color: AppColors.primary,
+                color: colors.action,
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'No Workout Split Generated',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: B05Typography.title(context),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Our AI Fitness Coach can design a custom training split matching your equipment, experience, and schedules.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+              style: B05Typography.body(context),
             ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: FilledButton.icon(
                 onPressed: () async {
                   final success = await context.push<bool>('/routine-wizard');
                   if (success == true) {
                     await _loadActiveRoutine();
                   }
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
                 icon: const Icon(Icons.auto_awesome_rounded, size: 18),
                 label: const Text(
                   'Generate Split with AI',
@@ -273,14 +254,6 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                         await _loadActiveRoutine();
                       }
                     },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primary),
-                      foregroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
                     icon: const Icon(
                       Icons.dashboard_customize_rounded,
                       size: 16,
@@ -305,14 +278,6 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                         await _loadActiveRoutine();
                       }
                     },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.border),
-                      foregroundColor: AppColors.textPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
                     icon: const Icon(Icons.edit_note_rounded, size: 16),
                     label: const Text(
                       'Manual Build',
@@ -332,6 +297,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   }
 
   Widget _buildRoutineLayout() {
+    final colors = context.b05Colors;
     // Locate details for selected day
     final dayData = _routineDays.firstWhere(
       (d) => (d['day'] as RoutineDay).dayOfWeek == _selectedDayOfWeek,
@@ -375,10 +341,10 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                       ),
                     ),
                     if (day.isRestDay)
-                      const Text(
+                      Text(
                         '🧘 REST',
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: colors.textSecondary,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -386,8 +352,8 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                     else
                       Text(
                         '${exercises.length} Exercises',
-                        style: const TextStyle(
-                          color: AppColors.primary,
+                        style: TextStyle(
+                          color: colors.action,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -406,7 +372,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                 if (!day.isRestDay && exercises.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20.0),
-                    child: ElevatedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: () {
                         context.push(
                           '/workout-player',
@@ -416,13 +382,8 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
                           },
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                      style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
                       ),
                       icon: const Icon(Icons.play_arrow_rounded, size: 28),
                       label: const Text(
@@ -443,12 +404,13 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   }
 
   Widget _buildWeeklyCalendarHeader() {
+    final colors = context.b05Colors;
     final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final now = DateTime.now();
     final monday = now.subtract(Duration(days: now.weekday - 1));
 
     return Container(
-      color: AppColors.surface,
+      color: colors.section,
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -469,63 +431,67 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
 
             return Padding(
               padding: const EdgeInsets.only(right: 8.0),
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedDayOfWeek = dayNum),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  width: 58,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.cardBackground,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? Colors.transparent : AppColors.border,
-                      width: 1,
+              child: Semantics(
+                button: true,
+                selected: isSelected,
+                label: '${weekdays[index]} ${date.day}',
+                child: InkWell(
+                  onTap: () => setState(() => _selectedDayOfWeek = dayNum),
+                  borderRadius: B05Radii.largeRadius,
+                  child: AnimatedContainer(
+                    duration: B05MotionPolicy.transitionDuration(context),
+                    width: 58,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: isSelected ? colors.action : colors.inset,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? Colors.transparent : colors.border,
+                        width: 1,
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        weekdays[index],
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.textSecondary,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          weekdays[index],
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected
+                                ? colors.onAction
+                                : colors.textSecondary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${date.day}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.textPrimary,
+                        const SizedBox(height: 4),
+                        Text(
+                          '${date.day}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected
+                                ? colors.onAction
+                                : colors.textPrimary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Icon(
-                        _completedDayOfWeeks.contains(dayNum)
-                            ? Icons.check_circle_rounded
-                            : (isRest
-                                  ? Icons.spa_rounded
-                                  : Icons.fitness_center_rounded),
-                        size: 14,
-                        color: isSelected
-                            ? Colors.white
-                            : (_completedDayOfWeeks.contains(dayNum)
-                                  ? AppColors.success
-                                  : (isRest
-                                        ? Colors.blue.withValues(alpha: 0.8)
-                                        : AppColors.primary)),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Icon(
+                          _completedDayOfWeeks.contains(dayNum)
+                              ? Icons.check_circle_rounded
+                              : (isRest
+                                    ? Icons.spa_rounded
+                                    : Icons.fitness_center_rounded),
+                          size: 14,
+                          color: isSelected
+                              ? colors.onAction
+                              : (_completedDayOfWeeks.contains(dayNum)
+                                    ? colors.success.indicator
+                                    : (isRest
+                                          ? colors.info.indicator
+                                          : colors.action)),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -537,6 +503,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   }
 
   Widget _buildRestDayState() {
+    final colors = context.b05Colors;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -544,10 +511,14 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.08),
+              color: colors.info.container,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.spa_rounded, size: 48, color: Colors.blue),
+            child: Icon(
+              Icons.spa_rounded,
+              size: 48,
+              color: colors.info.foreground,
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -555,10 +526,10 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Your muscles grow during rest periods. Hydrate and eat well!',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: B05Typography.caption(context),
           ),
         ],
       ),
@@ -566,6 +537,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   }
 
   Widget _buildExercisesList(List<RoutineExercise> list) {
+    final colors = context.b05Colors;
     return ListView.builder(
       itemCount: list.length,
       itemBuilder: (context, index) {
@@ -574,8 +546,8 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
           margin: const EdgeInsets.only(bottom: 8.0),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: AppColors.primaryGlow,
-              foregroundColor: AppColors.primary,
+              backgroundColor: colors.selected,
+              foregroundColor: colors.action,
               child: Text('${index + 1}'),
             ),
             title: Text(

@@ -20,7 +20,7 @@ class AppTheme {
         surface: colors.section,
         onSurface: colors.textPrimary,
         error: colors.danger.indicator,
-        onError: Color(0xFFFFFFFF),
+        onError: colors.danger.container,
       ),
 
       // Text Theme

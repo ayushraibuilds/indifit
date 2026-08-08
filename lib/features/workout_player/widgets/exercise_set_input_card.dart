@@ -70,6 +70,7 @@ class ExerciseSetInputCard extends StatelessWidget {
                       double.tryParse(weightController.text) ?? 20.0;
                   showIndiFitBottomSheet<void>(
                     context: context,
+                    semanticLabel: 'Plate calculator',
                     builder: (context) => PlateCalculatorSheet(targetWeight: w),
                   );
                 },

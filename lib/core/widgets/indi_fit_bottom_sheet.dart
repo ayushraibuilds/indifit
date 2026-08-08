@@ -95,7 +95,7 @@ Future<T?> showIndiFitBottomSheet<T>({
     enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
     useSafeArea: false,
-    barrierLabel: semanticLabel,
+    requestFocus: true,
     builder: (sheetContext) => IndiFitBottomSheet(
       maxHeightFactor: maxHeightFactor,
       semanticLabel: semanticLabel,

@@ -29,6 +29,7 @@ class TodayWorkoutCard extends ConsumerWidget {
   void _showManualLogSheet(BuildContext context) {
     showIndiFitBottomSheet(
       context: context,
+      semanticLabel: 'Log completed workout',
       builder: (context) => ManualLogSheet(
         selectedDate: selectedDate,
         initialWorkoutName: isRestDay ? 'Extra Workout' : todayWorkoutName,

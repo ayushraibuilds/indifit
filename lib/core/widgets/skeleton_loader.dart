@@ -35,10 +35,7 @@ class SkeletonBox extends StatelessWidget {
               .animate(onPlay: (controller) => controller.repeat(reverse: true))
               .shimmer(duration: 1200.ms, color: colors.interactive)
               .fadeIn(duration: 180.ms);
-    return Semantics(
-      label: 'Loading',
-      child: ExcludeSemantics(child: content),
-    );
+    return ExcludeSemantics(child: content);
   }
 }
 
@@ -87,11 +84,18 @@ class SkeletonList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      itemCount: count,
-      itemBuilder: (context, index) => const SkeletonCard(),
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: 'Loading content',
+      child: ExcludeSemantics(
+        child: ListView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: count,
+          itemBuilder: (context, index) => const SkeletonCard(),
+        ),
+      ),
     );
   }
 }
