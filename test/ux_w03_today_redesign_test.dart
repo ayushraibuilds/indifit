@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/nutrients.dart';
@@ -193,6 +194,39 @@ void main() {
     },
   );
 
+  testWidgets('Today keyboard traversal follows visible reading order', (
+    tester,
+  ) async {
+    var customizeCalls = 0;
+    var settingsCalls = 0;
+    DateTime? changedDate;
+    await tester.pumpWidget(
+      _todayApp(
+        theme: AppTheme.lightTheme,
+        textScale: 1,
+        disableAnimations: true,
+        personalization: personalization,
+        onCustomize: () => customizeCalls++,
+        onOpenSettings: () => settingsCalls++,
+        onDateChanged: (date) => changedDate = date,
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(customizeCalls, 1);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(settingsCalls, 1);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(changedDate, DateTime(2026, 8, 6));
+  });
+
   testWidgets('Today dark golden benchmark', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -268,6 +302,9 @@ Widget _todayApp({
   required double textScale,
   required bool disableAnimations,
   required DashboardPersonalizationController personalization,
+  ValueChanged<DateTime>? onDateChanged,
+  VoidCallback? onOpenSettings,
+  VoidCallback? onCustomize,
 }) {
   return ProviderScope(
     overrides: [
@@ -297,10 +334,10 @@ Widget _todayApp({
           now: DateTime(2026, 8, 8, 10),
           userName: 'Ari',
           streakCount: 3,
-          onDateChanged: (_) {},
+          onDateChanged: onDateChanged ?? (_) {},
           onRefresh: () async {},
-          onOpenSettings: () {},
-          onCustomize: () {},
+          onOpenSettings: onOpenSettings ?? () {},
+          onCustomize: onCustomize ?? () {},
           onOpenWorkoutPlan: () {},
           onLogMeal: () {},
         ),

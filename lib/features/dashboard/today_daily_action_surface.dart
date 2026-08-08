@@ -140,7 +140,10 @@ class TodayDailyActionSurface extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: onRefresh,
           child: FocusTraversalGroup(
-            policy: OrderedTraversalPolicy(),
+            // The date bar owns its small local ordered group. At page level,
+            // widget order mirrors the visible reading order and prevents
+            // numeric orders in separate sections from interleaving.
+            policy: WidgetOrderTraversalPolicy(),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(
