@@ -294,7 +294,10 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.textContaining('policy is on hold'), findsOneWidget);
+    expect(
+      find.textContaining('Coaching suggestions are unavailable'),
+      findsOneWidget,
+    );
     expect(find.text('Record override'), findsNothing);
     expect(tester.takeException(), isNull);
     final semantics = tester.ensureSemantics();
@@ -339,7 +342,7 @@ void main() {
         ),
       );
       expect(
-        find.textContaining('Safety-sensitive guidance is unavailable'),
+        find.textContaining('I need more dietary information'),
         findsOneWidget,
       );
       expect(find.textContaining('safe'), findsNothing);
@@ -420,8 +423,11 @@ void main() {
           ),
         ),
       );
-      expect(find.textContaining('Exact result: 1750/1'), findsOneWidget);
-      expect(find.text('Eligibility: Eligible'), findsOneWidget);
+      expect(
+        find.textContaining('Suggested change: -100 kcal/day'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Daily estimate: 2000 kcal'), findsOneWidget);
       expect(find.text('Accept target'), findsOneWidget);
       await tester.tap(find.text('Accept target'));
       expect(actions, contains(B04RecommendationFeedbackAction.accept));
@@ -496,12 +502,7 @@ void main() {
       ),
     );
 
-    expect(
-      find.text(
-        'No current guidance is visible. Dismissed guidance remains in history.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Nothing to recommend yet.'), findsOneWidget);
     expect(
       find.text('This explanation must not be shown after dismissal.'),
       findsNothing,
@@ -587,9 +588,9 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('energy: 1200 kcal'), findsOneWidget);
-    expect(find.textContaining('protein: 40–60 g'), findsOneWidget);
-    expect(find.textContaining('Evidence: candidate-v1'), findsOneWidget);
+    expect(find.textContaining('Calories: 1200 kcal'), findsOneWidget);
+    expect(find.textContaining('Protein: 40–60 g'), findsOneWidget);
+    expect(find.textContaining('candidate-v1'), findsNothing);
   });
 
   testWidgets('current-food failures expose retry', (tester) async {
@@ -681,23 +682,23 @@ void main() {
   test('production copy identifies boundary and rapid-change holds', () {
     expect(
       b04ProductionStateCopy('policy_boundary_reached'),
-      contains('policy boundary'),
+      contains('supported range'),
     );
     expect(
       b04ProductionStateCopy('rapid_change_review'),
-      contains('Recent change evidence'),
+      contains('Recent changes need'),
     );
     expect(
       b04ProductionStateCopy('readiness_incomplete_or_unavailable'),
-      contains('Readiness evidence is incomplete'),
+      contains('need a little more activity information'),
     );
     expect(
       b04ProductionStateCopy('candidate_evidence_unavailable'),
-      contains('Safety-sensitive guidance is unavailable'),
+      contains('need more dietary information'),
     );
     expect(
       b04ProductionStateCopy('no_candidate_after_filter'),
-      contains('No explicit local meal opportunity'),
+      contains('Nothing to recommend yet'),
     );
   });
 

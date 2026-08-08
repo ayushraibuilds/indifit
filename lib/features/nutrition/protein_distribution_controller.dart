@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/nutrition_protein_distribution.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/repositories/nutrition_protein_distribution_repository.dart';
 
 enum NutritionProteinDistributionStatus { idle, loading, ready, empty, failure }
@@ -84,9 +85,9 @@ class NutritionProteinDistributionController
       state = state.copyWith(
         status: NutritionProteinDistributionStatus.failure,
         errorCode: typed?.code ?? 'protein_distribution_failed',
-        errorMessage:
-            typed?.message ??
-            'Protein distribution could not be loaded. You can retry.',
+        errorMessage: ProductFailurePresentation.fromCode(
+          typed?.code ?? 'protein_distribution_failed',
+        ).message,
         retryable: true,
       );
     }

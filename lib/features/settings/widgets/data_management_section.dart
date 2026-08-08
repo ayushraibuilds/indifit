@@ -81,7 +81,7 @@ class DataManagementSection extends ConsumerWidget {
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Restore Database Backup'),
+          title: const Text('Restore a backup'),
           backgroundColor: AppColors.surface,
           content: SingleChildScrollView(
             child: Column(
@@ -106,11 +106,13 @@ class DataManagementSection extends ConsumerWidget {
                           selectedFileContent = selected.content;
                         });
                       }
-                    } catch (e) {
+                    } catch (_) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Could not open backup file: $e'),
+                          const SnackBar(
+                            content: Text(
+                              'The backup file could not be opened. Try again.',
+                            ),
                             backgroundColor: AppColors.danger,
                           ),
                         );
@@ -206,7 +208,7 @@ class DataManagementSection extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'WARNING: Overwriting will permanently replace your local database.',
+                            'WARNING: Restoring will replace the data currently on this device.',
                             style: TextStyle(
                               color: AppColors.danger,
                               fontWeight: FontWeight.bold,
@@ -219,13 +221,13 @@ class DataManagementSection extends ConsumerWidget {
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           Text('Export Date: ${result.timestamp}'),
-                          Text('Schema Version: v${result.schemaVersion}'),
+                          Text('Backup format: v${result.schemaVersion}'),
                           Text(
                             'Encrypted: ${result.isEncrypted ? "Yes (SHA256 Verified)" : "No"}',
                           ),
                           const SizedBox(height: 12),
                           const Text(
-                            'RECORD COUNTS:',
+                            'ITEMS IN BACKUP:',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
@@ -250,7 +252,7 @@ class DataManagementSection extends ConsumerWidget {
                             backgroundColor: AppColors.danger,
                           ),
                           onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('Overwrite & Restore'),
+                          child: const Text('Restore backup'),
                         ),
                       ],
                     ),
@@ -265,7 +267,7 @@ class DataManagementSection extends ConsumerWidget {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Database restored successfully!'),
+                            content: Text('Backup restored successfully.'),
                           ),
                         );
                       }
@@ -366,11 +368,11 @@ class DataManagementSection extends ConsumerWidget {
           );
         }
       }
-    } catch (e) {
+    } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Auto-backup restore failed: $e'),
+          const SnackBar(
+            content: Text('Automatic restore failed. Try again.'),
             backgroundColor: AppColors.danger,
           ),
         );

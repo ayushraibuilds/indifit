@@ -37,7 +37,7 @@ void main() {
     expect(controller.state.status, B02ProgressStatus.partial);
     expect(controller.state.data?.activityHistory, isNotNull);
     expect(controller.state.data?.targetEvidence, isNull);
-    expect(controller.state.issues.single, contains('Target evidence'));
+    expect(controller.state.issues.single, contains('Suggested targets'));
   });
 
   test(

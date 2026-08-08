@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -83,7 +84,10 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       setState(() {
         _draftLoading = false;
         _draftLoaded = false;
-        _draftError = error.toString();
+        _draftError = ProductFailurePresentation.fromError(
+          error,
+          title: 'Routine draft unavailable',
+        ).message;
       });
     }
   }
@@ -155,7 +159,9 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       if (mounted) {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save routine draft: $error')),
+          const SnackBar(
+            content: Text('Could not save your routine draft. Try again.'),
+          ),
         );
       }
       return;
@@ -182,8 +188,8 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       setState(() => _loading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Generation error: ${e.toString()}'),
+          const SnackBar(
+            content: Text('Your routine could not be generated. Try again.'),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -205,7 +211,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'A scheduled program is active. Create a replacement version from the training-program flow instead.',
+                'A scheduled program is active. Create a new routine from the training-program flow instead.',
               ),
             ),
           );
@@ -233,8 +239,8 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save routine: ${e.toString()}'),
+          const SnackBar(
+            content: Text('Your routine could not be saved. Try again.'),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -254,7 +260,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not skip onboarding: $error')),
+          const SnackBar(content: Text('Could not skip setup. Try again.')),
         );
       }
     } finally {

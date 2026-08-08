@@ -111,12 +111,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _draftLoaded = true;
         _draftError = null;
       });
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _draftLoading = false;
         _draftLoaded = false;
-        _draftError = error.toString();
+        _draftError = 'Your setup could not be restored. Try again.';
       });
     }
   }
@@ -298,7 +298,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not finish onboarding: $error')),
+          const SnackBar(content: Text('Could not finish setup. Try again.')),
         );
       }
     } finally {

@@ -267,7 +267,7 @@ class _NutritionRecipeEditorScreenState
             OutlinedButton.icon(
               onPressed: busy ? null : _duplicate,
               icon: const Icon(Icons.copy_outlined),
-              label: const Text('Duplicate current version'),
+              label: const Text('Duplicate recipe'),
             ),
           ],
         ],
@@ -308,7 +308,7 @@ class _NutritionRecipeEditorScreenState
         transformedOption: target,
       );
     } catch (error) {
-      _showError('Ingredient was not added: $error');
+      _showError('Ingredient was not added. Check the amount and try again.');
     }
   }
 
@@ -333,7 +333,7 @@ class _NutritionRecipeEditorScreenState
         ),
       );
     } catch (error) {
-      _showError('Quantity was not updated: $error');
+      _showError('Quantity was not updated. Check the amount and try again.');
     }
   }
 
@@ -415,7 +415,7 @@ class _NutritionRecipeEditorScreenState
     if (controller.currentState.published) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Recipe published as an immutable version.'),
+          content: Text('Recipe published as a new saved recipe.'),
         ),
       );
     }

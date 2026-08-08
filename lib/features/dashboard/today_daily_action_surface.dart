@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/nutrients.dart';
 import '../../core/nutrition_legacy_read_models.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/models/b02_progress_read_models.dart';
@@ -499,7 +500,7 @@ class _CalendarReadStatus extends StatelessWidget {
       return B05StatusMessage(
         status: B05SemanticStatus.unavailable,
         label: 'Your scheduled workout is unavailable',
-        value: read!.errorMessage,
+        value: 'Open your workout plan to try again.',
       );
     }
     final occurrences = read!.value!.rangeOccurrences;
@@ -514,7 +515,7 @@ class _CalendarReadStatus extends StatelessWidget {
     return Semantics(
       container: true,
       label: 'Scheduled workout: ${occurrence.template.name}',
-      value: 'Status ${occurrence.occurrence.status}',
+      value: _calendarStatusLabel(occurrence.occurrence.status),
       child: ExcludeSemantics(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -522,7 +523,7 @@ class _CalendarReadStatus extends StatelessWidget {
             Text(occurrence.template.name, style: B05Typography.label(context)),
             const SizedBox(height: B05Layout.space4),
             Text(
-              'Scheduled status: ${occurrence.occurrence.status}',
+              _calendarStatusLabel(occurrence.occurrence.status),
               style: B05Typography.body(context),
             ),
           ],
@@ -590,7 +591,7 @@ class _NutritionReadStatus extends StatelessWidget {
       return B05StatusMessage(
         status: B05SemanticStatus.unavailable,
         label: 'Daily nutrition totals are unavailable',
-        value: read!.errorMessage,
+        value: 'Log a meal or try again later.',
       );
     }
     final daily = read!.value!;
@@ -599,15 +600,15 @@ class _NutritionReadStatus extends StatelessWidget {
       return const B05StatusMessage(
         status: B05SemanticStatus.info,
         label: 'No meals have been logged for this day',
-        value: 'Log a meal to see canonical nutrition totals.',
+        value: 'Log your first meal to start tracking today.',
       );
     }
     final fact = daily.totals.facts['energy'];
     if (state == TodayNutritionSummaryState.unknown || fact == null) {
       return const B05StatusMessage(
         status: B05SemanticStatus.unavailable,
-        label: 'Energy total is unknown',
-        value: 'The nutrition source did not provide a usable total.',
+        label: 'Calories are not available yet',
+        value: 'We couldn’t calculate a total from today’s meals.',
       );
     }
     final value = state == TodayNutritionSummaryState.range
@@ -625,11 +626,11 @@ class _NutritionReadStatus extends StatelessWidget {
   }
 
   String _pointLabel(NutrientFact fact) =>
-      '${fact.point?.value.toString() ?? 'unknown'} ${fact.unit.symbol}';
+      '${fact.point?.value.toString() ?? 'Not available'} ${fact.unit.symbol}';
 
   String _rangeLabel(NutrientFact fact) {
-    final lower = fact.lower?.value.toString() ?? 'unknown';
-    final upper = fact.upper?.value.toString() ?? 'unknown';
+    final lower = fact.lower?.value.toString() ?? 'Not available';
+    final upper = fact.upper?.value.toString() ?? 'Not available';
     return '$lower–$upper ${fact.unit.symbol}';
   }
 }
@@ -679,7 +680,7 @@ class _ProgressReadStatus extends StatelessWidget {
       return B05StatusMessage(
         status: B05SemanticStatus.unavailable,
         label: 'Activity and progress are unavailable',
-        value: read!.errorMessage,
+        value: 'Complete a workout or try again later.',
       );
     }
     final history = read!.value!.activityHistory;
@@ -693,13 +694,14 @@ class _ProgressReadStatus extends StatelessWidget {
     if (history.isEmpty) {
       return const B05StatusMessage(
         status: B05SemanticStatus.info,
-        label: 'No completed activity in this progress period',
+        label: 'No completed activity yet',
+        value: 'Complete a workout to start seeing progress.',
       );
     }
     return B05StatusMessage(
       status: B05SemanticStatus.success,
       label: 'Activity history is available',
-      value: '${history.length} recorded activities in this progress period.',
+      value: '${history.length} activities so far.',
     );
   }
 }
@@ -766,7 +768,7 @@ class _RetryStatus extends StatelessWidget {
       B05StatusMessage(
         status: B05SemanticStatus.unavailable,
         label: label,
-        value: message,
+        value: 'We couldn’t load this right now. Try again.',
       ),
       const SizedBox(height: B05Layout.space8),
       B05ActionButton(
@@ -803,4 +805,15 @@ class _NoVisibleModules extends StatelessWidget {
       ],
     ),
   );
+}
+
+String _calendarStatusLabel(Object? value) {
+  final key = value?.toString().toLowerCase().replaceAll('_', ' ') ?? '';
+  return switch (key) {
+    'scheduled' || 'planned' => 'Planned for today',
+    'completed' || 'complete' => 'Completed today',
+    'skipped' => 'Skipped',
+    'cancelled' || 'canceled' => 'Cancelled',
+    _ => ConsumerCopy.state(key),
+  };
 }

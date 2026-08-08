@@ -9,6 +9,7 @@ import '../../core/di/providers.dart';
 import '../../core/fixtures/b02_muscle_catalog.dart';
 import '../../core/fixtures/b05_foundation_registry.dart';
 import '../../core/nutrition_household_measures.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
@@ -59,7 +60,7 @@ const List<B05EducationContentDescriptor> kB05BundledEducationLessons = [
     body:
         'Energy balance describes energy consumed and energy used over time. '
         'It is a trend, not a single-meal score, and it does not replace the '
-        'app\'s canonical nutrition totals or safety checks.',
+        'app\'s nutrition guidance or safety checks.',
     relevanceTags: {'energy_balance', 'nutrition'},
   ),
   B05EducationContentDescriptor(
@@ -589,7 +590,10 @@ class B05EducationLessonsController
       state = B05EducationLessonsState(
         status: B05EducationLessonsStatus.error,
         lessons: previous,
-        errorMessage: error.toString(),
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Mini lessons are unavailable',
+        ).message,
       );
     }
   }
@@ -647,7 +651,10 @@ class B05EducationLessonsController
       state = B05EducationLessonsState(
         status: B05EducationLessonsStatus.error,
         lessons: state.lessons,
-        errorMessage: error.toString(),
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Mini lesson could not be saved',
+        ).message,
       );
     }
   }
@@ -783,9 +790,9 @@ class _B05MiniLessonTile extends StatelessWidget {
     if (item.isRevision) {
       actions.add(
         B05ActionButton(
-          label: 'Read new version',
+          label: 'Read refreshed lesson',
           icon: Icons.auto_awesome_outlined,
-          hint: 'Starts the revised ${item.lesson.topic} lesson.',
+          hint: 'Starts the refreshed ${item.lesson.topic} lesson.',
           onPressed: isSaving ? null : onRevision,
           focusOrder: focusBase.toDouble(),
         ),
@@ -807,7 +814,7 @@ class _B05MiniLessonTile extends StatelessWidget {
         B05ActionButton(
           label: 'Mark complete',
           icon: Icons.check_rounded,
-          hint: 'Marks this lesson complete for this version.',
+          hint: 'Marks this lesson complete.',
           onPressed: isSaving ? null : onComplete,
           focusOrder: focusBase.toDouble(),
         ),
@@ -826,7 +833,7 @@ class _B05MiniLessonTile extends StatelessWidget {
       child: Semantics(
         container: true,
         label: item.lesson.topic,
-        value: '$stateLabel, version ${item.lesson.version}',
+        value: stateLabel,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -837,16 +844,13 @@ class _B05MiniLessonTile extends StatelessWidget {
             const SizedBox(height: B05Layout.space4),
             Text(item.lesson.body, style: B05Typography.body(context)),
             const SizedBox(height: B05Layout.space4),
-            Text(
-              '$stateLabel · Version ${item.lesson.version}',
-              style: B05Typography.body(context),
-            ),
+            Text(stateLabel, style: B05Typography.body(context)),
             if (item.isRevision) ...[
               const SizedBox(height: B05Layout.space4),
               const B05StatusMessage(
                 status: B05SemanticStatus.info,
-                label: 'A revised lesson is available',
-                value: 'Your prior version remains in your history.',
+                label: 'A refreshed lesson is available',
+                value: 'Your earlier progress remains in your history.',
               ),
             ],
             const SizedBox(height: B05Layout.space8),
@@ -996,10 +1000,10 @@ class _B05ExerciseEducationPanelState
             status: B05SemanticStatus.info,
             label: 'Loading exercise education',
           ),
-          error: (error, _) => B05StatusMessage(
+          error: (_, _) => const B05StatusMessage(
             status: B05SemanticStatus.unavailable,
             label: 'Exercise education is unavailable',
-            value: error.toString(),
+            value: 'Try again later.',
           ),
           data: (model) => _buildContent(context, model, visualRegistry),
         ),

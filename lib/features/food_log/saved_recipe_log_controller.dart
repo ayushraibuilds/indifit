@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/nutrition_calculation_service.dart';
 import '../../core/nutrition_consumption_snapshots.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
@@ -389,7 +390,7 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
     } on QuantityError catch (error) {
       throw NutritionRecipeLogError(
         'invalid_amount',
-        error.toString(),
+        ProductFailurePresentation.fromCode('invalid_amount').message,
         cause: error,
       );
     }
@@ -401,11 +402,7 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
         : error is NutritionCalculationError
         ? error.code
         : fallbackCode;
-    final message = error is NutritionRecipeLogError
-        ? error.message
-        : error is NutritionCalculationError
-        ? error.message
-        : error.toString();
+    final message = ProductFailurePresentation.fromCode(code).message;
     state = state.copyWith(
       status: SavedRecipeLogStatus.failure,
       errorCode: code,

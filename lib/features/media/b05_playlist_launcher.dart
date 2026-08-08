@@ -169,7 +169,7 @@ class B05PlaylistLaunchService {
     if (strictOffline) {
       return const B05PlaylistLaunchResult(
         status: B05PlaylistLaunchStatus.offline,
-        message: 'Playlist launch is unavailable in strict-offline mode.',
+        message: 'Music is unavailable while you’re offline.',
       );
     }
     late final B05PlaylistReference reference;
@@ -178,10 +178,11 @@ class B05PlaylistLaunchService {
         preference.providerId,
         preference.normalizedReference,
       );
-    } on Object catch (error) {
+    } on Object {
       return B05PlaylistLaunchResult(
         status: B05PlaylistLaunchStatus.invalid,
-        message: 'Saved playlist reference is invalid: $error',
+        message:
+            'This playlist is no longer available. Choose another playlist.',
       );
     }
     try {
@@ -203,10 +204,10 @@ class B05PlaylistLaunchService {
         message: 'Playlist opened.',
         uri: reference.launchUri,
       );
-    } on Object catch (error) {
+    } on Object {
       return B05PlaylistLaunchResult(
         status: B05PlaylistLaunchStatus.failure,
-        message: 'Playlist launch failed: $error',
+        message: 'The playlist could not be opened. Try again.',
       );
     }
   }
@@ -266,19 +267,19 @@ class B05PlaylistController extends StateNotifier<B05PlaylistControllerState> {
       final message =
           preference != null &&
               !_isValidPlaylistPreference(_registry, preference)
-          ? 'Saved playlist preference is unavailable in this build. Choose an approved provider and reference.'
+          ? 'Saved playlist preference is unavailable. Choose a supported music app and playlist.'
           : null;
       state = B05PlaylistControllerState(
         status: B05PlaylistControllerStatus.ready,
         preference: preference,
         message: message,
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       state = B05PlaylistControllerState(
         status: B05PlaylistControllerStatus.error,
         preference: state.preference,
-        message: error.toString(),
+        message: 'Playlist settings could not be loaded. Try again.',
       );
     }
   }
@@ -306,12 +307,12 @@ class B05PlaylistController extends StateNotifier<B05PlaylistControllerState> {
         preference: preference,
         message: 'Playlist preference saved.',
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       state = B05PlaylistControllerState(
         status: B05PlaylistControllerStatus.error,
         preference: state.preference,
-        message: error.toString(),
+        message: 'Playlist preference could not be saved. Try again.',
       );
     }
   }
@@ -329,12 +330,12 @@ class B05PlaylistController extends StateNotifier<B05PlaylistControllerState> {
         status: B05PlaylistControllerStatus.ready,
         message: 'Playlist preference cleared.',
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       state = B05PlaylistControllerState(
         status: B05PlaylistControllerStatus.error,
         preference: state.preference,
-        message: error.toString(),
+        message: 'Playlist preference could not be cleared. Try again.',
       );
     }
   }
@@ -360,17 +361,17 @@ class B05PlaylistController extends StateNotifier<B05PlaylistControllerState> {
         );
       }
       return result;
-    } catch (error) {
+    } catch (_) {
       if (mounted) {
         state = B05PlaylistControllerState(
           status: B05PlaylistControllerStatus.error,
           preference: preference,
-          message: error.toString(),
+          message: 'The playlist could not be opened. Try again.',
         );
       }
       return B05PlaylistLaunchResult(
         status: B05PlaylistLaunchStatus.failure,
-        message: 'Playlist launch failed: $error',
+        message: 'The playlist could not be opened. Try again.',
       );
     } finally {
       _isLaunching = false;
@@ -416,6 +417,7 @@ class B05PlaylistLauncherButton extends ConsumerWidget {
     final state = ref.watch(b05PlaylistControllerProvider);
     final registry = ref.watch(b05PlaylistProviderRegistryProvider);
     final controller = ref.read(b05PlaylistControllerProvider.notifier);
+    if (registry.providers.isEmpty) return const SizedBox.shrink();
     final preference = state.preference;
     if (state.status == B05PlaylistControllerStatus.loading ||
         state.status == B05PlaylistControllerStatus.launching) {
@@ -434,7 +436,7 @@ class B05PlaylistLauncherButton extends ConsumerWidget {
         label: 'Playlist launcher',
         hint:
             state.message ??
-            'Saved playlist is unavailable. Open settings to choose an approved playlist provider.',
+            'Saved playlist is unavailable. Choose a supported music app in Settings.',
         onPressed: () => context.push('/settings'),
         focusOrder: 3,
       );
@@ -504,9 +506,8 @@ class _B05PlaylistSettingsPanelState
     if (registry.providers.isEmpty) {
       return const B05StatusMessage(
         status: B05SemanticStatus.unavailable,
-        label: 'Playlist setup is unavailable',
-        value:
-            'An approved provider allowlist is required before a playlist can be saved or launched.',
+        label: 'Music playlists aren’t available yet',
+        value: 'Supported music apps will appear here when they’re ready.',
       );
     }
     if (state.status == B05PlaylistControllerStatus.loading &&
@@ -562,7 +563,10 @@ class _B05PlaylistSettingsPanelState
               decoration: const InputDecoration(labelText: 'Provider'),
               items: [
                 for (final item in registry.providers.values)
-                  DropdownMenuItem(value: item.id, child: Text(item.id)),
+                  DropdownMenuItem(
+                    value: item.id,
+                    child: Text(_providerLabel(item.id)),
+                  ),
               ],
               onChanged: state.isBusy
                   ? null
@@ -636,4 +640,13 @@ class B05PlaylistSettingsScreen extends StatelessWidget {
       ),
     ),
   );
+}
+
+String _providerLabel(String value) {
+  return switch (value.trim().toLowerCase()) {
+    'spotify' => 'Spotify',
+    'youtube_music' || 'youtube-music' => 'YouTube Music',
+    'apple_music' || 'apple-music' => 'Apple Music',
+    _ => 'Music app',
+  };
 }

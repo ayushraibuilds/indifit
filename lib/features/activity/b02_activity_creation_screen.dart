@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_activity_session_repository.dart';
 import '../../data/services/b02_activity_form_service.dart';
@@ -348,7 +349,12 @@ class _B02ActivityCreationScreenState
     } on B02ValidationException catch (error) {
       setState(() => _validationError = error.message);
     } catch (error) {
-      setState(() => _validationError = error.toString());
+      setState(
+        () => _validationError = ProductFailurePresentation.fromError(
+          error,
+          title: 'Activity could not be started',
+        ).message,
+      );
     }
   }
 

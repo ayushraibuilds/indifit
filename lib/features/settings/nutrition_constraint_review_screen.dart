@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/nutrition_constraints.dart';
+import '../../core/presentation/consumer_copy.dart';
 import 'nutrition_constraint_review_controller.dart';
 
 class NutritionConstraintEvaluationReviewScreen extends ConsumerStatefulWidget {
@@ -49,24 +50,24 @@ class _NutritionConstraintEvaluationReviewScreenState
       nutritionConstraintEvaluationReviewControllerProvider.notifier,
     );
     return Scaffold(
-      appBar: AppBar(title: const Text('Dietary evidence review')),
+      appBar: AppBar(title: const Text('Dietary check')),
       body: switch (state.status) {
         NutritionConstraintEvaluationReviewStatus.idle => const Center(
-          child: Text('Choose a resolved food or recipe version to review.'),
+          child: Text('Choose a food or recipe to review.'),
         ),
         NutritionConstraintEvaluationReviewStatus.loading => Center(
           child: Semantics(
-            label: 'Loading dietary evidence',
+            label: 'Loading dietary check',
             child: const CircularProgressIndicator(),
           ),
         ),
         NutritionConstraintEvaluationReviewStatus.failure => _ReviewFailure(
-          message: state.message ?? 'Could not review dietary evidence.',
+          message: state.message ?? 'Could not complete the dietary check.',
           onRetry: controller.retry,
         ),
         NutritionConstraintEvaluationReviewStatus.success =>
           state.evaluation == null
-              ? const Center(child: Text('Dietary evidence is unavailable.'))
+              ? const Center(child: Text('The dietary check is unavailable.'))
               : SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                   child: NutritionConstraintEvaluationReviewCard(
@@ -110,10 +111,8 @@ class NutritionConstraintEvaluationReviewCard extends StatelessWidget {
                   Text(outcomeLabel),
                   const SizedBox(height: 6),
                   const Text(
-                    'This is an evidence-based check. No known conflict does not mean guaranteed safety.',
+                    'This check uses the information available for this item. No known conflict is not a safety guarantee.',
                   ),
-                  const SizedBox(height: 6),
-                  Text('Rule version: ${evaluation.ruleVersion}'),
                 ],
               ),
             ),
@@ -151,32 +150,27 @@ class _EvaluationDetail extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 4),
-          Text('Target: ${evaluation.targetKey}'),
+          Text('Item: ${_targetLabel(evaluation.targetKey)}'),
           Text('Result: ${_outcomeLabel(evaluation.outcome)}'),
           if (evaluation.acknowledged)
-            const Text('Acknowledged by the user; evidence is unchanged.'),
+            const Text('Your acknowledgement does not change the check.'),
           const SizedBox(height: 8),
           if (evaluation.evidence.isEmpty)
-            const Text('Evidence: none recorded; absence is not assumed.')
+            const Text('More information is needed to complete this check.')
           else ...[
-            const Text('Evidence:'),
-            for (final evidence in evaluation.evidence)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  '${evidence.status.stableId} · ${evidence.source.stableId} · ${evidence.evidenceId}'
-                  '${evidence.ingredientLineage == null ? '' : ' · line ${evidence.ingredientLineage}'}',
-                ),
-              ),
+            Text(
+              '${evaluation.evidence.length} ${evaluation.evidence.length == 1 ? 'check' : 'checks'} completed.',
+            ),
           ],
           if (evaluation.affectedComponentIds.isNotEmpty)
-            Text(
-              'Affected components: ${evaluation.affectedComponentIds.join(', ')}',
+            const Text(
+              'This check covers more than one ingredient or component.',
             ),
-          if (evaluation.missingEvidence.isNotEmpty)
-            Text('Missing evidence: ${evaluation.missingEvidence.join(', ')}'),
-          if (evaluation.reasonCodes.isNotEmpty)
-            Text('Reason: ${evaluation.reasonCodes.join(', ')}'),
+          if (evaluation.missingEvidence.isNotEmpty ||
+              evaluation.reasonCodes.isNotEmpty)
+            const Text(
+              'Why? I need a little more information before I can show this safely.',
+            ),
         ],
       ),
     ),
@@ -196,9 +190,12 @@ class _ReviewFailure extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Dietary evidence is unavailable.'),
+          const Text('The dietary check is unavailable.'),
           const SizedBox(height: 8),
-          Text(message, textAlign: TextAlign.center),
+          const Text(
+            'We couldn’t complete this check right now. Try again.',
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: onRetry,
@@ -216,5 +213,14 @@ String _outcomeLabel(NutritionConstraintOutcome outcome) => switch (outcome) {
   NutritionConstraintOutcome.possibleConflict => 'Possible conflict',
   NutritionConstraintOutcome.noKnownConflict => 'No detected conflict',
   NutritionConstraintOutcome.insufficientInformation =>
-    'Unknown or insufficient evidence',
+    'More information needed',
 };
+
+String _targetLabel(String key) {
+  try {
+    final target = NutritionConstraintTarget.fromStableKey(key);
+    return '${ConsumerCopy.targetType(target.type.stableId)}: ${ConsumerCopy.target(target.id)}';
+  } on Object {
+    return 'Selected item';
+  }
+}

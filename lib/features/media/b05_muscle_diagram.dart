@@ -5,6 +5,7 @@ import '../../core/fixtures/b02_muscle_catalog.dart';
 import '../../core/fixtures/b05_foundation_registry.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../data/models/b02_execution_models.dart';
 import '../education/b05_education_content.dart';
 
 /// Validates the approved visual-region packet against the canonical B02
@@ -72,8 +73,11 @@ class _B05InteractiveMuscleDiagramState
     }
     try {
       B05MuscleDiagramValidator().validate(registry);
-    } on B05RegistryValidationException catch (error) {
-      return _textFallback(context, error.message);
+    } on B05RegistryValidationException {
+      return _textFallback(
+        context,
+        'The muscle guide is not available right now. Try again later.',
+      );
     }
     final labelsById = {
       for (final label in widget.muscles.labels) label.muscleId: label,
@@ -96,7 +100,7 @@ class _B05InteractiveMuscleDiagramState
           ),
           const SizedBox(height: B05Layout.space4),
           Text(
-            'Select a labelled region to inspect its canonical B02 contribution.',
+            'Select a labelled region to see how it supports your workout.',
             style: B05Typography.body(context),
           ),
           const SizedBox(height: B05Layout.space12),
@@ -197,7 +201,7 @@ class _B05InteractiveMuscleDiagramState
         const B05StatusMessage(
           status: B05SemanticStatus.unavailable,
           label: 'Muscle diagram unavailable',
-          value: 'The canonical text list remains available.',
+          value: 'The text list remains available.',
         ),
         const SizedBox(height: B05Layout.space8),
         Text(message, style: B05Typography.body(context)),
@@ -205,7 +209,7 @@ class _B05InteractiveMuscleDiagramState
         Semantics(
           container: true,
           explicitChildNodes: true,
-          label: 'Canonical muscle contribution text list',
+          label: 'Muscle contribution text list',
           value: widget.muscles.labels.isEmpty
               ? 'No reviewed B02 mapping is available.'
               : widget.muscles.labels
@@ -240,7 +244,11 @@ class _B05InteractiveMuscleDiagramState
   ) {
     final role = labelsById[region.muscleId]?.role;
     return role == null
-        ? 'Contribution unknown'
-        : '${role.dbValue} contribution';
+        ? 'Contribution not available'
+        : '${switch (role) {
+            B02MuscleRole.primary => 'Main',
+            B02MuscleRole.secondary => 'Supporting',
+            B02MuscleRole.stabilizing => 'Stabilising',
+          }} contribution';
   }
 }

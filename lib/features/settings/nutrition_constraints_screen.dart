@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/nutrition_constraints.dart';
+import '../../core/presentation/consumer_copy.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
 import 'nutrition_constraints_controller.dart';
 
@@ -176,9 +177,9 @@ class _DisclosureCard extends StatelessWidget {
       child: Semantics(
         container: true,
         label:
-            'Dietary constraints are user-entered records. Evaluation uses explicit evidence. No known conflict does not mean guaranteed safety.',
+            'Dietary preferences help IndiFit check meals. No known conflict is not a safety guarantee.',
         child: const Text(
-          'Constraints are user-entered records. Food and recipe checks use explicit evidence; missing information stays visible and is not treated as safe.',
+          'Tell us what to avoid or prefer. If a meal has limited information, we’ll say so instead of guessing.',
         ),
       ),
     ),
@@ -203,7 +204,7 @@ class _ConstraintCard extends StatelessWidget {
     );
     final stateLabel = constraint.isActive ? 'Active' : 'Archived';
     final targetLabel =
-        '${constraint.target.type.stableId}: ${constraint.target.id}';
+        '${ConsumerCopy.targetType(constraint.target.type.stableId)}: ${ConsumerCopy.target(constraint.target.id)}';
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -224,12 +225,11 @@ class _ConstraintCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Semantics(
-              label: 'Stable target identity $targetLabel',
-              child: Text(targetLabel),
-            ),
+            Semantics(label: targetLabel, child: Text(targetLabel)),
             const SizedBox(height: 4),
-            Text('Handling: ${constraint.strictness.stableId}'),
+            Text(
+              'Preference: ${ConsumerCopy.strictness(constraint.strictness.stableId)}',
+            ),
             if (constraint.crossContact) const Text('Cross-contact: included'),
             if (constraint.notes != null) ...[
               const SizedBox(height: 4),
@@ -337,9 +337,9 @@ class _EditConstraintDialogState extends State<_EditConstraintDialog> {
             const SizedBox(height: 8),
             Semantics(
               label:
-                  'Stable target identity ${widget.constraint.target.stableKey}',
+                  '${ConsumerCopy.targetType(widget.constraint.target.type.stableId)}: ${ConsumerCopy.target(widget.constraint.target.id)}',
               child: Text(
-                widget.constraint.target.stableKey,
+                '${ConsumerCopy.targetType(widget.constraint.target.type.stableId)}: ${ConsumerCopy.target(widget.constraint.target.id)}',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -354,7 +354,7 @@ class _EditConstraintDialogState extends State<_EditConstraintDialog> {
                   DropdownMenuItem(
                     value: value,
                     child: Text(
-                      value.stableId,
+                      ConsumerCopy.strictness(value.stableId),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -422,11 +422,11 @@ class _EditConstraintDialogState extends State<_EditConstraintDialog> {
           clearNotes: notes.isEmpty,
         ),
       );
-    } on NutritionConstraintError catch (error) {
+    } on NutritionConstraintError {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _error = error.message;
+        _error = 'Could not update this preference. Try again.';
       });
     } catch (_) {
       if (!mounted) return;
@@ -564,7 +564,7 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
                       DropdownMenuItem(
                         value: targetType,
                         child: Text(
-                          targetType.stableId,
+                          ConsumerCopy.targetType(targetType.stableId),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -580,8 +580,9 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
               controller: _targetIdController,
               enabled: !_saving,
               decoration: const InputDecoration(
-                labelText: 'Stable target ID',
-                helperText: 'Use an approved portable ID, not a display name.',
+                labelText: 'Food, ingredient, or item',
+                helperText:
+                    'Enter the food or ingredient you want to avoid or prefer.',
               ),
               textInputAction: TextInputAction.next,
             ),
@@ -595,7 +596,7 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
                   DropdownMenuItem(
                     value: value,
                     child: Text(
-                      value.stableId,
+                      ConsumerCopy.strictness(value.stableId),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -652,7 +653,7 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
     final targetId = _targetIdController.text.trim();
     final targetType = _targetType;
     if (targetType == null || targetId.isEmpty) {
-      setState(() => _error = 'Choose a target type and enter its stable ID.');
+      setState(() => _error = 'Choose what this preference applies to.');
       return;
     }
     setState(() {
@@ -669,11 +670,11 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
             ? null
             : _notesController.text.trim(),
       );
-    } on NutritionConstraintError catch (error) {
+    } on NutritionConstraintError {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _error = error.message;
+        _error = 'Could not save this preference. Try again.';
       });
     } catch (_) {
       if (!mounted) return;

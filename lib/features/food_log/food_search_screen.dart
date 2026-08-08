@@ -108,9 +108,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         online = await apiService.searchOnline(text);
       } catch (e) {
         isOnlineSearchOffline = true;
-        onlineFailureMessage = e is StateError
-            ? e.message.toString()
-            : 'Online results are unavailable right now.';
+        onlineFailureMessage = 'Online results are unavailable right now.';
       }
 
       if (mounted) {
@@ -143,7 +141,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('This food is unavailable: $error')),
+          const SnackBar(content: Text('This food is unavailable. Try again.')),
         );
       }
     }
@@ -171,7 +169,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('This provider food is unavailable: $error')),
+          const SnackBar(content: Text('This food is unavailable. Try again.')),
         );
       }
     }
@@ -314,9 +312,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                           );
                         }
                         if (snapshot.hasError) {
-                          return Text(
-                            'Nutrition preview unavailable: ${snapshot.error}',
-                            style: const TextStyle(color: AppColors.warning),
+                          return const Text(
+                            'Nutrition preview unavailable. Try again.',
+                            style: TextStyle(color: AppColors.warning),
                           );
                         }
                         final facts = snapshot.data!.facts;
@@ -444,8 +442,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                           context,
                                         ).showSnackBar(
                                           SnackBar(
-                                            content: Text(
-                                              'Meal could not be logged: $error',
+                                            content: const Text(
+                                              'Meal could not be logged. Try again.',
                                             ),
                                           ),
                                         );

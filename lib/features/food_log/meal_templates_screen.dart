@@ -55,12 +55,12 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
         );
         Navigator.pop(context, true);
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() => _isLogging = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to log template: $e'),
+          const SnackBar(
+            content: Text('Meal template could not be logged. Try again.'),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -364,7 +364,9 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (_, _) => const Center(
+          child: Text('Meal templates are unavailable. Try again later.'),
+        ),
       ),
     );
   }

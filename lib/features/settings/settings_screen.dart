@@ -22,6 +22,10 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(settingsControllerProvider);
     final currentThemeMode = ref.watch(themeModeProvider);
+    final playlistAvailable = ref
+        .watch(b05PlaylistProviderRegistryProvider)
+        .providers
+        .isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -134,21 +138,24 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const Divider(height: 1, color: AppColors.border),
-                        _buildSettingTile(
-                          context,
-                          icon: Icons.music_note_outlined,
-                          iconColor: AppColors.primary,
-                          title: 'Workout Playlist',
-                          subtitle:
-                              'Save a validated playlist for quick workout launch',
-                          onTap: () => Navigator.push(
+                        if (playlistAvailable) ...[
+                          const Divider(height: 1, color: AppColors.border),
+                          _buildSettingTile(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => const B05PlaylistSettingsScreen(),
+                            icon: Icons.music_note_outlined,
+                            iconColor: AppColors.primary,
+                            title: 'Workout Playlist',
+                            subtitle:
+                                'Save a playlist for quick workout launch',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const B05PlaylistSettingsScreen(),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                         const Divider(height: 1, color: AppColors.border),
                         _buildSettingTile(
                           context,

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../../data/models/b04_briefing_read_models.dart';
 import '../../data/models/b04_goal_models.dart';
@@ -140,9 +141,10 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
         status: B04DailyBriefingControllerStatus.failure,
         briefing: null,
         errorCode: typed?.code ?? 'daily_briefing_read_failed',
-        errorMessage:
-            typed?.message ??
-            'The daily briefing could not be loaded. You can retry.',
+        errorMessage: ProductFailurePresentation.fromCode(
+          typed?.code,
+          title: 'Daily briefing unavailable',
+        ).message,
         retryable: true,
       );
     }
@@ -192,8 +194,10 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
       state = state.copyWith(
         status: B04DailyBriefingControllerStatus.failure,
         errorCode: typed?.code ?? 'daily_briefing_feedback_failed',
-        errorMessage:
-            typed?.message ?? 'That feedback could not be recorded. Retry.',
+        errorMessage: ProductFailurePresentation.fromCode(
+          typed?.code,
+          title: 'Feedback could not be saved',
+        ).message,
         retryable: true,
       );
     }
@@ -248,10 +252,10 @@ class B04DailyBriefingController extends StateNotifier<B04DailyBriefingState> {
           'The target was not accepted. No proposal was changed.';
       if (error is B04GoalValidationError) {
         errorCode = error.code;
-        errorMessage = error.message;
+        errorMessage = 'The target was not accepted. No changes were made.';
       } else if (error is B04RecommendationHistoryError) {
         errorCode = error.code;
-        errorMessage = error.toString();
+        errorMessage = ProductFailurePresentation.fromCode(error.code).message;
       }
       state = state.copyWith(
         status: B04DailyBriefingControllerStatus.failure,

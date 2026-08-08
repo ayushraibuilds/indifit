@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/travel_repository.dart';
@@ -76,8 +77,15 @@ class TravelController extends StateNotifier<TravelUiState> {
           isLoading: false,
         );
       }
-    } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Travel settings unavailable',
+          code: 'travel_unavailable',
+        ).message,
+      );
     }
   }
 
@@ -97,8 +105,15 @@ class TravelController extends StateNotifier<TravelUiState> {
         equipmentProfileId: equipmentProfileId,
       );
       state = state.copyWith(previewResult: preview, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Travel preview unavailable',
+          code: 'travel_preview_failed',
+        ).message,
+      );
     }
   }
 
@@ -113,8 +128,15 @@ class TravelController extends StateNotifier<TravelUiState> {
     try {
       await _travelRepo.endTravelContext(active.id);
       await loadActiveTravel();
-    } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Travel mode could not end',
+          code: 'travel_update_failed',
+        ).message,
+      );
       rethrow;
     }
   }
@@ -133,8 +155,15 @@ class TravelController extends StateNotifier<TravelUiState> {
         note: note,
       );
       await loadActiveTravel();
-    } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Travel mode could not be applied',
+          code: 'travel_update_failed',
+        ).message,
+      );
       rethrow;
     }
   }
@@ -148,8 +177,15 @@ class TravelController extends StateNotifier<TravelUiState> {
     try {
       await _travelRepo.cancelTravelContext(active.id);
       await loadActiveTravel();
-    } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Travel mode could not be cancelled',
+          code: 'travel_update_failed',
+        ).message,
+      );
       rethrow;
     }
   }
@@ -178,7 +214,14 @@ class TravelController extends StateNotifier<TravelUiState> {
       );
       await loadActiveTravel();
     } catch (error) {
-      state = state.copyWith(isLoading: false, errorMessage: '$error');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Workout date could not be changed',
+          code: 'travel_update_failed',
+        ).message,
+      );
       rethrow;
     }
   }

@@ -46,12 +46,14 @@ class _EquipmentProfilesScreenState
         _defaultProfileId = defaultId;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to load profiles: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Equipment profiles could not be loaded. Try again.'),
+          ),
+        );
       }
     }
   }
@@ -66,10 +68,12 @@ class _EquipmentProfilesScreenState
           const SnackBar(content: Text('Default equipment profile updated.')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to set default profile: $e')),
+          const SnackBar(
+            content: Text('Default profile could not be updated. Try again.'),
+          ),
         );
       }
     }
@@ -105,11 +109,15 @@ class _EquipmentProfilesScreenState
           context,
         ).showSnackBar(const SnackBar(content: Text('Profile archived.')));
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Cannot archive profile: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Equipment profile could not be archived. Try again.',
+            ),
+          ),
+        );
       }
     }
   }

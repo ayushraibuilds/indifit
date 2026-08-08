@@ -15,7 +15,7 @@ class BackupRestoreCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Export JSON Database
+        // Export a local backup.
         ElevatedButton.icon(
           onPressed: onExport,
           icon: const Icon(Icons.download_rounded),
@@ -33,11 +33,11 @@ class BackupRestoreCard extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Restore JSON Database
+        // Restore a local backup.
         ElevatedButton.icon(
           onPressed: onRestore,
           icon: const Icon(Icons.upload_rounded, color: Colors.blueAccent),
-          label: const Text('Restore Database from Backup'),
+          label: const Text('Restore a backup'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent.withValues(alpha: 0.12),
             foregroundColor: Colors.blueAccent,
