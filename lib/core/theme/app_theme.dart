@@ -36,6 +36,8 @@ class AppTheme {
         elevation: 0,
       ),
 
+      navigationBarTheme: _navigationBarTheme(Brightness.dark),
+
       // Input Decoration
       inputDecorationTheme: InputDecorationTheme(
         fillColor: const Color(0x0F060A12),
@@ -82,6 +84,7 @@ class AppTheme {
         margin: EdgeInsets.zero,
         elevation: 0,
       ),
+      navigationBarTheme: _navigationBarTheme(Brightness.light),
       inputDecorationTheme: InputDecorationTheme(
         fillColor: const Color(0xFFF1F5F9),
         filled: true,
@@ -120,5 +123,30 @@ class AppTheme {
       AppLogger.warning('GoogleFonts.outfitTextTheme failed: $e');
       return baseTextTheme;
     }
+  }
+
+  static NavigationBarThemeData _navigationBarTheme(Brightness brightness) {
+    final colors = brightness == Brightness.dark
+        ? B05SemanticColors.dark
+        : B05SemanticColors.light;
+    return NavigationBarThemeData(
+      backgroundColor: colors.surface,
+      indicatorColor: colors.action.withValues(alpha: 0.18),
+      elevation: 0,
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return TextStyle(
+          color: selected ? colors.action : colors.textSecondary,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        );
+      }),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return IconThemeData(
+          color: selected ? colors.action : colors.textSecondary,
+          size: 24,
+        );
+      }),
+    );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/colors.dart';
+import '../../../core/widgets/responsive_form_primitives.dart';
 
 class PlateCalculatorSheet extends StatefulWidget {
   final double targetWeight;
@@ -99,33 +100,31 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
             ],
           ),
           const SizedBox(height: 16),
-          Row(
+          IndiFitResponsiveFieldGroup(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Target Weight (kg)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Target Weight (kg)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${_targetWeight.toStringAsFixed(1)} kg',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_targetWeight.toStringAsFixed(1)} kg',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Barbell',
@@ -137,19 +136,29 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
                   const SizedBox(height: 4),
                   DropdownButton<double>(
                     value: _barbellWeight,
+                    isExpanded: true,
                     underline: const SizedBox.shrink(),
                     items: const [
                       DropdownMenuItem(
                         value: 20.0,
-                        child: Text('20 kg (Olympic)'),
+                        child: Text(
+                          '20 kg (Olympic)',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       DropdownMenuItem(
                         value: 15.0,
-                        child: Text('15 kg (Women)'),
+                        child: Text(
+                          '15 kg (Women)',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       DropdownMenuItem(
                         value: 10.0,
-                        child: Text('10 kg (EZ Bar)'),
+                        child: Text(
+                          '10 kg (EZ Bar)',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                     onChanged: (val) {
@@ -197,42 +206,45 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(width: 20, height: 6, color: Colors.grey),
-                        ..._calculatedPlates.entries.map((entry) {
-                          final double weight = entry.key;
-                          final int count = entry.value;
-                          return Row(
-                            children: List.generate(
-                              count,
-                              (_) => Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                ),
-                                width: weight >= 20 ? 12 : 8,
-                                height: weight >= 20 ? 50 : 36,
-                                decoration: BoxDecoration(
-                                  color: _getPlateColor(weight),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  weight % 1 == 0
-                                      ? '${weight.toInt()}'
-                                      : '$weight',
-                                  style: const TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(width: 20, height: 6, color: Colors.grey),
+                          ..._calculatedPlates.entries.map((entry) {
+                            final double weight = entry.key;
+                            final int count = entry.value;
+                            return Row(
+                              children: List.generate(
+                                count,
+                                (_) => Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                  ),
+                                  width: weight >= 20 ? 12 : 8,
+                                  height: weight >= 20 ? 50 : 36,
+                                  decoration: BoxDecoration(
+                                    color: _getPlateColor(weight),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    weight % 1 == 0
+                                        ? '${weight.toInt()}'
+                                        : '$weight',
+                                    style: const TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          );
-                        }),
-                      ],
+                            );
+                          }),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(

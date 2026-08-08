@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
@@ -119,10 +120,8 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
               ),
               tooltip: 'Log Past Workout',
               onPressed: () {
-                showModalBottomSheet(
+                showIndiFitBottomSheet(
                   context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
                   builder: (context) =>
                       ManualLogSheet(selectedDate: DateTime.now()),
                 ).then((_) => _loadActiveRoutine());

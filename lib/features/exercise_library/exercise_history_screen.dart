@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/colors.dart';
+import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 
@@ -392,78 +393,77 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 children: [
-                  Row(
+                  IndiFitResponsiveFieldGroup(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Target Weight (kg)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Target Weight (kg)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
                             ),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: _targetWeightController,
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => _calculatePlatesNeeded(),
-                              decoration: const InputDecoration(
-                                hintText: 'e.g. 100',
-                              ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: _targetWeightController,
+                            keyboardType: TextInputType.number,
+                            onChanged: (_) => _calculatePlatesNeeded(),
+                            decoration: const InputDecoration(
+                              hintText: 'e.g. 100',
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Barbell Weight (kg)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Barbell Weight (kg)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<double>(
+                            initialValue: _barWeight,
+                            isExpanded: true,
+                            dropdownColor: AppColors.surface,
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<double>(
-                              initialValue: _barWeight,
-                              dropdownColor: AppColors.surface,
-                              decoration: const InputDecoration(
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
+                            items: const [
+                              DropdownMenuItem(
+                                value: 20.0,
+                                child: Text(
+                                  '20 kg (Std)',
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 20.0,
-                                  child: Text('20 kg (Std)'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 15.0,
-                                  child: Text('15 kg'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 10.0,
-                                  child: Text('10 kg'),
-                                ),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() {
-                                    _barWeight = val;
-                                  });
-                                  _calculatePlatesNeeded();
-                                }
-                              },
-                            ),
-                          ],
-                        ),
+                              DropdownMenuItem(
+                                value: 15.0,
+                                child: Text('15 kg'),
+                              ),
+                              DropdownMenuItem(
+                                value: 10.0,
+                                child: Text('10 kg'),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _barWeight = val;
+                                });
+                                _calculatePlatesNeeded();
+                              }
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -507,72 +507,75 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                 child: Column(
                   children: [
                     // Visual plate layout
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Barbell shaft left
-                        Container(width: 24, height: 6, color: Colors.grey),
-                        // Loaded plates list
-                        if (_calculatedPlates.isEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'Empty Bar',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textMuted,
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Barbell shaft left
+                          Container(width: 24, height: 6, color: Colors.grey),
+                          // Loaded plates list
+                          if (_calculatedPlates.isEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
-                            ),
-                          )
-                        else
-                          ..._calculatedPlates.entries.map((entry) {
-                            final double plateWeight = entry.key;
-                            final int count = entry.value;
-                            return Row(
-                              children: List.generate(
-                                count,
-                                (_) => Container(
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                  ),
-                                  width: plateWeight >= 20 ? 14 : 8,
-                                  height: plateWeight >= 20 ? 56 : 38,
-                                  decoration: BoxDecoration(
-                                    color: _getPlateColor(plateWeight),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: RotatedBox(
-                                    quarterTurns: 1,
-                                    child: Text(
-                                      plateWeight % 1 == 0
-                                          ? '${plateWeight.toInt()}'
-                                          : '$plateWeight',
-                                      style: TextStyle(
-                                        color:
-                                            plateWeight >= 20 ||
-                                                plateWeight <= 2.5
-                                            ? Colors.white
-                                            : Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 9,
+                              decoration: BoxDecoration(
+                                color: AppColors.background,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'Empty Bar',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            )
+                          else
+                            ..._calculatedPlates.entries.map((entry) {
+                              final double plateWeight = entry.key;
+                              final int count = entry.value;
+                              return Row(
+                                children: List.generate(
+                                  count,
+                                  (_) => Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 2,
+                                    ),
+                                    width: plateWeight >= 20 ? 14 : 8,
+                                    height: plateWeight >= 20 ? 56 : 38,
+                                    decoration: BoxDecoration(
+                                      color: _getPlateColor(plateWeight),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: RotatedBox(
+                                      quarterTurns: 1,
+                                      child: Text(
+                                        plateWeight % 1 == 0
+                                            ? '${plateWeight.toInt()}'
+                                            : '$plateWeight',
+                                        style: TextStyle(
+                                          color:
+                                              plateWeight >= 20 ||
+                                                  plateWeight <= 2.5
+                                              ? Colors.white
+                                              : Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 9,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }),
-                        // Barbell sleeve end
-                        Container(width: 12, height: 12, color: Colors.grey),
-                      ],
+                              );
+                            }),
+                          // Barbell sleeve end
+                          Container(width: 12, height: 12, color: Colors.grey),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
 
@@ -580,8 +583,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                     ..._calculatedPlates.entries.map(
                       (entry) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          runSpacing: 8,
                           children: [
                             Row(
                               children: [
@@ -616,8 +620,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
 
                     if (_unmatchedWeight > 0.0) ...[
                       const Divider(color: AppColors.border, height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        runSpacing: 8,
                         children: [
                           const Text(
                             'Unmatched remainder',

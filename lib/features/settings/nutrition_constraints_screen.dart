@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/nutrition_constraints.dart';
+import '../../core/widgets/responsive_form_primitives.dart';
 import 'nutrition_constraints_controller.dart';
 
 class NutritionConstraintsScreen extends ConsumerStatefulWidget {
@@ -337,15 +338,26 @@ class _EditConstraintDialogState extends State<_EditConstraintDialog> {
             Semantics(
               label:
                   'Stable target identity ${widget.constraint.target.stableKey}',
-              child: Text(widget.constraint.target.stableKey),
+              child: Text(
+                widget.constraint.target.stableKey,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<NutritionConstraintStrictness>(
               initialValue: _strictness,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Handling'),
               items: [
                 for (final value in NutritionConstraintStrictness.values)
-                  DropdownMenuItem(value: value, child: Text(value.stableId)),
+                  DropdownMenuItem(
+                    value: value,
+                    child: Text(
+                      value.stableId,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
               ],
               onChanged: _saving
                   ? null
@@ -517,40 +529,51 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            DropdownButtonFormField<NutritionConstraintType>(
-              initialValue: _type,
-              decoration: const InputDecoration(labelText: 'Category'),
-              items: [
-                for (final definition in widget.definitions)
-                  DropdownMenuItem(
-                    value: definition.type,
-                    child: Text(definition.displayName),
-                  ),
+            IndiFitResponsiveFieldGroup(
+              children: [
+                DropdownButtonFormField<NutritionConstraintType>(
+                  initialValue: _type,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Category'),
+                  items: [
+                    for (final definition in widget.definitions)
+                      DropdownMenuItem(
+                        value: definition.type,
+                        child: Text(
+                          definition.displayName,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: _saving
+                      ? null
+                      : (value) {
+                          if (value == null) return;
+                          setState(() {
+                            _type = value;
+                            _setDefaultTargetType();
+                          });
+                        },
+                ),
+                DropdownButtonFormField<NutritionConstraintTargetType>(
+                  initialValue: _targetType,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Target type'),
+                  items: [
+                    for (final targetType in allowed)
+                      DropdownMenuItem(
+                        value: targetType,
+                        child: Text(
+                          targetType.stableId,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: _saving
+                      ? null
+                      : (value) => setState(() => _targetType = value),
+                ),
               ],
-              onChanged: _saving
-                  ? null
-                  : (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _type = value;
-                        _setDefaultTargetType();
-                      });
-                    },
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<NutritionConstraintTargetType>(
-              initialValue: _targetType,
-              decoration: const InputDecoration(labelText: 'Target type'),
-              items: [
-                for (final targetType in allowed)
-                  DropdownMenuItem(
-                    value: targetType,
-                    child: Text(targetType.stableId),
-                  ),
-              ],
-              onChanged: _saving
-                  ? null
-                  : (value) => setState(() => _targetType = value),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -565,10 +588,17 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
             const SizedBox(height: 12),
             DropdownButtonFormField<NutritionConstraintStrictness>(
               initialValue: _strictness,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Handling'),
               items: [
                 for (final value in NutritionConstraintStrictness.values)
-                  DropdownMenuItem(value: value, child: Text(value.stableId)),
+                  DropdownMenuItem(
+                    value: value,
+                    child: Text(
+                      value.stableId,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
               ],
               onChanged: _saving
                   ? null
