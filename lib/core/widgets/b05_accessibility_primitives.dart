@@ -11,6 +11,7 @@ abstract final class B05Layout {
   static const double space16 = 16;
   static const double space20 = 20;
   static const double space24 = 24;
+  static const double space32 = 32;
 
   static const double compactBreakpoint = 360;
   static const double iconSmall = 18;
@@ -49,6 +50,13 @@ BorderRadius b05Radius(B05SurfaceRadius radius) {
 
 /// Typography helpers that retain the active app text scale and semantic ink.
 abstract final class B05Typography {
+  static TextStyle pageTitle(BuildContext context) {
+    return Theme.of(context).textTheme.headlineSmall!.copyWith(
+      color: context.b05Colors.textPrimary,
+      fontWeight: FontWeight.w700,
+    );
+  }
+
   static TextStyle title(BuildContext context) {
     return Theme.of(context).textTheme.titleMedium!.copyWith(
       color: context.b05Colors.textPrimary,
@@ -68,7 +76,27 @@ abstract final class B05Typography {
       fontWeight: FontWeight.w600,
     );
   }
+
+  static TextStyle caption(BuildContext context) {
+    return Theme.of(
+      context,
+    ).textTheme.bodySmall!.copyWith(color: context.b05Colors.textSecondary);
+  }
+
+  static TextStyle metric(BuildContext context) {
+    return Theme.of(context).textTheme.displaySmall!.copyWith(
+      color: context.b05Colors.textPrimary,
+      fontWeight: FontWeight.w700,
+    );
+  }
 }
+
+/// The small semantic surface scale used across consumer screens.
+///
+/// A section should normally be the only boundary around an information
+/// group. Insets, selected choices and interactive rows rely on tonal
+/// contrast instead of adding another card border.
+enum B05SurfaceTone { section, inset, selected, interactive }
 
 /// A restrained semantic surface. It avoids a card-on-card visual hierarchy.
 class B05Surface extends StatelessWidget {
@@ -77,22 +105,33 @@ class B05Surface extends StatelessWidget {
     super.key,
     this.padding = const EdgeInsets.all(B05Layout.space16),
     this.radius = B05SurfaceRadius.medium,
+    this.tone = B05SurfaceTone.section,
     this.subtle = false,
-    this.showBorder = true,
+    this.showBorder = false,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final B05SurfaceRadius radius;
+  final B05SurfaceTone tone;
+
+  /// Retained for earlier callers; new code should choose [tone].
   final bool subtle;
   final bool showBorder;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
+    final resolvedTone = subtle ? B05SurfaceTone.inset : tone;
+    final background = switch (resolvedTone) {
+      B05SurfaceTone.section => colors.section,
+      B05SurfaceTone.inset => colors.inset,
+      B05SurfaceTone.selected => colors.selected,
+      B05SurfaceTone.interactive => colors.interactive,
+    };
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: subtle ? colors.surfaceSubtle : colors.surface,
+        color: background,
         borderRadius: b05Radius(radius),
         border: showBorder ? Border.all(color: colors.border) : null,
       ),
@@ -169,7 +208,7 @@ class _B05FocusRingState extends State<B05FocusRing> {
   }
 }
 
-enum B05ActionEmphasis { primary, secondary }
+enum B05ActionEmphasis { primary, secondary, tertiary }
 
 /// A labelled action with a semantic hint, focus order and shared touch target.
 class B05ActionButton extends StatelessWidget {
@@ -213,6 +252,13 @@ class B05ActionButton extends StatelessWidget {
         side: BorderSide(color: colors.border),
         shape: RoundedRectangleBorder(borderRadius: B05Radii.mediumRadius),
       ),
+      B05ActionEmphasis.tertiary => TextButton.styleFrom(
+        foregroundColor: colors.action,
+        disabledForegroundColor: colors.textDisabled,
+        minimumSize: B05Layout.minimumTouchTarget,
+        padding: const EdgeInsets.symmetric(horizontal: B05Layout.space8),
+        shape: RoundedRectangleBorder(borderRadius: B05Radii.smallRadius),
+      ),
     };
     final button = B05TouchTarget(
       child: B05FocusRing(
@@ -254,6 +300,11 @@ class B05ActionButton extends StatelessWidget {
         style: style,
         child: Text(label),
       ),
+      B05ActionEmphasis.tertiary => TextButton(
+        onPressed: onPressed,
+        style: style,
+        child: Text(label),
+      ),
     };
   }
 
@@ -266,6 +317,12 @@ class B05ActionButton extends StatelessWidget {
         label: Text(label),
       ),
       B05ActionEmphasis.secondary => OutlinedButton.icon(
+        onPressed: onPressed,
+        style: style,
+        icon: Icon(icon, size: B05Layout.iconMedium),
+        label: Text(label),
+      ),
+      B05ActionEmphasis.tertiary => TextButton.icon(
         onPressed: onPressed,
         style: style,
         icon: Icon(icon, size: B05Layout.iconMedium),
@@ -406,7 +463,7 @@ class B05StatusMessage extends StatelessWidget {
           decoration: BoxDecoration(
             color: role.container,
             borderRadius: B05Radii.smallRadius,
-            border: Border.all(color: role.indicator),
+            border: Border(left: BorderSide(color: role.indicator, width: 3)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(B05Layout.space8),

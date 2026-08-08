@@ -627,13 +627,7 @@ class _TodayNutritionModule extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              calories.value,
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                color: context.b05Colors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            Text(calories.value, style: B05Typography.metric(context)),
             const SizedBox(width: B05Layout.space4),
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -833,6 +827,7 @@ class _TodayLoadingState extends StatelessWidget {
         _LoadingLine(widthFactor: .62),
         const SizedBox(height: B05Layout.space12),
         LinearProgressIndicator(
+          value: B05MotionPolicy.reduceMotion(context) ? .55 : null,
           minHeight: 2,
           color: context.b05Colors.action,
           backgroundColor: context.b05Colors.surfaceSubtle,
@@ -871,14 +866,20 @@ class _TodayInlineProgress extends StatelessWidget {
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          width: 14,
-          height: 14,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: context.b05Colors.action,
-          ),
-        ),
+        B05MotionPolicy.reduceMotion(context)
+            ? Icon(
+                Icons.hourglass_top_rounded,
+                size: B05Layout.iconSmall,
+                color: context.b05Colors.action,
+              )
+            : SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: context.b05Colors.action,
+                ),
+              ),
         const SizedBox(width: B05Layout.space8),
         Text(label, style: B05Typography.body(context)),
       ],

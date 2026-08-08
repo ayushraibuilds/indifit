@@ -3,13 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../core/theme/colors.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -417,7 +415,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: const EdgeInsets.fromLTRB(
+              B05Layout.space16,
+              B05Layout.space12,
+              B05Layout.space16,
+              B05Layout.space8,
+            ),
             child: Row(
               children: [
                 B05IconAction(
@@ -426,7 +429,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   hint: 'Return to the previous setup step.',
                   onPressed: _currentPage > 0 ? _prevPage : null,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: B05Layout.space8),
                 Expanded(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
@@ -438,14 +441,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: B05Layout.space12),
                 Text(
                   '${_currentPage + 1}/$_totalPages',
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontFamily: GoogleFonts.outfit().fontFamily,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: B05Typography.label(
+                    context,
+                  ).copyWith(color: colors.textSecondary),
                 ),
               ],
             ),
@@ -473,31 +474,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
         ],
       ),
-      primaryAction: SizedBox(
-        height: 52,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: colors.action,
-            foregroundColor: colors.onAction,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            elevation: 0,
-          ),
-          onPressed: _isCompleting ? null : _nextPage,
-          child: Text(
-            _isCompleting
-                ? 'Saving your profile…'
-                : _currentPage == _totalPages - 1
-                ? 'Create my plan'
-                : 'Continue',
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: GoogleFonts.outfit().fontFamily,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+      primaryAction: B05ActionButton(
+        label: _isCompleting
+            ? 'Saving your profile…'
+            : _currentPage == _totalPages - 1
+            ? 'Create my plan'
+            : 'Continue',
+        onPressed: _isCompleting ? null : _nextPage,
       ),
     );
   }
@@ -542,6 +525,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildSexPage() {
+    final colors = context.b05Colors;
     return OnboardingPageContainer(
       title: 'Welcome to IndiFit!',
       subtitle: 'Your intelligent fitness & Indian nutrition companion.',
@@ -550,12 +534,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         children: [
           Text(
             'Select your biological sex:',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
-              fontFamily: GoogleFonts.outfit().fontFamily,
-            ),
+            style: B05Typography.label(
+              context,
+            ).copyWith(color: colors.textSecondary),
           ),
           const SizedBox(height: 12),
           OnboardingSelectionCard(
@@ -571,7 +552,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             selected: _sex == 'female',
             onTap: () => _selectOnboardingChoice(() => _sex = 'female'),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: B05Layout.space24),
           TextField(
             controller: _nameController,
             maxLength: 100,
@@ -581,28 +562,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             textInputAction: TextInputAction.done,
             onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
             onEditingComplete: _dismissInputFocus,
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              fontFamily: GoogleFonts.outfit().fontFamily,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: colors.textPrimary),
             decoration: InputDecoration(
-              labelText: 'Your Name (Optional)',
+              labelText: 'Name (optional)',
               hintText: 'e.g. Rahul, Priya',
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Icons.person_outline_rounded,
-                color: AppColors.primary,
+                color: colors.action,
               ),
               filled: true,
-              fillColor: AppColors.cardBackground,
+              fillColor: colors.inset,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: AppColors.border),
+                borderRadius: B05Radii.largeRadius,
+                borderSide: BorderSide(color: colors.border),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: AppColors.border),
+                borderRadius: B05Radii.largeRadius,
+                borderSide: BorderSide(color: colors.border),
               ),
             ),
           ),

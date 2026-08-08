@@ -4,7 +4,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/product_failure_presentation.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
@@ -111,7 +112,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                 code: 'workout_save_failed',
               ).message,
             ),
-            backgroundColor: AppColors.danger,
+            backgroundColor: context.b05Colors.danger.indicator,
           ),
         );
       }
@@ -137,124 +138,133 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Workout Summary'),
-        elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
         automaticallyImplyLeading: false, // Don't allow backing out to player
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(B05Layout.space20),
         child: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    // Celebration Emoji Header
                     const Center(
-                      child: Text('🏆', style: TextStyle(fontSize: 64)),
+                      child: Text('🏆', style: TextStyle(fontSize: 56)),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Workout Crushed!',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    const SizedBox(height: B05Layout.space12),
+                    Text(
+                      'Workout complete',
+                      style: B05Typography.pageTitle(context),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: B05Layout.space4),
                     Text(
                       widget.routineName,
-                      style: const TextStyle(
-                        color: AppColors.primary,
+                      textAlign: TextAlign.center,
+                      style: B05Typography.label(context).copyWith(
+                        color: context.b05Colors.action,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: B05Layout.space24),
 
-                    // Metrics Grid (Volume, Duration, Calories)
-                    Row(
-                      children: [
-                        _buildMetricCard(
-                          context,
-                          'Total Volume',
-                          '${totalVolume.round()} kg',
-                          Icons.fitness_center_rounded,
-                        ),
-                        const SizedBox(width: 12),
-                        _buildMetricCard(
-                          context,
-                          'Duration',
-                          durationText,
-                          Icons.timer_outlined,
-                        ),
-                        const SizedBox(width: 12),
-                        _buildMetricCard(
-                          context,
-                          'Active Burn',
-                          '$calories kcal',
-                          Icons.local_fire_department_rounded,
-                        ),
-                      ],
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact =
+                            constraints.maxWidth <
+                                B05Layout.compactBreakpoint ||
+                            MediaQuery.textScalerOf(context).scale(1) > 1.3;
+                        final metrics = [
+                          _buildMetricCard(
+                            context,
+                            'Total volume',
+                            '${totalVolume.round()} kg',
+                            Icons.fitness_center_rounded,
+                          ),
+                          _buildMetricCard(
+                            context,
+                            'Duration',
+                            durationText,
+                            Icons.timer_outlined,
+                          ),
+                          _buildMetricCard(
+                            context,
+                            'Active burn',
+                            '$calories kcal',
+                            Icons.local_fire_department_rounded,
+                          ),
+                        ];
+                        if (compact) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              for (
+                                var index = 0;
+                                index < metrics.length;
+                                index++
+                              ) ...[
+                                metrics[index],
+                                if (index < metrics.length - 1)
+                                  const SizedBox(height: B05Layout.space8),
+                              ],
+                            ],
+                          );
+                        }
+                        return Row(
+                          children: [
+                            for (
+                              var index = 0;
+                              index < metrics.length;
+                              index++
+                            ) ...[
+                              Expanded(child: metrics[index]),
+                              if (index < metrics.length - 1)
+                                const SizedBox(width: B05Layout.space8),
+                            ],
+                          ],
+                        );
+                      },
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: B05Layout.space24),
 
-                    // Completed Exercises Section Header
-                    const Align(
+                    Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'EXERCISES COMPLETED',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textSecondary,
-                          letterSpacing: 1.0,
-                        ),
+                        'Exercises completed',
+                        style: B05Typography.caption(
+                          context,
+                        ).copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: B05Layout.space12),
 
                     // Exercises sets summary rows
                     ...grouped.entries.map((entry) {
                       final exName = entry.key;
                       final sets = entry.value;
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8.0),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: B05Layout.space8,
+                        ),
+                        child: B05Surface(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                exName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
+                              Text(exName, style: B05Typography.label(context)),
+                              const SizedBox(height: B05Layout.space8),
                               Wrap(
-                                spacing: 8,
-                                runSpacing: 4,
+                                spacing: B05Layout.space8,
+                                runSpacing: B05Layout.space4,
                                 children: sets.map((s) {
-                                  return Container(
+                                  return B05Surface(
+                                    tone: B05SurfaceTone.inset,
+                                    radius: B05SurfaceRadius.small,
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.cardBackground,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: AppColors.border,
-                                      ),
+                                      horizontal: B05Layout.space8,
+                                      vertical: B05Layout.space4,
                                     ),
                                     child: Text(
-                                      'Set ${s.setNumber.value}: ${s.weight.value}kg x ${s.reps.value}',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textSecondary,
-                                      ),
+                                      'Set ${s.setNumber.value}: ${s.weight.value} kg × ${s.reps.value}',
+                                      style: B05Typography.caption(context),
                                     ),
                                   );
                                 }).toList(),
@@ -269,63 +279,35 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
               ),
             ),
 
-            // Share Summary Button
-            OutlinedButton.icon(
-              onPressed: _isSaving
-                  ? null
-                  : () {
-                      final text =
-                          'Crushed my workout today! 🏋️\n'
-                          'Routine: ${widget.routineName}\n'
-                          'Volume Lifted: ${totalVolume.round()} kg\n'
-                          'Duration: $durationText\n'
-                          'Burned: $calories kcal\n'
-                          'Logged with IndiFit App ⚡';
-                      Share.share(text);
-                    },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.primary),
-                foregroundColor: AppColors.primary,
-                minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              icon: const Icon(Icons.share_rounded, size: 18),
-              label: const Text(
-                'Share Workout Report',
-                style: TextStyle(fontWeight: FontWeight.bold),
+            // Secondary sharing and the one clear completion action.
+            SizedBox(
+              width: double.infinity,
+              child: B05ActionButton(
+                label: 'Share workout report',
+                icon: Icons.share_rounded,
+                emphasis: B05ActionEmphasis.secondary,
+                onPressed: _isSaving
+                    ? null
+                    : () {
+                        final text =
+                            'Crushed my workout today! 🏋️\n'
+                            'Routine: ${widget.routineName}\n'
+                            'Volume Lifted: ${totalVolume.round()} kg\n'
+                            'Duration: $durationText\n'
+                            'Burned: $calories kcal\n'
+                            'Logged with IndiFit App ⚡';
+                        Share.share(text);
+                      },
               ),
             ),
-            const SizedBox(height: 12),
-
-            // Save Workout Button with Multi-Tap Guard
-            ElevatedButton(
-              onPressed: _isSaving ? null : _handleSave,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            const SizedBox(height: B05Layout.space8),
+            SizedBox(
+              width: double.infinity,
+              child: B05ActionButton(
+                label: 'Save workout',
+                icon: Icons.check_rounded,
+                onPressed: _isSaving ? null : _handleSave,
               ),
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text(
-                      'Save Workout & Exit',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
             ),
           ],
         ),
@@ -339,32 +321,29 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
     String value,
     IconData icon,
   ) {
-    return Expanded(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
-          child: Column(
-            children: [
-              Icon(icon, color: AppColors.primary, size: 24),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 10,
-                ),
-              ),
-            ],
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      radius: B05SurfaceRadius.small,
+      padding: const EdgeInsets.all(B05Layout.space12),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: context.b05Colors.action,
+            size: B05Layout.iconMedium,
           ),
-        ),
+          const SizedBox(width: B05Layout.space8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value, style: B05Typography.label(context)),
+                const SizedBox(height: B05Layout.space4),
+                Text(label, style: B05Typography.caption(context)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

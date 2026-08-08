@@ -78,19 +78,19 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(B05Layout.space20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Plate Calculator',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: B05Typography.title(context),
                 ),
               ),
               IconButton(
@@ -108,26 +108,21 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
                 children: [
                   Text(
                     'Target Weight (kg)',
-                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                    style: B05Typography.caption(context),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${_targetWeight.toStringAsFixed(1)} kg',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: colors.action,
-                    ),
+                    style: B05Typography.metric(
+                      context,
+                    ).copyWith(color: colors.action),
                   ),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Barbell',
-                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
-                  ),
+                  Text('Barbell', style: B05Typography.caption(context)),
                   const SizedBox(height: 4),
                   DropdownButton<double>(
                     value: _barbellWeight,
@@ -172,84 +167,75 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
           const SizedBox(height: 20),
           Text(
             'LOADING PER SIDE',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: colors.textSecondary,
-              letterSpacing: 0.5,
-            ),
+            style: B05Typography.caption(
+              context,
+            ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .6),
           ),
           const SizedBox(height: 12),
           if (_calculatedPlates.isEmpty && _unmatchedWeight == 0.0)
             B05Surface(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Center(
-                  child: Text(
-                    'Barbell alone covers target weight.',
-                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
-                  ),
+              child: Center(
+                child: Text(
+                  'Barbell alone covers target weight.',
+                  style: B05Typography.body(context),
                 ),
               ),
             )
           else
             B05Surface(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(width: 20, height: 6, color: Colors.grey),
-                          ..._calculatedPlates.entries.map((entry) {
-                            final double weight = entry.key;
-                            final int count = entry.value;
-                            return Row(
-                              children: List.generate(
-                                count,
-                                (_) => Container(
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                  ),
-                                  width: weight >= 20 ? 12 : 8,
-                                  height: weight >= 20 ? 50 : 36,
-                                  decoration: BoxDecoration(
-                                    color: _getPlateColor(weight),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    weight % 1 == 0
-                                        ? '${weight.toInt()}'
-                                        : '$weight',
-                                    style: const TextStyle(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
+              child: Column(
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(width: 20, height: 6, color: Colors.grey),
+                        ..._calculatedPlates.entries.map((entry) {
+                          final double weight = entry.key;
+                          final int count = entry.value;
+                          return Row(
+                            children: List.generate(
+                              count,
+                              (_) => Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                ),
+                                width: weight >= 20 ? 12 : 8,
+                                height: weight >= 20 ? 50 : 36,
+                                decoration: BoxDecoration(
+                                  color: _getPlateColor(weight),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  weight % 1 == 0
+                                      ? '${weight.toInt()}'
+                                      : '$weight',
+                                  style: const TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
-                            );
-                          }),
-                        ],
-                      ),
+                            ),
+                          );
+                        }),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _calculatedPlates.entries
-                          .map((e) => '${e.value}x ${e.key}kg')
-                          .join('  +  '),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _calculatedPlates.entries
+                        .map((e) => '${e.value}x ${e.key}kg')
+                        .join('  +  '),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           const SizedBox(height: 12),

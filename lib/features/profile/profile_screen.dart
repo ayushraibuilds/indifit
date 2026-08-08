@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/user_profile_provider.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
@@ -129,33 +129,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final choice = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: const Row(
+          backgroundColor: context.b05Colors.section,
+          title: Row(
             children: [
               Icon(
                 Icons.auto_awesome_rounded,
-                color: AppColors.primary,
+                color: context.b05Colors.action,
                 size: 22,
               ),
-              SizedBox(width: 8),
-              Text('Recalculate Goals?'),
+              const SizedBox(width: B05Layout.space8),
+              const Text('Refresh your targets?'),
             ],
           ),
           content: const Text(
-            'Your body measurements or fitness goals have changed. Would you like to recalculate daily calorie & macronutrient targets using Mifflin-St Jeor equation?',
-            style: TextStyle(fontSize: 13, height: 1.4),
+            'Your measurements or goal have changed. Would you like to refresh your daily nutrition targets?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Keep Current Goals'),
+              child: const Text('Keep current targets'),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: const Text('Recalculate Goals'),
+              child: const Text('Refresh targets'),
             ),
           ],
         ),
@@ -237,10 +233,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         SnackBar(
           content: Text(
             recalculateGoals
-                ? 'Profile updated & nutrition targets recalculated ($newCals kcal)!'
-                : 'Profile updated successfully!',
+                ? 'Profile updated and nutrition targets refreshed.'
+                : 'Profile updated.',
           ),
-          backgroundColor: AppColors.success,
+          backgroundColor: context.b05Colors.success.indicator,
         ),
       );
       Navigator.pop(context);
@@ -249,7 +245,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: AppColors.danger),
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: context.b05Colors.danger.indicator,
+      ),
     );
   }
 
@@ -263,259 +262,236 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Your profile'), elevation: 0),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(B05Layout.space20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Identity & Body Data Section
-            _buildSectionHeader('ABOUT YOU'),
-            const SizedBox(height: 12),
+            _buildSectionHeader(context, 'About you'),
+            const SizedBox(height: B05Layout.space8),
             B05Surface(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Display Name',
-                        prefixIcon: Icon(Icons.person_outline_rounded),
-                      ),
+              padding: const EdgeInsets.all(B05Layout.space16),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Display Name',
+                      prefixIcon: Icon(Icons.person_outline_rounded),
                     ),
-                    const SizedBox(height: 16),
-                    IndiFitResponsiveFieldGroup(
-                      children: [
-                        TextField(
-                          controller: _ageController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Age (years)',
-                            suffixText: 'yrs',
-                          ),
-                        ),
-                        DropdownButtonFormField<String>(
-                          // ignore: deprecated_member_use
-                          value: _selectedSex,
-                          decoration: const InputDecoration(labelText: 'Sex'),
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'male',
-                              child: Text('Male'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'female',
-                              child: Text('Female'),
-                            ),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _selectedSex = val);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    IndiFitResponsiveFieldGroup(
-                      children: [
-                        TextField(
-                          controller: _heightController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'Height',
-                            suffixText: 'cm',
-                          ),
-                        ),
-                        TextField(
-                          controller: _weightController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'Weight',
-                            suffixText: 'kg',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // 2. Goal & Activity Section
-            _buildSectionHeader('GOALS & ROUTINE'),
-            const SizedBox(height: 12),
-            B05Surface(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    DropdownButtonFormField<String>(
-                      // ignore: deprecated_member_use
-                      value: _selectedGoal,
-                      decoration: const InputDecoration(
-                        labelText: 'What are you working toward?',
-                        prefixIcon: Icon(Icons.flag_rounded),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'lose',
-                          child: Text('Lose weight'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'maintain',
-                          child: Text('Maintain and feel strong'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'gain',
-                          child: Text('Build muscle'),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() => _selectedGoal = val);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      // ignore: deprecated_member_use
-                      value: _selectedActivity,
-                      decoration: const InputDecoration(
-                        labelText: 'How active are most days?',
-                        prefixIcon: Icon(Icons.directions_run_rounded),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'sedentary',
-                          child: Text('Mostly seated'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'light',
-                          child: Text('Lightly active'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'moderate',
-                          child: Text('Moderately active'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'active',
-                          child: Text('Very active'),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() => _selectedActivity = val);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // 3. Diet Preference
-            _buildSectionHeader('FOOD PREFERENCES'),
-            const SizedBox(height: 12),
-            B05Surface(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: DietPreferenceDropdown(
-                  selectedUiValue: _selectedDiet,
-                  decoration: InputDecoration(
-                    labelText: 'How do you like to eat?',
-                    helperText: _selectedDiet == null
-                        ? 'Choose your dietary preference.'
-                        : null,
-                    prefixIcon: const Icon(Icons.restaurant_rounded),
                   ),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedDiet = value;
-                        _dietPreferenceChanged = true;
-                      });
-                    }
-                  },
-                ),
+                  const SizedBox(height: 16),
+                  IndiFitResponsiveFieldGroup(
+                    children: [
+                      TextField(
+                        controller: _ageController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Age (years)',
+                          suffixText: 'yrs',
+                        ),
+                      ),
+                      DropdownButtonFormField<String>(
+                        // ignore: deprecated_member_use
+                        value: _selectedSex,
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'Sex'),
+                        items: const [
+                          DropdownMenuItem(value: 'male', child: Text('Male')),
+                          DropdownMenuItem(
+                            value: 'female',
+                            child: Text('Female'),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _selectedSex = val);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  IndiFitResponsiveFieldGroup(
+                    children: [
+                      TextField(
+                        controller: _heightController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Height',
+                          suffixText: 'cm',
+                        ),
+                      ),
+                      TextField(
+                        controller: _weightController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Weight',
+                          suffixText: 'kg',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: B05Layout.space24),
 
-            // 4. Equipment & Injuries
-            _buildSectionHeader('TRAINING SETUP'),
-            const SizedBox(height: 12),
+            _buildSectionHeader(context, 'Goals and routine'),
+            const SizedBox(height: B05Layout.space8),
             B05Surface(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    DropdownButtonFormField<String>(
-                      // ignore: deprecated_member_use
-                      value: _selectedEquipment,
-                      decoration: const InputDecoration(
-                        labelText: 'What equipment do you have?',
-                        prefixIcon: Icon(Icons.fitness_center_rounded),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'full_gym',
-                          child: Text('Full gym'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'dumbbells',
-                          child: Text('Dumbbells'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'bodyweight',
-                          child: Text('Bodyweight'),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() => _selectedEquipment = val);
-                        }
-                      },
+              padding: const EdgeInsets.all(B05Layout.space16),
+              child: Column(
+                children: [
+                  DropdownButtonFormField<String>(
+                    // ignore: deprecated_member_use
+                    value: _selectedGoal,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'What are you working toward?',
+                      prefixIcon: Icon(Icons.flag_rounded),
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _injuriesController,
-                      maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Anything we should work around?',
-                        hintText: 'e.g. lower back pain or a shoulder issue',
-                        prefixIcon: Icon(Icons.medical_services_outlined),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'lose',
+                        child: Text('Lose weight'),
                       ),
+                      DropdownMenuItem(
+                        value: 'maintain',
+                        child: Text('Maintain and feel strong'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'gain',
+                        child: Text('Build muscle'),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() => _selectedGoal = val);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    // ignore: deprecated_member_use
+                    value: _selectedActivity,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'How active are most days?',
+                      prefixIcon: Icon(Icons.directions_run_rounded),
                     ),
-                  ],
-                ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'sedentary',
+                        child: Text('Mostly seated'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'light',
+                        child: Text('Lightly active'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'moderate',
+                        child: Text('Moderately active'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'active',
+                        child: Text('Very active'),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() => _selectedActivity = val);
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: B05Layout.space24),
 
-            // Save Button
+            _buildSectionHeader(context, 'Food preferences'),
+            const SizedBox(height: B05Layout.space8),
+            B05Surface(
+              padding: const EdgeInsets.all(B05Layout.space16),
+              child: DietPreferenceDropdown(
+                selectedUiValue: _selectedDiet,
+                decoration: InputDecoration(
+                  labelText: 'How do you like to eat?',
+                  helperText: _selectedDiet == null
+                      ? 'Choose your dietary preference.'
+                      : null,
+                  prefixIcon: const Icon(Icons.restaurant_rounded),
+                ),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedDiet = value;
+                      _dietPreferenceChanged = true;
+                    });
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: B05Layout.space24),
+
+            _buildSectionHeader(context, 'Training setup'),
+            const SizedBox(height: B05Layout.space8),
+            B05Surface(
+              padding: const EdgeInsets.all(B05Layout.space16),
+              child: Column(
+                children: [
+                  DropdownButtonFormField<String>(
+                    // ignore: deprecated_member_use
+                    value: _selectedEquipment,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'What equipment do you have?',
+                      prefixIcon: Icon(Icons.fitness_center_rounded),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'full_gym',
+                        child: Text('Full gym'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'dumbbells',
+                        child: Text('Dumbbells'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'bodyweight',
+                        child: Text('Bodyweight'),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() => _selectedEquipment = val);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _injuriesController,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Anything we should work around?',
+                      hintText: 'e.g. lower back pain or a shoulder issue',
+                      prefixIcon: Icon(Icons.medical_services_outlined),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: B05Layout.space24),
+
             SizedBox(
               width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
+              child: B05ActionButton(
                 onPressed: _handleSave,
-                icon: const Icon(Icons.save_rounded),
-                label: const Text(
-                  'Save profile',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
+                icon: Icons.save_rounded,
+                label: 'Save profile',
               ),
             ),
           ],
@@ -524,15 +500,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textMuted,
-        letterSpacing: 1.0,
-      ),
+      style: B05Typography.caption(
+        context,
+      ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .6),
     );
   }
 }

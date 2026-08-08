@@ -6,6 +6,7 @@ import '../../core/nutrition_constraints.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/secondary_presentation.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
 import 'nutrition_constraints_controller.dart';
 
@@ -66,10 +67,11 @@ class _NutritionConstraintsScreenState
   ) {
     switch (state.status) {
       case NutritionConstraintManagementStatus.loading:
-        return Center(
-          child: Semantics(
-            label: 'Loading dietary constraints',
-            child: CircularProgressIndicator(),
+        return const Center(
+          child: ConsumerStatusRow(
+            label: 'Loading your dietary needs',
+            detail: 'Getting your saved choices ready.',
+            loading: true,
           ),
         );
       case NutritionConstraintManagementStatus.failure:

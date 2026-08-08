@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -121,9 +124,6 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exercise Library'),
-        elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
         actions: [
           Semantics(
             button: true,
@@ -132,14 +132,12 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
             child: IconButton(
               tooltip: 'Mini lessons',
               icon: const Icon(Icons.school_outlined),
-              onPressed: () => showModalBottomSheet<void>(
+              onPressed: () => showIndiFitBottomSheet<void>(
                 context: context,
-                isScrollControlled: true,
-                builder: (context) => SafeArea(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: const B05MiniLessonsPanel(),
-                  ),
+                semanticLabel: 'Mini lessons',
+                builder: (context) => const Padding(
+                  padding: EdgeInsets.all(B05Layout.space16),
+                  child: B05MiniLessonsPanel(),
                 ),
               ),
             ),
@@ -147,7 +145,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: B05Layout.space16),
         child: Column(
           children: [
             // Search Input
@@ -155,15 +153,15 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search bench press, squat, curl...',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search_rounded,
-                  color: AppColors.textMuted,
+                  color: context.b05Colors.textDisabled,
                 ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.clear,
-                          color: AppColors.textSecondary,
+                          color: context.b05Colors.textSecondary,
                         ),
                         onPressed: () => _searchController.clear(),
                       )
@@ -174,7 +172,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
             // Horizontal Muscle Filters
             SizedBox(
-              height: 32,
+              height: B05Layout.minTouchTarget,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _muscleFilters.length,
@@ -198,12 +196,12 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                           _loadExercises();
                         }
                       },
-                      selectedColor: AppColors.primaryGlow,
-                      labelStyle: TextStyle(
+                      selectedColor: context.b05Colors.selected,
+                      backgroundColor: context.b05Colors.inset,
+                      labelStyle: B05Typography.caption(context).copyWith(
                         color: isSelected
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                        fontSize: 11,
+                            ? context.b05Colors.action
+                            : context.b05Colors.textSecondary,
                         fontWeight: isSelected
                             ? FontWeight.bold
                             : FontWeight.normal,
@@ -212,8 +210,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
                           color: isSelected
-                              ? AppColors.primary
-                              : AppColors.border,
+                              ? context.b05Colors.action
+                              : context.b05Colors.border,
                         ),
                       ),
                     ),
@@ -225,7 +223,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
             // Equipment Filters Row
             SizedBox(
-              height: 32,
+              height: B05Layout.minTouchTarget,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _equipmentFilters.length,
@@ -247,12 +245,12 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                           _loadExercises();
                         }
                       },
-                      selectedColor: AppColors.infoBlue.withValues(alpha: 0.12),
-                      labelStyle: TextStyle(
+                      selectedColor: context.b05Colors.selected,
+                      backgroundColor: context.b05Colors.inset,
+                      labelStyle: B05Typography.caption(context).copyWith(
                         color: isSelected
-                            ? AppColors.infoBlue
-                            : AppColors.textSecondary,
-                        fontSize: 11,
+                            ? context.b05Colors.action
+                            : context.b05Colors.textSecondary,
                         fontWeight: isSelected
                             ? FontWeight.bold
                             : FontWeight.normal,
@@ -261,8 +259,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
                           color: isSelected
-                              ? AppColors.infoBlue
-                              : AppColors.border,
+                              ? context.b05Colors.action
+                              : context.b05Colors.border,
                         ),
                       ),
                     ),
@@ -277,7 +275,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
               child: _loading
                   ? const SkeletonList(count: 6)
                   : _exercises.isEmpty
-                  ? _buildEmptyState()
+                  ? _buildEmptyState(context)
                   : ListView.builder(
                       itemCount: _exercises.length,
                       itemBuilder: (context, index) {
@@ -296,16 +294,15 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                               '${ex.equipment} • ${muscles.join(', ')}',
                               style: const TextStyle(fontSize: 12),
                             ),
-                            trailing: const Icon(
+                            trailing: Icon(
                               Icons.info_outline_rounded,
-                              color: AppColors.primary,
-                              size: 20,
+                              color: context.b05Colors.action,
+                              size: B05Layout.iconMedium,
                             ),
                             onTap: () {
-                              showModalBottomSheet(
+                              showIndiFitBottomSheet<void>(
                                 context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
+                                semanticLabel: 'Exercise details',
                                 builder: (context) =>
                                     ExerciseDetailsSheet(exercise: ex),
                               );
@@ -321,7 +318,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     final query = _searchController.text.trim();
     final message = query.isNotEmpty
         ? 'No exercises match "$query".\nTry a different search term or change muscle filters.'
@@ -329,36 +326,16 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.search_off_rounded,
-              size: 48,
-              color: AppColors.textMuted,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-            if (query.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () {
-                  _searchController.clear();
-                },
-                icon: const Icon(Icons.clear_rounded, size: 16),
-                label: const Text('Clear Search'),
-              ),
-            ],
-          ],
+        padding: const EdgeInsets.all(B05Layout.space24),
+        child: ProductEmptyState(
+          icon: Icons.search_off_rounded,
+          title: query.isNotEmpty
+              ? 'No matching exercises'
+              : 'No exercises yet',
+          message: message,
+          action: query.isNotEmpty ? _searchController.clear : null,
+          actionLabel: query.isNotEmpty ? 'Clear search' : null,
+          actionIcon: query.isNotEmpty ? Icons.clear_rounded : null,
         ),
       ),
     );

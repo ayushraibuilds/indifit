@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/presentation/secondary_presentation.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import 'household_measures_controller.dart';
 
 class HouseholdMeasuresScreen extends ConsumerStatefulWidget {
@@ -44,7 +45,13 @@ class _HouseholdMeasuresScreenState
         label: const Text('Measure your own'),
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: ConsumerStatusRow(
+                label: 'Loading your measures',
+                detail: 'Getting your cups, bowls, and calibrations ready.',
+                loading: true,
+              ),
+            )
           : state.status == HouseholdMeasuresStatus.error
           ? _ErrorState(message: state.message, onRetry: controller.load)
           : _content(context, state, controller),
@@ -68,22 +75,19 @@ class _HouseholdMeasuresScreenState
           child: B05Surface(
             showBorder: false,
             subtle: true,
-            child: Padding(
-              padding: EdgeInsets.zero,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'A quick note about measuring',
-                    style: B05Typography.title(context),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'A cup tells us volume, not weight. Your measured cup is useful for portions, but it does not turn water, rice, dal, or another food into grams.',
-                    style: B05Typography.body(context),
-                  ),
-                ],
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'A quick note about measuring',
+                  style: B05Typography.title(context),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'A cup tells us volume, not weight. Your measured cup is useful for portions, but it does not turn water, rice, dal, or another food into grams.',
+                  style: B05Typography.body(context),
+                ),
+              ],
             ),
           ),
         ),

@@ -4,7 +4,9 @@ import 'package:vibration/vibration.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/services/notification_service.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
+import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 
 class RestTimerBottomSheet extends StatefulWidget {
   final int recommendedRestSeconds;
@@ -14,14 +16,9 @@ class RestTimerBottomSheet extends StatefulWidget {
   static Future<void> show(BuildContext context, int restSeconds) async {
     await WakelockPlus.enable();
     if (context.mounted) {
-      await showModalBottomSheet(
+      await showIndiFitBottomSheet<void>(
         context: context,
-        isDismissible: true,
-        enableDrag: true,
-        backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
+        semanticLabel: 'Rest timer',
         builder: (context) =>
             RestTimerBottomSheet(recommendedRestSeconds: restSeconds),
       );
@@ -69,6 +66,7 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final progress = widget.recommendedRestSeconds > 0
         ? _secondsRemaining / widget.recommendedRestSeconds
         : 0.0;
@@ -80,7 +78,7 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
         final confirm = await showDialog<bool>(
           context: context,
           builder: (dialogCtx) => AlertDialog(
-            backgroundColor: AppColors.surface,
+            backgroundColor: context.b05Colors.section,
             title: const Text('End Rest Period?'),
             content: const Text(
               'Are you sure you want to skip the rest timer early?',
@@ -90,13 +88,9 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
                 onPressed: () => Navigator.pop(dialogCtx, false),
                 child: const Text('Continue Rest'),
               ),
-              ElevatedButton(
+              B05ActionButton(
                 onPressed: () => Navigator.pop(dialogCtx, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Skip Rest'),
+                label: 'Skip rest',
               ),
             ],
           ),
@@ -106,18 +100,20 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
         }
       },
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.fromLTRB(
+          B05Layout.space24,
+          B05Layout.space12,
+          B05Layout.space24,
+          B05Layout.space24,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'REST PERIOD',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
-                letterSpacing: 1.0,
-              ),
+              style: B05Typography.caption(
+                context,
+              ).copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.0),
             ),
             const SizedBox(height: 16),
             Stack(
@@ -129,43 +125,34 @@ class _RestTimerBottomSheetState extends State<RestTimerBottomSheet> {
                   child: CircularProgressIndicator(
                     value: progress,
                     strokeWidth: 8,
-                    backgroundColor: AppColors.border,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
-                    ),
+                    backgroundColor: colors.border,
+                    valueColor: AlwaysStoppedAnimation<Color>(colors.action),
                   ),
                 ),
                 Text(
                   '${_secondsRemaining}s',
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: B05Typography.metric(context).copyWith(fontSize: 32),
                 ),
               ],
             ),
             const SizedBox(height: 24),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                OutlinedButton.icon(
-                  onPressed: () => setState(() => _secondsRemaining += 30),
-                  icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text('+30s'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.cardBackground,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(120, 44),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.border),
-                    ),
+                Expanded(
+                  child: B05ActionButton(
+                    onPressed: () => setState(() => _secondsRemaining += 30),
+                    icon: Icons.add_rounded,
+                    label: 'Add 30 sec',
+                    emphasis: B05ActionEmphasis.secondary,
                   ),
-                  child: const Text('Skip Rest'),
+                ),
+                const SizedBox(width: B05Layout.space12),
+                Expanded(
+                  child: B05ActionButton(
+                    onPressed: () => Navigator.pop(context),
+                    label: 'Skip rest',
+                    emphasis: B05ActionEmphasis.tertiary,
+                  ),
                 ),
               ],
             ),

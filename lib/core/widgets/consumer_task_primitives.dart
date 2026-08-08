@@ -179,7 +179,7 @@ class ConsumerStatusRow extends StatelessWidget {
     final content = Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (loading)
+        if (loading && !B05MotionPolicy.reduceMotion(context))
           SizedBox(
             width: 18,
             height: 18,
@@ -187,6 +187,12 @@ class ConsumerStatusRow extends StatelessWidget {
               strokeWidth: 2,
               color: colors.action,
             ),
+          )
+        else if (loading)
+          Icon(
+            Icons.hourglass_top_rounded,
+            size: B05Layout.iconMedium,
+            color: colors.action,
           )
         else
           Icon(

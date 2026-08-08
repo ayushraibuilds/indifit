@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../theme/colors.dart';
+
+import '../theme/b05_semantic_colors.dart';
+import 'b05_accessibility_primitives.dart';
 
 class SkeletonBox extends StatelessWidget {
   final double width;
@@ -16,20 +18,27 @@ class SkeletonBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-            color: AppColors.border.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-        )
-        .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .shimmer(
-          duration: 1200.ms,
-          color: AppColors.border.withValues(alpha: 0.8),
-        )
-        .fadeIn(duration: 600.ms);
+    final colors = context.b05Colors;
+    final box = SizedBox(
+      width: width,
+      height: height,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.inset,
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+      ),
+    );
+    final content = B05MotionPolicy.reduceMotion(context)
+        ? box
+        : box
+              .animate(onPlay: (controller) => controller.repeat(reverse: true))
+              .shimmer(duration: 1200.ms, color: colors.interactive)
+              .fadeIn(duration: 180.ms);
+    return Semantics(
+      label: 'Loading',
+      child: ExcludeSemantics(child: content),
+    );
   }
 }
 
@@ -40,26 +49,31 @@ class SkeletonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8.0),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            const SkeletonBox(width: 40, height: 40, borderRadius: 20),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SkeletonBox(width: 140, height: 14),
-                  const SizedBox(height: 8),
-                  SkeletonBox(width: 80, height: 10, borderRadius: 4),
-                ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: B05Layout.space8),
+      child: B05Surface(
+        subtle: true,
+        showBorder: false,
+        padding: const EdgeInsets.all(B05Layout.space16),
+        child: SizedBox(
+          height: height,
+          child: Row(
+            children: [
+              const SkeletonBox(width: 40, height: 40, borderRadius: 20),
+              const SizedBox(width: B05Layout.space16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SkeletonBox(width: 140, height: 14),
+                    const SizedBox(height: B05Layout.space8),
+                    SkeletonBox(width: 80, height: 10, borderRadius: 4),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

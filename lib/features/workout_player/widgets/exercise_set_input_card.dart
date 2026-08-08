@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../../core/widgets/responsive_form_primitives.dart';
@@ -46,6 +46,7 @@ class ExerciseSetInputCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     return B05Surface(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -58,19 +59,12 @@ class ExerciseSetInputCard extends StatelessWidget {
                   'Set ${currentSetIndex + 1} of ${currentExercise.sets}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                  style: B05Typography.title(context),
                 ),
               ),
-              IconButton(
-                icon: const Icon(
-                  Icons.calculate_outlined,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-                tooltip: 'Plate Calculator',
+              B05IconAction(
+                icon: Icons.calculate_outlined,
+                label: 'Open plate calculator',
                 onPressed: () {
                   final double w =
                       double.tryParse(weightController.text) ?? 20.0;
@@ -141,10 +135,7 @@ class ExerciseSetInputCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          const Text(
-            'Set Type',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
+          Text('Set Type', style: B05Typography.caption(context)),
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -164,14 +155,17 @@ class ExerciseSetInputCard extends StatelessWidget {
                         label: Text(
                           type['label']!,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: Theme.of(
+                              context,
+                            ).textTheme.bodySmall!.fontSize,
                             color: isSelected
-                                ? Colors.white
-                                : AppColors.textSecondary,
+                                ? colors.action
+                                : colors.textSecondary,
                           ),
                         ),
                         selected: isSelected,
-                        selectedColor: AppColors.primary,
+                        selectedColor: colors.selected,
+                        backgroundColor: colors.inset,
                         onSelected: (val) {
                           if (val) onSetTypeChanged(type['id']!);
                         },
@@ -181,9 +175,9 @@ class ExerciseSetInputCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Rate of Perceived Exertion (RPE)',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: B05Typography.caption(context),
           ),
           const SizedBox(height: 8),
           SingleChildScrollView(
@@ -201,17 +195,20 @@ class ExerciseSetInputCard extends StatelessWidget {
                     label: Text(
                       '@$rpe',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: Theme.of(
+                          context,
+                        ).textTheme.bodySmall!.fontSize,
                         fontWeight: isSelected
                             ? FontWeight.bold
                             : FontWeight.normal,
                         color: isSelected
-                            ? Colors.white
-                            : AppColors.textSecondary,
+                            ? colors.action
+                            : colors.textSecondary,
                       ),
                     ),
                     selected: isSelected,
-                    selectedColor: AppColors.primary,
+                    selectedColor: colors.selected,
+                    backgroundColor: colors.inset,
                     onSelected: (val) => onRpeChanged(val ? rpe : null),
                   ),
                 );
@@ -219,20 +216,13 @@ class ExerciseSetInputCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
-            ),
+          B05Surface(
+            tone: B05SurfaceTone.inset,
+            radius: B05SurfaceRadius.small,
+            padding: const EdgeInsets.all(B05Layout.space12),
             child: Text(
               executionMetadata.formCue,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
+              style: B05Typography.caption(context).copyWith(height: 1.4),
             ),
           ),
           const SizedBox(height: 20),

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import 'calendar_controller.dart';
@@ -107,8 +108,8 @@ class _OccurrenceActionsSheetState
         content: TextField(
           controller: timezoneController,
           decoration: const InputDecoration(
-            labelText: 'IANA timezone',
-            helperText: 'For example: Asia/Kolkata or Europe/London',
+            labelText: 'Time zone',
+            helperText: 'Use the time zone where you will train.',
           ),
         ),
         actions: [
@@ -175,21 +176,18 @@ class _OccurrenceActionsSheetState
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(
-            'Skip Workout',
-            style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
-          ),
+          title: const Text('Skip workout'),
           content: const Text(
-            'How would you like to handle progression for this skipped workout?',
+            'Would you like to make it up later, or skip it and continue your plan?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, 'keepPending'),
-              child: const Text('1. Keep Pending (Make up later)'),
+              child: const Text('Make it up later'),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () => Navigator.pop(context, 'skipAndAdvance'),
-              child: const Text('2. Skip & Advance Progression'),
+              child: const Text('Skip Workout'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, null),
@@ -222,8 +220,8 @@ class _OccurrenceActionsSheetState
           SnackBar(
             content: Text(
               isBypass
-                  ? 'Skipped and advanced progression.'
-                  : 'Skipped (Kept pending for make-up).',
+                  ? 'Workout skipped. Your plan will continue.'
+                  : 'Workout kept on your plan for later.',
             ),
           ),
         );
@@ -305,15 +303,15 @@ class _OccurrenceActionsSheetState
       context: context,
       builder: (context) {
         return SimpleDialog(
-          title: const Text('Repeat Workout Purpose'),
+          title: const Text('Repeat workout'),
           children: [
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, 'makeUp'),
-              child: const Text('Make-up Repeat (Fulfills pending ordinal)'),
+              child: const Text('Make up a missed workout'),
             ),
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, 'extra'),
-              child: const Text('Extra Repeat (Additional volume)'),
+              child: const Text('Add an extra workout'),
             ),
           ],
         );
@@ -387,35 +385,32 @@ class _OccurrenceActionsSheetState
         .read(calendarRepositoryProvider)
         .getOccurrenceHistory(widget.occurrenceItem.occurrence.id);
     if (!mounted) return;
-    await showModalBottomSheet<void>(
+    await showIndiFitBottomSheet<void>(
       context: context,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.all(16),
-          children: [
-            const Text(
-              'Occurrence history',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            if (events.isEmpty) const Text('No recorded events.'),
-            ...events.map(
-              (event) => ListTile(
-                title: Text(_eventLabel(event.eventType)),
-                subtitle: Text(
-                  '${_statusLabel(event.fromStatus)} → ${_statusLabel(event.toStatus)}\n${ConsumerDateLabel.dateTime(event.occurredAtUtc)}',
-                ),
+      semanticLabel: 'Workout history',
+      builder: (context) => ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.all(B05Layout.space16),
+        children: [
+          Text('Occurrence history', style: B05Typography.title(context)),
+          const SizedBox(height: 8),
+          if (events.isEmpty) const Text('No recorded events.'),
+          ...events.map(
+            (event) => ListTile(
+              title: Text(_eventLabel(event.eventType)),
+              subtitle: Text(
+                '${_statusLabel(event.fromStatus)} → ${_statusLabel(event.toStatus)}\n${ConsumerDateLabel.dateTime(event.occurredAtUtc)}',
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final item = widget.occurrenceItem;
     final occ = item.occurrence;
     final isStartable = occ.status == 'planned' || occ.status == 'rescheduled';
@@ -427,128 +422,128 @@ class _OccurrenceActionsSheetState
       'cancelled',
     }.contains(occ.status);
     final isRestorable = occ.status == 'skipped' || occ.status == 'cancelled';
+    final scheduledDateLabel = ConsumerDateLabel.day(occ.originalLocalDate);
+    final dateLabel = occ.originalLocalDate == occ.effectiveLocalDate
+        ? 'Scheduled for $scheduledDateLabel'
+        : 'Moved to ${ConsumerDateLabel.day(occ.effectiveLocalDate)}';
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    item.template.name,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
-                    ),
-                  ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(B05Layout.space16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  item.template.name,
+                  style: B05Typography.title(context),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _statusLabel(occ.status),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Scheduled: ${ConsumerDateLabel.day(occ.originalLocalDate)}\nEffective: ${ConsumerDateLabel.day(occ.effectiveLocalDate)}${item.isOverdue ? ' • Overdue' : ''}',
-              style: TextStyle(
-                color: item.isOverdue ? Colors.orange : Colors.grey,
-                fontWeight: item.isOverdue
-                    ? FontWeight.bold
-                    : FontWeight.normal,
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '${item.block.name} • Week ${item.week.programWeekOrdinal + 1}${item.isDeload ? ' • Deload' : ''}',
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            if (item.prescriptions.isNotEmpty)
-              Text(
-                item.prescriptions
-                    .map(
-                      (prescription) =>
-                          '${prescription.exerciseNameSnapshot} (${prescription.plannedSets} × ${prescription.repsRange})',
-                    )
-                    .join('\n'),
-                style: const TextStyle(fontSize: 13),
-              ),
-            const SizedBox(height: 8),
-            if (_isLoading)
-              const Center(child: CircularProgressIndicator())
-            else ...[
-              if (isStartable || isInProgress)
-                ListTile(
-                  leading: const Icon(
-                    Icons.play_arrow_rounded,
-                    color: AppColors.primary,
-                  ),
-                  title: Text(
-                    isInProgress ? 'Resume Workout' : 'Start Workout',
-                  ),
-                  onTap: _startWorkout,
+              B05Surface(
+                tone: B05SurfaceTone.selected,
+                radius: B05SurfaceRadius.small,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: B05Layout.space8,
+                  vertical: B05Layout.space4,
                 ),
-              if (isStartable) ...[
-                ListTile(
-                  leading: const Icon(Icons.edit_calendar_rounded),
-                  title: const Text('Reschedule'),
-                  onTap: _rescheduleOccurrence,
+                child: Text(
+                  _statusLabel(occ.status),
+                  style: B05Typography.caption(
+                    context,
+                  ).copyWith(color: colors.action, fontWeight: FontWeight.bold),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.skip_next_rounded),
-                  title: const Text('Skip Workout'),
-                  onTap: _showSkipDialog,
-                ),
-                ListTile(
-                  leading: const Icon(Icons.cancel_outlined, color: Colors.red),
-                  title: const Text(
-                    'Cancel Workout',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  onTap: _cancelOccurrence,
-                ),
-              ],
-              if (isRestorable)
-                ListTile(
-                  leading: const Icon(Icons.undo_rounded),
-                  title: const Text('Restore to Plan'),
-                  onTap: _restoreOccurrence,
-                ),
-              if (isTerminal)
-                ListTile(
-                  leading: const Icon(Icons.repeat_rounded),
-                  title: const Text('Repeat Workout'),
-                  onTap: _showRepeatDialog,
-                ),
-              ListTile(
-                leading: const Icon(Icons.history_rounded),
-                title: const Text('View History'),
-                onTap: _showHistory,
               ),
             ],
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            '$dateLabel${item.isOverdue ? ' • Overdue' : ''}',
+            style: B05Typography.caption(context).copyWith(
+              color: item.isOverdue
+                  ? colors.warning.indicator
+                  : colors.textSecondary,
+              fontWeight: item.isOverdue ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          const SizedBox(height: B05Layout.space16),
+          Text(
+            '${item.block.name} • Week ${item.week.programWeekOrdinal + 1}${item.isDeload ? ' • Deload' : ''}',
+            style: B05Typography.caption(context),
+          ),
+          const SizedBox(height: B05Layout.space8),
+          if (item.prescriptions.isNotEmpty)
+            Text(
+              item.prescriptions
+                  .map(
+                    (prescription) =>
+                        '${prescription.exerciseNameSnapshot} (${prescription.plannedSets} × ${prescription.repsRange})',
+                  )
+                  .join('\n'),
+              style: B05Typography.caption(context),
+            ),
+          const SizedBox(height: B05Layout.space8),
+          if (_isLoading)
+            Center(
+              child: Semantics(
+                liveRegion: true,
+                label: 'Updating workout',
+                child: CircularProgressIndicator(color: colors.action),
+              ),
+            )
+          else ...[
+            if (isStartable || isInProgress)
+              ListTile(
+                leading: Icon(Icons.play_arrow_rounded, color: colors.action),
+                title: Text(isInProgress ? 'Resume Workout' : 'Start Workout'),
+                onTap: _startWorkout,
+              ),
+            if (isStartable) ...[
+              ListTile(
+                leading: const Icon(Icons.edit_calendar_rounded),
+                title: const Text('Reschedule'),
+                onTap: _rescheduleOccurrence,
+              ),
+              ListTile(
+                leading: const Icon(Icons.skip_next_rounded),
+                title: const Text('Skip Workout'),
+                onTap: _showSkipDialog,
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.cancel_outlined,
+                  color: colors.danger.indicator,
+                ),
+                title: Text(
+                  'Cancel Workout',
+                  style: B05Typography.body(
+                    context,
+                  ).copyWith(color: colors.danger.indicator),
+                ),
+                onTap: _cancelOccurrence,
+              ),
+            ],
+            if (isRestorable)
+              ListTile(
+                leading: const Icon(Icons.undo_rounded),
+                title: const Text('Restore to Plan'),
+                onTap: _restoreOccurrence,
+              ),
+            if (isTerminal)
+              ListTile(
+                leading: const Icon(Icons.repeat_rounded),
+                title: const Text('Repeat Workout'),
+                onTap: _showRepeatDialog,
+              ),
+            ListTile(
+              leading: const Icon(Icons.history_rounded),
+              title: const Text('View History'),
+              onTap: _showHistory,
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

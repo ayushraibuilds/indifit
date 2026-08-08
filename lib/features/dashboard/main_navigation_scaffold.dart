@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../exercise_library/exercise_library_screen.dart';
 import '../progress/progress_screen.dart';
 import '../workout_player/routine_display_screen.dart';
@@ -33,7 +34,10 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
             _currentIndex = index;
           });
         },
-        animationDuration: const Duration(milliseconds: 300),
+        animationDuration: B05MotionPolicy.transitionDuration(
+          context,
+          standard: const Duration(milliseconds: 220),
+        ),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.today_outlined),

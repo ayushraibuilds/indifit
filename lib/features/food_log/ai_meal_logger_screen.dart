@@ -16,7 +16,6 @@ import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/privacy/nutrition_estimate_privacy.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../core/theme/colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -101,28 +100,25 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: AppColors.surface,
+          backgroundColor: dialogContext.b05Colors.section,
           title: Text(
             isCamera
                 ? 'Camera Access Required'
                 : 'Photo Gallery Access Required',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: B05Typography.title(dialogContext),
           ),
           content: Text(
             isCamera
                 ? 'IndiFit can send this meal photo to the approved estimation service after you confirm. The temporary photo is deleted after processing and is not backed up.'
                 : 'IndiFit can send the selected meal photo to the approved estimation service after you confirm. The temporary photo is deleted after processing and is not backed up.',
-            style: const TextStyle(height: 1.4, color: AppColors.textSecondary),
+            style: B05Typography.body(dialogContext),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
+              child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () async {
                 Navigator.pop(dialogContext);
                 try {
@@ -166,10 +162,6 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   }
                 }
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
               child: const Text('Allow'),
             ),
           ],
@@ -376,9 +368,9 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     final String name = _nameEditController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Meal name cannot be empty.'),
-          backgroundColor: AppColors.danger,
+          backgroundColor: context.b05Colors.danger.indicator,
         ),
       );
       return;
@@ -392,11 +384,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     };
     if (rawValues.values.any(_isInvalidNonNegative)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'Enter valid finite non-negative values, or leave an unknown nutrient blank.',
           ),
-          backgroundColor: AppColors.danger,
+          backgroundColor: context.b05Colors.danger.indicator,
         ),
       );
       return;
@@ -423,11 +415,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         NutritionQuantityService.validatePositiveUserEnteredPortion(quantity);
       } on QuantityError {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
               'That amount could not be used. Check it and try again.',
             ),
-            backgroundColor: AppColors.danger,
+            backgroundColor: context.b05Colors.danger.indicator,
           ),
         );
         return;
@@ -435,9 +427,9 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     }
     if (quantity == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Enter a positive serving count before logging.'),
-          backgroundColor: AppColors.danger,
+          backgroundColor: context.b05Colors.danger.indicator,
         ),
       );
       return;
@@ -628,16 +620,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
           children: [
             Text(
               'Log ${_mealLabel(widget.mealType)}',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: B05Typography.title(context),
             ),
-            Text(
-              dateStr,
-              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
+            Text(dateStr, style: B05Typography.caption(context)),
           ],
         ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
       ),
       body: _loading
           ? _buildLoadingState()
@@ -654,11 +641,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   _estimate == null
                       ? 'Describe what you ate, then review the estimate before saving.'
                       : 'Review the estimate and adjust anything that looks different from your meal.',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
+                  style: B05Typography.body(context),
                 ),
                 const SizedBox(height: 16),
                 if (_estimate == null) ...[
@@ -679,10 +662,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Describe your meal',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
+          Text('Describe your meal', style: B05Typography.title(context)),
           const SizedBox(height: 4),
           TextField(
             controller: _textController,
@@ -698,28 +678,28 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
             runSpacing: 8,
             children: [
               ActionChip(
-                avatar: const Icon(
+                avatar: Icon(
                   Icons.restaurant_outlined,
                   size: 14,
-                  color: AppColors.primary,
+                  color: context.b05Colors.action,
                 ),
-                label: const Text(
+                label: Text(
                   '2 rotis + paneer',
-                  style: TextStyle(fontSize: 11),
+                  style: B05Typography.caption(context),
                 ),
                 onPressed: () => setState(
                   () => _textController.text = '2 rotis with paneer bhurji',
                 ),
               ),
               ActionChip(
-                avatar: const Icon(
+                avatar: Icon(
                   Icons.restaurant_outlined,
                   size: 14,
-                  color: AppColors.primary,
+                  color: context.b05Colors.action,
                 ),
-                label: const Text(
+                label: Text(
                   'Oats + almonds',
-                  style: TextStyle(fontSize: 11),
+                  style: B05Typography.caption(context),
                 ),
                 onPressed: () => setState(
                   () => _textController.text =
@@ -739,10 +719,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Use a photo (optional)',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
+          Text('Use a photo (optional)', style: B05Typography.title(context)),
           const SizedBox(height: 12),
 
           // Image Preview Slot
@@ -766,41 +743,23 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                 onPressed: _saving
                     ? null
                     : () => _pickImage(ImageSource.gallery),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                icon: const Icon(
+                icon: Icon(
                   Icons.photo_library_rounded,
                   size: 18,
-                  color: AppColors.textSecondary,
+                  color: context.b05Colors.action,
                 ),
-                label: const Text(
-                  'Gallery',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
+                label: const Text('Gallery'),
               ),
               OutlinedButton.icon(
                 onPressed: _saving
                     ? null
                     : () => _pickImage(ImageSource.camera),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                icon: const Icon(
+                icon: Icon(
                   Icons.camera_alt_rounded,
                   size: 18,
-                  color: AppColors.textSecondary,
+                  color: context.b05Colors.action,
                 ),
-                label: const Text(
-                  'Camera',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
+                label: const Text('Camera'),
               ),
             ],
           ),
@@ -819,9 +778,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Temporary photo cleanup needs a retry. No photo content was saved to nutrition data.',
-                    style: TextStyle(color: AppColors.danger, fontSize: 11),
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(color: context.b05Colors.danger.foreground),
                   ),
                   TextButton(
                     onPressed: _retryImageCleanup,
@@ -847,14 +808,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Review your meal',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
+              Text('Review your meal', style: B05Typography.title(context)),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'These numbers are approximate. Missing information stays blank rather than becoming zero.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                style: B05Typography.caption(context),
               ),
               const SizedBox(height: 16),
               _buildUncertaintySummary(estimate),

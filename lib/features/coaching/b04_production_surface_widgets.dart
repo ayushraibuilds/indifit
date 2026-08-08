@@ -5,7 +5,6 @@ import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../core/theme/colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/models/b04_briefing_read_models.dart';
 import '../../data/models/b04_current_food_models.dart';
@@ -286,10 +285,7 @@ class _B04BriefingContent extends StatelessWidget {
             children: [
               Text(title, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
-              Text(
-                _periodLabel(read),
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
+              Text(_periodLabel(read), style: B05Typography.caption(context)),
               const SizedBox(height: 12),
               ...read.visibleRecommendations.map(
                 (item) => Padding(
@@ -479,7 +475,7 @@ class _B04CompactUnavailable extends StatelessWidget {
       const SizedBox(height: B05Layout.space4),
       B05ActionButton(
         label: 'Why?',
-        emphasis: B05ActionEmphasis.secondary,
+        emphasis: B05ActionEmphasis.tertiary,
         onPressed: onWhy,
       ),
       if (showWhy && presentation.why != null) ...[
@@ -517,14 +513,20 @@ class _B04CompactProgress extends StatelessWidget {
     liveRegion: true,
     child: Row(
       children: [
-        SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: context.b05Colors.action,
-          ),
-        ),
+        B05MotionPolicy.reduceMotion(context)
+            ? Icon(
+                Icons.hourglass_top_rounded,
+                size: B05Layout.iconSmall,
+                color: context.b05Colors.action,
+              )
+            : SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: context.b05Colors.action,
+                ),
+              ),
         const SizedBox(width: B05Layout.space8),
         Text('Preparing a meal suggestion', style: B05Typography.body(context)),
       ],
@@ -625,7 +627,7 @@ class B04CurrentFoodContent extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'These ideas fit the information you have logged today. Check ingredients for allergies or medical needs.',
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: B05Typography.caption(context),
               ),
               const SizedBox(height: 12),
               _B04EvidenceLines(
@@ -713,95 +715,91 @@ class _B04RecommendationTile extends StatelessWidget {
     return Semantics(
       container: true,
       label: '${presentation.title}, ${presentation.status}',
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      presentation.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
+      child: B05Surface(
+        tone: B05SurfaceTone.inset,
+        radius: B05SurfaceRadius.medium,
+        padding: const EdgeInsets.all(B05Layout.space12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    presentation.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  _B04Pill(label: presentation.status),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(presentation.explanation),
-              if (presentation.result != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  presentation.result!,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
+                _B04Pill(label: presentation.status),
               ],
-              if (presentation.showWhy && presentation.why != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Why? ${presentation.why}',
-                  style: const TextStyle(color: AppColors.textSecondary),
-                ),
-              ],
-              if (recommendation.targetAcceptanceState !=
-                  B04BriefingTargetAcceptanceState.notApplicable) ...[
-                const SizedBox(height: 6),
-                Text(
-                  'Target: ${ConsumerCopy.state(recommendation.targetAcceptanceState.stableId)}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
+            ),
+            const SizedBox(height: 6),
+            Text(presentation.explanation),
+            if (presentation.result != null) ...[
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  if (!isSafetyUnavailable)
-                    _B04ActionButton(
-                      label: 'Acknowledge',
-                      onPressed: () => onAction(
-                        recommendation,
-                        B04RecommendationFeedbackAction.acknowledge,
-                      ),
-                    ),
-                  if (!isSafetyUnavailable &&
-                      hasCanonicalProposal &&
-                      recommendation.targetAcceptanceState ==
-                          B04BriefingTargetAcceptanceState.proposalAvailable)
-                    _B04ActionButton(
-                      label: 'Accept target',
-                      onPressed: () => onAction(
-                        recommendation,
-                        B04RecommendationFeedbackAction.accept,
-                      ),
-                    ),
-                  if (!isSafetyUnavailable)
-                    _B04ActionButton(
-                      label: 'Not for me',
-                      onPressed: () => onAction(
-                        recommendation,
-                        B04RecommendationFeedbackAction.override,
-                      ),
-                    ),
-                  _B04ActionButton(
-                    label: 'Dismiss',
-                    onPressed: () => onAction(
-                      recommendation,
-                      B04RecommendationFeedbackAction.dismiss,
-                    ),
-                  ),
-                ],
+              Text(
+                presentation.result!,
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ],
-          ),
+            if (presentation.showWhy && presentation.why != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Why? ${presentation.why}',
+                style: B05Typography.caption(context),
+              ),
+            ],
+            if (recommendation.targetAcceptanceState !=
+                B04BriefingTargetAcceptanceState.notApplicable) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Target: ${ConsumerCopy.state(recommendation.targetAcceptanceState.stableId)}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                if (!isSafetyUnavailable)
+                  _B04ActionButton(
+                    label: 'Acknowledge',
+                    onPressed: () => onAction(
+                      recommendation,
+                      B04RecommendationFeedbackAction.acknowledge,
+                    ),
+                  ),
+                if (!isSafetyUnavailable &&
+                    hasCanonicalProposal &&
+                    recommendation.targetAcceptanceState ==
+                        B04BriefingTargetAcceptanceState.proposalAvailable)
+                  _B04ActionButton(
+                    label: 'Accept target',
+                    onPressed: () => onAction(
+                      recommendation,
+                      B04RecommendationFeedbackAction.accept,
+                    ),
+                  ),
+                if (!isSafetyUnavailable)
+                  _B04ActionButton(
+                    label: 'Not for me',
+                    onPressed: () => onAction(
+                      recommendation,
+                      B04RecommendationFeedbackAction.override,
+                    ),
+                  ),
+                _B04ActionButton(
+                  label: 'Dismiss',
+                  onPressed: () => onAction(
+                    recommendation,
+                    B04RecommendationFeedbackAction.dismiss,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -814,23 +812,26 @@ class _B04WarningList extends StatelessWidget {
   const _B04WarningList({required this.warnings});
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Helpful notes',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 4),
-      for (final warning in warnings)
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.info_outline, color: AppColors.warning),
-          title: Text(ConsumerCopy.explanation(warning.wording)),
-          subtitle: const Text('This note is not a safety approval.'),
-        ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Helpful notes', style: B05Typography.label(context)),
+        const SizedBox(height: B05Layout.space4),
+        for (final warning in warnings)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.info_outline, color: colors.warning.indicator),
+            title: Text(ConsumerCopy.explanation(warning.wording)),
+            subtitle: Text(
+              'This note is not a safety approval.',
+              style: B05Typography.caption(context),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _B04EvidenceLines extends StatelessWidget {
@@ -871,13 +872,13 @@ class B04LoadingCard extends StatelessWidget {
   const B04LoadingCard({super.key, required this.label});
 
   @override
-  Widget build(BuildContext context) => Card(
+  Widget build(BuildContext context) => B05Surface(
     child: Semantics(
       container: true,
+      liveRegion: true,
       label: '$label loading',
-      child: const Padding(
-        padding: EdgeInsets.all(20),
-        child: Center(child: CircularProgressIndicator()),
+      child: Center(
+        child: CircularProgressIndicator(color: context.b05Colors.action),
       ),
     ),
   );
@@ -898,31 +899,25 @@ class B04ReadStatusCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Card(
+  Widget build(BuildContext context) => B05Surface(
     child: Semantics(
       container: true,
       label: '$title. $message${detail == null ? '' : ' $detail'}',
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(message),
-            if (detail != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                detail!,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-            if (action != null) ...[const SizedBox(height: 4), action!],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: B05Typography.title(context)),
+          const SizedBox(height: B05Layout.space8),
+          Text(message, style: B05Typography.body(context)),
+          if (detail != null) ...[
+            const SizedBox(height: B05Layout.space8),
+            Text(detail!, style: B05Typography.caption(context)),
           ],
-        ),
+          if (action != null) ...[
+            const SizedBox(height: B05Layout.space4),
+            action!,
+          ],
+        ],
       ),
     ),
   );
@@ -934,13 +929,14 @@ class _B04Pill extends StatelessWidget {
   const _B04Pill({required this.label});
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: AppColors.primary.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(8),
+  Widget build(BuildContext context) => B05Surface(
+    tone: B05SurfaceTone.selected,
+    radius: B05SurfaceRadius.small,
+    padding: const EdgeInsets.symmetric(
+      horizontal: B05Layout.space8,
+      vertical: B05Layout.space4,
     ),
-    child: Text(label, style: const TextStyle(fontSize: 11)),
+    child: Text(label, style: B05Typography.caption(context)),
   );
 }
 
@@ -951,12 +947,9 @@ class _B04ActionButton extends StatelessWidget {
   const _B04ActionButton({required this.label, required this.onPressed});
 
   @override
-  Widget build(BuildContext context) => OutlinedButton(
+  Widget build(BuildContext context) => B05ActionButton(
+    label: label,
     onPressed: onPressed,
-    style: OutlinedButton.styleFrom(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      minimumSize: const Size(0, 36),
-    ),
-    child: Text(label),
+    emphasis: B05ActionEmphasis.secondary,
   );
 }

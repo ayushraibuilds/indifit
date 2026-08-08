@@ -300,10 +300,7 @@ void main() {
           ),
         );
 
-        final saveButton = find.widgetWithText(
-          ElevatedButton,
-          'Save Workout & Exit',
-        );
+        final saveButton = find.widgetWithText(FilledButton, 'Save workout');
         expect(saveButton, findsOneWidget);
 
         await tester.tap(saveButton);
@@ -385,10 +382,7 @@ void main() {
           ),
         );
 
-        final saveButton = find.widgetWithText(
-          ElevatedButton,
-          'Save Workout & Exit',
-        );
+        final saveButton = find.widgetWithText(FilledButton, 'Save workout');
         await tester.tap(saveButton);
         await tester.pump();
         expect(repo.logSessionCallCount, equals(1));
@@ -462,10 +456,7 @@ void main() {
           ),
         );
 
-        final saveButton = find.widgetWithText(
-          ElevatedButton,
-          'Save Workout & Exit',
-        );
+        final saveButton = find.widgetWithText(FilledButton, 'Save workout');
 
         // Attempt 1: Fails
         await tester.tap(saveButton);
@@ -528,7 +519,7 @@ void main() {
           ),
         );
 
-        final saveButton = find.byType(ElevatedButton);
+        final saveButton = find.widgetWithText(FilledButton, 'Save workout');
         expect(saveButton, findsOneWidget);
 
         // Rapid multi-tap

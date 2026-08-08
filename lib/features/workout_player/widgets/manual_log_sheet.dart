@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/presentation/consumer_date_label.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
-import '../../../core/theme/colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/consumer_task_primitives.dart';
 import '../../../core/widgets/indi_fit_bottom_sheet.dart';
@@ -93,14 +92,11 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                           ),
                           subtitle: Text(
                             '${ex.muscleGroups} • ${ex.equipment}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                            ),
+                            style: B05Typography.caption(ctx),
                           ),
-                          trailing: const Icon(
+                          trailing: Icon(
                             Icons.add_circle_outline,
-                            color: AppColors.primary,
+                            color: ctx.b05Colors.action,
                           ),
                           onTap: () {
                             setState(() {
@@ -183,7 +179,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
           content: Text(
             'Logged "$name" for ${widget.selectedDate.day}/${widget.selectedDate.month}!',
           ),
-          backgroundColor: AppColors.success,
+          backgroundColor: context.b05Colors.success.indicator,
         ),
       );
       Navigator.pop(context, true);
@@ -191,6 +187,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
   }
 
   Widget _buildExerciseCard(_ManualExerciseInput exercise, int exerciseIndex) {
+    final colors = context.b05Colors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: B05Surface(
@@ -211,10 +208,10 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                 ),
                 IconButton(
                   tooltip: 'Remove ${exercise.exerciseName}',
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close,
                     size: 16,
-                    color: AppColors.textMuted,
+                    color: colors.textSecondary,
                   ),
                   onPressed: () {
                     setState(() {
@@ -258,10 +255,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                         padding: const EdgeInsets.only(top: 14),
                         child: Text(
                           'Set ${setIndex + 1}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: B05Typography.caption(context),
                         ),
                       ),
                     ),
@@ -296,10 +290,10 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                     ),
                     IconButton(
                       tooltip: 'Remove set ${setIndex + 1}',
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.delete_outline,
                         size: 18,
-                        color: AppColors.textMuted,
+                        color: colors.textSecondary,
                       ),
                       onPressed: () {
                         setState(() {
@@ -343,24 +337,18 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                           ),
                         ),
                       ),
-                      Container(
+                      B05Surface(
+                        tone: B05SurfaceTone.selected,
+                        radius: B05SurfaceRadius.small,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: context.b05Colors.action.withValues(
-                            alpha: 0.12,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
+                          horizontal: B05Layout.space8,
+                          vertical: B05Layout.space4,
                         ),
                         child: Text(
                           dateStr,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: context.b05Colors.action,
-                          ),
+                          style: B05Typography.caption(
+                            context,
+                          ).copyWith(color: context.b05Colors.action),
                         ),
                       ),
                       IconButton(
@@ -396,12 +384,11 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                     runSpacing: 4,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'EXERCISES LOGGED',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textMuted,
+                        style: B05Typography.caption(context).copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: .6,
                         ),
                       ),
                       TextButton.icon(
