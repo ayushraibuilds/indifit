@@ -65,6 +65,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   var _draftLoaded = false;
   String? _draftError;
   var _isCompleting = false;
+  String? _completionError;
 
   @override
   void initState() {
@@ -292,14 +293,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   // Mifflin-St Jeor formula for BMR + TDEE multiplier + deficit/surplus adjustments
   Future<void> _completeOnboarding() async {
     if (_isCompleting) return;
-    setState(() => _isCompleting = true);
+    setState(() {
+      _isCompleting = true;
+      _completionError = null;
+    });
     try {
       await _saveDraft();
       await _completeOnboardingOnce();
     } catch (error) {
       if (mounted) {
+        setState(
+          () => _completionError = 'Your setup could not be saved. Try again.',
+        );
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not finish setup. Try again.')),
+          const SnackBar(
+            content: Text('Your setup could not be saved. Try again.'),
+          ),
         );
       }
     } finally {
@@ -450,6 +459,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ],
             ),
           ),
+          if (_completionError != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ConsumerStatusRow(
+                label: 'Setup could not be completed',
+                detail: _completionError,
+                error: true,
+                onRetry: _isCompleting ? null : _completeOnboarding,
+              ),
+            ),
           Expanded(
             child: PageView(
               controller: _pageController,
@@ -488,9 +507,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           child: Text(
             _isCompleting
                 ? 'Saving your profile…'
+                : _completionError != null && _currentPage == _totalPages - 1
+                ? 'Retry setup'
                 : _currentPage == _totalPages - 1
                 ? 'Create my plan'
-                : 'Continue',
+                : 'Next Step',
             style: TextStyle(
               fontSize: 16,
               fontFamily: GoogleFonts.outfit().fontFamily,

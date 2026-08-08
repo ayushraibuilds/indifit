@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../errors/app_failure.dart';
+import '../presentation/product_failure_presentation.dart';
 import '../theme/colors.dart';
 
 class FailureStateWidget extends StatelessWidget {
@@ -45,6 +46,7 @@ class FailureStateWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final iconColor = _getColorForType(failure.type);
     final icon = _getIconForType(failure.type);
+    final presentation = ProductFailurePresentation.fromAppFailure(failure);
 
     return Card(
       elevation: 0,
@@ -65,7 +67,7 @@ class FailureStateWidget extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              failure.message,
+              presentation.message,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,

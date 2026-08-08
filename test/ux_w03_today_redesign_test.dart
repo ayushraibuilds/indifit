@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,12 +8,16 @@ import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
+import 'package:indifit/data/models/b02_execution_models.dart';
+import 'package:indifit/data/models/b02_progress_read_models.dart';
 import 'package:indifit/data/repositories/dashboard_personalization_repository.dart';
+import 'package:indifit/features/coaching/b04_production_surface_widgets.dart';
 import 'package:indifit/features/dashboard/dashboard_module_registry.dart';
 import 'package:indifit/features/dashboard/dashboard_personalization_controller.dart';
 import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
 import 'package:indifit/features/dashboard/today_daily_action_surface.dart';
 import 'package:indifit/features/dashboard/today_surface_controller.dart';
+import 'package:indifit/features/nutrition/current_food_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -72,17 +77,85 @@ void main() {
     expect(unavailable.detail, isNot(contains('source failed')));
   });
 
+  test('Today progress presentation does not re-aggregate B02 history', () {
+    final presentation = TodayProgressPresentation.from(
+      TodayDomainRead.available(
+        B02ProgressReadModel(
+          query: const B02ProgressQuery(
+            startLocalDate: '2026-08-01',
+            endLocalDate: '2026-08-07',
+            timezoneId: 'Asia/Kolkata',
+          ),
+          activityHistory: [
+            B02ProgressActivityRecord(
+              sessionId: 1,
+              name: 'Strength session',
+              activityType: B02ActivityType.strength,
+              recordKind: B02HistoryRecordKind.canonical,
+              completedAtUtc: DateTime.utc(2026, 8, 7, 9),
+              durationSeconds: 3600,
+              source: B02ActivitySource.manual,
+              legacySetCount: 0,
+              performedExerciseCount: 0,
+              performedGroupCount: 0,
+              cardioIntervalCount: 0,
+              hasCardioDetail: false,
+              hasMobilityDetail: false,
+              cardioDetail: null,
+              mobilityDetail: null,
+            ),
+            B02ProgressActivityRecord(
+              sessionId: 2,
+              name: 'Walk',
+              activityType: B02ActivityType.walking,
+              recordKind: B02HistoryRecordKind.canonical,
+              completedAtUtc: DateTime.utc(2026, 8, 6, 9),
+              durationSeconds: 1800,
+              source: B02ActivitySource.manual,
+              legacySetCount: 0,
+              performedExerciseCount: 0,
+              performedGroupCount: 0,
+              cardioIntervalCount: 0,
+              hasCardioDetail: false,
+              hasMobilityDetail: false,
+              cardioDetail: null,
+              mobilityDetail: null,
+            ),
+          ],
+          groupHistory: null,
+          targetEvidence: null,
+          muscleVolume: null,
+        ),
+      ),
+      loading: false,
+    );
+
+    expect(presentation.state, TodayPresentationState.ready);
+    expect(presentation.headline, 'Your recent activity is ready');
+    expect(presentation.detail, isNot(contains('90 minutes')));
+    expect(presentation.detail, isNot(contains('2 sessions')));
+  });
+
   test(
-    'focus policy chooses a useful consumer action without domain reads',
+    'focus policy distinguishes loading and unavailable authority output',
     () {
       expect(
         todayFocusPresentation(dateRelation: TodayDateRelation.future).action,
         TodayNextAction.returnToToday,
       );
-      expect(
-        todayFocusPresentation(dateRelation: TodayDateRelation.today).action,
-        TodayNextAction.logMeal,
+      final loading = todayFocusPresentation(
+        dateRelation: TodayDateRelation.today,
+        loading: true,
       );
+      expect(loading.state, TodayPresentationState.loading);
+      expect(loading.action, isNull);
+
+      final unavailable = todayFocusPresentation(
+        dateRelation: TodayDateRelation.today,
+        snapshot: _unavailableSnapshot(DateTime(2026, 8, 7)),
+      );
+      expect(unavailable.state, TodayPresentationState.unavailable);
+      expect(unavailable.action, isNull);
     },
   );
 
@@ -108,7 +181,11 @@ void main() {
             await tester.pump(const Duration(milliseconds: 100));
             final exception = tester.takeException();
             expect(exception, isNull);
-            expect(find.text('Start with one small win'), findsOneWidget);
+            expect(
+              find.text('Your daily focus is unavailable'),
+              findsOneWidget,
+            );
+            expect(find.byType(FilledButton), findsOneWidget);
           }
         }
       }
@@ -116,6 +193,39 @@ void main() {
       tester.view.resetDevicePixelRatio();
     },
   );
+
+  testWidgets('Today keyboard traversal follows visible reading order', (
+    tester,
+  ) async {
+    var customizeCalls = 0;
+    var settingsCalls = 0;
+    DateTime? changedDate;
+    await tester.pumpWidget(
+      _todayApp(
+        theme: AppTheme.lightTheme,
+        textScale: 1,
+        disableAnimations: true,
+        personalization: personalization,
+        onCustomize: () => customizeCalls++,
+        onOpenSettings: () => settingsCalls++,
+        onDateChanged: (date) => changedDate = date,
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(customizeCalls, 1);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(settingsCalls, 1);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(changedDate, DateTime(2026, 8, 6));
+  });
 
   testWidgets('Today dark golden benchmark', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -159,6 +269,32 @@ void main() {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
   });
+
+  testWidgets(
+    'current-food summary failure offers retry instead of a dead why action',
+    (tester) async {
+      var retries = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            body: B04CurrentFoodSummaryContent(
+              state: const B04CurrentFoodState(
+                status: B04CurrentFoodControllerStatus.failure,
+                retryable: true,
+              ),
+              onRetry: () => retries++,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Retry'), findsOneWidget);
+      expect(find.bySemanticsLabel('Why?'), findsNothing);
+      await tester.tap(find.bySemanticsLabel('Retry'));
+      expect(retries, 1);
+    },
+  );
 }
 
 Widget _todayApp({
@@ -166,6 +302,9 @@ Widget _todayApp({
   required double textScale,
   required bool disableAnimations,
   required DashboardPersonalizationController personalization,
+  ValueChanged<DateTime>? onDateChanged,
+  VoidCallback? onOpenSettings,
+  VoidCallback? onCustomize,
 }) {
   return ProviderScope(
     overrides: [
@@ -195,10 +334,10 @@ Widget _todayApp({
           now: DateTime(2026, 8, 8, 10),
           userName: 'Ari',
           streakCount: 3,
-          onDateChanged: (_) {},
+          onDateChanged: onDateChanged ?? (_) {},
           onRefresh: () async {},
-          onOpenSettings: () {},
-          onCustomize: () {},
+          onOpenSettings: onOpenSettings ?? () {},
+          onCustomize: onCustomize ?? () {},
           onOpenWorkoutPlan: () {},
           onLogMeal: () {},
         ),
@@ -206,6 +345,16 @@ Widget _todayApp({
     ),
   );
 }
+
+TodaySurfaceSnapshot _unavailableSnapshot(DateTime selectedDate) =>
+    TodaySurfaceSnapshot(
+      selectedDate: selectedDate,
+      localDate: todaySurfaceDateKey(selectedDate),
+      timezoneId: 'Asia/Kolkata',
+      calendar: const TodayDomainRead.unavailable('Calendar offline'),
+      progress: const TodayDomainRead.unavailable('Activity offline'),
+      nutrition: const TodayDomainRead.unavailable('Nutrition offline'),
+    );
 
 NutritionDailyReadModel _dailyWithFacts({
   List<NutritionHistoricalReadRecord> records = const [_TestRecord()],

@@ -462,6 +462,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
     }
 
     final currentEx = state.activeExercises[state.currentExerciseIndex];
+    final currentExerciseContext =
+        widget.personalExerciseContextByName[currentEx.exerciseName];
+    final rawStableId = currentExerciseContext?['exerciseId'];
 
     return Scaffold(
       body: SafeArea(
@@ -540,12 +543,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                   const SizedBox(height: 12),
                   PlayerSetupCuesPanel(
                     exerciseName: currentEx.exerciseName,
-                    stableId:
-                        widget.personalExerciseContextByName[currentEx
-                                .exerciseName]?['exerciseId']
-                            as String?,
-                    frozenContext: widget
-                        .personalExerciseContextByName[currentEx.exerciseName],
+                    stableId: rawStableId is String ? rawStableId : null,
+                    frozenContext: currentExerciseContext,
                   ),
                   const SizedBox(height: 12),
                   ExerciseSetInputCard(

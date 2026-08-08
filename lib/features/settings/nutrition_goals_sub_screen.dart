@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/theme/colors.dart';
 import '../../data/models/b04_goal_models.dart';
@@ -471,9 +470,7 @@ class _NutritionGoalsSubScreenState
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.verified_user_outlined),
-              title: Text(
-                'Coaching ${ConsumerCopy.state(event.action.stableId).toLowerCase()}',
-              ),
+              title: Text('Coaching ${_consentActionLabel(event.action)}'),
               subtitle: Text(ConsumerDateLabel.dateTime(event.timestampUtc)),
             ),
         ],
@@ -481,6 +478,12 @@ class _NutritionGoalsSubScreenState
     ),
   );
 }
+
+String _consentActionLabel(CoachingConsentAction action) => switch (action) {
+  CoachingConsentAction.enable => 'enabled',
+  CoachingConsentAction.disable => 'disabled',
+  CoachingConsentAction.withdraw => 'withdrawn',
+};
 
 class _B04WordingBoundaryCard extends StatelessWidget {
   const _B04WordingBoundaryCard();

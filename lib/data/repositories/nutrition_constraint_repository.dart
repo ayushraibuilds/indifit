@@ -6,6 +6,20 @@ import 'package:uuid/uuid.dart';
 import '../../core/nutrition_constraints.dart';
 import '../database/app_database.dart' as db;
 
+/// A display-ready, read-only choice for the dietary-preferences picker.
+///
+/// The target remains the B03 portable identity. The label is deliberately
+/// kept separate so presentation never asks a person to type that identity.
+class NutritionConstraintTargetOption {
+  const NutritionConstraintTargetOption({
+    required this.target,
+    required this.displayLabel,
+  });
+
+  final NutritionConstraintTarget target;
+  final String displayLabel;
+}
+
 /// The sole durable owner for B03-16 taxonomy-backed user constraints and
 /// food evidence. Evaluation itself is delegated to the pure evaluator and
 /// never mutates the database.
@@ -151,6 +165,131 @@ class NutritionConstraintRepository {
           );
       return constraint.copyWith(updatedAtUtc: now);
     });
+  }
+
+  /// Searches only existing, active B03 food or preparation identities for
+  /// the consumer picker. This read does not create a food, infer an alias,
+  /// or alter dietary rules.
+  Future<List<NutritionConstraintTargetOption>> searchTargetOptions({
+    required NutritionConstraintTargetType type,
+    String query = '',
+    int limit = 30,
+  }) async {
+    if (limit <= 0) return const [];
+    final normalized = query.trim().toLowerCase();
+    if (type == NutritionConstraintTargetType.food ||
+        type == NutritionConstraintTargetType.ingredient) {
+      final rows =
+          await (_db.select(_db.nutritionFoods)
+                ..where(
+                  (table) =>
+                      table.lifecycle.equals('active') &
+                      (normalized.isEmpty
+                          ? const Constant(true)
+                          : table.displayName.lower().contains(normalized)),
+                )
+                ..orderBy([
+                  (table) => OrderingTerm(expression: table.displayName),
+                ])
+                ..limit(limit))
+              .get();
+      return List.unmodifiable(_foodTargetOptions(type: type, rows: rows));
+    }
+    if (type == NutritionConstraintTargetType.preparation) {
+      final foods = await (_db.select(
+        _db.nutritionFoods,
+      )..where((table) => table.lifecycle.equals('active'))).get();
+      final foodById = {for (final food in foods) food.id: food};
+      final preparations = await _db
+          .select(_db.nutritionFoodPreparations)
+          .get();
+      final options = <NutritionConstraintTargetOption>[];
+      for (final preparation in preparations) {
+        final food = foodById[preparation.foodId];
+        if (food == null) continue;
+        final stateLabel = switch (preparation.state) {
+          'raw' => 'Raw',
+          'cooked' => 'Cooked',
+          _ => 'Prepared',
+        };
+        final label = '${food.displayName} · $stateLabel';
+        if (normalized.isNotEmpty &&
+            !label.toLowerCase().contains(normalized)) {
+          continue;
+        }
+        try {
+          options.add(
+            NutritionConstraintTargetOption(
+              target: NutritionConstraintTarget(type: type, id: preparation.id),
+              displayLabel: label,
+            ),
+          );
+        } on NutritionConstraintError {
+          // Legacy IDs can be intentionally non-portable. They are not safe
+          // targets for a new consumer preference, so omit them from choices.
+        }
+        if (options.length == limit) break;
+      }
+      options.sort(
+        (left, right) => left.displayLabel.toLowerCase().compareTo(
+          right.displayLabel.toLowerCase(),
+        ),
+      );
+      return List.unmodifiable(options);
+    }
+    return const [];
+  }
+
+  /// Resolves an existing B03 target to its consumer-facing catalogue label.
+  ///
+  /// This is intentionally read-only: a missing or legacy identity remains
+  /// unresolved rather than being recreated or inferred for presentation.
+  Future<String?> targetDisplayLabel(NutritionConstraintTarget target) async {
+    if (target.type == NutritionConstraintTargetType.food ||
+        target.type == NutritionConstraintTargetType.ingredient) {
+      final food = await (_db.select(
+        _db.nutritionFoods,
+      )..where((table) => table.id.equals(target.id))).getSingleOrNull();
+      return food?.displayName;
+    }
+    if (target.type == NutritionConstraintTargetType.preparation) {
+      final preparation = await (_db.select(
+        _db.nutritionFoodPreparations,
+      )..where((table) => table.id.equals(target.id))).getSingleOrNull();
+      if (preparation == null) return null;
+      final food =
+          await (_db.select(_db.nutritionFoods)
+                ..where((table) => table.id.equals(preparation.foodId)))
+              .getSingleOrNull();
+      if (food == null) return null;
+      final stateLabel = switch (preparation.state) {
+        'raw' => 'Raw',
+        'cooked' => 'Cooked',
+        _ => 'Prepared',
+      };
+      return '${food.displayName} · $stateLabel';
+    }
+    return null;
+  }
+
+  List<NutritionConstraintTargetOption> _foodTargetOptions({
+    required NutritionConstraintTargetType type,
+    required Iterable<db.NutritionFood> rows,
+  }) {
+    final options = <NutritionConstraintTargetOption>[];
+    for (final row in rows) {
+      try {
+        options.add(
+          NutritionConstraintTargetOption(
+            target: NutritionConstraintTarget(type: type, id: row.id),
+            displayLabel: row.displayName,
+          ),
+        );
+      } on NutritionConstraintError {
+        // See the matching preparation note above.
+      }
+    }
+    return options;
   }
 
   Future<NutritionUserConstraint> createUserConstraint({
