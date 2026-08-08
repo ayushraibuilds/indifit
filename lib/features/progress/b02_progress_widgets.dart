@@ -30,10 +30,15 @@ class B02ProgressOverview extends ConsumerWidget {
       );
     }
     if (data == null) {
-      return const Card(
+      return Card(
         child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Center(child: CircularProgressIndicator()),
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: Semantics(
+              label: 'Loading progress',
+              child: const CircularProgressIndicator(),
+            ),
+          ),
         ),
       );
     }
@@ -463,7 +468,7 @@ class _B02ProgressFailureCard extends StatelessWidget {
           children: [
             const Text('Progress data could not be loaded.'),
             const SizedBox(height: 6),
-            const Text('Some progress details could not be loaded. Try again.'),
+            Text(message),
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton(onPressed: onRetry, child: const Text('Retry')),

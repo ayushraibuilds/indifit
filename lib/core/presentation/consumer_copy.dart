@@ -116,7 +116,10 @@ abstract final class ConsumerCopy {
       'punjabi': 'Punjabi',
       'south_indian': 'South Indian',
     };
-    return labels[key] ?? _titleCase(trimmed);
+    // Unknown target values are portable identities, not reviewed consumer
+    // copy. Showing one can disclose an internal key, so collapse it instead
+    // of attempting to turn it into a label.
+    return labels[key] ?? 'Selected item';
   }
 
   /// Keeps an already consumer-facing display label intact while guarding
@@ -173,11 +176,4 @@ abstract final class ConsumerCopy {
         ).hasMatch(lower) ||
         RegExp(r'\b[0-9a-f]{24,}\b', caseSensitive: false).hasMatch(lower);
   }
-
-  static String _titleCase(String value) => value
-      .replaceAll('_', ' ')
-      .split(' ')
-      .where((part) => part.isNotEmpty)
-      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
-      .join(' ');
 }

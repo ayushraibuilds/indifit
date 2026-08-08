@@ -53,5 +53,13 @@ void main() {
         expect(state.selectedDate, newDate);
       },
     );
+
+    test('DashboardController ignores a load started after disposal', () async {
+      final container = ProviderContainer();
+      final controller = container.read(dashboardControllerProvider.notifier);
+      container.dispose();
+
+      await expectLater(controller.loadStateData(), completes);
+    });
   });
 }

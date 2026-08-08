@@ -6,6 +6,7 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
+import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b04_adaptive_target_models.dart';
 import 'package:indifit/data/models/b04_briefing_read_models.dart';
@@ -429,6 +430,11 @@ void main() {
       );
       expect(find.textContaining('Daily estimate: 2000 kcal'), findsOneWidget);
       expect(find.text('Accept target'), findsOneWidget);
+      expect(find.byType(B05ActionButton), findsNWidgets(4));
+      expect(
+        tester.getSize(find.byType(B05TouchTarget).first).height,
+        greaterThanOrEqualTo(B05Layout.minTouchTarget),
+      );
       await tester.tap(find.text('Accept target'));
       expect(actions, contains(B04RecommendationFeedbackAction.accept));
     },
@@ -591,6 +597,13 @@ void main() {
     expect(find.textContaining('Calories: 1200 kcal'), findsOneWidget);
     expect(find.textContaining('Protein: 40–60 g'), findsOneWidget);
     expect(find.textContaining('candidate-v1'), findsNothing);
+    expect(find.textContaining('daily_totals_missing'), findsNothing);
+    expect(
+      find.textContaining(
+        'This guidance is based on the information you have logged.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('current-food failures expose retry', (tester) async {
@@ -832,7 +845,7 @@ B04Recommendation _mealRecommendation() => B04Recommendation(
   state: B04RecommendationState.available,
   priority: B04RecommendationPriority.nutrition,
   rationaleCode: 'meal_opportunity_target_fit',
-  explanation: 'This local candidate fits the recorded target evidence.',
+  explanation: 'reason_code=daily_totals_missing evidence_id=candidate-v1',
   confidence: B04RecommendationConfidence.high,
   completeness: B04RecommendationCompleteness.complete,
   evidenceIds: const ['candidate-v1'],

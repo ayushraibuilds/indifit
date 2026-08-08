@@ -5,6 +5,7 @@ import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/models/b04_briefing_read_models.dart';
 import '../../data/models/b04_current_food_models.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
@@ -460,7 +461,9 @@ class _B04CurrentFoodCandidateTile extends StatelessWidget {
       title: Text(ConsumerCopy.label(card.displayLabel)),
       subtitle: Text(
         [
-          ConsumerCopy.explanation(card.recommendation.explanation),
+          B04RecommendationPresentation.explanationForState(
+            card.recommendation.state,
+          ),
           fit,
           if (facts.isNotEmpty) facts,
         ].join('\n'),
@@ -735,12 +738,9 @@ class _B04ActionButton extends StatelessWidget {
   const _B04ActionButton({required this.label, required this.onPressed});
 
   @override
-  Widget build(BuildContext context) => OutlinedButton(
+  Widget build(BuildContext context) => B05ActionButton(
+    label: label,
     onPressed: onPressed,
-    style: OutlinedButton.styleFrom(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      minimumSize: const Size(0, 36),
-    ),
-    child: Text(label),
+    emphasis: B05ActionEmphasis.secondary,
   );
 }
