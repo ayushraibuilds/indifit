@@ -12,6 +12,7 @@ import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/workout_repository.dart';
 import 'b05_adaptive_onboarding.dart';
 import 'widgets/onboarding_step_widgets.dart';
@@ -143,7 +144,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _dismissInputFocus() {
-    FocusManager.instance.primaryFocus?.unfocus();
+    FocusScope.of(context).unfocus();
   }
 
   void _selectOnboardingChoice(VoidCallback selection) {
@@ -409,111 +410,93 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_draftLoaded) return _buildDraftRestoreState();
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Progress bar
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Row(
-                children: [
-                  if (_currentPage > 0)
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios,
-                        color: AppColors.textPrimary,
-                        size: 20,
-                      ),
-                      onPressed: _prevPage,
-                    )
-                  else
-                    const SizedBox(width: 48),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: (_currentPage + 1) / _totalPages,
-                        backgroundColor: AppColors.cardBackground,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.primary,
-                        ),
-                        minHeight: 6,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    '${_currentPage + 1}/$_totalPages',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Content PageView
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (page) {
-                  _dismissInputFocus();
-                  setState(() => _currentPage = page);
-                  unawaited(_saveDraft().catchError((_) {}));
-                },
-                children: [
-                  _buildSexPage(),
-                  _buildAgePage(),
-                  _buildHeightPage(),
-                  _buildWeightPage(),
-                  _buildActivityPage(),
-                  _buildGoalPage(),
-                  _buildTargetWeightPage(),
-                  _buildDietPage(),
-                ],
-              ),
-            ),
-
-            // Bottom Navigation Button
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 0,
-                    ),
-                    onPressed: _isCompleting ? null : _nextPage,
-                    child: Text(
-                      _isCompleting
-                          ? 'Saving your profile…'
-                          : _currentPage == _totalPages - 1
-                          ? 'Calculate My Plan'
-                          : 'Next Step',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontFamily: GoogleFonts.outfit().fontFamily,
-                        fontWeight: FontWeight.bold,
-                      ),
+    final colors = context.b05Colors;
+    return ConsumerTaskScaffold(
+      scrollable: false,
+      padding: EdgeInsets.zero,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              children: [
+                B05IconAction(
+                  icon: Icons.arrow_back_rounded,
+                  label: 'Back',
+                  hint: 'Return to the previous setup step.',
+                  onPressed: _currentPage > 0 ? _prevPage : null,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: (_currentPage + 1) / _totalPages,
+                      backgroundColor: colors.surfaceSubtle,
+                      valueColor: AlwaysStoppedAnimation<Color>(colors.action),
+                      minHeight: 6,
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Text(
+                  '${_currentPage + 1}/$_totalPages',
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontFamily: GoogleFonts.outfit().fontFamily,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              onPageChanged: (page) {
+                _dismissInputFocus();
+                setState(() => _currentPage = page);
+                unawaited(_saveDraft().catchError((_) {}));
+              },
+              children: [
+                _buildSexPage(),
+                _buildAgePage(),
+                _buildHeightPage(),
+                _buildWeightPage(),
+                _buildActivityPage(),
+                _buildGoalPage(),
+                _buildTargetWeightPage(),
+                _buildDietPage(),
+              ],
+            ),
+          ),
+        ],
+      ),
+      primaryAction: SizedBox(
+        height: 52,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colors.action,
+            foregroundColor: colors.onAction,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            elevation: 0,
+          ),
+          onPressed: _isCompleting ? null : _nextPage,
+          child: Text(
+            _isCompleting
+                ? 'Saving your profile…'
+                : _currentPage == _totalPages - 1
+                ? 'Create my plan'
+                : 'Continue',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: GoogleFonts.outfit().fontFamily,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );
@@ -592,6 +575,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           TextField(
             controller: _nameController,
             maxLength: 100,
+            buildCounter:
+                (_, {required currentLength, required isFocused, maxLength}) =>
+                    null,
             textInputAction: TextInputAction.done,
             onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
             onEditingComplete: _dismissInputFocus,

@@ -6,7 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/theme/colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/confetti_overlay.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 import 'player_setup_cues_panel.dart';
@@ -203,12 +205,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
   }
 
   void _showExerciseHistorySheet(String exerciseName) {
-    showModalBottomSheet(
+    showIndiFitBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (context) {
         final repo = ref.read(workoutRepositoryProvider);
         return FutureBuilder<List<Map<String, dynamic>>>(
@@ -368,25 +366,33 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
 
   Future<void> _substituteExercise() async {
     final repo = ref.read(workoutRepositoryProvider);
-    final selectedExerciseName = await showModalBottomSheet<String>(
+    final selectedExerciseName = await showIndiFitBottomSheet<String>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (context) {
         String searchQuery = '';
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Container(
+            return Padding(
               padding: const EdgeInsets.all(16),
-              height: MediaQuery.of(context).size.height * 0.75,
               child: Column(
                 children: [
-                  const Text(
-                    'Substitute Exercise',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Choose a replacement',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      B05IconAction(
+                        icon: Icons.close,
+                        label: 'Close exercise choices',
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -466,6 +472,15 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: B05IconAction(
+                      icon: Icons.close,
+                      label: 'Close workout',
+                      hint: 'Leave this workout for now.',
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    ),
+                  ),
                   WorkoutPlayerHeader(
                     routineName: widget.routineName,
                     elapsedSeconds: state.elapsedSeconds,

@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_date_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../travel/travel_controller.dart';
 import 'calendar_controller.dart';
@@ -114,16 +116,23 @@ class ProgramCalendarScreen extends ConsumerWidget {
     BuildContext context,
     List<CalendarOccurrenceReadItem> items,
     Set<String> activeTravelOccurrenceIds,
+    CalendarView view,
   ) {
     if (items.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.event_note_rounded, size: 48, color: Colors.grey),
-            SizedBox(height: 12),
-            Text('Nothing planned in this range.'),
-          ],
+      final isDay = view == CalendarView.day;
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ProductEmptyState(
+            icon: Icons.event_note_rounded,
+            title: isDay ? 'Nothing planned today' : 'Nothing planned here',
+            message: isDay
+                ? 'Choose a workout or enjoy a recovery day.'
+                : 'Try another date or set up a training plan.',
+            action: () => context.push('/routine-wizard'),
+            actionLabel: 'Set up a training plan',
+            actionIcon: Icons.fitness_center_rounded,
+          ),
         ),
       );
     }
@@ -232,9 +241,13 @@ class ProgramCalendarScreen extends ConsumerWidget {
           if (state.errorMessage != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                state.errorMessage!,
-                style: const TextStyle(color: Colors.red),
+              child: ConsumerStatusRow(
+                label: 'Calendar unavailable',
+                detail: ProductFailurePresentation.fromCode(
+                  'calendar_unavailable',
+                ).message,
+                error: true,
+                onRetry: controller.refresh,
               ),
             ),
           if (travelState.activeTravelContext case final travel?)
@@ -253,11 +266,18 @@ class ProgramCalendarScreen extends ConsumerWidget {
             ),
           Expanded(
             child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: ConsumerStatusRow(
+                      label: 'Loading your calendar',
+                      detail: 'Finding planned workouts for this period.',
+                      loading: true,
+                    ),
+                  )
                 : _buildOccurrences(
                     context,
                     visibleItems,
                     travelState.activeTravelOccurrenceIds,
+                    state.view,
                   ),
           ),
         ],

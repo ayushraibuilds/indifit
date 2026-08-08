@@ -9,6 +9,7 @@ import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/ai_routine_service.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -135,6 +136,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   }
 
   void _nextStep() {
+    FocusScope.of(context).unfocus();
     if (_currentStep < 5) {
       setState(() => _currentStep++);
       unawaited(_saveDraft().catchError((_) {}));
@@ -142,6 +144,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   }
 
   void _prevStep() {
+    FocusScope.of(context).unfocus();
     if (_currentStep > 0) {
       setState(() => _currentStep--);
       unawaited(_saveDraft().catchError((_) {}));
@@ -270,7 +273,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ConsumerTaskScaffold(
       appBar: AppBar(
         title: const Text('AI Coach Setup'),
         backgroundColor: AppColors.background,
@@ -297,13 +300,17 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
                 _buildProgressIndicator(),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     child: _buildStepContent(),
                   ),
                 ),
-                _buildBottomNavigation(),
               ],
             ),
+      scrollable: false,
+      padding: EdgeInsets.zero,
+      primaryAction: _draftLoaded && !_loading
+          ? _buildBottomNavigation()
+          : null,
     );
   }
 
@@ -814,50 +821,35 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   }
 
   Widget _buildBottomNavigation() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          if (_currentStep > 0 && _currentStep < 5) ...[
-            OutlinedButton(onPressed: _prevStep, child: const Text('Back')),
-            const SizedBox(width: 12),
-          ],
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _savingRoutine
-                  ? null
-                  : () {
-                      if (_currentStep == 4) {
-                        _generateRoutine();
-                      } else if (_currentStep == 5) {
-                        _saveAndApplyRoutine();
-                      } else {
-                        _nextStep();
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                _currentStep == 4
-                    ? 'Generate Routine'
-                    : _currentStep == 5
-                    ? 'Activate Routine'
-                    : 'Continue',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
+    return TaskActionGroup(
+      secondary: _currentStep > 0 && _currentStep < 5
+          ? B05ActionButton(
+              label: 'Back',
+              icon: Icons.arrow_back_rounded,
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: _savingRoutine ? null : _prevStep,
+            )
+          : null,
+      primary: B05ActionButton(
+        label: _currentStep == 4
+            ? 'Create routine'
+            : _currentStep == 5
+            ? 'Activate routine'
+            : 'Continue',
+        icon: _currentStep == 5
+            ? Icons.check_rounded
+            : Icons.arrow_forward_rounded,
+        onPressed: _savingRoutine
+            ? null
+            : () {
+                if (_currentStep == 4) {
+                  _generateRoutine();
+                } else if (_currentStep == 5) {
+                  _saveAndApplyRoutine();
+                } else {
+                  _nextStep();
+                }
+              },
       ),
     );
   }

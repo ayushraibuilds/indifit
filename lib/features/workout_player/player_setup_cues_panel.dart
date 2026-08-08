@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/colors.dart';
+import 'player_setup_presentation.dart';
 
 /// Compact, collapsible player quick panel displaying frozen personal setup values and cues during execution.
 class PlayerSetupCuesPanel extends ConsumerWidget {
@@ -21,14 +22,8 @@ class PlayerSetupCuesPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final Map<String, dynamic> contextData = frozenContext ?? {};
-    final String? generalNote = contextData['generalNote'] as String?;
-    final List setupValues = (contextData['setupValues'] as List?) ?? [];
-    final List personalCues = (contextData['personalCues'] as List?) ?? [];
-
-    final hasContent =
-        (generalNote != null && generalNote.isNotEmpty) ||
-        setupValues.isNotEmpty ||
-        personalCues.isNotEmpty;
+    final presentation = PlayerSetupPresentation.fromContext(contextData);
+    final hasContent = presentation.hasContent;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -72,9 +67,9 @@ class PlayerSetupCuesPanel extends ConsumerWidget {
                     'No setup values or cues saved for this exercise.',
                     style: TextStyle(color: Colors.grey, fontSize: 13),
                   ),
-                if (generalNote != null && generalNote.isNotEmpty) ...[
+                if (presentation.note != null) ...[
                   Text(
-                    'Note: $generalNote',
+                    presentation.note!,
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
@@ -82,16 +77,14 @@ class PlayerSetupCuesPanel extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                 ],
-                if (setupValues.isNotEmpty) ...[
+                if (presentation.setupValues.isNotEmpty) ...[
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
-                    children: setupValues.map((sv) {
-                      final label = sv['label'] ?? '';
-                      final val = sv['value'] ?? '';
+                    children: presentation.setupValues.map((value) {
                       return Chip(
                         labelStyle: const TextStyle(fontSize: 12),
-                        label: Text('$label: $val'),
+                        label: Text('${value.label}: ${value.value}'),
                         backgroundColor: AppColors.primary.withValues(
                           alpha: 0.15,
                         ),
@@ -100,10 +93,8 @@ class PlayerSetupCuesPanel extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                 ],
-                if (personalCues.isNotEmpty) ...[
-                  ...personalCues.map((c) {
-                    final cueText =
-                        (c is Map ? c['cueText'] : c.toString()) ?? '';
+                if (presentation.cues.isNotEmpty) ...[
+                  ...presentation.cues.map((cueText) {
                     return Padding(
                       padding: const EdgeInsets.only(top: 2.0),
                       child: Row(

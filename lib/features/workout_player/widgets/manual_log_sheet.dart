@@ -2,7 +2,11 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/presentation/consumer_date_label.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/theme/colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
+import '../../../core/widgets/consumer_task_primitives.dart';
 import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../../core/widgets/responsive_form_primitives.dart';
 import '../../../data/database/app_database.dart';
@@ -187,10 +191,10 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
   }
 
   Widget _buildExerciseCard(_ManualExerciseInput exercise, int exerciseIndex) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: B05Surface(
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -225,58 +229,61 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
               final setInput = setEntry.value;
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: 52,
-                      child: Text(
-                        'Set ${setIndex + 1}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Set ${setIndex + 1}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                         ),
-                      ),
+                        IconButton(
+                          tooltip: 'Remove set ${setIndex + 1}',
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: AppColors.textMuted,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              exercise.sets.removeAt(setIndex).dispose();
+                            });
+                          },
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: setInput.weightController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
+                    IndiFitResponsiveFieldGroup(
+                      spacing: 8,
+                      children: [
+                        TextField(
+                          controller: setInput.weightController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'kg',
+                            isDense: true,
+                          ),
+                          onChanged: (value) =>
+                              setInput.weightKg = double.tryParse(value) ?? 0.0,
                         ),
-                        decoration: const InputDecoration(
-                          labelText: 'kg',
-                          isDense: true,
+                        TextField(
+                          controller: setInput.repsController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'reps',
+                            isDense: true,
+                          ),
+                          onChanged: (value) =>
+                              setInput.reps = int.tryParse(value) ?? 0,
                         ),
-                        onChanged: (value) =>
-                            setInput.weightKg = double.tryParse(value) ?? 0.0,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: setInput.repsController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'reps',
-                          isDense: true,
-                        ),
-                        onChanged: (value) =>
-                            setInput.reps = int.tryParse(value) ?? 0,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Remove set ${setIndex + 1}',
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        size: 18,
-                        color: AppColors.textMuted,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          exercise.sets.removeAt(setIndex).dispose();
-                        });
-                      },
+                      ],
                     ),
                   ],
                 ),
@@ -307,8 +314,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr =
-        '${widget.selectedDate.day}/${widget.selectedDate.month}/${widget.selectedDate.year}';
+    final dateStr = ConsumerDateLabel.dateTime(widget.selectedDate);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -332,16 +338,25 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                           ),
                         ),
                       ),
-                      Chip(
-                        label: Text(
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.b05Colors.action.withValues(
+                            alpha: 0.12,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
                           dateStr,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
+                            color: context.b05Colors.action,
                           ),
                         ),
-                        backgroundColor: AppColors.primaryGlow,
-                        labelStyle: const TextStyle(color: AppColors.primary),
                       ),
                       IconButton(
                         tooltip: 'Close',
@@ -395,15 +410,13 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                     ],
                   ),
                   if (_exercises.isEmpty)
-                    SizedBox(
-                      height: 160,
-                      child: Center(
-                        child: TextButton.icon(
-                          onPressed: _addExercise,
-                          icon: const Icon(Icons.fitness_center_rounded),
-                          label: const Text('Tap to add exercises to this log'),
-                        ),
-                      ),
+                    ProductEmptyState(
+                      icon: Icons.fitness_center_rounded,
+                      title: 'Add your first exercise',
+                      message: 'Choose the exercises and sets you completed.',
+                      action: _addExercise,
+                      actionLabel: 'Add exercise',
+                      actionIcon: Icons.add,
                     )
                   else
                     Column(
@@ -419,21 +432,10 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: B05ActionButton(
               onPressed: _saveLoggedSession,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              icon: const Icon(Icons.check_circle_rounded, size: 18),
-              label: const Text(
-                'Save Workout Session',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
+              icon: Icons.check_circle_rounded,
+              label: 'Save workout',
             ),
           ),
         ],

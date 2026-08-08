@@ -197,6 +197,19 @@ class WorkoutRepository {
         .watch();
   }
 
+  /// Reads the current completed-session snapshot for one-shot presentation
+  /// screens. Unlike [watchSessions], this cannot leave a consumer task
+  /// waiting for a stream emission when the table is empty.
+  Future<List<WorkoutSession>> getSessions() async {
+    return (_db.select(_db.workoutSessions)..orderBy([
+          (tbl) => OrderingTerm(
+            expression: tbl.completedAt,
+            mode: OrderingMode.desc,
+          ),
+        ]))
+        .get();
+  }
+
   // 6. Log a completed session and its sets in a transaction
   Future<int> logSession({
     required String name,
