@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_date_label.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/models/b04_briefing_read_models.dart';
 import '../../data/models/b04_current_food_models.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
@@ -317,6 +319,220 @@ class B04CurrentFoodCard extends ConsumerStatefulWidget {
   @override
   ConsumerState<B04CurrentFoodCard> createState() => _B04CurrentFoodCardState();
 }
+
+/// Compact Today presentation for current-food guidance. The full card stays
+/// available on the food flow; Today gets only the decision and a short
+/// explanation so coaching never becomes a diagnostic dump inside another
+/// surface.
+class B04CurrentFoodSummary extends ConsumerStatefulWidget {
+  const B04CurrentFoodSummary({super.key});
+
+  @override
+  ConsumerState<B04CurrentFoodSummary> createState() =>
+      _B04CurrentFoodSummaryState();
+}
+
+class _B04CurrentFoodSummaryState extends ConsumerState<B04CurrentFoodSummary> {
+  String? _loadedContextId;
+
+  void _load(B04RecommendationContext context) {
+    if (_loadedContextId == context.contextId) return;
+    _loadedContextId = context.contextId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(b04CurrentFoodControllerProvider.notifier)
+          .loadProduction(context: context);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final contextAsync = ref.watch(b04ProductionRecommendationContextProvider);
+    final state = ref.watch(b04CurrentFoodControllerProvider);
+    return contextAsync.when(
+      loading: () => const _B04CompactProgress(),
+      error: (_, _) => const _B04CompactGuidanceUnavailable(),
+      data: (value) {
+        _load(value);
+        return B04CurrentFoodSummaryContent(state: state);
+      },
+    );
+  }
+}
+
+class B04CurrentFoodSummaryContent extends StatefulWidget {
+  const B04CurrentFoodSummaryContent({required this.state, super.key});
+
+  final B04CurrentFoodState state;
+
+  @override
+  State<B04CurrentFoodSummaryContent> createState() =>
+      _B04CurrentFoodSummaryContentState();
+}
+
+class _B04CurrentFoodSummaryContentState
+    extends State<B04CurrentFoodSummaryContent> {
+  var _showWhy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = widget.state;
+    if (state.status == B04CurrentFoodControllerStatus.loading ||
+        state.status == B04CurrentFoodControllerStatus.idle) {
+      return const _B04CompactProgress();
+    }
+    final guidance = state.guidance;
+    if (guidance == null || !guidance.isAvailable || guidance.cards.isEmpty) {
+      final presentation = guidance == null
+          ? const B04CurrentFoodPresentation(
+              periodLabel: 'Today',
+              status: 'Nothing to recommend yet',
+              explanation:
+                  'Log a meal and I’ll suggest something that fits your day.',
+              targetValues: [],
+              why: 'I don’t have enough nutrition information for today yet.',
+            )
+          : B04CurrentFoodPresentation.from(guidance);
+      return _B04CompactUnavailable(
+        presentation: presentation,
+        showWhy: _showWhy,
+        onWhy: () => setState(() => _showWhy = !_showWhy),
+      );
+    }
+    final presentation = B04CurrentFoodPresentation.from(guidance);
+    return Semantics(
+      container: true,
+      label: 'Meal suggestion: ${presentation.suggestion}',
+      value: presentation.fit,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lightbulb_outline, color: context.b05Colors.action),
+          const SizedBox(width: B05Layout.space8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'A good fit right now',
+                  style: B05Typography.label(context),
+                ),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  presentation.suggestion!,
+                  style: B05Typography.body(context),
+                ),
+                const SizedBox(height: B05Layout.space4),
+                Text(presentation.fit!, style: B05Typography.body(context)),
+                if (presentation.targetValues.isNotEmpty) ...[
+                  const SizedBox(height: B05Layout.space8),
+                  Text('Remaining today', style: B05Typography.label(context)),
+                  const SizedBox(height: B05Layout.space4),
+                  for (final value in presentation.targetValues)
+                    Text(value, style: B05Typography.body(context)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _B04CompactUnavailable extends StatelessWidget {
+  const _B04CompactUnavailable({
+    required this.presentation,
+    required this.showWhy,
+    required this.onWhy,
+  });
+
+  final B04CurrentFoodPresentation presentation;
+  final bool showWhy;
+  final VoidCallback onWhy;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.restaurant_outlined, color: context.b05Colors.action),
+          const SizedBox(width: B05Layout.space8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(presentation.status, style: B05Typography.label(context)),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  presentation.explanation,
+                  style: B05Typography.body(context),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: B05Layout.space4),
+      B05ActionButton(
+        label: 'Why?',
+        emphasis: B05ActionEmphasis.secondary,
+        onPressed: onWhy,
+      ),
+      if (showWhy && presentation.why != null) ...[
+        const SizedBox(height: B05Layout.space8),
+        Text(presentation.why!, style: B05Typography.body(context)),
+      ],
+    ],
+  );
+}
+
+class _B04CompactGuidanceUnavailable extends StatelessWidget {
+  const _B04CompactGuidanceUnavailable();
+
+  @override
+  Widget build(BuildContext context) => const _B04CompactUnavailable(
+    presentation: B04CurrentFoodPresentation(
+      periodLabel: 'Today',
+      status: 'Suggestions are taking a moment',
+      explanation: 'Log a meal to continue.',
+      targetValues: [],
+      why: 'Your meal guidance is not ready yet.',
+    ),
+    showWhy: false,
+    onWhy: _noop,
+  );
+}
+
+class _B04CompactProgress extends StatelessWidget {
+  const _B04CompactProgress();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    label: 'Preparing meal guidance',
+    liveRegion: true,
+    child: Row(
+      children: [
+        SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: context.b05Colors.action,
+          ),
+        ),
+        const SizedBox(width: B05Layout.space8),
+        Text('Preparing a meal suggestion', style: B05Typography.body(context)),
+      ],
+    ),
+  );
+}
+
+void _noop() {}
 
 class _B04CurrentFoodCardState extends ConsumerState<B04CurrentFoodCard> {
   String? _loadedContextId;

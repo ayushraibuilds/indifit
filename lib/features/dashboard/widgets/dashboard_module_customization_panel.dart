@@ -144,118 +144,70 @@ class _DashboardModuleCustomizationRow extends StatelessWidget {
       container: true,
       label: descriptor.customizationLabel,
       value: stateDescription,
-      hint:
-          'Use visibility, collapse, and move controls to customize this module.',
+      hint: 'Open more options to move, show, hide, or collapse this module.',
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              descriptor.label,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                Semantics(
-                  label: 'Move ${descriptor.customizationLabel} up',
-                  hint: 'Moves this module one position earlier.',
-                  button: true,
-                  enabled: enabled && index > 0,
-                  onTap: enabled && index > 0
-                      ? () => unawaited(onMove(item.moduleId, index - 1))
-                      : null,
-                  excludeSemantics: true,
-                  child: IconButton(
-                    onPressed: enabled && index > 0
-                        ? () => onMove(item.moduleId, index - 1)
-                        : null,
-                    icon: const Icon(Icons.arrow_upward),
-                    tooltip: 'Move ${descriptor.customizationLabel} up',
-                    constraints: const BoxConstraints.tightFor(
-                      width: 48,
-                      height: 48,
-                    ),
-                  ),
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.drag_handle_rounded),
+          title: Text(descriptor.label),
+          subtitle: Text(
+            [
+              item.isVisible ? 'Visible' : 'Hidden',
+              if (descriptor.collapsible)
+                item.isCollapsed ? 'Starts collapsed' : 'Starts expanded',
+              'Position ${index + 1} of $count',
+            ].join(' · '),
+          ),
+          trailing: SizedBox(
+            width: 48,
+            height: 48,
+            child: PopupMenuButton<String>(
+              enabled: enabled,
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              tooltip: 'More options for ${descriptor.customizationLabel}',
+              onSelected: (value) {
+                switch (value) {
+                  case 'up' when index > 0:
+                    unawaited(onMove(item.moduleId, index - 1));
+                  case 'down' when index < count - 1:
+                    unawaited(onMove(item.moduleId, index + 1));
+                  case 'visibility':
+                    unawaited(
+                      onVisibilityChanged(item.moduleId, !item.isVisible),
+                    );
+                  case 'collapse' when descriptor.collapsible:
+                    unawaited(
+                      onCollapsedChanged(item.moduleId, !item.isCollapsed),
+                    );
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'up',
+                  enabled: index > 0,
+                  child: Text('Move ${descriptor.customizationLabel} up'),
                 ),
-                Semantics(
-                  label: 'Move ${descriptor.customizationLabel} down',
-                  hint: 'Moves this module one position later.',
-                  button: true,
-                  enabled: enabled && index < count - 1,
-                  onTap: enabled && index < count - 1
-                      ? () => unawaited(onMove(item.moduleId, index + 1))
-                      : null,
-                  excludeSemantics: true,
-                  child: IconButton(
-                    onPressed: enabled && index < count - 1
-                        ? () => onMove(item.moduleId, index + 1)
-                        : null,
-                    icon: const Icon(Icons.arrow_downward),
-                    tooltip: 'Move ${descriptor.customizationLabel} down',
-                    constraints: const BoxConstraints.tightFor(
-                      width: 48,
-                      height: 48,
-                    ),
-                  ),
+                PopupMenuItem<String>(
+                  value: 'down',
+                  enabled: index < count - 1,
+                  child: Text('Move ${descriptor.customizationLabel} down'),
                 ),
-                Semantics(
-                  label:
-                      '${item.isVisible ? 'Hide' : 'Show'} ${descriptor.customizationLabel}',
-                  button: true,
-                  enabled: enabled,
-                  onTap: enabled
-                      ? () => unawaited(
-                          onVisibilityChanged(item.moduleId, !item.isVisible),
-                        )
-                      : null,
-                  excludeSemantics: true,
-                  child: OutlinedButton(
-                    onPressed: enabled
-                        ? () => onVisibilityChanged(
-                            item.moduleId,
-                            !item.isVisible,
-                          )
-                        : null,
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: _minimumDashboardControlSize,
-                    ),
-                    child: Text(item.isVisible ? 'Hide' : 'Show'),
-                  ),
+                PopupMenuItem<String>(
+                  value: 'visibility',
+                  child: Text(item.isVisible ? 'Hide' : 'Show'),
                 ),
                 if (descriptor.collapsible)
-                  Semantics(
-                    label:
-                        '${item.isCollapsed ? 'Expand' : 'Collapse'} ${descriptor.customizationLabel}',
-                    button: true,
-                    enabled: enabled,
-                    onTap: enabled
-                        ? () => unawaited(
-                            onCollapsedChanged(
-                              item.moduleId,
-                              !item.isCollapsed,
-                            ),
-                          )
-                        : null,
-                    excludeSemantics: true,
-                    child: OutlinedButton(
-                      onPressed: enabled
-                          ? () => onCollapsedChanged(
-                              item.moduleId,
-                              !item.isCollapsed,
-                            )
-                          : null,
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: _minimumDashboardControlSize,
-                      ),
-                      child: Text(item.isCollapsed ? 'Expand' : 'Collapse'),
+                  PopupMenuItem<String>(
+                    value: 'collapse',
+                    child: Text(
+                      item.isCollapsed ? 'Start expanded' : 'Start collapsed',
                     ),
                   ),
               ],
+              icon: const Icon(Icons.more_horiz_rounded),
             ),
-          ],
+          ),
         ),
       ),
     );

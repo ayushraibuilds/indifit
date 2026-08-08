@@ -158,33 +158,33 @@ class DashboardPersonalizationValidationException extends FormatException {
 final DashboardModuleRegistry standardDashboardModuleRegistry =
     DashboardModuleRegistry([
       const DashboardModuleDescriptor(
-        id: 'today.workout',
+        id: 'today.next_action',
         defaultOrdinal: 0,
-        label: 'What should I do?',
-        customizationLabel: 'Workout and activity',
+        label: 'Daily focus',
+        customizationLabel: 'Daily focus',
+        eligibility: DashboardModuleEligibility.nextAction,
+        collapsible: false,
+      ),
+      const DashboardModuleDescriptor(
+        id: 'today.workout',
+        defaultOrdinal: 1,
+        label: 'Workout',
+        customizationLabel: 'Workout',
         eligibility: DashboardModuleEligibility.workout,
       ),
       const DashboardModuleDescriptor(
         id: 'today.meals',
-        defaultOrdinal: 1,
-        label: 'What should I eat?',
-        customizationLabel: 'Meals and nutrition',
+        defaultOrdinal: 2,
+        label: 'Nutrition',
+        customizationLabel: 'Nutrition and meals',
         eligibility: DashboardModuleEligibility.nutrition,
       ),
       const DashboardModuleDescriptor(
         id: 'today.progress',
-        defaultOrdinal: 2,
-        label: 'How am I progressing?',
+        defaultOrdinal: 3,
+        label: 'Progress',
         customizationLabel: 'Progress',
         eligibility: DashboardModuleEligibility.progress,
-      ),
-      const DashboardModuleDescriptor(
-        id: 'today.next_action',
-        defaultOrdinal: 3,
-        label: 'What is my next action?',
-        customizationLabel: 'Next action',
-        eligibility: DashboardModuleEligibility.nextAction,
-        collapsible: false,
       ),
     ]);
 
