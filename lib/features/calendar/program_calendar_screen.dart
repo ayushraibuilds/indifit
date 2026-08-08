@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_date_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../travel/travel_controller.dart';
 import 'calendar_controller.dart';
@@ -114,17 +115,16 @@ class ProgramCalendarScreen extends ConsumerWidget {
     BuildContext context,
     List<CalendarOccurrenceReadItem> items,
     Set<String> activeTravelOccurrenceIds,
+    CalendarView view,
+    bool hasActiveProgram,
   ) {
     if (items.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.event_note_rounded, size: 48, color: Colors.grey),
-            SizedBox(height: 12),
-            Text('Nothing planned in this range.'),
-          ],
-        ),
+      final isDay = view == CalendarView.day;
+      return CalendarEmptyState(
+        isDay: isDay,
+        hasActiveProgram: hasActiveProgram,
+        onAction: () =>
+            context.push(hasActiveProgram ? '/workout' : '/routine-wizard'),
       );
     }
     return ListView.builder(
@@ -157,7 +157,7 @@ class ProgramCalendarScreen extends ConsumerWidget {
               ? 'Training Calendar'
               : 'Training Calendar • ${state.activeProgramName}',
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
+          style: Theme.of(context).textTheme.titleLarge,
         ),
         actions: [
           Consumer(
@@ -232,9 +232,13 @@ class ProgramCalendarScreen extends ConsumerWidget {
           if (state.errorMessage != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                state.errorMessage!,
-                style: const TextStyle(color: Colors.red),
+              child: ConsumerStatusRow(
+                label: 'Calendar unavailable',
+                detail: ProductFailurePresentation.fromCode(
+                  'calendar_unavailable',
+                ).message,
+                error: true,
+                onRetry: controller.refresh,
               ),
             ),
           if (travelState.activeTravelContext case final travel?)
@@ -248,19 +252,68 @@ class ProgramCalendarScreen extends ConsumerWidget {
               ),
               child: Text(
                 'Travel mode: ${ConsumerDateLabel.range(travel.startLocalDate, travel.endLocalDate)} • ${travelState.activeTravelOccurrenceIds.length} previewed workout${travelState.activeTravelOccurrenceIds.length == 1 ? '' : 's'} use travel equipment.',
-                style: const TextStyle(color: AppColors.textPrimary),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ),
           Expanded(
             child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: ConsumerStatusRow(
+                      label: 'Loading your calendar',
+                      detail: 'Finding planned workouts for this period.',
+                      loading: true,
+                    ),
+                  )
                 : _buildOccurrences(
                     context,
                     visibleItems,
                     travelState.activeTravelOccurrenceIds,
+                    state.view,
+                    state.activeProgramVersionId != null,
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class CalendarEmptyState extends StatelessWidget {
+  const CalendarEmptyState({
+    required this.isDay,
+    required this.hasActiveProgram,
+    required this.onAction,
+    super.key,
+  });
+
+  final bool isDay;
+  final bool hasActiveProgram;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final actionLabel = hasActiveProgram
+        ? 'Open training plan'
+        : 'Set up a training plan';
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ProductEmptyState(
+          icon: Icons.event_note_rounded,
+          title: isDay ? 'Nothing planned today' : 'Nothing planned here',
+          message: isDay
+              ? hasActiveProgram
+                    ? 'No workout is scheduled for this day. Open your training plan to choose another day.'
+                    : 'Choose a workout or enjoy a recovery day.'
+              : hasActiveProgram
+              ? 'No workouts are scheduled in this range. Open your training plan to choose another day.'
+              : 'Try another date or set up a training plan.',
+          action: onAction,
+          actionLabel: actionLabel,
+          actionIcon: Icons.fitness_center_rounded,
+        ),
       ),
     );
   }

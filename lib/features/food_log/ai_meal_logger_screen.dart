@@ -5,19 +5,22 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_estimates.dart';
 import '../../core/nutrition_household_measures.dart';
+import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/privacy/nutrition_estimate_privacy.dart';
 import '../../core/privacy/privacy_policy.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
 import '../../core/typed_quantities.dart';
-import '../../core/utils/natural_meal_parser.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
+import '../../core/widgets/responsive_form_primitives.dart';
 import 'food_log_surface.dart';
 
 class AiMealLoggerScreen extends ConsumerStatefulWidget {
@@ -41,6 +44,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
   bool _loading = false;
   bool _saving = false;
+  String? _estimateError;
   String? _saveError;
   NutritionEstimate? _estimate;
   NutritionEstimateImageCleanupResult? _imageCleanup;
@@ -222,6 +226,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     setState(() {
       _loading = true;
       _estimate = null;
+      _estimateError = null;
       _saveError = null;
     });
 
@@ -243,11 +248,15 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         inputHash: nutritionEstimateInputHash(description),
       );
     } catch (error) {
-      if (mounted) setState(() => _loading = false);
       if (mounted) {
+        final message = _estimateErrorMessage(error);
+        setState(() {
+          _loading = false;
+          _estimateError = message;
+        });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(_estimateErrorMessage(error))));
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       await _cleanupSelectedImage(
@@ -277,6 +286,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     setState(() {
       _loading = true;
       _estimate = null;
+      _estimateError = null;
       _saveError = null;
     });
 
@@ -315,9 +325,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       );
     } catch (error) {
       if (mounted) {
+        final message = _estimateErrorMessage(error);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(_estimateErrorMessage(error))));
+        ).showSnackBar(SnackBar(content: Text(message)));
+        setState(() => _estimateError = message);
       }
     } finally {
       await _cleanupSelectedImage(
@@ -349,6 +361,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     if (!mounted) return;
     setState(() {
       _estimate = estimate;
+      _estimateError = null;
       _saveError = null;
       _initEditControllers();
     });
@@ -585,348 +598,263 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       ('Carbohydrates', 'carbohydrate'),
       ('Fat', 'fat'),
     ];
-    return Card(
-      color: AppColors.surface,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'About this estimate',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            const Text('Based on the meal information you provided.'),
-            Text(_completenessLabel(estimate.completeness.state.name)),
-            const SizedBox(height: 8),
-            for (final nutrient in nutrients)
-              Semantics(
-                label: '${nutrient.$1}: ${_rangeText(nutrient.$2)}',
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Text('${nutrient.$1}: ${_rangeText(nutrient.$2)}'),
-                ),
+    return B05Surface(
+      subtle: true,
+      showBorder: false,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'About this estimate',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          const Text('Based on the meal information you provided.'),
+          Text(_completenessLabel(estimate.completeness.state.name)),
+          const SizedBox(height: 8),
+          for (final nutrient in nutrients)
+            Semantics(
+              label: '${nutrient.$1}: ${_rangeText(nutrient.$2)}',
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text('${nutrient.$1}: ${_rangeText(nutrient.$2)}'),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final logDate = widget.selectedDate ?? DateTime.now();
-    final dateStr = DateFormat('EEE, MMM d').format(logDate);
+    final dateStr = ConsumerDateLabel.dateTime(logDate);
 
-    return Scaffold(
+    return ConsumerTaskScaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'AI Meal Estimator',
+            Text(
+              'Log ${_mealLabel(widget.mealType)}',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
-              'Logging for $dateStr',
+              dateStr,
               style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
           ],
         ),
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.page,
+        foregroundColor: colors.textPrimary,
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            color: Colors.orange.withValues(alpha: 0.08),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: const Row(
+      body: _loading
+          ? _buildLoadingState()
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.orange,
-                  size: 16,
+                B05StatusMessage(
+                  status: B05SemanticStatus.warning,
+                  label: 'Estimates are approximate',
+                  value: 'Check ingredients for allergies and medical safety.',
                 ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'AI nutritional estimations are approximate. Check ingredients for food allergies and medical safety.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 10.5,
-                    ),
+                if (_estimateError != null) ...[
+                  const SizedBox(height: 12),
+                  ConsumerStatusRow(
+                    label: 'Estimate unavailable',
+                    detail: _estimateError,
+                    error: true,
+                    onRetry: _retryEstimate,
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Text(
+                  _estimate == null
+                      ? 'Describe what you ate, then review the estimate before saving.'
+                      : 'Review the estimate and adjust anything that looks different from your meal.',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                    height: 1.4,
                   ),
                 ),
+                const SizedBox(height: 16),
+                if (_estimate == null) ...[
+                  _buildTextEstimatorCard(),
+                  const SizedBox(height: 16),
+                  _buildPhotoEstimatorCard(),
+                ] else
+                  _buildResultSection(),
+                const SizedBox(height: 12),
+                _LoggedMealsSection(date: logDate),
               ],
             ),
+      primaryAction: _buildPrimaryAction(),
+    );
+  }
+
+  Widget _buildTextEstimatorCard() {
+    return B05Surface(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Describe your meal',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
-          Expanded(
-            child: _loading
-                ? _buildLoadingState()
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Estimate nutrition from a meal description or photo. Review the result before logging.',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Keep the existing B03 log reachable from the live
-                        // route so corrections apply to persisted entries.
-                        FoodLogEntriesPanel(date: logDate),
-                        const SizedBox(height: 20),
-
-                        // 1. Text Estimator Input Card
-                        _buildTextEstimatorCard(),
-                        const SizedBox(height: 20),
-
-                        // 2. Photo Estimator Pickers Card
-                        _buildPhotoEstimatorCard(),
-                        const SizedBox(height: 20),
-
-                        // 3. AI Estimate Results Section
-                        if (_estimate != null) _buildResultSection(),
-                      ],
-                    ),
-                  ),
+          const SizedBox(height: 4),
+          TextField(
+            controller: _textController,
+            maxLines: 3,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              hintText: 'e.g. 2 rotis with paneer bhurji and dal tadka',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ActionChip(
+                avatar: const Icon(
+                  Icons.restaurant_outlined,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+                label: const Text(
+                  '2 rotis + paneer',
+                  style: TextStyle(fontSize: 11),
+                ),
+                onPressed: () => setState(
+                  () => _textController.text = '2 rotis with paneer bhurji',
+                ),
+              ),
+              ActionChip(
+                avatar: const Icon(
+                  Icons.restaurant_outlined,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+                label: const Text(
+                  'Oats + almonds',
+                  style: TextStyle(fontSize: 11),
+                ),
+                onPressed: () => setState(
+                  () => _textController.text =
+                      '1 bowl oats with milk and 10 almonds',
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTextEstimatorCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Describe your meal',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 4),
-            TextField(
-              controller: _textController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: 'e.g. 2 rotis with paneer bhurji and dal tadka',
+  Widget _buildPhotoEstimatorCard() {
+    return B05Surface(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Use a photo (optional)',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 12),
+
+          // Image Preview Slot
+          if (_selectedImage != null)
+            Container(
+              height: 180,
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                image: DecorationImage(
+                  image: FileImage(_selectedImage!),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+
+          IndiFitResponsiveFieldGroup(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _saving
+                    ? null
+                    : () => _pickImage(ImageSource.gallery),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.photo_library_rounded,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+                label: const Text(
+                  'Gallery',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _saving
+                    ? null
+                    : () => _pickImage(ImageSource.camera),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.camera_alt_rounded,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+                label: const Text(
+                  'Camera',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+            ],
+          ),
+          if (_selectedImage != null) ...[
+            const SizedBox(height: 12),
+            B05ActionButton(
+              onPressed: _saving ? null : _submitPhotoEstimate,
+              icon: Icons.photo_camera_outlined,
+              label: 'Estimate this photo',
+              emphasis: B05ActionEmphasis.secondary,
+            ),
+          ],
+          if (_imageCleanup != null && !_imageCleanup!.succeeded)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ActionChip(
-                    avatar: const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 14,
-                      color: AppColors.primary,
-                    ),
-                    label: const Text(
-                      'Parse Items',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    onPressed: () {
-                      final items = NaturalMealParser.parse(
-                        _textController.text,
-                      );
-                      if (items.isNotEmpty) {
-                        final summary = items
-                            .map((i) => '${i.quantity} ${i.unit} ${i.foodName}')
-                            .join(', ');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Parsed ${items.length} items: $summary',
-                            ),
-                          ),
-                        );
-                      }
-                    },
+                  const Text(
+                    'Temporary photo cleanup needs a retry. No photo content was saved to nutrition data.',
+                    style: TextStyle(color: AppColors.danger, fontSize: 11),
                   ),
-                  const SizedBox(width: 8),
-                  ActionChip(
-                    avatar: const Icon(
-                      Icons.restaurant_outlined,
-                      size: 14,
-                      color: AppColors.primary,
-                    ),
-                    label: const Text(
-                      '2 rotis + paneer',
-                      style: TextStyle(fontSize: 11),
-                    ),
-                    onPressed: () =>
-                        _textController.text = '2 rotis with paneer bhurji',
-                  ),
-                  const SizedBox(width: 8),
-                  ActionChip(
-                    avatar: const Icon(
-                      Icons.restaurant_outlined,
-                      size: 14,
-                      color: AppColors.primary,
-                    ),
-                    label: const Text(
-                      'Oats + almonds',
-                      style: TextStyle(fontSize: 11),
-                    ),
-                    onPressed: () => _textController.text =
-                        '1 bowl oats with milk and 10 almonds',
+                  TextButton(
+                    onPressed: _retryImageCleanup,
+                    child: const Text('Retry cleanup'),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton.icon(
-                onPressed: _saving ? null : _submitTextEstimate,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                icon: const Icon(Icons.psychology_rounded, size: 18),
-                label: const Text('Estimate from Text'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPhotoEstimatorCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Snap or Upload Plate Photo',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-
-            // Image Preview Slot
-            if (_selectedImage != null)
-              Container(
-                height: 180,
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  image: DecorationImage(
-                    image: FileImage(_selectedImage!),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _saving
-                        ? null
-                        : () => _pickImage(ImageSource.gallery),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.border),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    icon: const Icon(
-                      Icons.photo_library_rounded,
-                      size: 18,
-                      color: AppColors.textSecondary,
-                    ),
-                    label: const Text(
-                      'Gallery',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _saving
-                        ? null
-                        : () => _pickImage(ImageSource.camera),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.border),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    icon: const Icon(
-                      Icons.camera_alt_rounded,
-                      size: 18,
-                      color: AppColors.textSecondary,
-                    ),
-                    label: const Text(
-                      'Camera',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (_selectedImage != null) ...[
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: _saving ? null : _submitPhotoEstimate,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(40),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                icon: const Icon(Icons.remove_red_eye_rounded, size: 18),
-                label: const Text('Analyze Food Photo'),
-              ),
-            ],
-            if (_imageCleanup != null && !_imageCleanup!.succeeded)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Temporary photo cleanup needs a retry. No photo content was saved to nutrition data.',
-                        style: TextStyle(color: AppColors.danger, fontSize: 11),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: _retryImageCleanup,
-                      child: const Text('Retry cleanup'),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -934,214 +862,105 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   Widget _buildResultSection() {
     final estimate = _estimate;
     if (estimate == null) return const SizedBox.shrink();
-    final confidenceLabel = 'Estimate · ${estimate.confidence.stableId}';
-    const labelColor = AppColors.primary;
-    const confidenceIcon = Icons.auto_awesome_rounded;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'ESTIMATION RESULT',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textSecondary,
-            letterSpacing: 1.0,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Confidence Badge Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Review estimated values:',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
-                      ),
+        B05Surface(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Review your meal',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'These numbers are approximate. Missing information stays blank rather than becoming zero.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              _buildUncertaintySummary(estimate),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _nameEditController,
+                enabled: !_saving,
+                decoration: const InputDecoration(
+                  labelText: 'Meal name',
+                  contentPadding: EdgeInsets.symmetric(vertical: 4),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _servingCountEditController,
+                enabled: !_saving,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Servings consumed',
+                  helperText:
+                      'Use a positive serving count; it does not imply grams.',
+                  contentPadding: EdgeInsets.symmetric(vertical: 4),
+                ),
+              ),
+              const SizedBox(height: 16),
+              IndiFitResponsiveFieldGroup(
+                children: [
+                  TextField(
+                    controller: _caloriesEditController,
+                    enabled: !_saving,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Calories (kcal)',
+                      contentPadding: EdgeInsets.symmetric(vertical: 4),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: labelColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: labelColor.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(confidenceIcon, size: 12, color: labelColor),
-                          const SizedBox(width: 4),
-                          Text(
-                            confidenceLabel,
-                            style: TextStyle(
-                              color: labelColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                  ),
+                  TextField(
+                    controller: _proteinEditController,
+                    enabled: !_saving,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Protein (g)',
+                      contentPadding: EdgeInsets.symmetric(vertical: 4),
                     ),
-                  ],
-                ),
-                const Divider(color: AppColors.border, height: 24),
-                const Text(
-                  'Values are estimates. When information is missing, we leave it blank instead of treating it as zero.',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
                   ),
-                ),
-                const SizedBox(height: 12),
-                _buildUncertaintySummary(estimate),
-                const SizedBox(height: 12),
-
-                // Name Field
-                TextField(
-                  controller: _nameEditController,
-                  enabled: !_saving,
-                  decoration: const InputDecoration(
-                    labelText: 'Meal Name',
-                    contentPadding: EdgeInsets.symmetric(vertical: 4),
+                ],
+              ),
+              const SizedBox(height: 16),
+              IndiFitResponsiveFieldGroup(
+                children: [
+                  TextField(
+                    controller: _carbsEditController,
+                    enabled: !_saving,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Carbs (g)',
+                      contentPadding: EdgeInsets.symmetric(vertical: 4),
+                    ),
                   ),
-                ),
+                  TextField(
+                    controller: _fatEditController,
+                    enabled: !_saving,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Fat (g)',
+                      contentPadding: EdgeInsets.symmetric(vertical: 4),
+                    ),
+                  ),
+                ],
+              ),
+              if (_saveError != null) ...[
                 const SizedBox(height: 16),
-                TextField(
-                  controller: _servingCountEditController,
-                  enabled: !_saving,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Servings consumed',
-                    helperText:
-                        'Use a positive serving count; it does not imply grams.',
-                    contentPadding: EdgeInsets.symmetric(vertical: 4),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Calories & Macros Inputs Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _caloriesEditController,
-                        enabled: !_saving,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Calories (kcal)',
-                          contentPadding: EdgeInsets.symmetric(vertical: 4),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _proteinEditController,
-                        enabled: !_saving,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Protein (g)',
-                          contentPadding: EdgeInsets.symmetric(vertical: 4),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _carbsEditController,
-                        enabled: !_saving,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Carbs (g)',
-                          contentPadding: EdgeInsets.symmetric(vertical: 4),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _fatEditController,
-                        enabled: !_saving,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Fat (g)',
-                          contentPadding: EdgeInsets.symmetric(vertical: 4),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                if (_saveError != null)
-                  Card(
-                    color: Theme.of(context).colorScheme.errorContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: Text(_saveError!)),
-                          TextButton(
-                            onPressed: _saving ? null : _logMeal,
-                            child: const Text('Retry save'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                if (_saveError != null) const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _saving ? null : _logMeal,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _saving
-                      ? const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            SizedBox(width: 10),
-                            Text('Saving…'),
-                          ],
-                        )
-                      : const Text(
-                          'Verify & Save to Log',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                ConsumerStatusRow(
+                  label: 'Meal could not be saved',
+                  detail: _saveError,
+                  error: true,
+                  onRetry: _saving ? null : _logMeal,
                 ),
               ],
-            ),
+            ],
           ),
         ),
       ],
@@ -1149,21 +968,104 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   }
 
   Widget _buildLoadingState() {
-    return const Center(
+    return const ConsumerStatusRow(
+      label: 'Estimating nutrition',
+      detail: 'This usually takes a few seconds.',
+      loading: true,
+    );
+  }
+
+  Widget _buildPrimaryAction() {
+    if (_estimate != null) {
+      return B05ActionButton(
+        label: _saving ? 'Saving meal…' : 'Save meal',
+        icon: Icons.check_rounded,
+        onPressed: _saving ? null : _logMeal,
+      );
+    }
+    final hasDescription = _textController.text.trim().isNotEmpty;
+    return B05ActionButton(
+      label: 'Estimate nutrition',
+      icon: Icons.auto_awesome_rounded,
+      onPressed: _saving || _loading || !hasDescription
+          ? null
+          : _submitTextEstimate,
+    );
+  }
+
+  Future<void> _retryEstimate() {
+    if (_selectedImage != null) return _submitPhotoEstimate();
+    return _submitTextEstimate();
+  }
+
+  static String _mealLabel(String value) {
+    final normalized = value.trim().toLowerCase();
+    return switch (normalized) {
+      'breakfast' => 'breakfast',
+      'lunch' => 'lunch',
+      'dinner' => 'dinner',
+      'snack' => 'snack',
+      _ => 'meal',
+    };
+  }
+}
+
+class _LoggedMealsSection extends StatefulWidget {
+  const _LoggedMealsSection({required this.date});
+
+  final DateTime date;
+
+  @override
+  State<_LoggedMealsSection> createState() => _LoggedMealsSectionState();
+}
+
+class _LoggedMealsSectionState extends State<_LoggedMealsSection> {
+  var _expanded = false;
+
+  void _toggle() => setState(() => _expanded = !_expanded);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return B05Surface(
+      padding: EdgeInsets.zero,
+      radius: B05SurfaceRadius.small,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CircularProgressIndicator(color: AppColors.primary),
-          SizedBox(height: 20),
-          Text(
-            'Analyzing meal components...',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          Semantics(
+            container: true,
+            button: true,
+            label: 'Logged meals',
+            value: _expanded ? 'Expanded' : 'Collapsed',
+            hint: _expanded
+                ? 'Hide meals logged for this day.'
+                : 'Show meals logged for this day.',
+            onTap: _toggle,
+            child: ExcludeSemantics(
+              child: ListTile(
+                title: const Text('Logged meals'),
+                subtitle: const Text('Review or edit meals for this day.'),
+                trailing: Icon(
+                  _expanded
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded,
+                  color: colors.action,
+                ),
+                onTap: _toggle,
+              ),
+            ),
           ),
-          SizedBox(height: 8),
-          Text(
-            'The approved estimation service is processing the meal...',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-          ),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                B05Layout.space12,
+                0,
+                B05Layout.space12,
+                B05Layout.space12,
+              ),
+              child: FoodLogEntriesPanel(date: widget.date),
+            ),
         ],
       ),
     );

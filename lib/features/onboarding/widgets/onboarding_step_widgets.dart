@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 
@@ -19,16 +20,16 @@ class OnboardingPageContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
           Text(
             title,
             style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 26,
+              color: context.b05Colors.textPrimary,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               fontFamily: GoogleFonts.outfit().fontFamily,
               height: 1.2,
@@ -38,13 +39,13 @@ class OnboardingPageContainer extends StatelessWidget {
           Text(
             subtitle,
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: context.b05Colors.textSecondary,
               fontSize: 14,
               fontFamily: GoogleFonts.outfit().fontFamily,
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
           Expanded(child: SingleChildScrollView(child: child)),
         ],
       ),
@@ -70,6 +71,7 @@ class OnboardingSelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     return Semantics(
       container: true,
       button: true,
@@ -88,11 +90,11 @@ class OnboardingSelectionCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
               color: selected
-                  ? AppColors.primary.withValues(alpha: 0.04)
-                  : AppColors.cardBackground,
+                  ? colors.action.withValues(alpha: 0.10)
+                  : colors.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: selected ? AppColors.primary : AppColors.border,
+                color: selected ? colors.action : colors.border,
                 width: selected ? 2.0 : 1.0,
               ),
             ),
@@ -102,15 +104,13 @@ class OnboardingSelectionCard extends StatelessWidget {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: selected
-                        ? AppColors.primary.withValues(alpha: 0.12)
-                        : const Color(0x1F223250),
+                        ? colors.action.withValues(alpha: 0.16)
+                        : colors.surfaceSubtle,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     icon,
-                    color: selected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                    color: selected ? colors.action : colors.textSecondary,
                     size: 24,
                   ),
                 ),
@@ -122,7 +122,7 @@ class OnboardingSelectionCard extends StatelessWidget {
                       Text(
                         title,
                         style: TextStyle(
-                          color: AppColors.textPrimary,
+                          color: colors.textPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           fontFamily: GoogleFonts.outfit().fontFamily,
@@ -133,7 +133,7 @@ class OnboardingSelectionCard extends StatelessWidget {
                         Text(
                           subtitle!,
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                             fontSize: 13,
                             fontFamily: GoogleFonts.outfit().fontFamily,
                           ),
@@ -179,6 +179,7 @@ class OnboardingNumberInputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final hasError = errorText != null;
     final isValid = !hasError && controller.text.isNotEmpty;
 
@@ -188,12 +189,12 @@ class OnboardingNumberInputField extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.cardBackground,
+            color: colors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: hasError
-                  ? AppColors.danger
-                  : (isValid ? AppColors.success : AppColors.border),
+                  ? colors.danger.indicator
+                  : (isValid ? colors.success.indicator : colors.border),
               width: hasError || isValid ? 1.5 : 1.0,
             ),
           ),
@@ -201,7 +202,9 @@ class OnboardingNumberInputField extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: hasError ? AppColors.danger : AppColors.textSecondary,
+                color: hasError
+                    ? colors.danger.indicator
+                    : colors.textSecondary,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -209,21 +212,20 @@ class OnboardingNumberInputField extends StatelessWidget {
                   controller: controller,
                   onChanged: onChanged,
                   onEditingComplete: onEditingComplete,
-                  maxLength: 16,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
                   textInputAction: TextInputAction.done,
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     fontFamily: GoogleFonts.outfit().fontFamily,
                   ),
                   decoration: InputDecoration(
                     labelText: label,
-                    labelStyle: const TextStyle(
-                      color: AppColors.textSecondary,
+                    labelStyle: TextStyle(
+                      color: colors.textSecondary,
                       fontSize: 14,
                     ),
                     border: InputBorder.none,
@@ -251,7 +253,7 @@ class OnboardingNumberInputField extends StatelessWidget {
                 Text(
                   suffix,
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: colors.textSecondary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     fontFamily: GoogleFonts.outfit().fontFamily,

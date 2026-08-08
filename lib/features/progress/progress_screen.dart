@@ -3,11 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../coaching/b04_production_surface_widgets.dart';
+import '../workout_player/routine_display_screen.dart';
 import 'achievements_screen.dart';
+import 'b02_progress_controller.dart';
 import 'b02_progress_widgets.dart';
 import 'widgets/progress_bmi_health_card.dart';
 
@@ -18,6 +23,40 @@ class ProgressScreen extends ConsumerStatefulWidget {
   ConsumerState<ProgressScreen> createState() => _ProgressScreenState();
 }
 
+class _ProgressMetric extends StatelessWidget {
+  const _ProgressMetric({required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$value $label',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   // Activity map representing workouts logged on specific days
   final List<DateTime> _activityDays = [];
@@ -26,6 +65,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   List<WorkoutSession> _sessions = [];
   List<BodyMeasurement> _measurements = [];
   double? _targetWeight;
+  ProductFailurePresentation? _loadFailure;
 
   @override
   void initState() {
@@ -39,7 +79,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
     try {
       final repo = ref.read(workoutRepositoryProvider);
-      final list = await repo.watchSessions().first;
+      final list = await repo.getSessions();
       final measurements = await repo.getBodyMeasurements();
       final prefs = await SharedPreferences.getInstance();
       final targetW = prefs.getDouble('user_target_weight');
@@ -66,15 +106,23 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         _measurements = measurements;
         _targetWeight = targetW;
         _loading = false;
+        _loadFailure = null;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _loadFailure = ProductFailurePresentation.fromCode(
+          'progress_unavailable',
+          title: 'Progress is unavailable',
+        );
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final b02State = ref.watch(b02ProgressControllerProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Progress & Analytics'),
@@ -99,73 +147,210 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
+      body: _loading || (b02State.isLoading && b02State.data == null)
+          ? const Center(
+              child: ConsumerStatusRow(
+                label: 'Loading your progress',
+                detail: 'Gathering recent activity and trends.',
+                loading: true,
+              ),
+            )
+          : _loadFailure != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: ProductFailureCard(
+                  failure: _loadFailure!,
+                  onRetry: _loadProgressLogs,
+                ),
+              ),
+            )
+          : b02State.status == B02ProgressStatus.failure &&
+                b02State.data == null &&
+                _sessions.isEmpty &&
+                _measurements.isEmpty
+          ? _buildB02FailureState()
+          : _hasNoMeaningfulData(b02State)
+          ? _buildNoProgressState()
           : RefreshIndicator(
-              onRefresh: () async {
-                await _loadProgressLogs();
-              },
+              onRefresh: _loadProgressLogs,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const B02ProgressOverview(),
+                    _buildOutcomeSummary(b02State),
+                    if (b02State.status == B02ProgressStatus.partial ||
+                        b02State.status == B02ProgressStatus.recovery) ...[
+                      const SizedBox(height: 12),
+                      ConsumerStatusRow(
+                        label: 'Some training details are unavailable',
+                        detail: 'You can retry without losing your progress.',
+                        error: true,
+                        onRetry: () => ref
+                            .read(b02ProgressControllerProvider.notifier)
+                            .retry(),
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     const B04WeeklyReviewCard(),
                     const SizedBox(height: 20),
-                    // 1. GitHub-style activity calendar heatmap (last 12 weeks)
                     const Text(
-                      'GYM ACTIVITY HEATMAP',
+                      'Activity',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textMuted,
                         letterSpacing: 0.5,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _buildGitHubHeatmap(),
-                    const SizedBox(height: 20),
-
-                    // 2. Body Weight Sparkline Chart Card
-                    const Text(
-                      'BODY WEIGHT TREND (KG)',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textMuted,
-                        letterSpacing: 0.5,
+                    if (_sessions.isNotEmpty) ...[
+                      _buildGitHubHeatmap(),
+                      const SizedBox(height: 20),
+                    ],
+                    if (_measurements.isNotEmpty) ...[
+                      const Text(
+                        'Weight trend',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textMuted,
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildWeightChartCard(),
-                    const SizedBox(height: 12),
-                    ProgressBmiHealthCard(
-                      weightKg: _measurements.isNotEmpty
-                          ? _measurements.first.weight
-                          : null,
-                    ),
-                    const SizedBox(height: 20),
-
-                    // 3. Workout Volume Trend Card (Strength progression)
-                    const Text(
-                      'STRENGTH VOLUME PROGRESSION (KG)',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textMuted,
-                        letterSpacing: 0.5,
+                      const SizedBox(height: 8),
+                      _buildWeightChartCard(),
+                      const SizedBox(height: 12),
+                      ProgressBmiHealthCard(
+                        weightKg: _measurements.first.weight,
                       ),
+                      const SizedBox(height: 20),
+                    ],
+                    if (_sessions.isNotEmpty) ...[
+                      const Text(
+                        'Strength trend',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textMuted,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildVolumeChartCard(),
+                      const SizedBox(height: 20),
+                    ],
+                    ExpansionTile(
+                      title: const Text('Training detail'),
+                      subtitle: const Text(
+                        'Activity, strength and muscle volume',
+                      ),
+                      children: const [
+                        Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                          child: B02ProgressOverview(),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    _buildVolumeChartCard(),
-                    const SizedBox(height: 20),
                   ],
                 ),
               ),
             ),
+    );
+  }
+
+  bool _hasNoMeaningfulData(B02ProgressState b02State) {
+    if (_measurements.isNotEmpty) return false;
+    // Partial and recovery states carry useful data alongside an unavailable
+    // section. Keep the outcome and retry affordance visible instead of
+    // collapsing the whole screen into a known-empty state.
+    if (b02State.status == B02ProgressStatus.partial ||
+        b02State.status == B02ProgressStatus.recovery) {
+      return false;
+    }
+    final activity = b02State.data?.activityHistory;
+    if (activity != null) return activity.isEmpty;
+    // A failed B02 read must remain visible through its retryable detail
+    // surface rather than being presented as a known-empty progress history.
+    return b02State.status != B02ProgressStatus.failure && _sessions.isEmpty;
+  }
+
+  Widget _buildNoProgressState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ProductEmptyState(
+          icon: Icons.auto_graph_rounded,
+          title: 'Your progress starts here',
+          message: 'Complete your first workout to see activity and trends.',
+          action: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()),
+            );
+          },
+          actionLabel: 'Start a workout',
+          actionIcon: Icons.fitness_center_rounded,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildB02FailureState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: ProductFailureCard(
+          failure: ProductFailurePresentation.fromCode(
+            'progress_unavailable',
+            title: 'Progress details are unavailable',
+          ),
+          onRetry: () =>
+              ref.read(b02ProgressControllerProvider.notifier).retry(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOutcomeSummary(B02ProgressState b02State) {
+    final latestWeight = _measurements.isNotEmpty
+        ? _measurements.first.weight
+        : null;
+    final activityCount = b02State.data?.activityHistory?.length;
+    return B05Surface(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Your progress',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Small, consistent actions add up.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 24,
+            runSpacing: 16,
+            children: [
+              if (activityCount != null)
+                _ProgressMetric(
+                  value: '$activityCount',
+                  label: 'completed workouts',
+                ),
+              if (latestWeight != null)
+                _ProgressMetric(
+                  value: '${latestWeight.toStringAsFixed(1)} kg',
+                  label: 'latest weight',
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

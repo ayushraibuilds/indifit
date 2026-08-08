@@ -9,6 +9,7 @@ import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/repositories/ai_routine_service.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -41,6 +42,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   String? _draftError;
   bool _savingRoutine = false;
   bool _skipping = false;
+  String? _actionError;
   GeneratedRoutineResult? _generatedRoutine;
   final B05OnboardingDraftStore _draftStore = const B05OnboardingDraftStore();
   Future<void> _draftWrite = Future<void>.value();
@@ -135,6 +137,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   }
 
   void _nextStep() {
+    FocusScope.of(context).unfocus();
     if (_currentStep < 5) {
       setState(() => _currentStep++);
       unawaited(_saveDraft().catchError((_) {}));
@@ -142,6 +145,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   }
 
   void _prevStep() {
+    FocusScope.of(context).unfocus();
     if (_currentStep > 0) {
       setState(() => _currentStep--);
       unawaited(_saveDraft().catchError((_) {}));
@@ -151,13 +155,20 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   Future<void> _generateRoutine() async {
     if (_loading) return;
     final draftWrite = _saveDraft();
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _actionError = null;
+    });
 
     try {
       await draftWrite;
     } catch (error) {
       if (mounted) {
         setState(() => _loading = false);
+        setState(
+          () => _actionError =
+              'Your routine answers could not be saved. Try again.',
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Could not save your routine draft. Try again.'),
@@ -185,7 +196,10 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
         _currentStep = 5; // Preview step
       });
     } catch (e) {
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _actionError = 'Your routine could not be generated. Try again.';
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -199,7 +213,10 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
 
   Future<void> _saveAndApplyRoutine() async {
     if (_generatedRoutine == null || _savingRoutine || _skipping) return;
-    setState(() => _savingRoutine = true);
+    setState(() {
+      _savingRoutine = true;
+      _actionError = null;
+    });
 
     try {
       await _draftWrite;
@@ -238,6 +255,9 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       }
     } catch (e) {
       if (mounted) {
+        setState(
+          () => _actionError = 'Your routine could not be saved. Try again.',
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Your routine could not be saved. Try again.'),
@@ -252,13 +272,17 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
 
   Future<void> _skipOnboarding() async {
     if (_skipping || _savingRoutine || _loading) return;
-    setState(() => _skipping = true);
+    setState(() {
+      _skipping = true;
+      _actionError = null;
+    });
     try {
       await _draftWrite;
       await _draftStore.clearRoutineDraft();
       if (mounted) GoRouter.of(context).go('/');
     } catch (error) {
       if (mounted) {
+        setState(() => _actionError = 'Could not skip setup. Try again.');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Could not skip setup. Try again.')),
         );
@@ -270,10 +294,12 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final colors = context.b05Colors;
+    return ConsumerTaskScaffold(
       appBar: AppBar(
         title: const Text('AI Coach Setup'),
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.page,
+        foregroundColor: colors.textPrimary,
         elevation: 0,
         actions: [
           TextButton(
@@ -294,16 +320,30 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
           ? _buildLoadingState()
           : Column(
               children: [
+                if (_actionError != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                    child: ConsumerStatusRow(
+                      label: 'Setup action unavailable',
+                      detail: _actionError,
+                      error: true,
+                      onRetry: _retryAction,
+                    ),
+                  ),
                 _buildProgressIndicator(),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     child: _buildStepContent(),
                   ),
                 ),
-                _buildBottomNavigation(),
               ],
             ),
+      scrollable: false,
+      padding: EdgeInsets.zero,
+      primaryAction: _draftLoaded && !_loading
+          ? _buildBottomNavigation()
+          : null,
     );
   }
 
@@ -364,24 +404,22 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   }
 
   Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          CircularProgressIndicator(color: AppColors.primary),
-          SizedBox(height: 24),
-          Text(
-            'Designing your custom split...',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Balancing volume, frequency & progressive overload',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
-        ],
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(20),
+        child: ConsumerStatusRow(
+          label: 'Creating your routine',
+          detail: 'Balancing volume, frequency and recovery.',
+          loading: true,
+        ),
       ),
     );
+  }
+
+  Future<void> _retryAction() {
+    if (_currentStep == 4) return _generateRoutine();
+    if (_currentStep == 5) return _saveAndApplyRoutine();
+    return _skipOnboarding();
   }
 
   Widget _buildStepContent() {
@@ -814,50 +852,37 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   }
 
   Widget _buildBottomNavigation() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          if (_currentStep > 0 && _currentStep < 5) ...[
-            OutlinedButton(onPressed: _prevStep, child: const Text('Back')),
-            const SizedBox(width: 12),
-          ],
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _savingRoutine
-                  ? null
-                  : () {
-                      if (_currentStep == 4) {
-                        _generateRoutine();
-                      } else if (_currentStep == 5) {
-                        _saveAndApplyRoutine();
-                      } else {
-                        _nextStep();
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                _currentStep == 4
-                    ? 'Generate Routine'
-                    : _currentStep == 5
-                    ? 'Activate Routine'
-                    : 'Continue',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-        ],
+    return TaskActionGroup(
+      secondary: _currentStep > 0 && _currentStep < 5
+          ? B05ActionButton(
+              label: 'Back',
+              icon: Icons.arrow_back_rounded,
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: _savingRoutine ? null : _prevStep,
+            )
+          : null,
+      primary: B05ActionButton(
+        label: _actionError != null
+            ? 'Retry'
+            : _currentStep == 4
+            ? 'Create routine'
+            : _currentStep == 5
+            ? 'Activate routine'
+            : 'Continue',
+        icon: _currentStep == 5
+            ? Icons.check_rounded
+            : Icons.arrow_forward_rounded,
+        onPressed: _savingRoutine
+            ? null
+            : () {
+                if (_currentStep == 4) {
+                  _generateRoutine();
+                } else if (_currentStep == 5) {
+                  _saveAndApplyRoutine();
+                } else {
+                  _nextStep();
+                }
+              },
       ),
     );
   }
