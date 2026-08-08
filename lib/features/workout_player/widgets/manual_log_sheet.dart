@@ -227,11 +227,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
       if (!mounted) return;
       final target = newSet.key.currentContext;
       if (target != null) {
-        Scrollable.ensureVisible(
-          target,
-          alignment: 1,
-          duration: Duration.zero,
-        );
+        Scrollable.ensureVisible(target, alignment: 1, duration: Duration.zero);
       }
     });
   }
@@ -318,10 +314,9 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                         children: [
                           TextField(
                             controller: setInput.weightController,
-                            keyboardType:
-                                const TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
                             decoration: const InputDecoration(
                               labelText: 'kg',
                               isDense: true,
@@ -336,8 +331,8 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                               labelText: 'reps',
                               isDense: true,
                             ),
-                            onChanged: (value) => setInput.reps =
-                                int.tryParse(value) ?? 0,
+                            onChanged: (value) =>
+                                setInput.reps = int.tryParse(value) ?? 0,
                           ),
                         ],
                       ),
