@@ -38,8 +38,12 @@ class B04RecommendationHistoryRepository implements B04BriefingHistorySource {
     _validateEvaluation(command);
     final owner = _owner(command.evaluation.userId);
     return _db.transaction(() async {
-      final consent = await _consent(command, owner);
-      final eligibility = await _eligibility(command, owner);
+      final consent = command.consentEventId == null
+          ? null
+          : await _consent(command, owner);
+      final eligibility = command.eligibilityEvaluationId == null
+          ? null
+          : await _eligibility(command, owner);
       final goal = await _goal(command, owner);
       final readiness = await _readiness(command, owner);
       final issued = <String>[];
@@ -477,53 +481,60 @@ class B04RecommendationHistoryRepository implements B04BriefingHistorySource {
   List<B04RecommendationEvidenceRecord> _lineageEvidence({
     required B04RecommendationHistoryCommand command,
     required B04Recommendation recommendation,
-    required db.CoachingConsentEvent consent,
-    required db.CoachingEligibilityEvaluation eligibility,
+    required db.CoachingConsentEvent? consent,
+    required db.CoachingEligibilityEvaluation? eligibility,
     required db.NutritionGoalVersion? goal,
     required db.ReadinessSnapshot? readiness,
   }) {
-    final values = <B04RecommendationEvidenceRecord>[
-      B04RecommendationEvidenceRecord(
-        id: '',
-        recommendationId: recommendation.id,
-        userId: command.evaluation.userId,
-        evidenceKind: 'consent',
-        sourceType: 'coaching_consent_event',
-        sourceId: consent.id,
-        sourceVersion: consent.consentPolicyVersion,
-        status: consent.action,
-        value: null,
-        lower: null,
-        upper: null,
-        unit: null,
-        exactResultNumerator: null,
-        exactResultDenominator: null,
-        normalizedMaintenanceKcal: null,
-        localDate: consent.localDate,
-        timezoneId: consent.timezoneId,
-        createdAtUtc: command.evaluation.evaluatedAtUtc,
-      ),
-      B04RecommendationEvidenceRecord(
-        id: '',
-        recommendationId: recommendation.id,
-        userId: command.evaluation.userId,
-        evidenceKind: 'eligibility',
-        sourceType: 'coaching_eligibility_evaluation',
-        sourceId: eligibility.id,
-        sourceVersion: eligibility.minimumAgeRuleVersion,
-        status: eligibility.result,
-        value: null,
-        lower: null,
-        upper: null,
-        unit: null,
-        exactResultNumerator: null,
-        exactResultDenominator: null,
-        normalizedMaintenanceKcal: null,
-        localDate: eligibility.evaluationLocalDate,
-        timezoneId: eligibility.timezoneId,
-        createdAtUtc: command.evaluation.evaluatedAtUtc,
-      ),
-    ];
+    final values = <B04RecommendationEvidenceRecord>[];
+    if (consent != null) {
+      values.add(
+        B04RecommendationEvidenceRecord(
+          id: '',
+          recommendationId: recommendation.id,
+          userId: command.evaluation.userId,
+          evidenceKind: 'consent',
+          sourceType: 'coaching_consent_event',
+          sourceId: consent.id,
+          sourceVersion: consent.consentPolicyVersion,
+          status: consent.action,
+          value: null,
+          lower: null,
+          upper: null,
+          unit: null,
+          exactResultNumerator: null,
+          exactResultDenominator: null,
+          normalizedMaintenanceKcal: null,
+          localDate: consent.localDate,
+          timezoneId: consent.timezoneId,
+          createdAtUtc: command.evaluation.evaluatedAtUtc,
+        ),
+      );
+    }
+    if (eligibility != null) {
+      values.add(
+        B04RecommendationEvidenceRecord(
+          id: '',
+          recommendationId: recommendation.id,
+          userId: command.evaluation.userId,
+          evidenceKind: 'eligibility',
+          sourceType: 'coaching_eligibility_evaluation',
+          sourceId: eligibility.id,
+          sourceVersion: eligibility.minimumAgeRuleVersion,
+          status: eligibility.result,
+          value: null,
+          lower: null,
+          upper: null,
+          unit: null,
+          exactResultNumerator: null,
+          exactResultDenominator: null,
+          normalizedMaintenanceKcal: null,
+          localDate: eligibility.evaluationLocalDate,
+          timezoneId: eligibility.timezoneId,
+          createdAtUtc: command.evaluation.evaluatedAtUtc,
+        ),
+      );
+    }
     if (goal != null) {
       values.add(
         B04RecommendationEvidenceRecord(
@@ -624,7 +635,7 @@ class B04RecommendationHistoryRepository implements B04BriefingHistorySource {
   ) async {
     final row =
         await (_db.select(_db.coachingConsentEvents)
-              ..where((item) => item.id.equals(command.consentEventId)))
+              ..where((item) => item.id.equals(command.consentEventId!)))
             .getSingleOrNull();
     if (row == null) {
       throw const B04RecommendationHistoryError(
@@ -686,9 +697,9 @@ class B04RecommendationHistoryRepository implements B04BriefingHistorySource {
     String owner,
   ) async {
     final row =
-        await (_db.select(
-              _db.coachingEligibilityEvaluations,
-            )..where((item) => item.id.equals(command.eligibilityEvaluationId)))
+        await (_db.select(_db.coachingEligibilityEvaluations)..where(
+              (item) => item.id.equals(command.eligibilityEvaluationId!),
+            ))
             .getSingleOrNull();
     if (row == null) {
       throw const B04RecommendationHistoryError(

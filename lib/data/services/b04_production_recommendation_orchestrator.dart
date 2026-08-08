@@ -36,6 +36,7 @@ import 'b04_meal_opportunity_service.dart';
 import 'b04_nutrition_safety_filter.dart';
 import 'b04_recommendation_context_assembler.dart';
 import 'b04_recommendation_engine.dart';
+import 'b04_recovery_production_adapter.dart';
 
 class B04ProductionCurrentFoodResult {
   final B04RecommendationContext context;
@@ -73,6 +74,7 @@ class B04ProductionRecommendationOrchestrator {
   final LocalScheduleDateService _dates;
   final DateTime Function() _nowUtc;
   final B04ActivationMetadata _activation;
+  final B04RecoveryProductionAdapter? _recoveryAdapter;
   final Map<String, Future<B04ProductionCurrentFoodResult>> _currentRuns = {};
   final Map<String, Future<_ProductionPeriod>> _coachingRuns = {};
 
@@ -100,6 +102,7 @@ class B04ProductionRecommendationOrchestrator {
     B04RecommendationEngine engine = const B04RecommendationEngine(),
     DateTime Function()? nowUtc,
     B04ActivationMetadata activation = const B04ActivationMetadata(),
+    B04RecoveryProductionAdapter? recoveryAdapter,
   }) : _goals = goals,
        _preferences = preferences,
        _nutrition = nutrition,
@@ -122,7 +125,8 @@ class B04ProductionRecommendationOrchestrator {
        _registry = registry,
        _dates = dates ?? LocalScheduleDateService(),
        _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
-       _activation = activation;
+       _activation = activation,
+       _recoveryAdapter = recoveryAdapter;
 
   Future<B04RecommendationContext> loadCurrentFoodContext({
     required String userId,
@@ -423,6 +427,13 @@ class B04ProductionRecommendationOrchestrator {
           endLocalDate: endLocalDate,
           timezoneId: timezoneId,
         );
+    if (scope != B04RecommendationHistoryScope.mealOpportunity) {
+      await _recoveryAdapter?.syncAndEvaluate(
+        userId: userId,
+        localDate: endLocalDate,
+        timezoneId: timezoneId,
+      );
+    }
     final sources = await _loadSources(
       userId: userId,
       startLocalDate: startLocalDate,
@@ -967,17 +978,25 @@ class B04ProductionRecommendationOrchestrator {
     final eligibility = period.context.eligibility;
     final consentEventId = preferences?.adaptiveCoachingEvent?.id;
     final eligibilityEvaluationId = eligibility?.id;
-    if (preferences?.adaptiveCoachingEnabled != true ||
-        consentEventId == null ||
-        eligibility?.isEligible != true ||
-        eligibilityEvaluationId == null) {
+    final isMealOpportunity =
+        period.scope == B04RecommendationHistoryScope.mealOpportunity;
+    if (!isMealOpportunity &&
+        (preferences?.adaptiveCoachingEnabled != true ||
+            consentEventId == null ||
+            eligibility?.isEligible != true ||
+            eligibilityEvaluationId == null)) {
       return false;
     }
     final command = B04RecommendationHistoryCommand(
       evaluation: period.evaluation,
       scope: period.scope,
-      consentEventId: consentEventId,
-      eligibilityEvaluationId: eligibilityEvaluationId,
+      // Consent and age eligibility are adaptive-target lineage. Meal
+      // opportunities retain only the B03 safety/candidate evidence relevant
+      // to that scope, even when adaptive coaching happens to be enabled.
+      consentEventId: isMealOpportunity ? null : consentEventId,
+      eligibilityEvaluationId: isMealOpportunity
+          ? null
+          : eligibilityEvaluationId,
       goalVersionId: _goalVersionForPeriod(period),
       readinessSnapshotId: _readinessIdForPeriod(period),
       evidenceByRecommendationId: {

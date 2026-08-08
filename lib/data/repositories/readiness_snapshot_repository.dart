@@ -232,7 +232,12 @@ class ReadinessSnapshotRepository {
                   row.userId.equals(userId) &
                   row.localDate.equals(localDate) &
                   row.timezoneId.equals(timezoneId) &
-                  row.calculationVersion.equals(calculationVersion) &
+                  // Revision snapshots suffix the same calculation version
+                  // with their evidence fingerprint.  A retry of that same
+                  // evidence must still resolve the existing immutable
+                  // snapshot rather than creating another revision.
+                  (row.calculationVersion.equals(calculationVersion) |
+                      row.calculationVersion.like('$calculationVersion:%')) &
                   row.policyVersion.equals(policyVersion) &
                   row.evidenceFingerprint.equals(fingerprint),
             ))

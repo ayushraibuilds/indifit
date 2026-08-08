@@ -180,11 +180,20 @@ class NutritionRecipeLogCoordinator {
         .where(
           (recipe) =>
               recipe.lifecycle == NutritionRecipeLifecycle.active &&
+              recipe.currentVersionId != null &&
               (normalizedQuery.isEmpty ||
                   recipe.name.toLowerCase().contains(normalizedQuery)),
         )
         .toList(growable: false);
   }
+
+  /// Drafts are exposed beside saved recipes so the authoring surface can
+  /// reopen an incomplete recipe without treating a mutable version as
+  /// loggable history.
+  Future<List<NutritionRecipeDraftModel>> listDrafts({
+    required String userId,
+    String query = '',
+  }) => _recipes.listDrafts(userId: userId, query: query);
 
   Future<List<NutritionRecipeVersionModel>> listLoggableVersions({
     required String recipeId,

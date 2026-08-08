@@ -3,11 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
+import '../../core/di/providers.dart';
+import '../../core/nutrition_household_measures.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_api_service.dart';
 import '../../data/repositories/food_repository.dart';
+import '../../data/repositories/nutrition_food_catalog_repository.dart';
+import '../../data/repositories/nutrition_food_logging_coordinator.dart';
 import 'barcode_scanner_screen.dart';
 import 'custom_food_editor_screen.dart';
 import 'food_log_surface.dart';
@@ -128,183 +133,349 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     }
   }
 
-  void _showLogDialog(
-    String name,
-    int calories,
-    double protein,
-    double carbs,
-    double fat,
-    double baseServing,
-    String unit,
-    int? foodItemId,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        double multiplier = 1.0;
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            double calcCalories = calories * multiplier;
-            double calcProtein = protein * multiplier;
-            double calcCarbs = carbs * multiplier;
-            double calcFat = fat * multiplier;
-            double currentServing = baseServing * multiplier;
+  Future<void> _openLegacyLogDialog(FoodItem food) async {
+    try {
+      final catalog = await ref.read(
+        nutritionFoodCatalogRepositoryProvider.future,
+      );
+      final option = await catalog.ensureLegacyFood(food);
+      await _showLogDialog(option);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('This food is unavailable: $error')),
+        );
+      }
+    }
+  }
 
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Log to ${widget.mealType.toUpperCase()}',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
+  Future<void> _openProviderLogDialog(FoodApiResult result) async {
+    try {
+      final reference = result.barcode == null
+          ? 'open-food-facts:search:${result.name.trim().toLowerCase()}'
+          : 'open-food-facts:barcode:${result.barcode}';
+      final catalog = await ref.read(
+        nutritionFoodCatalogRepositoryProvider.future,
+      );
+      final option = await catalog.ensureProviderFood(
+        displayName: result.name,
+        sourceReference: reference,
+        servingSize: result.servingSize,
+        servingUnit: result.servingUnit,
+        energyKcal: result.calories,
+        proteinG: result.protein,
+        carbohydrateG: result.carbs,
+        fatG: result.fat,
+      );
+      await _showLogDialog(option);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('This provider food is unavailable: $error')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showLogDialog(NutritionFoodOption option) async {
+    final coordinator = await ref.read(
+      nutritionFoodLoggingCoordinatorProvider.future,
+    );
+    final transformations = await coordinator.transformationsFor(option);
+    if (!mounted) return;
+    unawaited(
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: AppColors.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) {
+          double multiplier = 1.0;
+          String? selectedTransformationId;
+          String? commandId;
+          String? consumptionId;
+          var isFinalizing = false;
+          late Future<NutritionFoodLogPreview> previewFuture;
+          Future<NutritionFoodLogPreview> buildPreview() => coordinator.preview(
+            option: option,
+            quantity: option.baseQuantity * multiplier,
+            transformation: transformations
+                .where((item) => item.id == selectedTransformationId)
+                .firstOrNull,
+          );
+          previewFuture = buildPreview();
+          return StatefulBuilder(
+            builder: (context, setModalState) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      option.displayName,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Serving adjustment row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Serving Amount',
-                        style: TextStyle(fontWeight: FontWeight.w500),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Log to ${widget.mealType.toUpperCase()}',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
                       ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.remove_circle_outline,
-                              color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Serving adjustment row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Serving Amount',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.remove_circle_outline,
+                                color: AppColors.textSecondary,
+                              ),
+                              onPressed: multiplier > 0.25
+                                  ? () =>
+                                        setModalState(() => multiplier -= 0.25)
+                                  : null,
                             ),
-                            onPressed: multiplier > 0.25
-                                ? () => setModalState(() => multiplier -= 0.25)
-                                : null,
+                            Text(
+                              '${(option.baseQuantity.amount.asDouble * multiplier).toStringAsFixed(1)} ${option.baseQuantity.definition.displayLabel}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.add_circle_outline,
+                                color: AppColors.primary,
+                              ),
+                              onPressed: () =>
+                                  setModalState(() => multiplier += 0.25),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Divider(color: AppColors.border, height: 24),
+
+                    if (transformations.isNotEmpty) ...[
+                      DropdownButtonFormField<String?>(
+                        initialValue: selectedTransformationId,
+                        decoration: const InputDecoration(
+                          labelText: 'Preparation conversion (optional)',
+                        ),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('No conversion'),
                           ),
-                          Text(
-                            '${currentServing.toStringAsFixed(1)} $unit',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          ...transformations.map(
+                            (item) => DropdownMenuItem<String?>(
+                              value: item.id,
+                              child: Text(
+                                '${item.sourceState.name} → ${item.targetState.name} (${item.method.name})',
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.add_circle_outline,
-                              color: AppColors.primary,
-                            ),
-                            onPressed: () =>
-                                setModalState(() => multiplier += 0.25),
                           ),
                         ],
+                        onChanged: (value) {
+                          setModalState(() {
+                            selectedTransformationId = value;
+                            previewFuture = buildPreview();
+                          });
+                        },
                       ),
+                      const SizedBox(height: 12),
                     ],
-                  ),
-                  const Divider(color: AppColors.border, height: 24),
+                    FutureBuilder<NutritionFoodLogPreview>(
+                      future: previewFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: LinearProgressIndicator(),
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          return Text(
+                            'Nutrition preview unavailable: ${snapshot.error}',
+                            style: const TextStyle(color: AppColors.warning),
+                          );
+                        }
+                        final facts = snapshot.data!.facts;
+                        String value(String id, String unit) {
+                          final fact = facts[id];
+                          if (fact == null) return 'Unknown';
+                          final decimals = id == 'energy' ? 0 : 1;
+                          if (fact.point != null) {
+                            return '${fact.point!.value.format(decimalPlaces: decimals)}$unit';
+                          }
+                          if (fact.lower != null && fact.upper != null) {
+                            return '${fact.lower!.value.format(decimalPlaces: decimals)}–${fact.upper!.value.format(decimalPlaces: decimals)}$unit';
+                          }
+                          return 'Unknown';
+                        }
 
-                  // Macros Preview Grid
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildMacroPreview(
-                        'Calories',
-                        '${calcCalories.round()} kcal',
-                        AppColors.primary,
-                      ),
-                      _buildMacroPreview(
-                        'Protein',
-                        '${calcProtein.toStringAsFixed(1)}g',
-                        AppColors.success,
-                      ),
-                      _buildMacroPreview(
-                        'Carbs',
-                        '${calcCarbs.toStringAsFixed(1)}g',
-                        AppColors.warning,
-                      ),
-                      _buildMacroPreview(
-                        'Fat',
-                        '${calcFat.toStringAsFixed(1)}g',
-                        AppColors.danger,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildMacroPreview(
+                              'Calories',
+                              value('energy', ' kcal'),
+                              AppColors.primary,
+                            ),
+                            _buildMacroPreview(
+                              'Protein',
+                              value('protein', 'g'),
+                              AppColors.success,
+                            ),
+                            _buildMacroPreview(
+                              'Carbs',
+                              value('carbohydrate', 'g'),
+                              AppColors.warning,
+                            ),
+                            _buildMacroPreview(
+                              'Fat',
+                              value('fat', 'g'),
+                              AppColors.danger,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
 
-                  // Action buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.border),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                    // Action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.border),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(color: AppColors.textSecondary),
                             ),
                           ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final repo = ref.read(foodRepositoryProvider);
-                            await repo.logFoodEntry(
-                              name: name,
-                              calories: calcCalories.round(),
-                              proteinG: calcProtein,
-                              carbsG: calcCarbs,
-                              fatG: calcFat,
-                              servingLogged: currentServing,
-                              servingUnit: unit,
-                              mealType: widget.mealType,
-                              foodItemId: foodItemId,
-                              loggedAt: widget.selectedDate ?? DateTime.now(),
-                            );
-                            await HapticFeedback.selectionClick();
-                            if (context.mounted) {
-                              Navigator.pop(context); // Close bottom sheet
-                              Navigator.pop(context); // Close search screen
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isFinalizing
+                                ? null
+                                : () async {
+                                    setModalState(() {
+                                      isFinalizing = true;
+                                      commandId ??=
+                                          'direct-food-command::${const Uuid().v4()}';
+                                      consumptionId ??=
+                                          'direct-food-consumption::${const Uuid().v4()}';
+                                    });
+                                    try {
+                                      final preview = await previewFuture;
+                                      final timezoneId = await ref
+                                          .read(localTimezoneServiceProvider)
+                                          .currentTimezoneId();
+                                      final dates = ref.read(
+                                        localScheduleDateServiceProvider,
+                                      );
+                                      final selectedLocalDate =
+                                          widget.selectedDate == null
+                                          ? null
+                                          : DateFormat(
+                                              'yyyy-MM-dd',
+                                            ).format(widget.selectedDate!);
+                                      final loggedAt = selectedLocalDate == null
+                                          ? DateTime.now().toUtc()
+                                          : dates.instantForLocalDate(
+                                              selectedLocalDate,
+                                              timezoneId,
+                                            );
+                                      final localDate =
+                                          selectedLocalDate ??
+                                          dates.localDateFor(
+                                            loggedAt,
+                                            timezoneId,
+                                          );
+                                      await coordinator.finalize(
+                                        userId: kLocalNutritionUserScopeId,
+                                        preview: preview,
+                                        mealCategory: widget.mealType,
+                                        loggedAt: loggedAt,
+                                        localDate: localDate,
+                                        timezoneId: timezoneId,
+                                        commandId: commandId,
+                                        consumptionId: consumptionId,
+                                      );
+                                      await HapticFeedback.selectionClick();
+                                      if (context.mounted) {
+                                        Navigator.pop(
+                                          context,
+                                        ); // Close bottom sheet
+                                        Navigator.pop(
+                                          context,
+                                        ); // Close search screen
+                                      }
+                                    } catch (error) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Meal could not be logged: $error',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      if (context.mounted) {
+                                        setModalState(
+                                          () => isFinalizing = false,
+                                        );
+                                      }
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
+                            child: Text(isFinalizing ? 'Saving…' : 'Add Meal'),
                           ),
-                          child: const Text('Add Meal'),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -401,16 +572,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 );
 
                 if (result != null && mounted) {
-                  _showLogDialog(
-                    result.name,
-                    result.calories,
-                    result.protein,
-                    result.carbs,
-                    result.fat,
-                    result.servingSize,
-                    result.servingUnit,
-                    null,
-                  );
+                  unawaited(_openProviderLogDialog(result));
                 }
               });
             },
@@ -613,16 +775,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           style: const TextStyle(fontSize: 12),
         ),
         trailing: const Icon(Icons.add_rounded, color: AppColors.primary),
-        onTap: () => _showLogDialog(
-          food.name,
-          food.calories,
-          food.proteinG,
-          food.carbsG,
-          food.fatG,
-          food.servingSize,
-          food.servingUnit,
-          food.id,
-        ),
+        onTap: () => unawaited(_openLegacyLogDialog(food)),
       ),
     );
   }
@@ -639,23 +792,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           ),
         ),
         subtitle: Text(
-          '${food.calories} kcal • P: ${food.protein}g | C: ${food.carbs}g | F: ${food.fat}g',
+          '${_formatProviderValue(food.calories, 'kcal')} • P: ${_formatProviderValue(food.protein, 'g')} | C: ${_formatProviderValue(food.carbs, 'g')} | F: ${_formatProviderValue(food.fat, 'g')}',
           style: const TextStyle(fontSize: 12),
         ),
         trailing: const Icon(Icons.add_rounded, color: AppColors.textSecondary),
-        onTap: () => _showLogDialog(
-          food.name,
-          food.calories,
-          food.protein,
-          food.carbs,
-          food.fat,
-          food.servingSize,
-          food.servingUnit,
-          null,
-        ),
+        onTap: () => unawaited(_openProviderLogDialog(food)),
       ),
     );
   }
+
+  String _formatProviderValue(double? value, String unit) =>
+      value == null ? 'Unknown' : '${value.toStringAsFixed(1)}$unit';
 
   Widget _buildEmptyState() {
     return const Center(

@@ -1,3 +1,4 @@
+import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -241,6 +242,123 @@ class CoachingPreferenceRepository {
     );
   }
 
+  /// Appends one deterministic age-eligibility evaluation.
+  ///
+  /// The caller supplies an explicit civil date of birth (or an explicit
+  /// unavailable/conflicting state). This command never reads the legacy
+  /// profile age integer and never stores the raw date of birth. The hashed
+  /// evidence fingerprint is sufficient to make same-day retries idempotent
+  /// while allowing a later correction to append a new evaluation.
+  Future<CoachingEligibilityReadModel> recordEligibility(
+    CoachingEligibilityCommand command,
+  ) async {
+    _validateEligibilityCommand(command);
+    final owner = _owner(command.userId);
+    final localDate = _dates.normalizeLocalDate(command.localDate);
+    final timezoneId = command.timezoneId.trim();
+    final requestedId = command.evaluationId?.trim();
+    final source = command.source.stableId;
+    final dob = command.dateOfBirthLocalDate == null
+        ? null
+        : _dates.normalizeLocalDate(command.dateOfBirthLocalDate!);
+    final evaluation = _evaluateAge(
+      dateOfBirthLocalDate: dob,
+      source: command.source,
+      localDate: localDate,
+    );
+    final evidenceFingerprint = _ageEvidenceFingerprint(
+      owner: owner,
+      source: source,
+      dateOfBirthLocalDate: dob,
+      localDate: localDate,
+      timezoneId: timezoneId,
+    );
+
+    return _db.transaction(() async {
+      if (requestedId != null && requestedId.isNotEmpty) {
+        final existing = await (_db.select(
+          _db.coachingEligibilityEvaluations,
+        )..where((row) => row.id.equals(requestedId))).getSingleOrNull();
+        if (existing != null) {
+          _assertSameEligibility(
+            existing,
+            command: command,
+            localDate: localDate,
+            timezoneId: timezoneId,
+            source: source,
+            evaluation: evaluation,
+            evidenceFingerprint: evidenceFingerprint,
+          );
+          return _eligibilityReadModel(existing);
+        }
+      }
+
+      final latest =
+          await (_db.select(_db.coachingEligibilityEvaluations)
+                ..where((row) => row.userId.equals(owner))
+                ..orderBy([
+                  (row) => OrderingTerm(
+                    expression: row.evaluationUtc,
+                    mode: OrderingMode.desc,
+                  ),
+                  (row) => OrderingTerm(
+                    expression: row.createdAtUtc,
+                    mode: OrderingMode.desc,
+                  ),
+                  (row) =>
+                      OrderingTerm(expression: row.id, mode: OrderingMode.desc),
+                ])
+                ..limit(1))
+              .getSingleOrNull();
+      // A repeated submission of the same evidence for the same local day is
+      // a retry, not a new historical fact. A different fingerprint (for
+      // example a corrected DOB) always appends a new row.
+      if (latest != null &&
+          latest.evidenceFingerprint == evidenceFingerprint &&
+          latest.evaluationLocalDate == localDate &&
+          latest.timezoneId == timezoneId &&
+          latest.policyVersion == command.policyVersion) {
+        return _eligibilityReadModel(latest);
+      }
+
+      var evaluationUtc = command.evaluationUtc.toUtc();
+      if (latest != null && !evaluationUtc.isAfter(latest.evaluationUtc)) {
+        evaluationUtc = latest.evaluationUtc.add(const Duration(seconds: 1));
+      }
+      final id = requestedId == null || requestedId.isEmpty
+          ? _uuid.v4()
+          : requestedId;
+      await _db
+          .into(_db.coachingEligibilityEvaluations)
+          .insert(
+            db.CoachingEligibilityEvaluationsCompanion.insert(
+              id: id,
+              userId: owner,
+              result: evaluation.result.stableId,
+              reasonCode: evaluation.reasonCode,
+              ageInputSource: source,
+              evidenceTimestampUtc: command.evidenceTimestampUtc.toUtc(),
+              evaluationUtc: evaluationUtc,
+              evaluationLocalDate: localDate,
+              timezoneId: timezoneId,
+              policyVersion: command.policyVersion,
+              minimumAgeRuleVersion: command.minimumAgeRuleVersion,
+              evidenceFingerprint: Value(evidenceFingerprint),
+            ),
+          );
+      final row = await (_db.select(
+        _db.coachingEligibilityEvaluations,
+      )..where((item) => item.id.equals(id))).getSingleOrNull();
+      if (row == null) {
+        throw const B04GoalConflictError(
+          'eligibility_not_persisted',
+          'The eligibility evaluation was not persisted.',
+        );
+      }
+      return _eligibilityReadModel(row);
+    });
+  }
+
   Future<CoachingAvailabilityReadModel> adaptiveAvailability({
     required String userId,
     DateTime? atUtc,
@@ -377,5 +495,199 @@ class CoachingPreferenceRepository {
         ),
       };
 
+  CoachingEligibilityReadModel _eligibilityReadModel(
+    db.CoachingEligibilityEvaluation row,
+  ) => CoachingEligibilityReadModel(
+    id: row.id,
+    userId: row.userId,
+    result: _eligibilityResult(row.result),
+    reasonCode: row.reasonCode,
+    policyVersion: row.policyVersion,
+    evaluationLocalDate: row.evaluationLocalDate,
+    timezoneId: row.timezoneId,
+    evaluationUtc: row.evaluationUtc.toUtc(),
+  );
+
+  _EligibilityEvaluation _evaluateAge({
+    required String? dateOfBirthLocalDate,
+    required CoachingAgeEvidenceSource source,
+    required String localDate,
+  }) {
+    switch (source) {
+      case CoachingAgeEvidenceSource.missing:
+        return const _EligibilityEvaluation(
+          result: CoachingEligibilityResult.unknownAge,
+          reasonCode: 'age_missing',
+        );
+      case CoachingAgeEvidenceSource.unknown:
+        return const _EligibilityEvaluation(
+          result: CoachingEligibilityResult.unknownAge,
+          reasonCode: 'age_unknown',
+        );
+      case CoachingAgeEvidenceSource.withheld:
+        return const _EligibilityEvaluation(
+          result: CoachingEligibilityResult.withheldAge,
+          reasonCode: 'age_withheld',
+        );
+      case CoachingAgeEvidenceSource.conflicting:
+        return const _EligibilityEvaluation(
+          result: CoachingEligibilityResult.conflictingAge,
+          reasonCode: 'age_conflicting',
+        );
+      case CoachingAgeEvidenceSource.invalid:
+        return const _EligibilityEvaluation(
+          result: CoachingEligibilityResult.invalidEvidence,
+          reasonCode: 'age_invalid',
+        );
+      case CoachingAgeEvidenceSource.userEnteredDob:
+      case CoachingAgeEvidenceSource.verifiedDob:
+        if (dateOfBirthLocalDate == null) {
+          return const _EligibilityEvaluation(
+            result: CoachingEligibilityResult.invalidEvidence,
+            reasonCode: 'age_invalid',
+          );
+        }
+        final birth = _civilDate(dateOfBirthLocalDate);
+        final current = _civilDate(localDate);
+        if (birth.isAfter(current)) {
+          return const _EligibilityEvaluation(
+            result: CoachingEligibilityResult.invalidEvidence,
+            reasonCode: 'age_invalid',
+          );
+        }
+        var years = current.year - birth.year;
+        if (current.month < birth.month ||
+            (current.month == birth.month && current.day < birth.day)) {
+          years -= 1;
+        }
+        return years >= 18
+            ? const _EligibilityEvaluation(
+                result: CoachingEligibilityResult.eligible,
+                reasonCode: 'eligible',
+              )
+            : const _EligibilityEvaluation(
+                result: CoachingEligibilityResult.underage,
+                reasonCode: 'coaching_unavailable_age',
+              );
+    }
+  }
+
+  void _validateEligibilityCommand(CoachingEligibilityCommand command) {
+    if (_owner(command.userId).isEmpty ||
+        command.minimumAgeRuleVersion.trim().isEmpty ||
+        command.policyVersion.trim().isEmpty) {
+      throw const B04GoalValidationError(
+        'invalid_eligibility_command',
+        'Eligibility requires an owner and versioned policy rules.',
+      );
+    }
+    if (command.policyVersion != kB04EnabledPolicyVersion) {
+      throw const B04GoalValidationError(
+        'unsupported_eligibility_policy',
+        'Eligibility must use the reviewed B04 age policy version.',
+      );
+    }
+    _dates.normalizeLocalDate(command.localDate);
+    _dates.validateTimezone(command.timezoneId);
+    final evaluationUtc = command.evaluationUtc.toUtc();
+    final evidenceUtc = command.evidenceTimestampUtc.toUtc();
+    if (!command.evaluationUtc.isUtc || !command.evidenceTimestampUtc.isUtc) {
+      throw const B04GoalValidationError(
+        'eligibility_timestamp_not_utc',
+        'Eligibility timestamps must be explicit UTC instants.',
+      );
+    }
+    final derivedDate = _dates.localDateFor(evaluationUtc, command.timezoneId);
+    if (derivedDate != _dates.normalizeLocalDate(command.localDate)) {
+      throw const B04GoalValidationError(
+        'eligibility_local_date_mismatch',
+        'Eligibility local date must match the evaluation timezone.',
+      );
+    }
+    if (evidenceUtc.isAfter(evaluationUtc)) {
+      throw const B04GoalValidationError(
+        'eligibility_evidence_after_evaluation',
+        'Age evidence cannot be recorded after its evaluation.',
+      );
+    }
+    final hasDob = command.dateOfBirthLocalDate?.trim().isNotEmpty == true;
+    final dobSource =
+        command.source == CoachingAgeEvidenceSource.userEnteredDob ||
+        command.source == CoachingAgeEvidenceSource.verifiedDob;
+    if (dobSource != hasDob) {
+      throw const B04GoalValidationError(
+        'eligibility_evidence_source_mismatch',
+        'Date-of-birth evidence must match its explicit source state.',
+      );
+    }
+    if (!dobSource && hasDob) {
+      throw const B04GoalValidationError(
+        'eligibility_unexpected_dob',
+        'Unavailable age states cannot carry a date of birth.',
+      );
+    }
+    if (hasDob) _dates.normalizeLocalDate(command.dateOfBirthLocalDate!);
+  }
+
+  void _assertSameEligibility(
+    db.CoachingEligibilityEvaluation row, {
+    required CoachingEligibilityCommand command,
+    required String localDate,
+    required String timezoneId,
+    required String source,
+    required _EligibilityEvaluation evaluation,
+    required String evidenceFingerprint,
+  }) {
+    if (row.userId != _owner(command.userId) ||
+        row.result != evaluation.result.stableId ||
+        row.reasonCode != evaluation.reasonCode ||
+        row.ageInputSource != source ||
+        row.evaluationLocalDate != localDate ||
+        row.timezoneId != timezoneId ||
+        row.policyVersion != command.policyVersion ||
+        row.minimumAgeRuleVersion != command.minimumAgeRuleVersion ||
+        row.evidenceFingerprint != evidenceFingerprint) {
+      throw const B04GoalConflictError(
+        'eligibility_evaluation_id_conflict',
+        'The eligibility evaluation ID is already used for different evidence.',
+      );
+    }
+  }
+
+  String _ageEvidenceFingerprint({
+    required String owner,
+    required String source,
+    required String? dateOfBirthLocalDate,
+    required String localDate,
+    required String timezoneId,
+  }) {
+    final value = [
+      owner,
+      source,
+      dateOfBirthLocalDate ?? '',
+      localDate,
+      timezoneId,
+      kB04MinimumAgeRuleVersion,
+    ].join('|');
+    return sha256.convert(value.codeUnits).toString();
+  }
+
+  static DateTime _civilDate(String value) {
+    final year = int.parse(value.substring(0, 4));
+    final month = int.parse(value.substring(5, 7));
+    final day = int.parse(value.substring(8, 10));
+    return DateTime.utc(year, month, day);
+  }
+
   static String _owner(String userId) => userId.trim();
+}
+
+class _EligibilityEvaluation {
+  final CoachingEligibilityResult result;
+  final String reasonCode;
+
+  const _EligibilityEvaluation({
+    required this.result,
+    required this.reasonCode,
+  });
 }

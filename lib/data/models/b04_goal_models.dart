@@ -65,6 +65,65 @@ enum CoachingEligibilityResult {
   policyUnavailable,
 }
 
+/// The only age evidence states accepted by the B04 eligibility authority.
+///
+/// A date of birth is deliberately carried as a civil date string rather than
+/// derived from the legacy profile age integer. The value is used to create an
+/// immutable evaluation and is not persisted as raw personal data.
+enum CoachingAgeEvidenceSource {
+  userEnteredDob,
+  verifiedDob,
+  missing,
+  unknown,
+  withheld,
+  conflicting,
+  invalid,
+}
+
+extension CoachingAgeEvidenceSourceId on CoachingAgeEvidenceSource {
+  String get stableId => switch (this) {
+    CoachingAgeEvidenceSource.userEnteredDob => 'user_entered_dob',
+    CoachingAgeEvidenceSource.verifiedDob => 'verified_dob',
+    CoachingAgeEvidenceSource.missing => 'missing',
+    CoachingAgeEvidenceSource.unknown => 'unknown',
+    CoachingAgeEvidenceSource.withheld => 'withheld',
+    CoachingAgeEvidenceSource.conflicting => 'conflicting',
+    CoachingAgeEvidenceSource.invalid => 'invalid',
+  };
+}
+
+const String kB04MinimumAgeRuleVersion = 'minimum-age-v1';
+
+/// A production command for the append-only eligibility authority.
+///
+/// `dateOfBirthLocalDate` is explicit user/verified evidence. It is never
+/// populated from profile age, activity, logging behaviour or appearance.
+class CoachingEligibilityCommand {
+  final String userId;
+  final String? dateOfBirthLocalDate;
+  final CoachingAgeEvidenceSource source;
+  final String localDate;
+  final String timezoneId;
+  final DateTime evidenceTimestampUtc;
+  final DateTime evaluationUtc;
+  final String policyVersion;
+  final String minimumAgeRuleVersion;
+  final String? evaluationId;
+
+  const CoachingEligibilityCommand({
+    required this.userId,
+    required this.dateOfBirthLocalDate,
+    this.source = CoachingAgeEvidenceSource.userEnteredDob,
+    required this.localDate,
+    required this.timezoneId,
+    required this.evidenceTimestampUtc,
+    required this.evaluationUtc,
+    this.policyVersion = kB04EnabledPolicyVersion,
+    this.minimumAgeRuleVersion = kB04MinimumAgeRuleVersion,
+    this.evaluationId,
+  });
+}
+
 extension CoachingEligibilityResultId on CoachingEligibilityResult {
   String get stableId => switch (this) {
     CoachingEligibilityResult.eligible => 'eligible',

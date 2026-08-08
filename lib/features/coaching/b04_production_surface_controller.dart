@@ -270,6 +270,52 @@ class B04GoalSettingsController extends StateNotifier<B04GoalSettingsState> {
     await load(atUtc: timestampUtc);
   }
 
+  /// Records explicit age evidence through the B04 append-only authority.
+  /// Blank input is an explicit missing-age evaluation; malformed input is
+  /// retained as invalid evidence rather than falling back to profile age.
+  Future<void> recordEligibility({String? dateOfBirthLocalDate}) async {
+    final context = state.context;
+    if (context == null) return;
+    final entered = dateOfBirthLocalDate?.trim() ?? '';
+    final hasValue = entered.isNotEmpty;
+    final validFormat =
+        hasValue && RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(entered);
+    var validCivilDate = false;
+    if (validFormat) {
+      try {
+        _dates.normalizeLocalDate(entered);
+        validCivilDate = true;
+      } catch (_) {
+        // Keep malformed civil dates as an explicit invalid evaluation rather
+        // than retaining a previously eligible state.
+      }
+    }
+    final source = !hasValue
+        ? CoachingAgeEvidenceSource.missing
+        : validCivilDate
+        ? CoachingAgeEvidenceSource.userEnteredDob
+        : CoachingAgeEvidenceSource.invalid;
+    final dateOfBirth = source == CoachingAgeEvidenceSource.userEnteredDob
+        ? entered
+        : null;
+    final timestamp = _nowUtc().toUtc();
+    final recorded = await _preferences.recordEligibility(
+      CoachingEligibilityCommand(
+        userId: context.userId,
+        dateOfBirthLocalDate: dateOfBirth,
+        source: source,
+        localDate: context.localDate,
+        timezoneId: context.timezoneId,
+        evidenceTimestampUtc: timestamp,
+        evaluationUtc: timestamp,
+      ),
+    );
+    // The repository may advance a same-timestamp correction by one second
+    // to preserve append-only ordering. Reload at the durable evaluation
+    // instant so the UI cannot project the prior eligibility row.
+    await load(atUtc: recorded.evaluationUtc);
+  }
+
   DateTime _nextConsentTimestamp(CoachingConsentEventReadModel? prior) {
     final now = _nowUtc().toUtc();
     if (prior == null || now.isAfter(prior.timestampUtc)) return now;

@@ -148,9 +148,13 @@ class B02StrengthExecutionController
       clearError: true,
     );
     try {
-      final slots = await _adapter.readExecutionSlots(current);
+      final prepared = await _adapter.prepareExecution(current);
       if (!mounted) return;
-      state = state.copyWith(status: previousStatus, slots: slots);
+      state = state.copyWith(
+        status: previousStatus,
+        launch: current.copyWith(state: prepared.state),
+        slots: prepared.slots,
+      );
     } catch (error) {
       _setFailure(error, current);
     }
@@ -217,7 +221,7 @@ class B02StrengthExecutionController
 
   Future<void> beginRest(
     B02StrengthExecutionSlot slot, {
-    int selectedSeconds = RestRecommendationService.defaultSeconds,
+    int? selectedSeconds,
   }) async {
     final current = state.launch;
     if (current == null) return;
@@ -229,26 +233,144 @@ class B02StrengthExecutionController
             exercise.groupMemberOrdinal == slot.memberOrdinal,
       );
       final sets = performed.expand((exercise) => exercise.sets).toList();
-      final setId = sets.isEmpty ? null : sets.last.id;
+      final lastSet = sets.isEmpty ? null : sets.last;
+      final setId = lastSet?.id;
       if (setId == null && slot.groupId == null) {
         throw const B02ValidationException(
           'Log a set before starting exercise rest.',
         );
       }
+      final group = slot.groupId == null
+          ? null
+          : current.state.groups.firstWhere(
+              (candidate) => candidate.id == slot.groupId,
+              orElse: () => throw const B02ValidationException(
+                'The current group is missing from the frozen draft.',
+              ),
+            );
+      final isLastGroupMember =
+          group != null && slot.memberOrdinal == group.members.length - 1;
+      final restPauseSeconds = lastSet?.technique.isRestPause == true
+          ? lastSet!.technique.segments
+                .skip(1)
+                .map((segment) => segment.restBeforeSeconds)
+                .whereType<int>()
+                .firstOrNull
+          : null;
+      final scope = restPauseSeconds != null
+          ? B02RestScope.restPause
+          : group == null
+          ? B02RestScope.exerciseSet
+          : isLastGroupMember
+          ? B02RestScope.groupRound
+          : B02RestScope.groupTransition;
+      final recommendation = const RestRecommendationService().recommend(
+        B02RestSelectionRequest(
+          scope: scope,
+          userSelectedSeconds: selectedSeconds,
+          prescribedSeconds: restPauseSeconds ?? slot.prescribedRestSeconds,
+          memberTransitionRestSeconds: slot.memberTransitionRestSeconds,
+          groupRestAfterRoundSeconds: slot.groupRestAfterRoundSeconds,
+          exercisePreferenceSeconds: slot.exercisePreferenceRestSeconds,
+          templateDefaultRestSeconds: slot.templateDefaultRestSeconds,
+          rpe: lastSet?.actualRpe,
+          effortMode: lastSet?.technique.effortMode ?? slot.effortMode,
+          endedAtFailure:
+              lastSet?.technique.endedAtFailure ?? slot.endedAtFailure,
+        ),
+      );
+      if (!recommendation.isAvailable) {
+        throw B02ValidationException(recommendation.explanation);
+      }
       final period = B02RestPeriod(
         id: 'rest:${slot.id}:${current.state.restPeriods.length}',
-        performedSetId: setId,
-        performedExerciseGroupId: setId == null ? slot.groupId : null,
-        scope: slot.groupId == null
-            ? B02RestScope.exerciseSet
-            : B02RestScope.groupTransition,
-        recommendedSeconds: selectedSeconds,
-        selectedSeconds: selectedSeconds,
+        performedSetId:
+            scope == B02RestScope.exerciseSet || scope == B02RestScope.restPause
+            ? setId
+            : null,
+        performedExerciseGroupId:
+            scope == B02RestScope.exerciseSet || scope == B02RestScope.restPause
+            ? null
+            : slot.groupId,
+        scope: scope,
+        recommendedSeconds: recommendation.recommendedSeconds,
+        selectedSeconds: recommendation.selectedSeconds,
         actualSeconds: null,
-        source: B02RestSource.user,
+        source: recommendation.source,
         startedAtUtc: DateTime.now().toUtc(),
       );
       await saveDraft(_restCoordinator.begin(current.state, period));
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  Future<void> overrideTarget(
+    B02StrengthExecutionSlot slot, {
+    double? loadKg,
+    B02LoadBasis? loadBasis,
+    int? targetRepsMin,
+    int? targetRepsMax,
+    int? targetRpe,
+  }) async {
+    final current = state.launch;
+    if (current == null) return;
+    try {
+      final next = _draftService.applyTargetOverride(
+        state: current.state,
+        slot: slot,
+        override: B02TargetOverride(
+          loadKg: loadKg,
+          loadBasis: loadBasis ?? slot.targetLoadBasis,
+          targetRepsMin: targetRepsMin ?? slot.targetRepsMin,
+          targetRepsMax: targetRepsMax ?? slot.targetRepsMax,
+          targetRpe: targetRpe ?? slot.targetRpe,
+        ),
+      );
+      await saveDraft(next);
+      if (!mounted) return;
+      final selected = next.targetOverrides[slot.id];
+      if (selected == null) return;
+      state = state.copyWith(
+        slots: [
+          for (final value in state.slots)
+            value.id == slot.id
+                ? value.copyWith(
+                    targetLoadKg: selected.loadKg,
+                    targetLoadBasis: selected.loadBasis,
+                    targetRepsMin: selected.targetRepsMin,
+                    targetRepsMax: selected.targetRepsMax,
+                    targetRpe: selected.targetRpe,
+                  )
+                : value,
+        ],
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  Future<void> chooseWarmup(B02WarmupDecision decision) async {
+    final current = state.launch;
+    if (current == null) return;
+    try {
+      await saveDraft(_draftService.chooseWarmup(current.state, decision));
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  Future<void> editWarmup(List<B02WarmupSetProposal> proposals) async {
+    final current = state.launch;
+    if (current == null) return;
+    try {
+      await saveDraft(
+        _draftService.chooseWarmup(
+          current.state,
+          B02WarmupDecision.edited,
+          selectedProposals: proposals,
+        ),
+      );
     } catch (error) {
       _setFailure(error, current);
     }
@@ -342,12 +464,12 @@ class B02StrengthExecutionController
     state = const B02StrengthExecutionUiState.initial();
     try {
       final launch = await _adapter.readDraft(draftId);
-      final slots = await _adapter.readExecutionSlots(launch);
+      final prepared = await _adapter.prepareExecution(launch);
       if (!mounted) return;
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
-        launch: launch,
-        slots: slots,
+        launch: launch.copyWith(state: prepared.state),
+        slots: prepared.slots,
       );
     } catch (error) {
       _setFailure(error, null, recovery: true);
@@ -364,12 +486,12 @@ class B02StrengthExecutionController
     );
     try {
       final launch = await operation();
-      final slots = await _adapter.readExecutionSlots(launch);
+      final prepared = await _adapter.prepareExecution(launch);
       if (!mounted) return;
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
-        launch: launch,
-        slots: slots,
+        launch: launch.copyWith(state: prepared.state),
+        slots: prepared.slots,
       );
     } on B02StrengthExecutionRecoveryException catch (error) {
       _setFailure(error, prior, recovery: true);
@@ -416,3 +538,7 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
         initialLaunch: launch,
       ),
     );
+
+extension _B02FirstOrNull<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
+}

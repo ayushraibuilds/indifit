@@ -994,6 +994,46 @@ class NutritionRecipeRepository {
     return filtered.map(_recipeModel).toList(growable: false);
   }
 
+  /// Returns editable drafts for the production authoring surface. Drafts are
+  /// intentionally separate from [listRecipes] because the recipe head points
+  /// only at immutable published versions.
+  Future<List<NutritionRecipeDraftModel>> listDrafts({
+    required String userId,
+    String query = '',
+  }) async {
+    final normalizedQuery = query.trim().toLowerCase();
+    final rows =
+        await (_db.select(_db.nutritionRecipeVersions)
+              ..where((row) => row.status.equals('draft'))
+              ..orderBy([
+                (row) => OrderingTerm(
+                  expression: row.updatedAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+    final result = <NutritionRecipeDraftModel>[];
+    for (final row in rows) {
+      final recipe = await _recipeById(row.recipeId);
+      if (recipe == null ||
+          recipe.userId != userId.trim() ||
+          recipe.lifecycle != NutritionRecipeLifecycle.active.stableId) {
+        continue;
+      }
+      if (normalizedQuery.isNotEmpty &&
+          !recipe.name.toLowerCase().contains(normalizedQuery)) {
+        continue;
+      }
+      result.add(
+        NutritionRecipeDraftModel(
+          recipe: _recipeModel(recipe),
+          version: await _loadVersionGraph(recipe, row),
+        ),
+      );
+    }
+    return List.unmodifiable(result);
+  }
+
   Future<void> archiveRecipe(String recipeId) async {
     await _setLifecycle(recipeId, NutritionRecipeLifecycle.archived);
   }

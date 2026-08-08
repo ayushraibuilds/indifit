@@ -17,10 +17,13 @@ import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/repositories/coaching_preference_repository.dart';
 import '../../data/repositories/equipment_preference_repository.dart';
+import '../../data/repositories/health_service.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/nutrition_constraint_repository.dart';
 import '../../data/repositories/nutrition_consumption_repository.dart';
 import '../../data/repositories/nutrition_estimate_repository.dart';
+import '../../data/repositories/nutrition_food_catalog_repository.dart';
+import '../../data/repositories/nutrition_food_logging_coordinator.dart';
 import '../../data/repositories/nutrition_goal_repository.dart';
 import '../../data/repositories/nutrition_household_measure_repository.dart';
 import '../../data/repositories/nutrition_protein_distribution_repository.dart';
@@ -32,6 +35,7 @@ import '../../data/repositories/nutrition_transformation_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
 import '../../data/repositories/readiness_snapshot_repository.dart';
+import '../../data/repositories/recovery_observation_repository.dart';
 import '../../data/repositories/travel_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -42,6 +46,7 @@ import '../../data/services/b04_nutrition_safety_filter.dart';
 import '../../data/services/b04_optional_ai_assistance.dart';
 import '../../data/services/b04_production_recommendation_orchestrator.dart';
 import '../../data/services/b04_recommendation_context_assembler.dart';
+import '../../data/services/b04_recovery_production_adapter.dart';
 import '../../features/coaching/b04_production_surface_controller.dart';
 import '../../features/dashboard/b04_daily_briefing_controller.dart';
 import '../../features/food_log/nutrition_estimate_review_controller.dart';
@@ -134,6 +139,30 @@ final nutritionConsumptionRepositoryProvider =
       return NutritionConsumptionRepository(
         db: ref.watch(databaseProvider),
         registry: registry,
+      );
+    });
+
+final nutritionFoodCatalogRepositoryProvider =
+    FutureProvider<NutritionFoodCatalogRepository>((ref) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      return NutritionFoodCatalogRepository(
+        db: ref.watch(databaseProvider),
+        registry: registry,
+      );
+    });
+
+final nutritionFoodLoggingCoordinatorProvider =
+    FutureProvider<NutritionFoodLoggingCoordinator>((ref) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      return NutritionFoodLoggingCoordinator(
+        db: ref.watch(databaseProvider),
+        registry: registry,
+        catalog: await ref.watch(nutritionFoodCatalogRepositoryProvider.future),
+        calculator: ref.watch(nutritionCalculationServiceProvider),
+        consumption: await ref.watch(
+          nutritionConsumptionRepositoryProvider.future,
+        ),
+        transformations: ref.watch(nutritionTransformationRepositoryProvider),
       );
     });
 
@@ -258,13 +287,16 @@ final b04CurrentFoodControllerProvider =
     StateNotifierProvider.autoDispose<
       B04CurrentFoodController,
       B04CurrentFoodState
-    >(
-      (ref) => B04CurrentFoodController(
+    >((ref) {
+      // The controller exposes an imperative production command boundary;
+      // keep it alive while a caller awaits the orchestration future.
+      ref.keepAlive();
+      return B04CurrentFoodController(
         service: ref.watch(b04CurrentFoodGuidanceServiceProvider),
         loadOrchestrator: () =>
             ref.read(b04ProductionRecommendationOrchestratorProvider.future),
-      ),
-    );
+      );
+    });
 
 final nutritionGoalRepositoryProvider = Provider<NutritionGoalRepository>(
   (ref) => NutritionGoalRepository(
@@ -309,6 +341,7 @@ final b04GoalSettingsControllerProvider =
       B04GoalSettingsController,
       B04GoalSettingsState
     >((ref) {
+      ref.keepAlive();
       final controller = B04GoalSettingsController(
         loadContext: () => ref.read(b04ProductionUserContextProvider.future),
         goals: ref.watch(nutritionGoalRepositoryProvider),
@@ -362,10 +395,7 @@ final b04ProductionRecommendationOrchestratorProvider =
         recipes: ref.watch(nutritionRecipeRepositoryProvider),
         recipeLogging: recipeLogging,
         thalis: thalis,
-        readiness: ReadinessSnapshotRepository(
-          database: database,
-          dates: dates,
-        ),
+        readiness: ref.watch(b04ReadinessSnapshotRepositoryProvider),
         progress: B02ProgressReadRepository(database, civilDates: dates),
         calendar: CalendarReadRepository(database, dates: dates),
         targetEngine: B04AdaptiveTargetEngine(dates: dates),
@@ -378,6 +408,7 @@ final b04ProductionRecommendationOrchestratorProvider =
         safety: const B04NutritionSafetyFilter(),
         registry: registry,
         dates: dates,
+        recoveryAdapter: ref.watch(b04RecoveryProductionAdapterProvider),
       );
     });
 
@@ -385,8 +416,9 @@ final b04DailyBriefingControllerProvider =
     StateNotifierProvider.autoDispose<
       B04DailyBriefingController,
       B04DailyBriefingState
-    >(
-      (ref) => B04DailyBriefingController(
+    >((ref) {
+      ref.keepAlive();
+      return B04DailyBriefingController(
         repository: ref.watch(b04DailyBriefingReadRepositoryProvider),
         history: ref.watch(b04RecommendationHistoryRepositoryProvider),
         goals: ref.watch(nutritionGoalRepositoryProvider),
@@ -394,15 +426,16 @@ final b04DailyBriefingControllerProvider =
         dates: ref.watch(localScheduleDateServiceProvider),
         loadOrchestrator: () =>
             ref.read(b04ProductionRecommendationOrchestratorProvider.future),
-      ),
-    );
+      );
+    });
 
 final b04WeeklyReviewControllerProvider =
     StateNotifierProvider.autoDispose<
       B04WeeklyReviewController,
       B04WeeklyReviewState
-    >(
-      (ref) => B04WeeklyReviewController(
+    >((ref) {
+      ref.keepAlive();
+      return B04WeeklyReviewController(
         repository: ref.watch(b04WeeklyReviewReadRepositoryProvider),
         history: ref.watch(b04RecommendationHistoryRepositoryProvider),
         goals: ref.watch(nutritionGoalRepositoryProvider),
@@ -410,8 +443,43 @@ final b04WeeklyReviewControllerProvider =
         dates: ref.watch(localScheduleDateServiceProvider),
         loadOrchestrator: () =>
             ref.read(b04ProductionRecommendationOrchestratorProvider.future),
+      );
+    });
+
+final b04RecoveryObservationRepositoryProvider =
+    Provider<RecoveryObservationRepository>(
+      (ref) => RecoveryObservationRepository(
+        database: ref.watch(databaseProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
       ),
     );
+
+final b04ReadinessSnapshotRepositoryProvider =
+    Provider<ReadinessSnapshotRepository>(
+      (ref) => ReadinessSnapshotRepository(
+        database: ref.watch(databaseProvider),
+        observations: ref.watch(b04RecoveryObservationRepositoryProvider),
+        dates: ref.watch(localScheduleDateServiceProvider),
+      ),
+    );
+
+final b04RecoveryProductionAdapterProvider =
+    Provider<B04RecoveryProductionAdapter>((ref) {
+      final dates = ref.watch(localScheduleDateServiceProvider);
+      return B04RecoveryProductionAdapter(
+        observations: ref.watch(b04RecoveryObservationRepositoryProvider),
+        snapshots: ref.watch(b04ReadinessSnapshotRepositoryProvider),
+        source: B04CanonicalRecoveryEvidenceSource(
+          health: ref.watch(healthServiceProvider),
+          progress: B02ProgressReadRepository(
+            ref.watch(databaseProvider),
+            civilDates: dates,
+          ),
+          dates: dates,
+        ),
+        dates: dates,
+      );
+    });
 
 final b04OptionalAiAssistanceProvider =
     Provider<B04OptionalAiAssistanceService>((ref) {
