@@ -142,11 +142,14 @@ class ProductEmptyState extends StatelessWidget {
           final sizedSurface = constraints.maxWidth.isFinite
               ? SizedBox(width: constraints.maxWidth, child: surface)
               : surface;
+          final tappableSurface = action == null
+              ? sizedSurface
+              : GestureDetector(onTap: action, child: sizedSurface);
           final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
           if (constraints.maxHeight.isFinite && textScale >= 1.6) {
-            return SingleChildScrollView(child: sizedSurface);
+            return SingleChildScrollView(child: tappableSurface);
           }
-          return sizedSurface;
+          return tappableSurface;
         },
       ),
     );

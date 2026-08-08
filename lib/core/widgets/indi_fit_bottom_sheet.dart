@@ -5,7 +5,7 @@ class IndiFitBottomSheet extends StatelessWidget {
   const IndiFitBottomSheet({
     required this.child,
     super.key,
-    this.maxHeightFactor = 0.92,
+    this.maxHeightFactor = 1.0,
     this.showHandle = true,
   });
 
@@ -75,7 +75,7 @@ Future<T?> showIndiFitBottomSheet<T>({
   required WidgetBuilder builder,
   bool isDismissible = true,
   bool enableDrag = true,
-  double maxHeightFactor = 0.92,
+  double maxHeightFactor = 1.0,
 }) {
   return showModalBottomSheet<T>(
     context: context,

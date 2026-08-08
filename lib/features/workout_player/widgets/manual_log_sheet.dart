@@ -224,88 +224,93 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                 ),
               ],
             ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    final lastWeight = exercise.sets.isNotEmpty
+                        ? exercise.sets.last.weightKg
+                        : 40.0;
+                    final lastReps = exercise.sets.isNotEmpty
+                        ? exercise.sets.last.reps
+                        : 10;
+                    exercise.sets.add(
+                      _SetInput(weightKg: lastWeight, reps: lastReps),
+                    );
+                  });
+                },
+                icon: const Icon(Icons.add, size: 14),
+                label: const Text('Add Set', style: TextStyle(fontSize: 11)),
+              ),
+            ),
             ...exercise.sets.asMap().entries.map((setEntry) {
               final setIndex = setEntry.key;
               final setInput = setEntry.value;
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Column(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Set ${setIndex + 1}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
+                    SizedBox(
+                      width: 48,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 14),
+                        child: Text(
+                          'Set ${setIndex + 1}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                        IconButton(
-                          tooltip: 'Remove set ${setIndex + 1}',
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            size: 18,
-                            color: AppColors.textMuted,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              exercise.sets.removeAt(setIndex).dispose();
-                            });
-                          },
-                        ),
-                      ],
+                      ),
                     ),
-                    IndiFitResponsiveFieldGroup(
-                      spacing: 8,
-                      children: [
-                        TextField(
-                          controller: setInput.weightController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
+                    Expanded(
+                      child: IndiFitResponsiveFieldGroup(
+                        spacing: 8,
+                        children: [
+                          TextField(
+                            controller: setInput.weightController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: const InputDecoration(
+                              labelText: 'kg',
+                              isDense: true,
+                            ),
+                            onChanged: (value) => setInput.weightKg =
+                                double.tryParse(value) ?? 0.0,
                           ),
-                          decoration: const InputDecoration(
-                            labelText: 'kg',
-                            isDense: true,
+                          TextField(
+                            controller: setInput.repsController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'reps',
+                              isDense: true,
+                            ),
+                            onChanged: (value) =>
+                                setInput.reps = int.tryParse(value) ?? 0,
                           ),
-                          onChanged: (value) =>
-                              setInput.weightKg = double.tryParse(value) ?? 0.0,
-                        ),
-                        TextField(
-                          controller: setInput.repsController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'reps',
-                            isDense: true,
-                          ),
-                          onChanged: (value) =>
-                              setInput.reps = int.tryParse(value) ?? 0,
-                        ),
-                      ],
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Remove set ${setIndex + 1}',
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: AppColors.textMuted,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          exercise.sets.removeAt(setIndex).dispose();
+                        });
+                      },
                     ),
                   ],
                 ),
               );
             }),
-            TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  final lastWeight = exercise.sets.isNotEmpty
-                      ? exercise.sets.last.weightKg
-                      : 40.0;
-                  final lastReps = exercise.sets.isNotEmpty
-                      ? exercise.sets.last.reps
-                      : 10;
-                  exercise.sets.add(
-                    _SetInput(weightKg: lastWeight, reps: lastReps),
-                  );
-                });
-              },
-              icon: const Icon(Icons.add, size: 14),
-              label: const Text('Add Set', style: TextStyle(fontSize: 11)),
-            ),
           ],
         ),
       ),
@@ -413,7 +418,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                     ProductEmptyState(
                       icon: Icons.fitness_center_rounded,
                       title: 'Add your first exercise',
-                      message: 'Choose the exercises and sets you completed.',
+                      message: 'Tap to add exercises to this log',
                       action: _addExercise,
                       actionLabel: 'Add exercise',
                       actionIcon: Icons.add,

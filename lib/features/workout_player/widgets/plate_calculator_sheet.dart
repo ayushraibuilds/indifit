@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/responsive_form_primitives.dart';
 
 class PlateCalculatorSheet extends StatefulWidget {
@@ -75,6 +76,7 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -104,20 +106,17 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Target Weight (kg)',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${_targetWeight.toStringAsFixed(1)} kg',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: colors.action,
                     ),
                   ),
                 ],
@@ -125,12 +124,9 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Barbell',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
                   ),
                   const SizedBox(height: 4),
                   DropdownButton<double>(
@@ -174,33 +170,30 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
             ],
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'LOADING PER SIDE',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: colors.textSecondary,
               letterSpacing: 0.5,
             ),
           ),
           const SizedBox(height: 12),
           if (_calculatedPlates.isEmpty && _unmatchedWeight == 0.0)
-            const Card(
+            B05Surface(
               child: Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Center(
                   child: Text(
                     'Barbell alone covers target weight.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                 ),
               ),
             )
           else
-            Card(
+            B05Surface(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(

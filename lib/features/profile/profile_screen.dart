@@ -5,6 +5,8 @@ import '../../core/di/user_profile_provider.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/tdee_calculator.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/responsive_form_primitives.dart';
 import '../dashboard/dashboard_controller.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -56,13 +58,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           : '70.0';
       _injuriesController.text = p.injuriesLimitations;
 
-      _selectedSex = p.userSex;
-      _selectedGoal = p.userGoal;
-      _selectedActivity = p.userActivityLevel;
+      _selectedSex = _knownOr(p.userSex, const {'male', 'female'}, 'male');
+      _selectedGoal = _knownOr(p.userGoal, const {
+        'lose',
+        'maintain',
+        'gain',
+      }, 'maintain');
+      _selectedActivity = _knownOr(p.userActivityLevel, const {
+        'sedentary',
+        'light',
+        'moderate',
+        'active',
+      }, 'moderate');
       _dietPreferenceSourceValue = p.dietPreference;
       _dietPreferenceChanged = false;
       _selectedDiet = DietPreferencePresentation.uiValueFor(p.dietPreference);
-      _selectedEquipment = p.equipmentAccess;
+      _selectedEquipment = _knownOr(p.equipmentAccess, const {
+        'full_gym',
+        'dumbbells',
+        'bodyweight',
+      }, 'full_gym');
 
       _initialized = true;
     }
@@ -238,23 +253,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  static String _knownOr(String value, Set<String> allowed, String fallback) {
+    final normalized = value.trim().toLowerCase();
+    return allowed.contains(normalized) ? normalized : fallback;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Your profile'), elevation: 0),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. Identity & Body Data Section
-            _buildSectionHeader('IDENTITY & BODY MEASUREMENTS'),
+            _buildSectionHeader('ABOUT YOU'),
             const SizedBox(height: 12),
-            Card(
+            B05Surface(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -267,69 +283,59 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Row(
+                    IndiFitResponsiveFieldGroup(
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _ageController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Age (years)',
-                              suffixText: 'yrs',
-                            ),
+                        TextField(
+                          controller: _ageController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Age (years)',
+                            suffixText: 'yrs',
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            // ignore: deprecated_member_use
-                            value: _selectedSex,
-                            decoration: const InputDecoration(labelText: 'Sex'),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'male',
-                                child: Text('Male'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'female',
-                                child: Text('Female'),
-                              ),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() => _selectedSex = val);
-                              }
-                            },
-                          ),
+                        DropdownButtonFormField<String>(
+                          // ignore: deprecated_member_use
+                          value: _selectedSex,
+                          decoration: const InputDecoration(labelText: 'Sex'),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'male',
+                              child: Text('Male'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'female',
+                              child: Text('Female'),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => _selectedSex = val);
+                            }
+                          },
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Row(
+                    IndiFitResponsiveFieldGroup(
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _heightController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: const InputDecoration(
-                              labelText: 'Height',
-                              suffixText: 'cm',
-                            ),
+                        TextField(
+                          controller: _heightController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Height',
+                            suffixText: 'cm',
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: _weightController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: const InputDecoration(
-                              labelText: 'Weight',
-                              suffixText: 'kg',
-                            ),
+                        TextField(
+                          controller: _weightController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Weight',
+                            suffixText: 'kg',
                           ),
                         ),
                       ],
@@ -341,9 +347,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 24),
 
             // 2. Goal & Activity Section
-            _buildSectionHeader('FITNESS GOAL & ACTIVITY LEVEL'),
+            _buildSectionHeader('GOALS & ROUTINE'),
             const SizedBox(height: 12),
-            Card(
+            B05Surface(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -352,21 +358,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       // ignore: deprecated_member_use
                       value: _selectedGoal,
                       decoration: const InputDecoration(
-                        labelText: 'Primary Fitness Goal',
+                        labelText: 'What are you working toward?',
                         prefixIcon: Icon(Icons.flag_rounded),
                       ),
                       items: const [
                         DropdownMenuItem(
                           value: 'lose',
-                          child: Text('Weight Loss / Cut'),
+                          child: Text('Lose weight'),
                         ),
                         DropdownMenuItem(
                           value: 'maintain',
-                          child: Text('Maintain Weight & Recomp'),
+                          child: Text('Maintain and feel strong'),
                         ),
                         DropdownMenuItem(
                           value: 'gain',
-                          child: Text('Muscle Gain / Bulk'),
+                          child: Text('Build muscle'),
                         ),
                       ],
                       onChanged: (val) {
@@ -380,25 +386,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       // ignore: deprecated_member_use
                       value: _selectedActivity,
                       decoration: const InputDecoration(
-                        labelText: 'Daily Activity Level',
+                        labelText: 'How active are most days?',
                         prefixIcon: Icon(Icons.directions_run_rounded),
                       ),
                       items: const [
                         DropdownMenuItem(
                           value: 'sedentary',
-                          child: Text('Sedentary (Desk Job)'),
+                          child: Text('Mostly seated'),
                         ),
                         DropdownMenuItem(
                           value: 'light',
-                          child: Text('Light Activity (1-3 workouts/wk)'),
+                          child: Text('Lightly active'),
                         ),
                         DropdownMenuItem(
                           value: 'moderate',
-                          child: Text('Moderate Activity (3-5 workouts/wk)'),
+                          child: Text('Moderately active'),
                         ),
                         DropdownMenuItem(
                           value: 'active',
-                          child: Text('Very Active (6-7 intense workouts/wk)'),
+                          child: Text('Very active'),
                         ),
                       ],
                       onChanged: (val) {
@@ -414,15 +420,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 24),
 
             // 3. Diet Preference
-            _buildSectionHeader('DIETARY PREFERENCE'),
+            _buildSectionHeader('FOOD PREFERENCES'),
             const SizedBox(height: 12),
-            Card(
+            B05Surface(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: DietPreferenceDropdown(
                   selectedUiValue: _selectedDiet,
                   decoration: InputDecoration(
-                    labelText: 'Diet Choice',
+                    labelText: 'How do you like to eat?',
                     helperText: _selectedDiet == null
                         ? 'Choose your dietary preference.'
                         : null,
@@ -442,9 +448,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 24),
 
             // 4. Equipment & Injuries
-            _buildSectionHeader('EQUIPMENT & INJURIES / LIMITATIONS'),
+            _buildSectionHeader('TRAINING SETUP'),
             const SizedBox(height: 12),
-            Card(
+            B05Surface(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -453,21 +459,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       // ignore: deprecated_member_use
                       value: _selectedEquipment,
                       decoration: const InputDecoration(
-                        labelText: 'Available Equipment',
+                        labelText: 'What equipment do you have?',
                         prefixIcon: Icon(Icons.fitness_center_rounded),
                       ),
                       items: const [
                         DropdownMenuItem(
                           value: 'full_gym',
-                          child: Text('Full Gym (Barbells, Cables, Machines)'),
+                          child: Text('Full gym'),
                         ),
                         DropdownMenuItem(
                           value: 'dumbbells',
-                          child: Text('Dumbbells Only'),
+                          child: Text('Dumbbells'),
                         ),
                         DropdownMenuItem(
                           value: 'bodyweight',
-                          child: Text('Bodyweight / Calisthenics'),
+                          child: Text('Bodyweight'),
                         ),
                       ],
                       onChanged: (val) {
@@ -481,8 +487,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       controller: _injuriesController,
                       maxLines: 2,
                       decoration: const InputDecoration(
-                        labelText: 'Injuries or Limitations',
-                        hintText: 'e.g. Lower back pain, shoulder impingement',
+                        labelText: 'Anything we should work around?',
+                        hintText: 'e.g. lower back pain or a shoulder issue',
                         prefixIcon: Icon(Icons.medical_services_outlined),
                       ),
                     ),
@@ -500,7 +506,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 onPressed: _handleSave,
                 icon: const Icon(Icons.save_rounded),
                 label: const Text(
-                  'Save Profile Changes',
+                  'Save profile',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(

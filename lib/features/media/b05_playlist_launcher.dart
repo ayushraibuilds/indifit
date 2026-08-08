@@ -506,8 +506,8 @@ class _B05PlaylistSettingsPanelState
     if (registry.providers.isEmpty) {
       return const B05StatusMessage(
         status: B05SemanticStatus.unavailable,
-        label: 'Music playlists aren’t available yet',
-        value: 'Supported music apps will appear here when they’re ready.',
+        label: 'Workout music is not available yet',
+        value: 'You can still complete workouts with the in-app guidance.',
       );
     }
     if (state.status == B05PlaylistControllerStatus.loading &&
@@ -551,16 +551,16 @@ class _B05PlaylistSettingsPanelState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Workout playlist', style: B05Typography.title(context)),
+            Text('Workout music', style: B05Typography.title(context)),
             const SizedBox(height: B05Layout.space4),
             Text(
-              'Save a validated provider reference for quick launch during a workout.',
+              'Save a playlist for quick access during a workout.',
               style: B05Typography.body(context),
             ),
             const SizedBox(height: B05Layout.space12),
             DropdownButtonFormField<String>(
               initialValue: provider,
-              decoration: const InputDecoration(labelText: 'Provider'),
+              decoration: const InputDecoration(labelText: 'Music app'),
               items: [
                 for (final item in registry.providers.values)
                   DropdownMenuItem(
@@ -577,15 +577,15 @@ class _B05PlaylistSettingsPanelState
               controller: _referenceController,
               enabled: !state.isBusy,
               decoration: const InputDecoration(
-                labelText: 'Playlist reference',
-                hintText: 'Provider-specific URI or link',
+                labelText: 'Playlist link',
+                hintText: 'Paste a link from your music app',
               ),
             ),
             const SizedBox(height: B05Layout.space8),
             TextField(
               controller: _labelController,
               enabled: !state.isBusy,
-              decoration: const InputDecoration(labelText: 'Label (optional)'),
+              decoration: const InputDecoration(labelText: 'Name (optional)'),
             ),
             const SizedBox(height: B05Layout.space8),
             B05ActionGroup(
@@ -603,7 +603,7 @@ class _B05PlaylistSettingsPanelState
                 ),
                 if (state.preference != null)
                   B05ActionButton(
-                    label: 'Clear playlist',
+                    label: 'Remove playlist',
                     icon: Icons.delete_outline,
                     emphasis: B05ActionEmphasis.secondary,
                     onPressed: state.isBusy ? null : controller.clear,
@@ -627,16 +627,67 @@ class _B05PlaylistSettingsPanelState
   }
 }
 
-class B05PlaylistSettingsScreen extends StatelessWidget {
+class B05PlaylistSettingsScreen extends ConsumerWidget {
   const B05PlaylistSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Workout playlist')),
-    body: const SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.all(B05Layout.space16),
-        child: B05PlaylistSettingsPanel(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final available = ref.watch(b05PlaylistProviderRegistryProvider).providers;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Workout music')),
+      body: SafeArea(
+        child: available.isEmpty
+            ? _PlaylistUnavailableBody(
+                onBack: () => Navigator.of(context).maybePop(),
+              )
+            : const SingleChildScrollView(
+                padding: EdgeInsets.all(B05Layout.space16),
+                child: B05PlaylistSettingsPanel(),
+              ),
+      ),
+    );
+  }
+}
+
+class _PlaylistUnavailableBody extends StatelessWidget {
+  final VoidCallback onBack;
+
+  const _PlaylistUnavailableBody({required this.onBack});
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(B05Layout.space24),
+      child: B05Surface(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.music_off_outlined,
+              size: 40,
+              color: context.b05Colors.textSecondary,
+            ),
+            const SizedBox(height: B05Layout.space12),
+            Text(
+              'Workout music is unavailable',
+              style: B05Typography.title(context),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: B05Layout.space4),
+            Text(
+              'There is nothing to set up on this device yet. Your workouts and instructions are still ready to use.',
+              style: B05Typography.body(context),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: B05Layout.space16),
+            B05ActionButton(
+              label: 'Go back',
+              icon: Icons.arrow_back,
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: onBack,
+            ),
+          ],
+        ),
       ),
     ),
   );

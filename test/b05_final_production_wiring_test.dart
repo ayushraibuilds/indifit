@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/presentation/consumer_date_label.dart';
 import 'package:indifit/core/router/app_router.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/features/food_log/food_contextual_action_controller.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -76,12 +76,11 @@ void main() {
       );
       await _pumpSettled(tester);
       await _expectLoggingDate(tester, past);
-      expect(find.bySemanticsLabel('Edit food'), findsOneWidget);
-      expect(find.bySemanticsLabel('Copy food'), findsOneWidget);
-      expect(find.bySemanticsLabel('Delete food'), findsOneWidget);
+      expect(find.text('Log breakfast'), findsOneWidget);
 
-      // The route exposes the production action controls, and the gateway
-      // below is the real B03 repository boundary (not a fake test gateway).
+      // The gateway below is the real B03 repository boundary (not a fake
+      // test gateway); contextual actions remain covered by their own Today
+      // surface tests.
       final gateway = FoodRepositoryContextualActionGateway(repository);
       final source = initialLogs.single;
       late List<FoodLog> rowsAfterCopy;
@@ -155,7 +154,7 @@ String _foodLocation(DateTime date) {
 }
 
 Future<void> _expectLoggingDate(WidgetTester tester, DateTime date) async {
-  final label = 'Logging for ${DateFormat('EEE, MMM d').format(date)}';
+  final label = ConsumerDateLabel.dateTime(date, today: DateTime.now());
   expect(find.text(label), findsOneWidget);
 }
 

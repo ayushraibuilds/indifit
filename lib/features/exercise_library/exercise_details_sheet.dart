@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../education/b05_education_content.dart';
 import 'exercise_history_screen.dart';
@@ -11,17 +12,15 @@ class ExerciseDetailsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final List<String> muscles = exercise.muscleGroups.split(',');
     final List<String> cues = exercise.formCues.split('\n');
     final List<String> mistakes = exercise.commonMistakes.split('\n');
 
-    return Container(
-      padding: const EdgeInsets.all(20.0),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    return Material(
+      color: colors.surface,
       child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -31,7 +30,7 @@ class ExerciseDetailsSheet extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: colors.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -45,7 +44,10 @@ class ExerciseDetailsSheet extends StatelessWidget {
                 Expanded(
                   child: Text(
                     exercise.name,
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 Container(
@@ -54,16 +56,16 @@ class ExerciseDetailsSheet extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryGlow,
+                    color: colors.action.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: colors.action.withValues(alpha: 0.35),
                     ),
                   ),
                   child: Text(
                     exercise.difficulty,
-                    style: const TextStyle(
-                      color: AppColors.primary,
+                    style: TextStyle(
+                      color: colors.action,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -85,9 +87,9 @@ class ExerciseDetailsSheet extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.cardBackground,
+                      color: colors.surfaceSubtle,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: colors.border),
                     ),
                     child: Text(
                       m,
@@ -104,23 +106,20 @@ class ExerciseDetailsSheet extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.cardBackground,
+                    color: colors.surfaceSubtle,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: colors.border),
                   ),
                   child: Text(
                     '🔧 ${exercise.equipment}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: TextStyle(fontSize: 11, color: colors.textSecondary),
                   ),
                 ),
               ],
             ),
-            const Divider(color: AppColors.border, height: 32),
+            Divider(color: colors.border, height: 32),
 
-            ElevatedButton.icon(
+            FilledButton.icon(
               onPressed: () {
                 Navigator.pop(context); // Close sheet first
                 Navigator.push(
@@ -133,9 +132,9 @@ class ExerciseDetailsSheet extends StatelessWidget {
               },
               icon: const Icon(Icons.analytics_rounded),
               label: const Text('View 1RM Trend & Plate Calc'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.action,
+                foregroundColor: colors.onAction,
                 minimumSize: const Size.fromHeight(44),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -145,12 +144,12 @@ class ExerciseDetailsSheet extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Form Cues List
-            const Text(
+            Text(
               'FORM CUES',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
+                color: colors.textSecondary,
                 letterSpacing: 1.0,
               ),
             ),
@@ -163,15 +162,17 @@ class ExerciseDetailsSheet extends StatelessWidget {
                   children: [
                     Text(
                       '${entry.key + 1}. ',
-                      style: const TextStyle(
-                        color: AppColors.primary,
+                      style: TextStyle(
+                        color: colors.action,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Expanded(
                       child: Text(
                         entry.value,
-                        style: const TextStyle(fontSize: 13, height: 1.3),
+                        style: B05Typography.body(
+                          context,
+                        ).copyWith(height: 1.3),
                       ),
                     ),
                   ],
@@ -181,12 +182,12 @@ class ExerciseDetailsSheet extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Common Mistakes List
-            const Text(
+            Text(
               'COMMON MISTAKES',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: AppColors.danger,
+                color: colors.danger.foreground,
                 letterSpacing: 1.0,
               ),
             ),
@@ -197,16 +198,18 @@ class ExerciseDetailsSheet extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.cancel_outlined,
-                      color: AppColors.danger,
+                      color: colors.danger.foreground,
                       size: 16,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         m,
-                        style: const TextStyle(fontSize: 13, height: 1.3),
+                        style: B05Typography.body(
+                          context,
+                        ).copyWith(height: 1.3),
                       ),
                     ),
                   ],

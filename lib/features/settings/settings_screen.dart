@@ -161,9 +161,9 @@ class SettingsScreen extends ConsumerWidget {
                           context,
                           icon: Icons.health_and_safety_outlined,
                           iconColor: AppColors.warning,
-                          title: 'Dietary Constraints',
+                          title: 'Food preferences',
                           subtitle:
-                              'Manage user-entered preferences and restrictions',
+                              'Choose foods and ingredients to handle carefully',
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(

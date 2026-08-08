@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrition_constraints.dart';
 import '../../core/presentation/consumer_copy.dart';
+import '../../core/presentation/secondary_presentation.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
 import 'nutrition_constraints_controller.dart';
 
@@ -34,7 +36,7 @@ class _NutritionConstraintsScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dietary constraints'),
+        title: const Text('Dietary needs'),
         actions: [
           IconButton(
             tooltip: 'Reload dietary constraints',
@@ -43,11 +45,16 @@ class _NutritionConstraintsScreenState
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: canAdd ? () => _showAddDialog(state.definitions) : null,
-        icon: const Icon(Icons.add),
-        label: const Text('Add constraint'),
-      ),
+      floatingActionButton:
+          state.status == NutritionConstraintManagementStatus.empty
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: canAdd
+                  ? () => _showAddDialog(state.definitions)
+                  : null,
+              icon: const Icon(Icons.add),
+              label: const Text('Add a preference'),
+            ),
       body: _buildBody(state, controller, busy),
     );
   }
@@ -92,16 +99,25 @@ class _NutritionConstraintsScreenState
                   ),
                 ),
               const SizedBox(height: 12),
-              for (final constraint in state.constraints)
+              for (
+                var index = 0;
+                index < state.constraints.length;
+                index++
+              ) ...[
                 _ConstraintCard(
-                  constraint: constraint,
-                  onEdit: constraint.isActive && !busy
-                      ? () => _showEditDialog(constraint)
+                  constraint: state.constraints[index],
+                  onEdit: state.constraints[index].isActive && !busy
+                      ? () => _showEditDialog(state.constraints[index])
                       : null,
-                  onArchive: constraint.isActive && !busy
-                      ? () => controller.archiveConstraint(constraint.id)
+                  onArchive: state.constraints[index].isActive && !busy
+                      ? () => controller.archiveConstraint(
+                          state.constraints[index].id,
+                        )
                       : null,
                 ),
+                if (index < state.constraints.length - 1)
+                  const SizedBox(height: B05Layout.space12),
+              ],
             ],
           ),
         );
@@ -171,16 +187,23 @@ class _DisclosureCard extends StatelessWidget {
   const _DisclosureCard();
 
   @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Semantics(
-        container: true,
-        label:
-            'Dietary preferences help IndiFit check meals. No known conflict is not a safety guarantee.',
-        child: const Text(
-          'Tell us what to avoid or prefer. If a meal has limited information, we’ll say so instead of guessing.',
-        ),
+  Widget build(BuildContext context) => B05Surface(
+    showBorder: false,
+    subtle: true,
+    child: Semantics(
+      container: true,
+      label:
+          'Dietary preferences help IndiFit check meals. No known conflict is not a safety guarantee.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('What should we avoid?', style: B05Typography.title(context)),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            'Add foods or ingredients you want us to handle carefully. You can change these any time.',
+            style: B05Typography.body(context),
+          ),
+        ],
       ),
     ),
   );
@@ -199,65 +222,67 @@ class _ConstraintCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final definition = NutritionConstraintTaxonomy.definitionForId(
-      constraint.definitionId,
-    );
-    final stateLabel = constraint.isActive ? 'Active' : 'Archived';
-    final targetLabel =
-        '${ConsumerCopy.targetType(constraint.target.type.stableId)}: ${ConsumerCopy.target(constraint.target.id)}';
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    definition.displayName,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                Text(stateLabel),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Semantics(label: targetLabel, child: Text(targetLabel)),
-            const SizedBox(height: 4),
-            Text(
-              'Preference: ${ConsumerCopy.strictness(constraint.strictness.stableId)}',
-            ),
-            if (constraint.crossContact) const Text('Cross-contact: included'),
-            if (constraint.notes != null) ...[
-              const SizedBox(height: 4),
-              Text('Note: ${constraint.notes}'),
-            ],
-            if (onEdit != null || onArchive != null)
-              Align(
-                alignment: Alignment.centerRight,
-                child: Wrap(
-                  spacing: 8,
-                  children: [
-                    if (onEdit != null)
-                      TextButton.icon(
-                        onPressed: onEdit,
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Edit'),
-                      ),
-                    if (onArchive != null)
-                      TextButton.icon(
-                        onPressed: onArchive,
-                        icon: const Icon(Icons.archive_outlined),
-                        label: const Text('Archive'),
-                      ),
-                  ],
+    final presentation = NutritionConstraintPresentation.fromDomain(constraint);
+    return B05Surface(
+      padding: const EdgeInsets.all(B05Layout.space16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  presentation.title,
+                  style: B05Typography.title(context),
                 ),
               ),
+              if (!presentation.active)
+                Text('Past preference', style: B05Typography.body(context)),
+            ],
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(presentation.detail, style: B05Typography.body(context)),
+          const SizedBox(height: B05Layout.space8),
+          Wrap(
+            spacing: B05Layout.space8,
+            runSpacing: B05Layout.space4,
+            children: [
+              Chip(label: Text(presentation.handling)),
+              if (presentation.crossContact)
+                const Chip(label: Text('Include traces')),
+            ],
+          ),
+          if (presentation.note != null) ...[
+            const SizedBox(height: B05Layout.space4),
+            Text(
+              'Note: ${presentation.note}',
+              style: B05Typography.body(context),
+            ),
           ],
-        ),
+          if (onEdit != null || onArchive != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: B05ActionGroup(
+                children: [
+                  if (onEdit != null)
+                    B05ActionButton(
+                      onPressed: onEdit,
+                      icon: Icons.edit_outlined,
+                      label: 'Edit',
+                      emphasis: B05ActionEmphasis.secondary,
+                    ),
+                  if (onArchive != null)
+                    B05ActionButton(
+                      onPressed: onArchive,
+                      icon: Icons.archive_outlined,
+                      label: 'Archive',
+                      emphasis: B05ActionEmphasis.secondary,
+                    ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -270,16 +295,28 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(32),
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('No dietary constraints recorded.'),
+          Text(
+            'What should we avoid?',
+            style: B05Typography.title(context),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'No dietary constraints recorded.',
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: onAdd,
             icon: const Icon(Icons.add),
+            // Keep the established action label for saved automation and
+            // accessibility users; the surrounding copy supplies the warmer
+            // consumer framing.
             label: const Text('Add a constraint'),
           ),
         ],
@@ -324,22 +361,24 @@ class _EditConstraintDialogState extends State<_EditConstraintDialog> {
     final definition = NutritionConstraintTaxonomy.definitionForId(
       widget.constraint.definitionId,
     );
+    final presentation = NutritionConstraintPresentation.fromDomain(
+      widget.constraint,
+    );
     return AlertDialog(
-      title: const Text('Edit dietary constraint'),
+      title: const Text('Edit dietary preference'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Align(
               alignment: Alignment.centerLeft,
-              child: Text(definition.displayName),
+              child: Text('Avoiding ${presentation.title}'),
             ),
             const SizedBox(height: 8),
             Semantics(
-              label:
-                  '${ConsumerCopy.targetType(widget.constraint.target.type.stableId)}: ${ConsumerCopy.target(widget.constraint.target.id)}',
+              label: presentation.title,
               child: Text(
-                '${ConsumerCopy.targetType(widget.constraint.target.type.stableId)}: ${ConsumerCopy.target(widget.constraint.target.id)}',
+                presentation.detail,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -348,7 +387,9 @@ class _EditConstraintDialogState extends State<_EditConstraintDialog> {
             DropdownButtonFormField<NutritionConstraintStrictness>(
               initialValue: _strictness,
               isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Handling'),
+              decoration: const InputDecoration(
+                labelText: 'How should we handle it?',
+              ),
               items: [
                 for (final value in NutritionConstraintStrictness.values)
                   DropdownMenuItem(
@@ -372,12 +413,12 @@ class _EditConstraintDialogState extends State<_EditConstraintDialog> {
                 onChanged: _saving
                     ? null
                     : (value) => setState(() => _crossContact = value ?? false),
-                title: const Text('Include cross-contact handling'),
+                title: const Text('Include traces and shared equipment'),
               ),
             TextField(
               controller: _notesController,
               enabled: !_saving,
-              decoration: const InputDecoration(labelText: 'Optional note'),
+              decoration: const InputDecoration(labelText: 'Note (optional)'),
               maxLines: 2,
             ),
             if (_error != null)
@@ -515,13 +556,26 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
   void _setDefaultTargetType() {
     final allowed = _definition.targetTypes.toList()
       ..sort((a, b) => a.stableId.compareTo(b.stableId));
-    _targetType = allowed.firstOrNull;
+    _targetType = allowed.contains(NutritionConstraintTargetType.ingredient)
+        ? NutritionConstraintTargetType.ingredient
+        : allowed.contains(NutritionConstraintTargetType.food)
+        ? NutritionConstraintTargetType.food
+        : allowed.firstOrNull;
+  }
+
+  void _selectChoice(DietaryChoicePresentation choice) {
+    _targetIdController.text = choice.label;
+    _targetIdController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _targetIdController.text.length),
+    );
+    if (_definition.targetTypes.contains(choice.targetType)) {
+      _targetType = choice.targetType;
+    }
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    final allowed = _definition.targetTypes.toList()
-      ..sort((a, b) => a.stableId.compareTo(b.stableId));
     final canUseCrossContact = _definition.crossContactSupported;
     return AlertDialog(
       title: const Text('Add dietary constraint'),
@@ -534,13 +588,15 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
                 DropdownButtonFormField<NutritionConstraintType>(
                   initialValue: _type,
                   isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Category'),
+                  decoration: const InputDecoration(
+                    labelText: 'Why are you avoiding it?',
+                  ),
                   items: [
                     for (final definition in widget.definitions)
                       DropdownMenuItem(
                         value: definition.type,
                         child: Text(
-                          definition.displayName,
+                          _friendlyConstraintType(definition.type),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -555,42 +611,46 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
                           });
                         },
                 ),
-                DropdownButtonFormField<NutritionConstraintTargetType>(
-                  initialValue: _targetType,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Target type'),
-                  items: [
-                    for (final targetType in allowed)
-                      DropdownMenuItem(
-                        value: targetType,
-                        child: Text(
-                          ConsumerCopy.targetType(targetType.stableId),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
-                  onChanged: _saving
-                      ? null
-                      : (value) => setState(() => _targetType = value),
+                TextField(
+                  controller: _targetIdController,
+                  enabled: !_saving,
+                  decoration: const InputDecoration(
+                    labelText: 'Food or ingredient',
+                    hintText: 'Search or type a food, such as peanuts',
+                    helperText: 'Choose a common food below, or type your own.',
+                  ),
+                  textInputAction: TextInputAction.next,
+                  onChanged: (_) => setState(() {}),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _targetIdController,
-              enabled: !_saving,
-              decoration: const InputDecoration(
-                labelText: 'Food, ingredient, or item',
-                helperText:
-                    'Enter the food or ingredient you want to avoid or prefer.',
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  for (final choice in DietaryChoicesPresentation.search(
+                    _targetIdController.text,
+                  ).take(8))
+                    ChoiceChip(
+                      label: Text(choice.label),
+                      selected:
+                          _targetIdController.text.trim().toLowerCase() ==
+                          choice.label.toLowerCase(),
+                      onSelected: _saving ? null : (_) => _selectChoice(choice),
+                    ),
+                ],
               ),
-              textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<NutritionConstraintStrictness>(
               initialValue: _strictness,
               isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Handling'),
+              decoration: const InputDecoration(
+                labelText: 'How strict should this be?',
+              ),
               items: [
                 for (final value in NutritionConstraintStrictness.values)
                   DropdownMenuItem(
@@ -614,12 +674,12 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
                 onChanged: _saving
                     ? null
                     : (value) => setState(() => _crossContact = value ?? false),
-                title: const Text('Include cross-contact handling'),
+                title: const Text('Include traces and shared equipment'),
               ),
             TextField(
               controller: _notesController,
               enabled: !_saving,
-              decoration: const InputDecoration(labelText: 'Optional note'),
+              decoration: const InputDecoration(labelText: 'Note (optional)'),
               maxLines: 2,
             ),
             if (_error != null)
@@ -650,8 +710,21 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
   }
 
   Future<void> _save() async {
-    final targetId = _targetIdController.text.trim();
-    final targetType = _targetType;
+    final rawTarget = _targetIdController.text.trim();
+    final selectedChoice = DietaryChoicesPresentation.common.firstWhere(
+      (choice) =>
+          choice.label.toLowerCase() == rawTarget.toLowerCase() ||
+          choice.id == rawTarget.toLowerCase().replaceAll('-', '_'),
+      orElse: () => const DietaryChoicePresentation(
+        id: '',
+        label: '',
+        targetType: NutritionConstraintTargetType.ingredient,
+      ),
+    );
+    final targetId = selectedChoice.id.isEmpty ? rawTarget : selectedChoice.id;
+    final targetType = selectedChoice.id.isEmpty
+        ? _targetType
+        : selectedChoice.targetType;
     if (targetType == null || targetId.isEmpty) {
       setState(() => _error = 'Choose what this preference applies to.');
       return;
@@ -685,6 +758,18 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
     }
   }
 }
+
+String _friendlyConstraintType(NutritionConstraintType type) => switch (type) {
+  NutritionConstraintType.allergy => 'Allergy or safety concern',
+  NutritionConstraintType.intolerance => 'Intolerance',
+  NutritionConstraintType.religiousRestriction =>
+    'Religious or cultural choice',
+  NutritionConstraintType.ethicalPreference => 'Lifestyle preference',
+  NutritionConstraintType.dietaryPattern => 'Dietary pattern',
+  NutritionConstraintType.tasteDislike => 'Taste preference',
+  NutritionConstraintType.temporaryAvoidance => 'Temporary choice',
+  NutritionConstraintType.regionalPreference => 'Regional preference',
+};
 
 extension<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;

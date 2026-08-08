@@ -267,7 +267,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
 
       expect(find.byType(IndiFitBottomSheet), findsOneWidget);
-      expect(find.text('Save Workout Session'), findsOneWidget);
+      expect(find.text('Save workout'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -432,7 +432,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Priya');
     expect(FocusManager.instance.primaryFocus, isNotNull);
 
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Continue'));
     await tester.pump();
     final focusedEditable = find.byType(EditableText).evaluate().where((
       element,
@@ -478,7 +478,7 @@ void main() {
     });
     expect(focusedChoiceEditable, isEmpty);
 
-    await tester.tap(find.text('Next Step'));
+    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.text('How old are you?'), findsOneWidget);
 
