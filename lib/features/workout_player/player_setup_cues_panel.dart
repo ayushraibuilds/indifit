@@ -69,7 +69,7 @@ class PlayerSetupCuesPanel extends ConsumerWidget {
                   ),
                 if (presentation.note != null) ...[
                   Text(
-                    presentation.note!,
+                    'Note: ${presentation.note!}',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,

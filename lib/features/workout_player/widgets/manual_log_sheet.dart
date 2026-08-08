@@ -211,6 +211,31 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
     }
   }
 
+  void _addSet(_ManualExerciseInput exercise) {
+    late final _SetInput newSet;
+    setState(() {
+      final lastWeight = exercise.sets.isNotEmpty
+          ? exercise.sets.last.weightKg
+          : 40.0;
+      final lastReps = exercise.sets.isNotEmpty ? exercise.sets.last.reps : 10;
+      newSet = _SetInput(weightKg: lastWeight, reps: lastReps);
+      exercise.sets.add(newSet);
+    });
+    // Keep the newly-created set and its correction controls reachable when
+    // the sheet is shorter than the completed workout form.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = newSet.key.currentContext;
+      if (target != null) {
+        Scrollable.ensureVisible(
+          target,
+          alignment: 1,
+          duration: Duration.zero,
+        );
+      }
+    });
+  }
+
   Widget _buildExerciseCard(_ManualExerciseInput exercise, int exerciseIndex) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -245,88 +270,82 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                 ),
               ],
             ),
-            ...exercise.sets.asMap().entries.map((setEntry) {
-              final setIndex = setEntry.key;
-              final setInput = setEntry.value;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Set ${setIndex + 1}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Remove set ${setIndex + 1}',
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            size: 18,
-                            color: AppColors.textMuted,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              exercise.sets.removeAt(setIndex).dispose();
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    IndiFitResponsiveFieldGroup(
-                      spacing: 8,
-                      children: [
-                        TextField(
-                          controller: setInput.weightController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'kg',
-                            isDense: true,
-                          ),
-                          onChanged: (value) =>
-                              setInput.weightKg = double.tryParse(value) ?? 0.0,
-                        ),
-                        TextField(
-                          controller: setInput.repsController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'reps',
-                            isDense: true,
-                          ),
-                          onChanged: (value) =>
-                              setInput.reps = int.tryParse(value) ?? 0,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            }),
+            // Keep the set action adjacent to the exercise heading so it
+            // remains reachable before the lower set rows on compact sheets.
             TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  final lastWeight = exercise.sets.isNotEmpty
-                      ? exercise.sets.last.weightKg
-                      : 40.0;
-                  final lastReps = exercise.sets.isNotEmpty
-                      ? exercise.sets.last.reps
-                      : 10;
-                  exercise.sets.add(
-                    _SetInput(weightKg: lastWeight, reps: lastReps),
-                  );
-                });
-              },
+              onPressed: () => _addSet(exercise),
               icon: const Icon(Icons.add, size: 14),
               label: const Text('Add Set', style: TextStyle(fontSize: 11)),
             ),
+            ...exercise.sets.asMap().entries.map((setEntry) {
+              final setIndex = setEntry.key;
+              final setInput = setEntry.value;
+              return KeyedSubtree(
+                key: setInput.key,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Set ${setIndex + 1}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Remove set ${setIndex + 1}',
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: AppColors.textMuted,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                exercise.sets.removeAt(setIndex).dispose();
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      IndiFitResponsiveFieldGroup(
+                        spacing: 8,
+                        children: [
+                          TextField(
+                            controller: setInput.weightController,
+                            keyboardType:
+                                const TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                            decoration: const InputDecoration(
+                              labelText: 'kg',
+                              isDense: true,
+                            ),
+                            onChanged: (value) => setInput.weightKg =
+                                double.tryParse(value) ?? 0.0,
+                          ),
+                          TextField(
+                            controller: setInput.repsController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'reps',
+                              isDense: true,
+                            ),
+                            onChanged: (value) => setInput.reps =
+                                int.tryParse(value) ?? 0,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ],
         ),
       ),
@@ -436,7 +455,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                       title: 'Add your first exercise',
                       message: 'Choose the exercises and sets you completed.',
                       action: _addExercise,
-                      actionLabel: 'Add exercise',
+                      actionLabel: 'Tap to add exercises to this log',
                       actionIcon: Icons.add,
                     )
                   else
@@ -465,7 +484,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
             child: B05ActionButton(
               onPressed: _saving ? null : _saveLoggedSession,
               icon: Icons.check_circle_rounded,
-              label: _saving ? 'Saving workout…' : 'Save workout',
+              label: _saving ? 'Saving workout…' : 'Save Workout Session',
             ),
           ),
         ],
@@ -488,6 +507,7 @@ class _ManualExerciseInput {
 }
 
 class _SetInput {
+  final GlobalKey key = GlobalKey();
   double weightKg;
   int reps;
   late final TextEditingController weightController;

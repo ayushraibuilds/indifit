@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/di/providers.dart';
@@ -631,6 +632,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     final colors = context.b05Colors;
     final logDate = widget.selectedDate ?? DateTime.now();
     final dateStr = ConsumerDateLabel.dateTime(logDate);
+    final explicitDate = DateFormat('EEE, MMM d').format(logDate.toLocal());
 
     return ConsumerTaskScaffold(
       appBar: AppBar(
@@ -646,6 +648,14 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
               dateStr,
               style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
+            if (dateStr != explicitDate)
+              Text(
+                'Logging for $explicitDate',
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textMuted,
+                ),
+              ),
           ],
         ),
         backgroundColor: colors.page,
@@ -1010,23 +1020,35 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   }
 }
 
-class _LoggedMealsSection extends StatefulWidget {
+class _LoggedMealsSection extends ConsumerStatefulWidget {
   const _LoggedMealsSection({required this.date});
 
   final DateTime date;
 
   @override
-  State<_LoggedMealsSection> createState() => _LoggedMealsSectionState();
+  ConsumerState<_LoggedMealsSection> createState() =>
+      _LoggedMealsSectionState();
 }
 
-class _LoggedMealsSectionState extends State<_LoggedMealsSection> {
+class _LoggedMealsSectionState extends ConsumerState<_LoggedMealsSection> {
   var _expanded = false;
+  var _autoExpanded = false;
 
   void _toggle() => setState(() => _expanded = !_expanded);
 
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
+    final logs = ref.watch(foodLogsForDayProvider(widget.date));
+    if (!_expanded &&
+        !_autoExpanded &&
+        logs.hasValue &&
+        logs.value!.isNotEmpty) {
+      _autoExpanded = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _expanded = true);
+      });
+    }
     return B05Surface(
       padding: EdgeInsets.zero,
       radius: B05SurfaceRadius.small,

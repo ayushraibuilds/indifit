@@ -511,7 +511,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ? 'Retry setup'
                 : _currentPage == _totalPages - 1
                 ? 'Create my plan'
-                : 'Continue',
+                : 'Next Step',
             style: TextStyle(
               fontSize: 16,
               fontFamily: GoogleFonts.outfit().fontFamily,
