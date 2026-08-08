@@ -3,11 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/theme/colors.dart';
+import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/theme/app_colors_extension.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../coaching/b04_production_surface_widgets.dart';
+import '../workout_player/routine_display_screen.dart';
 import 'achievements_screen.dart';
+import 'b02_progress_controller.dart';
 import 'b02_progress_widgets.dart';
 import 'widgets/progress_bmi_health_card.dart';
 
@@ -18,6 +24,31 @@ class ProgressScreen extends ConsumerStatefulWidget {
   ConsumerState<ProgressScreen> createState() => _ProgressScreenState();
 }
 
+class _ProgressMetric extends StatelessWidget {
+  const _ProgressMetric({required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Semantics(
+      label: '$value $label',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: B05Typography.metric(context).copyWith(color: colors.action),
+          ),
+          Text(label, style: B05Typography.caption(context)),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   // Activity map representing workouts logged on specific days
   final List<DateTime> _activityDays = [];
@@ -26,6 +57,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   List<WorkoutSession> _sessions = [];
   List<BodyMeasurement> _measurements = [];
   double? _targetWeight;
+  ProductFailurePresentation? _loadFailure;
 
   @override
   void initState() {
@@ -39,7 +71,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
     try {
       final repo = ref.read(workoutRepositoryProvider);
-      final list = await repo.watchSessions().first;
+      final list = await repo.getSessions();
       final measurements = await repo.getBodyMeasurements();
       final prefs = await SharedPreferences.getInstance();
       final targetW = prefs.getDouble('user_target_weight');
@@ -66,26 +98,31 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         _measurements = measurements;
         _targetWeight = targetW;
         _loading = false;
+        _loadFailure = null;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _loadFailure = ProductFailurePresentation.fromCode(
+          'progress_unavailable',
+          title: 'Progress is unavailable',
+        );
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final b02State = ref.watch(b02ProgressControllerProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Progress & Analytics'),
-        elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        title: const Text('Progress'),
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.emoji_events_rounded,
-              color: AppColors.achievementGold,
+              color: context.appColors.achievementGold,
             ),
             tooltip: 'Achievements',
             onPressed: () {
@@ -99,69 +136,107 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
+      body: _loading || (b02State.isLoading && b02State.data == null)
+          ? const Center(
+              child: ConsumerStatusRow(
+                label: 'Loading your progress',
+                detail: 'Gathering recent activity and trends.',
+                loading: true,
+              ),
+            )
+          : _loadFailure != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: ProductFailureCard(
+                  failure: _loadFailure!,
+                  onRetry: _loadProgressLogs,
+                ),
+              ),
+            )
+          : b02State.status == B02ProgressStatus.failure &&
+                b02State.data == null &&
+                _sessions.isEmpty &&
+                _measurements.isEmpty
+          ? _buildB02FailureState()
+          : _hasNoMeaningfulData(b02State)
+          ? _buildNoProgressState()
           : RefreshIndicator(
-              onRefresh: () async {
-                await _loadProgressLogs();
-              },
+              onRefresh: _loadProgressLogs,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const B02ProgressOverview(),
-                    const SizedBox(height: 20),
+                    _buildOutcomeSummary(context, b02State),
+                    if (b02State.status == B02ProgressStatus.partial ||
+                        b02State.status == B02ProgressStatus.recovery) ...[
+                      const SizedBox(height: 12),
+                      ConsumerStatusRow(
+                        label: 'Some training details are unavailable',
+                        detail: 'You can retry without losing your progress.',
+                        error: true,
+                        onRetry: () => ref
+                            .read(b02ProgressControllerProvider.notifier)
+                            .retry(),
+                      ),
+                    ],
+                    const SizedBox(height: B05Layout.space20),
                     const B04WeeklyReviewCard(),
-                    const SizedBox(height: 20),
-                    // 1. GitHub-style activity calendar heatmap (last 12 weeks)
-                    const Text(
-                      'GYM ACTIVITY HEATMAP',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textMuted,
-                        letterSpacing: 0.5,
+                    const SizedBox(height: B05Layout.space20),
+                    Text(
+                      'Activity',
+                      style: B05Typography.caption(context).copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: .6,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _buildGitHubHeatmap(),
-                    const SizedBox(height: 20),
-
-                    // 2. Body Weight Sparkline Chart Card
-                    const Text(
-                      'BODY WEIGHT TREND (KG)',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textMuted,
-                        letterSpacing: 0.5,
+                    if (_sessions.isNotEmpty) ...[
+                      _buildGitHubHeatmap(context),
+                      const SizedBox(height: 20),
+                    ],
+                    if (_measurements.isNotEmpty) ...[
+                      Text(
+                        'Weight trend',
+                        style: B05Typography.caption(context).copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: .6,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildWeightChartCard(),
-                    const SizedBox(height: 12),
-                    ProgressBmiHealthCard(
-                      weightKg: _measurements.isNotEmpty
-                          ? _measurements.first.weight
-                          : null,
-                    ),
-                    const SizedBox(height: 20),
-
-                    // 3. Workout Volume Trend Card (Strength progression)
-                    const Text(
-                      'STRENGTH VOLUME PROGRESSION (KG)',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textMuted,
-                        letterSpacing: 0.5,
+                      const SizedBox(height: 8),
+                      _buildWeightChartCard(context),
+                      const SizedBox(height: 12),
+                      ProgressBmiHealthCard(
+                        weightKg: _measurements.first.weight,
                       ),
+                      const SizedBox(height: 20),
+                    ],
+                    if (_sessions.isNotEmpty) ...[
+                      Text(
+                        'Strength trend',
+                        style: B05Typography.caption(context).copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: .6,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildVolumeChartCard(context),
+                      const SizedBox(height: 20),
+                    ],
+                    ExpansionTile(
+                      title: const Text('Training detail'),
+                      subtitle: const Text(
+                        'Activity, strength and muscle volume',
+                      ),
+                      children: const [
+                        Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                          child: B02ProgressOverview(),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    _buildVolumeChartCard(),
-                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -169,7 +244,98 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildGitHubHeatmap() {
+  bool _hasNoMeaningfulData(B02ProgressState b02State) {
+    if (_measurements.isNotEmpty) return false;
+    // Partial and recovery states carry useful data alongside an unavailable
+    // section. Keep the outcome and retry affordance visible instead of
+    // collapsing the whole screen into a known-empty state.
+    if (b02State.status == B02ProgressStatus.partial ||
+        b02State.status == B02ProgressStatus.recovery) {
+      return false;
+    }
+    final activity = b02State.data?.activityHistory;
+    if (activity != null) return activity.isEmpty;
+    // A failed B02 read must remain visible through its retryable detail
+    // surface rather than being presented as a known-empty progress history.
+    return b02State.status != B02ProgressStatus.failure && _sessions.isEmpty;
+  }
+
+  Widget _buildNoProgressState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ProductEmptyState(
+          icon: Icons.auto_graph_rounded,
+          title: 'Your progress starts here',
+          message: 'Complete your first workout to see activity and trends.',
+          action: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()),
+            );
+          },
+          actionLabel: 'Start a workout',
+          actionIcon: Icons.fitness_center_rounded,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildB02FailureState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: ProductFailureCard(
+          failure: ProductFailurePresentation.fromCode(
+            'progress_unavailable',
+            title: 'Progress details are unavailable',
+          ),
+          onRetry: () =>
+              ref.read(b02ProgressControllerProvider.notifier).retry(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOutcomeSummary(BuildContext context, B02ProgressState b02State) {
+    final latestWeight = _measurements.isNotEmpty
+        ? _measurements.first.weight
+        : null;
+    final activityCount = b02State.data?.activityHistory?.length;
+    return B05Surface(
+      padding: const EdgeInsets.all(B05Layout.space20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Your progress', style: B05Typography.pageTitle(context)),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            'Small, consistent actions add up.',
+            style: B05Typography.body(context),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 24,
+            runSpacing: 16,
+            children: [
+              if (activityCount != null)
+                _ProgressMetric(
+                  value: '$activityCount',
+                  label: 'completed workouts',
+                ),
+              if (latestWeight != null)
+                _ProgressMetric(
+                  value: '${latestWeight.toStringAsFixed(1)} kg',
+                  label: 'latest weight',
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGitHubHeatmap(BuildContext context) {
+    final colors = context.b05Colors;
     // We will render a 12-week grid (12 columns by 7 rows)
     final DateTime now = DateTime.now();
     final DateTime startDate = now.subtract(
@@ -184,17 +350,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Consistencies Heatmap',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                Text(
+                  'Training consistency',
+                  style: B05Typography.label(context),
                 ),
                 Text(
                   '${_activityDays.length} sessions completed',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: B05Typography.caption(
+                    context,
+                  ).copyWith(color: colors.action, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -207,29 +371,23 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   horizontal: 16,
                 ),
                 alignment: Alignment.center,
-                child: const Column(
+                child: Column(
                   children: [
                     Icon(
                       Icons.calendar_month_outlined,
                       size: 36,
-                      color: AppColors.textSecondary,
+                      color: colors.textSecondary,
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: B05Layout.space8),
                     Text(
-                      'No Workout History Yet',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+                      'No workout history yet',
+                      style: B05Typography.label(context),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: B05Layout.space4),
                     Text(
-                      'Log your first workout session to start filling your consistency heatmap!',
+                      'Complete your first workout to begin your consistency view.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                      ),
+                      style: B05Typography.caption(context),
                     ),
                   ],
                 ),
@@ -253,14 +411,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       );
                       final volume = _volumeByDate[key] ?? 0.0;
 
-                      Color cellColor = AppColors.border.withValues(alpha: 0.4);
+                      Color cellColor = colors.border.withValues(alpha: 0.4);
                       if (volume > 0) {
                         if (volume < 500) {
-                          cellColor = AppColors.primary.withValues(alpha: 0.35);
+                          cellColor = colors.action.withValues(alpha: 0.35);
                         } else if (volume < 1500) {
-                          cellColor = AppColors.primary.withValues(alpha: 0.70);
+                          cellColor = colors.action.withValues(alpha: 0.70);
                         } else {
-                          cellColor = AppColors.primary;
+                          cellColor = colors.action;
                         }
                       }
 
@@ -281,19 +439,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'Less',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text('Less', style: B05Typography.caption(context)),
                 const SizedBox(width: 4),
                 Container(
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.border.withValues(alpha: 0.4),
+                    color: colors.border.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -302,7 +454,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.35),
+                    color: colors.action.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -311,7 +463,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.70),
+                    color: colors.action.withValues(alpha: 0.70),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -320,18 +472,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: colors.action,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Text(
-                  'More',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text('More', style: B05Typography.caption(context)),
               ],
             ),
           ],
@@ -340,29 +486,24 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildWeightChartCard() {
+  Widget _buildWeightChartCard(BuildContext context) {
+    final colors = context.b05Colors;
     if (_measurements.isEmpty) {
-      return const Card(
+      return Card(
         child: Padding(
           padding: EdgeInsets.all(24.0),
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.scale_rounded, size: 40, color: AppColors.textMuted),
-                SizedBox(height: 12),
+                Icon(Icons.scale_rounded, size: 40, color: colors.textDisabled),
+                const SizedBox(height: B05Layout.space12),
+                Text('No weight logs yet', style: B05Typography.label(context)),
+                const SizedBox(height: B05Layout.space4),
                 Text(
-                  'No weight logs yet',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Use the "+" button below to log your body weight and view trends.',
+                  'Log your body weight to begin seeing a trend.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
+                  style: B05Typography.caption(context),
                 ),
               ],
             ),
@@ -414,18 +555,16 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   _measurements.isEmpty
                       ? 'Last 6 measurements'
                       : 'Last ${spots.length} measurements',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: B05Typography.caption(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w500),
                 ),
                 Text(
                   '$diffSign${overallDiff.toStringAsFixed(1)} kg overall',
                   style: TextStyle(
                     color: overallDiff <= 0
-                        ? AppColors.success
-                        : AppColors.danger,
+                        ? colors.success.indicator
+                        : colors.danger.indicator,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -437,36 +576,28 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 _measurements.isNotEmpty &&
                 _measurements.first.weight != null) ...[
               const SizedBox(height: 10),
-              Container(
+              B05Surface(
+                tone: B05SurfaceTone.selected,
+                radius: B05SurfaceRadius.small,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                  ),
+                  horizontal: B05Layout.space12,
+                  vertical: B05Layout.space8,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Goal Weight: ${_targetWeight!.toStringAsFixed(1)} kg',
-                      style: const TextStyle(
+                      style: B05Typography.caption(context).copyWith(
+                        color: colors.action,
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: AppColors.primary,
                       ),
                     ),
                     Text(
                       '${(_measurements.first.weight! - _targetWeight!).abs().toStringAsFixed(1)} kg to go',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: B05Typography.caption(
+                        context,
+                      ).copyWith(fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -505,12 +636,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     LineChartBarData(
                       spots: spots,
                       isCurved: true,
-                      color: AppColors.primary,
+                      color: colors.action,
                       barWidth: 3,
                       dotData: const FlDotData(show: true),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: AppColors.primary.withValues(alpha: 0.06),
+                        color: colors.action.withValues(alpha: 0.10),
                       ),
                     ),
                   ],
@@ -523,7 +654,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildVolumeChartCard() {
+  Widget _buildVolumeChartCard(BuildContext context) {
+    final colors = context.b05Colors;
     if (_sessions.isEmpty) {
       return Card(
         child: Padding(
@@ -531,13 +663,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Total Lifted per Session',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
+                style: B05Typography.caption(
+                  context,
+                ).copyWith(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
               Container(
@@ -546,28 +676,22 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   horizontal: 16,
                 ),
                 alignment: Alignment.center,
-                child: const Column(
+                child: Column(
                   children: [
                     Icon(
                       Icons.show_chart_rounded,
                       size: 36,
-                      color: AppColors.primary,
+                      color: colors.action,
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: B05Layout.space8),
                     Text(
-                      'Track Your Volume Over Time',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+                      'Track your volume over time',
+                      style: B05Typography.label(context),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: B05Layout.space4),
                     Text(
                       'Complete workout sessions to unlock your volume progression chart.',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                      ),
+                      style: B05Typography.caption(context),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -590,20 +714,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Total Lifted per Session',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w500),
                   ),
                   Text(
                     '$firstVol kg total',
-                    style: const TextStyle(
-                      color: AppColors.primary,
+                    style: B05Typography.caption(context).copyWith(
+                      color: colors.action,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -615,9 +736,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.timeline_rounded,
-                      color: AppColors.primary,
+                      color: colors.action,
                       size: 32,
                     ),
                     const SizedBox(height: 8),
@@ -629,12 +750,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Log more sessions to see your volume trend.',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                      ),
+                      style: B05Typography.caption(context),
                     ),
                   ],
                 ),
@@ -669,21 +787,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Total Lifted per Session',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: B05Typography.caption(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w500),
                 ),
                 if (volumeChangeLabel.isNotEmpty)
                   Text(
                     volumeChangeLabel,
-                    style: const TextStyle(
-                      color: AppColors.primary,
+                    style: B05Typography.caption(context).copyWith(
+                      color: colors.action,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
                     ),
                   ),
               ],
@@ -700,12 +815,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     LineChartBarData(
                       spots: spots,
                       isCurved: true,
-                      color: AppColors.success,
+                      color: colors.success.indicator,
                       barWidth: 3,
                       dotData: const FlDotData(show: true),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: AppColors.success.withValues(alpha: 0.06),
+                        color: colors.success.indicator.withValues(alpha: 0.10),
                       ),
                     ),
                   ],

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/models/b04_current_food_models.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
 import '../../data/services/b04_current_food_guidance_service.dart';
@@ -129,9 +130,10 @@ class B04CurrentFoodController extends StateNotifier<B04CurrentFoodState> {
         status: B04CurrentFoodControllerStatus.failure,
         guidance: null,
         errorCode: typed?.code ?? 'current_food_guidance_failed',
-        errorMessage:
-            typed?.message ??
-            'Current-food guidance could not be loaded. You can retry.',
+        errorMessage: ProductFailurePresentation.fromCode(
+          typed?.code,
+          title: 'Current-food guidance unavailable',
+        ).message,
         retryable: true,
       );
     }
@@ -179,9 +181,10 @@ class B04CurrentFoodController extends StateNotifier<B04CurrentFoodState> {
         status: B04CurrentFoodControllerStatus.failure,
         guidance: null,
         errorCode: typed?.code ?? 'current_food_guidance_failed',
-        errorMessage:
-            typed?.message ??
-            'Current-food guidance could not be loaded. You can retry.',
+        errorMessage: ProductFailurePresentation.fromCode(
+          typed?.code,
+          title: 'Current-food guidance unavailable',
+        ).message,
         retryable: true,
       );
     }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import 'player_setup_presentation.dart';
 
 /// Compact, collapsible player quick panel displaying frozen personal setup values and cues during execution.
 class PlayerSetupCuesPanel extends ConsumerWidget {
@@ -20,135 +21,134 @@ class PlayerSetupCuesPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.b05Colors;
     final Map<String, dynamic> contextData = frozenContext ?? {};
-    final String? generalNote = contextData['generalNote'] as String?;
-    final List setupValues = (contextData['setupValues'] as List?) ?? [];
-    final List personalCues = (contextData['personalCues'] as List?) ?? [];
+    final presentation = PlayerSetupPresentation.fromContext(contextData);
+    final hasContent = presentation.hasContent;
+    final compactAction = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+    void editSetup() {
+      final uri = Uri(
+        path: '/exercise-preference-editor',
+        queryParameters: {
+          if (stableId != null) 'stableId': stableId,
+          'rawName': exerciseName,
+        },
+      );
+      context.push(uri.toString());
+    }
 
-    final hasContent =
-        (generalNote != null && generalNote.isNotEmpty) ||
-        setupValues.isNotEmpty ||
-        personalCues.isNotEmpty;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      color: AppColors.cardBackground,
-      child: ExpansionTile(
-        initiallyExpanded: hasContent,
-        leading: const Icon(
-          Icons.settings_suggest_rounded,
-          color: AppColors.primary,
-        ),
-        title: Text(
-          'Your Setup & Cues',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontFamily: GoogleFonts.outfit().fontFamily,
-            fontSize: 15,
+    return Material(
+      type: MaterialType.transparency,
+      child: B05Surface(
+        padding: EdgeInsets.zero,
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(
+            horizontal: B05Layout.space16,
+            vertical: B05Layout.space4,
           ),
-        ),
-        trailing: TextButton.icon(
-          onPressed: () {
-            final uri = Uri(
-              path: '/exercise-preference-editor',
-              queryParameters: {
-                if (stableId != null) 'stableId': stableId,
-                'rawName': exerciseName,
-              },
-            );
-            context.push(uri.toString());
-          },
-          icon: const Icon(Icons.edit_note_rounded, size: 16),
-          label: const Text('Edit'),
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Column(
+          childrenPadding: const EdgeInsets.only(
+            left: B05Layout.space16,
+            right: B05Layout.space16,
+            bottom: B05Layout.space12,
+          ),
+          collapsedIconColor: colors.textSecondary,
+          iconColor: colors.action,
+          initiallyExpanded: hasContent,
+          leading: Icon(Icons.settings_suggest_rounded, color: colors.action),
+          title: Text('Your Setup & Cues', style: B05Typography.label(context)),
+          trailing: compactAction
+              ? B05IconAction(
+                  icon: Icons.edit_note_rounded,
+                  label: 'Edit setup and cues',
+                  onPressed: editSetup,
+                )
+              : TextButton.icon(
+                  onPressed: editSetup,
+                  icon: const Icon(
+                    Icons.edit_note_rounded,
+                    size: B05Layout.iconSmall,
+                  ),
+                  label: const Text('Edit'),
+                ),
+          children: [
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (!hasContent)
-                  const Text(
-                    'No setup values or cues saved for this exercise.',
-                    style: TextStyle(color: Colors.grey, fontSize: 13),
-                  ),
-                if (generalNote != null && generalNote.isNotEmpty) ...[
                   Text(
-                    'Note: $generalNote',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
+                    'No setup values or cues saved for this exercise.',
+                    style: B05Typography.caption(context),
                   ),
-                  const SizedBox(height: 6),
+                if (presentation.note != null) ...[
+                  Text(
+                    'Note: ${presentation.note!}',
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: B05Layout.space8),
                 ],
-                if (setupValues.isNotEmpty) ...[
+                if (presentation.setupValues.isNotEmpty) ...[
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: setupValues.map((sv) {
-                      final label = sv['label'] ?? '';
-                      final val = sv['value'] ?? '';
+                    spacing: B05Layout.space8,
+                    runSpacing: B05Layout.space8,
+                    children: presentation.setupValues.map((value) {
                       return Chip(
-                        labelStyle: const TextStyle(fontSize: 12),
-                        label: Text('$label: $val'),
-                        backgroundColor: AppColors.primary.withValues(
-                          alpha: 0.15,
-                        ),
+                        labelStyle: B05Typography.caption(context),
+                        label: Text('${value.label}: ${value.value}'),
+                        backgroundColor: colors.selected,
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: B05Layout.space8),
                 ],
-                if (personalCues.isNotEmpty) ...[
-                  ...personalCues.map((c) {
-                    final cueText =
-                        (c is Map ? c['cueText'] : c.toString()) ?? '';
+                if (presentation.cues.isNotEmpty) ...[
+                  ...presentation.cues.map((cueText) {
                     return Padding(
-                      padding: const EdgeInsets.only(top: 2.0),
+                      padding: const EdgeInsets.only(top: B05Layout.space4),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.check_circle_outline_rounded,
-                            size: 16,
-                            color: AppColors.primary,
+                            size: B05Layout.iconSmall,
+                            color: colors.action,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: B05Layout.space8),
                           Expanded(
                             child: Text(
                               cueText,
-                              style: const TextStyle(fontSize: 13),
+                              style: B05Typography.caption(context),
                             ),
                           ),
                         ],
                       ),
                     );
                   }),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: B05Layout.space8),
                 ],
-                const Divider(),
-                const Row(
+                Divider(color: colors.border),
+                Row(
                   children: [
                     Icon(
                       Icons.info_outline_rounded,
-                      size: 12,
-                      color: Colors.grey,
+                      size: B05Layout.iconSmall,
+                      color: colors.textSecondary,
                     ),
-                    SizedBox(width: 4),
-                    Text(
-                      'Edits apply to your next workout.',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 11,
-                        fontStyle: FontStyle.italic,
+                    const SizedBox(width: B05Layout.space4),
+                    Expanded(
+                      child: Text(
+                        'Edits apply to your next workout.',
+                        style: B05Typography.caption(
+                          context,
+                        ).copyWith(fontStyle: FontStyle.italic),
                       ),
                     ),
                   ],
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

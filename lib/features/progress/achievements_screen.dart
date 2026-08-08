@@ -60,7 +60,7 @@ class _AchievementsScreenState extends ConsumerState<AchievementsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
+          _errorMessage = 'Achievements could not be loaded. Try again.';
           _isLoading = false;
         });
       }

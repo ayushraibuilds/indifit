@@ -36,7 +36,7 @@ void main() {
     await database.close();
   });
 
-  testWidgets('Today presents the four questions in registry order', (
+  testWidgets('Today presents the daily modules in registry order', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -66,12 +66,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    final labels = [
-      'What should I do?',
-      'What should I eat?',
-      'How am I progressing?',
-      'What is my next action?',
-    ];
+    final labels = ['Daily focus', 'Workout', 'Nutrition', 'Progress'];
     for (final label in labels) {
       expect(find.bySemanticsLabel(label), findsOneWidget);
     }
@@ -80,15 +75,11 @@ void main() {
       lessThan(tester.getTopLeft(find.bySemanticsLabel(labels[1])).dy),
     );
     expect(
-      find.bySemanticsLabel(
-        'Unavailable: Daily nutrition totals are unavailable',
-      ),
+      find.bySemanticsLabel('Unavailable: Nutrition is unavailable'),
       findsOneWidget,
     );
     expect(
-      find.bySemanticsLabel(
-        'Unavailable: Activity and progress are unavailable',
-      ),
+      find.bySemanticsLabel('Unavailable: Progress is unavailable'),
       findsOneWidget,
     );
     await tester.pumpWidget(const SizedBox.shrink());
@@ -140,16 +131,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.bySemanticsLabel('What should I do?'), findsNothing);
+    expect(find.bySemanticsLabel('Daily focus'), findsNothing);
+    expect(find.text('Collapsed'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('Information: Collapsed. Expand to see details.'),
-      findsOneWidget,
-    );
-    expect(
-      tester.getTopLeft(find.bySemanticsLabel('What is my next action?')).dy,
-      lessThan(
-        tester.getTopLeft(find.bySemanticsLabel('What should I eat?')).dy,
-      ),
+      tester.getTopLeft(find.bySemanticsLabel('Progress')).dy,
+      lessThan(tester.getTopLeft(find.bySemanticsLabel('Nutrition')).dy),
     );
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();

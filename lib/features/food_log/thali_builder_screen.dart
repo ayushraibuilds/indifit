@@ -392,7 +392,9 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('The thali could not be logged: $error')),
+          const SnackBar(
+            content: Text('The thali could not be logged. Try again.'),
+          ),
         );
       }
     }
@@ -442,8 +444,8 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               if (evaluation.missingEvidence.isNotEmpty)
-                Text(
-                  'Missing evidence: ${evaluation.missingEvidence.join(', ')}',
+                const Text(
+                  'More information is needed to complete this dietary check.',
                 ),
               for (final result in evaluation.evaluations)
                 Text(
@@ -671,10 +673,10 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         ),
         measureId: value.measureId,
       );
-    } on QuantityError catch (error) {
-      _showMessage(error.toString());
-    } on FormatException catch (error) {
-      _showMessage(error.message);
+    } on QuantityError {
+      _showMessage('That quantity could not be used. Check it and try again.');
+    } on FormatException {
+      _showMessage('That quantity could not be used. Check it and try again.');
     }
   }
 
@@ -707,7 +709,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
 
   String _factLabel(NutrientFact fact) {
     if (fact.lower != null || fact.upper != null) {
-      return '${fact.lower ?? '?'}–${fact.upper ?? '?'}${fact.unit} (point ${fact.point ?? 'unknown'})';
+      return '${fact.lower ?? '?'}–${fact.upper ?? '?'} ${fact.unit.symbol}';
     }
     return fact.point?.toString() ?? 'unknown';
   }
@@ -717,7 +719,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         NutritionConstraintOutcome.confirmedConflict => 'Confirmed conflict',
         NutritionConstraintOutcome.possibleConflict => 'Possible conflict',
         NutritionConstraintOutcome.insufficientInformation =>
-          'Unknown / insufficient evidence',
+          'More information needed',
         NutritionConstraintOutcome.noKnownConflict => 'No detected conflict',
       };
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 
 class OnboardingPageContainer extends StatelessWidget {
@@ -19,34 +18,24 @@ class OnboardingPageContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              fontFamily: GoogleFonts.outfit().fontFamily,
-              height: 1.2,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-              fontFamily: GoogleFonts.outfit().fontFamily,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 28),
-          Expanded(child: SingleChildScrollView(child: child)),
-        ],
+      padding: const EdgeInsets.fromLTRB(
+        B05Layout.space20,
+        B05Layout.space16,
+        B05Layout.space20,
+        B05Layout.space24,
+      ),
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: B05Typography.pageTitle(context)),
+            const SizedBox(height: B05Layout.space8),
+            Text(subtitle, style: B05Typography.body(context)),
+            const SizedBox(height: B05Layout.space20),
+            child,
+          ],
+        ),
       ),
     );
   }
@@ -70,6 +59,7 @@ class OnboardingSelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     return Semantics(
       container: true,
       button: true,
@@ -77,78 +67,62 @@ class OnboardingSelectionCard extends StatelessWidget {
       label: title,
       hint: 'Select $title.',
       onTap: onTap,
-      child: ExcludeSemantics(
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: AnimatedContainer(
-            duration: B05MotionPolicy.reduceMotion(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: selected
-                  ? AppColors.primary.withValues(alpha: 0.04)
-                  : AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: selected ? AppColors.primary : AppColors.border,
-                width: selected ? 2.0 : 1.0,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.primary.withValues(alpha: 0.12)
-                        : const Color(0x1F223250),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    icon,
-                    color: selected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                    size: 24,
-                  ),
+      child: B05TouchTarget(
+        child: B05FocusRing(
+          radius: B05SurfaceRadius.large,
+          child: ExcludeSemantics(
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: B05Radii.largeRadius,
+              child: AnimatedContainer(
+                duration: B05MotionPolicy.transitionDuration(context),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: B05Layout.space16,
+                  vertical: B05Layout.space12,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: GoogleFonts.outfit().fontFamily,
-                        ),
+                decoration: BoxDecoration(
+                  color: selected ? colors.selected : colors.interactive,
+                  borderRadius: B05Radii.largeRadius,
+                  border: selected
+                      ? Border.all(color: colors.action, width: 2)
+                      : null,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(B05Layout.space8),
+                      decoration: BoxDecoration(
+                        color: selected ? colors.selected : colors.inset,
+                        shape: BoxShape.circle,
                       ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle!,
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                            fontFamily: GoogleFonts.outfit().fontFamily,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                      child: Icon(
+                        icon,
+                        color: selected ? colors.action : colors.textSecondary,
+                        size: B05Layout.iconMedium,
+                      ),
+                    ),
+                    const SizedBox(width: B05Layout.space12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: B05Typography.label(context)),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: B05Layout.space4),
+                            Text(subtitle!, style: B05Typography.body(context)),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (selected)
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: colors.action,
+                        size: B05Layout.iconLarge,
+                      ),
+                  ],
                 ),
-                if (selected)
-                  const Icon(
-                    Icons.check_circle,
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
-              ],
+              ),
             ),
           ),
         ),
@@ -164,6 +138,7 @@ class OnboardingNumberInputField extends StatelessWidget {
   final IconData icon;
   final String? errorText;
   final ValueChanged<String>? onChanged;
+  final VoidCallback? onEditingComplete;
 
   const OnboardingNumberInputField({
     super.key,
@@ -173,25 +148,31 @@ class OnboardingNumberInputField extends StatelessWidget {
     required this.icon,
     this.errorText,
     this.onChanged,
+    this.onEditingComplete,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final hasError = errorText != null;
     final isValid = !hasError && controller.text.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        AnimatedContainer(
+          duration: B05MotionPolicy.transitionDuration(context),
+          padding: const EdgeInsets.symmetric(
+            horizontal: B05Layout.space16,
+            vertical: B05Layout.space8,
+          ),
           decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(16),
+            color: colors.inset,
+            borderRadius: B05Radii.largeRadius,
             border: Border.all(
               color: hasError
-                  ? AppColors.danger
-                  : (isValid ? AppColors.success : AppColors.border),
+                  ? colors.danger.indicator
+                  : (isValid ? colors.success.indicator : colors.border),
               width: hasError || isValid ? 1.5 : 1.0,
             ),
           ),
@@ -199,29 +180,26 @@ class OnboardingNumberInputField extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: hasError ? AppColors.danger : AppColors.textSecondary,
+                color: hasError
+                    ? colors.danger.indicator
+                    : colors.textSecondary,
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: TextField(
                   controller: controller,
                   onChanged: onChanged,
-                  maxLength: 16,
+                  onEditingComplete: onEditingComplete,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: GoogleFonts.outfit().fontFamily,
-                  ),
+                  textInputAction: TextInputAction.done,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(color: colors.textPrimary),
                   decoration: InputDecoration(
                     labelText: label,
-                    labelStyle: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
+                    labelStyle: B05Typography.body(context),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
@@ -232,41 +210,31 @@ class OnboardingNumberInputField extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               if (isValid)
-                const Icon(
+                Icon(
                   Icons.check_circle_rounded,
-                  color: AppColors.success,
+                  color: colors.success.indicator,
                   size: 18,
                 )
               else if (hasError)
-                const Icon(
+                Icon(
                   Icons.error_outline_rounded,
-                  color: AppColors.danger,
+                  color: colors.danger.indicator,
                   size: 18,
                 )
               else
-                Text(
-                  suffix,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: GoogleFonts.outfit().fontFamily,
-                  ),
-                ),
+                Text(suffix, style: B05Typography.label(context)),
             ],
           ),
         ),
         if (hasError) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: B05Layout.space4),
           Padding(
-            padding: const EdgeInsets.only(left: 12.0),
+            padding: const EdgeInsets.only(left: B05Layout.space12),
             child: Text(
               errorText!,
-              style: const TextStyle(
-                color: AppColors.danger,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+              style: B05Typography.caption(
+                context,
+              ).copyWith(color: colors.danger.foreground),
             ),
           ),
         ],

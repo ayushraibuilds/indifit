@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 
@@ -26,12 +28,41 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   double _barWeight = 20.0;
   Map<double, int> _calculatedPlates = {};
   double _unmatchedWeight = 0.0;
+  late Future<List<Map<String, dynamic>>> _historyFuture;
+  var _historyInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _calculatePlatesNeeded();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_historyInitialized) {
+      _historyFuture = _loadHistory();
+      _historyInitialized = true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ExerciseHistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.exerciseName != widget.exerciseName) {
+      _historyFuture = _loadHistory();
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _loadHistory() {
+    return ref
+        .read(workoutRepositoryProvider)
+        .getExerciseHistory(widget.exerciseName);
+  }
+
+  void _retryHistory() {
+    setState(() => _historyFuture = _loadHistory());
   }
 
   @override
@@ -81,18 +112,17 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final repo = ref.watch(workoutRepositoryProvider);
+    final colors = context.b05Colors;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.exerciseName),
-        backgroundColor: AppColors.background,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: colors.action,
+          labelColor: colors.action,
+          unselectedLabelColor: colors.textSecondary,
           tabs: const [
             Tab(icon: Icon(Icons.history_rounded), text: 'History & 1RM'),
             Tab(icon: Icon(Icons.calculate_rounded), text: 'Plate Calc'),
@@ -100,22 +130,30 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
         ),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: repo.getExerciseHistory(widget.exerciseName),
+        future: _historyFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+            return TabBarView(
+              controller: _tabController,
+              children: [
+                Center(
+                  child: Semantics(
+                    label: 'Loading exercise history',
+                    child: CircularProgressIndicator(color: colors.action),
+                  ),
+                ),
+                _buildPlateCalculatorTab(),
+              ],
             );
           }
 
-          final history = snapshot.data ?? [];
+          final historyTab = snapshot.hasError
+              ? _HistoryErrorState(onRetry: _retryHistory)
+              : _buildHistoryAndChartTab(snapshot.data ?? []);
 
           return TabBarView(
             controller: _tabController,
-            children: [
-              _buildHistoryAndChartTab(history),
-              _buildPlateCalculatorTab(),
-            ],
+            children: [historyTab, _buildPlateCalculatorTab()],
           );
         },
       ),
@@ -123,6 +161,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   }
 
   Widget _buildHistoryAndChartTab(List<Map<String, dynamic>> history) {
+    final colors = context.b05Colors;
     if (history.isEmpty) {
       return Center(
         child: Padding(
@@ -133,18 +172,18 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
               Icon(
                 Icons.fitness_center_rounded,
                 size: 64,
-                color: AppColors.textMuted.withValues(alpha: 0.3),
+                color: colors.textDisabled.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'No sets logged yet',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'History logs and 1RM trend charts will appear here after you log sets in the workout player.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                style: TextStyle(color: colors.textSecondary, fontSize: 13),
               ),
             ],
           ),
@@ -169,19 +208,57 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
       spots.add(FlSpot(i.toDouble(), best1Rm));
     }
 
+    final bestEstimate = spots.isEmpty
+        ? 0.0
+        : spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          B05Surface(
+            showBorder: false,
+            subtle: true,
+            child: Row(
+              children: [
+                Icon(Icons.trending_up_rounded, color: colors.action, size: 28),
+                const SizedBox(width: B05Layout.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Your best estimate',
+                        style: B05Typography.body(context),
+                      ),
+                      Text(
+                        '${bestEstimate.toStringAsFixed(1)} kg',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: colors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      Text(
+                        '${history.length} training ${history.length == 1 ? 'session' : 'sessions'} recorded',
+                        style: B05Typography.body(context),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: B05Layout.space16),
           // 1. 1RM Trend Chart
           if (spots.length >= 2) ...[
-            const Text(
+            Text(
               'ESTIMATED 1RM TREND',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
+                color: colors.textSecondary,
                 letterSpacing: 0.5,
               ),
             ),
@@ -201,10 +278,8 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
-                        getDrawingHorizontalLine: (value) => const FlLine(
-                          color: AppColors.border,
-                          strokeWidth: 1,
-                        ),
+                        getDrawingHorizontalLine: (value) =>
+                            FlLine(color: colors.border, strokeWidth: 1),
                       ),
                       titlesData: FlTitlesData(
                         rightTitles: const AxisTitles(
@@ -225,8 +300,8 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                                         as DateTime;
                                 return Text(
                                   DateFormat('dd/MM').format(date),
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
+                                  style: TextStyle(
+                                    color: colors.textSecondary,
                                     fontSize: 9,
                                   ),
                                 );
@@ -241,12 +316,12 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                         LineChartBarData(
                           spots: spots,
                           isCurved: true,
-                          color: AppColors.primary,
+                          color: colors.action,
                           barWidth: 3,
                           dotData: const FlDotData(show: true),
                           belowBarData: BarAreaData(
                             show: true,
-                            color: AppColors.primary.withValues(alpha: 0.1),
+                            color: colors.action.withValues(alpha: 0.1),
                           ),
                         ),
                       ],
@@ -258,12 +333,12 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
             const SizedBox(height: 24),
           ],
 
-          const Text(
+          Text(
             'TRAINING SESSIONS',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: colors.textSecondary,
               letterSpacing: 0.5,
             ),
           ),
@@ -285,22 +360,25 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        spacing: B05Layout.space8,
+                        runSpacing: B05Layout.space4,
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
                             DateFormat(
                               'MMMM dd, yyyy',
                             ).format(session.completedAt),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
                           ),
                           Text(
                             'Volume: ${session.totalVolume.round()}kg',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: colors.textSecondary,
                               fontSize: 11,
                             ),
                           ),
@@ -309,13 +387,13 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                       const SizedBox(height: 4),
                       Text(
                         session.name,
-                        style: const TextStyle(
-                          color: AppColors.primary,
+                        style: TextStyle(
+                          color: colors.action,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const Divider(color: AppColors.border, height: 24),
+                      Divider(color: colors.border, height: 24),
                       Wrap(
                         spacing: 12,
                         runSpacing: 8,
@@ -326,16 +404,16 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.surface,
+                                    decoration: BoxDecoration(
+                                      color: colors.surfaceSubtle,
                                       shape: BoxShape.circle,
                                     ),
                                     child: Text(
                                       '${s.setNumber}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.primary,
+                                        color: colors.action,
                                       ),
                                     ),
                                   ),
@@ -349,9 +427,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                                   ),
                                   if (s.isPr) ...[
                                     const SizedBox(width: 4),
-                                    const Icon(
+                                    Icon(
                                       Icons.emoji_events_rounded,
-                                      color: Colors.orangeAccent,
+                                      color: colors.warning.foreground,
                                       size: 14,
                                     ),
                                   ],
@@ -372,17 +450,18 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   }
 
   Widget _buildPlateCalculatorTab() {
+    final colors = context.b05Colors;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'PLATE LOADING CALCULATOR',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: colors.textSecondary,
               letterSpacing: 0.5,
             ),
           ),
@@ -392,78 +471,79 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 children: [
-                  Row(
+                  IndiFitResponsiveFieldGroup(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Target Weight (kg)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Target Weight (kg)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.textSecondary,
                             ),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: _targetWeightController,
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => _calculatePlatesNeeded(),
-                              decoration: const InputDecoration(
-                                hintText: 'e.g. 100',
-                              ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: _targetWeightController,
+                            keyboardType: TextInputType.number,
+                            onChanged: (_) => _calculatePlatesNeeded(),
+                            decoration: const InputDecoration(
+                              hintText: 'e.g. 100',
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Barbell Weight (kg)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Barbell Weight (kg)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<double>(
+                            initialValue: _barWeight,
+                            isExpanded: true,
+                            dropdownColor: Theme.of(
+                              context,
+                            ).colorScheme.surface,
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<double>(
-                              initialValue: _barWeight,
-                              dropdownColor: AppColors.surface,
-                              decoration: const InputDecoration(
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
+                            items: const [
+                              DropdownMenuItem(
+                                value: 20.0,
+                                child: Text(
+                                  '20 kg (Std)',
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 20.0,
-                                  child: Text('20 kg (Std)'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 15.0,
-                                  child: Text('15 kg'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 10.0,
-                                  child: Text('10 kg'),
-                                ),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() {
-                                    _barWeight = val;
-                                  });
-                                  _calculatePlatesNeeded();
-                                }
-                              },
-                            ),
-                          ],
-                        ),
+                              DropdownMenuItem(
+                                value: 15.0,
+                                child: Text('15 kg'),
+                              ),
+                              DropdownMenuItem(
+                                value: 10.0,
+                                child: Text('10 kg'),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _barWeight = val;
+                                });
+                                _calculatePlatesNeeded();
+                              }
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -473,106 +553,107 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
           ),
           const SizedBox(height: 24),
 
-          const Text(
+          Text(
             'LOADING PER SIDE',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: colors.textSecondary,
               letterSpacing: 0.5,
             ),
           ),
           const SizedBox(height: 12),
 
           if (_calculatedPlates.isEmpty && _unmatchedWeight == 0.0)
-            const Card(
+            B05Surface(
               child: Padding(
-                padding: EdgeInsets.all(20.0),
+                padding: const EdgeInsets.all(20.0),
                 child: Center(
                   child: Text(
                     'Target weight is equal to or less than the barbell weight.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                 ),
               ),
             )
           else
-            Card(
+            B05Surface(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
                   children: [
                     // Visual plate layout
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Barbell shaft left
-                        Container(width: 24, height: 6, color: Colors.grey),
-                        // Loaded plates list
-                        if (_calculatedPlates.isEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'Empty Bar',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textMuted,
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Barbell shaft left
+                          Container(width: 24, height: 6, color: Colors.grey),
+                          // Loaded plates list
+                          if (_calculatedPlates.isEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
-                            ),
-                          )
-                        else
-                          ..._calculatedPlates.entries.map((entry) {
-                            final double plateWeight = entry.key;
-                            final int count = entry.value;
-                            return Row(
-                              children: List.generate(
-                                count,
-                                (_) => Container(
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                  ),
-                                  width: plateWeight >= 20 ? 14 : 8,
-                                  height: plateWeight >= 20 ? 56 : 38,
-                                  decoration: BoxDecoration(
-                                    color: _getPlateColor(plateWeight),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: RotatedBox(
-                                    quarterTurns: 1,
-                                    child: Text(
-                                      plateWeight % 1 == 0
-                                          ? '${plateWeight.toInt()}'
-                                          : '$plateWeight',
-                                      style: TextStyle(
-                                        color:
-                                            plateWeight >= 20 ||
-                                                plateWeight <= 2.5
-                                            ? Colors.white
-                                            : Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 9,
+                              decoration: BoxDecoration(
+                                color: colors.surfaceSubtle,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'Empty Bar',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: colors.textDisabled,
+                                ),
+                              ),
+                            )
+                          else
+                            ..._calculatedPlates.entries.map((entry) {
+                              final double plateWeight = entry.key;
+                              final int count = entry.value;
+                              return Row(
+                                children: List.generate(
+                                  count,
+                                  (_) => Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 2,
+                                    ),
+                                    width: plateWeight >= 20 ? 14 : 8,
+                                    height: plateWeight >= 20 ? 56 : 38,
+                                    decoration: BoxDecoration(
+                                      color: _getPlateColor(plateWeight),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: colors.border),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: RotatedBox(
+                                      quarterTurns: 1,
+                                      child: Text(
+                                        plateWeight % 1 == 0
+                                            ? '${plateWeight.toInt()}'
+                                            : '$plateWeight',
+                                        style: TextStyle(
+                                          color:
+                                              plateWeight >= 20 ||
+                                                  plateWeight <= 2.5
+                                              ? Colors.white
+                                              : Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 9,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }),
-                        // Barbell sleeve end
-                        Container(width: 12, height: 12, color: Colors.grey),
-                      ],
+                              );
+                            }),
+                          // Barbell sleeve end
+                          Container(width: 12, height: 12, color: Colors.grey),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
 
@@ -580,8 +661,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                     ..._calculatedPlates.entries.map(
                       (entry) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          runSpacing: 8,
                           children: [
                             Row(
                               children: [
@@ -604,9 +686,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                             ),
                             Text(
                               'x ${entry.value} per side',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
+                                color: colors.action,
                               ),
                             ),
                           ],
@@ -615,19 +697,20 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                     ),
 
                     if (_unmatchedWeight > 0.0) ...[
-                      const Divider(color: AppColors.border, height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Divider(color: colors.border, height: 24),
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        runSpacing: 8,
                         children: [
-                          const Text(
-                            'Unmatched remainder',
-                            style: TextStyle(color: Colors.orangeAccent),
+                          Text(
+                            'Still to load',
+                            style: TextStyle(color: colors.warning.foreground),
                           ),
                           Text(
                             '${_unmatchedWeight.toStringAsFixed(2)} kg per side',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.orangeAccent,
+                              color: colors.warning.foreground,
                             ),
                           ),
                         ],
@@ -641,4 +724,42 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
       ),
     );
   }
+}
+
+class _HistoryErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _HistoryErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(B05Layout.space24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.history_toggle_off_rounded, size: 42),
+          const SizedBox(height: B05Layout.space12),
+          Text(
+            'Exercise history is unavailable right now.',
+            style: B05Typography.title(context),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            'Your plate calculator is still ready to use. Try loading history again.',
+            style: B05Typography.body(context),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: B05Layout.space16),
+          B05ActionButton(
+            label: 'Retry history',
+            icon: Icons.refresh_rounded,
+            emphasis: B05ActionEmphasis.secondary,
+            onPressed: onRetry,
+          ),
+        ],
+      ),
+    ),
+  );
 }

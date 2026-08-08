@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/nutrients.dart';
-import '../../core/theme/colors.dart';
+import '../../core/presentation/consumer_copy.dart';
+import '../../core/presentation/consumer_date_label.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/models/b04_briefing_read_models.dart';
 import '../../data/models/b04_current_food_models.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
@@ -12,6 +14,7 @@ import '../../data/models/b04_recommendation_models.dart';
 import '../dashboard/b04_daily_briefing_controller.dart';
 import '../nutrition/current_food_controller.dart';
 import '../progress/b04_weekly_review_controller.dart';
+import 'b04_consumer_presentation.dart';
 import 'b04_production_surface_controller.dart';
 
 class B04DailyBriefingCard extends ConsumerStatefulWidget {
@@ -247,25 +250,28 @@ class _B04BriefingContent extends StatelessWidget {
     if (read.status == B04BriefingReadStatus.noData) {
       return B04ReadStatusCard(
         title: title,
-        message: 'No guidance has been recorded for this local period yet.',
-        detail: _briefingDetail(read),
+        message: 'Nothing to recommend yet.',
+        detail: 'Log a meal or complete a workout to start seeing guidance.',
       );
     }
     if (read.status == B04BriefingReadStatus.unavailable) {
       return B04ReadStatusCard(
         title: title,
         message: read.unavailableReasons.isEmpty
-            ? 'This guidance is unavailable because the required evidence is incomplete.'
-            : read.unavailableReasons.map(b04ProductionStateCopy).join(' '),
-        detail: _briefingDetail(read),
+            ? 'This guidance is not ready yet.'
+            : read.unavailableReasons
+                  .map(b04ProductionStateCopy)
+                  .map(ConsumerCopy.explanation)
+                  .join(' '),
+        detail:
+            'Why? I need a little more information before I can show this safely.',
       );
     }
     if (read.visibleRecommendations.isEmpty) {
       return B04ReadStatusCard(
         title: title,
-        message:
-            'No current guidance is visible. Dismissed guidance remains in history.',
-        detail: _briefingDetail(read),
+        message: 'Nothing to recommend yet.',
+        detail: 'Log a meal or complete a workout to start seeing guidance.',
       );
     }
     return Card(
@@ -273,49 +279,13 @@ class _B04BriefingContent extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Semantics(
           container: true,
-          label: read.accessibilityLabel,
+          label: '$title, ${B04DatePresentation.period(read)}',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
-              Text(
-                _periodLabel(read),
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-              if (read.policyState != null ||
-                  read.consentState != null ||
-                  read.eligibilityState != null) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    if (read.policyState != null)
-                      _B04Pill(
-                        label:
-                            'Policy: ${b04ProductionStateLabel(read.policyState!.stableId)}',
-                      ),
-                    if (read.consentState != null)
-                      _B04Pill(
-                        label:
-                            'Consent: ${b04ProductionStateLabel(read.consentState!.stableId)}',
-                      ),
-                    if (read.eligibilityState != null)
-                      _B04Pill(
-                        label:
-                            'Eligibility: ${b04ProductionStateLabel(read.eligibilityState!.stableId)}',
-                      ),
-                  ],
-                ),
-              ],
-              if (read.missingEvidence.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Evidence limits: ${read.missingEvidence.join(', ')}',
-                  style: const TextStyle(color: AppColors.textSecondary),
-                ),
-              ],
+              Text(_periodLabel(read), style: B05Typography.caption(context)),
               const SizedBox(height: 12),
               ...read.visibleRecommendations.map(
                 (item) => Padding(
@@ -336,32 +306,7 @@ class _B04BriefingContent extends StatelessWidget {
   }
 
   String _periodLabel(B04BriefingReadModel read) =>
-      read.scope == B04RecommendationHistoryScope.daily
-      ? '${read.startLocalDate} · ${read.timezoneId}'
-      : '${read.startLocalDate} – ${read.endLocalDate} · ${read.timezoneId}';
-
-  String _briefingDetail(B04BriefingReadModel read) {
-    final values = <String>[_periodLabel(read)];
-    if (read.policyState != null) {
-      values.add(
-        'Policy: ${b04ProductionStateLabel(read.policyState!.stableId)}',
-      );
-    }
-    if (read.consentState != null) {
-      values.add(
-        'Consent: ${b04ProductionStateLabel(read.consentState!.stableId)}',
-      );
-    }
-    if (read.eligibilityState != null) {
-      values.add(
-        'Eligibility: ${b04ProductionStateLabel(read.eligibilityState!.stableId)}',
-      );
-    }
-    if (read.missingEvidence.isNotEmpty) {
-      values.add('Evidence limits: ${read.missingEvidence.join(', ')}');
-    }
-    return values.join(' · ');
-  }
+      B04DatePresentation.period(read);
 }
 
 class B04CurrentFoodCard extends ConsumerStatefulWidget {
@@ -369,6 +314,253 @@ class B04CurrentFoodCard extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<B04CurrentFoodCard> createState() => _B04CurrentFoodCardState();
+}
+
+/// Compact Today presentation for current-food guidance. The full card stays
+/// available on the food flow; Today gets only the decision and a short
+/// explanation so coaching never becomes a diagnostic dump inside another
+/// surface.
+class B04CurrentFoodSummary extends ConsumerStatefulWidget {
+  const B04CurrentFoodSummary({super.key});
+
+  @override
+  ConsumerState<B04CurrentFoodSummary> createState() =>
+      _B04CurrentFoodSummaryState();
+}
+
+class _B04CurrentFoodSummaryState extends ConsumerState<B04CurrentFoodSummary> {
+  String? _loadedContextId;
+
+  void _load(B04RecommendationContext context) {
+    if (_loadedContextId == context.contextId) return;
+    _loadedContextId = context.contextId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(b04CurrentFoodControllerProvider.notifier)
+          .loadProduction(context: context);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final contextAsync = ref.watch(b04ProductionRecommendationContextProvider);
+    final state = ref.watch(b04CurrentFoodControllerProvider);
+    return contextAsync.when(
+      loading: () => const _B04CompactProgress(),
+      error: (_, _) => _B04CompactGuidanceUnavailable(
+        onRetry: () =>
+            ref.invalidate(b04ProductionRecommendationContextProvider),
+      ),
+      data: (value) {
+        final needsLoad = _loadedContextId != value.contextId;
+        _load(value);
+        if (needsLoad) return const _B04CompactProgress();
+        return B04CurrentFoodSummaryContent(
+          state: state,
+          onRetry: () =>
+              ref.read(b04CurrentFoodControllerProvider.notifier).retry(),
+        );
+      },
+    );
+  }
+}
+
+class B04CurrentFoodSummaryContent extends StatefulWidget {
+  const B04CurrentFoodSummaryContent({
+    required this.state,
+    required this.onRetry,
+    super.key,
+  });
+
+  final B04CurrentFoodState state;
+  final VoidCallback onRetry;
+
+  @override
+  State<B04CurrentFoodSummaryContent> createState() =>
+      _B04CurrentFoodSummaryContentState();
+}
+
+class _B04CurrentFoodSummaryContentState
+    extends State<B04CurrentFoodSummaryContent> {
+  var _showWhy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = widget.state;
+    if (state.status == B04CurrentFoodControllerStatus.loading ||
+        state.status == B04CurrentFoodControllerStatus.idle) {
+      return const _B04CompactProgress();
+    }
+    if (state.status == B04CurrentFoodControllerStatus.failure) {
+      return _B04CompactGuidanceUnavailable(onRetry: widget.onRetry);
+    }
+    final guidance = state.guidance;
+    if (guidance == null || !guidance.isAvailable || guidance.cards.isEmpty) {
+      final presentation = guidance == null
+          ? const B04CurrentFoodPresentation(
+              periodLabel: 'Today',
+              status: 'Nothing to recommend yet',
+              explanation:
+                  'Log a meal and I’ll suggest something that fits your day.',
+              targetValues: [],
+              why: 'I don’t have enough nutrition information for today yet.',
+            )
+          : B04CurrentFoodPresentation.from(guidance);
+      return _B04CompactUnavailable(
+        presentation: presentation,
+        showWhy: _showWhy,
+        onWhy: () => setState(() => _showWhy = !_showWhy),
+      );
+    }
+    final presentation = B04CurrentFoodPresentation.from(guidance);
+    return Semantics(
+      container: true,
+      label: 'Meal suggestion: ${presentation.suggestion}',
+      value: presentation.fit,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lightbulb_outline, color: context.b05Colors.action),
+          const SizedBox(width: B05Layout.space8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'A good fit right now',
+                  style: B05Typography.label(context),
+                ),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  presentation.suggestion!,
+                  style: B05Typography.body(context),
+                ),
+                const SizedBox(height: B05Layout.space4),
+                Text(presentation.fit!, style: B05Typography.body(context)),
+                if (presentation.targetValues.isNotEmpty) ...[
+                  const SizedBox(height: B05Layout.space8),
+                  Text('Remaining today', style: B05Typography.label(context)),
+                  const SizedBox(height: B05Layout.space4),
+                  for (final value in presentation.targetValues)
+                    Text(value, style: B05Typography.body(context)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _B04CompactUnavailable extends StatelessWidget {
+  const _B04CompactUnavailable({
+    required this.presentation,
+    required this.showWhy,
+    required this.onWhy,
+  });
+
+  final B04CurrentFoodPresentation presentation;
+  final bool showWhy;
+  final VoidCallback onWhy;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.restaurant_outlined, color: context.b05Colors.action),
+          const SizedBox(width: B05Layout.space8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(presentation.status, style: B05Typography.label(context)),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  presentation.explanation,
+                  style: B05Typography.body(context),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: B05Layout.space4),
+      B05ActionButton(
+        label: 'Why?',
+        emphasis: B05ActionEmphasis.tertiary,
+        onPressed: onWhy,
+      ),
+      if (showWhy && presentation.why != null) ...[
+        const SizedBox(height: B05Layout.space8),
+        Text(presentation.why!, style: B05Typography.body(context)),
+      ],
+    ],
+  );
+}
+
+class _B04CompactGuidanceUnavailable extends StatelessWidget {
+  const _B04CompactGuidanceUnavailable({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Meal suggestions are unavailable',
+        style: B05Typography.label(context),
+      ),
+      const SizedBox(height: B05Layout.space4),
+      Text(
+        'Try again to load a suggestion for today.',
+        style: B05Typography.body(context),
+      ),
+      const SizedBox(height: B05Layout.space8),
+      B05ActionButton(
+        label: 'Retry',
+        icon: Icons.refresh_rounded,
+        emphasis: B05ActionEmphasis.secondary,
+        onPressed: onRetry,
+      ),
+    ],
+  );
+}
+
+class _B04CompactProgress extends StatelessWidget {
+  const _B04CompactProgress();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    label: 'Preparing meal guidance',
+    liveRegion: true,
+    child: Row(
+      children: [
+        B05MotionPolicy.reduceMotion(context)
+            ? Icon(
+                Icons.hourglass_top_rounded,
+                size: B05Layout.iconSmall,
+                color: context.b05Colors.action,
+              )
+            : SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: context.b05Colors.action,
+                ),
+              ),
+        const SizedBox(width: B05Layout.space8),
+        Text('Preparing a meal suggestion', style: B05Typography.body(context)),
+      ],
+    ),
+  );
 }
 
 class _B04CurrentFoodCardState extends ConsumerState<B04CurrentFoodCard> {
@@ -393,8 +585,7 @@ class _B04CurrentFoodCardState extends ConsumerState<B04CurrentFoodCard> {
       loading: () => const B04LoadingCard(label: 'What can I eat now?'),
       error: (_, _) => B04ReadStatusCard(
         title: 'What can I eat now?',
-        message:
-            'Current-food guidance is unavailable until local evidence is ready.',
+        message: 'Suggestions aren’t ready yet. Try again in a moment.',
         action: TextButton(
           onPressed: () =>
               ref.invalidate(b04ProductionRecommendationContextProvider),
@@ -431,10 +622,14 @@ class B04CurrentFoodContent extends StatelessWidget {
       return B04ReadStatusCard(
         title: 'What can I eat now?',
         message: reasons.isEmpty
-            ? state.errorMessage ??
-                  'Current-food guidance is unavailable until nutrition and safety evidence is complete.'
-            : reasons.map(b04ProductionStateCopy).join(' '),
-        detail: guidance == null ? null : _currentFoodDetail(guidance),
+            ? 'Nothing to recommend yet.'
+            : reasons
+                  .map(b04ProductionStateCopy)
+                  .map(ConsumerCopy.explanation)
+                  .join(' '),
+        detail: guidance == null
+            ? 'Log a meal and I’ll suggest something that fits your day.'
+            : _currentFoodDetail(guidance),
         action:
             state.status == B04CurrentFoodControllerStatus.failure &&
                 onRetry != null
@@ -447,7 +642,8 @@ class B04CurrentFoodContent extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Semantics(
           container: true,
-          label: 'What can I eat now? ${guidance.status.stableId}',
+          label:
+              'What can I eat now? Suggestions for ${ConsumerDateLabel.day(guidance.localDate)}',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -457,12 +653,12 @@ class B04CurrentFoodContent extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Candidates are filtered through B03 evidence. No-known-conflict is not a safety guarantee.',
-                style: const TextStyle(color: AppColors.textSecondary),
+                'These ideas fit the information you have logged today. Check ingredients for allergies or medical needs.',
+                style: B05Typography.caption(context),
               ),
               const SizedBox(height: 12),
               _B04EvidenceLines(
-                title: 'Remaining targets and evidence',
+                title: 'Today’s nutrition',
                 lines: _currentFoodTargetLines(guidance.remainingTargets),
               ),
               const SizedBox(height: 12),
@@ -471,17 +667,15 @@ class B04CurrentFoodContent extends StatelessWidget {
               if (guidance.excludedCandidates.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 const Text(
-                  'Candidates not shown as guidance',
+                  'Other options need more information',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 for (final excluded in guidance.excludedCandidates)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text(excluded.displayLabel),
+                    title: Text(ConsumerCopy.label(excluded.displayLabel)),
                     subtitle: Text(
-                      excluded.reasonCodes
-                          .map(b04ProductionStateCopy)
-                          .join(' '),
+                      'This option is not ready to recommend safely yet.',
                     ),
                   ),
               ],
@@ -502,20 +696,23 @@ class _B04CurrentFoodCandidateTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final facts = card.nutrientFacts.map(_currentFoodValueLabel).join(' · ');
-    final evidence = card.recommendation.evidenceIds.join(', ');
+    final facts = card.nutrientFacts
+        .map(B03NutritionPresentation.value)
+        .join(' · ');
+    final fit = B03NutritionPresentation.fit(card.targetFit.state);
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(card.displayLabel),
+      title: Text(ConsumerCopy.label(card.displayLabel)),
       subtitle: Text(
         [
-          card.recommendation.explanation,
-          'Target fit: ${b04ProductionStateLabel(card.targetFit.state.stableId)}',
-          if (facts.isNotEmpty) 'Nutrient evidence: $facts',
-          if (evidence.isNotEmpty) 'Evidence: $evidence',
+          B04RecommendationPresentation.explanationForState(
+            card.recommendation.state,
+          ),
+          fit,
+          if (facts.isNotEmpty) facts,
         ].join('\n'),
       ),
-      trailing: Text(b04ProductionStateLabel(card.targetFit.state.stableId)),
+      trailing: Text(fit),
     );
   }
 }
@@ -535,6 +732,7 @@ class _B04RecommendationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final presentation = B04RecommendationPresentation.from(recommendation);
     final isSafetyUnavailable =
         recommendation.state == B04RecommendationState.unavailable;
     final hasCanonicalProposal =
@@ -543,134 +741,97 @@ class _B04RecommendationTile extends StatelessWidget {
             ?.canonicalAdaptiveTarget
             ?.proposal !=
         null;
-    final result = recommendation.canonicalResult;
     return Semantics(
       container: true,
-      label: recommendation.accessibilityLabel,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      b04ProductionStateLabel(recommendation.action),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  _B04Pill(
-                    label: b04ProductionStateLabel(
-                      recommendation.state.stableId,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(recommendation.explanation),
-              if (result != null && result.hasCanonicalResult) ...[
-                const SizedBox(height: 8),
-                Text(
-                  _canonicalResultLabel(result),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ],
-              if (recommendation.uncertainty.isNotEmpty ||
-                  recommendation.missingEvidence.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Evidence limits: ${[...recommendation.uncertainty, ...recommendation.missingEvidence].join(', ')}',
-                  style: const TextStyle(color: AppColors.textSecondary),
-                ),
-              ],
-              if (recommendation.evidenceIds.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  'Evidence: ${recommendation.evidenceIds.join(', ')}',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
+      label: '${presentation.title}, ${presentation.status}',
+      child: B05Surface(
+        tone: B05SurfaceTone.inset,
+        radius: B05SurfaceRadius.medium,
+        padding: const EdgeInsets.all(B05Layout.space12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    presentation.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
+                _B04Pill(label: presentation.status),
               ],
-              if (recommendation.targetAcceptanceState !=
-                  B04BriefingTargetAcceptanceState.notApplicable) ...[
-                const SizedBox(height: 6),
-                Text(
-                  'Target: ${b04ProductionStateLabel(recommendation.targetAcceptanceState.stableId)}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
+            ),
+            const SizedBox(height: 6),
+            Text(presentation.explanation),
+            if (presentation.result != null) ...[
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  if (!isSafetyUnavailable)
-                    _B04ActionButton(
-                      label: 'Acknowledge',
-                      onPressed: () => onAction(
-                        recommendation,
-                        B04RecommendationFeedbackAction.acknowledge,
-                      ),
-                    ),
-                  if (!isSafetyUnavailable &&
-                      hasCanonicalProposal &&
-                      recommendation.targetAcceptanceState ==
-                          B04BriefingTargetAcceptanceState.proposalAvailable)
-                    _B04ActionButton(
-                      label: 'Accept target',
-                      onPressed: () => onAction(
-                        recommendation,
-                        B04RecommendationFeedbackAction.accept,
-                      ),
-                    ),
-                  if (!isSafetyUnavailable)
-                    _B04ActionButton(
-                      label: 'Record override',
-                      onPressed: () => onAction(
-                        recommendation,
-                        B04RecommendationFeedbackAction.override,
-                      ),
-                    ),
-                  _B04ActionButton(
-                    label: 'Dismiss',
-                    onPressed: () => onAction(
-                      recommendation,
-                      B04RecommendationFeedbackAction.dismiss,
-                    ),
-                  ),
-                ],
+              Text(
+                presentation.result!,
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ],
-          ),
+            if (presentation.showWhy && presentation.why != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Why? ${presentation.why}',
+                style: B05Typography.caption(context),
+              ),
+            ],
+            if (recommendation.targetAcceptanceState !=
+                B04BriefingTargetAcceptanceState.notApplicable) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Target: ${ConsumerCopy.state(recommendation.targetAcceptanceState.stableId)}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                if (!isSafetyUnavailable)
+                  _B04ActionButton(
+                    label: 'Acknowledge',
+                    onPressed: () => onAction(
+                      recommendation,
+                      B04RecommendationFeedbackAction.acknowledge,
+                    ),
+                  ),
+                if (!isSafetyUnavailable &&
+                    hasCanonicalProposal &&
+                    recommendation.targetAcceptanceState ==
+                        B04BriefingTargetAcceptanceState.proposalAvailable)
+                  _B04ActionButton(
+                    label: 'Accept target',
+                    onPressed: () => onAction(
+                      recommendation,
+                      B04RecommendationFeedbackAction.accept,
+                    ),
+                  ),
+                if (!isSafetyUnavailable)
+                  _B04ActionButton(
+                    label: 'Not for me',
+                    onPressed: () => onAction(
+                      recommendation,
+                      B04RecommendationFeedbackAction.override,
+                    ),
+                  ),
+                _B04ActionButton(
+                  label: 'Dismiss',
+                  onPressed: () => onAction(
+                    recommendation,
+                    B04RecommendationFeedbackAction.dismiss,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  String _canonicalResultLabel(B04BriefingNumericalResult result) {
-    final values = <String>[];
-    if (result.proposedDeltaKcal != null) {
-      values.add('Canonical delta: ${result.proposedDeltaKcal} kcal/day');
-    }
-    if (result.normalizedMaintenanceKcal != null) {
-      values.add('Maintenance: ${result.normalizedMaintenanceKcal} kcal/day');
-    }
-    if (result.exactResultNumerator != null &&
-        result.exactResultDenominator != null) {
-      values.add(
-        'Exact result: ${result.exactResultNumerator}/${result.exactResultDenominator}',
-      );
-    }
-    return values.join(' · ');
   }
 }
 
@@ -680,25 +841,26 @@ class _B04WarningList extends StatelessWidget {
   const _B04WarningList({required this.warnings});
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Logging-only warnings',
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 4),
-      for (final warning in warnings)
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.info_outline, color: AppColors.warning),
-          title: Text(warning.wording),
-          subtitle: const Text(
-            'This warning is not a recommendation safety approval.',
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Helpful notes', style: B05Typography.label(context)),
+        const SizedBox(height: B05Layout.space4),
+        for (final warning in warnings)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.info_outline, color: colors.warning.indicator),
+            title: Text(ConsumerCopy.explanation(warning.wording)),
+            subtitle: Text(
+              'This note is not a safety approval.',
+              style: B05Typography.caption(context),
+            ),
           ),
-        ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _B04EvidenceLines extends StatelessWidget {
@@ -721,33 +883,17 @@ class _B04EvidenceLines extends StatelessWidget {
 
 List<String> _currentFoodTargetLines(B04RemainingTargetReadModel targets) {
   final lines = <String>[
-    if (targets.goalVersionId != null)
-      'Goal: ${targets.goalSource ?? 'unknown'} · ${targets.goalVersionId}',
-    for (final value in targets.targets) _currentFoodValueLabel(value),
-    if (targets.missingEvidence.isNotEmpty)
-      'Missing evidence: ${targets.missingEvidence.join(', ')}',
+    for (final value in targets.targets) B03NutritionPresentation.value(value),
   ];
-  if (lines.isEmpty) lines.add('No remaining target values are available.');
+  if (lines.isEmpty) {
+    lines.add('Your nutrition targets will appear here as you log meals.');
+  }
   return lines;
 }
 
 String _currentFoodDetail(B04CurrentFoodGuidance guidance) => [
-  '${guidance.localDate} · ${guidance.timezoneId}',
-  ..._currentFoodTargetLines(guidance.remainingTargets),
-].join(' · ');
-
-String _currentFoodValueLabel(B04CurrentFoodNutrientValue value) {
-  final amount = switch (value.state) {
-    B04CurrentFoodValueState.known => value.point ?? 'unknown',
-    B04CurrentFoodValueState.range =>
-      '${value.lower ?? 'at least'}–${value.upper ?? 'at most'}',
-    B04CurrentFoodValueState.unknown => 'unknown',
-    B04CurrentFoodValueState.missing => 'missing',
-    B04CurrentFoodValueState.invalid => 'invalid',
-  };
-  final reason = value.reasonCode == null ? '' : ' (${value.reasonCode})';
-  return '${value.nutrientId}: $amount ${value.unit.symbol} · ${value.state.stableId}$reason · evidence ${value.sourceIds.join(', ')}';
-}
+  'Why? I don’t have enough nutrition information for ${ConsumerDateLabel.day(guidance.localDate)} yet.',
+].join(' ');
 
 class B04LoadingCard extends StatelessWidget {
   final String label;
@@ -755,13 +901,13 @@ class B04LoadingCard extends StatelessWidget {
   const B04LoadingCard({super.key, required this.label});
 
   @override
-  Widget build(BuildContext context) => Card(
+  Widget build(BuildContext context) => B05Surface(
     child: Semantics(
       container: true,
+      liveRegion: true,
       label: '$label loading',
-      child: const Padding(
-        padding: EdgeInsets.all(20),
-        child: Center(child: CircularProgressIndicator()),
+      child: Center(
+        child: CircularProgressIndicator(color: context.b05Colors.action),
       ),
     ),
   );
@@ -782,31 +928,25 @@ class B04ReadStatusCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Card(
+  Widget build(BuildContext context) => B05Surface(
     child: Semantics(
       container: true,
       label: '$title. $message${detail == null ? '' : ' $detail'}',
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(message),
-            if (detail != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                detail!,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-            if (action != null) ...[const SizedBox(height: 4), action!],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: B05Typography.title(context)),
+          const SizedBox(height: B05Layout.space8),
+          Text(message, style: B05Typography.body(context)),
+          if (detail != null) ...[
+            const SizedBox(height: B05Layout.space8),
+            Text(detail!, style: B05Typography.caption(context)),
           ],
-        ),
+          if (action != null) ...[
+            const SizedBox(height: B05Layout.space4),
+            action!,
+          ],
+        ],
       ),
     ),
   );
@@ -818,13 +958,14 @@ class _B04Pill extends StatelessWidget {
   const _B04Pill({required this.label});
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: AppColors.primary.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(8),
+  Widget build(BuildContext context) => B05Surface(
+    tone: B05SurfaceTone.selected,
+    radius: B05SurfaceRadius.small,
+    padding: const EdgeInsets.symmetric(
+      horizontal: B05Layout.space8,
+      vertical: B05Layout.space4,
     ),
-    child: Text(label, style: const TextStyle(fontSize: 11)),
+    child: Text(label, style: B05Typography.caption(context)),
   );
 }
 
@@ -835,12 +976,9 @@ class _B04ActionButton extends StatelessWidget {
   const _B04ActionButton({required this.label, required this.onPressed});
 
   @override
-  Widget build(BuildContext context) => OutlinedButton(
+  Widget build(BuildContext context) => B05ActionButton(
+    label: label,
     onPressed: onPressed,
-    style: OutlinedButton.styleFrom(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      minimumSize: const Size(0, 36),
-    ),
-    child: Text(label),
+    emphasis: B05ActionEmphasis.secondary,
   );
 }

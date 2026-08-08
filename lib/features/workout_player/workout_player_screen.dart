@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/confetti_overlay.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 import 'player_setup_cues_panel.dart';
@@ -203,23 +204,27 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
   }
 
   void _showExerciseHistorySheet(String exerciseName) {
-    showModalBottomSheet(
+    showIndiFitBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      semanticLabel: '$exerciseName history',
       builder: (context) {
+        final colors = context.b05Colors;
         final repo = ref.read(workoutRepositoryProvider);
         return FutureBuilder<List<Map<String, dynamic>>>(
           future: repo.getExerciseHistory(exerciseName),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return Center(
+                child: Semantics(
+                  liveRegion: true,
+                  label: 'Loading exercise history',
+                  child: CircularProgressIndicator(color: colors.action),
+                ),
+              );
             }
             final history = snapshot.data ?? [];
             return Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(B05Layout.space24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -229,34 +234,25 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                       Expanded(
                         child: Text(
                           '$exerciseName History',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: B05Typography.title(context),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Icon(
-                        Icons.insights_rounded,
-                        color: AppColors.primary,
-                      ),
+                      Icon(Icons.insights_rounded, color: colors.action),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Track your estimated 1RM (Epley formula) and PR progression below.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                  const SizedBox(height: B05Layout.space8),
+                  Text(
+                    'Review recent sets, personal records and estimated strength.',
+                    style: B05Typography.caption(context),
                   ),
-                  const Divider(color: AppColors.border, height: 24),
+                  Divider(color: colors.border, height: B05Layout.space24),
                   Expanded(
                     child: history.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Text(
-                              'No past logs for this exercise.',
-                              style: TextStyle(color: AppColors.textSecondary),
+                              'No past sets for this exercise yet.',
+                              style: B05Typography.body(context),
                             ),
                           )
                         : ListView.builder(
@@ -266,26 +262,31 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                               final session = item['session'] as WorkoutSession;
                               final sets = item['sets'] as List<WorkoutSet>;
 
-                              final dateStr =
-                                  '${session.completedAt.year}-${session.completedAt.month.toString().padLeft(2, '0')}-${session.completedAt.day.toString().padLeft(2, '0')}';
+                              final dateStr = MaterialLocalizations.of(
+                                context,
+                              ).formatMediumDate(session.completedAt.toLocal());
 
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12.0),
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: B05Layout.space12,
+                                ),
+                                child: B05Surface(
+                                  tone: B05SurfaceTone.inset,
+                                  radius: B05SurfaceRadius.small,
+                                  padding: const EdgeInsets.all(
+                                    B05Layout.space12,
+                                  ),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Session on $dateStr: ${session.name}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                          color: AppColors.textSecondary,
-                                        ),
+                                        style: B05Typography.caption(
+                                          context,
+                                        ).copyWith(fontWeight: FontWeight.bold),
                                       ),
-                                      const SizedBox(height: 8),
+                                      const SizedBox(height: B05Layout.space8),
                                       ...sets.map((s) {
                                         final oneRm =
                                             s.weight * (1 + s.reps / 30.0);
@@ -293,58 +294,69 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                                           padding: const EdgeInsets.symmetric(
                                             vertical: 4.0,
                                           ),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
+                                          child: Wrap(
+                                            alignment:
+                                                WrapAlignment.spaceBetween,
+                                            runSpacing: B05Layout.space4,
                                             children: [
-                                              Row(
+                                              Wrap(
+                                                crossAxisAlignment:
+                                                    WrapCrossAlignment.center,
                                                 children: [
                                                   if (s.isPr)
-                                                    const Padding(
+                                                    Padding(
                                                       padding: EdgeInsets.only(
-                                                        right: 6.0,
+                                                        right: B05Layout.space4,
                                                       ),
                                                       child: Icon(
                                                         Icons
                                                             .emoji_events_rounded,
-                                                        color:
-                                                            AppColors.warning,
-                                                        size: 16,
+                                                        color: colors
+                                                            .warning
+                                                            .indicator,
+                                                        size:
+                                                            B05Layout.iconSmall,
                                                       ),
                                                     ),
                                                   Text(
                                                     'Set ${s.setNumber}: ${s.weight.toStringAsFixed(1)} kg × ${s.reps} reps',
-                                                    style: TextStyle(
-                                                      fontWeight: s.isPr
-                                                          ? FontWeight.bold
-                                                          : FontWeight.normal,
-                                                      fontSize: 12,
-                                                    ),
+                                                    style:
+                                                        B05Typography.caption(
+                                                          context,
+                                                        ).copyWith(
+                                                          fontWeight: s.isPr
+                                                              ? FontWeight.bold
+                                                              : FontWeight
+                                                                    .normal,
+                                                        ),
                                                   ),
                                                   if (s.durationSeconds != null)
                                                     Padding(
                                                       padding:
                                                           const EdgeInsets.only(
-                                                            left: 8.0,
+                                                            left: B05Layout
+                                                                .space8,
                                                           ),
                                                       child: Text(
                                                         '(${s.durationSeconds}s${s.distanceKm != null ? ", ${s.distanceKm}km" : ""})',
-                                                        style: const TextStyle(
-                                                          fontSize: 10,
-                                                          color: AppColors
-                                                              .textSecondary,
-                                                        ),
+                                                        style:
+                                                            B05Typography.caption(
+                                                              context,
+                                                            ),
                                                       ),
                                                     ),
                                                 ],
                                               ),
                                               Text(
                                                 '1RM: ${oneRm.toStringAsFixed(1)} kg',
-                                                style: const TextStyle(
-                                                  color: AppColors.primary,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                                style:
+                                                    B05Typography.caption(
+                                                      context,
+                                                    ).copyWith(
+                                                      color: colors.action,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
                                               ),
                                             ],
                                           ),
@@ -368,37 +380,38 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
 
   Future<void> _substituteExercise() async {
     final repo = ref.read(workoutRepositoryProvider);
-    final selectedExerciseName = await showModalBottomSheet<String>(
+    final selectedExerciseName = await showIndiFitBottomSheet<String>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      semanticLabel: 'Choose a replacement exercise',
       builder: (context) {
         String searchQuery = '';
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Container(
+            final colors = context.b05Colors;
+            return Padding(
               padding: const EdgeInsets.all(16),
-              height: MediaQuery.of(context).size.height * 0.75,
               child: Column(
                 children: [
-                  const Text(
-                    'Substitute Exercise',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Choose a replacement',
+                          style: B05Typography.title(context),
+                        ),
+                      ),
+                      B05IconAction(
+                        icon: Icons.close,
+                        label: 'Close exercise choices',
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     decoration: InputDecoration(
                       hintText: 'Search alternative exercise...',
                       prefixIcon: const Icon(Icons.search),
-                      filled: true,
-                      fillColor: AppColors.cardBackground,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
                     ),
                     onChanged: (val) => setModalState(() => searchQuery = val),
                   ),
@@ -416,9 +429,9 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                             final name = list[idx];
                             return ListTile(
                               title: Text(name),
-                              trailing: const Icon(
+                              trailing: Icon(
                                 Icons.swap_horiz_rounded,
-                                color: AppColors.primary,
+                                color: colors.action,
                               ),
                               onTap: () => Navigator.pop(context, name),
                             );
@@ -447,6 +460,7 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
   Widget build(BuildContext context) {
     final state = ref.watch(_controllerProvider);
     final controller = ref.read(_controllerProvider.notifier);
+    final colors = context.b05Colors;
 
     if (state.activeExercises.isEmpty) {
       return Scaffold(
@@ -456,16 +470,28 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
     }
 
     final currentEx = state.activeExercises[state.currentExerciseIndex];
+    final currentExerciseContext =
+        widget.personalExerciseContextByName[currentEx.exerciseName];
+    final rawStableId = currentExerciseContext?['exerciseId'];
 
     return Scaffold(
       body: SafeArea(
         child: Stack(
           children: [
             SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(B05Layout.space20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: B05IconAction(
+                      icon: Icons.close,
+                      label: 'Close workout',
+                      hint: 'Leave this workout for now.',
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    ),
+                  ),
                   WorkoutPlayerHeader(
                     routineName: widget.routineName,
                     elapsedSeconds: state.elapsedSeconds,
@@ -477,44 +503,59 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                     },
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                currentEx.exerciseName,
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: GoogleFonts.outfit().fontFamily,
-                                  letterSpacing: -0.3,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact =
+                          constraints.maxWidth < B05Layout.compactBreakpoint ||
+                          MediaQuery.textScalerOf(context).scale(1) > 1.3;
+                      final exerciseTitle = Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              currentEx.exerciseName,
+                              style: B05Typography.title(
+                                context,
+                              ).copyWith(fontSize: 22, letterSpacing: -0.3),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.history_rounded,
-                                color: AppColors.primary,
-                                size: 20,
-                              ),
-                              tooltip: 'Exercise History & 1RM',
-                              onPressed: () => _showExerciseHistorySheet(
-                                currentEx.exerciseName,
-                              ),
+                          ),
+                          B05IconAction(
+                            icon: Icons.history_rounded,
+                            label:
+                                'View exercise history and estimated strength',
+                            onPressed: () => _showExerciseHistorySheet(
+                              currentEx.exerciseName,
+                            ),
+                          ),
+                        ],
+                      );
+                      final substituteAction = TextButton.icon(
+                        onPressed: _substituteExercise,
+                        icon: const Icon(
+                          Icons.swap_horiz_rounded,
+                          size: B05Layout.iconSmall,
+                        ),
+                        label: const Text('Substitute'),
+                      );
+                      if (compact) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            exerciseTitle,
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: substituteAction,
                             ),
                           ],
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: _substituteExercise,
-                        icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                        label: const Text('Substitute'),
-                      ),
-                    ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: exerciseTitle),
+                          substituteAction,
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 8),
                   PriorSessionCard(
@@ -525,12 +566,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                   const SizedBox(height: 12),
                   PlayerSetupCuesPanel(
                     exerciseName: currentEx.exerciseName,
-                    stableId:
-                        widget.personalExerciseContextByName[currentEx
-                                .exerciseName]?['exerciseId']
-                            as String?,
-                    frozenContext: widget
-                        .personalExerciseContextByName[currentEx.exerciseName],
+                    stableId: rawStableId is String ? rawStableId : null,
+                    frozenContext: currentExerciseContext,
                   ),
                   const SizedBox(height: 12),
                   ExerciseSetInputCard(
@@ -567,19 +604,15 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                           },
                           icon: const Icon(Icons.arrow_back_rounded, size: 16),
                           label: const Text('Prev Set'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
-                          ),
                         )
                       else
                         const SizedBox.shrink(),
 
                       Text(
                         'Set ${state.currentSetIndex + 1} of ${currentEx.sets}',
-                        style: const TextStyle(
+                        style: B05Typography.caption(context).copyWith(
+                          color: colors.action,
                           fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: AppColors.primary,
                         ),
                       ),
                     ],
@@ -622,32 +655,32 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                               }
                             },
                             avatar: isCompleted
-                                ? const Icon(
+                                ? Icon(
                                     Icons.check_circle_rounded,
-                                    size: 14,
-                                    color: AppColors.success,
+                                    size: B05Layout.iconSmall,
+                                    color: colors.success.indicator,
                                   )
                                 : null,
-                            selectedColor: AppColors.primaryGlow,
-                            labelStyle: TextStyle(
+                            selectedColor: colors.selected,
+                            backgroundColor: colors.inset,
+                            labelStyle: B05Typography.caption(context).copyWith(
                               color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
-                              fontSize: 11,
+                                  ? colors.action
+                                  : colors.textSecondary,
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: B05Radii.smallRadius,
                               side: BorderSide(
                                 color: isSelected
-                                    ? AppColors.primary
+                                    ? colors.action
                                     : (isCompleted
-                                          ? AppColors.success.withValues(
+                                          ? colors.success.indicator.withValues(
                                               alpha: 0.5,
                                             )
-                                          : AppColors.border),
+                                          : Colors.transparent),
                               ),
                             ),
                           ),
@@ -664,8 +697,8 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
                       }
                     },
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.danger),
-                      foregroundColor: AppColors.danger,
+                      side: BorderSide(color: colors.danger.indicator),
+                      foregroundColor: colors.danger.indicator,
                       minimumSize: const Size.fromHeight(48),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -683,32 +716,28 @@ class _WorkoutPlayerScreenState extends ConsumerState<WorkoutPlayerScreen>
               ConfettiOverlay(
                 isPlaying: true,
                 child: Container(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: colors.selected.withValues(alpha: 0.92),
                   child: Center(
-                    child: Card(
-                      color: AppColors.surface,
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('👑', style: TextStyle(fontSize: 48)),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'NEW PERSONAL RECORD!',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${state.prExerciseName}: ${state.prWeight.toStringAsFixed(1)} kg x ${state.prReps} reps',
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                          ],
-                        ),
+                    child: B05Surface(
+                      radius: B05SurfaceRadius.large,
+                      padding: const EdgeInsets.all(B05Layout.space24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('👑', style: TextStyle(fontSize: 48)),
+                          const SizedBox(height: B05Layout.space8),
+                          Text(
+                            'NEW PERSONAL RECORD!',
+                            style: B05Typography.title(
+                              context,
+                            ).copyWith(color: colors.action),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${state.prExerciseName}: ${state.prWeight.toStringAsFixed(1)} kg x ${state.prReps} reps',
+                            style: B05Typography.caption(context),
+                          ),
+                        ],
                       ),
                     ),
                   ),

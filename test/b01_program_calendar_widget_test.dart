@@ -260,8 +260,11 @@ void main() {
 
         // The action row remains visible behind the confirmation dialog.
         expect(find.text('Skip Workout'), findsNWidgets(2));
-        expect(find.text('1. Keep Pending (Make up later)'), findsOneWidget);
-        expect(find.text('2. Skip & Advance Progression'), findsOneWidget);
+        expect(find.text('Make it up later'), findsOneWidget);
+        expect(
+          find.widgetWithText(FilledButton, 'Skip Workout'),
+          findsOneWidget,
+        );
       },
     );
   });

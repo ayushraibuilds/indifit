@@ -12,6 +12,7 @@ import '../../core/backup/backup_v10.dart';
 import '../../core/backup/backup_v8.dart';
 import '../../core/backup/backup_v9.dart';
 import '../../core/di/providers.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/services/notification_service.dart';
@@ -197,8 +198,10 @@ class SettingsController extends StateNotifier<SettingsState> {
       ], subject: 'IndiFit Health Backup (.indifit-backup)');
 
       return null;
-    } catch (e) {
-      return 'Failed to export backup: $e';
+    } catch (_) {
+      return ProductFailurePresentation.fromCode(
+        'backup_export_failed',
+      ).message;
     } finally {
       await BackupFileAdapter.cleanupTempFile(tempFile);
       state = state.copyWith(loading: false);

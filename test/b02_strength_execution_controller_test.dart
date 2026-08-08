@@ -44,13 +44,13 @@ void main() {
     await controller.finalize(commandId: 'finish-invalid');
     expect(controller.state.status, B02StrengthExecutionStatus.failure);
     expect(controller.state.launch, isNotNull);
-    expect(controller.state.errorMessage, contains('requires'));
+    expect(controller.state.errorMessage, contains('could not be saved'));
 
     await controller.startUnscheduled(
       routineName: 'Broken',
       executionSnapshotJson: 'not-json',
     );
     expect(controller.state.status, B02StrengthExecutionStatus.recovery);
-    expect(controller.state.errorMessage, contains('invalid'));
+    expect(controller.state.errorMessage, contains('reopened'));
   });
 }

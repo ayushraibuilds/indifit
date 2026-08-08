@@ -327,7 +327,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Version ${version.versionNumber} • Updated ${_formatDate(version.updatedAt)}',
+            'Updated ${_formatDate(version.updatedAt)}',
             style: const TextStyle(color: AppColors.textSecondary),
           ),
           if (state.versions.length > 1) ...[
@@ -335,14 +335,14 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
             DropdownButtonFormField<String>(
               initialValue: version.id,
               decoration: const InputDecoration(
-                labelText: 'Published recipe version',
+                labelText: 'Published recipe',
                 border: OutlineInputBorder(),
               ),
               items: [
                 for (final item in state.versions)
                   DropdownMenuItem(
                     value: item.id,
-                    child: Text('Version ${item.versionNumber}'),
+                    child: Text('Updated ${_formatDate(item.updatedAt)}'),
                   ),
               ],
               onChanged: isFinalizing

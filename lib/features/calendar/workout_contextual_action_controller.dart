@@ -121,8 +121,10 @@ class WorkoutOccurrenceActionController
         late final OccurrenceStatus status;
         try {
           status = _parseStatus(occurrence.status);
-        } on StateError catch (error) {
-          _setUnavailable(error.message);
+        } on StateError {
+          _setUnavailable(
+            'This workout is not available in the latest plan. Refresh and try again.',
+          );
           return;
         }
         if (status != OccurrenceStatus.planned &&
@@ -218,14 +220,16 @@ class WorkoutOccurrenceActionController
     try {
       await operation();
     } on InvalidOccurrenceTransitionException catch (error) {
-      if (mounted) _setUnavailable(error.message);
+      if (mounted) {
+        _setUnavailable(_transitionMessage(error.message));
+      }
     } catch (error) {
       if (!mounted) return;
       _retryAction = retry;
       state = WorkoutOccurrenceActionState(
         status: WorkoutOccurrenceActionStatus.failure,
         activeAction: action,
-        message: 'Could not update this workout: $error',
+        message: 'Could not update this workout. Try again.',
       );
     }
   }
@@ -244,6 +248,12 @@ class WorkoutOccurrenceActionController
         (status) => status.dbValue == value,
         orElse: () => throw StateError('Unknown occurrence status: $value'),
       );
+
+  static String _transitionMessage(String message) => switch (message.trim()) {
+    'A later workout has started.' => 'A later workout has started.',
+    _ =>
+      'This workout changed before the action completed. Refresh and try again.',
+  };
 }
 
 final workoutOccurrenceActionGatewayProvider =

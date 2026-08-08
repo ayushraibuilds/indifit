@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/theme/colors.dart';
+import '../../core/presentation/consumer_date_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../travel/travel_controller.dart';
 import 'calendar_controller.dart';
@@ -18,9 +22,9 @@ class ProgramCalendarScreen extends ConsumerWidget {
   const ProgramCalendarScreen({super.key});
 
   void _showActions(BuildContext context, CalendarOccurrenceReadItem item) {
-    showModalBottomSheet<void>(
+    showIndiFitBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
+      semanticLabel: 'Workout actions',
       builder: (context) => OccurrenceActionsSheet(occurrenceItem: item),
     );
   }
@@ -87,6 +91,15 @@ class ProgramCalendarScreen extends ConsumerWidget {
     CalendarView.month => 'Month',
   };
 
+  static String _selectedDateLabel(CalendarView view, String localDate) {
+    final day = ConsumerDateLabel.day(localDate);
+    return switch (view) {
+      CalendarView.day => day,
+      CalendarView.week => 'Week of $day',
+      CalendarView.month => 'Month of $day',
+    };
+  }
+
   Widget _buildOccurrenceCard(
     BuildContext context,
     CalendarOccurrenceReadItem item, {
@@ -104,17 +117,16 @@ class ProgramCalendarScreen extends ConsumerWidget {
     BuildContext context,
     List<CalendarOccurrenceReadItem> items,
     Set<String> activeTravelOccurrenceIds,
+    CalendarView view,
+    bool hasActiveProgram,
   ) {
     if (items.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.event_note_rounded, size: 48, color: Colors.grey),
-            SizedBox(height: 12),
-            Text('No workouts scheduled in this range.'),
-          ],
-        ),
+      final isDay = view == CalendarView.day;
+      return CalendarEmptyState(
+        isDay: isDay,
+        hasActiveProgram: hasActiveProgram,
+        onAction: () =>
+            context.push(hasActiveProgram ? '/workout' : '/routine-wizard'),
       );
     }
     return ListView.builder(
@@ -147,7 +159,6 @@ class ProgramCalendarScreen extends ConsumerWidget {
               ? 'Training Calendar'
               : 'Training Calendar • ${state.activeProgramName}',
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
         ),
         actions: [
           Consumer(
@@ -157,7 +168,7 @@ class ProgramCalendarScreen extends ConsumerWidget {
               return IconButton(
                 icon: Icon(
                   Icons.flight_rounded,
-                  color: isActive ? AppColors.success : null,
+                  color: isActive ? context.b05Colors.success.indicator : null,
                 ),
                 tooltip: isActive ? 'Travel mode active' : 'Travel mode',
                 onPressed: () => context.push('/travel-mode'),
@@ -189,68 +200,188 @@ class ProgramCalendarScreen extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: [
-                IconButton(
-                  tooltip: 'Previous ${_viewLabel(state.view).toLowerCase()}',
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () => _moveDate(ref, -1),
-                ),
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => _pickDate(context, ref),
-                    child: Text(
-                      '${state.selectedLocalDate} • ${state.timezoneId}',
-                      semanticsLabel:
-                          'Selected calendar date ${state.selectedLocalDate} in ${state.timezoneId}',
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => _goToToday(ref),
-                  child: const Text('Today'),
-                ),
-                IconButton(
-                  tooltip: 'Next ${_viewLabel(state.view).toLowerCase()}',
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () => _moveDate(ref, 1),
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: B05Layout.space8),
+            child: _CalendarDateControls(
+              view: state.view,
+              localDate: state.selectedLocalDate,
+              onPrevious: () => _moveDate(ref, -1),
+              onPickDate: () => _pickDate(context, ref),
+              onToday: () => _goToToday(ref),
+              onNext: () => _moveDate(ref, 1),
             ),
           ),
           if (state.errorMessage != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                state.errorMessage!,
-                style: const TextStyle(color: Colors.red),
+              child: ConsumerStatusRow(
+                label: 'Calendar unavailable',
+                detail: ProductFailurePresentation.fromCode(
+                  'calendar_unavailable',
+                ).message,
+                error: true,
+                onRetry: controller.refresh,
               ),
             ),
           if (travelState.activeTravelContext case final travel?)
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                B05Layout.space16,
+                B05Layout.space4,
+                B05Layout.space16,
+                0,
               ),
-              child: Text(
-                'Travel mode: ${travel.startLocalDate} – ${travel.endLocalDate} • ${travelState.activeTravelOccurrenceIds.length} previewed workout${travelState.activeTravelOccurrenceIds.length == 1 ? '' : 's'} use travel equipment.',
-                style: const TextStyle(color: AppColors.textPrimary),
+              child: B05Surface(
+                tone: B05SurfaceTone.selected,
+                showBorder: false,
+                padding: const EdgeInsets.all(B05Layout.space12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    'Travel mode: ${ConsumerDateLabel.range(travel.startLocalDate, travel.endLocalDate)} • ${travelState.activeTravelOccurrenceIds.length} previewed workout${travelState.activeTravelOccurrenceIds.length == 1 ? '' : 's'} use travel equipment.',
+                    style: B05Typography.body(context),
+                  ),
+                ),
               ),
             ),
-          Expanded(
-            child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildOccurrences(
-                    context,
-                    visibleItems,
-                    travelState.activeTravelOccurrenceIds,
-                  ),
-          ),
+          if (state.isLoading)
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(B05Layout.space16),
+                child: const ConsumerStatusRow(
+                  label: 'Loading your calendar',
+                  detail: 'Finding planned workouts for this period.',
+                  loading: true,
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: _buildOccurrences(
+                context,
+                visibleItems,
+                travelState.activeTravelOccurrenceIds,
+                state.view,
+                state.activeProgramVersionId != null,
+              ),
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _CalendarDateControls extends StatelessWidget {
+  const _CalendarDateControls({
+    required this.view,
+    required this.localDate,
+    required this.onPrevious,
+    required this.onPickDate,
+    required this.onToday,
+    required this.onNext,
+  });
+
+  final CalendarView view;
+  final String localDate;
+  final VoidCallback onPrevious;
+  final VoidCallback onPickDate;
+  final VoidCallback onToday;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final compact = MediaQuery.sizeOf(context).width < 360 || scale >= 1.6;
+    final period = ProgramCalendarScreen._viewLabel(view).toLowerCase();
+    final selectedLabel = ProgramCalendarScreen._selectedDateLabel(
+      view,
+      localDate,
+    );
+    final dateButton = Semantics(
+      label: 'Selected $selectedLabel',
+      button: true,
+      child: B05ActionButton(
+        label: selectedLabel,
+        icon: Icons.calendar_today_outlined,
+        emphasis: B05ActionEmphasis.tertiary,
+        hint: 'Choose a date to view.',
+        onPressed: onPickDate,
+      ),
+    );
+    final previous = B05IconAction(
+      icon: Icons.chevron_left_rounded,
+      label: 'Previous $period',
+      onPressed: onPrevious,
+    );
+    final next = B05IconAction(
+      icon: Icons.chevron_right_rounded,
+      label: 'Next $period',
+      onPressed: onNext,
+    );
+    final today = B05ActionButton(
+      label: 'Today',
+      emphasis: B05ActionEmphasis.tertiary,
+      onPressed: onToday,
+    );
+
+    if (compact) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              previous,
+              Expanded(child: dateButton),
+              next,
+            ],
+          ),
+          Align(alignment: Alignment.centerRight, child: today),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        previous,
+        Expanded(child: dateButton),
+        today,
+        next,
+      ],
+    );
+  }
+}
+
+class CalendarEmptyState extends StatelessWidget {
+  const CalendarEmptyState({
+    required this.isDay,
+    required this.hasActiveProgram,
+    required this.onAction,
+    super.key,
+  });
+
+  final bool isDay;
+  final bool hasActiveProgram;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final actionLabel = hasActiveProgram
+        ? 'Open training plan'
+        : 'Set up a training plan';
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ProductEmptyState(
+          icon: Icons.event_note_rounded,
+          title: isDay ? 'Nothing planned today' : 'Nothing planned here',
+          message: isDay
+              ? hasActiveProgram
+                    ? 'No workout is scheduled for this day. Open your training plan to choose another day.'
+                    : 'Choose a workout or enjoy a recovery day.'
+              : hasActiveProgram
+              ? 'No workouts are scheduled in this range. Open your training plan to choose another day.'
+              : 'Try another date or set up a training plan.',
+          action: onAction,
+          actionLabel: actionLabel,
+          actionIcon: Icons.fitness_center_rounded,
+        ),
       ),
     );
   }

@@ -281,7 +281,7 @@ class B05MediaBundleController extends StateNotifier<B05MediaBundleState> {
           status: B05MediaBundleStatus.unavailable,
           preference: preference,
           message:
-              'The approved top-20 media packet is not configured on this build.',
+              'Movement guides are not installed on this device. Written guidance remains available.',
         );
         return;
       }
@@ -296,8 +296,7 @@ class B05MediaBundleController extends StateNotifier<B05MediaBundleState> {
           status: B05MediaBundleStatus.unavailable,
           manifest: manifest,
           preference: preference,
-          message:
-              'The saved media-pack identity is not available in this build.',
+          message: 'The saved movement guide is not available on this device.',
         );
         return;
       }
@@ -317,28 +316,28 @@ class B05MediaBundleController extends StateNotifier<B05MediaBundleState> {
         reconciliation: reconciliation,
         preference: preference,
         message: switch (status) {
-          B05MediaBundleStatus.ready => 'Approved bundled media is available.',
+          B05MediaBundleStatus.ready => 'Movement guides are ready to use.',
           B05MediaBundleStatus.absent =>
-            'Bundled media is not present on this device. Text instructions remain available.',
+            'Movement guides are not installed. Text instructions remain available.',
           B05MediaBundleStatus.invalid =>
-            'Bundled media failed checksum validation. Text instructions remain available.',
+            'Movement guides are unavailable. Text instructions remain available.',
           _ => null,
         },
       );
-    } on B05RegistryValidationException catch (error) {
+    } on B05RegistryValidationException {
       if (!mounted) return;
       state = B05MediaBundleState(
         status: B05MediaBundleStatus.invalid,
         preference: state.preference,
-        message: error.message,
+        message: 'Exercise media could not be checked. Try again.',
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       state = B05MediaBundleState(
         status: B05MediaBundleStatus.error,
         manifest: state.manifest,
         preference: state.preference,
-        message: error.toString(),
+        message: 'Exercise media could not be checked. Try again.',
       );
     } finally {
       _isReconciling = false;
@@ -355,7 +354,7 @@ class B05MediaBundleController extends StateNotifier<B05MediaBundleState> {
     if (id == null || id.isEmpty) {
       return const B05MediaExerciseView(
         status: B05MediaExerciseStatus.unavailable,
-        message: 'This exercise has no resolved stable ID for bundled media.',
+        message: 'Exercise media is not available for this exercise.',
       );
     }
     final asset = state.manifest?.assets
@@ -364,7 +363,7 @@ class B05MediaBundleController extends StateNotifier<B05MediaBundleState> {
     if (asset == null) {
       return const B05MediaExerciseView(
         status: B05MediaExerciseStatus.unavailable,
-        message: 'This exercise is not in the approved media manifest.',
+        message: 'A movement guide is not available for this exercise.',
       );
     }
     return switch (state.status) {
@@ -464,12 +463,12 @@ class B05ExerciseMediaPanel extends ConsumerWidget {
       ),
       B05MediaExerciseStatus.absent => B05StatusMessage(
         status: B05SemanticStatus.unavailable,
-        label: 'Bundled media is not installed',
+        label: 'Movement guide is not installed',
         value: view.message,
       ),
       B05MediaExerciseStatus.invalid => B05StatusMessage(
         status: B05SemanticStatus.danger,
-        label: 'Bundled media is invalid',
+        label: 'Movement guide is unavailable',
         value: view.message,
       ),
       B05MediaExerciseStatus.error => B05StatusMessage(
@@ -508,12 +507,11 @@ class B05ExerciseMediaPanel extends ConsumerWidget {
   }
 
   Widget _available(BuildContext context, B05MediaExerciseView view) {
-    final assetId = view.asset?.assetId ?? 'approved asset';
     return B05MotionContent(
       animatedChild: B05StatusMessage(
         status: B05SemanticStatus.success,
-        label: 'Bundled media is available',
-        value: 'Asset $assetId is verified locally.',
+        label: 'A movement guide is available',
+        value: 'Follow the guide at your own pace.',
       ),
       reducedMotionChild: B05StatusMessage(
         status: B05SemanticStatus.success,
@@ -524,41 +522,27 @@ class B05ExerciseMediaPanel extends ConsumerWidget {
   }
 
   Widget _textAlternative(BuildContext context, B05MediaExerciseView view) {
-    final fallback = view.asset?.stillFallbackId;
-    final reduced = view.asset?.reducedMotionFallbackId;
     final cues = textFallback
         .map((cue) => cue.trim())
         .where((cue) => cue.isNotEmpty)
         .toList(growable: false);
     return Semantics(
       container: true,
-      label: 'Text and still alternative',
+      label: 'Written movement guidance',
       value: [
-        if (fallback != null) 'Fallback $fallback',
-        if (reduced != null) 'Reduced motion $reduced',
         if (cues.isNotEmpty) ...cues,
-        if (fallback == null && reduced == null && cues.isEmpty)
-          'Use the exercise checklist below.',
+        if (cues.isEmpty) 'Use the exercise checklist below.',
       ].join('. '),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Text and still alternative',
-            style: B05Typography.label(context),
-          ),
+          Text('Written guidance', style: B05Typography.label(context)),
           const SizedBox(height: B05Layout.space4),
-          if (fallback != null)
-            Text(
-              'Still fallback: $fallback',
-              style: B05Typography.body(context),
-            ),
-          if (reduced != null)
-            Text(
-              'Reduced-motion fallback: $reduced',
-              style: B05Typography.body(context),
-            ),
-          if (cues.isEmpty && fallback == null && reduced == null)
+          Text(
+            'A written guide is always available if you prefer not to use media.',
+            style: B05Typography.body(context),
+          ),
+          if (cues.isEmpty)
             Text(
               'Use the exercise checklist and form cues below.',
               style: B05Typography.body(context),

@@ -425,7 +425,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(LogWeightBottomSheet), findsOneWidget);
-      expect(find.text('Database Write Exception'), findsOneWidget);
+      expect(
+        find.text('Weight could not be saved. Try again.'),
+        findsOneWidget,
+      );
 
       final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(

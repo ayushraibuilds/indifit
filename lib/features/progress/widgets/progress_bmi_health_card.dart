@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/di/user_profile_provider.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 
 class ProgressBmiHealthCard extends ConsumerWidget {
   final double? weightKg;
@@ -10,107 +12,88 @@ class ProgressBmiHealthCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.b05Colors;
     final userProfile = ref.watch(userProfileProvider);
-    final double? heightCm = userProfile.userHeight;
+    final heightCm = userProfile.userHeight;
 
     if (weightKg == null || weightKg! <= 0) {
       return const SizedBox.shrink();
     }
 
     if (heightCm == null || heightCm <= 0) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: const [
-              Icon(Icons.straighten_rounded, color: AppColors.primary),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Set your height in onboarding/profile to calculate your BMI.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+      return B05Surface(
+        tone: B05SurfaceTone.inset,
+        child: Row(
+          children: [
+            Icon(
+              Icons.straighten_rounded,
+              color: colors.action,
+              size: B05Layout.iconMedium,
+            ),
+            const SizedBox(width: B05Layout.space12),
+            Expanded(
+              child: Text(
+                'Add your height in Profile to calculate BMI.',
+                style: B05Typography.caption(context),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
 
-    final double heightMeters = heightCm / 100.0;
-    final double bmi = weightKg! / (heightMeters * heightMeters);
+    final heightMeters = heightCm / 100;
+    final bmi = weightKg! / (heightMeters * heightMeters);
+    final (category, categoryColor) = switch (bmi) {
+      < 18.5 => ('Underweight', colors.warning),
+      < 25.0 => ('In the healthy range', colors.success),
+      < 30.0 => ('Overweight', colors.warning),
+      _ => ('Obese', colors.danger),
+    };
 
-    String category;
-    Color categoryColor;
-    if (bmi < 18.5) {
-      category = 'Underweight';
-      categoryColor = AppColors.warning;
-    } else if (bmi < 25.0) {
-      category = 'Normal weight';
-      categoryColor = AppColors.success;
-    } else if (bmi < 30.0) {
-      category = 'Overweight';
-      categoryColor = AppColors.warning;
-    } else {
-      category = 'Obese';
-      categoryColor = AppColors.danger;
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+    return Semantics(
+      label: 'BMI ${bmi.toStringAsFixed(1)}, $category',
+      child: B05Surface(
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: categoryColor.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
+            B05Surface(
+              tone: B05SurfaceTone.inset,
+              radius: B05SurfaceRadius.medium,
+              padding: const EdgeInsets.all(B05Layout.space12),
               child: Icon(
                 Icons.monitor_weight_outlined,
-                color: categoryColor,
-                size: 24,
+                color: categoryColor.indicator,
+                size: B05Layout.iconLarge,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: B05Layout.space16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'BMI & Weight Category',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
+                  Text('BMI', style: B05Typography.label(context)),
+                  const SizedBox(height: B05Layout.space4),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: B05Layout.space8,
+                    runSpacing: B05Layout.space4,
                     children: [
                       Text(
-                        'BMI: ${bmi.toStringAsFixed(1)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
+                        bmi.toStringAsFixed(1),
+                        style: B05Typography.title(context),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
+                      B05Surface(
+                        tone: B05SurfaceTone.inset,
+                        radius: B05SurfaceRadius.small,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: categoryColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
+                          horizontal: B05Layout.space8,
+                          vertical: B05Layout.space4,
                         ),
                         child: Text(
                           category,
-                          style: TextStyle(
-                            color: categoryColor,
+                          style: B05Typography.caption(context).copyWith(
+                            color: categoryColor.foreground,
                             fontWeight: FontWeight.bold,
-                            fontSize: 11,
                           ),
                         ),
                       ),

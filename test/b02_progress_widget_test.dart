@@ -54,12 +54,9 @@ void main() {
       ),
     );
 
-    expect(
-      find.textContaining('Legacy B01 projection · 4 sets'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Earlier workout · 4 sets'), findsOneWidget);
     expect(find.textContaining('Running'), findsOneWidget);
-    expect(find.text('Manual'), findsOneWidget);
+    expect(find.text('Logged by you'), findsOneWidget);
   });
 
   testWidgets(
@@ -102,13 +99,16 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('Unknown'), findsWidgets);
+      expect(find.textContaining('Not available'), findsWidgets);
       expect(
-        find.textContaining('Unknown mapping: 1 working sets'),
+        find.textContaining('1 sets need a little more information'),
         findsOneWidget,
       );
-      expect(find.textContaining('Legacy history: 1 sets'), findsOneWidget);
-      expect(find.textContaining('mapped: 2 (67%)'), findsOneWidget);
+      expect(
+        find.textContaining('Some earlier sets could not be assigned'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('2 of 3 working sets mapped'), findsOneWidget);
     },
   );
 
@@ -162,10 +162,16 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('medium confidence'), findsOneWidget);
+    expect(find.textContaining('Medium confidence'), findsOneWidget);
     expect(find.text('User override'), findsOneWidget);
-    expect(find.textContaining('No target evidence recorded'), findsOneWidget);
-    expect(find.textContaining('Why: recovery-unknown'), findsOneWidget);
+    expect(
+      find.textContaining('A target will appear after a strength workout.'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Based on your recent training'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('heat-map card remains usable at compact screen size', (

@@ -87,7 +87,7 @@ void main() {
 
     expect(find.text('No detected conflict'), findsOneWidget);
     expect(
-      find.textContaining('does not mean guaranteed safety'),
+      find.textContaining('No known conflict is not a safety guarantee'),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);

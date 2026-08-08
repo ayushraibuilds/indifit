@@ -130,10 +130,7 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
       if (mounted) {
         setState(() {
           _isSaving = false;
-          _errorMessage = e.toString().replaceFirst(
-            RegExp(r'^(Exception|StateError):\s*'),
-            '',
-          );
+          _errorMessage = 'Weight could not be saved. Try again.';
         });
       }
     }

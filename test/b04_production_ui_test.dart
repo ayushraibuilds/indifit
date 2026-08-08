@@ -6,6 +6,7 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
+import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b04_adaptive_target_models.dart';
 import 'package:indifit/data/models/b04_briefing_read_models.dart';
@@ -294,7 +295,10 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.textContaining('policy is on hold'), findsOneWidget);
+    expect(
+      find.textContaining('Coaching suggestions are unavailable'),
+      findsOneWidget,
+    );
     expect(find.text('Record override'), findsNothing);
     expect(tester.takeException(), isNull);
     final semantics = tester.ensureSemantics();
@@ -339,7 +343,7 @@ void main() {
         ),
       );
       expect(
-        find.textContaining('Safety-sensitive guidance is unavailable'),
+        find.textContaining('I need more dietary information'),
         findsOneWidget,
       );
       expect(find.textContaining('safe'), findsNothing);
@@ -420,9 +424,17 @@ void main() {
           ),
         ),
       );
-      expect(find.textContaining('Exact result: 1750/1'), findsOneWidget);
-      expect(find.text('Eligibility: Eligible'), findsOneWidget);
+      expect(
+        find.textContaining('Suggested change: -100 kcal/day'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Daily estimate: 2000 kcal'), findsOneWidget);
       expect(find.text('Accept target'), findsOneWidget);
+      expect(find.byType(B05ActionButton), findsNWidgets(4));
+      expect(
+        tester.getSize(find.byType(B05TouchTarget).first).height,
+        greaterThanOrEqualTo(B05Layout.minTouchTarget),
+      );
       await tester.tap(find.text('Accept target'));
       expect(actions, contains(B04RecommendationFeedbackAction.accept));
     },
@@ -496,12 +508,7 @@ void main() {
       ),
     );
 
-    expect(
-      find.text(
-        'No current guidance is visible. Dismissed guidance remains in history.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Nothing to recommend yet.'), findsOneWidget);
     expect(
       find.text('This explanation must not be shown after dismissal.'),
       findsNothing,
@@ -587,9 +594,16 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('energy: 1200 kcal'), findsOneWidget);
-    expect(find.textContaining('protein: 40–60 g'), findsOneWidget);
-    expect(find.textContaining('Evidence: candidate-v1'), findsOneWidget);
+    expect(find.textContaining('Calories: 1200 kcal'), findsOneWidget);
+    expect(find.textContaining('Protein: 40–60 g'), findsOneWidget);
+    expect(find.textContaining('candidate-v1'), findsNothing);
+    expect(find.textContaining('daily_totals_missing'), findsNothing);
+    expect(
+      find.textContaining(
+        'This guidance is based on the information you have logged.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('current-food failures expose retry', (tester) async {
@@ -681,23 +695,23 @@ void main() {
   test('production copy identifies boundary and rapid-change holds', () {
     expect(
       b04ProductionStateCopy('policy_boundary_reached'),
-      contains('policy boundary'),
+      contains('supported range'),
     );
     expect(
       b04ProductionStateCopy('rapid_change_review'),
-      contains('Recent change evidence'),
+      contains('Recent changes need'),
     );
     expect(
       b04ProductionStateCopy('readiness_incomplete_or_unavailable'),
-      contains('Readiness evidence is incomplete'),
+      contains('need a little more activity information'),
     );
     expect(
       b04ProductionStateCopy('candidate_evidence_unavailable'),
-      contains('Safety-sensitive guidance is unavailable'),
+      contains('need more dietary information'),
     );
     expect(
       b04ProductionStateCopy('no_candidate_after_filter'),
-      contains('No explicit local meal opportunity'),
+      contains('Nothing to recommend yet'),
     );
   });
 
@@ -831,7 +845,7 @@ B04Recommendation _mealRecommendation() => B04Recommendation(
   state: B04RecommendationState.available,
   priority: B04RecommendationPriority.nutrition,
   rationaleCode: 'meal_opportunity_target_fit',
-  explanation: 'This local candidate fits the recorded target evidence.',
+  explanation: 'reason_code=daily_totals_missing evidence_id=candidate-v1',
   confidence: B04RecommendationConfidence.high,
   completeness: B04RecommendationCompleteness.complete,
   evidenceIds: const ['candidate-v1'],

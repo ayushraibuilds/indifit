@@ -5,6 +5,7 @@ import '../../core/nutrition_constraints.dart';
 import '../../core/nutrition_consumption_snapshots.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_thali.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_thali_repository.dart';
 
@@ -578,13 +579,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
         : error is QuantityError
         ? 'invalid_quantity'
         : 'thali_operation_failed';
-    final message = error is NutritionThaliError
-        ? error.message
-        : error is NutritionConstraintError
-        ? error.message
-        : error is QuantityError
-        ? error.toString()
-        : error.toString();
+    final message = ProductFailurePresentation.fromCode(code).message;
     state = state.copyWith(
       status: NutritionThaliStatus.failure,
       errorCode: code,

@@ -287,15 +287,17 @@ class FoodContextualActionController
     );
     try {
       await operation();
-    } on FoodContextualUnavailableException catch (error) {
-      _setUnavailable(error.message);
+    } on FoodContextualUnavailableException {
+      _setUnavailable(
+        'This food entry is no longer available. Refresh and try again.',
+      );
     } catch (error) {
       if (!mounted) return;
       _retryAction = retry;
       state = FoodContextualActionState(
         status: FoodContextualActionStatus.failure,
         activeAction: action,
-        message: 'Could not update this food entry: $error',
+        message: 'Could not update this food entry. Try again.',
       );
     }
   }

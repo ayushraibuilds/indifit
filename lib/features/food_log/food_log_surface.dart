@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
@@ -16,10 +17,7 @@ DateTime _civilDay(DateTime value) =>
 /// reconciled; mutations explicitly invalidate the provider below.
 final foodLogsForDayProvider = FutureProvider.autoDispose
     .family<List<FoodLog>, DateTime>((ref, date) {
-      return ref
-          .watch(foodRepositoryProvider)
-          .watchLogsForDay(_civilDay(date))
-          .first;
+      return ref.watch(foodRepositoryProvider).getLogsForDay(_civilDay(date));
     });
 
 /// A compact production food-log surface used by the existing food-search/log
@@ -40,23 +38,13 @@ class FoodLogEntriesPanel extends ConsumerWidget {
           status: B05SemanticStatus.info,
           label: 'Loading logged food',
         ),
-        error: (error, _) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            B05StatusMessage(
-              status: B05SemanticStatus.unavailable,
-              label: 'Logged food is unavailable',
-              value: error.toString(),
-            ),
-            const SizedBox(height: B05Layout.space8),
-            B05ActionButton(
-              label: 'Retry logged food',
-              icon: Icons.refresh_rounded,
-              emphasis: B05ActionEmphasis.secondary,
-              onPressed: () =>
-                  ref.invalidate(foodLogsForDayProvider(_civilDay(date))),
-            ),
-          ],
+        error: (_, _) => ProductFailureCard(
+          failure: ProductFailurePresentation.fromCode(
+            'food_log_unavailable',
+            title: 'Logged food is unavailable',
+          ),
+          onRetry: () =>
+              ref.invalidate(foodLogsForDayProvider(_civilDay(date))),
         ),
         data: (items) {
           if (items.isEmpty) {

@@ -169,7 +169,7 @@ class B05PlaylistLaunchService {
     if (strictOffline) {
       return const B05PlaylistLaunchResult(
         status: B05PlaylistLaunchStatus.offline,
-        message: 'Playlist launch is unavailable in strict-offline mode.',
+        message: 'Music is unavailable while you’re offline.',
       );
     }
     late final B05PlaylistReference reference;
@@ -178,10 +178,11 @@ class B05PlaylistLaunchService {
         preference.providerId,
         preference.normalizedReference,
       );
-    } on Object catch (error) {
+    } on Object {
       return B05PlaylistLaunchResult(
         status: B05PlaylistLaunchStatus.invalid,
-        message: 'Saved playlist reference is invalid: $error',
+        message:
+            'This playlist is no longer available. Choose another playlist.',
       );
     }
     try {
@@ -203,10 +204,10 @@ class B05PlaylistLaunchService {
         message: 'Playlist opened.',
         uri: reference.launchUri,
       );
-    } on Object catch (error) {
+    } on Object {
       return B05PlaylistLaunchResult(
         status: B05PlaylistLaunchStatus.failure,
-        message: 'Playlist launch failed: $error',
+        message: 'The playlist could not be opened. Try again.',
       );
     }
   }
@@ -266,19 +267,19 @@ class B05PlaylistController extends StateNotifier<B05PlaylistControllerState> {
       final message =
           preference != null &&
               !_isValidPlaylistPreference(_registry, preference)
-          ? 'Saved playlist preference is unavailable in this build. Choose an approved provider and reference.'
+          ? 'Saved playlist preference is unavailable. Choose a supported music app and playlist.'
           : null;
       state = B05PlaylistControllerState(
         status: B05PlaylistControllerStatus.ready,
         preference: preference,
         message: message,
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       state = B05PlaylistControllerState(
         status: B05PlaylistControllerStatus.error,
         preference: state.preference,
-        message: error.toString(),
+        message: 'Playlist settings could not be loaded. Try again.',
       );
     }
   }
@@ -306,12 +307,12 @@ class B05PlaylistController extends StateNotifier<B05PlaylistControllerState> {
         preference: preference,
         message: 'Playlist preference saved.',
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       state = B05PlaylistControllerState(
         status: B05PlaylistControllerStatus.error,
         preference: state.preference,
-        message: error.toString(),
+        message: 'Playlist preference could not be saved. Try again.',
       );
     }
   }
@@ -329,12 +330,12 @@ class B05PlaylistController extends StateNotifier<B05PlaylistControllerState> {
         status: B05PlaylistControllerStatus.ready,
         message: 'Playlist preference cleared.',
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       state = B05PlaylistControllerState(
         status: B05PlaylistControllerStatus.error,
         preference: state.preference,
-        message: error.toString(),
+        message: 'Playlist preference could not be cleared. Try again.',
       );
     }
   }
@@ -360,17 +361,17 @@ class B05PlaylistController extends StateNotifier<B05PlaylistControllerState> {
         );
       }
       return result;
-    } catch (error) {
+    } catch (_) {
       if (mounted) {
         state = B05PlaylistControllerState(
           status: B05PlaylistControllerStatus.error,
           preference: preference,
-          message: error.toString(),
+          message: 'The playlist could not be opened. Try again.',
         );
       }
       return B05PlaylistLaunchResult(
         status: B05PlaylistLaunchStatus.failure,
-        message: 'Playlist launch failed: $error',
+        message: 'The playlist could not be opened. Try again.',
       );
     } finally {
       _isLaunching = false;
@@ -416,6 +417,7 @@ class B05PlaylistLauncherButton extends ConsumerWidget {
     final state = ref.watch(b05PlaylistControllerProvider);
     final registry = ref.watch(b05PlaylistProviderRegistryProvider);
     final controller = ref.read(b05PlaylistControllerProvider.notifier);
+    if (registry.providers.isEmpty) return const SizedBox.shrink();
     final preference = state.preference;
     if (state.status == B05PlaylistControllerStatus.loading ||
         state.status == B05PlaylistControllerStatus.launching) {
@@ -434,7 +436,7 @@ class B05PlaylistLauncherButton extends ConsumerWidget {
         label: 'Playlist launcher',
         hint:
             state.message ??
-            'Saved playlist is unavailable. Open settings to choose an approved playlist provider.',
+            'Saved playlist is unavailable. Choose a supported music app in Settings.',
         onPressed: () => context.push('/settings'),
         focusOrder: 3,
       );
@@ -504,9 +506,8 @@ class _B05PlaylistSettingsPanelState
     if (registry.providers.isEmpty) {
       return const B05StatusMessage(
         status: B05SemanticStatus.unavailable,
-        label: 'Playlist setup is unavailable',
-        value:
-            'An approved provider allowlist is required before a playlist can be saved or launched.',
+        label: 'Workout music is not available yet',
+        value: 'You can still complete workouts with the in-app guidance.',
       );
     }
     if (state.status == B05PlaylistControllerStatus.loading &&
@@ -550,19 +551,22 @@ class _B05PlaylistSettingsPanelState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Workout playlist', style: B05Typography.title(context)),
+            Text('Workout music', style: B05Typography.title(context)),
             const SizedBox(height: B05Layout.space4),
             Text(
-              'Save a validated provider reference for quick launch during a workout.',
+              'Save a playlist for quick access during a workout.',
               style: B05Typography.body(context),
             ),
             const SizedBox(height: B05Layout.space12),
             DropdownButtonFormField<String>(
               initialValue: provider,
-              decoration: const InputDecoration(labelText: 'Provider'),
+              decoration: const InputDecoration(labelText: 'Music app'),
               items: [
                 for (final item in registry.providers.values)
-                  DropdownMenuItem(value: item.id, child: Text(item.id)),
+                  DropdownMenuItem(
+                    value: item.id,
+                    child: Text(_providerLabel(item.id)),
+                  ),
               ],
               onChanged: state.isBusy
                   ? null
@@ -573,15 +577,15 @@ class _B05PlaylistSettingsPanelState
               controller: _referenceController,
               enabled: !state.isBusy,
               decoration: const InputDecoration(
-                labelText: 'Playlist reference',
-                hintText: 'Provider-specific URI or link',
+                labelText: 'Playlist link',
+                hintText: 'Paste a link from your music app',
               ),
             ),
             const SizedBox(height: B05Layout.space8),
             TextField(
               controller: _labelController,
               enabled: !state.isBusy,
-              decoration: const InputDecoration(labelText: 'Label (optional)'),
+              decoration: const InputDecoration(labelText: 'Name (optional)'),
             ),
             const SizedBox(height: B05Layout.space8),
             B05ActionGroup(
@@ -599,7 +603,7 @@ class _B05PlaylistSettingsPanelState
                 ),
                 if (state.preference != null)
                   B05ActionButton(
-                    label: 'Clear playlist',
+                    label: 'Remove playlist',
                     icon: Icons.delete_outline,
                     emphasis: B05ActionEmphasis.secondary,
                     onPressed: state.isBusy ? null : controller.clear,
@@ -623,17 +627,77 @@ class _B05PlaylistSettingsPanelState
   }
 }
 
-class B05PlaylistSettingsScreen extends StatelessWidget {
+class B05PlaylistSettingsScreen extends ConsumerWidget {
   const B05PlaylistSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Workout playlist')),
-    body: const SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.all(B05Layout.space16),
-        child: B05PlaylistSettingsPanel(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final available = ref.watch(b05PlaylistProviderRegistryProvider).providers;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Workout music')),
+      body: SafeArea(
+        child: available.isEmpty
+            ? _PlaylistUnavailableBody(
+                onBack: () => Navigator.of(context).maybePop(),
+              )
+            : const SingleChildScrollView(
+                padding: EdgeInsets.all(B05Layout.space16),
+                child: B05PlaylistSettingsPanel(),
+              ),
+      ),
+    );
+  }
+}
+
+class _PlaylistUnavailableBody extends StatelessWidget {
+  final VoidCallback onBack;
+
+  const _PlaylistUnavailableBody({required this.onBack});
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(B05Layout.space24),
+      child: B05Surface(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.music_off_outlined,
+              size: 40,
+              color: context.b05Colors.textSecondary,
+            ),
+            const SizedBox(height: B05Layout.space12),
+            Text(
+              'Workout music is unavailable',
+              style: B05Typography.title(context),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: B05Layout.space4),
+            Text(
+              'There is nothing to set up on this device yet. Your workouts and instructions are still ready to use.',
+              style: B05Typography.body(context),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: B05Layout.space16),
+            B05ActionButton(
+              label: 'Go back',
+              icon: Icons.arrow_back,
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: onBack,
+            ),
+          ],
+        ),
       ),
     ),
   );
+}
+
+String _providerLabel(String value) {
+  return switch (value.trim().toLowerCase()) {
+    'spotify' => 'Spotify',
+    'youtube_music' || 'youtube-music' => 'YouTube Music',
+    'apple_music' || 'apple-music' => 'Apple Music',
+    _ => 'Music app',
+  };
 }

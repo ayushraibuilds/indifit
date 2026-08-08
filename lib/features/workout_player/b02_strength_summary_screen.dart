@@ -179,9 +179,7 @@ class _Body extends StatelessWidget {
             child: ListTile(
               leading: Icon(Icons.info_outline),
               title: Text('No performed sets yet'),
-              subtitle: Text(
-                'Log at least one canonical set before finishing.',
-              ),
+              subtitle: Text('Log at least one set before finishing.'),
             ),
           ),
         for (final exercise in performed) _PerformedCard(exercise: exercise),

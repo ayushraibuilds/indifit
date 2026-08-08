@@ -43,6 +43,13 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     required this.page,
     required this.surface,
     required this.surfaceSubtle,
+    required this.section,
+    required this.inset,
+    required this.selected,
+    required this.interactive,
+    required this.navigationSurface,
+    required this.navigationSelected,
+    required this.navigationUnselected,
     required this.textPrimary,
     required this.textSecondary,
     required this.textDisabled,
@@ -66,6 +73,25 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
   });
 
   final Color page;
+
+  /// The neutral, single-boundary surface for a product information group.
+  final Color section;
+
+  /// A recessed area within a section, such as a metric or compact input.
+  final Color inset;
+
+  /// The tonal state for a selected product choice.
+  final Color selected;
+
+  /// The tonal state for a tappable, non-selected product row.
+  final Color interactive;
+
+  /// Navigation colors intentionally have their own contrast contract.
+  final Color navigationSurface;
+  final Color navigationSelected;
+  final Color navigationUnselected;
+
+  /// Backwards-compatible aliases used by earlier B05 presentation surfaces.
   final Color surface;
   final Color surfaceSubtle;
   final Color textPrimary;
@@ -94,6 +120,13 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
 
   static const dark = B05SemanticColors(
     page: Color(0xFF060A12),
+    section: Color(0xFF0F172A),
+    inset: Color(0xFF162033),
+    selected: Color(0xFF103B31),
+    interactive: Color(0xFF172235),
+    navigationSurface: Color(0xFF0B1220),
+    navigationSelected: Color(0xFF34D399),
+    navigationUnselected: Color(0xFF94A3B8),
     surface: Color(0xFF0F172A),
     surfaceSubtle: Color(0xFF162033),
     textPrimary: Color(0xFFF1F5F9),
@@ -168,6 +201,13 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
 
   static const light = B05SemanticColors(
     page: Color(0xFFF8FAFC),
+    section: Color(0xFFFFFFFF),
+    inset: Color(0xFFF1F5F9),
+    selected: Color(0xFFD1FAE5),
+    interactive: Color(0xFFECFDF5),
+    navigationSurface: Color(0xFFFFFFFF),
+    navigationSelected: Color(0xFF0F766E),
+    navigationUnselected: Color(0xFF475569),
     surface: Color(0xFFFFFFFF),
     surfaceSubtle: Color(0xFFF1F5F9),
     textPrimary: Color(0xFF0F172A),
@@ -272,6 +312,13 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
     Color? page,
     Color? surface,
     Color? surfaceSubtle,
+    Color? section,
+    Color? inset,
+    Color? selected,
+    Color? interactive,
+    Color? navigationSurface,
+    Color? navigationSelected,
+    Color? navigationUnselected,
     Color? textPrimary,
     Color? textSecondary,
     Color? textDisabled,
@@ -297,6 +344,13 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       page: page ?? this.page,
       surface: surface ?? this.surface,
       surfaceSubtle: surfaceSubtle ?? this.surfaceSubtle,
+      section: section ?? this.section,
+      inset: inset ?? this.inset,
+      selected: selected ?? this.selected,
+      interactive: interactive ?? this.interactive,
+      navigationSurface: navigationSurface ?? this.navigationSurface,
+      navigationSelected: navigationSelected ?? this.navigationSelected,
+      navigationUnselected: navigationUnselected ?? this.navigationUnselected,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textDisabled: textDisabled ?? this.textDisabled,
@@ -327,6 +381,25 @@ class B05SemanticColors extends ThemeExtension<B05SemanticColors> {
       page: Color.lerp(page, other.page, t)!,
       surface: Color.lerp(surface, other.surface, t)!,
       surfaceSubtle: Color.lerp(surfaceSubtle, other.surfaceSubtle, t)!,
+      section: Color.lerp(section, other.section, t)!,
+      inset: Color.lerp(inset, other.inset, t)!,
+      selected: Color.lerp(selected, other.selected, t)!,
+      interactive: Color.lerp(interactive, other.interactive, t)!,
+      navigationSurface: Color.lerp(
+        navigationSurface,
+        other.navigationSurface,
+        t,
+      )!,
+      navigationSelected: Color.lerp(
+        navigationSelected,
+        other.navigationSelected,
+        t,
+      )!,
+      navigationUnselected: Color.lerp(
+        navigationUnselected,
+        other.navigationUnselected,
+        t,
+      )!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textDisabled: Color.lerp(textDisabled, other.textDisabled, t)!,

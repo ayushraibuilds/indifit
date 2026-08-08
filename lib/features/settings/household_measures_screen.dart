@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/nutrition_household_measures.dart';
+import '../../core/presentation/secondary_presentation.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import 'household_measures_controller.dart';
 
 class HouseholdMeasuresScreen extends ConsumerStatefulWidget {
@@ -27,7 +30,7 @@ class _HouseholdMeasuresScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Household Measures'),
+        title: const Text('Measuring at home'),
         actions: [
           IconButton(
             tooltip: 'Retry loading household measures',
@@ -39,11 +42,18 @@ class _HouseholdMeasuresScreenState
       floatingActionButton: FloatingActionButton.extended(
         onPressed: state.isSaving ? null : () => _showCreateVessel(context),
         icon: const Icon(Icons.add),
-        label: const Text('Add vessel'),
+        label: const Text('Measure your own'),
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.status == HouseholdMeasuresStatus.error
+          ? const Center(
+              child: ConsumerStatusRow(
+                label: 'Loading your measures',
+                detail: 'Getting your cups, bowls, and calibrations ready.',
+                loading: true,
+              ),
+            )
+          : state.status == HouseholdMeasuresStatus.error &&
+                state.vessels.isEmpty
           ? _ErrorState(message: state.message, onRetry: controller.load)
           : _content(context, state, controller),
     );
@@ -63,54 +73,34 @@ class _HouseholdMeasuresScreenState
         Semantics(
           container: true,
           label: 'Volume-only household measure information',
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Volume only',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'A calibrated vessel records its capacity in mL. It does not imply grams for water, rice, dal, or any other food.',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
+          child: B05Surface(
+            showBorder: false,
+            subtle: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'A quick note about measuring',
+                  style: B05Typography.title(context),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'A cup tells us volume, not weight. Your measured cup is useful for portions, but it does not turn water, rice, dal, or another food into grams.',
+                  style: B05Typography.body(context),
+                ),
+              ],
             ),
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'SELECT A MEASURE',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-        ),
+        Text('STANDARD MEASURES', style: B05Typography.label(context)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
             for (final definition in standardMeasures)
-              Semantics(
-                button: true,
-                label: _standardSemanticsLabel(definition),
-                child: ChoiceChip(
-                  label: Text(
-                    definition.hasReviewedVolume
-                        ? '${definition.displayName} (${definition.volume!.point} mL)'
-                        : '${definition.displayName} (unresolved)',
-                  ),
-                  selected: _selectedMeasure == definition.id,
-                  onSelected: (_) =>
-                      setState(() => _selectedMeasure = definition.id),
-                ),
-              ),
+              _standardChoice(context, definition),
             for (final vessel in activeVessels)
               Semantics(
                 button: true,
@@ -132,22 +122,20 @@ class _HouseholdMeasuresScreenState
         if (state.status == HouseholdMeasuresStatus.empty) ...[
           const SizedBox(height: 20),
           const Text(
-            'No personal vessels yet. Add one when you want to record a measured capacity.',
+            'No personal measures yet. Add one when you want to measure your everyday cup or bowl.',
           ),
         ],
         if (state.message != null &&
-            state.status == HouseholdMeasuresStatus.validationError) ...[
+            (state.status == HouseholdMeasuresStatus.validationError ||
+                state.status == HouseholdMeasuresStatus.error)) ...[
           const SizedBox(height: 12),
           _MessageCard(message: state.message!, isError: true),
         ],
         const SizedBox(height: 24),
-        const Text(
-          'PERSONAL VESSELS',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-        ),
+        Text('YOUR MEASURES', style: B05Typography.label(context)),
         const SizedBox(height: 8),
         if (state.vessels.isEmpty)
-          const Text('Personal vessel history will appear here.')
+          const Text('Your measured cups and bowls will appear here.')
         else
           for (final vessel in state.vessels)
             _vesselCard(context, state, controller, vessel),
@@ -163,9 +151,9 @@ class _HouseholdMeasuresScreenState
   ) {
     final calibration = state.currentCalibrations[vessel.id];
     final archived = vessel.isArchived;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: B05Surface(
         padding: const EdgeInsets.fromLTRB(14, 12, 8, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,19 +163,16 @@ class _HouseholdMeasuresScreenState
                 Expanded(
                   child: Text(
                     vessel.displayName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
+                    style: B05Typography.title(context),
                   ),
                 ),
                 if (archived)
                   const Chip(
-                    label: Text('Archived'),
+                    label: Text('Past measure'),
                     visualDensity: VisualDensity.compact,
                   ),
                 PopupMenuButton<String>(
-                  tooltip: 'Vessel actions',
+                  tooltip: 'Measure actions',
                   onSelected: (action) {
                     switch (action) {
                       case 'rename':
@@ -197,14 +182,11 @@ class _HouseholdMeasuresScreenState
                     }
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'rename',
-                      child: Text('Rename vessel'),
-                    ),
+                    const PopupMenuItem(value: 'rename', child: Text('Rename')),
                     if (!archived)
                       const PopupMenuItem(
                         value: 'archive',
-                        child: Text('Archive vessel'),
+                        child: Text('Keep in history'),
                       ),
                   ],
                 ),
@@ -212,18 +194,15 @@ class _HouseholdMeasuresScreenState
             ),
             if (vessel.vesselType != null) ...[
               const SizedBox(height: 2),
-              Text(
-                vessel.vesselType!,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text(vessel.vesselType!, style: B05Typography.body(context)),
             ],
             const SizedBox(height: 8),
             Semantics(
-              label: 'Current calibrated vessel capacity',
+              label: 'Measured capacity',
               child: Text(
                 archived
-                    ? 'Historical calibration: ${_vesselVolumeLabel(calibration)}'
-                    : 'Current capacity: ${_vesselVolumeLabel(calibration)}',
+                    ? 'Past capacity: ${_vesselVolumeLabel(calibration)}'
+                    : 'Capacity: ${_vesselVolumeLabel(calibration)}',
               ),
             ),
             const SizedBox(height: 8),
@@ -237,18 +216,40 @@ class _HouseholdMeasuresScreenState
                   icon: const Icon(Icons.water_drop_outlined, size: 18),
                   label: Text(
                     calibration == null
-                        ? 'Record volume calibration'
-                        : 'Recalibrate volume',
+                        ? 'Measure this cup or bowl'
+                        : 'Measure again',
                   ),
                 ),
               ),
             if (archived)
               Text(
-                'Archived vessels remain readable for history and cannot be used for new entries.',
-                style: Theme.of(context).textTheme.bodySmall,
+                'This measure is kept for your history and is no longer offered for new entries.',
+                style: B05Typography.body(context),
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _standardChoice(
+    BuildContext context,
+    NutritionHouseholdMeasureDefinition definition,
+  ) {
+    final presentation = HouseholdMeasurePresentation.fromDefinition(
+      definition,
+    );
+    return Semantics(
+      button: true,
+      label: _standardSemanticsLabel(definition),
+      child: ChoiceChip(
+        label: Text(
+          presentation.volume == null
+              ? '${presentation.label} (Not calibrated)'
+              : '${presentation.label} (${presentation.volume})',
+        ),
+        selected: _selectedMeasure == definition.id,
+        onSelected: (_) => setState(() => _selectedMeasure = definition.id),
       ),
     );
   }
@@ -259,21 +260,21 @@ class _HouseholdMeasuresScreenState
     final values = await showDialog<Map<String, String?>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add personal vessel'),
+        title: const Text('Measure your own cup or bowl'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               autofocus: true,
               decoration: const InputDecoration(
-                labelText: 'Vessel name',
+                labelText: 'What should we call it?',
                 hintText: 'Breakfast bowl',
               ),
               onChanged: (value) => name = value,
             ),
             TextField(
               decoration: const InputDecoration(
-                labelText: 'Type (optional)',
+                labelText: 'Shape (optional)',
                 hintText: 'Bowl, cup, or katori',
               ),
               onChanged: (value) => type = value,
@@ -290,7 +291,7 @@ class _HouseholdMeasuresScreenState
               'name': name,
               'type': type.trim().isEmpty ? null : type.trim(),
             }),
-            child: const Text('Create'),
+            child: const Text('Add measure'),
           ),
         ],
       ),
@@ -319,11 +320,11 @@ class _HouseholdMeasuresScreenState
       updatedName = await showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Rename vessel'),
+          title: const Text('Rename measure'),
           content: TextField(
             autofocus: true,
             controller: nameController,
-            decoration: const InputDecoration(labelText: 'Vessel name'),
+            decoration: const InputDecoration(labelText: 'Measure name'),
             onChanged: (value) => name = value,
           ),
           actions: [
@@ -359,15 +360,15 @@ class _HouseholdMeasuresScreenState
     final value = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Record vessel capacity'),
+        title: const Text('Measure its capacity'),
         content: TextField(
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: const InputDecoration(
-            labelText: 'Capacity (mL)',
+            labelText: 'Capacity',
             hintText: '180',
             suffixText: 'mL',
-            helperText: 'This measures volume only, not food mass.',
+            helperText: 'Volume only — it does not tell us food weight.',
           ),
           onChanged: (input) => volume = input,
         ),
@@ -378,7 +379,7 @@ class _HouseholdMeasuresScreenState
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, volume),
-            child: const Text('Save volume'),
+            child: const Text('Save measurement'),
           ),
         ],
       ),
@@ -401,9 +402,9 @@ class _HouseholdMeasuresScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Archive vessel?'),
+        title: const Text('Keep this measure in history?'),
         content: const Text(
-          'The vessel and its calibration history will remain readable, but it will not be offered for new entries.',
+          'Its measurement will remain readable, but it will no longer be offered for new entries.',
         ),
         actions: [
           TextButton(
@@ -412,7 +413,7 @@ class _HouseholdMeasuresScreenState
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Archive'),
+            child: const Text('Keep in history'),
           ),
         ],
       ),
@@ -426,7 +427,7 @@ class _HouseholdMeasuresScreenState
     NutritionHouseholdMeasureDefinition definition,
   ) => definition.hasReviewedVolume
       ? '${definition.displayName}, reviewed volume ${definition.volume!.point} mL'
-      : '${definition.displayName}, unresolved volume';
+      : '${definition.displayName}, not calibrated; measure yours';
 
   static String _vesselSemanticsLabel(
     NutritionPersonalVessel vessel,
@@ -434,9 +435,9 @@ class _HouseholdMeasuresScreenState
   ) => '${vessel.displayName}, ${_vesselVolumeLabel(calibration)}';
 
   static String _vesselVolumeLabel(NutritionVesselCalibration? calibration) {
-    if (calibration == null) return 'volume unresolved';
+    if (calibration == null) return 'Not calibrated';
     final volume = calibration.volume.normalizedToMillilitres();
-    if (volume.point == null) return 'volume range unresolved';
+    if (volume.point == null) return 'Needs measuring';
     return '${volume.point} mL';
   }
 }
@@ -456,7 +457,11 @@ class _ErrorState extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, size: 42),
           const SizedBox(height: 12),
-          Text(message ?? 'Household measures could not be loaded.'),
+          const Text('Household measures are unavailable right now.'),
+          if (message != null) ...[
+            const SizedBox(height: 8),
+            Text(message!, textAlign: TextAlign.center),
+          ],
           const SizedBox(height: 12),
           OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
         ],

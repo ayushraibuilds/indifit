@@ -101,7 +101,7 @@ void main() {
       await tester.pump();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Playlist reference'), findsOneWidget);
+      expect(find.text('Playlist link'), findsOneWidget);
       expect(find.text('Save playlist'), findsOneWidget);
       expect(
         find.textContaining('Saved playlist preference is unavailable'),

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/nutrition_constraints.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/repositories/nutrition_constraint_repository.dart';
 
 enum NutritionConstraintManagementStatus {
@@ -190,12 +191,23 @@ class NutritionConstraintManagementController
 
   Future<void> retry() => load();
 
+  Future<List<NutritionConstraintTargetOption>> searchTargetOptions({
+    required NutritionConstraintTargetType type,
+    String query = '',
+  }) => _repository.searchTargetOptions(type: type, query: query);
+
+  Future<String?> targetDisplayLabel(NutritionConstraintTarget target) =>
+      _repository.targetDisplayLabel(target);
+
   void _failure(Object error) {
     final typed = error is NutritionConstraintError ? error : null;
     state = state.copyWith(
       status: NutritionConstraintManagementStatus.failure,
       errorCode: typed?.code ?? 'constraint_operation_failed',
-      message: typed?.message ?? 'Could not update dietary constraints.',
+      message: ProductFailurePresentation.fromCode(
+        typed?.code ?? 'constraint_operation_failed',
+        title: 'Dietary preferences unavailable',
+      ).message,
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/nutrition_household_measures.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/repositories/dashboard_personalization_repository.dart';
 import 'dashboard_module_registry.dart';
 
@@ -73,7 +74,11 @@ class DashboardPersonalizationController
       state = DashboardPersonalizationState(
         status: DashboardPersonalizationStatus.error,
         layout: state.layout,
-        errorMessage: error.toString(),
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Dashboard settings unavailable',
+          code: 'dashboard_settings_unavailable',
+        ).message,
       );
     }
   }
@@ -134,7 +139,11 @@ class DashboardPersonalizationController
       state = DashboardPersonalizationState(
         status: DashboardPersonalizationStatus.error,
         layout: state.layout,
-        errorMessage: error.toString(),
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Dashboard settings could not be saved',
+          code: 'dashboard_settings_save_failed',
+        ).message,
       );
     }
   }

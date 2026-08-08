@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/fixtures/b05_foundation_registry.dart';
 import '../../core/nutrition_household_measures.dart';
+import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../education/b05_education_content.dart';
@@ -154,12 +155,12 @@ class B05AdaptiveOnboardingController
         currentLessonIndex: _nextIncompleteIndex(lessons),
         clearError: true,
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       _retryAction = load;
       state = state.copyWith(
         status: B05AdaptiveOnboardingStatus.error,
-        errorMessage: error.toString(),
+        errorMessage: 'Your learning plan could not be loaded. Try again.',
       );
     }
   }
@@ -204,12 +205,12 @@ class B05AdaptiveOnboardingController
       await action(lesson);
       if (!mounted) return;
       await load();
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       _retryAction = () => _run(contentId, action);
       state = state.copyWith(
         status: B05AdaptiveOnboardingStatus.error,
-        errorMessage: error.toString(),
+        errorMessage: 'That lesson could not be saved. Try again.',
       );
     }
   }
@@ -455,7 +456,7 @@ class B05OnboardingDraftStore {
       _choice(value, const {'lose', 'maintain', 'gain'}, fallback: 'maintain');
 
   static String normalizeDiet(String? value) =>
-      _choice(value, const {'veg', 'non-veg', 'vegan'}, fallback: 'veg');
+      DietPreferencePresentation.normalizeForOnboarding(value);
 
   static String normalizeRoutineGoal(String? value) => _choice(value, const {
     'hypertrophy',
@@ -649,7 +650,7 @@ class _B05AdaptiveLessonTile extends StatelessWidget {
         container: true,
         explicitChildNodes: true,
         label: _title(item.lesson.lesson.topic),
-        value: '$label, version ${item.lesson.lesson.version}',
+        value: label,
         hint: isCurrent ? 'Next relevant lesson' : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -677,7 +678,7 @@ class _B05AdaptiveLessonTile extends StatelessWidget {
             const SizedBox(height: B05Layout.space4),
             Text(item.lesson.lesson.body, style: B05Typography.body(context)),
             const SizedBox(height: B05Layout.space4),
-            Text('$label · Version ${item.lesson.lesson.version}'),
+            Text(label),
             const SizedBox(height: B05Layout.space8),
             B05ActionGroup(
               children: [

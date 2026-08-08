@@ -70,7 +70,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
             title: const Text('Barcode Lookup Unavailable'),
             content: Text(
               lookupError is StateError
-                  ? lookupError.message.toString()
+                  ? 'This barcode could not be looked up. Try again.'
                   : 'We could not reach the food database. Your scan was not lost; try again when you are connected.',
             ),
             actions: [

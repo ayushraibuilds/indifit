@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../../data/database/app_database.dart' show ScheduledSessionOccurrence;
 import '../../data/repositories/calendar_read_repository.dart';
@@ -195,7 +196,14 @@ class CalendarController extends StateNotifier<CalendarUiState> {
           },
           onError: (Object error, StackTrace _) {
             if (!mounted || generation != _generation) return;
-            state = state.copyWith(isLoading: false, errorMessage: '$error');
+            state = state.copyWith(
+              isLoading: false,
+              errorMessage: ProductFailurePresentation.fromError(
+                error,
+                title: 'Calendar unavailable',
+                code: 'calendar_unavailable',
+              ).message,
+            );
           },
         );
     await _loadSnapshot(bounds, generation);
@@ -216,7 +224,14 @@ class CalendarController extends StateNotifier<CalendarUiState> {
       }
     } catch (error) {
       if (mounted && generation == _generation) {
-        state = state.copyWith(isLoading: false, errorMessage: '$error');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: ProductFailurePresentation.fromError(
+            error,
+            title: 'Calendar unavailable',
+            code: 'calendar_unavailable',
+          ).message,
+        );
       }
     }
   }

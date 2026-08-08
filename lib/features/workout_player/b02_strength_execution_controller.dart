@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
@@ -511,7 +512,9 @@ class B02StrengthExecutionController
           ? B02StrengthExecutionStatus.recovery
           : B02StrengthExecutionStatus.failure,
       launch: launch,
-      errorMessage: error.toString(),
+      errorMessage: ProductFailurePresentation.fromCode(
+        recovery ? 'workout_recovery_needed' : 'workout_save_failed',
+      ).message,
     );
   }
 }
