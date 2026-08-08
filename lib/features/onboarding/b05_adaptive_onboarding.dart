@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/fixtures/b05_foundation_registry.dart';
 import '../../core/nutrition_household_measures.dart';
+import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../education/b05_education_content.dart';
@@ -455,7 +456,7 @@ class B05OnboardingDraftStore {
       _choice(value, const {'lose', 'maintain', 'gain'}, fallback: 'maintain');
 
   static String normalizeDiet(String? value) =>
-      _choice(value, const {'veg', 'non-veg', 'vegan'}, fallback: 'veg');
+      DietPreferencePresentation.normalizeForOnboarding(value);
 
   static String normalizeRoutineGoal(String? value) => _choice(value, const {
     'hypertrophy',

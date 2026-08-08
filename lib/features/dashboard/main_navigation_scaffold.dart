@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/colors.dart';
 import '../exercise_library/exercise_library_screen.dart';
 import '../progress/progress_screen.dart';
 import '../workout_player/routine_display_screen.dart';
@@ -34,37 +33,26 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
             _currentIndex = index;
           });
         },
-        backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.primaryGlow,
         animationDuration: const Duration(milliseconds: 300),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today_rounded, color: AppColors.primary),
+            selectedIcon: Icon(Icons.today_rounded),
             label: 'Today',
           ),
           NavigationDestination(
             icon: Icon(Icons.fitness_center_outlined),
-            selectedIcon: Icon(
-              Icons.fitness_center_rounded,
-              color: AppColors.primary,
-            ),
+            selectedIcon: Icon(Icons.fitness_center_rounded),
             label: 'Workouts',
           ),
           NavigationDestination(
             icon: Icon(Icons.library_books_outlined),
-            selectedIcon: Icon(
-              Icons.library_books_rounded,
-              color: AppColors.primary,
-            ),
+            selectedIcon: Icon(Icons.library_books_rounded),
             label: 'Exercises',
           ),
           NavigationDestination(
             icon: Icon(Icons.auto_graph_outlined),
-            selectedIcon: Icon(
-              Icons.auto_graph_rounded,
-              color: AppColors.primary,
-            ),
+            selectedIcon: Icon(Icons.auto_graph_rounded),
             label: 'Progress',
           ),
         ],

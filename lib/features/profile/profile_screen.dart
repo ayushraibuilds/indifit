@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/user_profile_provider.dart';
+import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../dashboard/dashboard_controller.dart';
@@ -23,7 +24,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String _selectedSex = 'male';
   String _selectedGoal = 'maintain';
   String _selectedActivity = 'moderate';
-  String _selectedDiet = 'veg';
+  String? _selectedDiet;
+  String? _dietPreferenceSourceValue;
+  var _dietPreferenceChanged = false;
   String _selectedEquipment = 'full_gym';
 
   bool _initialized = false;
@@ -56,7 +59,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _selectedSex = p.userSex;
       _selectedGoal = p.userGoal;
       _selectedActivity = p.userActivityLevel;
-      _selectedDiet = p.dietPreference;
+      _dietPreferenceSourceValue = p.dietPreference;
+      _dietPreferenceChanged = false;
+      _selectedDiet = DietPreferencePresentation.uiValueFor(p.dietPreference);
       _selectedEquipment = p.equipmentAccess;
 
       _initialized = true;
@@ -197,7 +202,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           sex: _selectedSex,
           activityLevel: _selectedActivity,
           goal: _selectedGoal,
-          dietPreference: _selectedDiet,
+          dietPreference: DietPreferencePresentation.persistedValueFor(
+            originalValue: _dietPreferenceSourceValue,
+            uiValue: _selectedDiet,
+            userChanged: _dietPreferenceChanged,
+          ),
           equipmentAccess: _selectedEquipment,
           injuriesLimitations: injuries,
           calorieGoal: newCals,
@@ -410,30 +419,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: DropdownButtonFormField<String>(
-                  // ignore: deprecated_member_use
-                  value: _selectedDiet,
-                  decoration: const InputDecoration(
+                child: DietPreferenceDropdown(
+                  selectedUiValue: _selectedDiet,
+                  decoration: InputDecoration(
                     labelText: 'Diet Choice',
-                    prefixIcon: Icon(Icons.restaurant_rounded),
+                    helperText: _selectedDiet == null
+                        ? 'Choose your dietary preference.'
+                        : null,
+                    prefixIcon: const Icon(Icons.restaurant_rounded),
                   ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'veg',
-                      child: Text('Vegetarian (Paneer, Curd, Dals)'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'vegan',
-                      child: Text('Vegan (Plant-based, Tofu, Soya)'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'non_veg',
-                      child: Text('Non-Vegetarian (Chicken, Eggs, Fish)'),
-                    ),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _selectedDiet = val);
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedDiet = value;
+                        _dietPreferenceChanged = true;
+                      });
                     }
                   },
                 ),

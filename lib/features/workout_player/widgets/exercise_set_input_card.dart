@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/colors.dart';
+import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/legacy_workout_compatibility_adapter.dart';
 import 'plate_calculator_sheet.dart';
@@ -69,14 +70,8 @@ class ExerciseSetInputCard extends StatelessWidget {
                   onPressed: () {
                     final double w =
                         double.tryParse(weightController.text) ?? 20.0;
-                    showModalBottomSheet(
+                    showIndiFitBottomSheet<void>(
                       context: context,
-                      backgroundColor: AppColors.surface,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(20),
-                        ),
-                      ),
                       builder: (context) =>
                           PlateCalculatorSheet(targetWeight: w),
                     );

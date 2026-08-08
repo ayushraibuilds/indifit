@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/colors.dart';
+import '../../../core/widgets/indi_fit_bottom_sheet.dart';
+import '../../../core/widgets/responsive_form_primitives.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/workout_repository.dart';
 
@@ -38,6 +40,9 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
   void dispose() {
     _nameController.dispose();
     _durationController.dispose();
+    for (final exercise in _exercises) {
+      exercise.dispose();
+    }
     super.dispose();
   }
 
@@ -46,13 +51,8 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
     final allExercises = await repo.searchExercises('');
     if (!mounted) return;
 
-    await showModalBottomSheet(
+    await showIndiFitBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (ctx) {
         String query = '';
         return StatefulBuilder(
@@ -62,20 +62,10 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                   (e) => e.name.toLowerCase().contains(query.toLowerCase()),
                 )
                 .toList();
-            return Container(
-              height: MediaQuery.of(ctx).size.height * 0.7,
-              padding: const EdgeInsets.all(16.0),
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: Column(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
                   TextField(
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.search),
@@ -196,242 +186,235 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
     }
   }
 
+  Widget _buildExerciseCard(_ManualExerciseInput exercise, int exerciseIndex) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    exercise.exerciseName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Remove ${exercise.exerciseName}',
+                  icon: const Icon(
+                    Icons.close,
+                    size: 16,
+                    color: AppColors.textMuted,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _exercises.removeAt(exerciseIndex).dispose();
+                    });
+                  },
+                ),
+              ],
+            ),
+            ...exercise.sets.asMap().entries.map((setEntry) {
+              final setIndex = setEntry.key;
+              final setInput = setEntry.value;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 52,
+                      child: Text(
+                        'Set ${setIndex + 1}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: setInput.weightController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'kg',
+                          isDense: true,
+                        ),
+                        onChanged: (value) =>
+                            setInput.weightKg = double.tryParse(value) ?? 0.0,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: setInput.repsController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'reps',
+                          isDense: true,
+                        ),
+                        onChanged: (value) =>
+                            setInput.reps = int.tryParse(value) ?? 0,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Remove set ${setIndex + 1}',
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: AppColors.textMuted,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          exercise.sets.removeAt(setIndex).dispose();
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  final lastWeight = exercise.sets.isNotEmpty
+                      ? exercise.sets.last.weightKg
+                      : 40.0;
+                  final lastReps = exercise.sets.isNotEmpty
+                      ? exercise.sets.last.reps
+                      : 10;
+                  exercise.sets.add(
+                    _SetInput(weightKg: lastWeight, reps: lastReps),
+                  );
+                });
+              },
+              icon: const Icon(Icons.add, size: 14),
+              label: const Text('Add Set', style: TextStyle(fontSize: 11)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateStr =
         '${widget.selectedDate.day}/${widget.selectedDate.month}/${widget.selectedDate.year}';
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      padding: EdgeInsets.only(
-        left: 20.0,
-        right: 20.0,
-        top: 12.0,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Log Completed Workout',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              Chip(
-                label: Text(
-                  dateStr,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                backgroundColor: AppColors.primaryGlow,
-                labelStyle: const TextStyle(color: AppColors.primary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Workout Title',
-                    isDense: true,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: _durationController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Duration (min)',
-                    isDense: true,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'EXERCISES LOGGED',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textMuted,
-                ),
-              ),
-              TextButton.icon(
-                onPressed: _addExercise,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text(
-                  'Add Exercise',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ),
-            ],
-          ),
           Expanded(
-            child: _exercises.isEmpty
-                ? Center(
-                    child: TextButton.icon(
-                      onPressed: _addExercise,
-                      icon: const Icon(Icons.fitness_center_rounded),
-                      label: const Text('Tap to add exercises to this log'),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: _exercises.length,
-                    itemBuilder: (context, exIdx) {
-                      final ex = _exercises[exIdx];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    ex.exerciseName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.close,
-                                      size: 16,
-                                      color: AppColors.textMuted,
-                                    ),
-                                    onPressed: () => setState(
-                                      () => _exercises.removeAt(exIdx),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              ...ex.sets.asMap().entries.map((setEntry) {
-                                final sIdx = setEntry.key;
-                                final setInput = setEntry.value;
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        'Set ${sIdx + 1}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      SizedBox(
-                                        width: 60,
-                                        child: TextField(
-                                          controller: TextEditingController(
-                                            text: '${setInput.weightKg}',
-                                          ),
-                                          keyboardType:
-                                              const TextInputType.numberWithOptions(
-                                                decimal: true,
-                                              ),
-                                          decoration: const InputDecoration(
-                                            labelText: 'kg',
-                                            isDense: true,
-                                          ),
-                                          onChanged: (v) => setInput.weightKg =
-                                              double.tryParse(v) ?? 0.0,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      SizedBox(
-                                        width: 60,
-                                        child: TextField(
-                                          controller: TextEditingController(
-                                            text: '${setInput.reps}',
-                                          ),
-                                          keyboardType: TextInputType.number,
-                                          decoration: const InputDecoration(
-                                            labelText: 'reps',
-                                            isDense: true,
-                                          ),
-                                          onChanged: (v) => setInput.reps =
-                                              int.tryParse(v) ?? 0,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete_outline,
-                                          size: 16,
-                                          color: AppColors.textMuted,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            ex.sets.removeAt(sIdx);
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }),
-                              TextButton.icon(
-                                onPressed: () {
-                                  setState(() {
-                                    final lastWeight = ex.sets.isNotEmpty
-                                        ? ex.sets.last.weightKg
-                                        : 40.0;
-                                    final lastReps = ex.sets.isNotEmpty
-                                        ? ex.sets.last.reps
-                                        : 10;
-                                    ex.sets.add(
-                                      _SetInput(
-                                        weightKg: lastWeight,
-                                        reps: lastReps,
-                                      ),
-                                    );
-                                  });
-                                },
-                                icon: const Icon(Icons.add, size: 14),
-                                label: const Text(
-                                  'Add Set',
-                                  style: TextStyle(fontSize: 11),
-                                ),
-                              ),
-                            ],
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Log Completed Workout',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
-                      );
-                    },
+                      ),
+                      Chip(
+                        label: Text(
+                          dateStr,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        backgroundColor: AppColors.primaryGlow,
+                        labelStyle: const TextStyle(color: AppColors.primary),
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 12),
+                  IndiFitResponsiveFieldGroup(
+                    children: [
+                      TextField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Workout Title',
+                          isDense: true,
+                        ),
+                      ),
+                      TextField(
+                        controller: _durationController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Duration (min)',
+                          isDense: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const Text(
+                        'EXERCISES LOGGED',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _addExercise,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text(
+                          'Add Exercise',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_exercises.isEmpty)
+                    SizedBox(
+                      height: 160,
+                      child: Center(
+                        child: TextButton.icon(
+                          onPressed: _addExercise,
+                          icon: const Icon(Icons.fitness_center_rounded),
+                          label: const Text('Tap to add exercises to this log'),
+                        ),
+                      ),
+                    )
+                  else
+                    Column(
+                      children: [
+                        for (var index = 0; index < _exercises.length; index++)
+                          _buildExerciseCard(_exercises[index], index),
+                      ],
+                    ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -464,11 +447,27 @@ class _ManualExerciseInput {
   List<_SetInput> sets;
 
   _ManualExerciseInput({required this.exerciseName, required this.sets});
+
+  void dispose() {
+    for (final set in sets) {
+      set.dispose();
+    }
+  }
 }
 
 class _SetInput {
   double weightKg;
   int reps;
+  late final TextEditingController weightController;
+  late final TextEditingController repsController;
 
-  _SetInput({required this.weightKg, required this.reps});
+  _SetInput({required this.weightKg, required this.reps}) {
+    weightController = TextEditingController(text: '$weightKg');
+    repsController = TextEditingController(text: '$reps');
+  }
+
+  void dispose() {
+    weightController.dispose();
+    repsController.dispose();
+  }
 }
