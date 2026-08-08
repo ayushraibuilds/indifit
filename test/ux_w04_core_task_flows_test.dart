@@ -115,7 +115,7 @@ void main() {
 
     expect(find.text('Welcome to IndiFit!'), findsOneWidget);
     expect(find.text('Select your biological sex:'), findsOneWidget);
-    expect(find.text('Continue'), findsOneWidget);
+    expect(find.text('Next Step'), findsOneWidget);
     expect(find.textContaining('0/100'), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -149,7 +149,7 @@ void main() {
     await tester.ensureVisible(find.text('Logged meals'));
     await tester.tap(find.text('Logged meals'));
     await tester.pump();
-    expect(find.text('Loading logged food'), findsOneWidget);
+    expect(find.text('No food logged for this day'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
     expect(tester.takeException(), isNull);
@@ -175,7 +175,10 @@ void main() {
     for (final theme in [AppTheme.lightTheme, AppTheme.darkTheme]) {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [databaseProvider.overrideWithValue(database)],
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            foodLogsForDayProvider.overrideWith((ref, date) async => []),
+          ],
           child: MaterialApp(
             theme: theme,
             home: const AiMealLoggerScreen(mealType: 'lunch'),
@@ -217,7 +220,7 @@ void main() {
 
     expect(find.text('Log Completed Workout'), findsOneWidget);
     expect(find.text('Add your first exercise'), findsOneWidget);
-    expect(find.text('Save workout'), findsOneWidget);
+    expect(find.text('Save Workout Session'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
