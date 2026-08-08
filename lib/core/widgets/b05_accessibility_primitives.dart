@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../presentation/product_failure_presentation.dart';
 import '../theme/b05_semantic_colors.dart';
 
 /// Shared spacing, icon and target sizes for B05-owned presentation.
@@ -454,6 +455,61 @@ class B05StatusMessage extends StatelessWidget {
       B05SemanticStatus.info => Icons.info_outline,
       B05SemanticStatus.unavailable => Icons.do_not_disturb_alt_outlined,
     };
+  }
+}
+
+/// Production-safe failure treatment shared by consumer screens. It accepts a
+/// mapped presentation value and therefore never renders an exception string.
+class ProductFailureCard extends StatelessWidget {
+  const ProductFailureCard({
+    required this.failure,
+    super.key,
+    this.onRetry,
+    this.onBack,
+  });
+
+  final ProductFailurePresentation failure;
+  final VoidCallback? onRetry;
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return B05Surface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(failure.title, style: B05Typography.title(context)),
+          const SizedBox(height: B05Layout.space8),
+          Text(failure.message, style: B05Typography.body(context)),
+          if (failure.supportReference != null) ...[
+            const SizedBox(height: B05Layout.space8),
+            Text(
+              'Reference ${failure.supportReference}',
+              style: B05Typography.body(context),
+            ),
+          ],
+          if (onRetry != null || onBack != null) ...[
+            const SizedBox(height: B05Layout.space12),
+            B05ActionGroup(
+              children: [
+                if (onRetry != null && failure.canRetry)
+                  B05ActionButton(
+                    label: 'Retry',
+                    icon: Icons.refresh_rounded,
+                    onPressed: onRetry,
+                  ),
+                if (onBack != null)
+                  B05ActionButton(
+                    label: 'Go back',
+                    emphasis: B05ActionEmphasis.secondary,
+                    onPressed: onBack,
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

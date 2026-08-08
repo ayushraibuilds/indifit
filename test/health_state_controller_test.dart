@@ -169,7 +169,7 @@ void main() {
 
       final state = container.read(healthStateProvider);
       expect(state.status, equals(HealthStatus.error));
-      expect(state.errorMessage, contains('Simulated Native Health SDK Error'));
+      expect(state.errorMessage, contains('load this right now'));
     });
 
     test(
@@ -211,7 +211,7 @@ void main() {
 
         final state = container.read(healthStateProvider);
         expect(state.status, equals(HealthStatus.error));
-        expect(state.errorMessage, contains('permission platform error'));
+        expect(state.errorMessage, contains('load this right now'));
       },
     );
   });

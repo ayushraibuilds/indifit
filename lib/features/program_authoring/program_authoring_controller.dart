@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/presentation/product_failure_presentation.dart';
+
 enum ProgramAuthoringStatus { idle, loading, partial, failure, recovery }
 
 /// Ephemeral authoring command state. The graph itself remains owned by the
@@ -67,7 +69,11 @@ class ProgramAuthoringController
   void markFailure(Object error) {
     state = state.copyWith(
       status: ProgramAuthoringStatus.failure,
-      errorMessage: '$error',
+      errorMessage: ProductFailurePresentation.fromError(
+        error,
+        title: 'Program could not be saved',
+        code: 'program_save_failed',
+      ).message,
     );
   }
 

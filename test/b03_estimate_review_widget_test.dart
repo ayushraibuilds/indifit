@@ -75,8 +75,7 @@ void main() {
       try {
         await tester.pump();
 
-        expect(find.text('Provenance and uncertainty'), findsOneWidget);
-        expect(find.textContaining('Source: ai_estimate'), findsOneWidget);
+        expect(find.text('About this estimate'), findsOneWidget);
         expect(find.textContaining('90 kcal'), findsOneWidget);
         expect(find.textContaining('110 kcal'), findsOneWidget);
         expect(find.bySemanticsLabel(RegExp(r'Energy:')), findsOneWidget);

@@ -325,20 +325,20 @@ class B05MediaBundleController extends StateNotifier<B05MediaBundleState> {
           _ => null,
         },
       );
-    } on B05RegistryValidationException catch (error) {
+    } on B05RegistryValidationException {
       if (!mounted) return;
       state = B05MediaBundleState(
         status: B05MediaBundleStatus.invalid,
         preference: state.preference,
-        message: error.message,
+        message: 'Exercise media could not be checked. Try again.',
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       state = B05MediaBundleState(
         status: B05MediaBundleStatus.error,
         manifest: state.manifest,
         preference: state.preference,
-        message: error.toString(),
+        message: 'Exercise media could not be checked. Try again.',
       );
     } finally {
       _isReconciling = false;
@@ -355,7 +355,7 @@ class B05MediaBundleController extends StateNotifier<B05MediaBundleState> {
     if (id == null || id.isEmpty) {
       return const B05MediaExerciseView(
         status: B05MediaExerciseStatus.unavailable,
-        message: 'This exercise has no resolved stable ID for bundled media.',
+        message: 'Exercise media is not available for this exercise.',
       );
     }
     final asset = state.manifest?.assets

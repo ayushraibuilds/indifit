@@ -96,7 +96,7 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
+          _errorMessage = 'Your weekly report could not be loaded. Try again.';
           _isLoading = false;
         });
       }

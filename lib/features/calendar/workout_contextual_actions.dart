@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/presentation/consumer_date_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/calendar_read_repository.dart';
@@ -58,7 +60,7 @@ class _WorkoutContextualActionsState
         builder: (context) => AlertDialog(
           title: const Text('Start outside scheduled date?'),
           content: Text(
-            'This workout is scheduled for ${_item.occurrence.effectiveLocalDate} in ${_item.occurrence.effectiveTimezoneId}. Starting it will not move or skip any other workout.',
+            'This workout is scheduled for ${ConsumerDateLabel.day(_item.occurrence.effectiveLocalDate)}. Starting it will not move or skip any other workout.',
           ),
           actions: [
             TextButton(
@@ -90,7 +92,13 @@ class _WorkoutContextualActionsState
       if (mounted) await _reconcile();
     } catch (error) {
       if (mounted) {
-        setState(() => _launchError = 'Could not open this workout: $error');
+        setState(
+          () => _launchError = ProductFailurePresentation.fromError(
+            error,
+            title: 'Workout unavailable',
+            code: 'workout_unavailable',
+          ).message,
+        );
       }
     } finally {
       if (mounted) setState(() => _isLaunching = false);
@@ -402,7 +410,7 @@ class _WorkoutContextualActionsState
     bool hasTravelOverride,
   ) {
     final occurrence = item.occurrence;
-    return '${occurrence.effectiveLocalDate} • ${item.block.name} • Week ${item.week.programWeekOrdinal + 1}'
+    return '${ConsumerDateLabel.day(occurrence.effectiveLocalDate)} • ${item.block.name} • Week ${item.week.programWeekOrdinal + 1}'
         '${item.isDeload ? ' • Deload' : ''}'
         '${hasTravelOverride ? ' • Travel equipment' : ''}'
         '${item.isOverdue ? ' • Overdue' : ''}';
@@ -434,9 +442,14 @@ class _WorkoutContextualActionsState
   };
 
   static String _spokenStatus(String status) => switch (status) {
+    'planned' => 'Planned',
+    'rescheduled' => 'Rescheduled',
+    'completed' => 'Completed',
     'partiallyCompleted' => 'Partially completed',
     'inProgress' => 'In progress',
-    _ => status,
+    'skipped' => 'Skipped',
+    'cancelled' => 'Cancelled',
+    _ => 'Status not available',
   };
 }
 

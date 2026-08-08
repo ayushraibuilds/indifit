@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_repository.dart';
@@ -66,7 +67,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
         final commandId = widget.completionCommandId;
         if (commandId == null || commandId.trim().isEmpty) {
           throw const ScheduledWorkoutFinalizationException(
-            'Scheduled workout completion is missing its command ID.',
+            'This workout is missing a required detail. Reopen it and try again.',
           );
         }
         await ref
@@ -98,12 +99,18 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.pop(context); // Exit summary and return to split view
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save session: $e'),
+            content: Text(
+              ProductFailurePresentation.fromError(
+                error,
+                title: 'Workout could not be saved',
+                code: 'workout_save_failed',
+              ).message,
+            ),
             backgroundColor: AppColors.danger,
           ),
         );

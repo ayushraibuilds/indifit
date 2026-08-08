@@ -335,11 +335,11 @@ class _MealCard extends ConsumerWidget {
           backgroundColor: AppColors.success,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not save template: $e'),
+        const SnackBar(
+          content: Text('Meal template could not be saved. Try again.'),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -549,7 +549,7 @@ class _MealCard extends ConsumerWidget {
         canonicalCalories.round();
     final legacyCalories = mealLogs.fold(0, (sum, item) => sum + item.calories);
     final energyLabel = canonicalEnergyUnknown
-        ? 'Energy unknown'
+        ? 'Calories not available'
         : canonicalEnergyRange
         ? '${(legacyCalories + canonicalEnergyLower).round()}–${(legacyCalories + canonicalEnergyUpper).round()} kcal'
         : '$totalCals kcal';
@@ -761,14 +761,13 @@ class _CanonicalItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final item = record.items.isEmpty ? null : record.items.first;
     final energy = record.totals.facts['energy'];
-    final version = item?.recipeVersionId;
     final isRecipe = record.items.any((item) => item.recipeVersionId != null);
     final quantity = item?.quantity.quantity;
     final amount = quantity == null
         ? null
-        : '${quantity.amount} ${quantity.definition.stableId}';
+        : '${quantity.amount} ${quantity.definition.displayLabel}';
     final energyText = energy?.point == null
-        ? 'Energy unknown'
+        ? 'Calories not available'
         : '${energy!.point!.value.format(decimalPlaces: 0)} kcal';
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -796,8 +795,7 @@ class _CanonicalItemRow extends StatelessWidget {
                 ),
                 Text(
                   [
-                    isRecipe ? 'Saved recipe' : 'Canonical food',
-                    if (version != null) 'version ${_shortId(version)}',
+                    isRecipe ? 'Saved recipe' : 'Food item',
                     ?amount,
                     energyText,
                   ].join(' • '),
@@ -809,7 +807,7 @@ class _CanonicalItemRow extends StatelessWidget {
                 if (record.completeness.state !=
                     NutrientCompletenessState.complete)
                   Text(
-                    record.completeness.state.name,
+                    _completenessLabel(record.completeness.state),
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.warning,
@@ -829,8 +827,13 @@ class _CanonicalItemRow extends StatelessWidget {
     );
   }
 
-  String _shortId(String value) =>
-      value.length <= 12 ? value : '${value.substring(0, 8)}…';
+  String _completenessLabel(NutrientCompletenessState state) => switch (state) {
+    NutrientCompletenessState.partial => 'Some nutrition details unavailable',
+    NutrientCompletenessState.unknown => 'Nutrition details unavailable',
+    NutrientCompletenessState.notApplicable => 'Nutrition details not needed',
+    NutrientCompletenessState.invalid => 'Nutrition details need review',
+    NutrientCompletenessState.complete => 'Nutrition details complete',
+  };
 }
 
 class _LoggedItemRow extends ConsumerWidget {

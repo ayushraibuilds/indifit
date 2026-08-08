@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../../core/services/local_timezone_service.dart';
 import '../../data/database/app_database.dart';
@@ -215,9 +216,10 @@ class B04GoalSettingsController extends StateNotifier<B04GoalSettingsState> {
       state = state.copyWith(
         status: B04GoalSettingsStatus.failure,
         errorCode: typed?.code ?? 'b04_settings_load_failed',
-        errorMessage:
-            typed?.message ??
-            'Coaching settings could not be loaded. You can retry.',
+        errorMessage: ProductFailurePresentation.fromCode(
+          typed?.code,
+          title: 'Coaching settings unavailable',
+        ).message,
       );
     }
   }
@@ -337,33 +339,33 @@ String b04ProductionStateCopy(String reasonCode) => switch (reasonCode) {
   'adaptive_consent_disabled' || 'adaptive_consent_missing' =>
     'Adaptive coaching is off. Review the disclosure before enabling it.',
   'coaching_unavailable_age' || 'underage' =>
-    'Adaptive coaching is unavailable for this age state. Logging, history and user-set targets remain available.',
+    'Coaching suggestions are unavailable for this age. Your logged activity and target remain available.',
   'unknown_age' || 'withheld_age' || 'conflicting_age' || 'invalid_evidence' =>
-    'Adaptive coaching is unavailable until age eligibility is verified. No target is inferred or changed.',
+    'Coaching suggestions are unavailable until we have your age details. Your target stays the same.',
   'eligibility_underage' =>
-    'Adaptive coaching is unavailable for this age state. Logging, history and user-set targets remain available.',
+    'Coaching suggestions are unavailable for this age. Your logged activity and target remain available.',
   'eligibility_unknown_age' ||
   'eligibility_withheld_age' ||
   'eligibility_conflicting_age' ||
   'eligibility_invalid_evidence' ||
   'eligibility_policy_unavailable' =>
-    'Adaptive coaching is unavailable until age eligibility is verified. No target is inferred or changed.',
+    'Coaching suggestions are unavailable until we have your age details. Your target stays the same.',
   'adaptive_policy_hold' =>
-    'Adaptive target proposals are unavailable while the current policy is on hold. Your user-set target is unchanged.',
+    'Coaching suggestions are unavailable right now. Your target stays the same.',
   'adaptive_policy_inactive' =>
-    'Adaptive coaching is not active for this local date. No target is inferred or changed.',
+    'Coaching suggestions are not active today. Your target stays the same.',
   'adaptive_policy_not_enabled' || 'adaptive_policy_scope_mismatch' =>
-    'Adaptive target proposals are unavailable in this surface. No target is inferred or changed.',
+    'Coaching suggestions are unavailable here. Your target stays the same.',
   'unsupported_policy_version' ||
   'target_policy_unavailable' ||
   'target_policy_missing' ||
   'target_policy_lineage_mismatch' ||
   'policy_unavailable' =>
-    'The current target policy is unavailable or unsupported. No adaptive target is changed.',
+    'Target guidance is unavailable right now. Your target stays the same.',
   'policy_boundary_reached' || 'user_target_outside_supported_policy' =>
-    'The requested change reached a supported policy boundary. Your current target remains unchanged.',
+    'That change is outside the supported range. Your current target stays the same.',
   'rapid_change_review' =>
-    'Recent change evidence needs review before adaptive guidance is shown. Your current target remains unchanged.',
+    'Recent changes need a quick review before coaching suggestions are shown. Your current target stays the same.',
   'unsupported_goal_rate' ||
   'unsupported_goal_type' ||
   'invalid_goal_type' ||
@@ -373,27 +375,27 @@ String b04ProductionStateCopy(String reasonCode) => switch (reasonCode) {
   'goal_target_invalid' ||
   'adaptive_goal_unsupported_pregnancy_or_breastfeeding' ||
   'clinician_managed_plan' =>
-    'This goal or request is outside supported adaptive coaching. No adaptive target is changed.',
+    'This goal or request is outside supported coaching. Your target stays the same.',
   'eligibility_unavailable' =>
-    'Adaptive coaching is unavailable because age eligibility has not been recorded.',
+    'Add your date of birth to personalise coaching suggestions.',
   'eligibility_not_evaluated_for_context' =>
-    'Age eligibility is unavailable for this local period. No target is inferred or changed.',
+    'Age details are unavailable for this period. Your target stays the same.',
   'goal_unavailable' || 'goal_missing' || 'goal_target_missing' =>
-    'A canonical goal version is unavailable. Set a user target to continue.',
+    'Your current goal is unavailable. Set a daily target to continue.',
   'goal_owner_mismatch' ||
   'goal_timezone_mismatch' ||
   'goal_not_effective' ||
   'goal_not_effective_for_context' =>
-    'The canonical goal is not valid for this local period. No adaptive target is changed.',
+    'Your goal is not available for this period. Your target stays the same.',
   'readiness_incomplete' ||
   'readiness_unavailable' ||
   'readiness_incomplete_or_unavailable' ||
   'missing_readiness_evidence' =>
-    'Readiness evidence is incomplete. No readiness-based change is presented.',
+    'We need a little more activity information before showing a change.',
   'workload_unavailable' || 'schedule_unavailable' =>
-    'Required local activity or schedule evidence is unavailable. No adaptive change is presented.',
+    'We need your workout plan or recent activity before showing a change.',
   'constraint_evaluation_unavailable' || 'dietary_restriction_unavailable' =>
-    'Dietary constraint evidence is unavailable. Safety-sensitive guidance is withheld.',
+    'We couldn’t check your dietary preferences, so food guidance is paused.',
   'dietary_safety_evidence_missing' ||
   'dietary_evidence_missing' ||
   'dietary_safety_scope_mismatch' ||
@@ -422,7 +424,7 @@ String b04ProductionStateCopy(String reasonCode) => switch (reasonCode) {
   'safety_evidence_unavailable' ||
   'dietary_unavailable' ||
   'candidate_unavailable' =>
-    'Safety-sensitive guidance is unavailable because dietary evidence is missing or uncertain.',
+    'I need more dietary information before I can show a suggestion.',
   'daily_totals_unavailable' ||
   'daily_totals_unknown' ||
   'daily_totals_partial' ||
@@ -437,23 +439,23 @@ String b04ProductionStateCopy(String reasonCode) => switch (reasonCode) {
   'candidate_energy_unknown' ||
   'candidate_nutrient_unknown' ||
   'remaining_target_unavailable' =>
-    'Nutrition evidence is incomplete or uncertain, so remaining targets are unavailable.',
+    'Log a meal to see today’s nutrition totals.',
   'no_explicit_candidate' ||
   'explicit_opportunity_required' ||
   'no_candidate' ||
   'no_candidate_after_filter' =>
-    'No explicit local meal opportunity or candidate is available. No food is inferred.',
+    'Nothing to recommend yet. Log a meal and I’ll suggest something that fits your day.',
   'target_fit_unavailable' ||
   'target_range_uncertain' ||
   'exceeds_remaining_target' =>
-    'This candidate cannot be presented as a suitable target match from the available nutrition evidence.',
+    'I need more nutrition information to check this option.',
   'guidance_unavailable' =>
-    'Current-food guidance is unavailable until the required local evidence is complete.',
+    'Suggestions aren’t ready yet. Log a meal to continue.',
   'confirmed_conflict' ||
   'dietary_confirmed_conflict' ||
   'dietary_hard_block' ||
   'constraint_conflict' =>
-    'This item conflicts with a recorded dietary constraint and is not presented as guidance.',
+    'This option doesn’t match a dietary preference you saved.',
   'medical_restriction' ||
   'medical_decision_required' ||
   'consult_professional' =>
@@ -461,9 +463,9 @@ String b04ProductionStateCopy(String reasonCode) => switch (reasonCode) {
   'emergency_out_of_scope' || 'severe_symptoms_out_of_scope' =>
     'Severe or emergency symptoms are outside this feature. Seek local emergency help.',
   'no_known_conflict' =>
-    'No known conflict detected for the checked evidence. This is not a safety guarantee.',
+    'No known conflict was found in the information checked. This is not a safety guarantee.',
   _ =>
-    'This guidance is unavailable because the required evidence is incomplete.',
+    'This guidance is unavailable because the required information is incomplete.',
 };
 
 String b04ProductionStateLabel(String value) => value

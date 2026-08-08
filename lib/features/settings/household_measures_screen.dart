@@ -104,7 +104,7 @@ class _HouseholdMeasuresScreenState
                   label: Text(
                     definition.hasReviewedVolume
                         ? '${definition.displayName} (${definition.volume!.point} mL)'
-                        : '${definition.displayName} (unresolved)',
+                        : '${definition.displayName} (Needs measuring)',
                   ),
                   selected: _selectedMeasure == definition.id,
                   onSelected: (_) =>
@@ -426,7 +426,7 @@ class _HouseholdMeasuresScreenState
     NutritionHouseholdMeasureDefinition definition,
   ) => definition.hasReviewedVolume
       ? '${definition.displayName}, reviewed volume ${definition.volume!.point} mL'
-      : '${definition.displayName}, unresolved volume';
+      : '${definition.displayName}, needs measuring';
 
   static String _vesselSemanticsLabel(
     NutritionPersonalVessel vessel,
@@ -434,9 +434,9 @@ class _HouseholdMeasuresScreenState
   ) => '${vessel.displayName}, ${_vesselVolumeLabel(calibration)}';
 
   static String _vesselVolumeLabel(NutritionVesselCalibration? calibration) {
-    if (calibration == null) return 'volume unresolved';
+    if (calibration == null) return 'Not calibrated';
     final volume = calibration.volume.normalizedToMillilitres();
-    if (volume.point == null) return 'volume range unresolved';
+    if (volume.point == null) return 'Needs measuring';
     return '${volume.point} mL';
   }
 }
@@ -456,7 +456,7 @@ class _ErrorState extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, size: 42),
           const SizedBox(height: 12),
-          Text(message ?? 'Household measures could not be loaded.'),
+          const Text('Household measures could not be loaded. Try again.'),
           const SizedBox(height: 12),
           OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
         ],

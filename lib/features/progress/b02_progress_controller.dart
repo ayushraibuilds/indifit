@@ -73,7 +73,7 @@ class B02ProgressController extends StateNotifier<B02ProgressState> {
       () => _source.readGroupHistory(selectedQuery),
     );
     final targets = await _readPart(
-      'Target evidence',
+      'Suggested targets',
       () => _source.readTargetEvidence(selectedQuery),
     );
     final muscle = await _readPart(
@@ -140,7 +140,7 @@ class B02ProgressController extends StateNotifier<B02ProgressState> {
     } catch (error) {
       // The failure remains in the state and is rendered by the card. It is
       // not converted into an empty value, so unknown never becomes zero.
-      return _B02ProgressPart<T>(issues: ['$label unavailable: $error']);
+      return _B02ProgressPart<T>(issues: ['$label unavailable']);
     }
   }
 }

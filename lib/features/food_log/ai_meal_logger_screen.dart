@@ -12,6 +12,7 @@ import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_estimates.dart';
 import '../../core/nutrition_household_measures.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/privacy/nutrition_estimate_privacy.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/colors.dart';
@@ -354,8 +355,16 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   }
 
   String _estimateErrorMessage(Object error) {
-    if (error is NutritionEstimateError) return error.message;
-    return 'The estimate could not be processed. You can retry.';
+    final code = switch (error) {
+      NutritionEstimateValidationError(:final code) => code,
+      NutritionEstimateConflictError(:final code) => code,
+      NutritionEstimatePersistenceError(:final code) => code,
+      _ => 'estimate_operation_failed',
+    };
+    return ProductFailurePresentation.fromCode(
+      code,
+      title: 'Estimate unavailable',
+    ).message;
   }
 
   Future<void> _logMeal() async {
@@ -410,10 +419,12 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
           source: 'user-review-v1',
         );
         NutritionQuantityService.validatePositiveUserEnteredPortion(quantity);
-      } on QuantityError catch (error) {
+      } on QuantityError {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.message),
+          const SnackBar(
+            content: Text(
+              'That amount could not be used. Check it and try again.',
+            ),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -582,16 +593,12 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Uncertainty and provenance',
+              'About this estimate',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
-            Text('Source: ${estimate.source.stableId}'),
-            Text(
-              'Input: ${estimate.evidence.inputModality ?? 'unknown'} · Completeness: ${estimate.completeness.state.name}',
-            ),
-            if (estimate.evidence.providerCategory != null)
-              Text('Provider category: ${estimate.evidence.providerCategory}'),
+            const Text('Based on the meal information you provided.'),
+            Text(_completenessLabel(estimate.completeness.state.name)),
             const SizedBox(height: 8),
             for (final nutrient in nutrients)
               Semantics(
@@ -705,29 +712,9 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Describe your meal',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.mic, color: AppColors.primary),
-                  tooltip: 'Voice Dictation',
-                  onPressed: () {
-                    _textController.text =
-                        '2 rotis with paneer bhurji and 1 bowl of dal';
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Voice input captured: "2 rotis with paneer bhurji and 1 bowl of dal"',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
+            const Text(
+              'Describe your meal',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             const SizedBox(height: 4),
             TextField(
@@ -776,7 +763,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   const SizedBox(width: 8),
                   ActionChip(
                     avatar: const Icon(
-                      Icons.record_voice_over,
+                      Icons.restaurant_outlined,
                       size: 14,
                       color: AppColors.primary,
                     ),
@@ -790,7 +777,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   const SizedBox(width: 8),
                   ActionChip(
                     avatar: const Icon(
-                      Icons.record_voice_over,
+                      Icons.restaurant_outlined,
                       size: 14,
                       color: AppColors.primary,
                     ),
@@ -1014,7 +1001,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                 ),
                 const Divider(color: AppColors.border, height: 24),
                 const Text(
-                  'Values remain estimates. Bounds are shown only when evidence provides them; missing nutrients are not treated as zero.',
+                  'Values are estimates. When information is missing, we leave it blank instead of treating it as zero.',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 11,
@@ -1182,3 +1169,10 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     );
   }
 }
+
+String _completenessLabel(String value) => switch (value) {
+  'complete' => 'All requested values are available.',
+  'partial' => 'Some values are not available yet.',
+  'unknown' || 'missing' => 'Nutrition details are not available yet.',
+  _ => 'Some values are not available yet.',
+};

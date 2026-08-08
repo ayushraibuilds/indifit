@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_date_label.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../travel/travel_controller.dart';
@@ -87,6 +88,15 @@ class ProgramCalendarScreen extends ConsumerWidget {
     CalendarView.month => 'Month',
   };
 
+  static String _selectedDateLabel(CalendarView view, String localDate) {
+    final day = ConsumerDateLabel.day(localDate);
+    return switch (view) {
+      CalendarView.day => day,
+      CalendarView.week => 'Week of $day',
+      CalendarView.month => 'Month of $day',
+    };
+  }
+
   Widget _buildOccurrenceCard(
     BuildContext context,
     CalendarOccurrenceReadItem item, {
@@ -112,7 +122,7 @@ class ProgramCalendarScreen extends ConsumerWidget {
           children: [
             Icon(Icons.event_note_rounded, size: 48, color: Colors.grey),
             SizedBox(height: 12),
-            Text('No workouts scheduled in this range.'),
+            Text('Nothing planned in this range.'),
           ],
         ),
       );
@@ -201,9 +211,9 @@ class ProgramCalendarScreen extends ConsumerWidget {
                   child: TextButton(
                     onPressed: () => _pickDate(context, ref),
                     child: Text(
-                      '${state.selectedLocalDate} • ${state.timezoneId}',
+                      _selectedDateLabel(state.view, state.selectedLocalDate),
                       semanticsLabel:
-                          'Selected calendar date ${state.selectedLocalDate} in ${state.timezoneId}',
+                          'Selected ${_selectedDateLabel(state.view, state.selectedLocalDate)}',
                     ),
                   ),
                 ),
@@ -237,7 +247,7 @@ class ProgramCalendarScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                'Travel mode: ${travel.startLocalDate} – ${travel.endLocalDate} • ${travelState.activeTravelOccurrenceIds.length} previewed workout${travelState.activeTravelOccurrenceIds.length == 1 ? '' : 's'} use travel equipment.',
+                'Travel mode: ${ConsumerDateLabel.range(travel.startLocalDate, travel.endLocalDate)} • ${travelState.activeTravelOccurrenceIds.length} previewed workout${travelState.activeTravelOccurrenceIds.length == 1 ? '' : 's'} use travel equipment.',
                 style: const TextStyle(color: AppColors.textPrimary),
               ),
             ),

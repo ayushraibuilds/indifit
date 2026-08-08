@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_date_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
@@ -37,7 +39,7 @@ class _OccurrenceActionsSheetState
         builder: (context) => AlertDialog(
           title: const Text('Start outside scheduled date?'),
           content: Text(
-            'This workout is scheduled for ${occurrence.effectiveLocalDate} in ${occurrence.effectiveTimezoneId}. Starting it will not move or skip any other workout.',
+            'This workout is scheduled for ${ConsumerDateLabel.day(occurrence.effectiveLocalDate)}. Starting it will not move or skip any other workout.',
           ),
           actions: [
             TextButton(
@@ -65,11 +67,19 @@ class _OccurrenceActionsSheetState
         Navigator.pop(context);
         await WorkoutContextualLauncher.push(context, target);
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to start workout: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ProductFailurePresentation.fromError(
+                error,
+                title: 'Workout could not be started',
+                code: 'workout_unavailable',
+              ).message,
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -133,15 +143,27 @@ class _OccurrenceActionsSheetState
       );
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Rescheduled to $newDateStr.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Rescheduled to ${ConsumerDateLabel.day(newDateStr)}.',
+            ),
+          ),
+        );
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Reschedule failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ProductFailurePresentation.fromError(
+                error,
+                title: 'Workout could not be rescheduled',
+                code: 'calendar_unavailable',
+              ).message,
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -206,11 +228,19 @@ class _OccurrenceActionsSheetState
           ),
         );
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Skip failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ProductFailurePresentation.fromError(
+                error,
+                title: 'Workout could not be skipped',
+                code: 'calendar_unavailable',
+              ).message,
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -251,11 +281,19 @@ class _OccurrenceActionsSheetState
           context,
         ).showSnackBar(const SnackBar(content: Text('Occurrence cancelled.')));
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Cancel failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ProductFailurePresentation.fromError(
+                error,
+                title: 'Workout could not be cancelled',
+                code: 'calendar_unavailable',
+              ).message,
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -308,9 +346,11 @@ class _OccurrenceActionsSheetState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Repeat failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Repeat could not be created. Try again.'),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -331,9 +371,11 @@ class _OccurrenceActionsSheetState
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Restore failed: $error')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Workout could not be restored. Try again.'),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -360,9 +402,9 @@ class _OccurrenceActionsSheetState
             if (events.isEmpty) const Text('No recorded events.'),
             ...events.map(
               (event) => ListTile(
-                title: Text(event.eventType),
+                title: Text(_eventLabel(event.eventType)),
                 subtitle: Text(
-                  '${event.fromStatus ?? '—'} → ${event.toStatus ?? '—'}\n${event.occurredAtUtc.toLocal()}',
+                  '${_statusLabel(event.fromStatus)} → ${_statusLabel(event.toStatus)}\n${ConsumerDateLabel.dateTime(event.occurredAtUtc)}',
                 ),
               ),
             ),
@@ -416,7 +458,7 @@ class _OccurrenceActionsSheetState
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    occ.status.toUpperCase(),
+                    _statusLabel(occ.status),
                     style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -428,7 +470,7 @@ class _OccurrenceActionsSheetState
             ),
             const SizedBox(height: 4),
             Text(
-              'Scheduled: ${occ.originalLocalDate} • ${occ.originalTimezoneId}\nEffective: ${occ.effectiveLocalDate} • ${occ.effectiveTimezoneId}${item.isOverdue ? " • OVERDUE" : ""}',
+              'Scheduled: ${ConsumerDateLabel.day(occ.originalLocalDate)}\nEffective: ${ConsumerDateLabel.day(occ.effectiveLocalDate)}${item.isOverdue ? ' • Overdue' : ''}',
               style: TextStyle(
                 color: item.isOverdue ? Colors.orange : Colors.grey,
                 fontWeight: item.isOverdue
@@ -509,5 +551,26 @@ class _OccurrenceActionsSheetState
         ),
       ),
     );
+  }
+
+  static String _eventLabel(String value) => value
+      .replaceAll('_', ' ')
+      .split(' ')
+      .where((part) => part.isNotEmpty)
+      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
+
+  static String _statusLabel(String? value) {
+    final key = value?.trim() ?? '';
+    return switch (key) {
+      'planned' => 'Planned',
+      'rescheduled' => 'Rescheduled',
+      'completed' => 'Completed',
+      'partiallyCompleted' => 'Partially completed',
+      'inProgress' => 'In progress',
+      'skipped' => 'Skipped',
+      'cancelled' => 'Cancelled',
+      _ => key.isEmpty ? '—' : 'Status not available',
+    };
   }
 }

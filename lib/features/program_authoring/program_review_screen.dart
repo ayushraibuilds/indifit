@@ -54,7 +54,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
         widget.programVersionId,
       );
       if (detail == null) {
-        setState(() => _errorMessage = 'Program version not found.');
+        setState(() => _errorMessage = 'This program is no longer available.');
         return;
       }
 
@@ -62,9 +62,9 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
         _versionDetail = detail;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = 'This program could not be loaded. Try again.';
         _isLoading = false;
       });
     }
@@ -100,9 +100,11 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Activation failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('The program could not be activated. Try again.'),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -164,7 +166,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Version ${detail.version.versionNumber} • ${detail.blocks.length} Blocks • ${detail.weeks.length} Weeks',
+                            '${detail.blocks.length} blocks • ${detail.weeks.length} weeks',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],

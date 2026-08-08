@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_date_label.dart';
 import '../../core/theme/colors.dart';
 import '../../data/models/b04_goal_models.dart';
 import '../coaching/b04_production_surface_controller.dart';
@@ -93,7 +94,7 @@ class _NutritionGoalsSubScreenState
             carbsTargetG: carbs,
             fatTargetG: fat,
           );
-      if (mounted) _showMessage('User-set target saved as a new goal version.');
+      if (mounted) _showMessage('Your daily target was saved.');
     } catch (error) {
       if (mounted) _showMessage(_errorMessage(error));
     } finally {
@@ -108,7 +109,7 @@ class _NutritionGoalsSubScreenState
         title: const Text('Review adaptive coaching'),
         content: const SingleChildScrollView(
           child: Text(
-            'Adaptive coaching uses your entered goals and historical evidence to show proposals. Proposals are not applied automatically; you accept each target. Incomplete evidence can make guidance unavailable. You can disable or withdraw consent later. Optional AI wording is separate, cannot set targets or bypass safety, and is not enabled by this action. This is general wellness guidance, not medical advice.',
+            'Adaptive coaching uses your goals and recent activity to suggest changes. Suggestions are never applied automatically—you choose whether to accept each one. You can turn coaching off at any time. This is general wellness guidance, not medical advice.',
           ),
         ),
         actions: [
@@ -150,7 +151,7 @@ class _NutritionGoalsSubScreenState
           .read(b04GoalSettingsControllerProvider.notifier)
           .recordEligibility(dateOfBirthLocalDate: _dateOfBirthController.text);
       if (mounted) {
-        _showMessage('Age eligibility evidence saved for adaptive coaching.');
+        _showMessage('Your age details were saved for adaptive coaching.');
       }
     } catch (error) {
       if (mounted) _showMessage(_errorMessage(error));
@@ -165,9 +166,8 @@ class _NutritionGoalsSubScreenState
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  String _errorMessage(Object error) => error is B04GoalValidationError
-      ? error.message
-      : 'That change could not be saved. Try again.';
+  String _errorMessage(Object error) =>
+      'That change could not be saved. Try again.';
 
   @override
   Widget build(BuildContext context) {
@@ -202,7 +202,7 @@ class _NutritionGoalsSubScreenState
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        _buildCanonicalTargetCard(active),
+        _buildCurrentTargetCard(active),
         const SizedBox(height: 16),
         _buildGoalForm(),
         const SizedBox(height: 16),
@@ -219,12 +219,12 @@ class _NutritionGoalsSubScreenState
     );
   }
 
-  Widget _buildCanonicalTargetCard(NutritionGoalVersionReadModel? active) {
+  Widget _buildCurrentTargetCard(NutritionGoalVersionReadModel? active) {
     if (active == null) {
       return const B04ReadStatusCard(
-        title: 'Canonical goal version unavailable',
+        title: 'No daily target yet',
         message:
-            'No target is inferred here. Enter a user-set target below to create the first version.',
+            'Enter your target below to start personalising your guidance.',
       );
     }
     final target = active.calorieTargetKcal == null
@@ -235,13 +235,12 @@ class _NutritionGoalsSubScreenState
         padding: const EdgeInsets.all(16),
         child: Semantics(
           container: true,
-          label:
-              'Active goal version $target, source ${active.source.stableId}',
+          label: 'Your current daily target: $target',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Active goal version',
+                'Your current daily target',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -254,18 +253,13 @@ class _NutritionGoalsSubScreenState
               ),
               const SizedBox(height: 6),
               Text(
-                'Source: ${active.isUserSet ? 'User-set' : b04ProductionStateLabel(active.source.stableId)}',
+                active.isUserSet
+                    ? 'Set by you'
+                    : 'Personalised from your goals and activity',
               ),
               Text(
-                'Effective: ${active.effectiveFromLocalDate} · ${active.timezoneId}',
+                'In effect from ${ConsumerDateLabel.day(active.effectiveFromLocalDate)}',
               ),
-              if (active.policyVersion != null)
-                Text('Policy: ${active.policyVersion}'),
-              if (active.exactResultNumerator != null &&
-                  active.exactResultDenominator != null)
-                Text(
-                  'Exact result: ${active.exactResultNumerator}/${active.exactResultDenominator}',
-                ),
             ],
           ),
         ),
@@ -285,7 +279,7 @@ class _NutritionGoalsSubScreenState
           ),
           const SizedBox(height: 4),
           const Text(
-            'Saving creates a new effective-dated version. It does not invoke a TDEE calculator or silently clamp your value.',
+            'Your entries take effect from today. IndiFit keeps the numbers you enter and does not adjust them silently.',
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
@@ -379,7 +373,7 @@ class _NutritionGoalsSubScreenState
           ),
           const SizedBox(height: 4),
           const Text(
-            'Off by default. Consent is recorded as an append-only event with its policy, copy version, timestamp and local date.',
+            'Off by default. You choose whether to use coaching suggestions, and you can turn them off at any time.',
             style: TextStyle(color: AppColors.textSecondary),
           ),
           SwitchListTile.adaptive(
@@ -410,13 +404,10 @@ class _NutritionGoalsSubScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Age eligibility evidence',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Age details', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
           const Text(
-            'Adaptive calorie and readiness proposals require explicit age evidence. IndiFit does not infer age from your profile, activity or food logs. Enter a civil date in YYYY-MM-DD format; leave it blank to record that age evidence is missing.',
+            'Some coaching suggestions use your age. IndiFit never guesses it from activity or food logs. Enter your date of birth to make those suggestions available.',
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
@@ -426,7 +417,7 @@ class _NutritionGoalsSubScreenState
             decoration: const InputDecoration(
               labelText: 'Date of birth',
               hintText: 'YYYY-MM-DD',
-              helperText: 'Only the resulting eligibility state is retained.',
+              helperText: 'Used only to tailor coaching suggestions.',
             ),
           ),
           const SizedBox(height: 12),
@@ -435,11 +426,7 @@ class _NutritionGoalsSubScreenState
             child: OutlinedButton.icon(
               onPressed: _savingEligibility ? null : _saveEligibility,
               icon: const Icon(Icons.verified_outlined),
-              label: Text(
-                _savingEligibility
-                    ? 'Saving…'
-                    : 'Save age eligibility evidence',
-              ),
+              label: Text(_savingEligibility ? 'Saving…' : 'Save age details'),
             ),
           ),
         ],
@@ -453,8 +440,8 @@ class _NutritionGoalsSubScreenState
       title: 'Adaptive availability',
       message: b04ProductionStateCopy(reason),
       detail: availability?.eligibility == null
-          ? 'Eligibility: not recorded'
-          : 'Eligibility: ${b04ProductionStateLabel(availability!.eligibility!.result.stableId)} · ${availability.eligibility!.evaluationLocalDate}',
+          ? 'Add your date of birth to personalise coaching.'
+          : 'Age details are available for coaching.',
     );
   }
 
@@ -473,28 +460,30 @@ class _NutritionGoalsSubScreenState
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.flag_outlined),
               title: Text(
-                'Goal v${goal.versionNumber}: ${goal.calorieTargetKcal ?? 'unavailable'} kcal/day',
+                'Daily target: ${goal.calorieTargetKcal ?? 'Not available'} kcal/day',
               ),
               subtitle: Text(
-                '${b04ProductionStateLabel(goal.source.stableId)} · ${goal.effectiveFromLocalDate}',
+                ConsumerDateLabel.day(goal.effectiveFromLocalDate),
               ),
             ),
           for (final event in state.consentHistory)
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.verified_user_outlined),
-              title: Text(
-                '${b04ProductionStateLabel(event.category.stableId)}: ${event.action.stableId}',
-              ),
-              subtitle: Text(
-                '${event.timestampUtc.toIso8601String()} · ${event.copyVersion}',
-              ),
+              title: Text('Coaching ${_consentActionLabel(event.action)}'),
+              subtitle: Text(ConsumerDateLabel.dateTime(event.timestampUtc)),
             ),
         ],
       ),
     ),
   );
 }
+
+String _consentActionLabel(CoachingConsentAction action) => switch (action) {
+  CoachingConsentAction.enable => 'enabled',
+  CoachingConsentAction.disable => 'disabled',
+  CoachingConsentAction.withdraw => 'withdrawn',
+};
 
 class _B04WordingBoundaryCard extends StatelessWidget {
   const _B04WordingBoundaryCard();
@@ -507,7 +496,7 @@ class _B04WordingBoundaryCard extends StatelessWidget {
         container: true,
         label: 'Wellness wording boundary',
         child: const Text(
-          'IndiFit provides general wellness guidance only. It does not diagnose, prescribe treatment, guarantee outcomes or replace qualified professional care. Safety-sensitive guidance may be unavailable when evidence is uncertain.',
+          'IndiFit provides general wellness guidance only. It does not diagnose, prescribe treatment, guarantee outcomes or replace qualified professional care. Safety-sensitive guidance may be unavailable when information is uncertain.',
         ),
       ),
     ),

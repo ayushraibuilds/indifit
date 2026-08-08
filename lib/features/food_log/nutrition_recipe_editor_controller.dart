@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/nutrition_household_measures.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/raw_cooked_transformations.dart';
 import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
@@ -522,13 +523,12 @@ class NutritionRecipeEditorController
   ];
 
   void _fail(Object error, {required String fallbackCode}) {
-    final exception = error is NutritionRecipeException
-        ? error
-        : NutritionRecipeException(fallbackCode, error.toString());
+    final exception = error is NutritionRecipeException ? error : null;
+    final code = exception?.code ?? fallbackCode;
     state = state.copyWith(
       status: NutritionRecipeEditorStatus.failure,
-      errorCode: exception.code,
-      errorMessage: exception.message,
+      errorCode: code,
+      errorMessage: ProductFailurePresentation.fromCode(code).message,
     );
   }
 }

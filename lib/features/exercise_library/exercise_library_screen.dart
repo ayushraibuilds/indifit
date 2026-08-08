@@ -325,7 +325,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     final query = _searchController.text.trim();
     final message = query.isNotEmpty
         ? 'No exercises match "$query".\nTry a different search term or change muscle filters.'
-        : 'No exercises found in database.';
+        : 'No exercises are available yet.';
 
     return Center(
       child: Padding(

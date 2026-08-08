@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/presentation/consumer_date_label.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/travel_repository.dart';
@@ -48,20 +49,16 @@ class _TravelPreviewSheetState extends ConsumerState<TravelPreviewSheet> {
                 : _noteController.text.trim(),
           );
       if (mounted) Navigator.of(context).pop();
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() => _applying = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Travel mode could not be applied. Try again.'),
+          ),
+        );
       }
     }
-  }
-
-  static String _displayDate(String isoDate) {
-    final parts = isoDate.split('-');
-    if (parts.length != 3) return isoDate;
-    return '${parts[2]}/${parts[1]}/${parts[0]}';
   }
 
   @override
@@ -128,11 +125,10 @@ class _TravelPreviewSheetState extends ConsumerState<TravelPreviewSheet> {
                   children: [
                     _buildChip(
                       Icons.date_range_rounded,
-                      '${_displayDate(preview.startLocalDate)} — ${_displayDate(preview.endLocalDate)}',
-                    ),
-                    _buildChip(
-                      Icons.public_rounded,
-                      preview.timezoneId.replaceAll('_', ' '),
+                      ConsumerDateLabel.range(
+                        preview.startLocalDate,
+                        preview.endLocalDate,
+                      ),
                     ),
                     _buildChip(
                       Icons.fitness_center_rounded,
@@ -357,7 +353,7 @@ class _TravelPreviewSheetState extends ConsumerState<TravelPreviewSheet> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  _displayDate(occurrence.effectiveLocalDate),
+                  ConsumerDateLabel.day(occurrence.effectiveLocalDate),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -366,7 +362,7 @@ class _TravelPreviewSheetState extends ConsumerState<TravelPreviewSheet> {
                 ),
               ),
               Semantics(
-                label: 'Status ${occurrence.status}',
+                label: 'Status ${_statusLabel(occurrence.status)}',
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -377,7 +373,7 @@ class _TravelPreviewSheetState extends ConsumerState<TravelPreviewSheet> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    occurrence.status,
+                    _statusLabel(occurrence.status),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -458,4 +454,15 @@ class _TravelPreviewSheetState extends ConsumerState<TravelPreviewSheet> {
       ),
     );
   }
+
+  static String _statusLabel(String status) => switch (status) {
+    'planned' => 'Planned',
+    'rescheduled' => 'Rescheduled',
+    'completed' => 'Completed',
+    'partiallyCompleted' => 'Partially completed',
+    'inProgress' => 'In progress',
+    'skipped' => 'Skipped',
+    'cancelled' => 'Cancelled',
+    _ => 'Status not available',
+  };
 }

@@ -155,12 +155,12 @@ class B05AdaptiveOnboardingController
         currentLessonIndex: _nextIncompleteIndex(lessons),
         clearError: true,
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       _retryAction = load;
       state = state.copyWith(
         status: B05AdaptiveOnboardingStatus.error,
-        errorMessage: error.toString(),
+        errorMessage: 'Your learning plan could not be loaded. Try again.',
       );
     }
   }
@@ -205,12 +205,12 @@ class B05AdaptiveOnboardingController
       await action(lesson);
       if (!mounted) return;
       await load();
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
       _retryAction = () => _run(contentId, action);
       state = state.copyWith(
         status: B05AdaptiveOnboardingStatus.error,
-        errorMessage: error.toString(),
+        errorMessage: 'That lesson could not be saved. Try again.',
       );
     }
   }
@@ -650,7 +650,7 @@ class _B05AdaptiveLessonTile extends StatelessWidget {
         container: true,
         explicitChildNodes: true,
         label: _title(item.lesson.lesson.topic),
-        value: '$label, version ${item.lesson.lesson.version}',
+        value: label,
         hint: isCurrent ? 'Next relevant lesson' : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -678,7 +678,7 @@ class _B05AdaptiveLessonTile extends StatelessWidget {
             const SizedBox(height: B05Layout.space4),
             Text(item.lesson.lesson.body, style: B05Typography.body(context)),
             const SizedBox(height: B05Layout.space4),
-            Text('$label · Version ${item.lesson.lesson.version}'),
+            Text(label),
             const SizedBox(height: B05Layout.space8),
             B05ActionGroup(
               children: [

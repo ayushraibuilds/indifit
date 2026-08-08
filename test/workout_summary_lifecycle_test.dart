@@ -397,7 +397,10 @@ void main() {
 
         // SnackBar must display failure message
         expect(find.byType(SnackBar), findsOneWidget);
-        expect(find.textContaining('Failed to save session'), findsOneWidget);
+        expect(
+          find.text('Your workout could not be saved. Try again.'),
+          findsOneWidget,
+        );
 
         // Database session count MUST be 0
         final sessions = await runDatabaseAction(

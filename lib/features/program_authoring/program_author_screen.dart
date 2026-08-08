@@ -105,12 +105,14 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
         ];
       }
       authoring.markReady();
-    } catch (e) {
-      authoring.markFailure(e);
+    } catch (error) {
+      authoring.markFailure(error);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading draft: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('The draft could not be loaded. Try again.'),
+          ),
+        );
       }
     }
   }
@@ -523,9 +525,8 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                   TextField(
                     controller: customName,
                     decoration: const InputDecoration(
-                      labelText: 'Custom/unresolved exercise name',
-                      helperText:
-                          'Shown as compatibility unknown until linked.',
+                      labelText: 'Custom exercise name',
+                      helperText: 'You can link a library exercise later.',
                     ),
                   ),
                 const SizedBox(height: 12),
@@ -919,11 +920,13 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
         );
       }
       return true;
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving draft: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('The draft could not be saved. Try again.'),
+          ),
+        );
       }
       return false;
     }
@@ -946,11 +949,13 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
           const SnackBar(content: Text('Copied to new draft version.')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error copying draft: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('The draft could not be copied. Try again.'),
+          ),
+        );
       }
     }
   }

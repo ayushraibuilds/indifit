@@ -21,33 +21,36 @@ class IndiFitResponsiveFieldGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final shouldStack =
-            constraints.maxWidth < breakpoint ||
-            textScale >= textScaleBreakpoint;
-        if (shouldStack) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var index = 0; index < children.length; index++) ...[
-                children[index],
-                if (index < children.length - 1) SizedBox(height: spacing),
-              ],
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (var index = 0; index < children.length; index++) ...[
-              Expanded(child: children[index]),
-              if (index < children.length - 1) SizedBox(width: spacing),
-            ],
+    // AlertDialog measures its content intrinsically. A LayoutBuilder below
+    // that boundary throws before the dialog can render, so use the usable
+    // viewport width instead. The small inset allowance matches the common
+    // screen and dialog padding used by this primitive's callers.
+    final usableWidth = (MediaQuery.sizeOf(context).width - 32).clamp(
+      0.0,
+      double.infinity,
+    );
+    final shouldStack =
+        usableWidth < breakpoint || textScale >= textScaleBreakpoint;
+    if (shouldStack) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var index = 0; index < children.length; index++) ...[
+            children[index],
+            if (index < children.length - 1) SizedBox(height: spacing),
           ],
-        );
-      },
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var index = 0; index < children.length; index++) ...[
+          Expanded(child: children[index]),
+          if (index < children.length - 1) SizedBox(width: spacing),
+        ],
+      ],
     );
   }
 }

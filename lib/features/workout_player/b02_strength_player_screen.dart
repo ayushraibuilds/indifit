@@ -91,7 +91,7 @@ class _B02StrengthPlayerScreenState
         children: [
           const _OfflineBanner(),
           const SizedBox(height: 16),
-          const Text('No canonical exercise slots are available yet.'),
+          const Text('No exercise slots are available yet.'),
           const SizedBox(height: 8),
           const Text(
             'The frozen draft is safe. Recover it after the exercise catalog is available, or finish through the retained B01 route.',
@@ -227,7 +227,7 @@ class _B02StrengthPlayerScreenState
               child: Padding(
                 padding: EdgeInsets.only(bottom: 12),
                 child: Text(
-                  'Tempo, pauses, assistance, drop sets and rest-pause fields are kept in the canonical draft. Expand this editor before logging advanced work.',
+                  'Tempo, pauses, assistance, drop sets and rest-pause details are available here when you need them.',
                 ),
               ),
             ),
@@ -537,12 +537,10 @@ class _WarmupCard extends StatelessWidget {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.whatshot_outlined),
-            title: Text(
-              'Warm-up · ${recommendation.decision.dbValue} · ${recommendation.reason}',
-            ),
+            title: Text('Warm-up guidance'),
             subtitle: Text(
               recommendation.proposals.isEmpty
-                  ? 'No warm-up target is available; choose manually.'
+                  ? 'No warm-up target is available; choose your own warm-up.'
                   : '${recommendation.proposals.length} proposed ramp set(s) · ${recommendation.selectedProposals.length} selected',
             ),
           ),
