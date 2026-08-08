@@ -5,12 +5,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/presentation/consumer_date_label.dart';
 import 'package:indifit/core/theme/app_theme.dart';
+import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/core/widgets/consumer_task_primitives.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/legacy_workout_compatibility_adapter.dart';
+import 'package:indifit/features/calendar/program_calendar_screen.dart';
 import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
+import 'package:indifit/features/food_log/food_log_surface.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/progress/progress_screen.dart';
+import 'package:indifit/features/workout_player/player_setup_cues_panel.dart';
 import 'package:indifit/features/workout_player/player_setup_presentation.dart';
 import 'package:indifit/features/workout_player/widgets/exercise_set_input_card.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
@@ -106,7 +110,8 @@ void main() {
         child: themed(const OnboardingScreen(), textScale: 1.5),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Welcome to IndiFit!'), findsOneWidget);
     expect(find.text('Select your biological sex:'), findsOneWidget);
@@ -123,7 +128,10 @@ void main() {
     addTearDown(database.close);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(database)],
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          foodLogsForDayProvider.overrideWith((ref, date) async => []),
+        ],
         child: themed(
           AiMealLoggerScreen(
             mealType: 'dinner',
@@ -132,13 +140,59 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
-
+    await tester.pump();
     expect(find.text('Log dinner'), findsOneWidget);
     expect(find.text('Estimate nutrition'), findsOneWidget);
     expect(find.text('Use a photo (optional)'), findsOneWidget);
     expect(find.text('Parse Items'), findsNothing);
+    expect(find.text('Logged meals'), findsOneWidget);
+    await tester.ensureVisible(find.text('Logged meals'));
+    await tester.tap(find.text('Logged meals'));
+    await tester.pump();
+    expect(find.text('Loading logged food'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
     expect(tester.takeException(), isNull);
+  });
+
+  test('empty logged-food snapshot resolves without a stream wait', () async {
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+    final container = ProviderContainer(
+      overrides: [databaseProvider.overrideWithValue(database)],
+    );
+    addTearDown(container.dispose);
+
+    final logs = await container.read(
+      foodLogsForDayProvider(DateTime(2026, 8, 8)).future,
+    );
+    expect(logs, isEmpty);
+  });
+
+  testWidgets('meal task remains legible in both themes', (tester) async {
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+    for (final theme in [AppTheme.lightTheme, AppTheme.darkTheme]) {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [databaseProvider.overrideWithValue(database)],
+          child: MaterialApp(
+            theme: theme,
+            home: const AiMealLoggerScreen(mealType: 'lunch'),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Log lunch'), findsOneWidget);
+      expect(find.text('Describe your meal'), findsOneWidget);
+      expect(
+        tester.widget<AppBar>(find.byType(AppBar)).backgroundColor,
+        theme.extension<B05SemanticColors>()?.page,
+      );
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('manual logging remains scrollable and responsive', (
@@ -158,7 +212,8 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('Log Completed Workout'), findsOneWidget);
     expect(find.text('Add your first exercise'), findsOneWidget);
@@ -249,6 +304,45 @@ void main() {
     );
   });
 
+  testWidgets('calendar empty state provides a setup exit', (tester) async {
+    var pressed = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: CalendarEmptyState(
+          isDay: false,
+          hasActiveProgram: false,
+          onAction: () => pressed = true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Nothing planned here'), findsOneWidget);
+    expect(find.text('Set up a training plan'), findsOneWidget);
+    await tester.tap(find.text('Set up a training plan'));
+    expect(pressed, isTrue);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: CalendarEmptyState(
+          isDay: true,
+          hasActiveProgram: true,
+          onAction: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Nothing planned today'), findsOneWidget);
+    expect(find.text('Open training plan'), findsOneWidget);
+    expect(
+      find.textContaining('No workout is scheduled for this day'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('progress empty state resolves without a stream wait', (
     tester,
   ) async {
@@ -288,6 +382,29 @@ void main() {
     expect(presentation.note, 'Keep your ribs down.');
     expect(presentation.setupValues.map((value) => value.label), ['Bench']);
     expect(presentation.cues, ['Drive through your feet.']);
+  });
+
+  testWidgets('player setup ignores malformed persisted exercise IDs', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      themed(
+        PlayerSetupCuesPanel(
+          exerciseName: 'Bench Press',
+          frozenContext: const {
+            'exerciseId': 42,
+            'personalCues': [
+              {'cueText': 'Keep your ribs down.'},
+            ],
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Your Setup & Cues'), findsOneWidget);
+    expect(find.text('Keep your ribs down.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('empty state golden', (tester) async {

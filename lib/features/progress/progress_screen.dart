@@ -12,6 +12,7 @@ import '../../data/repositories/workout_repository.dart';
 import '../coaching/b04_production_surface_widgets.dart';
 import '../workout_player/routine_display_screen.dart';
 import 'achievements_screen.dart';
+import 'b02_progress_controller.dart';
 import 'b02_progress_widgets.dart';
 import 'widgets/progress_bmi_health_card.dart';
 
@@ -121,6 +122,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final b02State = ref.watch(b02ProgressControllerProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Progress & Analytics'),
@@ -145,7 +147,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           ),
         ],
       ),
-      body: _loading
+      body: _loading || (b02State.isLoading && b02State.data == null)
           ? const Center(
               child: ConsumerStatusRow(
                 label: 'Loading your progress',
@@ -163,7 +165,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 ),
               ),
             )
-          : _hasNoMeaningfulData
+          : b02State.status == B02ProgressStatus.failure &&
+                b02State.data == null &&
+                _sessions.isEmpty &&
+                _measurements.isEmpty
+          ? _buildB02FailureState()
+          : _hasNoMeaningfulData(b02State)
           ? _buildNoProgressState()
           : RefreshIndicator(
               onRefresh: _loadProgressLogs,
@@ -173,7 +180,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildOutcomeSummary(),
+                    _buildOutcomeSummary(b02State),
+                    if (b02State.status == B02ProgressStatus.partial ||
+                        b02State.status == B02ProgressStatus.recovery) ...[
+                      const SizedBox(height: 12),
+                      ConsumerStatusRow(
+                        label: 'Some training details are unavailable',
+                        detail: 'You can retry without losing your progress.',
+                        error: true,
+                        onRetry: () => ref
+                            .read(b02ProgressControllerProvider.notifier)
+                            .retry(),
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     const B04WeeklyReviewCard(),
                     const SizedBox(height: 20),
@@ -242,7 +261,21 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  bool get _hasNoMeaningfulData => _sessions.isEmpty && _measurements.isEmpty;
+  bool _hasNoMeaningfulData(B02ProgressState b02State) {
+    if (_measurements.isNotEmpty) return false;
+    // Partial and recovery states carry useful data alongside an unavailable
+    // section. Keep the outcome and retry affordance visible instead of
+    // collapsing the whole screen into a known-empty state.
+    if (b02State.status == B02ProgressStatus.partial ||
+        b02State.status == B02ProgressStatus.recovery) {
+      return false;
+    }
+    final activity = b02State.data?.activityHistory;
+    if (activity != null) return activity.isEmpty;
+    // A failed B02 read must remain visible through its retryable detail
+    // surface rather than being presented as a known-empty progress history.
+    return b02State.status != B02ProgressStatus.failure && _sessions.isEmpty;
+  }
 
   Widget _buildNoProgressState() {
     return Center(
@@ -264,10 +297,27 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildOutcomeSummary() {
+  Widget _buildB02FailureState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: ProductFailureCard(
+          failure: ProductFailurePresentation.fromCode(
+            'progress_unavailable',
+            title: 'Progress details are unavailable',
+          ),
+          onRetry: () =>
+              ref.read(b02ProgressControllerProvider.notifier).retry(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOutcomeSummary(B02ProgressState b02State) {
     final latestWeight = _measurements.isNotEmpty
         ? _measurements.first.weight
         : null;
+    final activityCount = b02State.data?.activityHistory?.length;
     return B05Surface(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -287,7 +337,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             spacing: 24,
             runSpacing: 16,
             children: [
-              _ProgressMetric(value: '${_sessions.length}', label: 'sessions'),
+              if (activityCount != null)
+                _ProgressMetric(
+                  value: '$activityCount',
+                  label: 'completed workouts',
+                ),
               if (latestWeight != null)
                 _ProgressMetric(
                   value: '${latestWeight.toStringAsFixed(1)} kg',

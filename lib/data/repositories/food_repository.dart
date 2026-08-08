@@ -124,6 +124,22 @@ class FoodRepository {
         .watch();
   }
 
+  /// Reads a finite snapshot for consumer task surfaces. A stream's first
+  /// event is not guaranteed for an empty Drift result, so empty states must
+  /// use this one-shot query instead of waiting indefinitely.
+  Future<List<FoodLog>> getLogsForDay(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+    return (_db.select(_db.foodLogs)
+          ..where((tbl) => tbl.loggedAt.isBetweenValues(startOfDay, endOfDay))
+          ..orderBy([
+            (tbl) =>
+                OrderingTerm(expression: tbl.loggedAt, mode: OrderingMode.desc),
+          ]))
+        .get();
+  }
+
   // 5. Delete logged entry
   Future<int> deleteLogEntry(int id) async {
     return await (_db.delete(

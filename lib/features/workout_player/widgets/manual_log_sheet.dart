@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/presentation/consumer_date_label.dart';
+import '../../../core/presentation/product_failure_presentation.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
@@ -30,6 +31,8 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
   late TextEditingController _nameController;
   late TextEditingController _durationController;
   final List<_ManualExerciseInput> _exercises = [];
+  var _saving = false;
+  String? _saveError;
 
   @override
   void initState() {
@@ -131,6 +134,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
   }
 
   Future<void> _saveLoggedSession() async {
+    if (_saving) return;
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -168,25 +172,42 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
 
     final int estCalories = (durationMins * 5.5).round();
 
-    await repo.logSession(
-      name: name,
-      volume: totalVol,
-      durationSeconds: durationMins * 60,
-      calories: estCalories,
-      sets: setCompanions,
-      completedAt: widget.selectedDate,
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Logged "$name" for ${widget.selectedDate.day}/${widget.selectedDate.month}!',
-          ),
-          backgroundColor: AppColors.success,
-        ),
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    try {
+      await repo.logSession(
+        name: name,
+        volume: totalVol,
+        durationSeconds: durationMins * 60,
+        calories: estCalories,
+        sets: setCompanions,
+        completedAt: widget.selectedDate,
       );
-      Navigator.pop(context, true);
+
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Logged "$name" for ${widget.selectedDate.day}/${widget.selectedDate.month}!',
+            ),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _saveError = ProductFailurePresentation.fromError(
+          error,
+          title: 'Workout could not be saved',
+          code: 'workout_save_failed',
+        ).message;
+      });
     }
   }
 
@@ -425,6 +446,15 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                           _buildExerciseCard(_exercises[index], index),
                       ],
                     ),
+                  if (_saveError != null) ...[
+                    const SizedBox(height: 12),
+                    ConsumerStatusRow(
+                      label: 'Workout could not be saved',
+                      detail: _saveError,
+                      error: true,
+                      onRetry: _saving ? null : _saveLoggedSession,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -433,9 +463,9 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
           SizedBox(
             width: double.infinity,
             child: B05ActionButton(
-              onPressed: _saveLoggedSession,
+              onPressed: _saving ? null : _saveLoggedSession,
               icon: Icons.check_circle_rounded,
-              label: 'Save workout',
+              label: _saving ? 'Saving workout…' : 'Save workout',
             ),
           ),
         ],

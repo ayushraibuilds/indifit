@@ -21,6 +21,7 @@ import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
+import 'food_log_surface.dart';
 
 class AiMealLoggerScreen extends ConsumerStatefulWidget {
   final String mealType; // "breakfast", "lunch", "dinner", "snack"
@@ -43,6 +44,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
   bool _loading = false;
   bool _saving = false;
+  String? _estimateError;
   String? _saveError;
   NutritionEstimate? _estimate;
   NutritionEstimateImageCleanupResult? _imageCleanup;
@@ -224,6 +226,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     setState(() {
       _loading = true;
       _estimate = null;
+      _estimateError = null;
       _saveError = null;
     });
 
@@ -245,11 +248,15 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         inputHash: nutritionEstimateInputHash(description),
       );
     } catch (error) {
-      if (mounted) setState(() => _loading = false);
       if (mounted) {
+        final message = _estimateErrorMessage(error);
+        setState(() {
+          _loading = false;
+          _estimateError = message;
+        });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(_estimateErrorMessage(error))));
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       await _cleanupSelectedImage(
@@ -279,6 +286,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     setState(() {
       _loading = true;
       _estimate = null;
+      _estimateError = null;
       _saveError = null;
     });
 
@@ -317,9 +325,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       );
     } catch (error) {
       if (mounted) {
+        final message = _estimateErrorMessage(error);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(_estimateErrorMessage(error))));
+        ).showSnackBar(SnackBar(content: Text(message)));
+        setState(() => _estimateError = message);
       }
     } finally {
       await _cleanupSelectedImage(
@@ -351,6 +361,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     if (!mounted) return;
     setState(() {
       _estimate = estimate;
+      _estimateError = null;
       _saveError = null;
       _initEditControllers();
     });
@@ -617,6 +628,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final logDate = widget.selectedDate ?? DateTime.now();
     final dateStr = ConsumerDateLabel.dateTime(logDate);
 
@@ -636,7 +648,8 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
             ),
           ],
         ),
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.page,
+        foregroundColor: colors.textPrimary,
         elevation: 0,
       ),
       body: _loading
@@ -649,6 +662,15 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   label: 'Estimates are approximate',
                   value: 'Check ingredients for allergies and medical safety.',
                 ),
+                if (_estimateError != null) ...[
+                  const SizedBox(height: 12),
+                  ConsumerStatusRow(
+                    label: 'Estimate unavailable',
+                    detail: _estimateError,
+                    error: true,
+                    onRetry: _retryEstimate,
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Text(
                   _estimate == null
@@ -667,6 +689,8 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   _buildPhotoEstimatorCard(),
                 ] else
                   _buildResultSection(),
+                const SizedBox(height: 12),
+                _LoggedMealsSection(date: logDate),
               ],
             ),
       primaryAction: _buildPrimaryAction(),
@@ -969,6 +993,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     );
   }
 
+  Future<void> _retryEstimate() {
+    if (_selectedImage != null) return _submitPhotoEstimate();
+    return _submitTextEstimate();
+  }
+
   static String _mealLabel(String value) {
     final normalized = value.trim().toLowerCase();
     return switch (normalized) {
@@ -978,6 +1007,68 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       'snack' => 'snack',
       _ => 'meal',
     };
+  }
+}
+
+class _LoggedMealsSection extends StatefulWidget {
+  const _LoggedMealsSection({required this.date});
+
+  final DateTime date;
+
+  @override
+  State<_LoggedMealsSection> createState() => _LoggedMealsSectionState();
+}
+
+class _LoggedMealsSectionState extends State<_LoggedMealsSection> {
+  var _expanded = false;
+
+  void _toggle() => setState(() => _expanded = !_expanded);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return B05Surface(
+      padding: EdgeInsets.zero,
+      radius: B05SurfaceRadius.small,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            container: true,
+            button: true,
+            label: 'Logged meals',
+            value: _expanded ? 'Expanded' : 'Collapsed',
+            hint: _expanded
+                ? 'Hide meals logged for this day.'
+                : 'Show meals logged for this day.',
+            onTap: _toggle,
+            child: ExcludeSemantics(
+              child: ListTile(
+                title: const Text('Logged meals'),
+                subtitle: const Text('Review or edit meals for this day.'),
+                trailing: Icon(
+                  _expanded
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded,
+                  color: colors.action,
+                ),
+                onTap: _toggle,
+              ),
+            ),
+          ),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                B05Layout.space12,
+                0,
+                B05Layout.space12,
+                B05Layout.space12,
+              ),
+              child: FoodLogEntriesPanel(date: widget.date),
+            ),
+        ],
+      ),
+    );
   }
 }
 
