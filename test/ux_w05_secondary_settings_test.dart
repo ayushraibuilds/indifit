@@ -11,6 +11,8 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart' show AppDatabase;
 import 'package:indifit/data/repositories/nutrition_household_measure_repository.dart';
+import 'package:indifit/data/repositories/workout_repository.dart';
+import 'package:indifit/features/exercise_library/exercise_history_screen.dart';
 import 'package:indifit/features/media/b05_playlist_launcher.dart';
 import 'package:indifit/features/settings/household_measures_controller.dart';
 import 'package:indifit/features/settings/household_measures_screen.dart';
@@ -42,6 +44,18 @@ void main() {
       expect(
         DietaryChoicesPresentation.search('shell').single.label,
         'Shellfish',
+      );
+      expect(
+        DietaryChoicesPresentation.searchForTargets('peanut', const {
+          NutritionConstraintTargetType.ingredient,
+        }),
+        isEmpty,
+      );
+      expect(
+        DietaryChoicesPresentation.searchForTargets('peanut', const {
+          NutritionConstraintTargetType.allergen,
+        }).single.label,
+        'Peanuts',
       );
 
       final constraint = NutritionUserConstraint(
@@ -221,6 +235,38 @@ void main() {
     },
   );
 
+  testWidgets('exercise history failure leaves the plate calculator usable', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          workoutRepositoryProvider.overrideWithValue(
+            _FailingWorkoutRepository(database),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const ExerciseHistoryScreen(exerciseName: 'Back squat'),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      find.text('Exercise history is unavailable right now.'),
+      findsOneWidget,
+    );
+    expect(find.text('Plate Calc'), findsOneWidget);
+    expect(find.text('Retry history'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   test('calibrated volume remains typed as volume, never an implied mass', () {
     final calibration = NutritionVesselCalibration(
       id: 'calibration-1',
@@ -242,6 +288,25 @@ void main() {
     expect(presentation.status, 'Ready to use');
     expect(presentation.volume, isNot(contains('g')));
   });
+
+  test('untouched profile values preserve B04-owned custom state', () {
+    expect(
+      ProfilePresentation.valueForSave(
+        source: 'custom',
+        selected: 'maintain',
+        changed: false,
+      ),
+      'custom',
+    );
+    expect(
+      ProfilePresentation.valueForSave(
+        source: 'custom',
+        selected: 'maintain',
+        changed: true,
+      ),
+      'maintain',
+    );
+  });
 }
 
 class _FakeHouseholdMeasureRepository
@@ -259,4 +324,12 @@ class _FakeHouseholdMeasureRepository
     required String userId,
     required String vesselId,
   }) async => null;
+}
+
+class _FailingWorkoutRepository extends WorkoutRepository {
+  _FailingWorkoutRepository(super.db);
+
+  @override
+  Future<List<Map<String, dynamic>>> getExerciseHistory(String exerciseName) =>
+      Future.error(StateError('history unavailable'));
 }

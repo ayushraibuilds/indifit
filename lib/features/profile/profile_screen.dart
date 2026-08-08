@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/user_profile_provider.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
-import '../../core/theme/colors.dart';
+import '../../core/presentation/secondary_presentation.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
@@ -30,6 +31,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String? _dietPreferenceSourceValue;
   var _dietPreferenceChanged = false;
   String _selectedEquipment = 'full_gym';
+
+  // Keep the persisted value separate from the closest UI choice. Older
+  // profiles (and B04 custom goals) can contain values this secondary editor
+  // does not offer as a dropdown option. A user saving an unrelated field
+  // must not silently rewrite those values.
+  String? _sourceSex;
+  String? _sourceGoal;
+  String? _sourceActivity;
+  String? _sourceEquipment;
+  var _sexChanged = false;
+  var _goalChanged = false;
+  var _activityChanged = false;
+  var _equipmentChanged = false;
 
   bool _initialized = false;
 
@@ -58,6 +72,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           : '70.0';
       _injuriesController.text = p.injuriesLimitations;
 
+      _sourceSex = p.userSex;
+      _sourceGoal = p.userGoal;
+      _sourceActivity = p.userActivityLevel;
+      _sourceEquipment = p.equipmentAccess;
       _selectedSex = _knownOr(p.userSex, const {'male', 'female'}, 'male');
       _selectedGoal = _knownOr(p.userGoal, const {
         'lose',
@@ -94,11 +112,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _handleSave() async {
+    final colors = context.b05Colors;
     final age = int.tryParse(_ageController.text.trim());
     final height = double.tryParse(_heightController.text.trim());
     final weight = double.tryParse(_weightController.text.trim());
     final name = _nameController.text.trim();
     final injuries = _injuriesController.text.trim();
+    final sex = ProfilePresentation.valueForSave(
+      source: _sourceSex,
+      selected: _selectedSex,
+      changed: _sexChanged,
+    );
+    final goal = ProfilePresentation.valueForSave(
+      source: _sourceGoal,
+      selected: _selectedGoal,
+      changed: _goalChanged,
+    );
+    final activity = ProfilePresentation.valueForSave(
+      source: _sourceActivity,
+      selected: _selectedActivity,
+      changed: _activityChanged,
+    );
+    final equipment = ProfilePresentation.valueForSave(
+      source: _sourceEquipment,
+      selected: _selectedEquipment,
+      changed: _equipmentChanged,
+    );
 
     // Validation
     if (age == null || age < 13 || age > 120) {
@@ -119,9 +158,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         p.userAge != age ||
         (p.userHeight ?? 0) != height ||
         p.currentWeight != weight ||
-        p.userSex != _selectedSex ||
-        p.userGoal != _selectedGoal ||
-        p.userActivityLevel != _selectedActivity;
+        p.userSex != sex ||
+        p.userGoal != goal ||
+        p.userActivityLevel != activity;
 
     bool recalculateGoals = false;
 
@@ -129,21 +168,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final choice = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: const Row(
+          backgroundColor: colors.surface,
+          title: Row(
             children: [
-              Icon(
-                Icons.auto_awesome_rounded,
-                color: AppColors.primary,
-                size: 22,
+              Icon(Icons.auto_awesome_rounded, color: colors.action, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                'Recalculate goals?',
+                style: TextStyle(color: colors.textPrimary),
               ),
-              SizedBox(width: 8),
-              Text('Recalculate Goals?'),
             ],
           ),
-          content: const Text(
+          content: Text(
             'Your body measurements or fitness goals have changed. Would you like to recalculate daily calorie & macronutrient targets using Mifflin-St Jeor equation?',
-            style: TextStyle(fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
           actions: [
             TextButton(
@@ -153,7 +195,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: colors.action,
+                foregroundColor: colors.onAction,
               ),
               child: const Text('Recalculate Goals'),
             ),
@@ -214,15 +257,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           age: age,
           height: height,
           weight: weight,
-          sex: _selectedSex,
-          activityLevel: _selectedActivity,
-          goal: _selectedGoal,
+          sex: sex,
+          activityLevel: activity,
+          // Passing null keeps an untouched B04/custom goal owned by its
+          // existing authority. Explicit user selection still records the
+          // selected goal through UserProfileNotifier.
+          goal: _goalChanged ? _selectedGoal : null,
           dietPreference: DietPreferencePresentation.persistedValueFor(
             originalValue: _dietPreferenceSourceValue,
             uiValue: _selectedDiet,
             userChanged: _dietPreferenceChanged,
           ),
-          equipmentAccess: _selectedEquipment,
+          equipmentAccess: equipment,
           injuriesLimitations: injuries,
           calorieGoal: newCals,
           proteinGoal: newProtein,
@@ -239,8 +285,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             recalculateGoals
                 ? 'Profile updated & nutrition targets recalculated ($newCals kcal)!'
                 : 'Profile updated successfully!',
+            style: TextStyle(color: context.b05Colors.success.foreground),
           ),
-          backgroundColor: AppColors.success,
+          backgroundColor: context.b05Colors.success.container,
         ),
       );
       Navigator.pop(context);
@@ -249,7 +296,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: AppColors.danger),
+      SnackBar(
+        content: Text(
+          msg,
+          style: TextStyle(color: context.b05Colors.danger.foreground),
+        ),
+        backgroundColor: context.b05Colors.danger.container,
+      ),
     );
   }
 
@@ -268,7 +321,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. Identity & Body Data Section
-            _buildSectionHeader('ABOUT YOU'),
+            _buildSectionHeader(context, 'ABOUT YOU'),
             const SizedBox(height: 12),
             B05Surface(
               child: Padding(
@@ -309,7 +362,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ],
                           onChanged: (val) {
                             if (val != null) {
-                              setState(() => _selectedSex = val);
+                              setState(() {
+                                _selectedSex = val;
+                                _sexChanged = true;
+                              });
                             }
                           },
                         ),
@@ -347,7 +403,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 24),
 
             // 2. Goal & Activity Section
-            _buildSectionHeader('GOALS & ROUTINE'),
+            _buildSectionHeader(context, 'GOALS & ROUTINE'),
             const SizedBox(height: 12),
             B05Surface(
               child: Padding(
@@ -377,7 +433,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ],
                       onChanged: (val) {
                         if (val != null) {
-                          setState(() => _selectedGoal = val);
+                          setState(() {
+                            _selectedGoal = val;
+                            _goalChanged = true;
+                          });
                         }
                       },
                     ),
@@ -409,7 +468,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ],
                       onChanged: (val) {
                         if (val != null) {
-                          setState(() => _selectedActivity = val);
+                          setState(() {
+                            _selectedActivity = val;
+                            _activityChanged = true;
+                          });
                         }
                       },
                     ),
@@ -420,7 +482,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 24),
 
             // 3. Diet Preference
-            _buildSectionHeader('FOOD PREFERENCES'),
+            _buildSectionHeader(context, 'FOOD PREFERENCES'),
             const SizedBox(height: 12),
             B05Surface(
               child: Padding(
@@ -448,7 +510,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 24),
 
             // 4. Equipment & Injuries
-            _buildSectionHeader('TRAINING SETUP'),
+            _buildSectionHeader(context, 'TRAINING SETUP'),
             const SizedBox(height: 12),
             B05Surface(
               child: Padding(
@@ -478,7 +540,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ],
                       onChanged: (val) {
                         if (val != null) {
-                          setState(() => _selectedEquipment = val);
+                          setState(() {
+                            _selectedEquipment = val;
+                            _equipmentChanged = true;
+                          });
                         }
                       },
                     ),
@@ -510,8 +575,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.b05Colors.action,
+                  foregroundColor: context.b05Colors.onAction,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -524,13 +589,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.bold,
-        color: AppColors.textMuted,
+        color: context.b05Colors.textSecondary,
         letterSpacing: 1.0,
       ),
     );

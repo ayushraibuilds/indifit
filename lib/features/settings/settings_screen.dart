@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/theme_provider.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../media/b05_playlist_launcher.dart';
 import '../profile/profile_screen.dart';
 import 'data_management_sub_screen.dart';
@@ -20,12 +21,14 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.b05Colors;
     final state = ref.watch(settingsControllerProvider);
     final currentThemeMode = ref.watch(themeModeProvider);
-    final playlistAvailable = ref
+    final playlistRegistryAvailable = ref
         .watch(b05PlaylistProviderRegistryProvider)
         .providers
         .isNotEmpty;
+    final playlistAvailable = playlistRegistryAvailable;
 
     return Scaffold(
       appBar: AppBar(
@@ -48,20 +51,17 @@ class SettingsScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
                               Icon(
                                 Icons.palette_outlined,
-                                color: AppColors.primary,
+                                color: colors.action,
                                 size: 20,
                               ),
-                              SizedBox(width: 10),
+                              const SizedBox(width: 10),
                               Text(
                                 'Appearance Theme',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
+                                style: B05Typography.title(context),
                               ),
                             ],
                           ),
@@ -110,12 +110,11 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
 
                   // 2. Settings Group List
-                  const Text(
+                  Text(
                     'PREFERENCES & DATA',
-                    style: TextStyle(
+                    style: B05Typography.label(context).copyWith(
+                      color: colors.textSecondary,
                       fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textMuted,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -127,7 +126,7 @@ class SettingsScreen extends ConsumerWidget {
                         _buildSettingTile(
                           context,
                           icon: Icons.person_outline_rounded,
-                          iconColor: AppColors.primary,
+                          iconColor: colors.action,
                           title: 'My Profile',
                           subtitle:
                               'Body measurements, goals, diet & equipment',
@@ -139,11 +138,11 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                         ),
                         if (playlistAvailable) ...[
-                          const Divider(height: 1, color: AppColors.border),
+                          Divider(height: 1, color: colors.border),
                           _buildSettingTile(
                             context,
                             icon: Icons.music_note_outlined,
-                            iconColor: AppColors.primary,
+                            iconColor: colors.action,
                             title: 'Workout Playlist',
                             subtitle:
                                 'Save a playlist for quick workout launch',
@@ -156,11 +155,11 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                         ],
-                        const Divider(height: 1, color: AppColors.border),
+                        Divider(height: 1, color: colors.border),
                         _buildSettingTile(
                           context,
                           icon: Icons.health_and_safety_outlined,
-                          iconColor: AppColors.warning,
+                          iconColor: colors.warning.foreground,
                           title: 'Food preferences',
                           subtitle:
                               'Choose foods and ingredients to handle carefully',
@@ -172,11 +171,11 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const Divider(height: 1, color: AppColors.border),
+                        Divider(height: 1, color: colors.border),
                         _buildSettingTile(
                           context,
                           icon: Icons.notifications_none_rounded,
-                          iconColor: AppColors.achievementGold,
+                          iconColor: colors.warning.foreground,
                           title: 'Notifications & Reminders',
                           subtitle:
                               'Meal reminders, workout alarms & summaries',
@@ -188,11 +187,11 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const Divider(height: 1, color: AppColors.border),
+                        Divider(height: 1, color: colors.border),
                         _buildSettingTile(
                           context,
                           icon: Icons.water_drop_outlined,
-                          iconColor: AppColors.infoBlue,
+                          iconColor: colors.info.foreground,
                           title: 'Hydration & Water Goal',
                           subtitle:
                               'Daily target, glass volume & intake history',
@@ -203,11 +202,11 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const Divider(height: 1, color: AppColors.border),
+                        Divider(height: 1, color: colors.border),
                         _buildSettingTile(
                           context,
                           icon: Icons.local_drink_outlined,
-                          iconColor: AppColors.infoBlue,
+                          iconColor: colors.info.foreground,
                           title: 'Household Measures',
                           subtitle:
                               'Manage personal vessels and measured volume capacity',
@@ -218,11 +217,11 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const Divider(height: 1, color: AppColors.border),
+                        Divider(height: 1, color: colors.border),
                         _buildSettingTile(
                           context,
                           icon: Icons.restaurant_menu_rounded,
-                          iconColor: AppColors.streakOrange,
+                          iconColor: colors.breakfast.foreground,
                           title: 'Regional Food Packs',
                           subtitle:
                               'Bengali, Gujarati, Punjabi & South Indian items',
@@ -233,11 +232,11 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const Divider(height: 1, color: AppColors.border),
+                        Divider(height: 1, color: colors.border),
                         _buildSettingTile(
                           context,
                           icon: Icons.restaurant_menu_rounded,
-                          iconColor: AppColors.primary,
+                          iconColor: colors.action,
                           title: 'Nutrition & Macro Goals',
                           subtitle:
                               'View calculated recommendations & customize targets',
@@ -248,11 +247,11 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const Divider(height: 1, color: AppColors.border),
+                        Divider(height: 1, color: colors.border),
                         _buildSettingTile(
                           context,
                           icon: Icons.favorite_border_rounded,
-                          iconColor: Colors.pink,
+                          iconColor: colors.danger.foreground,
                           title: 'Health Sync Hub',
                           subtitle: 'Connect Health Connect / Apple Health',
                           onTap: () => Navigator.push(
@@ -262,11 +261,11 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const Divider(height: 1, color: AppColors.border),
+                        Divider(height: 1, color: colors.border),
                         _buildSettingTile(
                           context,
                           icon: Icons.sd_storage_outlined,
-                          iconColor: Colors.green,
+                          iconColor: colors.success.foreground,
                           title: 'Data & Auto-Backup',
                           subtitle: 'CSV export, SQLite backups & offline mode',
                           onTap: () => Navigator.push(
@@ -311,11 +310,11 @@ class SettingsScreen extends ConsumerWidget {
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+        style: TextStyle(color: context.b05Colors.textSecondary, fontSize: 11),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right_rounded,
-        color: AppColors.textMuted,
+        color: context.b05Colors.textDisabled,
         size: 20,
       ),
       onTap: onTap,
@@ -328,6 +327,7 @@ class _MedicalDisclaimerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -336,31 +336,28 @@ class _MedicalDisclaimerCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.12),
+                color: colors.danger.container,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.health_and_safety_rounded,
-                color: Colors.red,
+                color: colors.danger.foreground,
                 size: 20,
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Health & Safety Disclaimer',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: B05Typography.title(context),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
                     'IndiFit is for informational purposes only.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                    ),
+                    style: B05Typography.body(context),
                   ),
                 ],
               ),
@@ -368,20 +365,10 @@ class _MedicalDisclaimerCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: const Text(
+        B05Surface(
+          child: Text(
             'IndiFit provides general fitness tracking, local AI exercise/food estimation, and routine planning tools. We do not provide medical advice or therapy. Consult a physician before starting any workout program or altering your diet. Always exercise caution, maintain proper form, and stop immediately if you experience pain. Nutritional estimations are generated locally and might contain variations or inaccuracies; do not rely on them for severe food allergies or medical diagnoses.',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 11,
-              height: 1.5,
-            ),
+            style: B05Typography.body(context).copyWith(height: 1.5),
           ),
         ),
       ],

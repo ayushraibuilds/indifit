@@ -113,6 +113,16 @@ abstract final class DietaryChoicesPresentation {
         .where((choice) => choice.label.toLowerCase().contains(key))
         .toList(growable: false);
   }
+
+  static List<DietaryChoicePresentation> searchForTargets(
+    String query,
+    Iterable<NutritionConstraintTargetType> targetTypes,
+  ) {
+    final allowed = targetTypes.toSet();
+    return search(query)
+        .where((choice) => allowed.contains(choice.targetType))
+        .toList(growable: false);
+  }
 }
 
 class NutritionConstraintPresentation {
@@ -260,4 +270,14 @@ abstract final class SecondaryConsumerCopy {
 
   static String playlistUnavailable() =>
       'Workout music is not available on this device yet.';
+}
+
+/// Keeps values owned by the profile/B04 authorities intact until the user
+/// explicitly changes the corresponding secondary dropdown.
+abstract final class ProfilePresentation {
+  static String valueForSave({
+    required String? source,
+    required String selected,
+    required bool changed,
+  }) => changed ? selected : source ?? selected;
 }

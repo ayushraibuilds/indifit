@@ -631,9 +631,11 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
                 spacing: 6,
                 runSpacing: 4,
                 children: [
-                  for (final choice in DietaryChoicesPresentation.search(
-                    _targetIdController.text,
-                  ).take(8))
+                  for (final choice
+                      in DietaryChoicesPresentation.searchForTargets(
+                        _targetIdController.text,
+                        _definition.targetTypes,
+                      ).take(8))
                     ChoiceChip(
                       label: Text(choice.label),
                       selected:
@@ -721,10 +723,13 @@ class _AddConstraintDialogState extends State<_AddConstraintDialog> {
         targetType: NutritionConstraintTargetType.ingredient,
       ),
     );
-    final targetId = selectedChoice.id.isEmpty ? rawTarget : selectedChoice.id;
-    final targetType = selectedChoice.id.isEmpty
-        ? _targetType
-        : selectedChoice.targetType;
+    final choiceIsAllowed =
+        selectedChoice.id.isNotEmpty &&
+        _definition.targetTypes.contains(selectedChoice.targetType);
+    final targetId = choiceIsAllowed ? selectedChoice.id : rawTarget;
+    final targetType = choiceIsAllowed
+        ? selectedChoice.targetType
+        : _targetType;
     if (targetType == null || targetId.isEmpty) {
       setState(() => _error = 'Choose what this preference applies to.');
       return;
