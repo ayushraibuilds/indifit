@@ -206,16 +206,19 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
                                 decoration: BoxDecoration(
                                   color: _getPlateColor(weight),
                                   borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: colors.border),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
                                   weight % 1 == 0
                                       ? '${weight.toInt()}'
                                       : '$weight',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 8,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: weight == 5.0
+                                        ? colors.textPrimary
+                                        : Colors.white,
                                   ),
                                 ),
                               ),
@@ -235,6 +238,17 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
                       fontSize: 13,
                     ),
                   ),
+                  if (_unmatchedWeight > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Still to load: ${_unmatchedWeight.toStringAsFixed(2)} kg per side',
+                      style: TextStyle(
+                        color: colors.warning.foreground,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ],
               ),
             ),

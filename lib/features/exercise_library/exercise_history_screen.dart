@@ -28,12 +28,41 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   double _barWeight = 20.0;
   Map<double, int> _calculatedPlates = {};
   double _unmatchedWeight = 0.0;
+  late Future<List<Map<String, dynamic>>> _historyFuture;
+  var _historyInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _calculatePlatesNeeded();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_historyInitialized) {
+      _historyFuture = _loadHistory();
+      _historyInitialized = true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ExerciseHistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.exerciseName != widget.exerciseName) {
+      _historyFuture = _loadHistory();
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _loadHistory() {
+    return ref
+        .read(workoutRepositoryProvider)
+        .getExerciseHistory(widget.exerciseName);
+  }
+
+  void _retryHistory() {
+    setState(() => _historyFuture = _loadHistory());
   }
 
   @override
@@ -84,7 +113,6 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
-    final repo = ref.watch(workoutRepositoryProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -102,22 +130,30 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
         ),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: repo.getExerciseHistory(widget.exerciseName),
+        future: _historyFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(color: colors.action),
+            return TabBarView(
+              controller: _tabController,
+              children: [
+                Center(
+                  child: Semantics(
+                    label: 'Loading exercise history',
+                    child: CircularProgressIndicator(color: colors.action),
+                  ),
+                ),
+                _buildPlateCalculatorTab(),
+              ],
             );
           }
 
-          final history = snapshot.data ?? [];
+          final historyTab = snapshot.hasError
+              ? _HistoryErrorState(onRetry: _retryHistory)
+              : _buildHistoryAndChartTab(snapshot.data ?? []);
 
           return TabBarView(
             controller: _tabController,
-            children: [
-              _buildHistoryAndChartTab(history),
-              _buildPlateCalculatorTab(),
-            ],
+            children: [historyTab, _buildPlateCalculatorTab()],
           );
         },
       ),
@@ -324,8 +360,11 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        spacing: B05Layout.space8,
+                        runSpacing: B05Layout.space4,
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
                             DateFormat(
@@ -388,9 +427,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                                   ),
                                   if (s.isPr) ...[
                                     const SizedBox(width: 4),
-                                    const Icon(
+                                    Icon(
                                       Icons.emoji_events_rounded,
-                                      color: Colors.orangeAccent,
+                                      color: colors.warning.foreground,
                                       size: 14,
                                     ),
                                   ],
@@ -587,6 +626,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                                     decoration: BoxDecoration(
                                       color: _getPlateColor(plateWeight),
                                       borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: colors.border),
                                     ),
                                     alignment: Alignment.center,
                                     child: RotatedBox(
@@ -662,15 +702,15 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                         alignment: WrapAlignment.spaceBetween,
                         runSpacing: 8,
                         children: [
-                          const Text(
+                          Text(
                             'Still to load',
-                            style: TextStyle(color: Colors.orangeAccent),
+                            style: TextStyle(color: colors.warning.foreground),
                           ),
                           Text(
                             '${_unmatchedWeight.toStringAsFixed(2)} kg per side',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.orangeAccent,
+                              color: colors.warning.foreground,
                             ),
                           ),
                         ],
@@ -684,4 +724,42 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
       ),
     );
   }
+}
+
+class _HistoryErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _HistoryErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(B05Layout.space24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.history_toggle_off_rounded, size: 42),
+          const SizedBox(height: B05Layout.space12),
+          Text(
+            'Exercise history is unavailable right now.',
+            style: B05Typography.title(context),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            'Your plate calculator is still ready to use. Try loading history again.',
+            style: B05Typography.body(context),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: B05Layout.space16),
+          B05ActionButton(
+            label: 'Retry history',
+            icon: Icons.refresh_rounded,
+            emphasis: B05ActionEmphasis.secondary,
+            onPressed: onRetry,
+          ),
+        ],
+      ),
+    ),
+  );
 }

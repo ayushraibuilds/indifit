@@ -52,7 +52,8 @@ class _HouseholdMeasuresScreenState
                 loading: true,
               ),
             )
-          : state.status == HouseholdMeasuresStatus.error
+          : state.status == HouseholdMeasuresStatus.error &&
+                state.vessels.isEmpty
           ? _ErrorState(message: state.message, onRetry: controller.load)
           : _content(context, state, controller),
     );
@@ -125,7 +126,8 @@ class _HouseholdMeasuresScreenState
           ),
         ],
         if (state.message != null &&
-            state.status == HouseholdMeasuresStatus.validationError) ...[
+            (state.status == HouseholdMeasuresStatus.validationError ||
+                state.status == HouseholdMeasuresStatus.error)) ...[
           const SizedBox(height: 12),
           _MessageCard(message: state.message!, isError: true),
         ],
@@ -455,7 +457,11 @@ class _ErrorState extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, size: 42),
           const SizedBox(height: 12),
-          const Text('Household measures could not be loaded. Try again.'),
+          const Text('Household measures are unavailable right now.'),
+          if (message != null) ...[
+            const SizedBox(height: 8),
+            Text(message!, textAlign: TextAlign.center),
+          ],
           const SizedBox(height: 12),
           OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
         ],

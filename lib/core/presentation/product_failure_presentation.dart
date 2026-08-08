@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import '../errors/app_failure.dart';
+
 /// Safe, consumer-facing failure copy.
 ///
 /// Domain and infrastructure exceptions may contain identifiers, SQL, stack
@@ -50,6 +52,44 @@ class ProductFailurePresentation {
     );
   }
 
+  /// Converts the legacy failure envelope at the rendering boundary. Its
+  /// message is caller-provided, so it must not be treated as safe display
+  /// copy. Keep that value for diagnostics and choose wording from the typed
+  /// failure category instead.
+  factory ProductFailurePresentation.fromAppFailure(AppFailure failure) {
+    return switch (failure.type) {
+      AppFailureType.offlinePolicyBlocked ||
+      AppFailureType.network => const ProductFailurePresentation(
+        title: 'Connection unavailable',
+        message: 'Check your connection and try again.',
+        canRetry: true,
+      ),
+      AppFailureType.permissionDenied => const ProductFailurePresentation(
+        title: 'Permission needed',
+        message: 'Allow this permission in Settings to continue.',
+      ),
+      AppFailureType.validation => ProductFailurePresentation.fromCode(
+        'invalid_input',
+        canRetry: false,
+      ),
+      AppFailureType.unsupportedPlatform => const ProductFailurePresentation(
+        title: 'Not available on this device',
+        message: 'This feature is not available on this device.',
+      ),
+      AppFailureType.corruptedBackup => const ProductFailurePresentation(
+        title: 'Backup unavailable',
+        message:
+            'This backup can’t be used. Choose another backup and try again.',
+      ),
+      AppFailureType.server ||
+      AppFailureType.unknown => const ProductFailurePresentation(
+        title: 'Something went wrong',
+        message: 'We couldn’t load this right now. Try again.',
+        canRetry: true,
+      ),
+    };
+  }
+
   static String? _knownCode(Object error) {
     // Do not call error.toString(): a future exception may expose sensitive
     // implementation details. The small set below is intentionally typed.
@@ -82,6 +122,9 @@ class ProductFailurePresentation {
     'b04_settings_load_failed' =>
       'Coaching settings could not be loaded. Try again.',
     'playlist_unavailable' => 'Music playlists are not available right now.',
+    'backup_export_failed' => 'Your backup could not be exported. Try again.',
+    'backup_inspection_failed' =>
+      'This backup could not be inspected. Choose another file or try again.',
     _ => 'We couldn’t load this right now. Try again.',
   };
 

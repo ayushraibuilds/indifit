@@ -13,9 +13,21 @@ class ExerciseDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
-    final List<String> muscles = exercise.muscleGroups.split(',');
-    final List<String> cues = exercise.formCues.split('\n');
-    final List<String> mistakes = exercise.commonMistakes.split('\n');
+    final muscles = exercise.muscleGroups
+        .split(',')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+    final cues = exercise.formCues
+        .split('\n')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+    final mistakes = exercise.commonMistakes
+        .split('\n')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
 
     return SingleChildScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -99,29 +111,37 @@ class ExerciseDetailsSheet extends StatelessWidget {
             ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .6),
           ),
           const SizedBox(height: B05Layout.space8),
-          ...cues.asMap().entries.map(
-            (entry) => Padding(
-              padding: const EdgeInsets.only(bottom: B05Layout.space8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${entry.key + 1}. ',
-                    style: TextStyle(
-                      color: colors.action,
-                      fontWeight: FontWeight.bold,
+          if (cues.isEmpty)
+            Text(
+              'Form cues are not available for this exercise yet.',
+              style: B05Typography.body(context),
+            )
+          else
+            ...cues.asMap().entries.map(
+              (entry) => Padding(
+                padding: const EdgeInsets.only(bottom: B05Layout.space8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${entry.key + 1}. ',
+                      style: TextStyle(
+                        color: colors.action,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      entry.value,
-                      style: B05Typography.body(context).copyWith(height: 1.3),
+                    Expanded(
+                      child: Text(
+                        entry.value,
+                        style: B05Typography.body(
+                          context,
+                        ).copyWith(height: 1.3),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
           const SizedBox(height: B05Layout.space16),
 
           Text(
@@ -133,28 +153,36 @@ class ExerciseDetailsSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: B05Layout.space8),
-          ...mistakes.map(
-            (m) => Padding(
-              padding: const EdgeInsets.only(bottom: B05Layout.space8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.cancel_outlined,
-                    color: colors.danger.foreground,
-                    size: B05Layout.iconSmall,
-                  ),
-                  const SizedBox(width: B05Layout.space8),
-                  Expanded(
-                    child: Text(
-                      m,
-                      style: B05Typography.body(context).copyWith(height: 1.3),
+          if (mistakes.isEmpty)
+            Text(
+              'Common mistakes are not available for this exercise yet.',
+              style: B05Typography.body(context),
+            )
+          else
+            ...mistakes.map(
+              (m) => Padding(
+                padding: const EdgeInsets.only(bottom: B05Layout.space8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.cancel_outlined,
+                      color: colors.danger.foreground,
+                      size: B05Layout.iconSmall,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: B05Layout.space8),
+                    Expanded(
+                      child: Text(
+                        m,
+                        style: B05Typography.body(
+                          context,
+                        ).copyWith(height: 1.3),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           const SizedBox(height: B05Layout.space12),
           B05ExerciseEducationPanel(
             exerciseName: exercise.name,

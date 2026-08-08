@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/user_profile_provider.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
+import '../../core/presentation/secondary_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -31,6 +32,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   var _dietPreferenceChanged = false;
   String _selectedEquipment = 'full_gym';
 
+  String? _sourceSex;
+  String? _sourceGoal;
+  String? _sourceActivity;
+  String? _sourceEquipment;
+  var _sexChanged = false;
+  var _goalChanged = false;
+  var _activityChanged = false;
+  var _equipmentChanged = false;
+
   bool _initialized = false;
 
   @override
@@ -58,6 +68,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           : '70.0';
       _injuriesController.text = p.injuriesLimitations;
 
+      _sourceSex = p.userSex;
+      _sourceGoal = p.userGoal;
+      _sourceActivity = p.userActivityLevel;
+      _sourceEquipment = p.equipmentAccess;
       _selectedSex = _knownOr(p.userSex, const {'male', 'female'}, 'male');
       _selectedGoal = _knownOr(p.userGoal, const {
         'lose',
@@ -99,6 +113,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final weight = double.tryParse(_weightController.text.trim());
     final name = _nameController.text.trim();
     final injuries = _injuriesController.text.trim();
+    final sex = ProfilePresentation.valueForSave(
+      source: _sourceSex,
+      selected: _selectedSex,
+      changed: _sexChanged,
+    );
+    final goal = ProfilePresentation.valueForSave(
+      source: _sourceGoal,
+      selected: _selectedGoal,
+      changed: _goalChanged,
+    );
+    final activity = ProfilePresentation.valueForSave(
+      source: _sourceActivity,
+      selected: _selectedActivity,
+      changed: _activityChanged,
+    );
+    final equipment = ProfilePresentation.valueForSave(
+      source: _sourceEquipment,
+      selected: _selectedEquipment,
+      changed: _equipmentChanged,
+    );
 
     // Validation
     if (age == null || age < 13 || age > 120) {
@@ -119,9 +153,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         p.userAge != age ||
         (p.userHeight ?? 0) != height ||
         p.currentWeight != weight ||
-        p.userSex != _selectedSex ||
-        p.userGoal != _selectedGoal ||
-        p.userActivityLevel != _selectedActivity;
+        p.userSex != sex ||
+        p.userGoal != goal ||
+        p.userActivityLevel != activity;
 
     bool recalculateGoals = false;
 
@@ -210,15 +244,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           age: age,
           height: height,
           weight: weight,
-          sex: _selectedSex,
-          activityLevel: _selectedActivity,
-          goal: _selectedGoal,
+          sex: sex,
+          activityLevel: activity,
+          goal: _goalChanged ? _selectedGoal : null,
           dietPreference: DietPreferencePresentation.persistedValueFor(
             originalValue: _dietPreferenceSourceValue,
             uiValue: _selectedDiet,
             userChanged: _dietPreferenceChanged,
           ),
-          equipmentAccess: _selectedEquipment,
+          equipmentAccess: equipment,
           injuriesLimitations: injuries,
           calorieGoal: newCals,
           proteinGoal: newProtein,
@@ -304,7 +338,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ],
                         onChanged: (val) {
                           if (val != null) {
-                            setState(() => _selectedSex = val);
+                            setState(() {
+                              _selectedSex = val;
+                              _sexChanged = true;
+                            });
                           }
                         },
                       ),
@@ -370,7 +407,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                     onChanged: (val) {
                       if (val != null) {
-                        setState(() => _selectedGoal = val);
+                        setState(() {
+                          _selectedGoal = val;
+                          _goalChanged = true;
+                        });
                       }
                     },
                   ),
@@ -403,7 +443,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                     onChanged: (val) {
                       if (val != null) {
-                        setState(() => _selectedActivity = val);
+                        setState(() {
+                          _selectedActivity = val;
+                          _activityChanged = true;
+                        });
                       }
                     },
                   ),
@@ -467,7 +510,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                     onChanged: (val) {
                       if (val != null) {
-                        setState(() => _selectedEquipment = val);
+                        setState(() {
+                          _selectedEquipment = val;
+                          _equipmentChanged = true;
+                        });
                       }
                     },
                   ),

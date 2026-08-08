@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/backup/backup_file_adapter.dart';
+import '../../../core/presentation/product_failure_presentation.dart';
 import '../../../core/services/auto_backup_service.dart';
 import '../../../core/theme/colors.dart';
 import '../../onboarding/onboarding_screen.dart';
@@ -174,7 +175,7 @@ class DataManagementSection extends ConsumerWidget {
                     rawContent,
                     password: password.isEmpty ? null : password,
                   );
-                } catch (e) {
+                } catch (_) {
                   if (context.mounted) {
                     await showDialog(
                       context: context,
@@ -182,7 +183,9 @@ class DataManagementSection extends ConsumerWidget {
                         title: const Text('Backup Inspection Failed'),
                         backgroundColor: AppColors.surface,
                         content: Text(
-                          'Unable to inspect backup: $e',
+                          ProductFailurePresentation.fromCode(
+                            'backup_inspection_failed',
+                          ).message,
                           style: const TextStyle(height: 1.4),
                         ),
                         actions: [

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/presentation/consumer_date_label.dart';
+import '../../../core/presentation/product_failure_presentation.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/consumer_task_primitives.dart';
@@ -29,6 +30,8 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
   late TextEditingController _nameController;
   late TextEditingController _durationController;
   final List<_ManualExerciseInput> _exercises = [];
+  var _saving = false;
+  String? _saveError;
 
   @override
   void initState() {
@@ -128,6 +131,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
   }
 
   Future<void> _saveLoggedSession() async {
+    if (_saving) return;
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -165,26 +169,64 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
 
     final int estCalories = (durationMins * 5.5).round();
 
-    await repo.logSession(
-      name: name,
-      volume: totalVol,
-      durationSeconds: durationMins * 60,
-      calories: estCalories,
-      sets: setCompanions,
-      completedAt: widget.selectedDate,
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Logged "$name" for ${widget.selectedDate.day}/${widget.selectedDate.month}!',
-          ),
-          backgroundColor: context.b05Colors.success.indicator,
-        ),
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    try {
+      await repo.logSession(
+        name: name,
+        volume: totalVol,
+        durationSeconds: durationMins * 60,
+        calories: estCalories,
+        sets: setCompanions,
+        completedAt: widget.selectedDate,
       );
-      Navigator.pop(context, true);
+
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Logged "$name" for ${widget.selectedDate.day}/${widget.selectedDate.month}!',
+            ),
+            backgroundColor: context.b05Colors.success.indicator,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _saveError = ProductFailurePresentation.fromError(
+          error,
+          title: 'Workout could not be saved',
+          code: 'workout_save_failed',
+        ).message;
+      });
     }
+  }
+
+  void _addSet(_ManualExerciseInput exercise) {
+    late final _SetInput newSet;
+    setState(() {
+      final lastWeight = exercise.sets.isNotEmpty
+          ? exercise.sets.last.weightKg
+          : 40.0;
+      final lastReps = exercise.sets.isNotEmpty ? exercise.sets.last.reps : 10;
+      newSet = _SetInput(weightKg: lastWeight, reps: lastReps);
+      exercise.sets.add(newSet);
+    });
+    // Keep the newly-created set and its correction controls reachable when
+    // the sheet is shorter than the completed workout form.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = newSet.key.currentContext;
+      if (target != null) {
+        Scrollable.ensureVisible(target, alignment: 1, duration: Duration.zero);
+      }
+    });
   }
 
   Widget _buildExerciseCard(_ManualExerciseInput exercise, int exerciseIndex) {
@@ -222,46 +264,47 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                 ),
               ],
             ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    final lastWeight = exercise.sets.isNotEmpty
-                        ? exercise.sets.last.weightKg
-                        : 40.0;
-                    final lastReps = exercise.sets.isNotEmpty
-                        ? exercise.sets.last.reps
-                        : 10;
-                    exercise.sets.add(
-                      _SetInput(weightKg: lastWeight, reps: lastReps),
-                    );
-                  });
-                },
-                icon: const Icon(Icons.add, size: 14),
-                label: const Text('Add Set', style: TextStyle(fontSize: 11)),
-              ),
+            // Keep the set action adjacent to the exercise heading so it
+            // remains reachable before the lower set rows on compact sheets.
+            TextButton.icon(
+              onPressed: () => _addSet(exercise),
+              icon: const Icon(Icons.add, size: 14),
+              label: const Text('Add Set', style: TextStyle(fontSize: 11)),
             ),
             ...exercise.sets.asMap().entries.map((setEntry) {
               final setIndex = setEntry.key;
               final setInput = setEntry.value;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 48,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 14),
-                        child: Text(
-                          'Set ${setIndex + 1}',
-                          style: B05Typography.caption(context),
-                        ),
+              return KeyedSubtree(
+                key: setInput.key,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Set ${setIndex + 1}',
+                              style: B05Typography.caption(context),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Remove set ${setIndex + 1}',
+                            icon: Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: colors.textSecondary,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                exercise.sets.removeAt(setIndex).dispose();
+                              });
+                            },
+                          ),
+                        ],
                       ),
-                    ),
-                    Expanded(
-                      child: IndiFitResponsiveFieldGroup(
+                      IndiFitResponsiveFieldGroup(
                         spacing: 8,
                         children: [
                           TextField(
@@ -288,21 +331,8 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                           ),
                         ],
                       ),
-                    ),
-                    IconButton(
-                      tooltip: 'Remove set ${setIndex + 1}',
-                      icon: Icon(
-                        Icons.delete_outline,
-                        size: 18,
-                        color: colors.textSecondary,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          exercise.sets.removeAt(setIndex).dispose();
-                        });
-                      },
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }),
@@ -406,9 +436,9 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                     ProductEmptyState(
                       icon: Icons.fitness_center_rounded,
                       title: 'Add your first exercise',
-                      message: 'Tap to add exercises to this log',
+                      message: 'Choose the exercises and sets you completed.',
                       action: _addExercise,
-                      actionLabel: 'Add exercise',
+                      actionLabel: 'Tap to add exercises to this log',
                       actionIcon: Icons.add,
                     )
                   else
@@ -418,6 +448,15 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                           _buildExerciseCard(_exercises[index], index),
                       ],
                     ),
+                  if (_saveError != null) ...[
+                    const SizedBox(height: 12),
+                    ConsumerStatusRow(
+                      label: 'Workout could not be saved',
+                      detail: _saveError,
+                      error: true,
+                      onRetry: _saving ? null : _saveLoggedSession,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -426,9 +465,9 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
           SizedBox(
             width: double.infinity,
             child: B05ActionButton(
-              onPressed: _saveLoggedSession,
+              onPressed: _saving ? null : _saveLoggedSession,
               icon: Icons.check_circle_rounded,
-              label: 'Save workout',
+              label: _saving ? 'Saving workout…' : 'Save Workout Session',
             ),
           ),
         ],
@@ -451,6 +490,7 @@ class _ManualExerciseInput {
 }
 
 class _SetInput {
+  final GlobalKey key = GlobalKey();
   double weightKg;
   int reps;
   late final TextEditingController weightController;

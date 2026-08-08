@@ -118,23 +118,15 @@ class ProgramCalendarScreen extends ConsumerWidget {
     List<CalendarOccurrenceReadItem> items,
     Set<String> activeTravelOccurrenceIds,
     CalendarView view,
+    bool hasActiveProgram,
   ) {
     if (items.isEmpty) {
       final isDay = view == CalendarView.day;
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: ProductEmptyState(
-            icon: Icons.event_note_rounded,
-            title: isDay ? 'Nothing planned today' : 'Nothing planned here',
-            message: isDay
-                ? 'Choose a workout or enjoy a recovery day.'
-                : 'Try another date or set up a training plan.',
-            action: () => context.push('/routine-wizard'),
-            actionLabel: 'Set up a training plan',
-            actionIcon: Icons.fitness_center_rounded,
-          ),
-        ),
+      return CalendarEmptyState(
+        isDay: isDay,
+        hasActiveProgram: hasActiveProgram,
+        onAction: () =>
+            context.push(hasActiveProgram ? '/workout' : '/routine-wizard'),
       );
     }
     return ListView.builder(
@@ -269,6 +261,7 @@ class ProgramCalendarScreen extends ConsumerWidget {
                 visibleItems,
                 travelState.activeTravelOccurrenceIds,
                 state.view,
+                state.activeProgramVersionId != null,
               ),
             ),
         ],
@@ -351,6 +344,45 @@ class _CalendarDateControls extends StatelessWidget {
         today,
         next,
       ],
+    );
+  }
+}
+
+class CalendarEmptyState extends StatelessWidget {
+  const CalendarEmptyState({
+    required this.isDay,
+    required this.hasActiveProgram,
+    required this.onAction,
+    super.key,
+  });
+
+  final bool isDay;
+  final bool hasActiveProgram;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final actionLabel = hasActiveProgram
+        ? 'Open training plan'
+        : 'Set up a training plan';
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ProductEmptyState(
+          icon: Icons.event_note_rounded,
+          title: isDay ? 'Nothing planned today' : 'Nothing planned here',
+          message: isDay
+              ? hasActiveProgram
+                    ? 'No workout is scheduled for this day. Open your training plan to choose another day.'
+                    : 'Choose a workout or enjoy a recovery day.'
+              : hasActiveProgram
+              ? 'No workouts are scheduled in this range. Open your training plan to choose another day.'
+              : 'Try another date or set up a training plan.',
+          action: onAction,
+          actionLabel: actionLabel,
+          actionIcon: Icons.fitness_center_rounded,
+        ),
+      ),
     );
   }
 }

@@ -140,7 +140,10 @@ class TodayDailyActionSurface extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: onRefresh,
           child: FocusTraversalGroup(
-            policy: OrderedTraversalPolicy(),
+            // The date bar owns its small local ordered group. At page level,
+            // widget order mirrors the visible reading order and prevents
+            // numeric orders in separate sections from interleaving.
+            policy: WidgetOrderTraversalPolicy(),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(
@@ -182,16 +185,6 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         onRetry: personalizationController.retry,
                       ),
                     ),
-                  if (snapshotAsync.hasError)
-                    Padding(
-                      padding: const EdgeInsets.only(top: B05Layout.space8),
-                      child: _TodayRetry(
-                        title: 'Today could not be loaded',
-                        onRetry: () => ref.invalidate(
-                          todaySurfaceSnapshotProvider(selectedDate),
-                        ),
-                      ),
-                    ),
                   const SizedBox(height: B05Layout.space12),
                   for (var index = 0; index < layout.length; index++)
                     if (layout[index].isVisible) ...[
@@ -208,6 +201,9 @@ class TodayDailyActionSurface extends ConsumerWidget {
                               !snapshotAsync.hasError,
                           unavailable: snapshotAsync.hasError,
                           relation: relation,
+                          onRetry: () => ref.invalidate(
+                            todaySurfaceSnapshotProvider(selectedDate),
+                          ),
                         ),
                       ),
                       const SizedBox(height: B05Layout.space12),
@@ -229,6 +225,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     required bool loading,
     required bool unavailable,
     required TodayDateRelation relation,
+    required VoidCallback onRetry,
   }) {
     final calendarRead =
         snapshot?.calendar ??
@@ -256,10 +253,13 @@ class TodayDailyActionSurface extends ConsumerWidget {
         presentation: todayFocusPresentation(
           dateRelation: relation,
           snapshot: snapshot,
+          loading: loading,
+          unavailable: unavailable,
         ),
         onOpenWorkoutPlan: onOpenWorkoutPlan,
         onLogMeal: onLogMeal,
         onReturnToToday: () => onDateChanged(now ?? DateTime.now()),
+        onRetry: onRetry,
       ),
       'today.workout' => _TodayWorkoutModule(
         presentation: TodayWorkoutPresentation.from(
@@ -267,6 +267,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
           loading: loading,
         ),
         onOpenWorkoutPlan: onOpenWorkoutPlan,
+        onRetry: onRetry,
       ),
       'today.meals' => _TodayNutritionModule(
         presentation: TodayNutritionPresentation.from(
@@ -275,12 +276,15 @@ class TodayDailyActionSurface extends ConsumerWidget {
         ),
         showGuidance: relation == TodayDateRelation.today,
         onLogMeal: onLogMeal,
+        onRetry: onRetry,
       ),
       'today.progress' => _TodayProgressModule(
         presentation: TodayProgressPresentation.from(
           progressRead,
           loading: loading,
         ),
+        onOpenWorkoutPlan: onOpenWorkoutPlan,
+        onRetry: onRetry,
       ),
       _ => const SizedBox.shrink(),
     };
@@ -475,21 +479,56 @@ class _TodayFocusModule extends StatelessWidget {
     required this.onOpenWorkoutPlan,
     required this.onLogMeal,
     required this.onReturnToToday,
+    required this.onRetry,
   });
 
   final TodayFocusPresentation presentation;
   final VoidCallback onOpenWorkoutPlan;
   final VoidCallback onLogMeal;
   final VoidCallback onReturnToToday;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    final callback = switch (presentation.action) {
+    if (presentation.state == TodayPresentationState.loading) {
+      return const _TodayLoadingState(label: 'Preparing your daily focus');
+    }
+    if (presentation.state == TodayPresentationState.unavailable) {
+      return Semantics(
+        container: true,
+        label: 'Daily focus unavailable',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              presentation.title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: context.b05Colors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: B05Layout.space4),
+            Text(presentation.detail, style: B05Typography.body(context)),
+            const SizedBox(height: B05Layout.space12),
+            B05ActionButton(
+              label: presentation.actionLabel ?? 'Retry',
+              hint: 'Tries to load your daily focus again.',
+              icon: Icons.refresh_rounded,
+              onPressed: onRetry,
+              emphasis: B05ActionEmphasis.primary,
+              focusOrder: 10,
+            ),
+          ],
+        ),
+      );
+    }
+    final action = presentation.action!;
+    final callback = switch (action) {
       TodayNextAction.openWorkoutPlan => onOpenWorkoutPlan,
       TodayNextAction.logMeal => onLogMeal,
       TodayNextAction.returnToToday => onReturnToToday,
     };
-    final icon = switch (presentation.action) {
+    final icon = switch (action) {
       TodayNextAction.openWorkoutPlan => Icons.fitness_center_rounded,
       TodayNextAction.logMeal => Icons.restaurant_outlined,
       TodayNextAction.returnToToday => Icons.today_outlined,
@@ -511,7 +550,7 @@ class _TodayFocusModule extends StatelessWidget {
           Text(presentation.detail, style: B05Typography.body(context)),
           const SizedBox(height: B05Layout.space12),
           B05ActionButton(
-            label: presentation.actionLabel,
+            label: presentation.actionLabel!,
             hint: 'Your most useful next step.',
             icon: icon,
             onPressed: callback,
@@ -528,10 +567,12 @@ class _TodayWorkoutModule extends StatelessWidget {
   const _TodayWorkoutModule({
     required this.presentation,
     required this.onOpenWorkoutPlan,
+    required this.onRetry,
   });
 
   final TodayWorkoutPresentation presentation;
   final VoidCallback onOpenWorkoutPlan;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -576,13 +617,21 @@ class _TodayWorkoutModule extends StatelessWidget {
         ),
         const SizedBox(height: B05Layout.space12),
         B05ActionButton(
-          label: presentation.state == TodayPresentationState.empty
+          label: presentation.state == TodayPresentationState.unavailable
+              ? 'Try again'
+              : presentation.state == TodayPresentationState.empty
               ? 'Choose a workout'
               : 'Open workout plan',
-          icon: Icons.calendar_month_outlined,
-          hint: 'Opens your workout plan and calendar.',
+          icon: presentation.state == TodayPresentationState.unavailable
+              ? Icons.refresh_rounded
+              : Icons.calendar_month_outlined,
+          hint: presentation.state == TodayPresentationState.unavailable
+              ? 'Tries to load your workout plan again.'
+              : 'Opens your workout plan and calendar.',
           emphasis: B05ActionEmphasis.secondary,
-          onPressed: onOpenWorkoutPlan,
+          onPressed: presentation.state == TodayPresentationState.unavailable
+              ? onRetry
+              : onOpenWorkoutPlan,
         ),
       ],
     );
@@ -601,11 +650,13 @@ class _TodayNutritionModule extends StatelessWidget {
     required this.presentation,
     required this.showGuidance,
     required this.onLogMeal,
+    required this.onRetry,
   });
 
   final TodayNutritionPresentation presentation;
   final bool showGuidance;
   final VoidCallback onLogMeal;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -682,13 +733,21 @@ class _TodayNutritionModule extends StatelessWidget {
       B05ActionGroup(
         children: [
           B05ActionButton(
-            label: presentation.state == TodayPresentationState.empty
+            label: presentation.state == TodayPresentationState.unavailable
+                ? 'Try again'
+                : presentation.state == TodayPresentationState.empty
                 ? 'Log your first meal'
                 : 'Log meal',
-            icon: Icons.restaurant_outlined,
-            hint: 'Opens the food logging flow for this day.',
+            icon: presentation.state == TodayPresentationState.unavailable
+                ? Icons.refresh_rounded
+                : Icons.restaurant_outlined,
+            hint: presentation.state == TodayPresentationState.unavailable
+                ? 'Tries to load today’s nutrition again.'
+                : 'Opens the food logging flow for this day.',
             emphasis: B05ActionEmphasis.secondary,
-            onPressed: onLogMeal,
+            onPressed: presentation.state == TodayPresentationState.unavailable
+                ? onRetry
+                : onLogMeal,
           ),
         ],
       ),
@@ -762,9 +821,15 @@ class _MealRow extends StatelessWidget {
 }
 
 class _TodayProgressModule extends StatelessWidget {
-  const _TodayProgressModule({required this.presentation});
+  const _TodayProgressModule({
+    required this.presentation,
+    required this.onOpenWorkoutPlan,
+    required this.onRetry,
+  });
 
   final TodayProgressPresentation presentation;
+  final VoidCallback onOpenWorkoutPlan;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -797,6 +862,26 @@ class _TodayProgressModule extends StatelessWidget {
           if (presentation.supporting != null) ...[
             const SizedBox(height: B05Layout.space8),
             Text(presentation.supporting!, style: B05Typography.body(context)),
+          ],
+          if (presentation.state == TodayPresentationState.empty) ...[
+            const SizedBox(height: B05Layout.space12),
+            B05ActionButton(
+              label: 'Choose a workout',
+              icon: Icons.fitness_center_rounded,
+              hint: 'Opens your workout plan and calendar.',
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: onOpenWorkoutPlan,
+            ),
+          ],
+          if (presentation.state == TodayPresentationState.unavailable) ...[
+            const SizedBox(height: B05Layout.space12),
+            B05ActionButton(
+              label: 'Try again',
+              icon: Icons.refresh_rounded,
+              hint: 'Tries to load your progress again.',
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: onRetry,
+            ),
           ],
         ],
       ),

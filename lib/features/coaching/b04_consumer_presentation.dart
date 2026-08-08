@@ -35,7 +35,10 @@ class B04RecommendationPresentation {
     return B04RecommendationPresentation(
       title: ConsumerCopy.action(recommendation.action),
       status: ConsumerCopy.state(recommendation.state.stableId),
-      explanation: ConsumerCopy.explanation(recommendation.explanation),
+      // Engine explanations can contain evidence IDs and reason codes. The
+      // card uses its typed state for consumer copy instead of rendering that
+      // free-form diagnostic text.
+      explanation: explanationForState(recommendation.state),
       result: _result(recommendation.canonicalResult),
       why: hasLimits
           ? 'I don’t have enough nutrition information to make this suggestion yet.'
@@ -43,6 +46,20 @@ class B04RecommendationPresentation {
       showWhy: hasLimits,
     );
   }
+
+  static String explanationForState(B04RecommendationState state) =>
+      switch (state) {
+        B04RecommendationState.available =>
+          'This guidance is based on the information you have logged.',
+        B04RecommendationState.cautious =>
+          'Review this guidance carefully before acting.',
+        B04RecommendationState.confirm =>
+          'Review this suggestion before making a change.',
+        B04RecommendationState.unavailable =>
+          'I need a little more information before I can show this safely.',
+        B04RecommendationState.dismissed => 'This suggestion was dismissed.',
+        B04RecommendationState.superseded => 'A newer suggestion is available.',
+      };
 
   static String? _result(B04BriefingNumericalResult? result) {
     if (result == null || !result.hasCanonicalResult) return null;

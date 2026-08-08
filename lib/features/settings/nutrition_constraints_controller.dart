@@ -191,6 +191,14 @@ class NutritionConstraintManagementController
 
   Future<void> retry() => load();
 
+  Future<List<NutritionConstraintTargetOption>> searchTargetOptions({
+    required NutritionConstraintTargetType type,
+    String query = '',
+  }) => _repository.searchTargetOptions(type: type, query: query);
+
+  Future<String?> targetDisplayLabel(NutritionConstraintTarget target) =>
+      _repository.targetDisplayLabel(target);
+
   void _failure(Object error) {
     final typed = error is NutritionConstraintError ? error : null;
     state = state.copyWith(

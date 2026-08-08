@@ -17,10 +17,7 @@ DateTime _civilDay(DateTime value) =>
 /// reconciled; mutations explicitly invalidate the provider below.
 final foodLogsForDayProvider = FutureProvider.autoDispose
     .family<List<FoodLog>, DateTime>((ref, date) {
-      return ref
-          .watch(foodRepositoryProvider)
-          .watchLogsForDay(_civilDay(date))
-          .first;
+      return ref.watch(foodRepositoryProvider).getLogsForDay(_civilDay(date));
     });
 
 /// A compact production food-log surface used by the existing food-search/log

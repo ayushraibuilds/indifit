@@ -144,7 +144,17 @@ class ProductEmptyState extends StatelessWidget {
               : surface;
           final tappableSurface = action == null
               ? sizedSurface
-              : GestureDetector(onTap: action, child: sizedSurface);
+              : Semantics(
+                  container: true,
+                  button: true,
+                  label: '$title. $message',
+                  hint: actionLabel == null
+                      ? 'Double tap to continue.'
+                      : 'Double tap to $actionLabel.',
+                  enabled: true,
+                  onTap: action,
+                  child: GestureDetector(onTap: action, child: sizedSurface),
+                );
           final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
           if (constraints.maxHeight.isFinite && textScale >= 1.6) {
             return SingleChildScrollView(child: tappableSurface);
