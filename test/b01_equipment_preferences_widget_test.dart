@@ -157,7 +157,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Your Setup & Cues'), findsOneWidget);
-        expect(find.text('Seat level 4'), findsOneWidget);
+        expect(find.text('Note: Seat level 4'), findsOneWidget);
         expect(find.text('Seat: 4'), findsOneWidget);
         expect(find.text('Keep heels flat'), findsOneWidget);
         expect(find.text('Edits apply to your next workout.'), findsOneWidget);
