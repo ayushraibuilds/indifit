@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/services/crash_reporting_service.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -176,13 +177,65 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(B05Layout.space16),
-          child: B05Surface(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 560),
-              child: const DashboardModuleCustomizationPanel(),
+          padding: const EdgeInsets.fromLTRB(
+            B05Layout.space12,
+            B05Layout.space12,
+            B05Layout.space12,
+            B05Layout.space8,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * .82,
+            ),
+            child: B05Surface(
+              padding: const EdgeInsets.fromLTRB(
+                B05Layout.space16,
+                B05Layout.space8,
+                B05Layout.space16,
+                B05Layout.space16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Semantics(
+                    label: 'Customize Today dashboard',
+                    header: true,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: context.b05Colors.border,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: B05Layout.space8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Customize Today',
+                                style: B05Typography.title(context),
+                              ),
+                            ),
+                            B05IconAction(
+                              icon: Icons.close_rounded,
+                              label: 'Close customization',
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: B05Layout.space8),
+                  const Flexible(child: DashboardModuleCustomizationPanel()),
+                ],
+              ),
             ),
           ),
         ),

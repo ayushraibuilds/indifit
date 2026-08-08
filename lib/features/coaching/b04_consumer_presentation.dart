@@ -87,6 +87,8 @@ class B04CurrentFoodPresentation {
   final String explanation;
   final String? why;
   final List<String> targetValues;
+  final String? suggestion;
+  final String? fit;
 
   const B04CurrentFoodPresentation({
     required this.periodLabel,
@@ -94,10 +96,13 @@ class B04CurrentFoodPresentation {
     required this.explanation,
     required this.targetValues,
     this.why,
+    this.suggestion,
+    this.fit,
   });
 
   factory B04CurrentFoodPresentation.from(B04CurrentFoodGuidance guidance) {
     final unavailable = !guidance.isAvailable || guidance.cards.isEmpty;
+    final suggestion = guidance.cards.isEmpty ? null : guidance.cards.first;
     return B04CurrentFoodPresentation(
       periodLabel: ConsumerDateLabel.day(guidance.localDate),
       status: guidance.isAvailable && guidance.cards.isNotEmpty
@@ -113,6 +118,15 @@ class B04CurrentFoodPresentation {
         for (final value in guidance.remainingTargets.targets)
           B03NutritionPresentation.value(value),
       ],
+      suggestion: suggestion == null
+          ? null
+          : ConsumerCopy.label(
+              suggestion.displayLabel,
+              fallback: 'A meal idea',
+            ),
+      fit: suggestion == null
+          ? null
+          : B03NutritionPresentation.fit(suggestion.targetFit.state),
     );
   }
 }

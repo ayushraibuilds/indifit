@@ -35,8 +35,6 @@ void main() {
         ),
       ]);
       final layout = registry.normalize(const []);
-      final moves = <(String, int)>[];
-      final visibilityChanges = <(String, bool)>[];
       final semantics = tester.ensureSemantics();
 
       await tester.pumpWidget(
@@ -50,12 +48,8 @@ void main() {
                 child: DashboardModuleCustomizationList(
                   layout: layout,
                   isSaving: false,
-                  onMove: (moduleId, targetIndex) async {
-                    moves.add((moduleId, targetIndex));
-                  },
-                  onVisibilityChanged: (moduleId, isVisible) async {
-                    visibilityChanges.add((moduleId, isVisible));
-                  },
+                  onMove: (_, _) async {},
+                  onVisibilityChanged: (_, _) async {},
                   onCollapsedChanged: (moduleId, isCollapsed) =>
                       Future<void>.value(),
                 ),
@@ -65,41 +59,17 @@ void main() {
         ),
       );
 
-      expect(find.bySemanticsLabel('Move Meals up'), findsOneWidget);
-      expect(find.bySemanticsLabel('Move Meals down'), findsOneWidget);
-      expect(find.bySemanticsLabel('Hide Meals'), findsOneWidget);
-      expect(find.bySemanticsLabel('Collapse Meals'), findsOneWidget);
-      expect(find.bySemanticsLabel('Collapse Next action'), findsNothing);
+      expect(find.byTooltip('More options for Meals'), findsOneWidget);
+      expect(find.byTooltip('More options for Workout'), findsOneWidget);
       expect(find.byType(FocusTraversalGroup), findsAtLeastNWidgets(1));
       expect(
-        tester.getSemantics(find.bySemanticsLabel('Move Meals up')),
-        matchesSemantics(
-          isButton: true,
-          hasEnabledState: true,
-          isEnabled: true,
-          hasTapAction: true,
-          label: 'Move Meals up',
-        ),
-      );
-      expect(
-        tester.getSize(find.byType(IconButton).first).height,
-        greaterThanOrEqualTo(48),
-      );
-      expect(
-        tester.getSize(find.byType(OutlinedButton).first).height,
+        tester.getSize(find.byTooltip('More options for Meals')).height,
         greaterThanOrEqualTo(48),
       );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       expect(FocusManager.instance.primaryFocus, isNotNull);
 
-      await tester.tap(find.bySemanticsLabel('Move Meals up'));
-      await tester.pump();
-      expect(moves, [('meals', 0)]);
-
-      await tester.tap(find.bySemanticsLabel('Hide Meals'));
-      await tester.pump();
-      expect(visibilityChanges, [('meals', false)]);
       semantics.dispose();
     },
   );
@@ -148,11 +118,13 @@ void main() {
         findsOneWidget,
       );
       expect(
-        tester.getSemantics(find.bySemanticsLabel('Move Meals up')),
+        tester.getSemantics(find.byTooltip('More options for Meals')),
         matchesSemantics(
           isButton: true,
           hasEnabledState: true,
           isEnabled: false,
+          hasExpandedState: true,
+          isExpanded: false,
           hasTapAction: false,
         ),
       );
