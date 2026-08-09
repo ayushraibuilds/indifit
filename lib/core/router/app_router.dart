@@ -10,6 +10,7 @@ import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../features/activity/b02_activity_creation_screen.dart';
 import '../../features/calendar/program_calendar_screen.dart';
 import '../../features/dashboard/main_navigation_scaffold.dart';
+import '../../features/education/learn_screen.dart';
 import '../../features/equipment/equipment_profile_editor_screen.dart';
 import '../../features/equipment/equipment_profiles_screen.dart';
 import '../../features/equipment/exercise_preference_editor_screen.dart';
@@ -21,6 +22,7 @@ import '../../features/food_log/nutrition_estimate_review_screen.dart';
 import '../../features/food_log/nutrition_recipe_editor_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/routine_wizard_screen.dart';
+import '../../features/profile/profile_screen.dart';
 import '../../features/program_authoring/program_author_screen.dart';
 import '../../features/program_authoring/program_review_screen.dart';
 import '../../features/progress/achievements_screen.dart';
@@ -107,6 +109,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) =>
             const MainNavigationScaffold(initialIndex: 1),
       ),
+      GoRoute(
+        path: '/progress',
+        builder: (context, state) =>
+            const MainNavigationScaffold(initialIndex: 3),
+      ),
       // Preserve the former Training entry point without reintroducing a
       // competing bottom-navigation concept.
       GoRoute(path: '/workouts', redirect: (context, state) => '/training'),
@@ -165,6 +172,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
       ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings/profile',
+        redirect: (context, state) => '/profile',
+      ),
+      GoRoute(path: '/learn', builder: (context, state) => const LearnScreen()),
       GoRoute(
         path: '/health-hub',
         builder: (context, state) => const HealthSyncHubScreen(),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrition_constraints.dart';
 import '../../core/presentation/consumer_copy.dart';
+import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/presentation/secondary_presentation.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -55,7 +56,7 @@ class _NutritionConstraintsScreenState
                   ? () => _showAddDialog(state.definitions)
                   : null,
               icon: const Icon(Icons.add),
-              label: const Text('Add a preference'),
+              label: const Text('Add a constraint'),
             ),
       body: _buildBody(state, controller, busy),
     );
@@ -91,6 +92,8 @@ class _NutritionConstraintsScreenState
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             children: [
+              const _DietPatternCard(),
+              const SizedBox(height: 12),
               const _DisclosureCard(),
               if (busy) const LinearProgressIndicator(minHeight: 2),
               if (state.message != null && !busy)
@@ -176,6 +179,50 @@ class _NutritionConstraintsScreenState
           }
           if (dialogContext.mounted) Navigator.of(dialogContext).pop();
         },
+      ),
+    );
+  }
+}
+
+class _DietPatternCard extends ConsumerWidget {
+  const _DietPatternCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(userProfileProvider);
+    final uiValue = DietPreferencePresentation.uiValueFor(
+      profile.dietPreference,
+    );
+    return B05Surface(
+      padding: const EdgeInsets.all(B05Layout.space16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Dietary pattern', style: B05Typography.title(context)),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            'Choose the pattern that best fits how you eat. Allergies and strict restrictions stay separate below.',
+            style: B05Typography.body(context),
+          ),
+          const SizedBox(height: B05Layout.space12),
+          DietPreferenceDropdown(
+            selectedUiValue: uiValue,
+            decoration: const InputDecoration(labelText: 'Pattern'),
+            onChanged: (value) async {
+              if (value == null) return;
+              await ref
+                  .read(userProfileProvider.notifier)
+                  .updateProfile(
+                    dietPreference:
+                        DietPreferencePresentation.persistedValueFor(
+                          originalValue: profile.dietPreference,
+                          uiValue: value,
+                          userChanged: true,
+                        ),
+                  );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -331,31 +378,28 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.onAdd});
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'What should we avoid?',
-            style: B05Typography.title(context),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'No dietary constraints recorded.',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add),
-            label: const Text('Add a constraint'),
-          ),
-        ],
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.all(24),
+    children: [
+      const _DietPatternCard(),
+      const SizedBox(height: 12),
+      Text(
+        'What should we avoid?',
+        style: B05Typography.title(context),
+        textAlign: TextAlign.center,
       ),
-    ),
+      const SizedBox(height: 12),
+      FilledButton.icon(
+        onPressed: onAdd,
+        icon: const Icon(Icons.add),
+        label: const Text('Add a constraint'),
+      ),
+      const SizedBox(height: 8),
+      const Text(
+        'No added restrictions yet. Add one when you want recommendations to be more careful.',
+        textAlign: TextAlign.center,
+      ),
+    ],
   );
 }
 
@@ -630,7 +674,7 @@ class _AddConstraintDialogState extends ConsumerState<_AddConstraintDialog> {
     final allowed = _allowedTargetTypes;
     final canUseCrossContact = _definition.crossContactSupported;
     return AlertDialog(
-      title: const Text('Add dietary constraint'),
+      title: const Text('Add a dietary need'),
       scrollable: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -640,7 +684,9 @@ class _AddConstraintDialogState extends ConsumerState<_AddConstraintDialog> {
               DropdownButtonFormField<NutritionConstraintType>(
                 initialValue: _type,
                 isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Category'),
+                decoration: const InputDecoration(
+                  labelText: 'Why should we avoid it?',
+                ),
                 items: [
                   for (final definition in widget.definitions)
                     DropdownMenuItem(

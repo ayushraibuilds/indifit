@@ -70,6 +70,13 @@ class _HouseholdMeasuresScreenState
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
+        Text('Household measures', style: B05Typography.pageTitle(context)),
+        const SizedBox(height: 4),
+        Text(
+          'Use familiar cups and bowls without changing the nutrition values stored for your foods.',
+          style: B05Typography.body(context),
+        ),
+        const SizedBox(height: 16),
         Semantics(
           container: true,
           label: 'Volume-only household measure information',
@@ -122,7 +129,7 @@ class _HouseholdMeasuresScreenState
         if (state.status == HouseholdMeasuresStatus.empty) ...[
           const SizedBox(height: 20),
           const Text(
-            'No personal measures yet. Add one when you want to measure your everyday cup or bowl.',
+            'No custom measures yet. Add the containers you use most often.',
           ),
         ],
         if (state.message != null &&

@@ -294,13 +294,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Your profile'), elevation: 0),
+      appBar: AppBar(title: const Text('Profile'), elevation: 0),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(B05Layout.space20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader(context, 'About you'),
+            _buildSectionHeader(context, 'Personal details'),
             const SizedBox(height: B05Layout.space8),
             B05Surface(
               padding: const EdgeInsets.all(B05Layout.space16),
@@ -309,7 +309,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   TextField(
                     controller: _nameController,
                     decoration: const InputDecoration(
-                      labelText: 'Display Name',
+                      labelText: 'Name (optional)',
                       prefixIcon: Icon(Icons.person_outline_rounded),
                     ),
                   ),
@@ -377,7 +377,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: B05Layout.space24),
 
-            _buildSectionHeader(context, 'Goals and routine'),
+            _buildSectionHeader(context, 'Goals'),
             const SizedBox(height: B05Layout.space8),
             B05Surface(
               padding: const EdgeInsets.all(B05Layout.space16),
@@ -455,7 +455,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: B05Layout.space24),
 
-            _buildSectionHeader(context, 'Food preferences'),
+            _buildSectionHeader(context, 'Nutrition preferences'),
             const SizedBox(height: B05Layout.space8),
             B05Surface(
               padding: const EdgeInsets.all(B05Layout.space16),
@@ -480,7 +480,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: B05Layout.space24),
 
-            _buildSectionHeader(context, 'Training setup'),
+            _buildSectionHeader(context, 'Training preferences'),
             const SizedBox(height: B05Layout.space8),
             B05Surface(
               padding: const EdgeInsets.all(B05Layout.space16),
