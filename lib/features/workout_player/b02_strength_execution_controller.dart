@@ -236,10 +236,8 @@ class B02StrengthExecutionController
       final sets = performed.expand((exercise) => exercise.sets).toList();
       final lastSet = sets.isEmpty ? null : sets.last;
       final setId = lastSet?.id;
-      if (setId == null && slot.groupId == null) {
-        throw const B02ValidationException(
-          'Log a set before starting exercise rest.',
-        );
+      if (setId == null) {
+        throw const B02ValidationException('Log a set before starting rest.');
       }
       final group = slot.groupId == null
           ? null
@@ -398,6 +396,26 @@ class B02StrengthExecutionController
           current.state,
           periodId,
           endedAtUtc: DateTime.now().toUtc(),
+        ),
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  /// Completes an elapsed countdown through the same durable B02 rest path as
+  /// an explicit skip. The timer is presentation-only; it never mutates a
+  /// rest period directly.
+  Future<void> completeRest(String periodId, {DateTime? endedAtUtc}) async {
+    final current = state.launch;
+    if (current == null) return;
+    try {
+      await saveDraft(
+        _restCoordinator.finish(
+          current.state,
+          periodId,
+          endedAtUtc: (endedAtUtc ?? DateTime.now()).toUtc(),
+          endReason: B02RestEndReason.elapsed,
         ),
       );
     } catch (error) {

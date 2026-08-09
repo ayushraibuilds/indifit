@@ -13,6 +13,7 @@ import '../../features/dashboard/main_navigation_scaffold.dart';
 import '../../features/equipment/equipment_profile_editor_screen.dart';
 import '../../features/equipment/equipment_profiles_screen.dart';
 import '../../features/equipment/exercise_preference_editor_screen.dart';
+import '../../features/exercise_library/exercise_library_screen.dart';
 import '../../features/food_log/ai_meal_logger_screen.dart';
 import '../../features/food_log/ai_meal_planner_screen.dart';
 import '../../features/food_log/food_search_screen.dart';
@@ -100,6 +101,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/workout',
         builder: (context, state) => const RoutineDisplayScreen(),
+      ),
+      GoRoute(
+        path: '/training',
+        builder: (context, state) =>
+            const MainNavigationScaffold(initialIndex: 1),
+      ),
+      // Preserve the former Training entry point without reintroducing a
+      // competing bottom-navigation concept.
+      GoRoute(path: '/workouts', redirect: (context, state) => '/training'),
+      // Exercise Library now lives under Training, but a saved or external
+      // deep link still opens the same production library safely.
+      GoRoute(
+        path: '/exercises',
+        builder: (context, state) => const ExerciseLibraryScreen(),
       ),
       GoRoute(
         path: '/food',

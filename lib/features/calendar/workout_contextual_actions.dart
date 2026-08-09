@@ -232,7 +232,7 @@ class _WorkoutContextualActionsState
         background: _SwipeBackground(
           alignment: Alignment.centerLeft,
           icon: _isInProgress ? Icons.play_arrow_rounded : Icons.check_rounded,
-          label: _isInProgress ? 'Resume workout' : 'Complete in player',
+          label: _isInProgress ? 'Resume workout' : 'Start workout',
           role: colors.info,
         ),
         secondaryBackground: _SwipeBackground(
@@ -309,10 +309,10 @@ class _WorkoutContextualActionsState
                       B05ActionButton(
                         label: _isInProgress
                             ? 'Resume workout'
-                            : 'Complete in player',
+                            : 'Start workout',
                         hint: _isInProgress
                             ? 'Resumes this existing workout draft.'
-                            : 'Opens the player. Completion remains confirmed through the existing workout flow.',
+                            : 'Starts this scheduled workout in the player.',
                         icon: _isInProgress
                             ? Icons.play_arrow_rounded
                             : Icons.check_circle_outline_rounded,

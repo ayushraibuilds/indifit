@@ -20,6 +20,17 @@ class B02StrengthSummaryScreen extends ConsumerWidget {
     final provider = b02StrengthExecutionScreenControllerProvider(launch);
     final ui = ref.watch(provider);
     final current = ui.launch ?? launch;
+    final completed =
+        ui.status == B02StrengthExecutionStatus.ready && ui.launch == null;
+    if (completed) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Workout complete')),
+        body: B02WorkoutCompletionSuccess(
+          launch: launch,
+          onDone: () => context.go('/training'),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Review workout')),
       body: _Body(
@@ -95,12 +106,73 @@ class B02StrengthSummaryScreen extends ConsumerWidget {
           reason: reason?.isEmpty == true ? null : reason,
         );
     if (!context.mounted) return;
-    final next = ref.read(provider);
-    if (next.status == B02StrengthExecutionStatus.ready &&
-        next.launch == null) {
-      context.go('/');
-    }
   }
+}
+
+/// Consumer-facing confirmation shown only after canonical B02 finalization
+/// succeeds. The durable summary remains the source of truth; this surface
+/// simply makes the successful handoff back to Training unmistakable.
+class B02WorkoutCompletionSuccess extends StatelessWidget {
+  const B02WorkoutCompletionSuccess({
+    super.key,
+    required this.launch,
+    required this.onDone,
+  });
+
+  final B02StrengthExecutionLaunch launch;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final exercises = launch.state.performedExercises;
+    final setCount = exercises.fold<int>(
+      0,
+      (count, exercise) => count + exercise.sets.length,
+    );
+    final details = <String>[
+      if (launch.state.elapsedSeconds > 0)
+        formatB02WorkoutDuration(launch.state.elapsedSeconds),
+      '${exercises.length} ${exercises.length == 1 ? 'exercise' : 'exercises'}',
+      '$setCount ${setCount == 1 ? 'set' : 'sets'}',
+    ];
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle_rounded, size: 56),
+            const SizedBox(height: 16),
+            Text(
+              'Workout complete',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              launch.state.routineName,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(details.join(' · '), textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(onPressed: onDone, child: const Text('Done')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String formatB02WorkoutDuration(int seconds) {
+  final minutes = seconds ~/ 60;
+  final remainingSeconds = seconds % 60;
+  if (minutes == 0) return '$remainingSeconds sec';
+  if (remainingSeconds == 0) return '$minutes min';
+  return '$minutes min $remainingSeconds sec';
 }
 
 class _Body extends StatelessWidget {
@@ -160,17 +232,17 @@ class _Body extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 6),
-        Text('${launch.state.elapsedSeconds}s · $totalActual actual reps'),
+        Text(
+          '${launch.state.elapsedSeconds > 0 ? formatB02WorkoutDuration(launch.state.elapsedSeconds) : 'Duration unavailable'} · $totalActual reps completed',
+        ),
         const SizedBox(height: 16),
         for (final group in launch.state.groups)
           Card(
             child: ListTile(
               leading: const Icon(Icons.account_tree_outlined),
-              title: Text(
-                '${group.label ?? 'Group ${group.ordinal + 1}'} · ${group.groupType.dbValue}',
-              ),
+              title: Text(_groupLabel(group)),
               subtitle: Text(
-                '${group.roundCount} round(s) · ${group.members.length} member(s) · explicit status retained',
+                '${group.roundCount} ${group.roundCount == 1 ? 'round' : 'rounds'} · ${group.members.length} ${group.members.length == 1 ? 'exercise' : 'exercises'}',
               ),
             ),
           ),
@@ -185,7 +257,7 @@ class _Body extends StatelessWidget {
         for (final exercise in performed) _PerformedCard(exercise: exercise),
         const SizedBox(height: 8),
         const Text(
-          'Actual values are immutable history inputs. Targets and recommendations remain separate and are never silently changed.',
+          'Your completed sets and any targets you chose are saved with this workout.',
         ),
         const SizedBox(height: 16),
         FilledButton(onPressed: onFull, child: const Text('Complete workout')),
@@ -196,6 +268,15 @@ class _Body extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  static String _groupLabel(B02ExerciseGroup group) {
+    final type = switch (group.groupType) {
+      B02GroupType.superset => 'Superset',
+      B02GroupType.circuit => 'Circuit',
+      B02GroupType.giantSet => 'Giant set',
+    };
+    return group.label?.trim().isNotEmpty == true ? group.label!.trim() : type;
   }
 }
 
