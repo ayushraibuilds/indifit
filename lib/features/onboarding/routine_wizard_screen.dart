@@ -308,7 +308,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
                 ? _skipOnboarding
                 : null,
             child: const Text(
-              'Skip',
+              'Skip for now',
               style: TextStyle(color: AppColors.textMuted),
             ),
           ),
@@ -474,8 +474,6 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
             'Higher density, moderate weights & cardio integration',
             Icons.local_fire_department_rounded,
           ),
-          const SizedBox(height: 20),
-          B05AdaptiveLessonPath(selectedGoal: _selectedGoal),
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/presentation/daypart_greeting.dart';
 import '../../../core/theme/colors.dart';
 
 class DashboardHeader extends StatelessWidget {
@@ -8,22 +9,9 @@ class DashboardHeader extends StatelessWidget {
 
   const DashboardHeader({super.key, required this.streakCount, this.userName});
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  }
-
-  String _getSubtitle() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return "Let's fuel your day and crush goals!";
-    if (hour < 17) return 'Keep the momentum going!';
-    return 'Great job today! Stay consistent.';
-  }
-
   @override
   Widget build(BuildContext context) {
+    final localNow = DateTime.now();
     final name = (userName != null && userName!.trim().isNotEmpty)
         ? userName!.trim()
         : 'Champ';
@@ -36,7 +24,7 @@ class DashboardHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${_getGreeting()}, $name',
+                '${daypartGreeting(localNow)}, $name',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -45,7 +33,7 @@ class DashboardHeader extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                _getSubtitle(),
+                daypartSubtitle(localNow),
                 style: const TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 11,

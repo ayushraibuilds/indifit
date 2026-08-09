@@ -15,6 +15,7 @@ import '../../features/equipment/equipment_profiles_screen.dart';
 import '../../features/equipment/exercise_preference_editor_screen.dart';
 import '../../features/food_log/ai_meal_logger_screen.dart';
 import '../../features/food_log/ai_meal_planner_screen.dart';
+import '../../features/food_log/food_search_screen.dart';
 import '../../features/food_log/nutrition_estimate_review_screen.dart';
 import '../../features/food_log/nutrition_recipe_editor_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
@@ -102,6 +103,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/food',
+        builder: (context, state) {
+          final mealType = state.uri.queryParameters['mealType'] ?? 'breakfast';
+          final selectedDate = parseFoodRouteDate(
+            state.uri.queryParameters['date'],
+          );
+          return FoodSearchScreen(
+            mealType: mealType,
+            selectedDate: selectedDate,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/food/ai',
         builder: (context, state) {
           final mealType = state.uri.queryParameters['mealType'] ?? 'breakfast';
           final selectedDate = parseFoodRouteDate(

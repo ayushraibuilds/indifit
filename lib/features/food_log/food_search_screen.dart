@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrition_household_measures.dart';
+import '../../core/presentation/consumer_date_label.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
@@ -13,6 +14,8 @@ import '../../data/repositories/food_api_service.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_food_logging_coordinator.dart';
+import '../dashboard/today_surface_controller.dart';
+import 'ai_meal_logger_screen.dart';
 import 'barcode_scanner_screen.dart';
 import 'custom_food_editor_screen.dart';
 import 'food_log_surface.dart';
@@ -427,6 +430,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                         commandId: commandId,
                                         consumptionId: consumptionId,
                                       );
+                                      ref
+                                          .read(
+                                            todayNutritionRevisionProvider
+                                                .notifier,
+                                          )
+                                          .state++;
+                                      ref.invalidate(
+                                        b04ProductionRecommendationContextProvider,
+                                      );
+                                      ref.invalidate(
+                                        b04CurrentFoodControllerProvider,
+                                      );
                                       await HapticFeedback.selectionClick();
                                       if (context.mounted) {
                                         Navigator.pop(
@@ -500,7 +515,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final logDate = widget.selectedDate ?? DateTime.now();
-    final dateStr = DateFormat('EEE, MMM d').format(logDate);
+    final dateStr = ConsumerDateLabel.dateTime(logDate);
+    final explicitDate = DateFormat('EEE, MMM d').format(logDate.toLocal());
 
     return Scaffold(
       appBar: AppBar(
@@ -509,13 +525,21 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Add to ${widget.mealType.toUpperCase()}',
+              'Log ${widget.mealType.toLowerCase()}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
-              'Logging for $dateStr',
+              dateStr,
               style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
+            if (dateStr != explicitDate)
+              Text(
+                'Logging for $explicitDate',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
+              ),
           ],
         ),
         backgroundColor: AppColors.background,
@@ -589,6 +613,26 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 await _performSearch(_searchController.text);
               }
             },
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'More food logging options',
+            onSelected: (value) {
+              if (value == 'ai-text' || value == 'ai-photo') {
+                Navigator.push<void>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AiMealLoggerScreen(
+                      mealType: widget.mealType,
+                      selectedDate: widget.selectedDate,
+                    ),
+                  ),
+                );
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'ai-text', child: Text('Describe with AI')),
+              PopupMenuItem(value: 'ai-photo', child: Text('Photo estimate')),
+            ],
           ),
         ],
       ),

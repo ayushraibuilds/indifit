@@ -389,6 +389,15 @@ class B05OnboardingDraftStore {
     }
   }
 
+  /// Marks profile setup as intentionally deferred without creating a
+  /// profile, target, eligibility, or adaptive recommendation from defaults.
+  Future<void> markProfileOnboardingSkipped() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_completed', true);
+    await prefs.setBool('onboarding_skipped', true);
+    await clearProfileDraft();
+  }
+
   Future<B05RoutineWizardDraft?> readRoutineDraft() async {
     final prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey(_routineStepKey) &&
