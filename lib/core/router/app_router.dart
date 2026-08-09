@@ -13,6 +13,7 @@ import '../../features/dashboard/main_navigation_scaffold.dart';
 import '../../features/equipment/equipment_profile_editor_screen.dart';
 import '../../features/equipment/equipment_profiles_screen.dart';
 import '../../features/equipment/exercise_preference_editor_screen.dart';
+import '../../features/exercise_library/exercise_library_screen.dart';
 import '../../features/food_log/ai_meal_logger_screen.dart';
 import '../../features/food_log/ai_meal_planner_screen.dart';
 import '../../features/food_log/food_search_screen.dart';
@@ -29,7 +30,6 @@ import '../../features/settings/household_measures_screen.dart';
 import '../../features/settings/nutrition_constraint_review_screen.dart';
 import '../../features/settings/nutrition_constraints_screen.dart';
 import '../../features/settings/settings_screen.dart';
-import '../../features/training/training_screen.dart';
 import '../../features/travel/travel_mode_screen.dart';
 import '../../features/workout_player/b02_strength_player_screen.dart';
 import '../../features/workout_player/b02_strength_summary_screen.dart';
@@ -104,7 +104,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/training',
-        builder: (context, state) => const TrainingScreen(),
+        builder: (context, state) =>
+            const MainNavigationScaffold(initialIndex: 1),
+      ),
+      // Preserve the former Training entry point without reintroducing a
+      // competing bottom-navigation concept.
+      GoRoute(path: '/workouts', redirect: (context, state) => '/training'),
+      // Exercise Library now lives under Training, but a saved or external
+      // deep link still opens the same production library safely.
+      GoRoute(
+        path: '/exercises',
+        builder: (context, state) => const ExerciseLibraryScreen(),
       ),
       GoRoute(
         path: '/food',

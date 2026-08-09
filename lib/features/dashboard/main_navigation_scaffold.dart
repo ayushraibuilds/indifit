@@ -7,14 +7,16 @@ import '../training/training_screen.dart';
 import 'dashboard_screen.dart';
 
 class MainNavigationScaffold extends StatefulWidget {
-  const MainNavigationScaffold({super.key});
+  const MainNavigationScaffold({super.key, this.initialIndex = 0});
+
+  final int initialIndex;
 
   @override
   State<MainNavigationScaffold> createState() => _MainNavigationScaffoldState();
 }
 
 class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   final List<Widget> _screens = [
     const DashboardScreen(),
@@ -22,6 +24,12 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     const FoodSearchScreen(mealType: 'breakfast'),
     const ProgressScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex.clamp(0, _screens.length - 1);
+  }
 
   @override
   Widget build(BuildContext context) {

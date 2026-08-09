@@ -112,6 +112,13 @@ class _B02StrengthPlayerScreenState
       orElse: () => slots.first,
     );
     _selectedSlotId ??= selected.id;
+    final workingSetCount = _workingSetCount(launch.state, selected);
+    final hasLoggedSet = _hasLoggedSet(launch.state, selected);
+    final hasOpenRest = _hasOpenRest(launch.state, selected);
+    final exerciseComplete = workingSetCount >= selected.plannedSets;
+    final currentSet = exerciseComplete
+        ? selected.plannedSets
+        : workingSetCount + 1;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
@@ -122,15 +129,37 @@ class _B02StrengthPlayerScreenState
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
+        Text(
+          selected.exerciseNameSnapshot,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        if (selected.groupType != null) ...[
+          const SizedBox(height: 4),
+          Text(_groupContext(selected)),
+        ],
+        const SizedBox(height: 4),
+        Semantics(
+          label: 'Current set',
+          value: exerciseComplete
+              ? 'Exercise complete'
+              : 'Set $currentSet of ${selected.plannedSets}',
+          child: Text(
+            exerciseComplete
+                ? 'Exercise complete'
+                : 'Set $currentSet of ${selected.plannedSets}',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           initialValue: selected.id,
-          decoration: const InputDecoration(labelText: 'Choose exercise'),
+          decoration: const InputDecoration(labelText: 'Switch exercise'),
           items: [
             for (final slot in slots)
               DropdownMenuItem(
                 value: slot.id,
                 child: Text(
-                  '${slot.groupDescription} · round ${(slot.roundOrdinal ?? 0) + 1} · exercise ${(slot.memberOrdinal ?? 0) + 1} · ${slot.exerciseNameSnapshot}',
+                  '${_groupContext(slot)} · ${slot.exerciseNameSnapshot}',
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -143,6 +172,8 @@ class _B02StrengthPlayerScreenState
         _TargetCard(
           slot: selected,
           state: launch.state,
+          currentSet: currentSet,
+          exerciseComplete: exerciseComplete,
           onOverride: ui.isBusy
               ? null
               : () => _overrideTarget(provider, selected),
@@ -157,21 +188,21 @@ class _B02StrengthPlayerScreenState
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(labelText: 'Actual load (kg)'),
+              decoration: const InputDecoration(labelText: 'Load (kg)'),
               onChanged: (value) => _loads[selected.id] = value,
             ),
             TextFormField(
               key: ValueKey('reps-${selected.id}'),
               initialValue: _reps[selected.id],
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Actual reps'),
+              decoration: const InputDecoration(labelText: 'Reps'),
               onChanged: (value) => _reps[selected.id] = value,
             ),
             TextFormField(
               key: ValueKey('rpe-${selected.id}'),
               initialValue: _rpes[selected.id],
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'RPE'),
+              decoration: const InputDecoration(labelText: 'RPE (optional)'),
               onChanged: (value) => _rpes[selected.id] = value,
             ),
           ],
@@ -213,6 +244,66 @@ class _B02StrengthPlayerScreenState
             ),
           ),
         const SizedBox(height: 12),
+        Semantics(
+          button: true,
+          label: _warmup
+              ? 'Log warm-up set'
+              : exerciseComplete
+              ? 'Exercise complete'
+              : 'Complete set $currentSet of ${selected.plannedSets}',
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed:
+                  ui.isBusy ||
+                      !selected.hasCanonicalExercise ||
+                      (!_warmup && exerciseComplete)
+                  ? null
+                  : () => _record(provider, selected),
+              child: Text(
+                _warmup
+                    ? 'Log warm-up set'
+                    : exerciseComplete
+                    ? 'Exercise complete'
+                    : 'Complete set',
+              ),
+            ),
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: ui.isBusy
+                ? null
+                : () => ref.read(provider.notifier).skipSlot(selected),
+            icon: const Icon(Icons.skip_next_rounded),
+            label: const Text('Skip exercise'),
+          ),
+        ),
+        if (hasLoggedSet || hasOpenRest) ...[
+          _RestCard(
+            slot: selected,
+            state: launch.state,
+            onBegin: ui.isBusy
+                ? null
+                : () => ref.read(provider.notifier).beginRest(selected),
+            onCustom: ui.isBusy
+                ? null
+                : (seconds) => ref
+                      .read(provider.notifier)
+                      .beginRest(selected, selectedSeconds: seconds),
+            onExtend: ui.isBusy
+                ? null
+                : (periodId) =>
+                      ref.read(provider.notifier).extendRest(periodId),
+            onSkip: ui.isBusy
+                ? null
+                : (periodId) => ref.read(provider.notifier).skipRest(periodId),
+            onElapsed: (periodId) =>
+                ref.read(provider.notifier).completeRest(periodId),
+          ),
+          const SizedBox(height: 12),
+        ],
         ExpansionTile(
           tilePadding: EdgeInsets.zero,
           title: const Text('Advanced technique details'),
@@ -228,46 +319,8 @@ class _B02StrengthPlayerScreenState
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        _RestCard(
-          slot: selected,
-          state: launch.state,
-          onBegin: () => ref.read(provider.notifier).beginRest(selected),
-          onCustom: (seconds) => ref
-              .read(provider.notifier)
-              .beginRest(selected, selectedSeconds: seconds),
-          onExtend: (periodId) =>
-              ref.read(provider.notifier).extendRest(periodId),
-          onSkip: (periodId) => ref.read(provider.notifier).skipRest(periodId),
-        ),
         const SizedBox(height: 12),
         _GroupProgressCard(launch: launch, slots: slots),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: ui.isBusy
-                    ? null
-                    : () => ref.read(provider.notifier).skipSlot(selected),
-                child: const Text('Skip exercise'),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: FilledButton(
-                onPressed: ui.isBusy || !selected.hasCanonicalExercise
-                    ? null
-                    : () => _record(provider, selected),
-                child: Text(
-                  ui.status == B02StrengthExecutionStatus.partial
-                      ? 'Save set'
-                      : 'Log set',
-                ),
-              ),
-            ),
-          ],
-        ),
         const SizedBox(height: 12),
         FilledButton.tonal(
           onPressed: ui.isBusy
@@ -280,6 +333,58 @@ class _B02StrengthPlayerScreenState
         ),
       ],
     );
+  }
+
+  int _workingSetCount(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    return state.performedExercises
+        .where(
+          (exercise) =>
+              exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+              exercise.groupRoundOrdinal == slot.roundOrdinal &&
+              exercise.groupMemberOrdinal == slot.memberOrdinal,
+        )
+        .expand((exercise) => exercise.sets)
+        .where((set) => set.role == B02SetRole.working)
+        .length;
+  }
+
+  bool _hasLoggedSet(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    return state.performedExercises.any(
+      (exercise) =>
+          exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+          exercise.groupRoundOrdinal == slot.roundOrdinal &&
+          exercise.groupMemberOrdinal == slot.memberOrdinal &&
+          exercise.sets.isNotEmpty,
+    );
+  }
+
+  bool _hasOpenRest(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    return state.restPeriods.any(
+      (period) =>
+          period.endedAtUtc == null && b02RestPeriodBelongsToSlot(period, slot),
+    );
+  }
+
+  static String _groupContext(B02StrengthExecutionSlot slot) {
+    if (slot.groupType == null) return 'Standalone exercise';
+    final type = switch (slot.groupType!) {
+      B02GroupType.superset => 'Superset',
+      B02GroupType.circuit => 'Circuit',
+      B02GroupType.giantSet => 'Giant set',
+    };
+    final name = slot.groupLabel?.trim().isNotEmpty == true
+        ? slot.groupLabel!.trim()
+        : type;
+    return '$name · Round ${(slot.roundOrdinal ?? 0) + 1} · Exercise ${(slot.memberOrdinal ?? 0) + 1}';
   }
 
   Future<void> _record(dynamic provider, B02StrengthExecutionSlot slot) async {
@@ -475,11 +580,15 @@ class _GroupProgressCard extends StatelessWidget {
 class _TargetCard extends StatelessWidget {
   final B02StrengthExecutionSlot slot;
   final B02ExecutionDraftState state;
+  final int currentSet;
+  final bool exerciseComplete;
   final VoidCallback? onOverride;
 
   const _TargetCard({
     required this.slot,
     required this.state,
+    required this.currentSet,
+    required this.exerciseComplete,
     required this.onOverride,
   });
 
@@ -495,11 +604,12 @@ class _TargetCard extends StatelessWidget {
         .expand((exercise) => exercise.sets)
         .fold<int>(0, (sum, set) => sum + (set.actualReps ?? 0));
     final target = slot.targetRepsMin == null
-        ? 'Target not available'
+        ? 'No target yet'
         : slot.targetRepsMin == slot.targetRepsMax
         ? '${slot.targetRepsMin}'
         : '${slot.targetRepsMin}-${slot.targetRepsMax}';
     final recommendation = state.targetRecommendations[slot.id];
+    final hasSuggestedTarget = recommendation?.recommendedLoadKg != null;
     final load = slot.targetLoadKg == null ? null : '${slot.targetLoadKg} kg';
     final targetLabel = load == null ? target : '$load × $target';
     final performedLabel = actual == 0
@@ -508,11 +618,11 @@ class _TargetCard extends StatelessWidget {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.flag_outlined),
-        title: const Text('Target'),
+        title: Text(hasSuggestedTarget ? 'Suggested target' : 'Planned target'),
         subtitle: Text(
-          '$targetLabel\nPerformed: $performedLabel\n${recommendation == null ? 'Use the prescribed target for this exercise.' : 'Based on your recent working sets.'}',
+          '$targetLabel · ${exerciseComplete ? 'Exercise complete' : 'Set $currentSet of ${slot.plannedSets}'}\nPerformed: $performedLabel\n${hasSuggestedTarget ? 'Suggested from your recent working sets. Change it if today needs a different target.' : 'Log what you complete; a suggestion appears when enough history is available.'}',
         ),
-        trailing: recommendation == null
+        trailing: !hasSuggestedTarget
             ? null
             : TextButton(onPressed: onOverride, child: const Text('Change')),
       ),
@@ -534,53 +644,90 @@ class _WarmupCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.whatshot_outlined),
-            title: const Text('Warm-up'),
-            subtitle: Text(
-              recommendation.proposals.isEmpty
-                  ? 'No working target is available yet.'
-                  : 'Prepare with a few lighter sets before you begin.',
+  Widget build(BuildContext context) {
+    final offered = recommendation.decision == B02WarmupDecision.offered;
+    final skipped = recommendation.decision == B02WarmupDecision.skipped;
+    final proposals = offered
+        ? recommendation.proposals
+        : recommendation.selectedProposals;
+    final title = switch (recommendation.decision) {
+      B02WarmupDecision.offered => 'Warm-up suggestion',
+      B02WarmupDecision.accepted => 'Warm-up accepted',
+      B02WarmupDecision.edited => 'Warm-up adjusted',
+      B02WarmupDecision.skipped => 'Warm-up skipped',
+    };
+    final subtitle = recommendation.proposals.isEmpty
+        ? 'No working target is available yet.'
+        : skipped
+        ? 'You can use the suggested ramp sets at any time.'
+        : offered
+        ? 'Prepare with a few lighter sets before you begin.'
+        : 'Your selected ramp sets are saved with this workout.';
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.whatshot_outlined),
+              title: Text(title),
+              subtitle: Text(subtitle),
             ),
-          ),
-          if (recommendation.proposals.isNotEmpty)
-            Text(
-              recommendation.proposals
-                  .map(
-                    (proposal) =>
-                        '${proposal.loadKg == null ? 'Bodyweight' : '${proposal.loadKg} kg'} × ${proposal.reps}',
-                  )
-                  .join('  ·  '),
-            ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: [
-              OutlinedButton(onPressed: onAccept, child: const Text('Accept')),
-              OutlinedButton(onPressed: onEdit, child: const Text('Edit')),
-              TextButton(onPressed: onSkip, child: const Text('Skip')),
+            if (proposals.isNotEmpty)
+              Text(
+                proposals
+                    .map(
+                      (proposal) =>
+                          '${proposal.loadKg == null ? 'Bodyweight' : '${proposal.loadKg} kg'} × ${proposal.reps}',
+                    )
+                    .join('  ·  '),
+              ),
+            if (recommendation.proposals.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  if (offered || skipped)
+                    OutlinedButton(
+                      onPressed: onAccept,
+                      child: Text(offered ? 'Accept' : 'Use suggestion'),
+                    ),
+                  OutlinedButton(
+                    onPressed: onEdit,
+                    child: Text(offered ? 'Edit' : 'Change'),
+                  ),
+                  if (offered || !skipped)
+                    TextButton(onPressed: onSkip, child: const Text('Skip')),
+                ],
+              ),
             ],
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
+}
+
+@visibleForTesting
+bool b02RestPeriodBelongsToSlot(
+  B02RestPeriod period,
+  B02StrengthExecutionSlot slot,
+) {
+  final groupId = slot.groupId;
+  return (groupId != null && period.performedExerciseGroupId == groupId) ||
+      period.id.startsWith('rest:${slot.id}:');
 }
 
 class _RestCard extends StatefulWidget {
   final B02StrengthExecutionSlot slot;
   final B02ExecutionDraftState state;
-  final VoidCallback onBegin;
-  final ValueChanged<int> onCustom;
-  final ValueChanged<String> onExtend;
-  final ValueChanged<String> onSkip;
+  final VoidCallback? onBegin;
+  final ValueChanged<int>? onCustom;
+  final ValueChanged<String>? onExtend;
+  final ValueChanged<String>? onSkip;
+  final ValueChanged<String> onElapsed;
 
   const _RestCard({
     required this.slot,
@@ -589,6 +736,7 @@ class _RestCard extends StatefulWidget {
     required this.onCustom,
     required this.onExtend,
     required this.onSkip,
+    required this.onElapsed,
   });
 
   @override
@@ -598,6 +746,7 @@ class _RestCard extends StatefulWidget {
 class _RestCardState extends State<_RestCard> {
   late DateTime _now;
   Timer? _ticker;
+  var _finishingElapsedRest = false;
 
   @override
   void initState() {
@@ -642,36 +791,41 @@ class _RestCardState extends State<_RestCard> {
                   ),
                   IconButton(
                     tooltip: 'Choose rest duration',
-                    onPressed: () async {
-                      final controller = TextEditingController();
-                      final value = await showDialog<int>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Custom rest'),
-                          content: TextField(
-                            controller: controller,
-                            autofocus: true,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Seconds',
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => context.pop(),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () =>
-                                  context.pop(int.tryParse(controller.text)),
-                              child: const Text('Start'),
-                            ),
-                          ],
-                        ),
-                      );
-                      controller.dispose();
-                      if (value != null && value >= 0) widget.onCustom(value);
-                    },
+                    onPressed: widget.onCustom == null
+                        ? null
+                        : () async {
+                            final controller = TextEditingController();
+                            final value = await showDialog<int>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Custom rest'),
+                                content: TextField(
+                                  controller: controller,
+                                  autofocus: true,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Seconds',
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => context.pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => context.pop(
+                                      int.tryParse(controller.text),
+                                    ),
+                                    child: const Text('Start'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            controller.dispose();
+                            if (value != null && value >= 0) {
+                              widget.onCustom?.call(value);
+                            }
+                          },
                     icon: const Icon(Icons.tune),
                   ),
                 ],
@@ -681,12 +835,16 @@ class _RestCardState extends State<_RestCard> {
                 children: [
                   IconButton(
                     tooltip: 'Add 30 seconds',
-                    onPressed: () => widget.onExtend(period.id),
+                    onPressed: widget.onExtend == null
+                        ? null
+                        : () => widget.onExtend?.call(period.id),
                     icon: const Icon(Icons.add_alarm_outlined),
                   ),
                   IconButton(
                     tooltip: 'Skip rest',
-                    onPressed: () => widget.onSkip(period.id),
+                    onPressed: widget.onSkip == null
+                        ? null
+                        : () => widget.onSkip?.call(period.id),
                     icon: const Icon(Icons.skip_next_outlined),
                   ),
                 ],
@@ -696,12 +854,16 @@ class _RestCardState extends State<_RestCard> {
   }
 
   String _remainingLabel(B02RestPeriod period) {
-    final total = period.selectedSeconds ?? period.recommendedSeconds ?? 0;
-    final elapsed = _now.difference(period.startedAtUtc).inSeconds;
-    final remaining = (total - elapsed).clamp(0, total);
+    final remaining = _remainingSeconds(period, _now);
     final minutes = remaining ~/ 60;
     final seconds = remaining % 60;
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  int _remainingSeconds(B02RestPeriod period, DateTime now) {
+    final total = period.selectedSeconds ?? period.recommendedSeconds ?? 0;
+    final elapsed = now.difference(period.startedAtUtc).inSeconds;
+    return (total - elapsed).clamp(0, total);
   }
 
   B02RestPeriod? _openPeriod(_RestCard value) {
@@ -709,23 +871,38 @@ class _RestCardState extends State<_RestCard> {
         .where(
           (period) =>
               period.endedAtUtc == null &&
-              (period.performedExerciseGroupId == value.slot.groupId ||
-                  period.id.startsWith('rest:${value.slot.id}:')),
+              b02RestPeriodBelongsToSlot(period, value.slot),
         )
         .toList();
     return open.isEmpty ? null : open.last;
   }
 
   void _syncTicker() {
-    if (_openPeriod(widget) != null && _ticker == null) {
+    final period = _openPeriod(widget);
+    if (period != null && _ticker == null) {
       _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (mounted) {
-          setState(() => _now = DateTime.now().toUtc());
+        if (!mounted) return;
+        final now = DateTime.now().toUtc();
+        final open = _openPeriod(widget);
+        if (open == null) {
+          _syncTicker();
+          return;
         }
+        if (_remainingSeconds(open, now) == 0) {
+          _ticker?.cancel();
+          _ticker = null;
+          if (!_finishingElapsedRest) {
+            _finishingElapsedRest = true;
+            widget.onElapsed(open.id);
+          }
+          return;
+        }
+        setState(() => _now = now);
       });
-    } else if (_openPeriod(widget) == null) {
+    } else if (period == null) {
       _ticker?.cancel();
       _ticker = null;
+      _finishingElapsedRest = false;
     }
   }
 }

@@ -42,6 +42,45 @@ class TrainingLandingSnapshot {
       todayWorkout ?? (upcoming.isEmpty ? null : upcoming.first);
 }
 
+/// The landing can only launch an occurrence that remains actionable in B01.
+/// Completed and retired occurrences stay readable elsewhere, never startable.
+bool canLaunchTrainingOccurrence(CalendarOccurrenceReadItem item) {
+  final status = item.occurrence.status;
+  return status == 'planned' ||
+      status == 'rescheduled' ||
+      status == 'inProgress';
+}
+
+/// Picks the single Today card without hiding an in-progress workout behind a
+/// completed or later planned occurrence on the same local date.
+CalendarOccurrenceReadItem? selectTrainingTodayWorkout(
+  Iterable<CalendarOccurrenceReadItem> occurrences,
+  String localDate,
+) {
+  CalendarOccurrenceReadItem? selected;
+  for (final item in occurrences) {
+    final status = item.occurrence.status;
+    if (item.occurrence.effectiveLocalDate != localDate ||
+        status == 'cancelled' ||
+        status == 'skipped') {
+      continue;
+    }
+    if (selected == null ||
+        _todayWorkoutPriority(item) > _todayWorkoutPriority(selected)) {
+      selected = item;
+    }
+  }
+  return selected;
+}
+
+int _todayWorkoutPriority(CalendarOccurrenceReadItem item) =>
+    switch (item.occurrence.status) {
+      'inProgress' => 3,
+      'planned' || 'rescheduled' => 2,
+      'completed' || 'partiallyCompleted' => 1,
+      _ => 0,
+    };
+
 final trainingLandingSnapshotProvider =
     FutureProvider.autoDispose<TrainingLandingSnapshot>((ref) async {
       final dates = ref.watch(localScheduleDateServiceProvider);
@@ -58,20 +97,15 @@ final trainingLandingSnapshotProvider =
             timezoneId: timezoneId,
           );
       final sessions = await ref.watch(workoutRepositoryProvider).getSessions();
-      final today = calendar.rangeOccurrences
-          .where(
-            (item) =>
-                item.occurrence.effectiveLocalDate == localDate &&
-                item.occurrence.status != 'cancelled' &&
-                item.occurrence.status != 'skipped',
-          )
-          .firstOrNull;
+      final today = selectTrainingTodayWorkout(
+        calendar.rangeOccurrences,
+        localDate,
+      );
       final upcoming = calendar.rangeOccurrences
           .where(
             (item) =>
                 item.occurrence.effectiveLocalDate.compareTo(localDate) > 0 &&
-                item.occurrence.status != 'cancelled' &&
-                item.occurrence.status != 'skipped',
+                canLaunchTrainingOccurrence(item),
           )
           .take(3)
           .toList(growable: false);
@@ -85,14 +119,23 @@ final trainingLandingSnapshotProvider =
       );
     });
 
-class TrainingScreen extends ConsumerWidget {
+class TrainingScreen extends ConsumerStatefulWidget {
   const TrainingScreen({super.key});
+
+  @override
+  ConsumerState<TrainingScreen> createState() => _TrainingScreenState();
+}
+
+class _TrainingScreenState extends ConsumerState<TrainingScreen> {
+  var _isLaunching = false;
 
   Future<void> _startWorkout(
     BuildContext context,
     WidgetRef ref,
     CalendarOccurrenceReadItem item,
   ) async {
+    if (_isLaunching || !canLaunchTrainingOccurrence(item)) return;
+    setState(() => _isLaunching = true);
     try {
       final needsConfirmation =
           WorkoutContextualLauncher.requiresDateConfirmation(ref, item);
@@ -135,12 +178,33 @@ class TrainingScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Workout unavailable. Try again.')),
       );
+    } finally {
+      if (mounted) setState(() => _isLaunching = false);
+    }
+  }
+
+  Future<void> _logWorkout(
+    BuildContext context,
+    TrainingLandingSnapshot data,
+  ) async {
+    final logged = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ManualLogSheet(
+        selectedDate: DateTime.parse('${data.localDate}T12:00:00'),
+      ),
+    );
+    if (logged == true && mounted) {
+      ref.invalidate(trainingLandingSnapshotProvider);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final snapshot = ref.watch(trainingLandingSnapshotProvider);
+    final hasActiveProgram =
+        snapshot.asData?.value.activeProgramName?.trim().isNotEmpty == true;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Training'),
@@ -149,7 +213,8 @@ class TrainingScreen extends ConsumerWidget {
             icon: Icons.more_horiz_rounded,
             label: 'More training options',
             hint: 'Open advanced training tools.',
-            onPressed: () => _showMore(context, ref),
+            onPressed: () =>
+                _showMore(context, ref, hasActiveProgram: hasActiveProgram),
           ),
         ],
       ),
@@ -175,6 +240,7 @@ class TrainingScreen extends ConsumerWidget {
         ),
         data: (data) => _TrainingLandingBody(
           data: data,
+          isLaunching: _isLaunching,
           onStartWorkout: (item) => _startWorkout(context, ref, item),
           onOpenPlan: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()),
@@ -185,20 +251,17 @@ class TrainingScreen extends ConsumerWidget {
           onOpenExercises: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ExerciseLibraryScreen()),
           ),
-          onLogWorkout: () => showModalBottomSheet<bool>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => ManualLogSheet(
-              selectedDate: DateTime.parse('${data.localDate}T12:00:00'),
-            ),
-          ),
+          onLogWorkout: () => _logWorkout(context, data),
         ),
       ),
     );
   }
 
-  void _showMore(BuildContext context, WidgetRef ref) {
+  void _showMore(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool hasActiveProgram,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -228,24 +291,27 @@ class TrainingScreen extends ConsumerWidget {
                   );
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.flight_outlined),
-                title: const Text('Travel mode'),
-                subtitle: const Text('Adjust training for a trip.'),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const TravelModeScreen()),
-                  );
-                },
-              ),
+              if (hasActiveProgram)
+                ListTile(
+                  leading: const Icon(Icons.flight_outlined),
+                  title: const Text('Travel mode'),
+                  subtitle: const Text('Adjust training for a trip.'),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const TravelModeScreen(),
+                      ),
+                    );
+                  },
+                ),
               ListTile(
                 leading: const Icon(Icons.tune_rounded),
                 title: const Text('Equipment and preferences'),
                 subtitle: const Text('Fine-tune advanced training options.'),
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  sheetContext.push('/equipment-profiles');
+                  context.push('/equipment-profiles');
                 },
               ),
             ],
@@ -259,6 +325,7 @@ class TrainingScreen extends ConsumerWidget {
 class _TrainingLandingBody extends StatelessWidget {
   const _TrainingLandingBody({
     required this.data,
+    required this.isLaunching,
     required this.onStartWorkout,
     required this.onOpenPlan,
     required this.onOpenCalendar,
@@ -267,6 +334,7 @@ class _TrainingLandingBody extends StatelessWidget {
   });
 
   final TrainingLandingSnapshot data;
+  final bool isLaunching;
   final ValueChanged<CalendarOccurrenceReadItem> onStartWorkout;
   final VoidCallback onOpenPlan;
   final VoidCallback onOpenCalendar;
@@ -289,7 +357,10 @@ class _TrainingLandingBody extends StatelessWidget {
         const SizedBox(height: B05Layout.space8),
         _TodayTrainingSurface(
           item: today,
-          onStart: today == null ? null : () => onStartWorkout(today),
+          isLaunching: isLaunching,
+          onStart: today == null || !canLaunchTrainingOccurrence(today)
+              ? null
+              : () => onStartWorkout(today),
           onOpenPlan: onOpenPlan,
           onLogWorkout: onLogWorkout,
         ),
@@ -348,7 +419,9 @@ class _TrainingLandingBody extends StatelessWidget {
                 for (var index = 0; index < data.upcoming.length; index++) ...[
                   _UpcomingTrainingRow(
                     item: data.upcoming[index],
-                    onTap: () => onStartWorkout(data.upcoming[index]),
+                    onTap: isLaunching
+                        ? null
+                        : () => onStartWorkout(data.upcoming[index]),
                   ),
                   if (index < data.upcoming.length - 1)
                     Divider(height: 1, color: context.b05Colors.border),
@@ -417,12 +490,14 @@ class _TrainingLandingBody extends StatelessWidget {
 class _TodayTrainingSurface extends StatelessWidget {
   const _TodayTrainingSurface({
     required this.item,
+    required this.isLaunching,
     required this.onStart,
     required this.onOpenPlan,
     required this.onLogWorkout,
   });
 
   final CalendarOccurrenceReadItem? item;
+  final bool isLaunching;
   final VoidCallback? onStart;
   final VoidCallback onOpenPlan;
   final VoidCallback onLogWorkout;
@@ -518,9 +593,9 @@ class _TodayTrainingSurface extends StatelessWidget {
             )
           else
             B05ActionButton(
-              label: actionLabel,
+              label: isLaunching ? 'Opening workout…' : actionLabel,
               icon: Icons.play_arrow_rounded,
-              onPressed: onStart,
+              onPressed: isLaunching ? null : onStart,
             ),
         ],
       ),
@@ -540,11 +615,11 @@ class _UpcomingTrainingRow extends StatelessWidget {
   const _UpcomingTrainingRow({required this.item, required this.onTap});
 
   final CalendarOccurrenceReadItem item;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) => Semantics(
-    button: true,
+    button: onTap != null,
     label:
         '${item.template.name}, ${ConsumerDateLabel.day(item.occurrence.effectiveLocalDate)}',
     onTap: onTap,

@@ -87,6 +87,115 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Training keeps Travel inside More and only with a plan', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          trainingLandingSnapshotProvider.overrideWith(
+            (ref) async => _populatedTrainingSnapshot,
+          ),
+        ],
+        child: _app(AppTheme.darkTheme, const TrainingScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('More training options'));
+    await tester.pumpAndSettle();
+    expect(find.text('Travel mode'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          trainingLandingSnapshotProvider.overrideWith(
+            (ref) async => const TrainingLandingSnapshot(
+              localDate: '2026-08-09',
+              timezoneId: 'Asia/Kolkata',
+              todayWorkout: null,
+              upcoming: [],
+              recentSessions: [],
+              activeProgramName: null,
+            ),
+          ),
+        ],
+        child: _app(AppTheme.darkTheme, const TrainingScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('More training options'));
+    await tester.pumpAndSettle();
+    expect(find.text('Travel mode'), findsNothing);
+    expect(find.text('Manage plan'), findsOneWidget);
+  });
+
+  test('Training only launches actionable B01 occurrence states', () {
+    expect(
+      canLaunchTrainingOccurrence(
+        _calendarItem(
+          name: 'Planned',
+          localDate: '2026-08-09',
+          status: 'planned',
+          prescriptionCount: 1,
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      canLaunchTrainingOccurrence(
+        _calendarItem(
+          name: 'Resume',
+          localDate: '2026-08-09',
+          status: 'inProgress',
+          prescriptionCount: 1,
+        ),
+      ),
+      isTrue,
+    );
+    for (final status in const ['completed', 'partiallyCompleted', 'skipped']) {
+      expect(
+        canLaunchTrainingOccurrence(
+          _calendarItem(
+            name: status,
+            localDate: '2026-08-09',
+            status: status,
+            prescriptionCount: 1,
+          ),
+        ),
+        isFalse,
+      );
+    }
+  });
+
+  test('Training prioritizes an in-progress workout on Today', () {
+    final completed = _calendarItem(
+      name: 'Completed first',
+      localDate: '2026-08-09',
+      status: 'completed',
+      prescriptionCount: 1,
+    );
+    final planned = _calendarItem(
+      name: 'Planned later',
+      localDate: '2026-08-09',
+      status: 'planned',
+      prescriptionCount: 1,
+    );
+    final resume = _calendarItem(
+      name: 'Resume now',
+      localDate: '2026-08-09',
+      status: 'inProgress',
+      prescriptionCount: 1,
+    );
+
+    expect(
+      selectTrainingTodayWorkout([completed, planned, resume], '2026-08-09'),
+      same(resume),
+    );
+  });
+
   testWidgets(
     'Training landing stays free of layout exceptions across the phone matrix',
     (tester) async {
