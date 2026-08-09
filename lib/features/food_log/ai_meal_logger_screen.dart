@@ -5,7 +5,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/di/providers.dart';
@@ -13,7 +12,6 @@ import '../../core/nutrients.dart';
 import '../../core/nutrition_estimates.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/presentation/consumer_date_label.dart';
-import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/privacy/nutrition_estimate_privacy.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/b05_semantic_colors.dart';
@@ -352,17 +350,10 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     });
   }
 
-  String _estimateErrorMessage(Object error) {
-    final code = switch (error) {
-      NutritionEstimateValidationError(:final code) => code,
-      NutritionEstimateConflictError(:final code) => code,
-      NutritionEstimatePersistenceError(:final code) => code,
-      _ => 'estimate_operation_failed',
-    };
-    return ProductFailurePresentation.fromCode(
-      code,
-      title: 'Estimate unavailable',
-    ).message;
+  String _estimateErrorMessage(Object _) {
+    // Provider details stay in diagnostics. The consumer sees one stable
+    // recovery message and can keep the description or switch to Search.
+    return 'AI estimate isn’t available right now';
   }
 
   Future<void> _logMeal() async {
@@ -510,13 +501,16 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       final finalizer = await ref.read(
         nutritionEstimateFinalizationServiceProvider.future,
       );
-      final loggedAt = (widget.selectedDate ?? DateTime.now()).toUtc();
       final timezoneId = await ref
           .read(localTimezoneServiceProvider)
           .currentTimezoneId();
-      final localDate = ref
-          .read(localScheduleDateServiceProvider)
-          .localDateFor(loggedAt, timezoneId);
+      final dates = ref.read(localScheduleDateServiceProvider);
+      final localDate = widget.selectedDate == null
+          ? dates.localDateFor(DateTime.now().toUtc(), timezoneId)
+          : _localDateKey(widget.selectedDate!);
+      final loggedAt = widget.selectedDate == null
+          ? DateTime.now().toUtc()
+          : dates.instantForLocalDate(localDate, timezoneId);
       await finalizer.finalizeEstimate(
         userId: kLocalNutritionUserScopeId,
         estimateId: selected.id,
@@ -547,7 +541,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _saveError = _estimateErrorMessage(error);
+          _saveError = 'Meal could not be saved. Try again.';
         });
       }
     }
@@ -566,9 +560,9 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
   String _rangeText(String nutrientId) {
     final fact = _estimate?.facts[nutrientId];
-    if (fact == null || !fact.hasNumericValue) return 'Unknown';
+    if (fact == null || !fact.hasNumericValue) return '—';
     String format(NutrientAmount? amount) =>
-        amount == null ? 'unknown' : '${amount.value} ${amount.unit.symbol}';
+        amount == null ? '—' : '${amount.value} ${amount.unit.symbol}';
     final point = format(fact.point);
     if (fact.lower == null && fact.upper == null) {
       return '$point (estimate)';
@@ -615,7 +609,6 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   Widget build(BuildContext context) {
     final logDate = widget.selectedDate ?? DateTime.now();
     final dateStr = ConsumerDateLabel.dateTime(logDate);
-    final explicitDate = DateFormat('EEE, MMM d').format(logDate.toLocal());
 
     return ConsumerTaskScaffold(
       appBar: AppBar(
@@ -628,11 +621,6 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
               style: B05Typography.title(context),
             ),
             Text(dateStr, style: B05Typography.caption(context)),
-            if (dateStr != explicitDate)
-              Text(
-                'Logging for $explicitDate',
-                style: B05Typography.caption(context),
-              ),
           ],
         ),
       ),
@@ -650,9 +638,16 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   const SizedBox(height: 12),
                   ConsumerStatusRow(
                     label: 'Estimate unavailable',
-                    detail: _estimateError,
+                    detail:
+                        'AI estimate isn’t available right now. Your description is still here. Try again or add the foods manually.',
                     error: true,
-                    onRetry: _retryEstimate,
+                  ),
+                  const SizedBox(height: 8),
+                  B05ActionButton(
+                    label: 'Try again',
+                    icon: Icons.refresh_rounded,
+                    hint: 'Try the estimate again using the same description.',
+                    onPressed: _retryEstimate,
                   ),
                   const SizedBox(height: 8),
                   B05ActionButton(
@@ -691,13 +686,12 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Describe your meal', style: B05Typography.title(context)),
-          const SizedBox(height: 4),
           TextField(
             controller: _textController,
             maxLines: 3,
             onChanged: (_) => setState(() {}),
             decoration: const InputDecoration(
+              labelText: 'Describe your meal',
               hintText: 'e.g. 2 rotis with paneer bhurji and dal tadka',
             ),
           ),
@@ -983,6 +977,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
       _ => 'meal',
     };
   }
+
+  static String _localDateKey(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
 }
 
 class _LoggedMealsSection extends ConsumerStatefulWidget {
@@ -1051,7 +1050,10 @@ class _LoggedMealsSectionState extends ConsumerState<_LoggedMealsSection> {
                 B05Layout.space12,
                 B05Layout.space12,
               ),
-              child: FoodLogEntriesPanel(date: widget.date),
+              child: FoodLogEntriesPanel(
+                date: widget.date,
+                includeCanonical: false,
+              ),
             ),
         ],
       ),

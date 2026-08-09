@@ -5,9 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/di/providers.dart';
+import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/presentation/consumer_date_label.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/typed_quantities.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_api_service.dart';
@@ -19,7 +23,6 @@ import 'ai_meal_logger_screen.dart';
 import 'barcode_scanner_screen.dart';
 import 'custom_food_editor_screen.dart';
 import 'food_log_surface.dart';
-import 'meal_templates_screen.dart';
 import 'saved_recipe_log_screen.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
@@ -36,12 +39,90 @@ class FoodSearchScreen extends ConsumerStatefulWidget {
   ConsumerState<FoodSearchScreen> createState() => _FoodSearchScreenState();
 }
 
+class _CanonicalRecentFood {
+  const _CanonicalRecentFood({
+    required this.option,
+    required this.quantityLabel,
+    required this.loggedAtUtc,
+  });
+
+  final NutritionFoodOption option;
+  final String quantityLabel;
+  final DateTime loggedAtUtc;
+}
+
+final canonicalRecentFoodsProvider =
+    FutureProvider.autoDispose<List<_CanonicalRecentFood>>((ref) async {
+      try {
+        final history = await ref.read(
+          nutritionReadModelRepositoryProvider.future,
+        );
+        final catalog = await ref.read(
+          nutritionFoodCatalogRepositoryProvider.future,
+        );
+        final records = await history.listHistory(
+          userId: kLocalNutritionUserScopeId,
+        );
+        final ordered = records.where((record) => !record.isLegacy).toList()
+          ..sort(
+            (left, right) => right.loggedAtUtc.compareTo(left.loggedAtUtc),
+          );
+        final seenFoodIds = <String>{};
+        final result = <_CanonicalRecentFood>[];
+        for (final record in ordered) {
+          for (final item in record.items) {
+            final foodId = item.foodId;
+            if (item.originSourceType != 'direct_food' ||
+                foodId == null ||
+                !seenFoodIds.add(foodId)) {
+              continue;
+            }
+            final option = await catalog.getOption(foodId);
+            if (option == null) continue;
+            result.add(
+              _CanonicalRecentFood(
+                option: option,
+                quantityLabel: item.quantity.quantity == null
+                    ? 'Previous amount unavailable'
+                    : QuantityFormatter.format(item.quantity.quantity!),
+                loggedAtUtc: record.loggedAtUtc,
+              ),
+            );
+            if (result.length == 20) return result;
+          }
+        }
+        return result;
+      } catch (_) {
+        // A canonical-history read must never make local/legacy Recent unusable.
+        return const [];
+      }
+    });
+
+class _FoodQuantityReviewCapture extends StatelessWidget {
+  const _FoodQuantityReviewCapture({
+    required this.padding,
+    required this.child,
+  });
+
+  final EdgeInsets padding;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+    key: const ValueKey('food_quantity_review_surface'),
+    child: Padding(padding: padding, child: child),
+  );
+}
+
 class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<FoodItem> _localResults = [];
   List<FoodApiResult> _onlineResults = [];
   List<FoodItem> _recentResults = [];
+  List<_CanonicalRecentFood> _canonicalRecentResults = [];
   bool _searching = false;
+  bool _loadingRecent = true;
+  String? _recentFailureMessage;
   Timer? _debounceTimer;
   bool _isOnlineSearchOffline = false;
   String? _onlineFailureMessage;
@@ -54,17 +135,46 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Future<void> _loadRecentFoods() async {
+    List<FoodItem> recent = const [];
+    String? failureMessage;
     try {
       final repo = ref.read(foodRepositoryProvider);
-      final recent = await repo.getRecentFoods(20);
-      if (mounted) {
-        setState(() {
-          _recentResults = recent;
-        });
-      }
-    } catch (e) {
-      // Ignored
+      recent = await repo.getRecentFoods(20);
+    } catch (_) {
+      failureMessage = 'Recent foods are unavailable right now.';
     }
+    // Legacy rows are already an accepted Recent source. Only perform the
+    // more expensive canonical-history read when that compatibility source is
+    // empty, which keeps the entry surface fast for migrated users too.
+    final canonicalRecent = recent.isEmpty
+        ? await ref
+              .read(canonicalRecentFoodsProvider.future)
+              .timeout(
+                const Duration(seconds: 2),
+                onTimeout: () => const <_CanonicalRecentFood>[],
+              )
+        : const <_CanonicalRecentFood>[];
+    if (mounted) {
+      setState(() {
+        _recentResults = recent;
+        _canonicalRecentResults = canonicalRecent;
+        _loadingRecent = false;
+        _recentFailureMessage = recent.isEmpty && canonicalRecent.isEmpty
+            ? failureMessage
+            : null;
+      });
+    }
+  }
+
+  Future<void> _retryRecentFoods() async {
+    if (mounted) {
+      setState(() {
+        _loadingRecent = true;
+        _recentFailureMessage = null;
+      });
+    }
+    ref.invalidate(canonicalRecentFoodsProvider);
+    await _loadRecentFoods();
   }
 
   @override
@@ -83,6 +193,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Future<void> _performSearch(String text) async {
+    if (!mounted) return;
     if (text.trim().isEmpty) {
       setState(() {
         _localResults = [];
@@ -126,6 +237,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
+          _localResults = [];
+          _onlineResults = [];
           _searching = false;
           _isOnlineSearchOffline = true;
           _onlineFailureMessage = 'Food search is unavailable right now.';
@@ -184,10 +297,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     );
     final transformations = await coordinator.transformationsFor(option);
     if (!mounted) return;
+    var finalized = false;
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.b05Colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -208,7 +322,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         previewFuture = buildPreview();
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Padding(
+            return _FoodQuantityReviewCapture(
               padding: EdgeInsets.only(
                 left: 20,
                 right: 20,
@@ -219,17 +333,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    option.displayName,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  Text(option.displayName, style: B05Typography.title(context)),
                   const SizedBox(height: 8),
-                  Text(
-                    'Log to ${widget.mealType.toUpperCase()}',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                  Semantics(
+                    liveRegion: true,
+                    label: 'Adding to ${_mealLabel(widget.mealType)}',
+                    child: Text(
+                      'Log to ${widget.mealType.toUpperCase()}',
+                      style: TextStyle(
+                        color: context.b05Colors.action,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -239,32 +354,28 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Serving Amount',
-                        style: TextStyle(fontWeight: FontWeight.w500),
+                        'Amount',
+                        style: TextStyle(fontWeight: FontWeight.w700),
                       ),
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(
-                              Icons.remove_circle_outline,
-                              color: AppColors.textSecondary,
-                            ),
+                            tooltip: 'Decrease amount',
+                            icon: const Icon(Icons.remove_circle_outline),
                             onPressed: multiplier > 0.25
                                 ? () => setModalState(() => multiplier -= 0.25)
                                 : null,
                           ),
                           Text(
-                            '${(option.baseQuantity.amount.asDouble * multiplier).toStringAsFixed(1)} ${option.baseQuantity.definition.displayLabel}',
+                            _quantityLabel(option.baseQuantity, multiplier),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(
-                              Icons.add_circle_outline,
-                              color: AppColors.primary,
-                            ),
+                            tooltip: 'Increase amount',
+                            icon: const Icon(Icons.add_circle_outline),
                             onPressed: () =>
                                 setModalState(() => multiplier += 0.25),
                           ),
@@ -272,13 +383,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                       ),
                     ],
                   ),
-                  const Divider(color: AppColors.border, height: 24),
+                  Divider(color: context.b05Colors.border, height: 24),
 
                   if (transformations.isNotEmpty) ...[
                     DropdownButtonFormField<String?>(
                       initialValue: selectedTransformationId,
                       decoration: const InputDecoration(
-                        labelText: 'Preparation conversion (optional)',
+                        labelText: 'Logged as (optional)',
+                        helperText:
+                            'Choose raw or cooked only when it applies.',
                       ),
                       items: [
                         const DropdownMenuItem<String?>(
@@ -288,9 +401,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                         ...transformations.map(
                           (item) => DropdownMenuItem<String?>(
                             value: item.id,
-                            child: Text(
-                              '${item.sourceState.name} → ${item.targetState.name} (${item.method.name})',
-                            ),
+                            child: Text(_transformationLabel(item)),
                           ),
                         ),
                       ],
@@ -313,15 +424,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                         );
                       }
                       if (snapshot.hasError) {
-                        return const Text(
+                        return Text(
                           'Nutrition preview unavailable. Try again.',
-                          style: TextStyle(color: AppColors.warning),
+                          style: TextStyle(
+                            color: context.b05Colors.warning.foreground,
+                          ),
                         );
                       }
                       final facts = snapshot.data!.facts;
                       String value(String id, String unit) {
                         final fact = facts[id];
-                        if (fact == null) return 'Unknown';
+                        if (fact == null || !fact.isAvailable) return '—';
                         final decimals = id == 'energy' ? 0 : 1;
                         if (fact.point != null) {
                           return '${fact.point!.value.format(decimalPlaces: decimals)}$unit';
@@ -329,7 +442,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                         if (fact.lower != null && fact.upper != null) {
                           return '${fact.lower!.value.format(decimalPlaces: decimals)}–${fact.upper!.value.format(decimalPlaces: decimals)}$unit';
                         }
-                        return 'Unknown';
+                        return '—';
                       }
 
                       return Row(
@@ -338,22 +451,28 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                           _buildMacroPreview(
                             'Calories',
                             value('energy', ' kcal'),
-                            AppColors.primary,
+                            context.b05Colors.action,
                           ),
                           _buildMacroPreview(
                             'Protein',
                             value('protein', 'g'),
-                            AppColors.success,
+                            context.b05Colors
+                                .meal(B05MealAccent.breakfast)
+                                .indicator,
                           ),
                           _buildMacroPreview(
                             'Carbs',
                             value('carbohydrate', 'g'),
-                            AppColors.warning,
+                            context.b05Colors
+                                .meal(B05MealAccent.lunch)
+                                .indicator,
                           ),
                           _buildMacroPreview(
                             'Fat',
                             value('fat', 'g'),
-                            AppColors.danger,
+                            context.b05Colors
+                                .meal(B05MealAccent.dinner)
+                                .indicator,
                           ),
                         ],
                       );
@@ -369,14 +488,16 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                           onPressed: () =>
                               Navigator.of(sheetContext).pop(false),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.border),
+                            side: BorderSide(color: context.b05Colors.border),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Cancel',
-                            style: TextStyle(color: AppColors.textSecondary),
+                            style: TextStyle(
+                              color: context.b05Colors.textSecondary,
+                            ),
                           ),
                         ),
                       ),
@@ -429,6 +550,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                       commandId: commandId,
                                       consumptionId: consumptionId,
                                     );
+                                    // Keep the route result as a secondary
+                                    // signal. A platform haptic/plugin call
+                                    // must not prevent the completed canonical
+                                    // save from closing the food flow.
+                                    finalized = true;
                                     ref
                                         .read(
                                           todayNutritionRevisionProvider
@@ -441,7 +567,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                     ref.invalidate(
                                       b04CurrentFoodControllerProvider,
                                     );
-                                    await HapticFeedback.selectionClick();
+                                    try {
+                                      await HapticFeedback.selectionClick();
+                                    } catch (_) {
+                                      // Haptics are optional feedback; a
+                                      // missing plugin cannot make a saved
+                                      // meal look unsaved.
+                                    }
                                     if (sheetContext.mounted) {
                                       Navigator.of(sheetContext).pop(true);
                                     }
@@ -463,8 +595,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
+                            backgroundColor: context.b05Colors.action,
+                            foregroundColor: context.b05Colors.onAction,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -484,8 +616,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     // Dismiss the parent only after the modal route has completed. Calling
     // pop twice in the same callback races the modal transition and can leave
     // the search page open after a successful canonical save.
-    if (saved == true && mounted) {
-      Navigator.of(context).pop();
+    if ((saved == true || finalized) && mounted) {
+      // Wait one frame for the modal route's reverse transition to complete,
+      // then close the meal-specific search route deterministically.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.of(context).maybePop(true);
+      });
     }
   }
 
@@ -494,7 +630,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          style: TextStyle(
+            fontSize: 11,
+            color: context.b05Colors.textSecondary,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -513,7 +652,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Widget build(BuildContext context) {
     final logDate = widget.selectedDate ?? DateTime.now();
     final dateStr = ConsumerDateLabel.dateTime(logDate);
-    final explicitDate = DateFormat('EEE, MMM d').format(logDate.toLocal());
 
     return Scaffold(
       appBar: AppBar(
@@ -523,298 +661,434 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           children: [
             Text(
               'Log ${widget.mealType.toLowerCase()}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: B05Typography.title(context),
             ),
-            Text(
-              dateStr,
-              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
-            if (dateStr != explicitDate)
-              Text(
-                'Logging for $explicitDate',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textMuted,
-                ),
-              ),
+            Text(dateStr, style: B05Typography.caption(context)),
           ],
         ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu_book_rounded, color: AppColors.primary),
-            tooltip: 'Saved Recipes',
-            onPressed: () async {
-              final result = await Navigator.push<bool?>(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SavedRecipeLogScreen(
-                    mealType: widget.mealType,
-                    selectedDate: widget.selectedDate,
-                  ),
-                ),
-              );
-              if (result == true && context.mounted) Navigator.pop(context);
-            },
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.bookmark_border_rounded,
-              color: AppColors.primary,
-            ),
-            tooltip: 'My Meal Templates',
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      MealTemplatesScreen(initialMealType: widget.mealType),
-                ),
-              );
-              if (result == true && context.mounted) Navigator.pop(context);
-            },
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.qr_code_scanner_rounded,
-              color: AppColors.primary,
-            ),
-            tooltip: 'Scan Barcode',
-            onPressed: () {
-              _showBarcodePermissionRationale(context, () async {
-                final result = await Navigator.push<FoodApiResult?>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const BarcodeScannerScreen(),
-                  ),
-                );
-
-                if (result != null && mounted) {
-                  unawaited(_openProviderLogDialog(result));
-                }
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.add_rounded, color: AppColors.primary),
-            tooltip: 'Create Custom Food',
-            onPressed: () async {
-              final result = await Navigator.push<bool?>(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CustomFoodEditorScreen(),
-                ),
-              );
-              if (result == true) {
-                await _performSearch(_searchController.text);
-              }
-            },
-          ),
-          PopupMenuButton<String>(
-            tooltip: 'More food logging options',
-            onSelected: (value) {
-              if (value == 'ai-text' || value == 'ai-photo') {
-                Navigator.push<void>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AiMealLoggerScreen(
-                      mealType: widget.mealType,
-                      selectedDate: widget.selectedDate,
-                    ),
-                  ),
-                );
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'ai-text', child: Text('Describe with AI')),
-              PopupMenuItem(value: 'ai-photo', child: Text('Photo estimate')),
-            ],
-          ),
-        ],
+        actions: [_buildMoreMenu(context)],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Column(
-          children: [
-            FoodLogEntriesPanel(date: logDate),
-            const SizedBox(height: 12),
-            // Search Input Field
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search whole wheat chapati, dal, idli...',
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  color: AppColors.textMuted,
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+          child: FocusTraversalGroup(
+            policy: WidgetOrderTraversalPolicy(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Add ${_mealLabel(widget.mealType)}',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(
-                          Icons.clear,
-                          color: AppColors.textSecondary,
-                        ),
-                        onPressed: () => _searchController.clear(),
-                      )
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Search loading indicator or results list
-            Expanded(
-              child: _searching
-                  ? const SkeletonList(count: 6)
-                  : _searchController.text.isEmpty
-                  ? (_recentResults.isNotEmpty
-                        ? ListView(
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8.0),
-                                child: Text(
-                                  'RECENTLY LOGGED FOODS',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                    letterSpacing: 1.0,
-                                  ),
-                                ),
-                              ),
-                              ..._recentResults.map(
-                                (food) => _buildLocalItemRow(food),
-                              ),
-                            ],
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _searchController,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    labelText: 'Search foods',
+                    hintText: 'Roti, paneer bhurji, dal, idli…',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            tooltip: 'Clear food search',
+                            icon: const Icon(Icons.clear_rounded),
+                            onPressed: () => _searchController.clear(),
                           )
-                        : _buildEmptyState())
-                  : ListView(
-                      children: [
-                        if (_isOnlineSearchOffline)
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.warning.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: AppColors.warning.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.cloud_off_rounded,
-                                  color: AppColors.warning,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _onlineFailureMessage ??
-                                        'Offline mode. Showing local results only.',
-                                    style: const TextStyle(
-                                      color: AppColors.warning,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      _performSearch(_searchController.text),
-                                  child: const Text('Retry'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (_localResults.isNotEmpty) ...[
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8.0),
-                            child: Text(
-                              'LOCAL INDIAN DATABASE',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                          ),
-                          ..._localResults.map(
-                            (food) => _buildLocalItemRow(food),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        if (_onlineResults.isNotEmpty) ...[
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8.0),
-                            child: Text(
-                              'GLOBAL SEARCH RESULTS',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textSecondary,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                          ),
-                          ..._onlineResults.map(
-                            (food) => _buildOnlineItemRow(food),
-                          ),
-                        ],
-                        if (_localResults.isEmpty && _onlineResults.isEmpty)
-                          _buildNoResultsState(),
-                      ],
-                    ),
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: _searching
+                      ? const SkeletonList(count: 6)
+                      : _searchController.text.isEmpty
+                      ? _buildLandingState(logDate)
+                      : _buildSearchResults(),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildLocalItemRow(FoodItem food) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8.0),
-      child: ListTile(
-        title: Row(
+  Widget _buildMoreMenu(BuildContext context) => PopupMenuButton<String>(
+    tooltip: 'More food options',
+    onSelected: (value) async {
+      if (value == 'custom') {
+        final result = await Navigator.push<bool?>(
+          context,
+          MaterialPageRoute(builder: (_) => const CustomFoodEditorScreen()),
+        );
+        if (result == true) await _performSearch(_searchController.text);
+      }
+    },
+    itemBuilder: (_) => const [
+      PopupMenuItem(value: 'custom', child: Text('Create a custom food')),
+    ],
+  );
+
+  Widget _buildLandingState(DateTime logDate) {
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
+      children: [
+        _sectionHeader(
+          title: 'Recent',
+          subtitle: 'Foods you log often stay close at hand.',
+        ),
+        if (_loadingRecent)
+          const SkeletonList(count: 3)
+        else if (_recentFailureMessage != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: ConsumerStatusRow(
+              label: 'Recent foods unavailable',
+              detail: _recentFailureMessage,
+              error: true,
+              onRetry: _retryRecentFoods,
+            ),
+          )
+        else if (_canonicalRecentResults.isEmpty && _recentResults.isEmpty)
+          _buildLandingEmpty(
+            title: 'No recent foods yet',
+            message: 'Foods you log will appear here.',
+          )
+        else
+          ..._canonicalRecentResults.map(_buildCanonicalRecentItemRow),
+        if (!_loadingRecent &&
+            _recentResults.isNotEmpty &&
+            _canonicalRecentResults.isNotEmpty)
+          const SizedBox(height: 8),
+        if (!_loadingRecent) ..._recentResults.take(6).map(_buildRecentItemRow),
+        const SizedBox(height: 16),
+        _sectionHeader(
+          title: 'Saved',
+          subtitle: 'Keep recipes for meals you make often.',
+        ),
+        _buildNavigationCard(
+          icon: Icons.bookmark_outline_rounded,
+          title: 'Saved recipes',
+          detail: 'Open, scale and add a published recipe.',
+          onTap: _openSavedRecipes,
+        ),
+        const SizedBox(height: 16),
+        _sectionHeader(
+          title: 'Recipes',
+          subtitle: 'Choose a complete meal and add it in a few taps.',
+        ),
+        _buildNavigationCard(
+          icon: Icons.menu_book_rounded,
+          title: 'Browse recipes',
+          detail: 'Find a recipe or create one from Food.',
+          onTap: _openSavedRecipes,
+        ),
+        const SizedBox(height: 16),
+        _sectionHeader(
+          title: 'More ways',
+          subtitle: 'Optional shortcuts when they help.',
+        ),
+        _buildNavigationCard(
+          icon: Icons.qr_code_scanner_rounded,
+          title: 'Scan barcode',
+          detail: 'Find a packaged food by its barcode.',
+          onTap: () => _openBarcode(context),
+        ),
+        _buildNavigationCard(
+          icon: Icons.auto_awesome_rounded,
+          title: 'Describe with AI',
+          detail: 'Get an estimate, then review it before saving.',
+          onTap: () => _openAi(context),
+        ),
+        _buildNavigationCard(
+          icon: Icons.photo_camera_outlined,
+          title: 'Photo estimate',
+          detail: 'Use a photo as an optional starting point.',
+          onTap: () => _openAi(context),
+        ),
+        const SizedBox(height: 16),
+        FoodLogEntriesPanel(date: logDate),
+      ],
+    );
+  }
+
+  Widget _buildSearchResults() => ListView(
+    padding: const EdgeInsets.only(bottom: 24),
+    children: [
+      if (_isOnlineSearchOffline)
+        ConsumerStatusRow(
+          label: 'Search isn’t available right now',
+          detail: _onlineFailureMessage ?? 'Try again or choose from Recent.',
+          error: true,
+          onRetry: () => _performSearch(_searchController.text),
+        ),
+      if (_localResults.isNotEmpty) ...[
+        _sectionHeader(title: 'Foods on this device'),
+        ..._localResults.map(_buildLocalItemRow),
+      ],
+      if (_onlineResults.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        _sectionHeader(title: 'More results'),
+        ..._onlineResults.map(_buildOnlineItemRow),
+      ],
+      if (_localResults.isEmpty && _onlineResults.isEmpty)
+        _buildNoResultsState(),
+    ],
+  );
+
+  Widget _sectionHeader({required String title, String? subtitle}) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: B05Typography.title(context)),
+        if (subtitle != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(subtitle, style: B05Typography.caption(context)),
+          ),
+      ],
+    ),
+  );
+
+  Widget _buildLandingEmpty({required String title, required String message}) =>
+      B05Surface(
+        subtle: true,
+        showBorder: false,
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Icon(Icons.history_rounded, color: context.b05Colors.action),
+            const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                food.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: B05Typography.label(context)),
+                  const SizedBox(height: 2),
+                  Text(message, style: B05Typography.body(context)),
+                ],
               ),
             ),
-            if (food.isCustom)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: const Text(
-                  'Custom',
-                  style: TextStyle(
-                    color: AppColors.success,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
           ],
         ),
-        subtitle: Text(
-          '${food.calories} kcal • P: ${food.proteinG}g | C: ${food.carbsG}g | F: ${food.fatG}g',
-          style: const TextStyle(fontSize: 12),
+      );
+
+  Widget _buildNavigationCard({
+    required IconData icon,
+    required String title,
+    required String detail,
+    required VoidCallback onTap,
+  }) => B05Surface(
+    padding: EdgeInsets.zero,
+    child: Semantics(
+      container: true,
+      explicitChildNodes: true,
+      button: true,
+      label: title,
+      hint: detail,
+      child: ListTile(
+        minVerticalPadding: 12,
+        leading: Icon(icon, color: context.b05Colors.action),
+        title: Text(title, style: B05Typography.label(context)),
+        subtitle: Text(detail, style: B05Typography.caption(context)),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onTap,
+      ),
+    ),
+  );
+
+  Widget _buildRecentItemRow(FoodItem food) =>
+      _buildLocalItemRow(food, recent: true);
+
+  Widget _buildCanonicalRecentItemRow(_CanonicalRecentFood recent) {
+    final option = recent.option;
+    final energy = _optionFactLabel(option, 'energy', 'kcal', 0);
+    final protein = _optionFactLabel(option, 'protein', 'g protein', 1);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Semantics(
+        container: true,
+        explicitChildNodes: true,
+        button: true,
+        label: '${option.displayName}, $energy, $protein',
+        hint: 'Opens the amount screen for ${_mealLabel(widget.mealType)}.',
+        child: ListTile(
+          minVerticalPadding: 10,
+          title: Text(
+            option.displayName,
+            style: B05Typography.label(context),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            '${recent.quantityLabel} · ${_lastLoggedLabel(recent.loggedAtUtc)} · $energy · $protein',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: TextButton.icon(
+            onPressed: () => unawaited(_showLogDialog(option)),
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('Add'),
+          ),
+          onTap: () => unawaited(_showLogDialog(option)),
         ),
-        trailing: const Icon(Icons.add_rounded, color: AppColors.primary),
-        onTap: () => unawaited(_openLegacyLogDialog(food)),
+      ),
+    );
+  }
+
+  String _optionFactLabel(
+    NutritionFoodOption option,
+    String nutrientId,
+    String unit,
+    int precision,
+  ) {
+    final fact = option.facts[nutrientId];
+    if (fact == null || !fact.isAvailable) return '—';
+    String format(NutrientAmount? amount) => amount == null
+        ? '—'
+        : '${amount.value.format(decimalPlaces: precision)} $unit';
+    if (fact.lower == null && fact.upper == null) return format(fact.point);
+    return '${format(fact.lower)}–${format(fact.upper)}';
+  }
+
+  String _lastLoggedLabel(DateTime timestamp) {
+    final days = DateTime.now().difference(timestamp.toLocal()).inDays;
+    return days <= 0
+        ? 'last logged today'
+        : days == 1
+        ? 'last logged yesterday'
+        : 'last logged $days days ago';
+  }
+
+  Future<void> _openSavedRecipes() async {
+    final result = await Navigator.push<bool?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SavedRecipeLogScreen(
+          mealType: widget.mealType,
+          selectedDate: widget.selectedDate,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (result == true) Navigator.pop(context, true);
+  }
+
+  Future<void> _openAi(BuildContext context) async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AiMealLoggerScreen(
+          mealType: widget.mealType,
+          selectedDate: widget.selectedDate,
+        ),
+      ),
+    );
+  }
+
+  void _openBarcode(BuildContext context) {
+    _showBarcodePermissionRationale(context, () async {
+      final result = await Navigator.push<FoodApiResult?>(
+        context,
+        MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+      );
+      if (result != null && mounted) unawaited(_openProviderLogDialog(result));
+    });
+  }
+
+  String _mealLabel(String value) {
+    return switch (value.trim().toLowerCase()) {
+      'breakfast' => 'breakfast',
+      'lunch' => 'lunch',
+      'dinner' => 'dinner',
+      'snack' || 'snacks' => 'snack',
+      _ => 'meal',
+    };
+  }
+
+  String _quantityLabel(Quantity quantity, double multiplier) {
+    final amount = quantity.amount.asDouble * multiplier;
+    final formatted = amount == amount.roundToDouble()
+        ? amount.toStringAsFixed(0)
+        : amount.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '');
+    return '$formatted ${quantity.definition.displayLabel}';
+  }
+
+  String _transformationLabel(dynamic transformation) {
+    final source = _preparationLabel(transformation.sourceState);
+    final target = _preparationLabel(transformation.targetState);
+    if (source == 'Preparation' && target == 'Preparation') {
+      return 'Use this preparation';
+    }
+    return '$source → $target';
+  }
+
+  String _preparationLabel(dynamic value) {
+    final name = value.toString().split('.').last;
+    return switch (name) {
+      'raw' => 'Raw',
+      'cooked' => 'Cooked',
+      _ => 'Preparation',
+    };
+  }
+
+  Widget _buildLocalItemRow(FoodItem food, {bool recent = false}) {
+    final serving =
+        '${_numberLabel(food.servingSize)} ${food.servingUnit.trim()}';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8.0),
+      child: Semantics(
+        container: true,
+        explicitChildNodes: true,
+        button: true,
+        label: '${food.name}, ${food.calories} kilocalories, $serving',
+        hint: 'Opens the amount screen for ${_mealLabel(widget.mealType)}.',
+        child: ListTile(
+          minVerticalPadding: 10,
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  food.name,
+                  style: B05Typography.label(context),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (food.isCustom)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Chip(
+                    label: const Text('Custom'),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    labelStyle: TextStyle(
+                      color: context.b05Colors.success.foreground,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    backgroundColor: context.b05Colors.success.container,
+                  ),
+                ),
+            ],
+          ),
+          subtitle: Text(
+            '${_numberLabel(food.calories)} kcal · ${_numberLabel(food.proteinG)} g protein · $serving${recent ? ' · Recent' : ''}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: TextButton.icon(
+            onPressed: () => unawaited(_openLegacyLogDialog(food)),
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('Add'),
+          ),
+          onTap: () => unawaited(_openLegacyLogDialog(food)),
+        ),
       ),
     );
   }
@@ -822,46 +1096,42 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Widget _buildOnlineItemRow(FoodApiResult food) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8.0),
-      child: ListTile(
-        title: Text(
-          food.name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+      child: Semantics(
+        container: true,
+        explicitChildNodes: true,
+        button: true,
+        label: '${food.name}, ${_formatProviderValue(food.calories, 'kcal')}',
+        hint: 'Opens the amount screen for ${_mealLabel(widget.mealType)}.',
+        child: ListTile(
+          minVerticalPadding: 10,
+          title: Text(
+            food.name,
+            style: B05Typography.label(context),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
+          subtitle: Text(
+            '${_formatProviderValue(food.calories, 'kcal')} · ${_formatProviderValue(food.protein, 'g protein')}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: TextButton.icon(
+            onPressed: () => unawaited(_openProviderLogDialog(food)),
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('Add'),
+          ),
+          onTap: () => unawaited(_openProviderLogDialog(food)),
         ),
-        subtitle: Text(
-          '${_formatProviderValue(food.calories, 'kcal')} • P: ${_formatProviderValue(food.protein, 'g')} | C: ${_formatProviderValue(food.carbs, 'g')} | F: ${_formatProviderValue(food.fat, 'g')}',
-          style: const TextStyle(fontSize: 12),
-        ),
-        trailing: const Icon(Icons.add_rounded, color: AppColors.textSecondary),
-        onTap: () => unawaited(_openProviderLogDialog(food)),
       ),
     );
   }
 
   String _formatProviderValue(double? value, String unit) =>
-      value == null ? 'Unknown' : '${value.toStringAsFixed(1)}$unit';
+      value == null ? '—' : '${value.toStringAsFixed(1)} $unit';
 
-  Widget _buildEmptyState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.restaurant_menu_rounded,
-            size: 48,
-            color: AppColors.textMuted,
-          ),
-          SizedBox(height: 12),
-          Text(
-            'Type to search meals...',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
+  String _numberLabel(num value) => value.toDouble() == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(1);
 
   Widget _buildNoResultsState() {
     return Padding(
@@ -869,18 +1139,21 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       child: Center(
         child: Column(
           children: [
-            const Icon(
+            Icon(
               Icons.search_off_rounded,
               size: 40,
-              color: AppColors.textMuted,
+              color: context.b05Colors.textSecondary,
             ),
             const SizedBox(height: 12),
-            const Text(
-              'No items found. Try typing another term.',
-              style: TextStyle(color: AppColors.textSecondary),
+            Text('No foods found', style: B05Typography.label(context)),
+            const SizedBox(height: 4),
+            Text(
+              'Try another name or create a custom food.',
+              style: B05Typography.body(context),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
+            FilledButton.icon(
               onPressed: () async {
                 final result = await Navigator.push<bool?>(
                   context,
@@ -893,12 +1166,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 }
               },
               icon: const Icon(Icons.add),
-              label: const Text('Create Custom Food'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                foregroundColor: AppColors.primary,
-                elevation: 0,
-              ),
+              label: const Text('Create a custom food'),
             ),
           ],
         ),
@@ -914,21 +1182,24 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: AppColors.surface,
+          backgroundColor: context.b05Colors.surface,
           title: const Text(
             'Camera Permission Request',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          content: const Text(
+          content: Text(
             'IndiFit requires access to your camera to scan barcodes on food packaging. This allows instant matching with our offline database and the Open Food Facts API.',
-            style: TextStyle(height: 1.4, color: AppColors.textSecondary),
+            style: TextStyle(
+              height: 1.4,
+              color: context.b05Colors.textSecondary,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text(
+              child: Text(
                 'Cancel',
-                style: TextStyle(color: AppColors.textMuted),
+                style: TextStyle(color: context.b05Colors.textSecondary),
               ),
             ),
             ElevatedButton(
@@ -937,8 +1208,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 onConfirm();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: context.b05Colors.action,
+                foregroundColor: context.b05Colors.onAction,
               ),
               child: const Text('Allow'),
             ),
