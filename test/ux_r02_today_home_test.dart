@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
+import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
@@ -12,6 +14,7 @@ import 'package:indifit/data/models/b02_progress_read_models.dart';
 import 'package:indifit/data/models/b04_goal_models.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
 import 'package:indifit/data/repositories/dashboard_personalization_repository.dart';
+import 'package:indifit/data/repositories/nutrition_goal_repository.dart';
 import 'package:indifit/features/dashboard/dashboard_module_registry.dart';
 import 'package:indifit/features/dashboard/dashboard_personalization_controller.dart';
 import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
@@ -60,7 +63,7 @@ void main() {
             'protein': _known('protein', 118, NutrientUnit.gram),
             'carbohydrate': _known('carbohydrate', 192, NutrientUnit.gram),
             'fat': _known('fat', 58, NutrientUnit.gram),
-            'fiber': _known('fiber', 21, NutrientUnit.gram),
+            'fibre': _known('fibre', 21, NutrientUnit.gram),
           },
           records: _mealRecords(),
         ),
@@ -79,6 +82,9 @@ void main() {
       'Fiber',
     ]);
     expect(withRange.macros.last.targetValue, isNull);
+    expect(withRange.macros.last.nutrientId, 'fibre');
+    expect(withRange.macros.last.value, '21');
+    expect(withRange.macros.last.isAvailable, isTrue);
 
     final partial = TodayNutritionPresentation.from(
       TodayDomainRead.available(_partialNutrition()),
@@ -100,6 +106,54 @@ void main() {
     );
     expect(noTarget.hasAcceptedCalorieTarget, isFalse);
     expect(noTarget.calories?.targetValue, isNull);
+  });
+
+  test('Today reads the accepted B04 target under its profile owner', () async {
+    final profileId = await database
+        .into(database.userProfiles)
+        .insert(UserProfilesCompanion.insert());
+    await NutritionGoalRepository(database: database).recordUserSetGoal(
+      NutritionGoalCommand(
+        userId: profileId.toString(),
+        goalType: NutritionGoalType.custom,
+        calorieTargetKcal: 2200,
+        proteinTargetG: 150,
+        carbsTargetG: 250,
+        fatTargetG: 70,
+        effectiveFromLocalDate: '2026-08-09',
+        timezoneId: 'Asia/Kolkata',
+      ),
+    );
+    final registry = NutrientRegistry.fromAssetFileSync(
+      'assets/data/nutrient_registry.json',
+    );
+    final container = ProviderContainer(
+      overrides: [
+        databaseProvider.overrideWithValue(database),
+        nutritionRegistryProvider.overrideWith((ref) async => registry),
+        localTimezoneServiceProvider.overrideWithValue(
+          LocalTimezoneService(read: () async => 'Asia/Kolkata'),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final beforeEffectiveDate = await container.read(
+      todaySurfaceSnapshotProvider(DateTime(2026, 8, 8)).future,
+    );
+    final snapshot = await container.read(
+      todaySurfaceSnapshotProvider(DateTime(2026, 8, 9)).future,
+    );
+    final presentation = TodayNutritionPresentation.from(
+      snapshot.nutrition,
+      loading: false,
+      goal: snapshot.goal,
+    );
+
+    expect(beforeEffectiveDate.goal.value, isNull);
+    expect(snapshot.goal.value?.userId, profileId.toString());
+    expect(presentation.calories?.targetValue, 2200);
+    expect(presentation.hasAcceptedCalorieTarget, isTrue);
   });
 
   test(
@@ -178,6 +232,45 @@ void main() {
     await tester.ensureVisible(start);
     await tester.tap(start);
     expect(started, same(item));
+  });
+
+  testWidgets('Next Up does not duplicate a non-startable workout CTA', (
+    tester,
+  ) async {
+    final item = _scheduledWorkout(status: 'completed');
+    await tester.pumpWidget(
+      _todayApp(
+        theme: AppTheme.darkTheme,
+        personalization: personalization,
+        snapshot: _snapshot(
+          DateTime(2026, 8, 9),
+          calendar: CalendarReadSnapshot(
+            rangeOccurrences: [item],
+            overdueOccurrences: const [],
+            activeProgramVersionId: item.version.id,
+            activeProgramName: item.program.name,
+          ),
+        ),
+      ),
+    );
+    await _settleToday(tester);
+
+    expect(find.bySemanticsLabel('View workout'), findsOneWidget);
+  });
+
+  testWidgets('Next Up does not duplicate the generic workout CTA', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _todayApp(
+        theme: AppTheme.darkTheme,
+        personalization: personalization,
+        snapshot: _populatedSnapshot(DateTime(2026, 8, 9)),
+      ),
+    );
+    await _settleToday(tester);
+
+    expect(find.bySemanticsLabel('Choose workout'), findsOneWidget);
   });
 
   testWidgets('meal source refresh redraws subtotal, ring, and macros', (
@@ -528,7 +621,7 @@ NutritionDailyReadModel _populatedNutrition() => _nutrition(
     'protein': _known('protein', 118, NutrientUnit.gram),
     'carbohydrate': _known('carbohydrate', 192, NutrientUnit.gram),
     'fat': _known('fat', 58, NutrientUnit.gram),
-    'fiber': _known('fiber', 21, NutrientUnit.gram),
+    'fibre': _known('fibre', 21, NutrientUnit.gram),
   },
   records: _mealRecords(),
 );
@@ -539,7 +632,7 @@ NutritionDailyReadModel _overTargetNutrition() => _nutrition(
     'protein': _known('protein', 160, NutrientUnit.gram),
     'carbohydrate': _known('carbohydrate', 278, NutrientUnit.gram),
     'fat': _known('fat', 74, NutrientUnit.gram),
-    'fiber': _known('fiber', 28, NutrientUnit.gram),
+    'fibre': _known('fibre', 28, NutrientUnit.gram),
   },
   records: const [
     _FixtureRecord(
@@ -574,7 +667,7 @@ NutritionDailyReadModel _partialNutrition() => _nutrition(
     'energy': _known('energy', 1840, NutrientUnit.kilocalorie),
     'carbohydrate': _known('carbohydrate', 192, NutrientUnit.gram),
     'fat': _known('fat', 58, NutrientUnit.gram),
-    'fiber': _known('fiber', 21, NutrientUnit.gram),
+    'fibre': _known('fibre', 21, NutrientUnit.gram),
   },
   records: _mealRecords(),
   missingNutrientIds: const ['protein'],
@@ -761,7 +854,7 @@ class _FixtureRecord implements NutritionHistoricalReadRecord {
   bool get isLegacy => false;
 }
 
-CalendarOccurrenceReadItem _scheduledWorkout() {
+CalendarOccurrenceReadItem _scheduledWorkout({String status = 'planned'}) {
   final created = DateTime.utc(2026, 8, 1);
   return CalendarOccurrenceReadItem(
     occurrence: ScheduledSessionOccurrence(
@@ -776,7 +869,7 @@ CalendarOccurrenceReadItem _scheduledWorkout() {
       originalTimezoneId: 'Asia/Kolkata',
       effectiveLocalDate: '2026-08-09',
       effectiveTimezoneId: 'Asia/Kolkata',
-      status: 'planned',
+      status: status,
       progressionDisposition: 'pending',
       createdAtUtc: created,
     ),

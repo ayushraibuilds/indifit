@@ -24,6 +24,19 @@ class B04RecommendationContextAssembler {
     if (contextId.isEmpty || userId.isEmpty) {
       throw ArgumentError('A recommendation context requires an identity.');
     }
+    // B04 goals and history are profile-owned, while canonical B03 meal and
+    // safety evidence may use the app's separate local nutrition scope. Keep
+    // both identities explicit and validate each source against its owner.
+    final nutritionUserId = _sourceOwner(
+      input.nutritionUserId,
+      fallback: userId,
+      source: 'nutrition',
+    );
+    final constraintUserId = _sourceOwner(
+      input.constraintUserId,
+      fallback: nutritionUserId,
+      source: 'constraint',
+    );
     if (!input.evaluatedAtUtc.isUtc) {
       throw ArgumentError.value(
         input.evaluatedAtUtc,
@@ -119,7 +132,7 @@ class B04RecommendationContextAssembler {
     final nutrition = _nutritionContext(
       input.nutritionDays,
       expectedDates,
-      userId,
+      nutritionUserId,
       missing,
     );
     final readiness = _readinessContext(
@@ -155,7 +168,7 @@ class B04RecommendationContextAssembler {
         ? const <B04ConstraintContext>[]
         : input.constraintEvaluations!
               .map((item) {
-                _validateOwner(userId, item.userId, 'constraint');
+                _validateOwner(constraintUserId, item.userId, 'constraint');
                 return B04ConstraintContext.fromEvaluation(item);
               })
               .toList(growable: false);
@@ -218,6 +231,7 @@ class B04RecommendationContextAssembler {
     return B04RecommendationContext(
       contextId: contextId,
       userId: userId,
+      nutritionUserId: nutritionUserId,
       window: B04RecommendationWindow(
         period: input.period,
         startLocalDate: start,
@@ -241,6 +255,18 @@ class B04RecommendationContextAssembler {
       missingEvidence: normalizedMissing,
       n8: B04N8Context.absent,
     );
+  }
+
+  String _sourceOwner(
+    String? value, {
+    required String fallback,
+    required String source,
+  }) {
+    final owner = (value ?? fallback).trim();
+    if (owner.isEmpty) {
+      throw ArgumentError('$source source owner must not be blank.');
+    }
+    return owner;
   }
 
   List<String> _expectedDates({

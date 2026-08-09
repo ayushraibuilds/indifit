@@ -111,8 +111,7 @@ class TodaySurfaceReadRepository {
         );
       }),
       _safeRead(
-        () => _goals.activeGoal(
-          userId: kLocalNutritionUserScopeId,
+        () => _goals.activeGoalForPrimaryProfile(
           localDate: localDate,
           timezoneId: timezoneId,
         ),
@@ -170,7 +169,8 @@ final todayNutritionRevisionProvider = StateProvider<int>((ref) => 0);
 ///
 /// Basic B01-B03 reads intentionally use the device timezone and the existing
 /// local nutrition scope. They must remain available when profile onboarding
-/// is skipped; B04 surfaces retain their separate fail-closed profile gate.
+/// is skipped. The optional B04 target is resolved under the profile-owned goal
+/// history, which safely yields no target when setup has not created a profile.
 final todaySurfaceSnapshotProvider = FutureProvider.autoDispose
     .family<TodaySurfaceSnapshot, DateTime>((ref, selectedDate) async {
       ref.watch(todayNutritionRevisionProvider);

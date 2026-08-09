@@ -255,7 +255,9 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         progress: progress,
                         hideWorkoutDuplicate:
                             nextUpVisible &&
-                            nextUp.action == TodayNextAction.startWorkout,
+                            (nextUp.action == TodayNextAction.startWorkout ||
+                                nextUp.action ==
+                                    TodayNextAction.openWorkoutPlan),
                         onRetry: () => ref.invalidate(
                           todaySurfaceSnapshotProvider(selectedDate),
                         ),
@@ -344,9 +346,10 @@ class TodayDailyActionSurface extends ConsumerWidget {
         onLogMeal: onLogMeal,
         onRetry: onRetry,
       ),
-      'today.workout'
-          when hideWorkoutDuplicate && relation == TodayDateRelation.today =>
-        const SizedBox.shrink(),
+      // When visible, Next Up owns the single workout CTA for this state. The
+      // independently customizable Workout module remains available whenever
+      // a person hides Next Up.
+      'today.workout' when hideWorkoutDuplicate => const SizedBox.shrink(),
       'today.workout' => _TodayWorkoutModule(
         presentation: workout,
         onOpenWorkoutPlan: onOpenWorkoutPlan,
@@ -890,14 +893,14 @@ class _MacroRow extends StatelessWidget {
       'protein' => context.b05Colors.success,
       'carbohydrate' => context.b05Colors.warning,
       'fat' => context.b05Colors.danger,
-      'fiber' => context.b05Colors.info,
+      'fibre' => context.b05Colors.info,
       _ => context.b05Colors.unavailable,
     };
     final icon = switch (metric.nutrientId) {
       'protein' => Icons.egg_alt_outlined,
       'carbohydrate' => Icons.grain_outlined,
       'fat' => Icons.water_drop_outlined,
-      'fiber' => Icons.eco_outlined,
+      'fibre' => Icons.eco_outlined,
       _ => Icons.circle_outlined,
     };
     final compact = MediaQuery.textScalerOf(context).scale(1) > 1.35;

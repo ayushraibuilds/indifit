@@ -278,7 +278,7 @@ class TodayNutritionPresentation {
       'fat': acceptedGoal?.fatTargetG,
       // There is no B04 fibre target authority. Keeping this null is more
       // truthful than reviving the legacy fixed 30 g reference.
-      'fiber': null,
+      'fibre': null,
     };
 
     final facts = daily.totals.facts;
@@ -301,7 +301,7 @@ class TodayNutritionPresentation {
         ('protein', 'Protein'),
         ('carbohydrate', 'Carbs'),
         ('fat', 'Fat'),
-        ('fiber', 'Fiber'),
+        ('fibre', 'Fiber'),
       ])
         noConsumption
             ? TodayNutritionMetricPresentation.knownZero(
