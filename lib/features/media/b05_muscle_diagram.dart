@@ -66,18 +66,12 @@ class _B05InteractiveMuscleDiagramState
   Widget build(BuildContext context) {
     final registry = widget.visualRegistry;
     if (registry == null || registry.regions.isEmpty) {
-      return _textFallback(
-        context,
-        'The approved muscle diagram is unavailable.',
-      );
+      return _textFallback(context);
     }
     try {
       B05MuscleDiagramValidator().validate(registry);
     } on B05RegistryValidationException {
-      return _textFallback(
-        context,
-        'The muscle guide is not available right now. Try again later.',
-      );
+      return _textFallback(context);
     }
     final labelsById = {
       for (final label in widget.muscles.labels) label.muscleId: label,
@@ -194,49 +188,33 @@ class _B05InteractiveMuscleDiagramState
     ),
   );
 
-  Widget _textFallback(BuildContext context, String message) => B05Surface(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const B05StatusMessage(
-          status: B05SemanticStatus.unavailable,
-          label: 'Muscle diagram unavailable',
-          value: 'The text list remains available.',
-        ),
-        const SizedBox(height: B05Layout.space8),
-        Text(message, style: B05Typography.body(context)),
-        const SizedBox(height: B05Layout.space8),
-        Semantics(
-          container: true,
-          explicitChildNodes: true,
-          label: 'Muscle contribution text list',
-          value: widget.muscles.labels.isEmpty
-              ? 'No reviewed B02 mapping is available.'
-              : widget.muscles.labels
-                    .map((label) => '${label.displayName}: ${label.roleLabel}')
-                    .join('. '),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Text list', style: B05Typography.label(context)),
-              const SizedBox(height: B05Layout.space4),
-              if (widget.muscles.labels.isEmpty)
-                Text(
-                  'No reviewed B02 mapping is available.',
-                  style: B05Typography.body(context),
-                )
-              else
-                for (final label in widget.muscles.labels)
-                  Text(
-                    '${label.displayName}: ${label.roleLabel}',
-                    style: B05Typography.body(context),
-                  ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
+  Widget _textFallback(BuildContext context) {
+    final labels = widget.muscles.labels;
+    if (labels.isEmpty) return const SizedBox.shrink();
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: 'Muscle contribution text list',
+      value: labels
+          .map((label) => '${label.displayName}: ${label.roleLabel}')
+          .join('. '),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Muscle contribution', style: B05Typography.label(context)),
+          const SizedBox(height: B05Layout.space4),
+          for (final label in labels)
+            Padding(
+              padding: const EdgeInsets.only(bottom: B05Layout.space4),
+              child: Text(
+                '${label.displayName}: ${label.roleLabel}',
+                style: B05Typography.body(context),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   static String _regionHint(
     B05MuscleDiagramRegion region,

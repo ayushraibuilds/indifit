@@ -187,6 +187,30 @@ void main() {
     },
   );
 
+  test(
+    'skipping profile setup records no fabricated profile targets',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'onboarding_draft_page': 3,
+        'onboarding_draft_age': '25',
+        'onboarding_draft_goal': 'maintain',
+      });
+      const store = B05OnboardingDraftStore();
+
+      await store.markProfileOnboardingSkipped();
+      final prefs = await SharedPreferences.getInstance();
+
+      expect(prefs.getBool('onboarding_completed'), isTrue);
+      expect(prefs.getBool('onboarding_skipped'), isTrue);
+      expect(prefs.containsKey('user_age'), isFalse);
+      expect(prefs.containsKey('calorie_goal'), isFalse);
+      expect(prefs.containsKey('protein_goal'), isFalse);
+      expect(prefs.containsKey('carbs_goal'), isFalse);
+      expect(prefs.containsKey('fat_goal'), isFalse);
+      expect(await store.readProfileDraft(), isNull);
+    },
+  );
+
   testWidgets('onboarding choice semantics and reduced motion remain usable', (
     tester,
   ) async {

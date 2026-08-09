@@ -10,6 +10,7 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/features/food_log/food_contextual_action_controller.dart';
 import 'package:indifit/features/food_log/food_log_surface.dart';
+import 'package:indifit/features/food_log/food_search_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -76,7 +77,11 @@ void main() {
       );
       await _pumpSettled(tester);
       await _expectLoggingDate(tester, past);
+      expect(find.byType(FoodSearchScreen), findsOneWidget);
       expect(find.text('Log breakfast'), findsOneWidget);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 10)),
+      );
 
       // The gateway below is the real B03 repository boundary (not a fake
       // test gateway); contextual actions remain covered by their own Today

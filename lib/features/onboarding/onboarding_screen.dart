@@ -63,7 +63,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   var _draftLoaded = false;
   String? _draftError;
   var _isCompleting = false;
+  var _isSkipping = false;
   String? _completionError;
+  String? _skipError;
 
   @override
   void initState() {
@@ -290,10 +292,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Mifflin-St Jeor formula for BMR + TDEE multiplier + deficit/surplus adjustments
   Future<void> _completeOnboarding() async {
-    if (_isCompleting) return;
+    if (_isCompleting || _isSkipping) return;
     setState(() {
       _isCompleting = true;
       _completionError = null;
+      _skipError = null;
     });
     try {
       await _saveDraft();
@@ -311,6 +314,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
     } finally {
       if (mounted) setState(() => _isCompleting = false);
+    }
+  }
+
+  Future<void> _skipOnboarding() async {
+    if (_isCompleting || _isSkipping || !_draftLoaded) return;
+    _dismissInputFocus();
+    setState(() {
+      _isSkipping = true;
+      _skipError = null;
+      _completionError = null;
+    });
+    try {
+      await _draftWrite;
+      await _draftStore.markProfileOnboardingSkipped();
+      ref.read(onboardingCompletedProvider.notifier).state = true;
+      if (mounted) context.go('/');
+    } catch (_) {
+      if (mounted) {
+        setState(() => _skipError = 'Your setup was not skipped. Try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _isSkipping = false);
     }
   }
 
@@ -394,6 +419,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     // Complete onboarding flag
     await prefs.setBool('onboarding_completed', true);
+    await prefs.remove('onboarding_skipped');
 
     // Notify router that onboarding is now complete
     ref.read(onboardingCompletedProvider.notifier).state = true;
@@ -423,6 +449,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       padding: EdgeInsets.zero,
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              B05Layout.space16,
+              B05Layout.space4,
+              B05Layout.space16,
+              0,
+            ),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _draftLoaded && !_isCompleting && !_isSkipping
+                    ? _skipOnboarding
+                    : null,
+                child: const Text('Skip for now'),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               B05Layout.space16,
@@ -468,6 +511,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 detail: _completionError,
                 error: true,
                 onRetry: _isCompleting ? null : _completeOnboarding,
+              ),
+            ),
+          if (_skipError != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: ConsumerStatusRow(
+                label: 'Setup could not be skipped',
+                detail: _skipError,
+                error: true,
+                onRetry: _isSkipping ? null : _skipOnboarding,
               ),
             ),
           Expanded(
@@ -734,8 +787,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             selected: _goal == 'gain',
             onTap: () => _selectOnboardingChoice(() => _goal = 'gain'),
           ),
-          const SizedBox(height: 20),
-          B05AdaptiveLessonPath(selectedGoal: _goal),
         ],
       ),
     );

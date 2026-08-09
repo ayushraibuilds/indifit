@@ -161,20 +161,34 @@ class ProgramCalendarScreen extends ConsumerWidget {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
-          Consumer(
-            builder: (context, ref, child) {
-              final travelState = ref.watch(travelControllerProvider);
-              final isActive = travelState.activeTravelContext != null;
-              return IconButton(
-                icon: Icon(
-                  Icons.flight_rounded,
-                  color: isActive ? context.b05Colors.success.indicator : null,
+          if (state.activeProgramVersionId != null)
+            PopupMenuButton<String>(
+              tooltip: 'Calendar options',
+              onSelected: (value) {
+                if (value == 'travel') context.push('/travel-mode');
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'travel',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.flight_rounded,
+                        color: travelState.activeTravelContext != null
+                            ? context.b05Colors.success.indicator
+                            : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        travelState.activeTravelContext != null
+                            ? 'Travel mode active'
+                            : 'Travel mode',
+                      ),
+                    ],
+                  ),
                 ),
-                tooltip: isActive ? 'Travel mode active' : 'Travel mode',
-                onPressed: () => context.push('/travel-mode'),
-              );
-            },
-          ),
+              ],
+            ),
           IconButton(
             icon: const Icon(Icons.add_box_rounded),
             tooltip: 'Author / activate program',

@@ -22,6 +22,7 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
 import 'food_log_surface.dart';
+import 'food_search_screen.dart';
 
 class AiMealLoggerScreen extends ConsumerStatefulWidget {
   final String mealType; // "breakfast", "lunch", "dinner", "snack"
@@ -205,13 +206,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     final policy = ref.read(privacyPolicyProvider);
     if (!policy.isAiAllowed) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'AI cloud estimation is disabled in strict offline privacy mode. Disable offline mode in Settings to use cloud AI features.',
-            ),
-          ),
-        );
+        setState(() {
+          _estimateError =
+              'AI estimates are unavailable right now. Add foods manually instead.';
+          _saveError = null;
+        });
       }
       return;
     }
@@ -247,9 +246,6 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
           _loading = false;
           _estimateError = message;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       await _cleanupSelectedImage(
@@ -265,13 +261,11 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     final policy = ref.read(privacyPolicyProvider);
     if (!policy.isImageUploadAllowed) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Photo analysis upload is disabled in strict offline privacy mode. Disable offline mode in Settings to use photo AI features.',
-            ),
-          ),
-        );
+        setState(() {
+          _estimateError =
+              'Photo estimates are unavailable right now. Add foods manually instead.';
+          _saveError = null;
+        });
       }
       return;
     }
@@ -319,9 +313,6 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
     } catch (error) {
       if (mounted) {
         final message = _estimateErrorMessage(error);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
         setState(() => _estimateError = message);
       }
     } finally {
@@ -554,9 +545,6 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
           _saving = false;
           _saveError = _estimateErrorMessage(error);
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(_estimateErrorMessage(error))));
       }
     }
   }
@@ -661,6 +649,14 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                     detail: _estimateError,
                     error: true,
                     onRetry: _retryEstimate,
+                  ),
+                  const SizedBox(height: 8),
+                  B05ActionButton(
+                    label: 'Search foods instead',
+                    icon: Icons.search_rounded,
+                    emphasis: B05ActionEmphasis.secondary,
+                    hint: 'Add foods manually without an estimate.',
+                    onPressed: _openManualSearch,
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -959,6 +955,18 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
   Future<void> _retryEstimate() {
     if (_selectedImage != null) return _submitPhotoEstimate();
     return _submitTextEstimate();
+  }
+
+  Future<void> _openManualSearch() async {
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FoodSearchScreen(
+          mealType: widget.mealType,
+          selectedDate: widget.selectedDate,
+        ),
+      ),
+    );
   }
 
   static String _mealLabel(String value) {

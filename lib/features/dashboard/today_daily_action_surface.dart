@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/nutrition_legacy_read_models.dart';
+import '../../core/presentation/daypart_greeting.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/models/b02_progress_read_models.dart';
@@ -158,7 +159,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                   _TodayGreeting(
                     userName: userName,
                     streakCount: streakCount,
-                    referenceNow: referenceNow,
+                    referenceNow: now,
                     onOpenSettings: onOpenSettings,
                     onCustomize: onCustomize,
                   ),
@@ -291,7 +292,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
   }
 }
 
-class _TodayGreeting extends StatelessWidget {
+class _TodayGreeting extends StatefulWidget {
   const _TodayGreeting({
     required this.userName,
     required this.streakCount,
@@ -302,18 +303,52 @@ class _TodayGreeting extends StatelessWidget {
 
   final String userName;
   final int streakCount;
-  final DateTime referenceNow;
+  final DateTime? referenceNow;
   final VoidCallback onOpenSettings;
   final VoidCallback onCustomize;
 
   @override
+  State<_TodayGreeting> createState() => _TodayGreetingState();
+}
+
+class _TodayGreetingState extends State<_TodayGreeting>
+    with WidgetsBindingObserver {
+  late DateTime _localNow;
+
+  @override
+  void initState() {
+    super.initState();
+    _localNow = widget.referenceNow ?? DateTime.now();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didUpdateWidget(covariant _TodayGreeting oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.referenceNow != oldWidget.referenceNow) {
+      _localNow = widget.referenceNow ?? DateTime.now();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        widget.referenceNow == null &&
+        mounted) {
+      setState(() => _localNow = DateTime.now());
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final name = userName.trim();
-    final greeting = switch (referenceNow.hour) {
-      < 12 => 'Good morning',
-      < 17 => 'Good afternoon',
-      _ => 'Good evening',
-    };
+    final name = widget.userName.trim();
+    final greeting = daypartGreeting(_localNow);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -335,8 +370,8 @@ class _TodayGreeting extends StatelessWidget {
                 ),
                 const SizedBox(height: B05Layout.space4),
                 Text(
-                  streakCount > 0
-                      ? '$streakCount-day streak · keep your rhythm going'
+                  widget.streakCount > 0
+                      ? '${widget.streakCount}-day streak · keep your rhythm going'
                       : 'A clear plan for your day, one step at a time.',
                   style: B05Typography.body(context),
                 ),
@@ -348,13 +383,13 @@ class _TodayGreeting extends StatelessWidget {
           icon: Icons.tune_rounded,
           label: 'Customize Today',
           hint: 'Reorder, show, hide, or collapse Today modules.',
-          onPressed: onCustomize,
+          onPressed: widget.onCustomize,
           focusOrder: 0,
         ),
         B05IconAction(
           icon: Icons.settings_outlined,
           label: 'Open settings',
-          onPressed: onOpenSettings,
+          onPressed: widget.onOpenSettings,
           focusOrder: 1,
         ),
       ],

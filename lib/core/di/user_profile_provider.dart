@@ -111,6 +111,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     String diet = prefs.getString('user_diet_preference') ?? 'veg';
     String equipment = prefs.getString('user_equipment') ?? 'full_gym';
     String injuries = prefs.getString('user_injuries') ?? '';
+    final onboardingSkipped = prefs.getBool('onboarding_skipped') ?? false;
 
     final db = _db;
     if (db != null) {
@@ -132,7 +133,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
           diet = p.dietPreference.isNotEmpty ? p.dietPreference : diet;
           equipment = p.equipmentAccess;
           injuries = p.injuriesLimitations;
-        } else {
+        } else if (!onboardingSkipped) {
           // Migrate SharedPreferences defaults to initial Drift row
           await db
               .into(db.userProfiles)
@@ -157,43 +158,45 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
           profiles = await db.select(db.userProfiles).get();
         }
 
-        final p = profiles.first;
-        final timezoneId = await _readTimezoneId();
-        final dates = LocalScheduleDateService();
-        final goalRepository = NutritionGoalRepository(
-          database: db,
-          dates: dates,
-        );
-        final owner = p.id.toString();
-        await goalRepository.ensureCompatibilityImport(
-          userId: owner,
-          legacyProfile: NutritionGoalCommand(
+        if (profiles.isNotEmpty) {
+          final p = profiles.first;
+          final timezoneId = await _readTimezoneId();
+          final dates = LocalScheduleDateService();
+          final goalRepository = NutritionGoalRepository(
+            database: db,
+            dates: dates,
+          );
+          final owner = p.id.toString();
+          await goalRepository.ensureCompatibilityImport(
             userId: owner,
-            goalType: NutritionGoalTypeId.parse(p.goal),
-            calorieTargetKcal: p.calorieGoal,
-            proteinTargetG: p.proteinGoal,
-            carbsTargetG: p.carbsGoal,
-            fatTargetG: p.fatGoal,
-            effectiveFromLocalDate: dates.todayIn(timezoneId),
+            legacyProfile: NutritionGoalCommand(
+              userId: owner,
+              goalType: NutritionGoalTypeId.parse(p.goal),
+              calorieTargetKcal: p.calorieGoal,
+              proteinTargetG: p.proteinGoal,
+              carbsTargetG: p.carbsGoal,
+              fatTargetG: p.fatGoal,
+              effectiveFromLocalDate: dates.todayIn(timezoneId),
+              timezoneId: timezoneId,
+            ),
+          );
+          final active = await goalRepository.activeGoal(
+            userId: owner,
+            localDate: dates.todayIn(timezoneId),
             timezoneId: timezoneId,
-          ),
-        );
-        final active = await goalRepository.activeGoal(
-          userId: owner,
-          localDate: dates.todayIn(timezoneId),
-          timezoneId: timezoneId,
-        );
-        if (active != null) {
-          cals = active.calorieTargetKcal ?? cals;
-          protein = active.proteinTargetG ?? protein;
-          carbs = active.carbsTargetG ?? carbs;
-          fat = active.fatTargetG ?? fat;
-          goal = switch (active.goalType) {
-            NutritionGoalType.loss => 'lose',
-            NutritionGoalType.maintenance => 'maintain',
-            NutritionGoalType.gain => 'gain',
-            NutritionGoalType.custom => 'custom',
-          };
+          );
+          if (active != null) {
+            cals = active.calorieTargetKcal ?? cals;
+            protein = active.proteinTargetG ?? protein;
+            carbs = active.carbsTargetG ?? carbs;
+            fat = active.fatTargetG ?? fat;
+            goal = switch (active.goalType) {
+              NutritionGoalType.loss => 'lose',
+              NutritionGoalType.maintenance => 'maintain',
+              NutritionGoalType.gain => 'gain',
+              NutritionGoalType.custom => 'custom',
+            };
+          }
         }
       } catch (e, st) {
         AppLogger.warning('loadProfile database access failed: $e');
