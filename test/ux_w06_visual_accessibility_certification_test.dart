@@ -20,6 +20,7 @@ import 'package:indifit/features/exercise_library/exercise_library_screen.dart';
 import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/profile/profile_screen.dart';
+import 'package:indifit/features/progress/progress_dashboard_models.dart';
 import 'package:indifit/features/progress/progress_screen.dart';
 import 'package:indifit/features/settings/nutrition_constraints_screen.dart';
 import 'package:indifit/features/workout_player/routine_display_screen.dart';
@@ -202,7 +203,7 @@ void main() {
         name: 'progress empty light',
         fileName: 'ux_w06_progress_empty_light.png',
         brightness: Brightness.light,
-        builder: () => const ProgressScreen(),
+        builder: () => ProgressScreen(preview: _certificationProgressEmpty),
       ),
       _GoldenRoute(
         name: 'calendar loading dark',
@@ -858,6 +859,17 @@ class _VisualSystemPreview extends StatelessWidget {
     );
   }
 }
+
+final _certificationProgressEmpty = ProgressDashboardSnapshot(
+  nowUtc: DateTime.utc(2026, 8, 9, 12),
+  timezoneId: 'Asia/Kolkata',
+  todayLocalDate: '2026-08-09',
+  measurements: const [],
+  workouts: const [],
+  strengthSets: const [],
+  muscleBalance: null,
+  unavailableSections: const {},
+);
 
 Widget _app({
   required ThemeData theme,
