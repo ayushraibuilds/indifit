@@ -397,10 +397,13 @@ class WorkoutRepository {
         _db.bodyMeasurements,
       )..where((tbl) => tbl.id.equals(id))).write(
         BodyMeasurementsCompanion(
-          weight: Value(weight),
-          waist: Value(waist),
-          chest: Value(chest),
-          arms: Value(arms),
+          // A body-measurement entry and a weight entry can share today's
+          // canonical row. Leave an omitted field untouched so logging waist
+          // does not erase a weight that was already recorded today.
+          weight: weight == null ? const Value.absent() : Value(weight),
+          waist: waist == null ? const Value.absent() : Value(waist),
+          chest: chest == null ? const Value.absent() : Value(chest),
+          arms: arms == null ? const Value.absent() : Value(arms),
         ),
       );
       return id;
