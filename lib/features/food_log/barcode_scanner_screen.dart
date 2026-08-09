@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../core/theme/colors.dart';
+
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../data/repositories/food_api_service.dart';
 import 'custom_food_editor_screen.dart';
 
@@ -66,7 +67,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
         await showDialog(
           context: context,
           builder: (dialogCtx) => AlertDialog(
-            backgroundColor: AppColors.surface,
+            backgroundColor: context.b05Colors.surface,
             title: const Text('Barcode Lookup Unavailable'),
             content: Text(
               lookupError is StateError
@@ -74,6 +75,13 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                   : 'We could not reach the food database. Your scan was not lost; try again when you are connected.',
             ),
             actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogCtx);
+                  if (mounted) Navigator.pop(context);
+                },
+                child: const Text('Search foods'),
+              ),
               TextButton(
                 onPressed: () async {
                   Navigator.pop(dialogCtx);
@@ -89,21 +97,25 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
         await showDialog(
           context: context,
           builder: (dialogCtx) => AlertDialog(
-            backgroundColor: AppColors.surface,
-            title: const Text('Product Not Found'),
-            content: Text(
-              'Could not find product with barcode "$code" in Open Food Facts.',
+            backgroundColor: context.b05Colors.surface,
+            title: const Text('Couldn’t find that product'),
+            content: const Text(
+              'Search by name instead, or create a custom food if this product is new.',
             ),
             actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogCtx);
+                  if (mounted) Navigator.pop(context);
+                },
+                child: const Text('Search foods'),
+              ),
               TextButton(
                 onPressed: () async {
                   Navigator.pop(dialogCtx); // Close dialog
                   await _scannerController.start(); // Restart scanner
                 },
-                child: const Text(
-                  'Try Again',
-                  style: TextStyle(color: AppColors.primary),
-                ),
+                child: const Text('Try Again'),
               ),
               TextButton(
                 onPressed: () async {
@@ -124,10 +136,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                     await _scannerController.start();
                   }
                 },
-                child: const Text(
-                  'Create Custom Food',
-                  style: TextStyle(color: AppColors.success),
-                ),
+                child: const Text('Create Custom Food'),
               ),
             ],
           ),
@@ -141,7 +150,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Scan Food Barcode'),
-        backgroundColor: AppColors.background,
+        backgroundColor: context.b05Colors.page,
         elevation: 0,
       ),
       body: Stack(
@@ -167,7 +176,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.primary, width: 3),
+                border: Border.all(color: context.b05Colors.action, width: 3),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: ClipRRect(
@@ -184,10 +193,10 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                           child: Container(
                             height: 3,
                             decoration: BoxDecoration(
-                              color: AppColors.primary,
+                              color: context.b05Colors.action,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(
+                                  color: context.b05Colors.action.withValues(
                                     alpha: 0.8,
                                   ),
                                   blurRadius: 8,
@@ -212,14 +221,14 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
             right: 0,
             child: Container(
               padding: const EdgeInsets.all(20),
-              color: AppColors.surface,
+              color: context.b05Colors.surface,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Simulator Testing: Enter barcode manually',
+                  Text(
+                    'Enter a barcode manually',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: context.b05Colors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -231,8 +240,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                           controller: _manualController,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                            hintText:
-                                'e.g. 8901030357771', // Standard Indian Barcode
+                            hintText: 'e.g. 8901030357771',
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 8,
@@ -248,8 +256,8 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                          backgroundColor: context.b05Colors.action,
+                          foregroundColor: context.b05Colors.onAction,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -267,13 +275,13 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
           if (_loading)
             Container(
               color: Colors.black54,
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: AppColors.primary),
-                    SizedBox(height: 16),
-                    Text(
+                    CircularProgressIndicator(color: context.b05Colors.action),
+                    const SizedBox(height: 16),
+                    const Text(
                       'Searching Open Food Facts...',
                       style: TextStyle(
                         color: Colors.white,
