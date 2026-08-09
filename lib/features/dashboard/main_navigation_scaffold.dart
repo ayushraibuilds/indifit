@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/widgets/b05_accessibility_primitives.dart';
-import '../exercise_library/exercise_library_screen.dart';
+import '../food_log/food_search_screen.dart';
 import '../progress/progress_screen.dart';
-import '../workout_player/routine_display_screen.dart';
+import '../training/training_screen.dart';
 import 'dashboard_screen.dart';
 
 class MainNavigationScaffold extends StatefulWidget {
@@ -18,8 +18,8 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
 
   final List<Widget> _screens = [
     const DashboardScreen(),
-    const RoutineDisplayScreen(),
-    const ExerciseLibraryScreen(),
+    const TrainingScreen(),
+    const FoodSearchScreen(mealType: 'breakfast'),
     const ProgressScreen(),
   ];
 
@@ -47,12 +47,12 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
           NavigationDestination(
             icon: Icon(Icons.fitness_center_outlined),
             selectedIcon: Icon(Icons.fitness_center_rounded),
-            label: 'Workouts',
+            label: 'Training',
           ),
           NavigationDestination(
-            icon: Icon(Icons.library_books_outlined),
-            selectedIcon: Icon(Icons.library_books_rounded),
-            label: 'Exercises',
+            icon: Icon(Icons.restaurant_outlined),
+            selectedIcon: Icon(Icons.restaurant_rounded),
+            label: 'Food',
           ),
           NavigationDestination(
             icon: Icon(Icons.auto_graph_outlined),

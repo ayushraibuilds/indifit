@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import 'b02_strength_execution_controller.dart';
@@ -91,7 +94,7 @@ class _B02StrengthPlayerScreenState
         children: [
           const _OfflineBanner(),
           const SizedBox(height: 16),
-          const Text('No exercise slots are available yet.'),
+          const Text('No exercises are available yet.'),
           const SizedBox(height: 8),
           const Text(
             'The frozen draft is safe. Recover it after the exercise catalog is available, or finish through the retained B01 route.',
@@ -114,8 +117,73 @@ class _B02StrengthPlayerScreenState
       children: [
         const _OfflineBanner(),
         const SizedBox(height: 12),
-        _GroupProgressCard(launch: launch, slots: slots),
+        Text(
+          'Current exercise',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: selected.id,
+          decoration: const InputDecoration(labelText: 'Choose exercise'),
+          items: [
+            for (final slot in slots)
+              DropdownMenuItem(
+                value: slot.id,
+                child: Text(
+                  '${slot.groupDescription} · round ${(slot.roundOrdinal ?? 0) + 1} · exercise ${(slot.memberOrdinal ?? 0) + 1} · ${slot.exerciseNameSnapshot}',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+          onChanged: ui.isBusy
+              ? null
+              : (value) => setState(() => _selectedSlotId = value),
+        ),
         const SizedBox(height: 12),
+        _TargetCard(
+          slot: selected,
+          state: launch.state,
+          onOverride: ui.isBusy
+              ? null
+              : () => _overrideTarget(provider, selected),
+        ),
+        const SizedBox(height: 12),
+        IndiFitResponsiveFieldGroup(
+          spacing: 10,
+          children: [
+            TextFormField(
+              key: ValueKey('load-${selected.id}'),
+              initialValue: _loads[selected.id],
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(labelText: 'Actual load (kg)'),
+              onChanged: (value) => _loads[selected.id] = value,
+            ),
+            TextFormField(
+              key: ValueKey('reps-${selected.id}'),
+              initialValue: _reps[selected.id],
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Actual reps'),
+              onChanged: (value) => _reps[selected.id] = value,
+            ),
+            TextFormField(
+              key: ValueKey('rpe-${selected.id}'),
+              initialValue: _rpes[selected.id],
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'RPE'),
+              onChanged: (value) => _rpes[selected.id] = value,
+            ),
+          ],
+        ),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Log as warm-up'),
+          value: _warmup,
+          onChanged: ui.isBusy
+              ? null
+              : (value) => setState(() => _warmup = value),
+        ),
         if (launch.state.warmupRecommendation != null)
           _WarmupCard(
             recommendation: launch.state.warmupRecommendation!,
@@ -138,86 +206,13 @@ class _B02StrengthPlayerScreenState
           const Card(
             child: ListTile(
               leading: Icon(Icons.whatshot_outlined),
-              title: Text('Warm-up recommendation'),
+              title: Text('Warm-up unavailable'),
               subtitle: Text(
-                'No preference is stored. Choose a warm-up when a valid target is available.',
+                'A warm-up will appear when a valid working target is available.',
               ),
             ),
           ),
         const SizedBox(height: 12),
-        Text('Current slot', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          initialValue: selected.id,
-          decoration: const InputDecoration(labelText: 'Group member'),
-          items: [
-            for (final slot in slots)
-              DropdownMenuItem(
-                value: slot.id,
-                child: Text(
-                  '${slot.groupDescription} · round ${(slot.roundOrdinal ?? 0) + 1} · member ${(slot.memberOrdinal ?? 0) + 1} · ${slot.exerciseNameSnapshot}',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-          ],
-          onChanged: ui.isBusy
-              ? null
-              : (value) => setState(() => _selectedSlotId = value),
-        ),
-        const SizedBox(height: 12),
-        _TargetCard(
-          slot: selected,
-          state: launch.state,
-          onOverride: ui.isBusy
-              ? null
-              : () => _overrideTarget(provider, selected),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('load-${selected.id}'),
-                initialValue: _loads[selected.id],
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Actual load (kg)',
-                ),
-                onChanged: (value) => _loads[selected.id] = value,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('reps-${selected.id}'),
-                initialValue: _reps[selected.id],
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Actual reps'),
-                onChanged: (value) => _reps[selected.id] = value,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('rpe-${selected.id}'),
-                initialValue: _rpes[selected.id],
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'RPE'),
-                onChanged: (value) => _rpes[selected.id] = value,
-              ),
-            ),
-          ],
-        ),
-        SwitchListTile.adaptive(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Log as warm-up'),
-          value: _warmup,
-          onChanged: ui.isBusy
-              ? null
-              : (value) => setState(() => _warmup = value),
-        ),
         ExpansionTile(
           tilePadding: EdgeInsets.zero,
           title: const Text('Advanced technique details'),
@@ -246,6 +241,8 @@ class _B02StrengthPlayerScreenState
           onSkip: (periodId) => ref.read(provider.notifier).skipRest(periodId),
         ),
         const SizedBox(height: 12),
+        _GroupProgressCard(launch: launch, slots: slots),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -253,7 +250,7 @@ class _B02StrengthPlayerScreenState
                 onPressed: ui.isBusy
                     ? null
                     : () => ref.read(provider.notifier).skipSlot(selected),
-                child: const Text('Skip slot'),
+                child: const Text('Skip exercise'),
               ),
             ),
             const SizedBox(width: 10),
@@ -450,20 +447,28 @@ class _GroupProgressCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Group progress',
+              'Workout progress',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 6),
-            Text('$completed of ${slots.length} slots complete'),
+            Text('$completed of ${slots.length} exercises complete'),
             const SizedBox(height: 10),
-            for (final group in launch.state.groups)
-              Text(
-                '${group.label ?? 'Group ${group.ordinal + 1}'} · ${group.groupType.dbValue} · ${group.roundCount} round(s) · ${group.members.length} member(s)',
-              ),
+            for (final group in launch.state.groups) Text(_groupLabel(group)),
           ],
         ),
       ),
     );
+  }
+
+  String _groupLabel(B02ExerciseGroup group) {
+    final name =
+        group.label ??
+        switch (group.groupType) {
+          B02GroupType.superset => 'Superset',
+          B02GroupType.circuit => 'Circuit',
+          B02GroupType.giantSet => 'Giant set',
+        };
+    return '$name · ${group.roundCount} ${group.roundCount == 1 ? 'round' : 'rounds'} · ${group.members.length} ${group.members.length == 1 ? 'exercise' : 'exercises'}';
   }
 }
 
@@ -490,25 +495,26 @@ class _TargetCard extends StatelessWidget {
         .expand((exercise) => exercise.sets)
         .fold<int>(0, (sum, set) => sum + (set.actualReps ?? 0));
     final target = slot.targetRepsMin == null
-        ? 'unknown'
+        ? 'Target not available'
         : slot.targetRepsMin == slot.targetRepsMax
         ? '${slot.targetRepsMin}'
         : '${slot.targetRepsMin}-${slot.targetRepsMax}';
     final recommendation = state.targetRecommendations[slot.id];
-    final load = slot.targetLoadKg == null
-        ? 'load unknown'
-        : '${slot.targetLoadKg} kg ${slot.targetLoadBasis?.dbValue ?? ''}';
-    final confidence = recommendation?.confidence.dbValue ?? 'unavailable';
+    final load = slot.targetLoadKg == null ? null : '${slot.targetLoadKg} kg';
+    final targetLabel = load == null ? target : '$load × $target';
+    final performedLabel = actual == 0
+        ? 'Not logged yet'
+        : '$actual ${actual == 1 ? 'rep' : 'reps'}';
     return Card(
       child: ListTile(
         leading: const Icon(Icons.flag_outlined),
-        title: Text('Target vs actual · $target reps · $load'),
+        title: const Text('Target'),
         subtitle: Text(
-          'Actual reps logged: $actual · ${recommendation == null ? 'no recommendation' : 'B02 ${recommendation.ruleVersion} · $confidence confidence'} · offered target stays separate from performed values.',
+          '$targetLabel\nPerformed: $performedLabel\n${recommendation == null ? 'Use the prescribed target for this exercise.' : 'Based on your recent working sets.'}',
         ),
         trailing: recommendation == null
             ? null
-            : TextButton(onPressed: onOverride, child: const Text('Override')),
+            : TextButton(onPressed: onOverride, child: const Text('Change')),
       ),
     );
   }
@@ -537,11 +543,11 @@ class _WarmupCard extends StatelessWidget {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.whatshot_outlined),
-            title: Text('Warm-up guidance'),
+            title: const Text('Warm-up'),
             subtitle: Text(
               recommendation.proposals.isEmpty
-                  ? 'No warm-up target is available; choose your own warm-up.'
-                  : '${recommendation.proposals.length} proposed ramp set(s) · ${recommendation.selectedProposals.length} selected',
+                  ? 'No working target is available yet.'
+                  : 'Prepare with a few lighter sets before you begin.',
             ),
           ),
           if (recommendation.proposals.isNotEmpty)
@@ -549,7 +555,7 @@ class _WarmupCard extends StatelessWidget {
               recommendation.proposals
                   .map(
                     (proposal) =>
-                        '${proposal.loadKg ?? 'bodyweight'} × ${proposal.reps}',
+                        '${proposal.loadKg == null ? 'Bodyweight' : '${proposal.loadKg} kg'} × ${proposal.reps}',
                   )
                   .join('  ·  '),
             ),
@@ -568,7 +574,7 @@ class _WarmupCard extends StatelessWidget {
   );
 }
 
-class _RestCard extends StatelessWidget {
+class _RestCard extends StatefulWidget {
   final B02StrengthExecutionSlot slot;
   final B02ExecutionDraftState state;
   final VoidCallback onBegin;
@@ -586,30 +592,54 @@ class _RestCard extends StatelessWidget {
   });
 
   @override
+  State<_RestCard> createState() => _RestCardState();
+}
+
+class _RestCardState extends State<_RestCard> {
+  late DateTime _now;
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _now = DateTime.now().toUtc();
+    _syncTicker();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RestCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncTicker();
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final open = state.restPeriods
-        .where(
-          (period) =>
-              period.endedAtUtc == null &&
-              (period.performedExerciseGroupId == slot.groupId ||
-                  period.id.startsWith('rest:${slot.id}:')),
-        )
-        .toList();
-    final period = open.isEmpty ? null : open.last;
+    final period = _openPeriod(widget);
     return Card(
       child: ListTile(
         leading: const Icon(Icons.timer_outlined),
-        title: const Text('Rest timer'),
+        title: Text(
+          period == null ? 'Rest' : 'Rest · ${_remainingLabel(period)}',
+        ),
         subtitle: Text(
-          slot.groupType == null
-              ? 'Manual override · session-only · actual rest is recorded separately.'
-              : 'Transition rest follows the ${slot.groupType!.dbValue} member order. Manual +30/skip is session-only.',
+          widget.slot.groupType == null
+              ? 'Take a breather before your next set.'
+              : 'Rest before the next exercise in this group.',
         ),
         trailing: period == null
             ? Wrap(
                 spacing: 2,
                 children: [
-                  TextButton(onPressed: onBegin, child: const Text('Start')),
+                  TextButton(
+                    onPressed: widget.onBegin,
+                    child: const Text('Start'),
+                  ),
                   IconButton(
                     tooltip: 'Choose rest duration',
                     onPressed: () async {
@@ -640,7 +670,7 @@ class _RestCard extends StatelessWidget {
                         ),
                       );
                       controller.dispose();
-                      if (value != null && value >= 0) onCustom(value);
+                      if (value != null && value >= 0) widget.onCustom(value);
                     },
                     icon: const Icon(Icons.tune),
                   ),
@@ -651,18 +681,52 @@ class _RestCard extends StatelessWidget {
                 children: [
                   IconButton(
                     tooltip: 'Add 30 seconds',
-                    onPressed: () => onExtend(period.id),
+                    onPressed: () => widget.onExtend(period.id),
                     icon: const Icon(Icons.add_alarm_outlined),
                   ),
                   IconButton(
                     tooltip: 'Skip rest',
-                    onPressed: () => onSkip(period.id),
+                    onPressed: () => widget.onSkip(period.id),
                     icon: const Icon(Icons.skip_next_outlined),
                   ),
                 ],
               ),
       ),
     );
+  }
+
+  String _remainingLabel(B02RestPeriod period) {
+    final total = period.selectedSeconds ?? period.recommendedSeconds ?? 0;
+    final elapsed = _now.difference(period.startedAtUtc).inSeconds;
+    final remaining = (total - elapsed).clamp(0, total);
+    final minutes = remaining ~/ 60;
+    final seconds = remaining % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  B02RestPeriod? _openPeriod(_RestCard value) {
+    final open = value.state.restPeriods
+        .where(
+          (period) =>
+              period.endedAtUtc == null &&
+              (period.performedExerciseGroupId == value.slot.groupId ||
+                  period.id.startsWith('rest:${value.slot.id}:')),
+        )
+        .toList();
+    return open.isEmpty ? null : open.last;
+  }
+
+  void _syncTicker() {
+    if (_openPeriod(widget) != null && _ticker == null) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) {
+          setState(() => _now = DateTime.now().toUtc());
+        }
+      });
+    } else if (_openPeriod(widget) == null) {
+      _ticker?.cancel();
+      _ticker = null;
+    }
   }
 }
 

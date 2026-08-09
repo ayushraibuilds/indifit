@@ -29,6 +29,7 @@ import '../../features/settings/household_measures_screen.dart';
 import '../../features/settings/nutrition_constraint_review_screen.dart';
 import '../../features/settings/nutrition_constraints_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/training/training_screen.dart';
 import '../../features/travel/travel_mode_screen.dart';
 import '../../features/workout_player/b02_strength_player_screen.dart';
 import '../../features/workout_player/b02_strength_summary_screen.dart';
@@ -100,6 +101,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/workout',
         builder: (context, state) => const RoutineDisplayScreen(),
+      ),
+      GoRoute(
+        path: '/training',
+        builder: (context, state) => const TrainingScreen(),
       ),
       GoRoute(
         path: '/food',

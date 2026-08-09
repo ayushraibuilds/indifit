@@ -313,7 +313,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                               decimal: true,
                             ),
                             decoration: const InputDecoration(
-                              labelText: 'kg',
+                              labelText: 'Weight (kg)',
                               isDense: true,
                             ),
                             onChanged: (value) => setInput.weightKg =
@@ -323,7 +323,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                             controller: setInput.repsController,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                              labelText: 'reps',
+                              labelText: 'Reps',
                               isDense: true,
                             ),
                             onChanged: (value) =>
@@ -346,131 +346,170 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
   Widget build(BuildContext context) {
     final dateStr = ConsumerDateLabel.dateTime(widget.selectedDate);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+    return Material(
+      color: context.b05Colors.section,
+      surfaceTintColor: Colors.transparent,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Expanded(
-                        child: Text(
-                          'Log Completed Workout',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final largeText =
+                              MediaQuery.textScalerOf(context).scale(14) / 14 >=
+                              1.4;
+                          final compact =
+                              constraints.maxWidth < 420 || largeText;
+                          final title = const Text(
+                            'Log Completed Workout',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          );
+                          final date = B05Surface(
+                            tone: B05SurfaceTone.selected,
+                            radius: B05SurfaceRadius.small,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: B05Layout.space8,
+                              vertical: B05Layout.space4,
+                            ),
+                            child: Text(
+                              dateStr,
+                              style: B05Typography.caption(
+                                context,
+                              ).copyWith(color: context.b05Colors.action),
+                            ),
+                          );
+                          final close = IconButton(
+                            tooltip: 'Close',
+                            onPressed: () => Navigator.of(context).maybePop(),
+                            icon: const Icon(Icons.close),
+                          );
+                          if (compact) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(child: title),
+                                    close,
+                                  ],
+                                ),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: date,
+                                ),
+                              ],
+                            );
+                          }
+                          return Row(
+                            children: [
+                              Expanded(child: title),
+                              date,
+                              close,
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      IndiFitResponsiveFieldGroup(
+                        children: [
+                          TextField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Workout Title',
+                              isDense: true,
+                            ),
                           ),
-                        ),
+                          TextField(
+                            controller: _durationController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Duration (min)',
+                              isDense: true,
+                            ),
+                          ),
+                        ],
                       ),
-                      B05Surface(
-                        tone: B05SurfaceTone.selected,
-                        radius: B05SurfaceRadius.small,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: B05Layout.space8,
-                          vertical: B05Layout.space4,
-                        ),
-                        child: Text(
-                          dateStr,
-                          style: B05Typography.caption(
-                            context,
-                          ).copyWith(color: context.b05Colors.action),
-                        ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            'EXERCISES LOGGED',
+                            style: B05Typography.caption(context).copyWith(
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: .6,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: _addExercise,
+                            icon: const Icon(Icons.add, size: 16),
+                            label: const Text(
+                              'Add Exercise',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        tooltip: 'Close',
-                        onPressed: () => Navigator.of(context).maybePop(),
-                        icon: const Icon(Icons.close),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  IndiFitResponsiveFieldGroup(
-                    children: [
-                      TextField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Workout Title',
-                          isDense: true,
+                      if (_exercises.isEmpty)
+                        ProductEmptyState(
+                          icon: Icons.fitness_center_rounded,
+                          title: 'Add your first exercise',
+                          message:
+                              'Choose the exercises and sets you completed.',
+                          action: _addExercise,
+                          actionLabel: 'Tap to add exercises to this log',
+                          actionIcon: Icons.add,
+                        )
+                      else
+                        Column(
+                          children: [
+                            for (
+                              var index = 0;
+                              index < _exercises.length;
+                              index++
+                            )
+                              _buildExerciseCard(_exercises[index], index),
+                          ],
                         ),
-                      ),
-                      TextField(
-                        controller: _durationController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Duration (min)',
-                          isDense: true,
+                      if (_saveError != null) ...[
+                        const SizedBox(height: 12),
+                        ConsumerStatusRow(
+                          label: 'Workout could not be saved',
+                          detail: _saveError,
+                          error: true,
+                          onRetry: _saving ? null : _saveLoggedSession,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                        'EXERCISES LOGGED',
-                        style: B05Typography.caption(context).copyWith(
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: .6,
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: _addExercise,
-                        icon: const Icon(Icons.add, size: 16),
-                        label: const Text(
-                          'Add Exercise',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_exercises.isEmpty)
-                    ProductEmptyState(
-                      icon: Icons.fitness_center_rounded,
-                      title: 'Add your first exercise',
-                      message: 'Choose the exercises and sets you completed.',
-                      action: _addExercise,
-                      actionLabel: 'Tap to add exercises to this log',
-                      actionIcon: Icons.add,
-                    )
-                  else
-                    Column(
-                      children: [
-                        for (var index = 0; index < _exercises.length; index++)
-                          _buildExerciseCard(_exercises[index], index),
                       ],
-                    ),
-                  if (_saveError != null) ...[
-                    const SizedBox(height: 12),
-                    ConsumerStatusRow(
-                      label: 'Workout could not be saved',
-                      detail: _saveError,
-                      error: true,
-                      onRetry: _saving ? null : _saveLoggedSession,
-                    ),
-                  ],
-                ],
+                    ],
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: B05ActionButton(
+                  onPressed: _saving ? null : _saveLoggedSession,
+                  icon: Icons.check_circle_rounded,
+                  label: _saving ? 'Saving workout…' : 'Save Workout Session',
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: B05ActionButton(
-              onPressed: _saving ? null : _saveLoggedSession,
-              icon: Icons.check_circle_rounded,
-              label: _saving ? 'Saving workout…' : 'Save Workout Session',
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
