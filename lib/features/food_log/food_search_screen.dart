@@ -14,6 +14,7 @@ import '../../data/repositories/food_api_service.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_food_logging_coordinator.dart';
+import '../dashboard/today_surface_controller.dart';
 import 'ai_meal_logger_screen.dart';
 import 'barcode_scanner_screen.dart';
 import 'custom_food_editor_screen.dart';
@@ -428,6 +429,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                         timezoneId: timezoneId,
                                         commandId: commandId,
                                         consumptionId: consumptionId,
+                                      );
+                                      ref
+                                          .read(
+                                            todayNutritionRevisionProvider
+                                                .notifier,
+                                          )
+                                          .state++;
+                                      ref.invalidate(
+                                        b04ProductionRecommendationContextProvider,
+                                      );
+                                      ref.invalidate(
+                                        b04CurrentFoodControllerProvider,
                                       );
                                       await HapticFeedback.selectionClick();
                                       if (context.mounted) {

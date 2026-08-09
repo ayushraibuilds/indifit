@@ -21,6 +21,7 @@ import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
+import '../dashboard/today_surface_controller.dart';
 import 'food_log_surface.dart';
 import 'food_search_screen.dart';
 
@@ -528,6 +529,9 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         consumptionId: 'ai-meal-consumption::${selected.id}',
         displayLabel: selected.displayLabel,
       );
+      ref.read(todayNutritionRevisionProvider.notifier).state++;
+      ref.invalidate(b04ProductionRecommendationContextProvider);
+      ref.invalidate(b04CurrentFoodControllerProvider);
 
       if (mounted) {
         setState(() {

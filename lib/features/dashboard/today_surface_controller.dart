@@ -140,14 +140,22 @@ final todaySurfaceReadRepositoryProvider = Provider<TodaySurfaceReadRepository>(
   ),
 );
 
-/// The single production read boundary consumed by the Today composition. It
-/// uses B04 only for the established local user/timezone context.
+/// Presentation invalidation owned by successful nutrition logging commands.
+/// The underlying record remains B03-owned; this counter carries no data.
+final todayNutritionRevisionProvider = StateProvider<int>((ref) => 0);
+
+/// The single production read boundary consumed by the Today composition.
+///
+/// Basic B01-B03 reads intentionally use the device timezone and the existing
+/// local nutrition scope. They must remain available when profile onboarding
+/// is skipped; B04 surfaces retain their separate fail-closed profile gate.
 final todaySurfaceSnapshotProvider = FutureProvider.autoDispose
     .family<TodaySurfaceSnapshot, DateTime>((ref, selectedDate) async {
-      final userContext = await ref.watch(
-        b04ProductionUserContextProvider.future,
-      );
+      ref.watch(todayNutritionRevisionProvider);
+      final timezoneId = await ref
+          .watch(localTimezoneServiceProvider)
+          .currentTimezoneId();
       return ref
           .watch(todaySurfaceReadRepositoryProvider)
-          .read(selectedDate: selectedDate, timezoneId: userContext.timezoneId);
+          .read(selectedDate: selectedDate, timezoneId: timezoneId);
     });
