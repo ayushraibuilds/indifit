@@ -103,9 +103,7 @@ class ProgressDashboardReadRepository {
             armsCm: row.arms,
           ),
     ];
-    result.sort(
-      (first, second) => second.recordedAt.compareTo(first.recordedAt),
-    );
+    result.sort(_compareMeasurementsNewestFirst);
     return result;
   }
 
@@ -126,9 +124,12 @@ class ProgressDashboardReadRepository {
             totalVolumeKg: row.totalVolume,
           ),
     ];
-    result.sort(
-      (first, second) => second.completedAtUtc.compareTo(first.completedAtUtc),
-    );
+    result.sort((first, second) {
+      final byCompletedAt = second.completedAtUtc.compareTo(
+        first.completedAtUtc,
+      );
+      return byCompletedAt != 0 ? byCompletedAt : second.id.compareTo(first.id);
+    });
     return result;
   }
 
@@ -215,5 +216,17 @@ class ProgressDashboardReadRepository {
         timezoneId: timezoneId,
       ),
     );
+  }
+
+  /// A backup or import can contain two observations at the exact same
+  /// instant. Preserve both records, while making the consumer's newest-value
+  /// selection deterministic instead of depending on SQLite's incidental row
+  /// order.
+  static int _compareMeasurementsNewestFirst(
+    ProgressMeasurementRecord first,
+    ProgressMeasurementRecord second,
+  ) {
+    final byRecordedAt = second.recordedAt.compareTo(first.recordedAt);
+    return byRecordedAt != 0 ? byRecordedAt : second.id.compareTo(first.id);
   }
 }

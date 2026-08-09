@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/presentation/product_failure_presentation.dart';
@@ -11,7 +12,6 @@ import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/models/b02_muscle_volume_models.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../dashboard/widgets/log_weight_bottom_sheet.dart';
-import '../workout_player/routine_display_screen.dart';
 import 'achievements_screen.dart';
 import 'progress_dashboard_controller.dart';
 import 'progress_dashboard_models.dart';
@@ -199,7 +199,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   ),
                   const SizedBox(height: B05Layout.space4),
                   Text(
-                    'Complete a workout or log another weigh-in to start seeing useful trends.',
+                    'Complete a workout or log a weigh-in to start seeing useful trends.',
                     style: B05Typography.body(context),
                   ),
                   const SizedBox(height: B05Layout.space20),
@@ -288,7 +288,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     _ProgressTimeRange range,
   ) {
     final records = snapshot.weightMeasurements.toList(growable: true)
-      ..sort((first, second) => first.recordedAt.compareTo(second.recordedAt));
+      ..sort(_compareMeasurementsChronologically);
     if (range == _ProgressTimeRange.all) return records;
     final start = range.startDate(snapshot.todayLocalDate);
     return records
@@ -308,7 +308,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
   Future<void> _logWeight(ProgressDashboardSnapshot snapshot) async {
     final weights = snapshot.weightMeasurements.toList(growable: true)
-      ..sort((first, second) => first.recordedAt.compareTo(second.recordedAt));
+      ..sort(_compareMeasurementsChronologically);
     final latest = weights.isEmpty ? null : weights.last;
     await LogWeightBottomSheet.show(context, latest?.weightKg ?? 70, (
       weight,
@@ -320,11 +320,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     });
   }
 
-  void _startWorkout() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()));
-  }
+  /// Fresh users may not have a routine yet. Training is the canonical entry
+  /// that offers both a plan and an existing manual-log action, whereas the
+  /// legacy routine route can strand them in setup.
+  void _startWorkout() => context.go('/training');
 
   void _openTrainingHistory(ProgressDashboardSnapshot snapshot) {
     Navigator.of(context).push(
@@ -401,9 +400,10 @@ class _ProgressOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dailyWeights = _dailyWeightObservations(selectedWeights);
     final metrics = <Widget>[];
-    if (selectedWeights.isNotEmpty) {
-      final latest = selectedWeights.last;
+    if (dailyWeights.isNotEmpty) {
+      final latest = dailyWeights.last;
       metrics.add(
         _OverviewMetric(
           value: _formatWeight(latest.weightKg!),
@@ -411,6 +411,7 @@ class _ProgressOverview extends StatelessWidget {
           semanticLabel: _weightSemantics(snapshot, selectedWeights),
           direction: _weightDirectionIcon(selectedWeights),
           color: _goalAwareTrendColor(context, snapshot, selectedWeights),
+          statusLabel: _weightGoalTrendLabel(snapshot, selectedWeights),
         ),
       );
     }
@@ -443,9 +444,8 @@ class _ProgressOverview extends StatelessWidget {
       );
     }
     if (metrics.isEmpty && snapshot.bodyMeasurements.isNotEmpty) {
-      final measurements = snapshot.bodyMeasurements.toList(
-        growable: true,
-      )..sort((first, second) => second.recordedAt.compareTo(first.recordedAt));
+      final measurements = snapshot.bodyMeasurements.toList(growable: true)
+        ..sort(_compareMeasurementsNewestFirst);
       final bodyValues = _bodyMeasurementValues(measurements);
       if (bodyValues.isNotEmpty) {
         final value = bodyValues.first;
@@ -488,6 +488,7 @@ class _OverviewMetric extends StatelessWidget {
     required this.semanticLabel,
     required this.direction,
     this.color,
+    this.statusLabel,
   });
 
   final String value;
@@ -495,6 +496,7 @@ class _OverviewMetric extends StatelessWidget {
   final String semanticLabel;
   final IconData direction;
   final Color? color;
+  final String? statusLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -528,6 +530,15 @@ class _OverviewMetric extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(label, style: B05Typography.caption(context)),
+              if (statusLabel case final status?) ...[
+                const SizedBox(height: 2),
+                Text(
+                  status,
+                  style: B05Typography.caption(
+                    context,
+                  ).copyWith(color: colors.success.foreground),
+                ),
+              ],
             ],
           ),
         ),
@@ -569,17 +580,18 @@ class _WeightSectionState extends State<_WeightSection> {
   @override
   Widget build(BuildContext context) {
     final measurements = widget.measurements;
-    final latest = measurements.last;
+    final dailyMeasurements = _dailyWeightObservations(measurements);
+    final latest = dailyMeasurements.last;
     final hasChart = _hasWeightChartHistory(measurements);
-    final allMeasurements = widget.snapshot.weightMeasurements.toList(
-      growable: true,
-    )..sort((first, second) => first.recordedAt.compareTo(second.recordedAt));
+    final allMeasurements = _dailyWeightObservations(
+      widget.snapshot.weightMeasurements,
+    );
     final hasLongerHistory = _hasWeightChartHistory(allMeasurements);
     final showRangeSelector = hasLongerHistory && widget.ranges.length > 1;
     final selected =
-        _touchedPoint == null || _touchedPoint! >= measurements.length
+        _touchedPoint == null || _touchedPoint! >= dailyMeasurements.length
         ? latest
-        : measurements[_touchedPoint!];
+        : dailyMeasurements[_touchedPoint!];
     final colors = context.b05Colors;
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     final logWeightAction = B05ActionButton(
@@ -644,30 +656,23 @@ class _WeightSectionState extends State<_WeightSection> {
                   onSelected: widget.onRangeSelected,
                 ),
               ],
-              if (measurements.length == 1) ...[
+              if (!hasChart && dailyMeasurements.length == 1) ...[
                 const SizedBox(height: B05Layout.space16),
                 Text(
                   hasLongerHistory
                       ? 'One measurement in this period. Choose a longer range to see more history.'
+                      : measurements.length > 1
+                      ? 'Multiple weigh-ins were recorded on one day. Log a measurement on another day to start seeing a trend.'
                       : 'Log another measurement to start seeing your trend.',
                   style: B05Typography.caption(context),
                 ),
               ],
-              if (measurements.length == 2) ...[
+              if (!hasChart && dailyMeasurements.length == 2) ...[
                 const SizedBox(height: B05Layout.space16),
                 Text(
                   hasLongerHistory
                       ? 'Two measurements in this period. Choose a longer range to see more history.'
                       : 'Two measurements recorded. Add another to see a fuller trend.',
-                  style: B05Typography.caption(context),
-                ),
-              ],
-              if (measurements.length >= 3 && !hasChart) ...[
-                const SizedBox(height: B05Layout.space16),
-                Text(
-                  hasLongerHistory
-                      ? 'This period only has same-day measurements. Choose a longer range to see more history.'
-                      : 'Log a measurement on another day to start seeing a trend.',
                   style: B05Typography.caption(context),
                 ),
               ],
@@ -684,7 +689,7 @@ class _WeightSectionState extends State<_WeightSection> {
                     child: LineChart(
                       _weightChartData(
                         context: context,
-                        measurements: measurements,
+                        measurements: dailyMeasurements,
                         goal: widget.snapshot.weightGoal,
                         onTouch: (index) =>
                             setState(() => _touchedPoint = index),
@@ -717,15 +722,15 @@ class _WeightGoalSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final distance = (currentWeight - goal.targetKg).abs();
     final targetLabel =
         goal.direction == ProgressWeightGoalDirection.maintenance
         ? 'Target ${_formatWeight(goal.targetKg)}'
         : 'Goal ${_formatWeight(goal.targetKg)}';
+    final progressLabel = _weightGoalProgressLabel(goal, currentWeight);
     return Semantics(
-      label: goal.direction == ProgressWeightGoalDirection.maintenance
+      label: progressLabel == null
           ? targetLabel
-          : '$targetLabel. ${_formatWeight(distance)} to go.',
+          : '$targetLabel. $progressLabel.',
       child: B05Surface(
         tone: B05SurfaceTone.inset,
         radius: B05SurfaceRadius.small,
@@ -754,11 +759,11 @@ class _WeightGoalSummary extends StatelessWidget {
                 ),
               ],
             );
-            final distanceText = Text(
-              '${_formatWeight(distance)} to go',
+            final progressText = Text(
+              progressLabel ?? '',
               style: B05Typography.label(context),
             );
-            if (goal.direction == ProgressWeightGoalDirection.maintenance) {
+            if (progressLabel == null) {
               return target;
             }
             if (stacked) {
@@ -769,7 +774,7 @@ class _WeightGoalSummary extends StatelessWidget {
                   const SizedBox(height: B05Layout.space4),
                   Padding(
                     padding: const EdgeInsets.only(left: 26),
-                    child: distanceText,
+                    child: progressText,
                   ),
                 ],
               );
@@ -778,7 +783,7 @@ class _WeightGoalSummary extends StatelessWidget {
               children: [
                 Expanded(child: target),
                 const SizedBox(width: B05Layout.space8),
-                distanceText,
+                progressText,
               ],
             );
           },
@@ -855,7 +860,7 @@ class _TrainingConsistencySection extends StatelessWidget {
                 child: ExcludeSemantics(
                   child: Text(
                     thisWeek.isEmpty
-                        ? 'No workouts yet'
+                        ? 'No workouts this week'
                         : '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'}',
                     style: B05Typography.metric(context),
                   ),
@@ -1068,7 +1073,7 @@ class _MeasurementsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ordered = measurements.toList(growable: true)
-      ..sort((first, second) => second.recordedAt.compareTo(first.recordedAt));
+      ..sort(_compareMeasurementsNewestFirst);
     final values = _bodyMeasurementValues(ordered);
     final latestEntry = ordered.first;
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
@@ -1344,7 +1349,7 @@ class ProgressMeasurementHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ordered = measurements.toList(growable: true)
-      ..sort((first, second) => second.recordedAt.compareTo(first.recordedAt));
+      ..sort(_compareMeasurementsNewestFirst);
     return Scaffold(
       appBar: AppBar(title: const Text('Measurement history')),
       body: ListView.separated(
@@ -1673,25 +1678,69 @@ List<ProgressWorkoutRecord> _workoutsInRecentFourWeeks(
       .toList(growable: false);
 }
 
+/// A weight trend needs observations on three distinct local days. Several
+/// weigh-ins in one day remain useful history, but cannot imply a day-to-day
+/// trend or become extra points in a consumer chart.
 bool _hasWeightChartHistory(List<ProgressMeasurementRecord> measurements) =>
-    measurements.length >= 3 &&
-    measurements.map(_measurementDate).toSet().length >= 2;
+    _dailyWeightObservations(measurements).length >= 3;
+
+int _compareMeasurementsChronologically(
+  ProgressMeasurementRecord first,
+  ProgressMeasurementRecord second,
+) {
+  final byRecordedAt = first.recordedAt.compareTo(second.recordedAt);
+  return byRecordedAt != 0 ? byRecordedAt : first.id.compareTo(second.id);
+}
+
+int _compareMeasurementsNewestFirst(
+  ProgressMeasurementRecord first,
+  ProgressMeasurementRecord second,
+) => _compareMeasurementsChronologically(second, first);
+
+/// Collapses a day's weigh-ins to its latest persisted observation for
+/// consumer trend display. The full record history remains unchanged for
+/// measurement history and persistence; this is presentation-only grouping.
+List<ProgressMeasurementRecord> _dailyWeightObservations(
+  Iterable<ProgressMeasurementRecord> measurements,
+) {
+  final chronological =
+      measurements
+          .where(
+            (measurement) =>
+                measurement.weightKg != null && measurement.weightKg! > 0,
+          )
+          .toList(growable: true)
+        ..sort(_compareMeasurementsChronologically);
+  final latestByLocalDate = <String, ProgressMeasurementRecord>{};
+  for (final measurement in chronological) {
+    latestByLocalDate[measurement.localDate] = measurement;
+  }
+  final daily = latestByLocalDate.values.toList(growable: true)
+    ..sort(_compareMeasurementsChronologically);
+  return daily;
+}
 
 String _weightOverviewDetail(List<ProgressMeasurementRecord> measurements) {
-  if (measurements.length == 1) return 'latest weight';
-  if (measurements.length == 2) {
-    return '${_formatWeight(measurements.first.weightKg!)} → ${_formatWeight(measurements.last.weightKg!)}';
+  final dailyMeasurements = _dailyWeightObservations(measurements);
+  if (dailyMeasurements.length == 1) return 'latest weight';
+  if (dailyMeasurements.length == 2) {
+    return '${_formatWeight(dailyMeasurements.first.weightKg!)} → ${_formatWeight(dailyMeasurements.last.weightKg!)}';
   }
   return _weightDetail(measurements);
 }
 
 String _weightDetail(List<ProgressMeasurementRecord> measurements) {
-  if (measurements.length == 1) return 'Latest weigh-in';
-  if (measurements.length == 2) {
-    return '${_formatWeight(measurements.first.weightKg!)} → ${_formatWeight(measurements.last.weightKg!)}';
+  final dailyMeasurements = _dailyWeightObservations(measurements);
+  if (dailyMeasurements.length == 1) {
+    return measurements.length > 1
+        ? 'Multiple weigh-ins recorded on ${_shortCivilDate(_measurementDate(dailyMeasurements.last))}'
+        : 'Latest weigh-in';
   }
-  final first = measurements.first;
-  final last = measurements.last;
+  if (dailyMeasurements.length == 2) {
+    return '${_formatWeight(dailyMeasurements.first.weightKg!)} → ${_formatWeight(dailyMeasurements.last.weightKg!)}';
+  }
+  final first = dailyMeasurements.first;
+  final last = dailyMeasurements.last;
   final difference = last.weightKg! - first.weightKg!;
   final days = _civilDayDifference(
     _measurementDate(first),
@@ -1715,31 +1764,97 @@ String _weightSemantics(
   ProgressDashboardSnapshot snapshot,
   List<ProgressMeasurementRecord> measurements,
 ) {
-  final latest = measurements.last;
+  final latest = _dailyWeightObservations(measurements).last;
   final detail = _weightDetail(measurements);
   final goal = snapshot.weightGoal;
   final goalText = goal == null
       ? ''
       : goal.direction == ProgressWeightGoalDirection.maintenance
       ? ' Target ${_formatWeight(goal.targetKg)}.'
-      : ' Goal ${_formatWeight(goal.targetKg)}, ${_formatWeight((latest.weightKg! - goal.targetKg).abs())} to go.';
+      : ' Goal ${_formatWeight(goal.targetKg)}, ${_weightGoalProgressLabel(goal, latest.weightKg!)}.';
   return 'Weight: ${_formatWeight(latest.weightKg!)}. $detail.$goalText';
 }
 
 IconData _weightDirectionIcon(List<ProgressMeasurementRecord> measurements) {
-  if (measurements.length < 2) return Icons.scale_rounded;
-  if (measurements.length >= 3 &&
-      _civilDayDifference(
-            _measurementDate(measurements.first),
-            _measurementDate(measurements.last),
-          ) ==
-          0) {
-    return Icons.scale_rounded;
-  }
-  final difference = measurements.last.weightKg! - measurements.first.weightKg!;
+  final dailyMeasurements = _dailyWeightObservations(measurements);
+  if (dailyMeasurements.length < 2) return Icons.scale_rounded;
+  final difference =
+      dailyMeasurements.last.weightKg! - dailyMeasurements.first.weightKg!;
   if (difference < 0) return Icons.south_east_rounded;
   if (difference > 0) return Icons.north_east_rounded;
   return Icons.horizontal_rule_rounded;
+}
+
+/// At-goal language follows the value the product displays (one decimal), so
+/// an invisible floating-point difference cannot turn a shown target into a
+/// misleading remaining-distance claim.
+bool _isAtWeightGoal(double currentWeight, double targetWeight) =>
+    currentWeight.toStringAsFixed(1) == targetWeight.toStringAsFixed(1);
+
+String? _weightGoalProgressLabel(
+  ProgressWeightGoal goal,
+  double currentWeight,
+) {
+  if (goal.direction == ProgressWeightGoalDirection.maintenance) return null;
+  if (_isAtWeightGoal(currentWeight, goal.targetKg)) return 'At your goal';
+
+  final distance = _formatWeight((currentWeight - goal.targetKg).abs());
+  return switch (goal.direction) {
+    ProgressWeightGoalDirection.loss =>
+      currentWeight > goal.targetKg
+          ? '$distance to go'
+          : '$distance below your goal',
+    ProgressWeightGoalDirection.gain =>
+      currentWeight < goal.targetKg
+          ? '$distance to go'
+          : '$distance above your goal',
+    ProgressWeightGoalDirection.maintenance => null,
+  };
+}
+
+bool _hasPassedWeightGoal(
+  List<ProgressMeasurementRecord> measurements,
+  double targetWeight,
+) {
+  final hasAboveTarget = measurements.any(
+    (measurement) => measurement.weightKg! > targetWeight,
+  );
+  final hasBelowTarget = measurements.any(
+    (measurement) => measurement.weightKg! < targetWeight,
+  );
+  final reachedBeforeLatest = measurements
+      .take(measurements.length - 1)
+      .any(
+        (measurement) => _isAtWeightGoal(measurement.weightKg!, targetWeight),
+      );
+  return (hasAboveTarget && hasBelowTarget) || reachedBeforeLatest;
+}
+
+bool _isMovingTowardWeightGoal(
+  ProgressWeightGoal goal,
+  List<ProgressMeasurementRecord> measurements,
+) {
+  if (goal.direction == ProgressWeightGoalDirection.maintenance) return false;
+  final dailyMeasurements = _dailyWeightObservations(measurements);
+  if (dailyMeasurements.length < 2) return false;
+  final last = dailyMeasurements.last;
+  if (_isAtWeightGoal(last.weightKg!, goal.targetKg)) return true;
+  if (_hasPassedWeightGoal(dailyMeasurements, goal.targetKg)) return false;
+  return (last.weightKg! - goal.targetKg).abs() <
+      (dailyMeasurements.first.weightKg! - goal.targetKg).abs();
+}
+
+String? _weightGoalTrendLabel(
+  ProgressDashboardSnapshot snapshot,
+  List<ProgressMeasurementRecord> measurements,
+) {
+  final goal = snapshot.weightGoal;
+  if (goal == null || !_hasWeightChartHistory(measurements)) return null;
+  if (!_isMovingTowardWeightGoal(goal, measurements)) return null;
+  final latest = _dailyWeightObservations(measurements).last;
+  return _isAtWeightGoal(latest.weightKg!, goal.targetKg)
+      ? 'At your goal'
+      : 'Moving closer to your goal';
 }
 
 Color? _goalAwareTrendColor(
@@ -1747,16 +1862,9 @@ Color? _goalAwareTrendColor(
   ProgressDashboardSnapshot snapshot,
   List<ProgressMeasurementRecord> measurements,
 ) {
-  if (!_hasWeightChartHistory(measurements) || snapshot.weightGoal == null) {
-    return null;
-  }
-  final difference = measurements.last.weightKg! - measurements.first.weightKg!;
-  final favourable = switch (snapshot.weightGoal!.direction) {
-    ProgressWeightGoalDirection.loss => difference < 0,
-    ProgressWeightGoalDirection.gain => difference > 0,
-    ProgressWeightGoalDirection.maintenance => false,
-  };
-  return favourable ? context.b05Colors.success.indicator : null;
+  return _weightGoalTrendLabel(snapshot, measurements) == null
+      ? null
+      : context.b05Colors.success.indicator;
 }
 
 LineChartData _weightChartData({
@@ -1766,6 +1874,13 @@ LineChartData _weightChartData({
   required ValueChanged<int> onTouch,
 }) {
   final colors = context.b05Colors;
+  // A January→February gap must not look identical to two consecutive days.
+  // The presentation still uses civil date labels supplied by the read model.
+  final firstDate = _measurementDate(measurements.first);
+  final chartDaySpan = _civilDayDifference(
+    firstDate,
+    _measurementDate(measurements.last),
+  );
   final weights = measurements.map((record) => record.weightKg!).toList();
   final minimum = weights.reduce(
     (first, second) => first < second ? first : second,
@@ -1805,15 +1920,20 @@ LineChartData _weightChartData({
         sideTitles: SideTitles(
           showTitles: true,
           reservedSize: 28,
+          interval: chartDaySpan.toDouble(),
           getTitlesWidget: (value, _) {
-            if (value != 0 && value != measurements.length - 1) {
+            final isFirst = value.abs() < .01;
+            final isLast = (value - chartDaySpan).abs() < .01;
+            if (!isFirst && !isLast) {
               return const SizedBox.shrink();
             }
-            final index = value.round().clamp(0, measurements.length - 1);
+            final measurement = isFirst
+                ? measurements.first
+                : measurements.last;
             return Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                _shortCivilDate(_measurementDate(measurements[index])),
+                _shortCivilDate(_measurementDate(measurement)),
                 style: B05Typography.caption(context),
               ),
             );
@@ -1823,7 +1943,7 @@ LineChartData _weightChartData({
     ),
     borderData: FlBorderData(show: false),
     minX: 0,
-    maxX: (measurements.length - 1).toDouble(),
+    maxX: chartDaySpan.toDouble(),
     minY: minY,
     maxY: maxY,
     lineTouchData: LineTouchData(
@@ -1864,7 +1984,13 @@ LineChartData _weightChartData({
       LineChartBarData(
         spots: [
           for (var index = 0; index < measurements.length; index++)
-            FlSpot(index.toDouble(), measurements[index].weightKg!),
+            FlSpot(
+              _civilDayDifference(
+                firstDate,
+                _measurementDate(measurements[index]),
+              ).toDouble(),
+              measurements[index].weightKg!,
+            ),
         ],
         isCurved: false,
         color: colors.action,

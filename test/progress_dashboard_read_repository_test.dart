@@ -85,6 +85,45 @@ void main() {
     },
   );
 
+  test(
+    'orders identical-time measurements deterministically by persisted id',
+    () async {
+      final instant = DateTime.utc(2026, 8, 8, 7);
+      await database
+          .into(database.bodyMeasurements)
+          .insert(
+            BodyMeasurementsCompanion.insert(
+              weight: const Value(82.0),
+              recordedAt: Value(instant),
+            ),
+          );
+      await database
+          .into(database.bodyMeasurements)
+          .insert(
+            BodyMeasurementsCompanion.insert(
+              weight: const Value(81.8),
+              recordedAt: Value(instant),
+            ),
+          );
+
+      final snapshot = await repository.read(
+        nowUtc: DateTime.utc(2026, 8, 9, 12),
+        timezoneId: 'Asia/Kolkata',
+      );
+
+      expect(snapshot.measurements!.map((record) => record.weightKg), [
+        81.8,
+        82.0,
+      ]);
+      expect(
+        snapshot.measurements!.first.id,
+        greaterThan(snapshot.measurements!.last.id),
+        reason:
+            'A latest observation must not depend on incidental SQLite row order.',
+      );
+    },
+  );
+
   test('strength is built only from B02 performed actual values', () async {
     await database
         .into(database.exercises)

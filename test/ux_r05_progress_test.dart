@@ -2,11 +2,13 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
+import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_muscle_volume_models.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
@@ -64,6 +66,12 @@ void main() {
     await _pump(tester, _zeroData(), AppTheme.darkTheme);
 
     expect(find.text('Your progress starts here'), findsOneWidget);
+    expect(
+      find.text(
+        'Complete a workout or log a weigh-in to start seeing useful trends.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Log weight'), findsOneWidget);
     expect(find.text('Start workout'), findsOneWidget);
     expect(find.textContaining('0 workouts'), findsNothing);
@@ -167,10 +175,130 @@ void main() {
 
     expect(find.text('Multiple weigh-ins recorded on Aug 9'), findsWidgets);
     expect(
-      find.text('Log a measurement on another day to start seeing a trend.'),
+      find.text(
+        'Multiple weigh-ins were recorded on one day. Log a measurement on another day to start seeing a trend.',
+      ),
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'same-day duplicates plus one other day remain a two-day comparison',
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      await _pump(
+        tester,
+        _snapshot(
+          measurements: [
+            _measurement('2026-08-01', 82, id: 1, hour: 8),
+            _measurement('2026-08-01', 81.8, id: 2, hour: 20),
+            _measurement('2026-08-09', 81.6, id: 3),
+          ],
+        ),
+        AppTheme.darkTheme,
+      );
+
+      expect(find.text('81.8 kg → 81.6 kg'), findsWidgets);
+      expect(
+        find.text(
+          'Two measurements recorded. Add another to see a fuller trend.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('a crossed loss goal is not presented as ongoing success', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await _pump(
+      tester,
+      _snapshot(
+        measurements: [
+          _measurement('2026-08-01', 82),
+          _measurement('2026-08-05', 80),
+          _measurement('2026-08-09', 77),
+        ],
+        goal: const ProgressWeightGoal(
+          targetKg: 78,
+          direction: ProgressWeightGoalDirection.loss,
+        ),
+      ),
+      AppTheme.darkTheme,
+    );
+
+    expect(find.text('1.0 kg below your goal'), findsOneWidget);
+    expect(find.text('Moving closer to your goal'), findsNothing);
+    final overviewWeight = find.text('77.0 kg').first;
+    expect(
+      tester.widget<Text>(overviewWeight).style?.color,
+      isNot(equals(B05SemanticColors.dark.success.indicator)),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('an intermediate overshoot also stays neutral', (tester) async {
+    _setViewport(tester, const Size(390, 844));
+    await _pump(
+      tester,
+      _snapshot(
+        measurements: [
+          _measurement('2026-08-01', 82),
+          _measurement('2026-08-05', 77),
+          _measurement('2026-08-09', 79),
+        ],
+        goal: const ProgressWeightGoal(
+          targetKg: 78,
+          direction: ProgressWeightGoalDirection.loss,
+        ),
+      ),
+      AppTheme.darkTheme,
+    );
+
+    expect(find.text('1.0 kg to go'), findsOneWidget);
+    expect(find.text('Moving closer to your goal'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('fresh Start workout opens the canonical Training destination', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    final router = GoRouter(
+      initialLocation: '/progress',
+      routes: [
+        GoRoute(
+          path: '/progress',
+          builder: (_, _) => ProgressScreen(preview: _zeroData()),
+        ),
+        GoRoute(
+          path: '/training',
+          builder: (_, _) =>
+              const Scaffold(body: Center(child: Text('Training destination'))),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(
+          theme: AppTheme.darkTheme,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start workout'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Training destination'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -190,6 +318,7 @@ void main() {
       expect(find.text('Strength'), findsOneWidget);
       expect(find.text('Training volume'), findsOneWidget);
       expect(find.text('Recent training emphasis'), findsOneWidget);
+      expect(find.text('Moving closer to your goal'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await expectLater(
         find.byType(ProgressScreen),
@@ -235,6 +364,36 @@ void main() {
       chart,
       matchesGoldenFile('goldens/ux_r05_weight_chart_dark.png'),
     );
+  });
+
+  testWidgets('weight chart preserves local-day spacing between observations', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await _pump(
+      tester,
+      _snapshot(
+        measurements: [
+          _measurement('2026-08-01', 82),
+          _measurement('2026-08-02', 81.8),
+          _measurement('2026-08-09', 81.6),
+        ],
+      ),
+      AppTheme.darkTheme,
+    );
+
+    final chart = find.byKey(const ValueKey('progress_weight_chart'));
+    await tester.ensureVisible(chart);
+    final lineChart = tester.widget<LineChart>(
+      find.descendant(of: chart, matching: find.byType(LineChart)),
+    );
+
+    expect(lineChart.data.lineBarsData.single.spots.map((spot) => spot.x), [
+      0.0,
+      1.0,
+      8.0,
+    ]);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('all-time range appears only when it adds older history', (
@@ -304,7 +463,8 @@ void main() {
       AppTheme.darkTheme,
     );
 
-    expect(find.text('No workouts yet'), findsOneWidget);
+    expect(find.text('No workouts this week'), findsOneWidget);
+    expect(find.text('No workouts yet'), findsNothing);
     expect(find.text('Weight'), findsNothing);
     expect(find.text('0 workouts'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -565,13 +725,15 @@ ProgressDashboardSnapshot _snapshot({
 ProgressMeasurementRecord _measurement(
   String localDate,
   double weight, {
+  int? id,
+  int hour = 8,
   double? waist,
   double? chest,
 }) {
   final parts = localDate.split('-').map(int.parse).toList();
   return ProgressMeasurementRecord(
-    id: parts.last,
-    recordedAt: DateTime(parts[0], parts[1], parts[2], 8),
+    id: id ?? parts.last,
+    recordedAt: DateTime(parts[0], parts[1], parts[2], hour),
     localDate: localDate,
     weightKg: weight,
     waistCm: waist,

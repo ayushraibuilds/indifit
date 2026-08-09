@@ -354,6 +354,27 @@ void main() {
       },
     );
 
+    test('6b. Weight preserves existing same-day body measurements', () async {
+      final workoutRepo = WorkoutRepository(db);
+      await db
+          .into(db.bodyMeasurements)
+          .insert(
+            BodyMeasurementsCompanion.insert(
+              waist: const Value(82.5),
+              chest: const Value(101.0),
+              recordedAt: Value(DateTime.now()),
+            ),
+          );
+
+      await workoutRepo.logWeightAndSyncProfile(weight: 82.0);
+
+      final measurements = await db.select(db.bodyMeasurements).get();
+      expect(measurements, hasLength(1));
+      expect(measurements.single.weight, 82.0);
+      expect(measurements.single.waist, 82.5);
+      expect(measurements.single.chest, 101.0);
+    });
+
     // 7. Bottom sheet closes only after successful persistence
     testWidgets('7. Bottom sheet closes only after successful persistence', (
       tester,
