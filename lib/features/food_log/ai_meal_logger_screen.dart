@@ -535,7 +535,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Meal logged successfully!')),
         );
-        Navigator.pop(context); // Close logger screen
+        Navigator.pop(context, true); // Close the whole food flow as saved.
       }
     } catch (error) {
       if (mounted) {
@@ -639,17 +639,24 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
                   ConsumerStatusRow(
                     label: 'Estimate unavailable',
                     detail:
-                        'AI estimate isn’t available right now. Your description is still here. Try again or add the foods manually.',
+                        _selectedImage != null ||
+                            _textController.text.trim().isNotEmpty
+                        ? 'AI estimate isn’t available right now. Your input is still here. Try again or add the foods manually.'
+                        : 'AI estimate isn’t available right now. Choose another photo or add the foods manually.',
                     error: true,
                   ),
                   const SizedBox(height: 8),
-                  B05ActionButton(
-                    label: 'Try again',
-                    icon: Icons.refresh_rounded,
-                    hint: 'Try the estimate again using the same description.',
-                    onPressed: _retryEstimate,
-                  ),
-                  const SizedBox(height: 8),
+                  if (_selectedImage != null ||
+                      _textController.text.trim().isNotEmpty) ...[
+                    B05ActionButton(
+                      label: 'Try again',
+                      icon: Icons.refresh_rounded,
+                      hint:
+                          'Try the estimate again using the same description.',
+                      onPressed: _retryEstimate,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   B05ActionButton(
                     label: 'Search foods instead',
                     icon: Icons.search_rounded,
@@ -957,7 +964,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
 
   Future<void> _openManualSearch() async {
     if (!mounted) return;
-    await Navigator.of(context).push(
+    final saved = await Navigator.of(context).push<bool?>(
       MaterialPageRoute(
         builder: (_) => FoodSearchScreen(
           mealType: widget.mealType,
@@ -965,6 +972,7 @@ class _AiMealLoggerScreenState extends ConsumerState<AiMealLoggerScreen> {
         ),
       ),
     );
+    if (saved == true && mounted) Navigator.pop(context, true);
   }
 
   static String _mealLabel(String value) {

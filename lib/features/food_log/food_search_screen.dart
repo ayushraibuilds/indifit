@@ -39,8 +39,8 @@ class FoodSearchScreen extends ConsumerStatefulWidget {
   ConsumerState<FoodSearchScreen> createState() => _FoodSearchScreenState();
 }
 
-class _CanonicalRecentFood {
-  const _CanonicalRecentFood({
+class CanonicalRecentFood {
+  const CanonicalRecentFood({
     required this.option,
     required this.quantityLabel,
     required this.loggedAtUtc,
@@ -52,8 +52,20 @@ class _CanonicalRecentFood {
 }
 
 final canonicalRecentFoodsProvider =
-    FutureProvider.autoDispose<List<_CanonicalRecentFood>>((ref) async {
+    FutureProvider.autoDispose<List<CanonicalRecentFood>>((ref) async {
       try {
+        // Avoid initializing the asset-backed canonical read stack when this
+        // user has no canonical consumption at all. This is only an existence
+        // gate; every displayed record still comes through the B03 read model.
+        final database = ref.read(databaseProvider);
+        final canonicalSnapshot =
+            await (database.select(database.nutritionConsumptionSnapshots)
+                  ..where(
+                    (row) => row.userId.equals(kLocalNutritionUserScopeId),
+                  )
+                  ..limit(1))
+                .getSingleOrNull();
+        if (canonicalSnapshot == null) return const [];
         final history = await ref.read(
           nutritionReadModelRepositoryProvider.future,
         );
@@ -68,7 +80,7 @@ final canonicalRecentFoodsProvider =
             (left, right) => right.loggedAtUtc.compareTo(left.loggedAtUtc),
           );
         final seenFoodIds = <String>{};
-        final result = <_CanonicalRecentFood>[];
+        final result = <CanonicalRecentFood>[];
         for (final record in ordered) {
           for (final item in record.items) {
             final foodId = item.foodId;
@@ -80,7 +92,7 @@ final canonicalRecentFoodsProvider =
             final option = await catalog.getOption(foodId);
             if (option == null) continue;
             result.add(
-              _CanonicalRecentFood(
+              CanonicalRecentFood(
                 option: option,
                 quantityLabel: item.quantity.quantity == null
                     ? 'Previous amount unavailable'
@@ -110,7 +122,71 @@ class _FoodQuantityReviewCapture extends StatelessWidget {
   @override
   Widget build(BuildContext context) => RepaintBoundary(
     key: const ValueKey('food_quantity_review_surface'),
-    child: Padding(padding: padding, child: child),
+    child: Padding(
+      padding: padding,
+      child: SingleChildScrollView(child: child),
+    ),
+  );
+}
+
+class _FoodAmountTextField extends StatefulWidget {
+  const _FoodAmountTextField({
+    required this.quantity,
+    required this.errorText,
+    required this.suffixText,
+    required this.onChanged,
+  });
+
+  final Quantity quantity;
+  final String? errorText;
+  final String? suffixText;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_FoodAmountTextField> createState() => _FoodAmountTextFieldState();
+}
+
+class _FoodAmountTextFieldState extends State<_FoodAmountTextField> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.quantity.amount.toString(),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _FoodAmountTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextText = widget.quantity.amount.toString();
+    if (_controller.text == nextText) return;
+    _controller.value = TextEditingValue(
+      text: nextText,
+      selection: TextSelection.collapsed(offset: nextText.length),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TextField(
+    controller: _controller,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    inputFormatters: [
+      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,4}')),
+    ],
+    decoration: InputDecoration(
+      labelText: 'Amount',
+      errorText: widget.errorText,
+      suffixText: widget.suffixText,
+    ),
+    onChanged: widget.onChanged,
   );
 }
 
@@ -119,11 +195,14 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   List<FoodItem> _localResults = [];
   List<FoodApiResult> _onlineResults = [];
   List<FoodItem> _recentResults = [];
-  List<_CanonicalRecentFood> _canonicalRecentResults = [];
+  List<CanonicalRecentFood> _canonicalRecentResults = [];
   bool _searching = false;
+  bool _searchingOnline = false;
+  int _searchGeneration = 0;
   bool _loadingRecent = true;
   String? _recentFailureMessage;
   Timer? _debounceTimer;
+  final Set<Timer> _recentTimeouts = {};
   bool _isOnlineSearchOffline = false;
   String? _onlineFailureMessage;
 
@@ -135,32 +214,29 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Future<void> _loadRecentFoods() async {
-    List<FoodItem> recent = const [];
-    String? failureMessage;
-    try {
-      final repo = ref.read(foodRepositoryProvider);
-      recent = await repo.getRecentFoods(20);
-    } catch (_) {
-      failureMessage = 'Recent foods are unavailable right now.';
-    }
-    // Legacy rows are already an accepted Recent source. Only perform the
-    // more expensive canonical-history read when that compatibility source is
-    // empty, which keeps the entry surface fast for migrated users too.
-    final canonicalRecent = recent.isEmpty
-        ? await ref
-              .read(canonicalRecentFoodsProvider.future)
-              .timeout(
-                const Duration(seconds: 2),
-                onTimeout: () => const <_CanonicalRecentFood>[],
-              )
-        : const <_CanonicalRecentFood>[];
+    final legacyFuture = ref
+        .read(foodRepositoryProvider)
+        .getRecentFoods(20)
+        .then<(List<FoodItem>, bool)>((foods) => (foods, false))
+        .catchError((_) => (<FoodItem>[], true));
+    final canonicalFuture = _canonicalRecentWithTimeout();
+    final canonicalRecent = await canonicalFuture;
+    final recentResult = canonicalRecent.isEmpty
+        ? await legacyFuture
+        : (const <FoodItem>[], false);
+    // Canonical B03 history owns Recent. Legacy rows are a compatibility
+    // fallback only, and must not displace foods logged through current paths.
+    final recent = canonicalRecent.isEmpty
+        ? recentResult.$1
+        : const <FoodItem>[];
     if (mounted) {
       setState(() {
         _recentResults = recent;
         _canonicalRecentResults = canonicalRecent;
         _loadingRecent = false;
-        _recentFailureMessage = recent.isEmpty && canonicalRecent.isEmpty
-            ? failureMessage
+        _recentFailureMessage =
+            recent.isEmpty && canonicalRecent.isEmpty && recentResult.$2
+            ? 'Recent foods are unavailable right now.'
             : null;
       });
     }
@@ -177,9 +253,33 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     await _loadRecentFoods();
   }
 
+  Future<List<CanonicalRecentFood>> _canonicalRecentWithTimeout() {
+    final completer = Completer<List<CanonicalRecentFood>>();
+    late final Timer timer;
+    void finish(List<CanonicalRecentFood> value) {
+      timer.cancel();
+      _recentTimeouts.remove(timer);
+      if (!completer.isCompleted) completer.complete(value);
+    }
+
+    timer = Timer(const Duration(seconds: 2), () {
+      _recentTimeouts.remove(timer);
+      if (!completer.isCompleted) completer.complete(const []);
+    });
+    _recentTimeouts.add(timer);
+    ref
+        .read(canonicalRecentFoodsProvider.future)
+        .then(finish, onError: (_) => finish(const []));
+    return completer.future;
+  }
+
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    for (final timer in _recentTimeouts) {
+      timer.cancel();
+    }
+    _recentTimeouts.clear();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -194,54 +294,62 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Future<void> _performSearch(String text) async {
     if (!mounted) return;
-    if (text.trim().isEmpty) {
+    final query = text.trim();
+    final generation = ++_searchGeneration;
+    if (query.isEmpty) {
       setState(() {
         _localResults = [];
         _onlineResults = [];
         _searching = false;
+        _searchingOnline = false;
         _isOnlineSearchOffline = false;
         _onlineFailureMessage = null;
       });
       return;
     }
 
-    setState(() => _searching = true);
+    setState(() {
+      _searching = true;
+      _searchingOnline = false;
+      _isOnlineSearchOffline = false;
+      _onlineFailureMessage = null;
+      _onlineResults = [];
+    });
 
+    List<FoodItem> local = const [];
     try {
       final repo = ref.read(foodRepositoryProvider);
-      final apiService = ref.read(foodApiServiceProvider);
+      local = await repo.searchFoodLocal(query);
+    } catch (_) {
+      // Online search may still be useful when the local compatibility store
+      // is temporarily unavailable.
+    }
+    if (!mounted || generation != _searchGeneration) return;
+    setState(() {
+      _localResults = local;
+      _searching = false;
+      _searchingOnline = true;
+    });
 
-      // Perform local fuzzy database search
-      final local = await repo.searchFoodLocal(text);
-
-      List<FoodApiResult> online = [];
-      bool isOnlineSearchOffline = false;
-      String? onlineFailureMessage;
-
-      try {
-        online = await apiService.searchOnline(text);
-      } catch (e) {
-        isOnlineSearchOffline = true;
-        onlineFailureMessage = 'Online results are unavailable right now.';
-      }
-
+    try {
+      final online = await ref.read(foodApiServiceProvider).searchOnline(query);
+      if (!mounted || generation != _searchGeneration) return;
+      setState(() {
+        _onlineResults = online;
+        _isOnlineSearchOffline = false;
+        _onlineFailureMessage = null;
+      });
+    } catch (_) {
+      if (!mounted || generation != _searchGeneration) return;
+      setState(() {
+        _onlineResults = [];
+        _isOnlineSearchOffline = true;
+        _onlineFailureMessage = 'Online results are unavailable right now.';
+      });
+    } finally {
       if (mounted) {
         setState(() {
-          _localResults = local;
-          _onlineResults = online;
-          _isOnlineSearchOffline = isOnlineSearchOffline;
-          _onlineFailureMessage = onlineFailureMessage;
-          _searching = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _localResults = [];
-          _onlineResults = [];
-          _searching = false;
-          _isOnlineSearchOffline = true;
-          _onlineFailureMessage = 'Food search is unavailable right now.';
+          if (generation == _searchGeneration) _searchingOnline = false;
         });
       }
     }
@@ -298,6 +406,21 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final transformations = await coordinator.transformationsFor(option);
     if (!mounted) return;
     var finalized = false;
+    var selectedQuantity = option.baseQuantity;
+    final compatibleUnits = switch (option.baseQuantity.dimension) {
+      QuantityDimension.mass => const [
+        QuantityUnit.milligram,
+        QuantityUnit.gram,
+        QuantityUnit.kilogram,
+      ],
+      QuantityDimension.volume => const [
+        QuantityUnit.millilitre,
+        QuantityUnit.litre,
+      ],
+      _ => [option.baseQuantity.unit],
+    };
+    final stepQuantity = option.baseQuantity / 4;
+    TransitionRoute<dynamic>? sheetRoute;
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -306,20 +429,51 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
-        double multiplier = 1.0;
+        sheetRoute ??= ModalRoute.of(sheetContext);
         String? selectedTransformationId;
+        String? amountError;
         String? commandId;
         String? consumptionId;
         var isFinalizing = false;
         late Future<NutritionFoodLogPreview> previewFuture;
         Future<NutritionFoodLogPreview> buildPreview() => coordinator.preview(
           option: option,
-          quantity: option.baseQuantity * multiplier,
+          quantity: selectedQuantity,
           transformation: transformations
               .where((item) => item.id == selectedTransformationId)
               .firstOrNull,
         );
         previewFuture = buildPreview();
+        void setQuantity(Quantity quantity, StateSetter setModalState) {
+          setModalState(() {
+            selectedQuantity = quantity;
+            amountError = null;
+            previewFuture = buildPreview();
+          });
+        }
+
+        void updateAmount(String raw, StateSetter setModalState) {
+          try {
+            final quantity = Quantity.fromDecimal(
+              amount: raw,
+              unit: selectedQuantity.unit,
+              context: selectedQuantity.context,
+            );
+            NutritionQuantityService.validatePositiveUserEnteredPortion(
+              quantity,
+            );
+            setModalState(() {
+              selectedQuantity = quantity;
+              amountError = null;
+              previewFuture = buildPreview();
+            });
+          } on QuantityError {
+            setModalState(() {
+              amountError = 'Enter an amount greater than zero.';
+            });
+          }
+        }
+
         return StatefulBuilder(
           builder: (context, setModalState) {
             return _FoodQuantityReviewCapture(
@@ -349,37 +503,66 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Serving adjustment row
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Amount',
-                        style: TextStyle(fontWeight: FontWeight.w700),
+                      IconButton(
+                        tooltip: 'Decrease amount',
+                        icon: const Icon(Icons.remove_circle_outline),
+                        onPressed: selectedQuantity.compareTo(stepQuantity) > 0
+                            ? () => setQuantity(
+                                selectedQuantity - stepQuantity,
+                                setModalState,
+                              )
+                            : null,
                       ),
-                      Row(
-                        children: [
-                          IconButton(
-                            tooltip: 'Decrease amount',
-                            icon: const Icon(Icons.remove_circle_outline),
-                            onPressed: multiplier > 0.25
-                                ? () => setModalState(() => multiplier -= 0.25)
-                                : null,
+                      Expanded(
+                        child: _FoodAmountTextField(
+                          quantity: selectedQuantity,
+                          errorText: amountError,
+                          suffixText: compatibleUnits.length == 1
+                              ? _quantityUnitLabel(selectedQuantity)
+                              : null,
+                          onChanged: (value) =>
+                              updateAmount(value, setModalState),
+                        ),
+                      ),
+                      if (compatibleUnits.length > 1) ...[
+                        const SizedBox(width: 8),
+                        Semantics(
+                          label: 'Unit',
+                          value: _quantityUnitLabel(selectedQuantity),
+                          child: DropdownButton<QuantityUnit>(
+                            value: selectedQuantity.unit,
+                            items: compatibleUnits
+                                .map(
+                                  (unit) => DropdownMenuItem(
+                                    value: unit,
+                                    child: Text(
+                                      QuantityUnitRegistry.definitionFor(
+                                        unit,
+                                      ).symbol,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (unit) {
+                              if (unit == null) return;
+                              setQuantity(
+                                selectedQuantity.convertTo(unit),
+                                setModalState,
+                              );
+                            },
                           ),
-                          Text(
-                            _quantityLabel(option.baseQuantity, multiplier),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: 'Increase amount',
-                            icon: const Icon(Icons.add_circle_outline),
-                            onPressed: () =>
-                                setModalState(() => multiplier += 0.25),
-                          ),
-                        ],
+                        ),
+                      ],
+                      IconButton(
+                        tooltip: 'Increase amount',
+                        icon: const Icon(Icons.add_circle_outline),
+                        onPressed: () => setQuantity(
+                          selectedQuantity + stepQuantity,
+                          setModalState,
+                        ),
                       ),
                     ],
                   ),
@@ -504,7 +687,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: isFinalizing
+                          onPressed: isFinalizing || amountError != null
                               ? null
                               : () async {
                                   setModalState(() {
@@ -617,11 +800,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     // pop twice in the same callback races the modal transition and can leave
     // the search page open after a successful canonical save.
     if ((saved == true || finalized) && mounted) {
-      // Wait one frame for the modal route's reverse transition to complete,
-      // then close the meal-specific search route deterministically.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) Navigator.of(context).maybePop(true);
-      });
+      // The result future resolves when the sheet begins closing. Wait for
+      // its overlay to be removed before popping the meal-specific search
+      // route, otherwise `maybePop` can run while the navigator is locked.
+      await sheetRoute?.completed;
+      if (mounted) Navigator.of(context).pop(true);
     }
   }
 
@@ -686,6 +869,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 const SizedBox(height: 14),
                 TextField(
                   controller: _searchController,
+                  autofocus: true,
                   textInputAction: TextInputAction.search,
                   decoration: InputDecoration(
                     labelText: 'Search foods',
@@ -820,8 +1004,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     children: [
       if (_isOnlineSearchOffline)
         ConsumerStatusRow(
-          label: 'Search isn’t available right now',
-          detail: _onlineFailureMessage ?? 'Try again or choose from Recent.',
+          label: 'Online search unavailable',
+          detail: _localResults.isNotEmpty
+              ? 'Foods on this device are still available.'
+              : _onlineFailureMessage ?? 'Try again or choose from Recent.',
           error: true,
           onRetry: () => _performSearch(_searchController.text),
         ),
@@ -834,7 +1020,16 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _sectionHeader(title: 'More results'),
         ..._onlineResults.map(_buildOnlineItemRow),
       ],
-      if (_localResults.isEmpty && _onlineResults.isEmpty)
+      if (_searchingOnline)
+        const ConsumerStatusRow(
+          label: 'Searching more foods',
+          detail: 'Foods on this device are ready to use.',
+          loading: true,
+        ),
+      if (!_searchingOnline &&
+          !_isOnlineSearchOffline &&
+          _localResults.isEmpty &&
+          _onlineResults.isEmpty)
         _buildNoResultsState(),
     ],
   );
@@ -905,7 +1100,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Widget _buildRecentItemRow(FoodItem food) =>
       _buildLocalItemRow(food, recent: true);
 
-  Widget _buildCanonicalRecentItemRow(_CanonicalRecentFood recent) {
+  Widget _buildCanonicalRecentItemRow(CanonicalRecentFood recent) {
     final option = recent.option;
     final energy = _optionFactLabel(option, 'energy', 'kcal', 0);
     final protein = _optionFactLabel(option, 'protein', 'g protein', 1);
@@ -980,7 +1175,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Future<void> _openAi(BuildContext context) async {
-    await Navigator.push<void>(
+    final saved = await Navigator.push<bool?>(
       context,
       MaterialPageRoute(
         builder: (_) => AiMealLoggerScreen(
@@ -989,15 +1184,28 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         ),
       ),
     );
+    if (saved == true && mounted) Navigator.pop(this.context, true);
   }
 
   void _openBarcode(BuildContext context) {
     _showBarcodePermissionRationale(context, () async {
-      final result = await Navigator.push<FoodApiResult?>(
+      final result = await Navigator.push<Object?>(
         context,
         MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
       );
-      if (result != null && mounted) unawaited(_openProviderLogDialog(result));
+      if (!mounted) return;
+      if (result is FoodApiResult) {
+        unawaited(_openProviderLogDialog(result));
+      } else if (result == true) {
+        await _retryRecentFoods();
+        if (mounted) {
+          ScaffoldMessenger.of(this.context).showSnackBar(
+            const SnackBar(
+              content: Text('Custom food saved. Search by name to add it.'),
+            ),
+          );
+        }
+      }
     });
   }
 
@@ -1011,13 +1219,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     };
   }
 
-  String _quantityLabel(Quantity quantity, double multiplier) {
-    final amount = quantity.amount.asDouble * multiplier;
-    final formatted = amount == amount.roundToDouble()
-        ? amount.toStringAsFixed(0)
-        : amount.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '');
-    return '$formatted ${quantity.definition.displayLabel}';
-  }
+  String _quantityUnitLabel(Quantity quantity) =>
+      quantity.unit == QuantityUnit.householdReference
+      ? quantity.context.householdMeasure!.measureType
+      : quantity.definition.displayLabel;
 
   String _transformationLabel(dynamic transformation) {
     final source = _preparationLabel(transformation.sourceState);
@@ -1094,13 +1299,16 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Widget _buildOnlineItemRow(FoodApiResult food) {
+    final serving =
+        '${_formatProviderNumber(food.servingSize)} ${food.servingUnit}';
     return Card(
       margin: const EdgeInsets.only(bottom: 8.0),
       child: Semantics(
         container: true,
         explicitChildNodes: true,
         button: true,
-        label: '${food.name}, ${_formatProviderValue(food.calories, 'kcal')}',
+        label:
+            '${food.name}, ${_formatProviderValue(food.calories, 'kcal')}, $serving',
         hint: 'Opens the amount screen for ${_mealLabel(widget.mealType)}.',
         child: ListTile(
           minVerticalPadding: 10,
@@ -1111,7 +1319,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Text(
-            '${_formatProviderValue(food.calories, 'kcal')} · ${_formatProviderValue(food.protein, 'g protein')}',
+            '${_formatProviderValue(food.calories, 'kcal')} · ${_formatProviderValue(food.protein, 'g protein')} · $serving',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1128,6 +1336,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   String _formatProviderValue(double? value, String unit) =>
       value == null ? '—' : '${value.toStringAsFixed(1)} $unit';
+
+  String _formatProviderNumber(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(1);
 
   String _numberLabel(num value) => value.toDouble() == value.roundToDouble()
       ? value.toStringAsFixed(0)
@@ -1188,7 +1400,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           content: Text(
-            'IndiFit requires access to your camera to scan barcodes on food packaging. This allows instant matching with our offline database and the Open Food Facts API.',
+            'Camera access lets IndiFit scan a package barcode. You can cancel and search for the food instead.',
             style: TextStyle(
               height: 1.4,
               color: context.b05Colors.textSecondary,
