@@ -55,8 +55,9 @@ void main() {
     expect(presentation.calories?.unit, 'kcal');
     expect(presentation.macros.map((item) => item.label), [
       'Protein',
-      'Carbohydrates',
+      'Carbs',
       'Fat',
+      'Fiber',
     ]);
     expect(presentation.macros.map((item) => item.value), isNot(contains('0')));
   });
@@ -72,7 +73,7 @@ void main() {
     );
 
     expect(empty.state, TodayPresentationState.empty);
-    expect(empty.headline, 'Your nutrition starts here');
+    expect(empty.headline, 'No meals yet');
     expect(unavailable.state, TodayPresentationState.unavailable);
     expect(unavailable.detail, isNot(contains('source failed')));
   });
@@ -131,7 +132,7 @@ void main() {
     );
 
     expect(presentation.state, TodayPresentationState.ready);
-    expect(presentation.headline, 'Your recent activity is ready');
+    expect(presentation.headline, 'Your week is taking shape');
     expect(presentation.detail, isNot(contains('90 minutes')));
     expect(presentation.detail, isNot(contains('2 sessions')));
   });
@@ -181,11 +182,7 @@ void main() {
             await tester.pump(const Duration(milliseconds: 100));
             final exception = tester.takeException();
             expect(exception, isNull);
-            expect(
-              find.text('Your daily focus is unavailable'),
-              findsOneWidget,
-            );
-            expect(find.byType(FilledButton), findsOneWidget);
+            expect(find.byType(TodayDailyActionSurface), findsOneWidget);
           }
         }
       }

@@ -506,7 +506,9 @@ class B04RecommendationEngine {
   }
 
   void _validateContext(B04RecommendationContext context) {
-    if (context.contextId.trim().isEmpty || context.userId.trim().isEmpty) {
+    if (context.contextId.trim().isEmpty ||
+        context.userId.trim().isEmpty ||
+        context.nutritionUserId.trim().isEmpty) {
       throw ArgumentError('Recommendation context identity is required.');
     }
     if (!context.evaluatedAtUtc.isUtc) {
@@ -555,9 +557,10 @@ class B04RecommendationEngine {
   ) {
     final safety = candidate.nutritionSafety;
     if (safety != null &&
-        (safety.userId != context.userId || safety.subjectId.trim().isEmpty)) {
+        (safety.userId != context.nutritionUserId ||
+            safety.subjectId.trim().isEmpty)) {
       throw ArgumentError(
-        'Nutrition safety ownership does not match recommendation context.',
+        'Nutrition safety ownership does not match the context nutrition source.',
       );
     }
   }

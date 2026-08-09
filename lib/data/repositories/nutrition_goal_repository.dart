@@ -85,6 +85,26 @@ class NutritionGoalRepository {
     return effective.isEmpty ? null : _fromRow(effective.first);
   }
 
+  /// Resolves the accepted B04 target for the app's primary local profile.
+  ///
+  /// B04 goal history is owned by the persisted profile identity, while B03
+  /// food consumption has its own local record scope. Consumer surfaces that
+  /// combine both must not use the B03 scope to look up a B04 target. A missing
+  /// profile is an ordinary, known absence of a target rather than a reason to
+  /// fabricate one.
+  Future<NutritionGoalVersionReadModel?> activeGoalForPrimaryProfile({
+    required String localDate,
+    required String timezoneId,
+  }) async {
+    final profiles = await _db.select(_db.userProfiles).get();
+    if (profiles.isEmpty) return null;
+    return activeGoal(
+      userId: profiles.first.id.toString(),
+      localDate: localDate,
+      timezoneId: timezoneId,
+    );
+  }
+
   /// Imports the existing profile once, using the current local date rather
   /// than inventing a historical effective date.
   Future<NutritionGoalVersionReadModel> ensureCompatibilityImport({

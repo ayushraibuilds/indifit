@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/nutrition_household_measures.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../../core/services/local_timezone_service.dart';
@@ -67,22 +68,26 @@ class B04ProductionUserContextLoader {
 class B04ProductionRecommendationContextLoader {
   final B04ProductionUserContextLoader _users;
   final LocalScheduleDateService _dates;
+  final String _nutritionUserId;
   final Future<B04ProductionRecommendationOrchestrator> Function()
   _loadOrchestrator;
 
   B04ProductionRecommendationContextLoader({
     required B04ProductionUserContextLoader users,
     required LocalScheduleDateService dates,
+    String nutritionUserId = kLocalNutritionUserScopeId,
     required Future<B04ProductionRecommendationOrchestrator> Function()
     loadOrchestrator,
   }) : _users = users,
        _dates = dates,
+       _nutritionUserId = nutritionUserId,
        _loadOrchestrator = loadOrchestrator;
 
   Future<B04RecommendationContext> load() async {
     final user = await _users.load();
     return (await _loadOrchestrator()).loadCurrentFoodContext(
       userId: user.userId,
+      nutritionUserId: _nutritionUserId,
       localDate: user.localDate,
       timezoneId: user.timezoneId,
     );

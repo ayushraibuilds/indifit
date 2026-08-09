@@ -97,11 +97,13 @@ class B04CurrentFoodController extends StateNotifier<B04CurrentFoodState> {
       final result = refresh
           ? await orchestrator.reloadCurrentFood(
               userId: context.userId,
+              nutritionUserId: context.nutritionUserId,
               localDate: context.window.startLocalDate,
               timezoneId: context.window.timezoneId,
             )
           : await orchestrator.loadCurrentFood(
               userId: context.userId,
+              nutritionUserId: context.nutritionUserId,
               localDate: context.window.startLocalDate,
               timezoneId: context.window.timezoneId,
             );

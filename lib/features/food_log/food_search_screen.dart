@@ -184,312 +184,309 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     );
     final transformations = await coordinator.transformationsFor(option);
     if (!mounted) return;
-    unawaited(
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (context) {
-          double multiplier = 1.0;
-          String? selectedTransformationId;
-          String? commandId;
-          String? consumptionId;
-          var isFinalizing = false;
-          late Future<NutritionFoodLogPreview> previewFuture;
-          Future<NutritionFoodLogPreview> buildPreview() => coordinator.preview(
-            option: option,
-            quantity: option.baseQuantity * multiplier,
-            transformation: transformations
-                .where((item) => item.id == selectedTransformationId)
-                .firstOrNull,
-          );
-          previewFuture = buildPreview();
-          return StatefulBuilder(
-            builder: (context, setModalState) {
-              return Padding(
-                padding: EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  top: 20,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      option.displayName,
-                      style: Theme.of(context).textTheme.titleMedium,
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        double multiplier = 1.0;
+        String? selectedTransformationId;
+        String? commandId;
+        String? consumptionId;
+        var isFinalizing = false;
+        late Future<NutritionFoodLogPreview> previewFuture;
+        Future<NutritionFoodLogPreview> buildPreview() => coordinator.preview(
+          option: option,
+          quantity: option.baseQuantity * multiplier,
+          transformation: transformations
+              .where((item) => item.id == selectedTransformationId)
+              .firstOrNull,
+        );
+        previewFuture = buildPreview();
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    option.displayName,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Log to ${widget.mealType.toUpperCase()}',
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Log to ${widget.mealType.toUpperCase()}',
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Serving adjustment row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Serving Amount',
+                        style: TextStyle(fontWeight: FontWeight.w500),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Serving adjustment row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Serving Amount',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.remove_circle_outline,
-                                color: AppColors.textSecondary,
-                              ),
-                              onPressed: multiplier > 0.25
-                                  ? () =>
-                                        setModalState(() => multiplier -= 0.25)
-                                  : null,
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.remove_circle_outline,
+                              color: AppColors.textSecondary,
                             ),
-                            Text(
-                              '${(option.baseQuantity.amount.asDouble * multiplier).toStringAsFixed(1)} ${option.baseQuantity.definition.displayLabel}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.add_circle_outline,
-                                color: AppColors.primary,
-                              ),
-                              onPressed: () =>
-                                  setModalState(() => multiplier += 0.25),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const Divider(color: AppColors.border, height: 24),
-
-                    if (transformations.isNotEmpty) ...[
-                      DropdownButtonFormField<String?>(
-                        initialValue: selectedTransformationId,
-                        decoration: const InputDecoration(
-                          labelText: 'Preparation conversion (optional)',
-                        ),
-                        items: [
-                          const DropdownMenuItem<String?>(
-                            value: null,
-                            child: Text('No conversion'),
+                            onPressed: multiplier > 0.25
+                                ? () => setModalState(() => multiplier -= 0.25)
+                                : null,
                           ),
-                          ...transformations.map(
-                            (item) => DropdownMenuItem<String?>(
-                              value: item.id,
-                              child: Text(
-                                '${item.sourceState.name} → ${item.targetState.name} (${item.method.name})',
-                              ),
+                          Text(
+                            '${(option.baseQuantity.amount.asDouble * multiplier).toStringAsFixed(1)} ${option.baseQuantity.definition.displayLabel}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.add_circle_outline,
+                              color: AppColors.primary,
+                            ),
+                            onPressed: () =>
+                                setModalState(() => multiplier += 0.25),
                           ),
                         ],
-                        onChanged: (value) {
-                          setModalState(() {
-                            selectedTransformationId = value;
-                            previewFuture = buildPreview();
-                          });
-                        },
                       ),
-                      const SizedBox(height: 12),
                     ],
-                    FutureBuilder<NutritionFoodLogPreview>(
-                      future: previewFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState != ConnectionState.done) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: LinearProgressIndicator(),
-                          );
-                        }
-                        if (snapshot.hasError) {
-                          return const Text(
-                            'Nutrition preview unavailable. Try again.',
-                            style: TextStyle(color: AppColors.warning),
-                          );
-                        }
-                        final facts = snapshot.data!.facts;
-                        String value(String id, String unit) {
-                          final fact = facts[id];
-                          if (fact == null) return 'Unknown';
-                          final decimals = id == 'energy' ? 0 : 1;
-                          if (fact.point != null) {
-                            return '${fact.point!.value.format(decimalPlaces: decimals)}$unit';
-                          }
-                          if (fact.lower != null && fact.upper != null) {
-                            return '${fact.lower!.value.format(decimalPlaces: decimals)}–${fact.upper!.value.format(decimalPlaces: decimals)}$unit';
-                          }
-                          return 'Unknown';
-                        }
+                  ),
+                  const Divider(color: AppColors.border, height: 24),
 
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildMacroPreview(
-                              'Calories',
-                              value('energy', ' kcal'),
-                              AppColors.primary,
-                            ),
-                            _buildMacroPreview(
-                              'Protein',
-                              value('protein', 'g'),
-                              AppColors.success,
-                            ),
-                            _buildMacroPreview(
-                              'Carbs',
-                              value('carbohydrate', 'g'),
-                              AppColors.warning,
-                            ),
-                            _buildMacroPreview(
-                              'Fat',
-                              value('fat', 'g'),
-                              AppColors.danger,
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Action buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.border),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(color: AppColors.textSecondary),
-                            ),
-                          ),
+                  if (transformations.isNotEmpty) ...[
+                    DropdownButtonFormField<String?>(
+                      initialValue: selectedTransformationId,
+                      decoration: const InputDecoration(
+                        labelText: 'Preparation conversion (optional)',
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('No conversion'),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: isFinalizing
-                                ? null
-                                : () async {
-                                    setModalState(() {
-                                      isFinalizing = true;
-                                      commandId ??=
-                                          'direct-food-command::${const Uuid().v4()}';
-                                      consumptionId ??=
-                                          'direct-food-consumption::${const Uuid().v4()}';
-                                    });
-                                    try {
-                                      final preview = await previewFuture;
-                                      final timezoneId = await ref
-                                          .read(localTimezoneServiceProvider)
-                                          .currentTimezoneId();
-                                      final dates = ref.read(
-                                        localScheduleDateServiceProvider,
-                                      );
-                                      final selectedLocalDate =
-                                          widget.selectedDate == null
-                                          ? null
-                                          : DateFormat(
-                                              'yyyy-MM-dd',
-                                            ).format(widget.selectedDate!);
-                                      final loggedAt = selectedLocalDate == null
-                                          ? DateTime.now().toUtc()
-                                          : dates.instantForLocalDate(
-                                              selectedLocalDate,
-                                              timezoneId,
-                                            );
-                                      final localDate =
-                                          selectedLocalDate ??
-                                          dates.localDateFor(
-                                            loggedAt,
-                                            timezoneId,
-                                          );
-                                      await coordinator.finalize(
-                                        userId: kLocalNutritionUserScopeId,
-                                        preview: preview,
-                                        mealCategory: widget.mealType,
-                                        loggedAt: loggedAt,
-                                        localDate: localDate,
-                                        timezoneId: timezoneId,
-                                        commandId: commandId,
-                                        consumptionId: consumptionId,
-                                      );
-                                      ref
-                                          .read(
-                                            todayNutritionRevisionProvider
-                                                .notifier,
-                                          )
-                                          .state++;
-                                      ref.invalidate(
-                                        b04ProductionRecommendationContextProvider,
-                                      );
-                                      ref.invalidate(
-                                        b04CurrentFoodControllerProvider,
-                                      );
-                                      await HapticFeedback.selectionClick();
-                                      if (context.mounted) {
-                                        Navigator.pop(
-                                          context,
-                                        ); // Close bottom sheet
-                                        Navigator.pop(
-                                          context,
-                                        ); // Close search screen
-                                      }
-                                    } catch (error) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: const Text(
-                                              'Meal could not be logged. Try again.',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      if (context.mounted) {
-                                        setModalState(
-                                          () => isFinalizing = false,
-                                        );
-                                      }
-                                    }
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                        ...transformations.map(
+                          (item) => DropdownMenuItem<String?>(
+                            value: item.id,
+                            child: Text(
+                              '${item.sourceState.name} → ${item.targetState.name} (${item.method.name})',
                             ),
-                            child: Text(isFinalizing ? 'Saving…' : 'Add Meal'),
                           ),
                         ),
                       ],
+                      onChanged: (value) {
+                        setModalState(() {
+                          selectedTransformationId = value;
+                          previewFuture = buildPreview();
+                        });
+                      },
                     ),
+                    const SizedBox(height: 12),
                   ],
-                ),
-              );
-            },
-          );
-        },
-      ),
+                  FutureBuilder<NutritionFoodLogPreview>(
+                    future: previewFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: LinearProgressIndicator(),
+                        );
+                      }
+                      if (snapshot.hasError) {
+                        return const Text(
+                          'Nutrition preview unavailable. Try again.',
+                          style: TextStyle(color: AppColors.warning),
+                        );
+                      }
+                      final facts = snapshot.data!.facts;
+                      String value(String id, String unit) {
+                        final fact = facts[id];
+                        if (fact == null) return 'Unknown';
+                        final decimals = id == 'energy' ? 0 : 1;
+                        if (fact.point != null) {
+                          return '${fact.point!.value.format(decimalPlaces: decimals)}$unit';
+                        }
+                        if (fact.lower != null && fact.upper != null) {
+                          return '${fact.lower!.value.format(decimalPlaces: decimals)}–${fact.upper!.value.format(decimalPlaces: decimals)}$unit';
+                        }
+                        return 'Unknown';
+                      }
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildMacroPreview(
+                            'Calories',
+                            value('energy', ' kcal'),
+                            AppColors.primary,
+                          ),
+                          _buildMacroPreview(
+                            'Protein',
+                            value('protein', 'g'),
+                            AppColors.success,
+                          ),
+                          _buildMacroPreview(
+                            'Carbs',
+                            value('carbohydrate', 'g'),
+                            AppColors.warning,
+                          ),
+                          _buildMacroPreview(
+                            'Fat',
+                            value('fat', 'g'),
+                            AppColors.danger,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Action buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () =>
+                              Navigator.of(sheetContext).pop(false),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.border),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isFinalizing
+                              ? null
+                              : () async {
+                                  setModalState(() {
+                                    isFinalizing = true;
+                                    commandId ??=
+                                        'direct-food-command::${const Uuid().v4()}';
+                                    consumptionId ??=
+                                        'direct-food-consumption::${const Uuid().v4()}';
+                                  });
+                                  try {
+                                    final preview = await previewFuture;
+                                    final timezoneId = await ref
+                                        .read(localTimezoneServiceProvider)
+                                        .currentTimezoneId();
+                                    final dates = ref.read(
+                                      localScheduleDateServiceProvider,
+                                    );
+                                    final selectedLocalDate =
+                                        widget.selectedDate == null
+                                        ? null
+                                        : DateFormat(
+                                            'yyyy-MM-dd',
+                                          ).format(widget.selectedDate!);
+                                    final loggedAt = selectedLocalDate == null
+                                        ? DateTime.now().toUtc()
+                                        : dates.instantForLocalDate(
+                                            selectedLocalDate,
+                                            timezoneId,
+                                          );
+                                    final localDate =
+                                        selectedLocalDate ??
+                                        dates.localDateFor(
+                                          loggedAt,
+                                          timezoneId,
+                                        );
+                                    await coordinator.finalize(
+                                      userId: kLocalNutritionUserScopeId,
+                                      preview: preview,
+                                      mealCategory: widget.mealType,
+                                      loggedAt: loggedAt,
+                                      localDate: localDate,
+                                      timezoneId: timezoneId,
+                                      commandId: commandId,
+                                      consumptionId: consumptionId,
+                                    );
+                                    ref
+                                        .read(
+                                          todayNutritionRevisionProvider
+                                              .notifier,
+                                        )
+                                        .state++;
+                                    ref.invalidate(
+                                      b04ProductionRecommendationContextProvider,
+                                    );
+                                    ref.invalidate(
+                                      b04CurrentFoodControllerProvider,
+                                    );
+                                    await HapticFeedback.selectionClick();
+                                    if (sheetContext.mounted) {
+                                      Navigator.of(sheetContext).pop(true);
+                                    }
+                                  } catch (error) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: const Text(
+                                            'Meal could not be logged. Try again.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    if (context.mounted) {
+                                      setModalState(() => isFinalizing = false);
+                                    }
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(isFinalizing ? 'Saving…' : 'Add Meal'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
+    // Dismiss the parent only after the modal route has completed. Calling
+    // pop twice in the same callback races the modal transition and can leave
+    // the search page open after a successful canonical save.
+    if (saved == true && mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   Widget _buildMacroPreview(String label, String value, Color color) {

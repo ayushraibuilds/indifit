@@ -6,8 +6,10 @@ import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/models/b02_progress_read_models.dart';
+import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/b02_progress_read_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/nutrition_goal_repository.dart';
 import '../../data/repositories/nutrition_read_model_repository.dart';
 
 /// A typed result from an existing B01–B03 read authority. A failed source
@@ -30,7 +32,7 @@ class TodayDomainRead<T> {
 /// Date-scoped, read-only inputs for the B05 daily action surface.
 ///
 /// This model contains source projections rather than a new dashboard
-/// calculation. B01, B02 and B03 remain responsible for their own facts.
+/// calculation. B01–B04 remain responsible for their own facts.
 class TodaySurfaceSnapshot {
   final DateTime selectedDate;
   final String localDate;
@@ -39,6 +41,11 @@ class TodaySurfaceSnapshot {
   final TodayDomainRead<B02ProgressReadModel> progress;
   final TodayDomainRead<NutritionDailyReadModel> nutrition;
 
+  /// A nullable value is a known absence of an accepted target. An unavailable
+  /// read remains distinct, so Today never invents a target just to fill the
+  /// calorie ring.
+  final TodayDomainRead<NutritionGoalVersionReadModel?> goal;
+
   const TodaySurfaceSnapshot({
     required this.selectedDate,
     required this.localDate,
@@ -46,6 +53,9 @@ class TodaySurfaceSnapshot {
     required this.calendar,
     required this.progress,
     required this.nutrition,
+    this.goal = const TodayDomainRead<NutritionGoalVersionReadModel?>.available(
+      null,
+    ),
   });
 }
 
@@ -55,16 +65,19 @@ class TodaySurfaceReadRepository {
   final CalendarReadRepository _calendar;
   final B02ProgressReadRepository _progress;
   final Future<NutritionReadModelRepository> Function() _nutrition;
+  final NutritionGoalRepository _goals;
   final LocalScheduleDateService _dates;
 
   TodaySurfaceReadRepository({
     required CalendarReadRepository calendar,
     required B02ProgressReadRepository progress,
     required Future<NutritionReadModelRepository> Function() nutrition,
+    required NutritionGoalRepository goals,
     required LocalScheduleDateService dates,
   }) : _calendar = calendar,
        _progress = progress,
        _nutrition = nutrition,
+       _goals = goals,
        _dates = dates;
 
   Future<TodaySurfaceSnapshot> read({
@@ -97,6 +110,12 @@ class TodaySurfaceReadRepository {
           localDate: localDate,
         );
       }),
+      _safeRead(
+        () => _goals.activeGoalForPrimaryProfile(
+          localDate: localDate,
+          timezoneId: timezoneId,
+        ),
+      ),
     ]);
 
     return TodaySurfaceSnapshot(
@@ -106,6 +125,7 @@ class TodaySurfaceReadRepository {
       calendar: reads[0] as TodayDomainRead<CalendarReadSnapshot>,
       progress: reads[1] as TodayDomainRead<B02ProgressReadModel>,
       nutrition: reads[2] as TodayDomainRead<NutritionDailyReadModel>,
+      goal: reads[3] as TodayDomainRead<NutritionGoalVersionReadModel?>,
     );
   }
 
@@ -136,6 +156,7 @@ final todaySurfaceReadRepositoryProvider = Provider<TodaySurfaceReadRepository>(
       civilDates: ref.watch(localScheduleDateServiceProvider),
     ),
     nutrition: () => ref.read(nutritionReadModelRepositoryProvider.future),
+    goals: ref.watch(nutritionGoalRepositoryProvider),
     dates: ref.watch(localScheduleDateServiceProvider),
   ),
 );
@@ -148,7 +169,8 @@ final todayNutritionRevisionProvider = StateProvider<int>((ref) => 0);
 ///
 /// Basic B01-B03 reads intentionally use the device timezone and the existing
 /// local nutrition scope. They must remain available when profile onboarding
-/// is skipped; B04 surfaces retain their separate fail-closed profile gate.
+/// is skipped. The optional B04 target is resolved under the profile-owned goal
+/// history, which safely yields no target when setup has not created a profile.
 final todaySurfaceSnapshotProvider = FutureProvider.autoDispose
     .family<TodaySurfaceSnapshot, DateTime>((ref, selectedDate) async {
       ref.watch(todayNutritionRevisionProvider);
