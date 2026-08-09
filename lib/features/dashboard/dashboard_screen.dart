@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,12 +7,17 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
+import '../../core/presentation/consumer_date_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../activity/b02_activity_controller.dart';
+import '../calendar/workout_contextual_launcher.dart';
+import '../coaching/b04_production_surface_widgets.dart';
 import '../settings/settings_screen.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
@@ -173,6 +180,113 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ref.invalidate(todaySurfaceSnapshotProvider(selectedDate));
   }
 
+  Future<void> _openFoodForMeal(String mealType) async {
+    final date = ref.read(dashboardControllerProvider).selectedDate;
+    final dateValue =
+        '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+    final route = Uri(
+      path: '/food',
+      queryParameters: {'mealType': mealType, 'date': dateValue},
+    );
+    await context.push(route.toString());
+    if (mounted) await _refreshToday();
+  }
+
+  void _openFoodGuidance() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(B05Layout.space12),
+          child: B05Surface(
+            radius: B05SurfaceRadius.large,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'What can I eat?',
+                        style: B05Typography.title(context),
+                      ),
+                    ),
+                    B05IconAction(
+                      icon: Icons.close_rounded,
+                      label: 'Close food guidance',
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: B05Layout.space12),
+                const B04CurrentFoodSummary(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _startTodayWorkout(CalendarOccurrenceReadItem item) async {
+    final needsConfirmation =
+        WorkoutContextualLauncher.requiresDateConfirmation(ref, item);
+    if (needsConfirmation) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Start outside scheduled date?'),
+          content: Text(
+            'This workout is scheduled for ${ConsumerDateLabel.day(item.occurrence.effectiveLocalDate)}. Starting it will not move or skip any other workout.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                item.occurrence.status == 'inProgress'
+                    ? 'Resume workout'
+                    : 'Start workout',
+              ),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    try {
+      final target = await WorkoutContextualLauncher.prepare(
+        ref: ref,
+        item: item,
+        confirmedOutsideEffectiveDate: needsConfirmation,
+      );
+      if (!mounted) return;
+      await WorkoutContextualLauncher.push(context, target);
+      if (mounted) await _refreshToday();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ProductFailurePresentation.fromError(
+              error,
+              title: 'Workout unavailable',
+              code: 'workout_unavailable',
+            ).message,
+          ),
+        ),
+      );
+    }
+  }
+
   void _openCustomization() {
     showModalBottomSheet<void>(
       context: context,
@@ -266,18 +380,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         },
         onCustomize: _openCustomization,
         onOpenWorkoutPlan: () => context.push('/calendar'),
-        onLogMeal: () {
-          final date = state.selectedDate;
-          final dateValue =
-              '${date.year.toString().padLeft(4, '0')}-'
-              '${date.month.toString().padLeft(2, '0')}-'
-              '${date.day.toString().padLeft(2, '0')}';
-          final route = Uri(
-            path: '/food',
-            queryParameters: {'mealType': 'breakfast', 'date': dateValue},
-          );
-          context.push(route.toString());
-        },
+        onLogMeal: () => unawaited(_openFoodForMeal('breakfast')),
+        onLogMealForMeal: _openFoodForMeal,
+        onStartWorkout: _startTodayWorkout,
+        onOpenFoodGuidance: _openFoodGuidance,
       ),
     );
   }

@@ -179,6 +179,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Future<void> _showLogDialog(NutritionFoodOption option) async {
+    // Retain the page context: the bottom-sheet builder receives a different
+    // context, so popping twice from it can leave the search route in place.
+    final searchContext = context;
     final coordinator = await ref.read(
       nutritionFoodLoggingCoordinatorProvider.future,
     );
@@ -192,7 +195,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        builder: (context) {
+        builder: (sheetContext) {
           double multiplier = 1.0;
           String? selectedTransformationId;
           String? commandId;
@@ -443,13 +446,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                         b04CurrentFoodControllerProvider,
                                       );
                                       await HapticFeedback.selectionClick();
-                                      if (context.mounted) {
-                                        Navigator.pop(
-                                          context,
-                                        ); // Close bottom sheet
-                                        Navigator.pop(
-                                          context,
-                                        ); // Close search screen
+                                      if (sheetContext.mounted) {
+                                        Navigator.of(sheetContext).pop();
+                                      }
+                                      if (searchContext.mounted) {
+                                        Navigator.of(searchContext).pop();
                                       }
                                     } catch (error) {
                                       if (context.mounted) {

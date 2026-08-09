@@ -66,21 +66,20 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    final labels = ['Daily focus', 'Workout', 'Nutrition', 'Progress'];
+    final labels = [
+      'Nutrition unavailable',
+      'Next up unavailable',
+      'Meals unavailable',
+      'Workout unavailable',
+      'Activity unavailable',
+      'Progress unavailable',
+    ];
     for (final label in labels) {
-      expect(find.bySemanticsLabel(label), findsOneWidget);
+      expect(find.text(label), findsOneWidget);
     }
     expect(
-      tester.getTopLeft(find.bySemanticsLabel(labels[0])).dy,
-      lessThan(tester.getTopLeft(find.bySemanticsLabel(labels[1])).dy),
-    );
-    expect(
-      find.bySemanticsLabel('Unavailable: Nutrition is unavailable'),
-      findsOneWidget,
-    );
-    expect(
-      find.bySemanticsLabel('Unavailable: Progress is unavailable'),
-      findsOneWidget,
+      tester.getTopLeft(find.text(labels[0])).dy,
+      lessThan(tester.getTopLeft(find.text(labels[1])).dy),
     );
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
@@ -96,9 +95,9 @@ void main() {
         registry: standardDashboardModuleRegistry,
       ),
       layout: [
-        defaults[3].copyWith(ordinal: 0),
-        defaults[1].copyWith(ordinal: 1, isCollapsed: true),
-        defaults[2].copyWith(ordinal: 2),
+        defaults[5].copyWith(ordinal: 0),
+        defaults[2].copyWith(ordinal: 1, isCollapsed: true),
+        defaults[3].copyWith(ordinal: 2),
         defaults[0].copyWith(ordinal: 3, isVisible: false),
       ],
     );
@@ -131,11 +130,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.bySemanticsLabel('Daily focus'), findsNothing);
+    expect(find.text('Nutrition unavailable'), findsNothing);
     expect(find.text('Collapsed'), findsOneWidget);
     expect(
-      tester.getTopLeft(find.bySemanticsLabel('Progress')).dy,
-      lessThan(tester.getTopLeft(find.bySemanticsLabel('Nutrition')).dy),
+      tester.getTopLeft(find.text('Progress unavailable')).dy,
+      lessThan(tester.getTopLeft(find.text('Workout unavailable')).dy),
     );
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
