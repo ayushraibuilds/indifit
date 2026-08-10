@@ -7,29 +7,66 @@ import '../training/training_screen.dart';
 import 'dashboard_screen.dart';
 
 class MainNavigationScaffold extends StatefulWidget {
-  const MainNavigationScaffold({super.key, this.initialIndex = 0});
+  const MainNavigationScaffold({
+    super.key,
+    this.initialIndex = 0,
+    this.foodMealType = 'breakfast',
+    this.foodSelectedDate,
+  });
 
   final int initialIndex;
+  final String foodMealType;
+  final DateTime? foodSelectedDate;
 
   @override
   State<MainNavigationScaffold> createState() => _MainNavigationScaffoldState();
 }
 
 class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
+  static const _screenCount = 4;
   late int _currentIndex;
-
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    const TrainingScreen(),
-    const FoodSearchScreen(mealType: 'breakfast'),
-    const ProgressScreen(),
-  ];
+  late List<Widget> _screens;
+  final Set<int> _visitedIndexes = {};
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex.clamp(0, _screens.length - 1);
+    _currentIndex = widget.initialIndex.clamp(0, _screenCount - 1);
+    _screens = List<Widget>.filled(
+      _screenCount,
+      const SizedBox.shrink(),
+      growable: false,
+    );
+    _activateScreen(_currentIndex);
   }
+
+  @override
+  void didUpdateWidget(covariant MainNavigationScaffold oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.foodMealType != widget.foodMealType ||
+        oldWidget.foodSelectedDate != widget.foodSelectedDate) {
+      if (_visitedIndexes.contains(2)) _screens[2] = _screenFor(2);
+    }
+    if (oldWidget.initialIndex != widget.initialIndex) {
+      _currentIndex = widget.initialIndex.clamp(0, _screenCount - 1);
+      _activateScreen(_currentIndex);
+    }
+  }
+
+  void _activateScreen(int index) {
+    if (_visitedIndexes.add(index)) _screens[index] = _screenFor(index);
+  }
+
+  Widget _screenFor(int index) => switch (index) {
+    0 => const DashboardScreen(),
+    1 => const TrainingScreen(),
+    2 => FoodSearchScreen(
+      mealType: widget.foodMealType,
+      selectedDate: widget.foodSelectedDate,
+    ),
+    3 => const ProgressScreen(),
+    _ => const SizedBox.shrink(),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +77,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;
+            _activateScreen(index);
           });
         },
         animationDuration: B05MotionPolicy.transitionDuration(

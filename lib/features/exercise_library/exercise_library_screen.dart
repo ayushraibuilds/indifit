@@ -7,7 +7,7 @@ import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
-import '../education/b05_education_content.dart';
+import '../education/learn_screen.dart';
 import 'exercise_details_sheet.dart';
 
 class ExerciseLibraryScreen extends ConsumerStatefulWidget {
@@ -132,14 +132,9 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
             child: IconButton(
               tooltip: 'Mini lessons',
               icon: const Icon(Icons.school_outlined),
-              onPressed: () => showIndiFitBottomSheet<void>(
-                context: context,
-                semanticLabel: 'Mini lessons',
-                builder: (context) => const Padding(
-                  padding: EdgeInsets.all(B05Layout.space16),
-                  child: B05MiniLessonsPanel(),
-                ),
-              ),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const LearnScreen())),
             ),
           ),
         ],

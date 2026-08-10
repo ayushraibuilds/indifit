@@ -343,10 +343,13 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Add a constraint').first);
+      await tester.pumpAndSettle();
+      final addConstraint = find.text('Add dietary need');
+      await tester.scrollUntilVisible(addConstraint, 360);
+      await tester.tap(addConstraint);
       await tester.pumpAndSettle();
 
-      expect(find.text('Add dietary constraint'), findsOneWidget);
+      expect(find.text('Add a dietary need'), findsOneWidget);
       expect(find.byType(IndiFitResponsiveFieldGroup), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
@@ -478,11 +481,7 @@ void main() {
     });
     expect(focusedChoiceEditable, isEmpty);
 
-    await tester.tap(find.text('Next Step'));
-    await tester.pumpAndSettle();
-    expect(find.text('How old are you?'), findsOneWidget);
-
-    await tester.tap(find.byType(TextField).first);
+    await tester.tap(find.byType(TextField).at(1));
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
     final focusedEditable = find.byType(EditableText).evaluate().where((
@@ -491,6 +490,10 @@ void main() {
       return Focus.maybeOf(element)?.hasPrimaryFocus ?? false;
     });
     expect(focusedEditable, isEmpty);
+
+    await tester.tap(find.text('Next Step'));
+    await tester.pumpAndSettle();
+    expect(find.text('What is your main goal?'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

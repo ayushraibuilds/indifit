@@ -70,6 +70,13 @@ class _HouseholdMeasuresScreenState
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
+        Text('Household measures', style: B05Typography.pageTitle(context)),
+        const SizedBox(height: 4),
+        Text(
+          'Use familiar cups and bowls without changing the nutrition values stored for your foods.',
+          style: B05Typography.body(context),
+        ),
+        const SizedBox(height: 16),
         Semantics(
           container: true,
           label: 'Volume-only household measure information',
@@ -122,7 +129,7 @@ class _HouseholdMeasuresScreenState
         if (state.status == HouseholdMeasuresStatus.empty) ...[
           const SizedBox(height: 20),
           const Text(
-            'No personal measures yet. Add one when you want to measure your everyday cup or bowl.',
+            'No custom measures yet. Add the containers you use most often.',
           ),
         ],
         if (state.message != null &&
@@ -261,6 +268,7 @@ class _HouseholdMeasuresScreenState
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Measure your own cup or bowl'),
+        scrollable: true,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -314,34 +322,29 @@ class _HouseholdMeasuresScreenState
     NutritionPersonalVessel vessel,
   ) async {
     var name = vessel.displayName;
-    final nameController = TextEditingController(text: vessel.displayName);
-    String? updatedName;
-    try {
-      updatedName = await showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Rename measure'),
-          content: TextField(
-            autofocus: true,
-            controller: nameController,
-            decoration: const InputDecoration(labelText: 'Measure name'),
-            onChanged: (value) => name = value,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, name),
-              child: const Text('Save'),
-            ),
-          ],
+    final updatedName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename measure'),
+        scrollable: true,
+        content: TextFormField(
+          autofocus: true,
+          initialValue: vessel.displayName,
+          decoration: const InputDecoration(labelText: 'Measure name'),
+          onChanged: (value) => name = value,
         ),
-      );
-    } finally {
-      nameController.dispose();
-    }
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, name),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
     if (!mounted || updatedName == null) return;
     await ref
         .read(
@@ -361,6 +364,7 @@ class _HouseholdMeasuresScreenState
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Measure its capacity'),
+        scrollable: true,
         content: TextField(
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),

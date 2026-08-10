@@ -158,7 +158,7 @@ void main() {
       );
       await advanceUi();
 
-      await tester.tap(find.text('Add a constraint').first);
+      await tester.tap(find.text('Add dietary need').first);
       await advanceUi();
       expect(find.text('Stable target ID'), findsNothing);
 
@@ -225,8 +225,10 @@ void main() {
         ),
       ),
     );
-    await advanceUi();
-    await tester.tap(find.text('Add a constraint').first);
+    await tester.pumpAndSettle();
+    final addConstraint = find.text('Add dietary need');
+    await tester.scrollUntilVisible(addConstraint, 360);
+    await tester.tap(addConstraint);
     await advanceUi();
     final targetType = find.byWidgetPredicate(
       (widget) =>

@@ -10,17 +10,18 @@ import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../features/activity/b02_activity_creation_screen.dart';
 import '../../features/calendar/program_calendar_screen.dart';
 import '../../features/dashboard/main_navigation_scaffold.dart';
+import '../../features/education/learn_screen.dart';
 import '../../features/equipment/equipment_profile_editor_screen.dart';
 import '../../features/equipment/equipment_profiles_screen.dart';
 import '../../features/equipment/exercise_preference_editor_screen.dart';
 import '../../features/exercise_library/exercise_library_screen.dart';
 import '../../features/food_log/ai_meal_logger_screen.dart';
 import '../../features/food_log/ai_meal_planner_screen.dart';
-import '../../features/food_log/food_search_screen.dart';
 import '../../features/food_log/nutrition_estimate_review_screen.dart';
 import '../../features/food_log/nutrition_recipe_editor_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/routine_wizard_screen.dart';
+import '../../features/profile/profile_screen.dart';
 import '../../features/program_authoring/program_author_screen.dart';
 import '../../features/program_authoring/program_review_screen.dart';
 import '../../features/progress/achievements_screen.dart';
@@ -62,6 +63,22 @@ DateTime? parseFoodRouteDate(String? raw) {
   }
   return parsed;
 }
+
+String parseFoodRouteMealType(String? raw) {
+  final value = raw?.trim().toLowerCase();
+  return switch (value) {
+    'breakfast' || 'lunch' || 'dinner' || 'snacks' => value!,
+    'snack' => 'snacks',
+    _ => 'breakfast',
+  };
+}
+
+MainNavigationScaffold foodRouteDestination({String? mealType, String? date}) =>
+    MainNavigationScaffold(
+      initialIndex: 2,
+      foodMealType: parseFoodRouteMealType(mealType),
+      foodSelectedDate: parseFoodRouteDate(date),
+    );
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -107,6 +124,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) =>
             const MainNavigationScaffold(initialIndex: 1),
       ),
+      GoRoute(
+        path: '/progress',
+        builder: (context, state) =>
+            const MainNavigationScaffold(initialIndex: 3),
+      ),
       // Preserve the former Training entry point without reintroducing a
       // competing bottom-navigation concept.
       GoRoute(path: '/workouts', redirect: (context, state) => '/training'),
@@ -118,16 +140,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/food',
-        builder: (context, state) {
-          final mealType = state.uri.queryParameters['mealType'] ?? 'breakfast';
-          final selectedDate = parseFoodRouteDate(
-            state.uri.queryParameters['date'],
-          );
-          return FoodSearchScreen(
-            mealType: mealType,
-            selectedDate: selectedDate,
-          );
-        },
+        builder: (context, state) => foodRouteDestination(
+          mealType: state.uri.queryParameters['mealType'],
+          date: state.uri.queryParameters['date'],
+        ),
       ),
       GoRoute(
         path: '/food/ai',
@@ -165,6 +181,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
       ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings/profile',
+        redirect: (context, state) => '/profile',
+      ),
+      GoRoute(path: '/learn', builder: (context, state) => const LearnScreen()),
       GoRoute(
         path: '/health-hub',
         builder: (context, state) => const HealthSyncHubScreen(),
