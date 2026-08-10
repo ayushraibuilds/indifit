@@ -12,6 +12,8 @@ import '../utils/app_logger.dart';
 import 'providers.dart';
 
 class UserProfileState {
+  final bool isLoaded;
+  final bool hasProfile;
   final int calorieGoal;
   final double proteinGoal;
   final double carbsGoal;
@@ -28,6 +30,8 @@ class UserProfileState {
   final String injuriesLimitations;
 
   const UserProfileState({
+    this.isLoaded = false,
+    this.hasProfile = false,
     required this.calorieGoal,
     required this.proteinGoal,
     required this.carbsGoal,
@@ -45,6 +49,8 @@ class UserProfileState {
   });
 
   UserProfileState copyWith({
+    bool? isLoaded,
+    bool? hasProfile,
     int? calorieGoal,
     double? proteinGoal,
     double? carbsGoal,
@@ -61,6 +67,8 @@ class UserProfileState {
     String? injuriesLimitations,
   }) {
     return UserProfileState(
+      isLoaded: isLoaded ?? this.isLoaded,
+      hasProfile: hasProfile ?? this.hasProfile,
       calorieGoal: calorieGoal ?? this.calorieGoal,
       proteinGoal: proteinGoal ?? this.proteinGoal,
       carbsGoal: carbsGoal ?? this.carbsGoal,
@@ -97,6 +105,13 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
 
   Future<void> loadProfile() async {
     final prefs = await SharedPreferences.getInstance();
+    final onboardingSkipped = prefs.getBool('onboarding_skipped') ?? false;
+    var hasProfile =
+        !onboardingSkipped &&
+        (prefs.containsKey('user_age') ||
+            prefs.containsKey('user_height') ||
+            prefs.containsKey('current_weight') ||
+            prefs.containsKey('user_sex'));
     int cals = prefs.getInt('calorie_goal') ?? 2000;
     double protein = prefs.getDouble('protein_goal') ?? 120.0;
     double carbs = prefs.getDouble('carbs_goal') ?? 230.0;
@@ -111,12 +126,12 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     String diet = prefs.getString('user_diet_preference') ?? 'veg';
     String equipment = prefs.getString('user_equipment') ?? 'full_gym';
     String injuries = prefs.getString('user_injuries') ?? '';
-
     final db = _db;
     if (db != null) {
       try {
         var profiles = await db.select(db.userProfiles).get();
         if (profiles.isNotEmpty) {
+          hasProfile = true;
           final p = profiles.first;
           cals = p.calorieGoal;
           protein = p.proteinGoal;
@@ -132,7 +147,7 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
           diet = p.dietPreference.isNotEmpty ? p.dietPreference : diet;
           equipment = p.equipmentAccess;
           injuries = p.injuriesLimitations;
-        } else {
+        } else if (!onboardingSkipped) {
           // Migrate SharedPreferences defaults to initial Drift row
           await db
               .into(db.userProfiles)
@@ -155,45 +170,48 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
                 ),
               );
           profiles = await db.select(db.userProfiles).get();
+          hasProfile = profiles.isNotEmpty;
         }
 
-        final p = profiles.first;
-        final timezoneId = await _readTimezoneId();
-        final dates = LocalScheduleDateService();
-        final goalRepository = NutritionGoalRepository(
-          database: db,
-          dates: dates,
-        );
-        final owner = p.id.toString();
-        await goalRepository.ensureCompatibilityImport(
-          userId: owner,
-          legacyProfile: NutritionGoalCommand(
+        if (profiles.isNotEmpty) {
+          final p = profiles.first;
+          final timezoneId = await _readTimezoneId();
+          final dates = LocalScheduleDateService();
+          final goalRepository = NutritionGoalRepository(
+            database: db,
+            dates: dates,
+          );
+          final owner = p.id.toString();
+          await goalRepository.ensureCompatibilityImport(
             userId: owner,
-            goalType: NutritionGoalTypeId.parse(p.goal),
-            calorieTargetKcal: p.calorieGoal,
-            proteinTargetG: p.proteinGoal,
-            carbsTargetG: p.carbsGoal,
-            fatTargetG: p.fatGoal,
-            effectiveFromLocalDate: dates.todayIn(timezoneId),
+            legacyProfile: NutritionGoalCommand(
+              userId: owner,
+              goalType: NutritionGoalTypeId.parse(p.goal),
+              calorieTargetKcal: p.calorieGoal,
+              proteinTargetG: p.proteinGoal,
+              carbsTargetG: p.carbsGoal,
+              fatTargetG: p.fatGoal,
+              effectiveFromLocalDate: dates.todayIn(timezoneId),
+              timezoneId: timezoneId,
+            ),
+          );
+          final active = await goalRepository.activeGoal(
+            userId: owner,
+            localDate: dates.todayIn(timezoneId),
             timezoneId: timezoneId,
-          ),
-        );
-        final active = await goalRepository.activeGoal(
-          userId: owner,
-          localDate: dates.todayIn(timezoneId),
-          timezoneId: timezoneId,
-        );
-        if (active != null) {
-          cals = active.calorieTargetKcal ?? cals;
-          protein = active.proteinTargetG ?? protein;
-          carbs = active.carbsTargetG ?? carbs;
-          fat = active.fatTargetG ?? fat;
-          goal = switch (active.goalType) {
-            NutritionGoalType.loss => 'lose',
-            NutritionGoalType.maintenance => 'maintain',
-            NutritionGoalType.gain => 'gain',
-            NutritionGoalType.custom => 'custom',
-          };
+          );
+          if (active != null) {
+            cals = active.calorieTargetKcal ?? cals;
+            protein = active.proteinTargetG ?? protein;
+            carbs = active.carbsTargetG ?? carbs;
+            fat = active.fatTargetG ?? fat;
+            goal = switch (active.goalType) {
+              NutritionGoalType.loss => 'lose',
+              NutritionGoalType.maintenance => 'maintain',
+              NutritionGoalType.gain => 'gain',
+              NutritionGoalType.custom => 'custom',
+            };
+          }
         }
       } catch (e, st) {
         AppLogger.warning('loadProfile database access failed: $e');
@@ -207,6 +225,8 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
 
     if (!mounted) return;
     state = UserProfileState(
+      isLoaded: true,
+      hasProfile: hasProfile,
       calorieGoal: cals,
       proteinGoal: protein,
       carbsGoal: carbs,
@@ -411,6 +431,32 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
     state = state.copyWith(userName: name);
   }
 
+  /// Persists the dietary pattern without manufacturing the remaining profile
+  /// fields. This is important for users who intentionally skipped onboarding:
+  /// choosing a diet must not create default age, sex, goals, or eligibility
+  /// evidence underneath a partial settings edit.
+  Future<void> updateDietPreference(String dietPreference) async {
+    final db = _db;
+    if (db != null) {
+      final profiles = await db.select(db.userProfiles).get();
+      if (profiles.isNotEmpty) {
+        await (db.update(
+          db.userProfiles,
+        )..where((table) => table.id.equals(profiles.first.id))).write(
+          UserProfilesCompanion(
+            dietPreference: Value(dietPreference),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+      }
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_diet_preference', dietPreference);
+    if (!mounted) return;
+    state = state.copyWith(dietPreference: dietPreference);
+  }
+
   Future<void> updateProfile({
     String? name,
     int? age,
@@ -583,6 +629,8 @@ class UserProfileNotifier extends StateNotifier<UserProfileState> {
 
     if (!mounted) return;
     state = state.copyWith(
+      isLoaded: true,
+      hasProfile: true,
       userName: name,
       userAge: age,
       userHeight: height,

@@ -331,6 +331,7 @@ final b04ProductionRecommendationContextProvider =
           timezones: ref.watch(localTimezoneServiceProvider),
         ),
         dates: ref.watch(localScheduleDateServiceProvider),
+        nutritionUserId: kLocalNutritionUserScopeId,
         loadOrchestrator: () =>
             ref.read(b04ProductionRecommendationOrchestratorProvider.future),
       ).load();

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import 'b02_strength_execution_controller.dart';
@@ -91,7 +94,7 @@ class _B02StrengthPlayerScreenState
         children: [
           const _OfflineBanner(),
           const SizedBox(height: 16),
-          const Text('No exercise slots are available yet.'),
+          const Text('No exercises are available yet.'),
           const SizedBox(height: 8),
           const Text(
             'The frozen draft is safe. Recover it after the exercise catalog is available, or finish through the retained B01 route.',
@@ -109,13 +112,109 @@ class _B02StrengthPlayerScreenState
       orElse: () => slots.first,
     );
     _selectedSlotId ??= selected.id;
+    final workingSetCount = _workingSetCount(launch.state, selected);
+    final hasLoggedSet = _hasLoggedSet(launch.state, selected);
+    final hasOpenRest = _hasOpenRest(launch.state, selected);
+    final exerciseComplete = workingSetCount >= selected.plannedSets;
+    final currentSet = exerciseComplete
+        ? selected.plannedSets
+        : workingSetCount + 1;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
         const _OfflineBanner(),
         const SizedBox(height: 12),
-        _GroupProgressCard(launch: launch, slots: slots),
+        Text(
+          'Current exercise',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          selected.exerciseNameSnapshot,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        if (selected.groupType != null) ...[
+          const SizedBox(height: 4),
+          Text(_groupContext(selected)),
+        ],
+        const SizedBox(height: 4),
+        Semantics(
+          label: 'Current set',
+          value: exerciseComplete
+              ? 'Exercise complete'
+              : 'Set $currentSet of ${selected.plannedSets}',
+          child: Text(
+            exerciseComplete
+                ? 'Exercise complete'
+                : 'Set $currentSet of ${selected.plannedSets}',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: selected.id,
+          decoration: const InputDecoration(labelText: 'Switch exercise'),
+          items: [
+            for (final slot in slots)
+              DropdownMenuItem(
+                value: slot.id,
+                child: Text(
+                  '${_groupContext(slot)} · ${slot.exerciseNameSnapshot}',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+          onChanged: ui.isBusy
+              ? null
+              : (value) => setState(() => _selectedSlotId = value),
+        ),
         const SizedBox(height: 12),
+        _TargetCard(
+          slot: selected,
+          state: launch.state,
+          currentSet: currentSet,
+          exerciseComplete: exerciseComplete,
+          onOverride: ui.isBusy
+              ? null
+              : () => _overrideTarget(provider, selected),
+        ),
+        const SizedBox(height: 12),
+        IndiFitResponsiveFieldGroup(
+          spacing: 10,
+          children: [
+            TextFormField(
+              key: ValueKey('load-${selected.id}'),
+              initialValue: _loads[selected.id],
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(labelText: 'Load (kg)'),
+              onChanged: (value) => _loads[selected.id] = value,
+            ),
+            TextFormField(
+              key: ValueKey('reps-${selected.id}'),
+              initialValue: _reps[selected.id],
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Reps'),
+              onChanged: (value) => _reps[selected.id] = value,
+            ),
+            TextFormField(
+              key: ValueKey('rpe-${selected.id}'),
+              initialValue: _rpes[selected.id],
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'RPE (optional)'),
+              onChanged: (value) => _rpes[selected.id] = value,
+            ),
+          ],
+        ),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Log as warm-up'),
+          value: _warmup,
+          onChanged: ui.isBusy
+              ? null
+              : (value) => setState(() => _warmup = value),
+        ),
         if (launch.state.warmupRecommendation != null)
           _WarmupCard(
             recommendation: launch.state.warmupRecommendation!,
@@ -138,86 +237,73 @@ class _B02StrengthPlayerScreenState
           const Card(
             child: ListTile(
               leading: Icon(Icons.whatshot_outlined),
-              title: Text('Warm-up recommendation'),
+              title: Text('Warm-up unavailable'),
               subtitle: Text(
-                'No preference is stored. Choose a warm-up when a valid target is available.',
+                'A warm-up will appear when a valid working target is available.',
               ),
             ),
           ),
         const SizedBox(height: 12),
-        Text('Current slot', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          initialValue: selected.id,
-          decoration: const InputDecoration(labelText: 'Group member'),
-          items: [
-            for (final slot in slots)
-              DropdownMenuItem(
-                value: slot.id,
-                child: Text(
-                  '${slot.groupDescription} · round ${(slot.roundOrdinal ?? 0) + 1} · member ${(slot.memberOrdinal ?? 0) + 1} · ${slot.exerciseNameSnapshot}',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-          ],
-          onChanged: ui.isBusy
-              ? null
-              : (value) => setState(() => _selectedSlotId = value),
-        ),
-        const SizedBox(height: 12),
-        _TargetCard(
-          slot: selected,
-          state: launch.state,
-          onOverride: ui.isBusy
-              ? null
-              : () => _overrideTarget(provider, selected),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('load-${selected.id}'),
-                initialValue: _loads[selected.id],
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Actual load (kg)',
-                ),
-                onChanged: (value) => _loads[selected.id] = value,
+        Semantics(
+          button: true,
+          label: _warmup
+              ? 'Log warm-up set'
+              : exerciseComplete
+              ? 'Exercise complete'
+              : 'Complete set $currentSet of ${selected.plannedSets}',
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed:
+                  ui.isBusy ||
+                      !selected.hasCanonicalExercise ||
+                      (!_warmup && exerciseComplete)
+                  ? null
+                  : () => _record(provider, selected),
+              child: Text(
+                _warmup
+                    ? 'Log warm-up set'
+                    : exerciseComplete
+                    ? 'Exercise complete'
+                    : 'Complete set',
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('reps-${selected.id}'),
-                initialValue: _reps[selected.id],
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Actual reps'),
-                onChanged: (value) => _reps[selected.id] = value,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('rpe-${selected.id}'),
-                initialValue: _rpes[selected.id],
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'RPE'),
-                onChanged: (value) => _rpes[selected.id] = value,
-              ),
-            ),
-          ],
+          ),
         ),
-        SwitchListTile.adaptive(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Log as warm-up'),
-          value: _warmup,
-          onChanged: ui.isBusy
-              ? null
-              : (value) => setState(() => _warmup = value),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: ui.isBusy
+                ? null
+                : () => ref.read(provider.notifier).skipSlot(selected),
+            icon: const Icon(Icons.skip_next_rounded),
+            label: const Text('Skip exercise'),
+          ),
         ),
+        if (hasLoggedSet || hasOpenRest) ...[
+          _RestCard(
+            slot: selected,
+            state: launch.state,
+            onBegin: ui.isBusy
+                ? null
+                : () => ref.read(provider.notifier).beginRest(selected),
+            onCustom: ui.isBusy
+                ? null
+                : (seconds) => ref
+                      .read(provider.notifier)
+                      .beginRest(selected, selectedSeconds: seconds),
+            onExtend: ui.isBusy
+                ? null
+                : (periodId) =>
+                      ref.read(provider.notifier).extendRest(periodId),
+            onSkip: ui.isBusy
+                ? null
+                : (periodId) => ref.read(provider.notifier).skipRest(periodId),
+            onElapsed: (periodId) =>
+                ref.read(provider.notifier).completeRest(periodId),
+          ),
+          const SizedBox(height: 12),
+        ],
         ExpansionTile(
           tilePadding: EdgeInsets.zero,
           title: const Text('Advanced technique details'),
@@ -233,44 +319,8 @@ class _B02StrengthPlayerScreenState
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        _RestCard(
-          slot: selected,
-          state: launch.state,
-          onBegin: () => ref.read(provider.notifier).beginRest(selected),
-          onCustom: (seconds) => ref
-              .read(provider.notifier)
-              .beginRest(selected, selectedSeconds: seconds),
-          onExtend: (periodId) =>
-              ref.read(provider.notifier).extendRest(periodId),
-          onSkip: (periodId) => ref.read(provider.notifier).skipRest(periodId),
-        ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: ui.isBusy
-                    ? null
-                    : () => ref.read(provider.notifier).skipSlot(selected),
-                child: const Text('Skip slot'),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: FilledButton(
-                onPressed: ui.isBusy || !selected.hasCanonicalExercise
-                    ? null
-                    : () => _record(provider, selected),
-                child: Text(
-                  ui.status == B02StrengthExecutionStatus.partial
-                      ? 'Save set'
-                      : 'Log set',
-                ),
-              ),
-            ),
-          ],
-        ),
+        _GroupProgressCard(launch: launch, slots: slots),
         const SizedBox(height: 12),
         FilledButton.tonal(
           onPressed: ui.isBusy
@@ -283,6 +333,58 @@ class _B02StrengthPlayerScreenState
         ),
       ],
     );
+  }
+
+  int _workingSetCount(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    return state.performedExercises
+        .where(
+          (exercise) =>
+              exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+              exercise.groupRoundOrdinal == slot.roundOrdinal &&
+              exercise.groupMemberOrdinal == slot.memberOrdinal,
+        )
+        .expand((exercise) => exercise.sets)
+        .where((set) => set.role == B02SetRole.working)
+        .length;
+  }
+
+  bool _hasLoggedSet(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    return state.performedExercises.any(
+      (exercise) =>
+          exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+          exercise.groupRoundOrdinal == slot.roundOrdinal &&
+          exercise.groupMemberOrdinal == slot.memberOrdinal &&
+          exercise.sets.isNotEmpty,
+    );
+  }
+
+  bool _hasOpenRest(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    return state.restPeriods.any(
+      (period) =>
+          period.endedAtUtc == null && b02RestPeriodBelongsToSlot(period, slot),
+    );
+  }
+
+  static String _groupContext(B02StrengthExecutionSlot slot) {
+    if (slot.groupType == null) return 'Standalone exercise';
+    final type = switch (slot.groupType!) {
+      B02GroupType.superset => 'Superset',
+      B02GroupType.circuit => 'Circuit',
+      B02GroupType.giantSet => 'Giant set',
+    };
+    final name = slot.groupLabel?.trim().isNotEmpty == true
+        ? slot.groupLabel!.trim()
+        : type;
+    return '$name · Round ${(slot.roundOrdinal ?? 0) + 1} · Exercise ${(slot.memberOrdinal ?? 0) + 1}';
   }
 
   Future<void> _record(dynamic provider, B02StrengthExecutionSlot slot) async {
@@ -450,31 +552,43 @@ class _GroupProgressCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Group progress',
+              'Workout progress',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 6),
-            Text('$completed of ${slots.length} slots complete'),
+            Text('$completed of ${slots.length} exercises complete'),
             const SizedBox(height: 10),
-            for (final group in launch.state.groups)
-              Text(
-                '${group.label ?? 'Group ${group.ordinal + 1}'} · ${group.groupType.dbValue} · ${group.roundCount} round(s) · ${group.members.length} member(s)',
-              ),
+            for (final group in launch.state.groups) Text(_groupLabel(group)),
           ],
         ),
       ),
     );
+  }
+
+  String _groupLabel(B02ExerciseGroup group) {
+    final name =
+        group.label ??
+        switch (group.groupType) {
+          B02GroupType.superset => 'Superset',
+          B02GroupType.circuit => 'Circuit',
+          B02GroupType.giantSet => 'Giant set',
+        };
+    return '$name · ${group.roundCount} ${group.roundCount == 1 ? 'round' : 'rounds'} · ${group.members.length} ${group.members.length == 1 ? 'exercise' : 'exercises'}';
   }
 }
 
 class _TargetCard extends StatelessWidget {
   final B02StrengthExecutionSlot slot;
   final B02ExecutionDraftState state;
+  final int currentSet;
+  final bool exerciseComplete;
   final VoidCallback? onOverride;
 
   const _TargetCard({
     required this.slot,
     required this.state,
+    required this.currentSet,
+    required this.exerciseComplete,
     required this.onOverride,
   });
 
@@ -490,25 +604,27 @@ class _TargetCard extends StatelessWidget {
         .expand((exercise) => exercise.sets)
         .fold<int>(0, (sum, set) => sum + (set.actualReps ?? 0));
     final target = slot.targetRepsMin == null
-        ? 'unknown'
+        ? 'No target yet'
         : slot.targetRepsMin == slot.targetRepsMax
         ? '${slot.targetRepsMin}'
         : '${slot.targetRepsMin}-${slot.targetRepsMax}';
     final recommendation = state.targetRecommendations[slot.id];
-    final load = slot.targetLoadKg == null
-        ? 'load unknown'
-        : '${slot.targetLoadKg} kg ${slot.targetLoadBasis?.dbValue ?? ''}';
-    final confidence = recommendation?.confidence.dbValue ?? 'unavailable';
+    final hasSuggestedTarget = recommendation?.recommendedLoadKg != null;
+    final load = slot.targetLoadKg == null ? null : '${slot.targetLoadKg} kg';
+    final targetLabel = load == null ? target : '$load × $target';
+    final performedLabel = actual == 0
+        ? 'Not logged yet'
+        : '$actual ${actual == 1 ? 'rep' : 'reps'}';
     return Card(
       child: ListTile(
         leading: const Icon(Icons.flag_outlined),
-        title: Text('Target vs actual · $target reps · $load'),
+        title: Text(hasSuggestedTarget ? 'Suggested target' : 'Planned target'),
         subtitle: Text(
-          'Actual reps logged: $actual · ${recommendation == null ? 'no recommendation' : 'B02 ${recommendation.ruleVersion} · $confidence confidence'} · offered target stays separate from performed values.',
+          '$targetLabel · ${exerciseComplete ? 'Exercise complete' : 'Set $currentSet of ${slot.plannedSets}'}\nPerformed: $performedLabel\n${hasSuggestedTarget ? 'Suggested from your recent working sets. Change it if today needs a different target.' : 'Log what you complete; a suggestion appears when enough history is available.'}',
         ),
-        trailing: recommendation == null
+        trailing: !hasSuggestedTarget
             ? null
-            : TextButton(onPressed: onOverride, child: const Text('Override')),
+            : TextButton(onPressed: onOverride, child: const Text('Change')),
       ),
     );
   }
@@ -528,53 +644,90 @@ class _WarmupCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.whatshot_outlined),
-            title: Text('Warm-up guidance'),
-            subtitle: Text(
-              recommendation.proposals.isEmpty
-                  ? 'No warm-up target is available; choose your own warm-up.'
-                  : '${recommendation.proposals.length} proposed ramp set(s) · ${recommendation.selectedProposals.length} selected',
+  Widget build(BuildContext context) {
+    final offered = recommendation.decision == B02WarmupDecision.offered;
+    final skipped = recommendation.decision == B02WarmupDecision.skipped;
+    final proposals = offered
+        ? recommendation.proposals
+        : recommendation.selectedProposals;
+    final title = switch (recommendation.decision) {
+      B02WarmupDecision.offered => 'Warm-up suggestion',
+      B02WarmupDecision.accepted => 'Warm-up accepted',
+      B02WarmupDecision.edited => 'Warm-up adjusted',
+      B02WarmupDecision.skipped => 'Warm-up skipped',
+    };
+    final subtitle = recommendation.proposals.isEmpty
+        ? 'No working target is available yet.'
+        : skipped
+        ? 'You can use the suggested ramp sets at any time.'
+        : offered
+        ? 'Prepare with a few lighter sets before you begin.'
+        : 'Your selected ramp sets are saved with this workout.';
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.whatshot_outlined),
+              title: Text(title),
+              subtitle: Text(subtitle),
             ),
-          ),
-          if (recommendation.proposals.isNotEmpty)
-            Text(
-              recommendation.proposals
-                  .map(
-                    (proposal) =>
-                        '${proposal.loadKg ?? 'bodyweight'} × ${proposal.reps}',
-                  )
-                  .join('  ·  '),
-            ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: [
-              OutlinedButton(onPressed: onAccept, child: const Text('Accept')),
-              OutlinedButton(onPressed: onEdit, child: const Text('Edit')),
-              TextButton(onPressed: onSkip, child: const Text('Skip')),
+            if (proposals.isNotEmpty)
+              Text(
+                proposals
+                    .map(
+                      (proposal) =>
+                          '${proposal.loadKg == null ? 'Bodyweight' : '${proposal.loadKg} kg'} × ${proposal.reps}',
+                    )
+                    .join('  ·  '),
+              ),
+            if (recommendation.proposals.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  if (offered || skipped)
+                    OutlinedButton(
+                      onPressed: onAccept,
+                      child: Text(offered ? 'Accept' : 'Use suggestion'),
+                    ),
+                  OutlinedButton(
+                    onPressed: onEdit,
+                    child: Text(offered ? 'Edit' : 'Change'),
+                  ),
+                  if (offered || !skipped)
+                    TextButton(onPressed: onSkip, child: const Text('Skip')),
+                ],
+              ),
             ],
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
-class _RestCard extends StatelessWidget {
+@visibleForTesting
+bool b02RestPeriodBelongsToSlot(
+  B02RestPeriod period,
+  B02StrengthExecutionSlot slot,
+) {
+  final groupId = slot.groupId;
+  return (groupId != null && period.performedExerciseGroupId == groupId) ||
+      period.id.startsWith('rest:${slot.id}:');
+}
+
+class _RestCard extends StatefulWidget {
   final B02StrengthExecutionSlot slot;
   final B02ExecutionDraftState state;
-  final VoidCallback onBegin;
-  final ValueChanged<int> onCustom;
-  final ValueChanged<String> onExtend;
-  final ValueChanged<String> onSkip;
+  final VoidCallback? onBegin;
+  final ValueChanged<int>? onCustom;
+  final ValueChanged<String>? onExtend;
+  final ValueChanged<String>? onSkip;
+  final ValueChanged<String> onElapsed;
 
   const _RestCard({
     required this.slot,
@@ -583,65 +736,96 @@ class _RestCard extends StatelessWidget {
     required this.onCustom,
     required this.onExtend,
     required this.onSkip,
+    required this.onElapsed,
   });
 
   @override
+  State<_RestCard> createState() => _RestCardState();
+}
+
+class _RestCardState extends State<_RestCard> {
+  late DateTime _now;
+  Timer? _ticker;
+  var _finishingElapsedRest = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _now = DateTime.now().toUtc();
+    _syncTicker();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RestCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncTicker();
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final open = state.restPeriods
-        .where(
-          (period) =>
-              period.endedAtUtc == null &&
-              (period.performedExerciseGroupId == slot.groupId ||
-                  period.id.startsWith('rest:${slot.id}:')),
-        )
-        .toList();
-    final period = open.isEmpty ? null : open.last;
+    final period = _openPeriod(widget);
     return Card(
       child: ListTile(
         leading: const Icon(Icons.timer_outlined),
-        title: const Text('Rest timer'),
+        title: Text(
+          period == null ? 'Rest' : 'Rest · ${_remainingLabel(period)}',
+        ),
         subtitle: Text(
-          slot.groupType == null
-              ? 'Manual override · session-only · actual rest is recorded separately.'
-              : 'Transition rest follows the ${slot.groupType!.dbValue} member order. Manual +30/skip is session-only.',
+          widget.slot.groupType == null
+              ? 'Take a breather before your next set.'
+              : 'Rest before the next exercise in this group.',
         ),
         trailing: period == null
             ? Wrap(
                 spacing: 2,
                 children: [
-                  TextButton(onPressed: onBegin, child: const Text('Start')),
+                  TextButton(
+                    onPressed: widget.onBegin,
+                    child: const Text('Start'),
+                  ),
                   IconButton(
                     tooltip: 'Choose rest duration',
-                    onPressed: () async {
-                      final controller = TextEditingController();
-                      final value = await showDialog<int>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Custom rest'),
-                          content: TextField(
-                            controller: controller,
-                            autofocus: true,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Seconds',
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => context.pop(),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () =>
-                                  context.pop(int.tryParse(controller.text)),
-                              child: const Text('Start'),
-                            ),
-                          ],
-                        ),
-                      );
-                      controller.dispose();
-                      if (value != null && value >= 0) onCustom(value);
-                    },
+                    onPressed: widget.onCustom == null
+                        ? null
+                        : () async {
+                            final controller = TextEditingController();
+                            final value = await showDialog<int>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Custom rest'),
+                                content: TextField(
+                                  controller: controller,
+                                  autofocus: true,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Seconds',
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => context.pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => context.pop(
+                                      int.tryParse(controller.text),
+                                    ),
+                                    child: const Text('Start'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            controller.dispose();
+                            if (value != null && value >= 0) {
+                              widget.onCustom?.call(value);
+                            }
+                          },
                     icon: const Icon(Icons.tune),
                   ),
                 ],
@@ -651,18 +835,75 @@ class _RestCard extends StatelessWidget {
                 children: [
                   IconButton(
                     tooltip: 'Add 30 seconds',
-                    onPressed: () => onExtend(period.id),
+                    onPressed: widget.onExtend == null
+                        ? null
+                        : () => widget.onExtend?.call(period.id),
                     icon: const Icon(Icons.add_alarm_outlined),
                   ),
                   IconButton(
                     tooltip: 'Skip rest',
-                    onPressed: () => onSkip(period.id),
+                    onPressed: widget.onSkip == null
+                        ? null
+                        : () => widget.onSkip?.call(period.id),
                     icon: const Icon(Icons.skip_next_outlined),
                   ),
                 ],
               ),
       ),
     );
+  }
+
+  String _remainingLabel(B02RestPeriod period) {
+    final remaining = _remainingSeconds(period, _now);
+    final minutes = remaining ~/ 60;
+    final seconds = remaining % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  int _remainingSeconds(B02RestPeriod period, DateTime now) {
+    final total = period.selectedSeconds ?? period.recommendedSeconds ?? 0;
+    final elapsed = now.difference(period.startedAtUtc).inSeconds;
+    return (total - elapsed).clamp(0, total);
+  }
+
+  B02RestPeriod? _openPeriod(_RestCard value) {
+    final open = value.state.restPeriods
+        .where(
+          (period) =>
+              period.endedAtUtc == null &&
+              b02RestPeriodBelongsToSlot(period, value.slot),
+        )
+        .toList();
+    return open.isEmpty ? null : open.last;
+  }
+
+  void _syncTicker() {
+    final period = _openPeriod(widget);
+    if (period != null && _ticker == null) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        final now = DateTime.now().toUtc();
+        final open = _openPeriod(widget);
+        if (open == null) {
+          _syncTicker();
+          return;
+        }
+        if (_remainingSeconds(open, now) == 0) {
+          _ticker?.cancel();
+          _ticker = null;
+          if (!_finishingElapsedRest) {
+            _finishingElapsedRest = true;
+            widget.onElapsed(open.id);
+          }
+          return;
+        }
+        setState(() => _now = now);
+      });
+    } else if (period == null) {
+      _ticker?.cancel();
+      _ticker = null;
+      _finishingElapsedRest = false;
+    }
   }
 }
 

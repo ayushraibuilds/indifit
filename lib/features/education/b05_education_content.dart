@@ -1096,10 +1096,11 @@ class _B05ExerciseEducationPanelState
                   .map((label) => _unknownMuscleLabel(context, label)),
             ],
             const SizedBox(height: B05Layout.space12),
-            B05InteractiveMuscleDiagram(
-              muscles: model.muscles,
-              visualRegistry: visualRegistry,
-            ),
+            if (visualRegistry != null && visualRegistry.regions.isNotEmpty)
+              B05InteractiveMuscleDiagram(
+                muscles: model.muscles,
+                visualRegistry: visualRegistry,
+              ),
           ],
         ),
       ),

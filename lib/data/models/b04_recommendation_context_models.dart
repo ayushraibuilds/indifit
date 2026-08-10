@@ -562,6 +562,8 @@ class B04N8Context {
 class B04RecommendationContextInput {
   final String contextId;
   final String userId;
+  final String? nutritionUserId;
+  final String? constraintUserId;
   final B04RecommendationPeriod period;
   final String startLocalDate;
   final String endLocalDate;
@@ -581,6 +583,8 @@ class B04RecommendationContextInput {
   const B04RecommendationContextInput({
     required this.contextId,
     required this.userId,
+    this.nutritionUserId,
+    this.constraintUserId,
     required this.period,
     required this.startLocalDate,
     required this.endLocalDate,
@@ -602,6 +606,7 @@ class B04RecommendationContextInput {
 class B04RecommendationContext {
   final String contextId;
   final String userId;
+  final String nutritionUserId;
   final B04RecommendationWindow window;
   final DateTime evaluatedAtUtc;
   final B04ContextAvailability availability;
@@ -621,6 +626,7 @@ class B04RecommendationContext {
   const B04RecommendationContext({
     required this.contextId,
     required this.userId,
+    String? nutritionUserId,
     required this.window,
     required this.evaluatedAtUtc,
     required this.availability,
@@ -636,7 +642,7 @@ class B04RecommendationContext {
     required this.mealOpportunity,
     required this.missingEvidence,
     required this.n8,
-  });
+  }) : nutritionUserId = nutritionUserId ?? userId;
 
   /// This map is the provider/redaction boundary. It intentionally contains
   /// no user identity, display labels, raw records, prompts, images, health

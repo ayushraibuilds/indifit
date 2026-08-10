@@ -5,14 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/nutrition_constraints.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 import 'package:indifit/core/widgets/consumer_task_primitives.dart';
 import 'package:indifit/core/widgets/indi_fit_bottom_sheet.dart';
 import 'package:indifit/core/widgets/skeleton_loader.dart';
-import 'package:indifit/data/database/app_database.dart';
+import 'package:indifit/data/database/app_database.dart'
+    hide NutritionConstraintDefinition, NutritionUserConstraint;
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
+import 'package:indifit/data/repositories/nutrition_constraint_repository.dart';
 import 'package:indifit/features/calendar/occurrence_actions_sheet.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
 import 'package:indifit/features/exercise_library/exercise_details_sheet.dart';
@@ -20,7 +23,9 @@ import 'package:indifit/features/exercise_library/exercise_library_screen.dart';
 import 'package:indifit/features/food_log/ai_meal_logger_screen.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:indifit/features/profile/profile_screen.dart';
+import 'package:indifit/features/progress/progress_dashboard_models.dart';
 import 'package:indifit/features/progress/progress_screen.dart';
+import 'package:indifit/features/settings/nutrition_constraints_controller.dart';
 import 'package:indifit/features/settings/nutrition_constraints_screen.dart';
 import 'package:indifit/features/workout_player/routine_display_screen.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
@@ -202,7 +207,7 @@ void main() {
         name: 'progress empty light',
         fileName: 'ux_w06_progress_empty_light.png',
         brightness: Brightness.light,
-        builder: () => const ProgressScreen(),
+        builder: () => ProgressScreen(preview: _certificationProgressEmpty),
       ),
       _GoldenRoute(
         name: 'calendar loading dark',
@@ -859,6 +864,17 @@ class _VisualSystemPreview extends StatelessWidget {
   }
 }
 
+final _certificationProgressEmpty = ProgressDashboardSnapshot(
+  nowUtc: DateTime.utc(2026, 8, 9, 12),
+  timezoneId: 'Asia/Kolkata',
+  todayLocalDate: '2026-08-09',
+  measurements: const [],
+  workouts: const [],
+  strengthSets: const [],
+  muscleBalance: null,
+  unavailableSections: const {},
+);
+
 Widget _app({
   required ThemeData theme,
   required MediaQueryData media,
@@ -877,12 +893,75 @@ Widget _providerApp({
   required Widget child,
 }) {
   return ProviderScope(
-    overrides: [databaseProvider.overrideWithValue(database)],
+    overrides: [
+      databaseProvider.overrideWithValue(database),
+      userProfileProvider.overrideWith(
+        (ref) => _CertificationProfileNotifier(),
+      ),
+      nutritionConstraintManagementControllerProvider.overrideWith(
+        (ref) => _CertificationConstraintController(database),
+      ),
+    ],
     child: MediaQuery(
       data: media,
       child: MaterialApp(theme: theme, home: child),
     ),
   );
+}
+
+class _CertificationProfileNotifier extends UserProfileNotifier {
+  _CertificationProfileNotifier() : super() {
+    state = const UserProfileState(
+      isLoaded: true,
+      hasProfile: true,
+      calorieGoal: 2200,
+      proteinGoal: 140,
+      carbsGoal: 250,
+      fatGoal: 70,
+      currentWeight: 80,
+      userHeight: 180,
+      userName: 'Ayush',
+      userSex: 'male',
+      userAge: 30,
+      userActivityLevel: 'moderate',
+      userGoal: 'gain',
+      dietPreference: 'non-veg',
+    );
+  }
+
+  @override
+  Future<void> loadProfile() async {}
+}
+
+class _CertificationConstraintRepository extends NutritionConstraintRepository {
+  _CertificationConstraintRepository(AppDatabase database)
+    : super(database: database);
+
+  @override
+  Future<List<NutritionConstraintDefinition>> listTaxonomy() async =>
+      NutritionConstraintTaxonomy.definitions;
+
+  @override
+  Future<List<NutritionUserConstraint>> listAllConstraints({
+    required String userId,
+  }) async => const [];
+}
+
+class _CertificationConstraintController
+    extends NutritionConstraintManagementController {
+  _CertificationConstraintController(AppDatabase database)
+    : super(
+        repository: _CertificationConstraintRepository(database),
+        userId: 'certification-user',
+      ) {
+    state = NutritionConstraintManagementState(
+      status: NutritionConstraintManagementStatus.empty,
+      definitions: NutritionConstraintTaxonomy.definitions,
+    );
+  }
+
+  @override
+  Future<void> load() async {}
 }
 
 double _contrast(Color first, Color second) {

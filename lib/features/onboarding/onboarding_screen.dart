@@ -25,7 +25,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 8;
+  final int _totalPages = 4;
 
   // Onboarding parameters
   int _age = 25;
@@ -56,14 +56,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String? _ageError;
   String? _heightError;
   String? _weightError;
-  String? _targetWeightError;
   final B05OnboardingDraftStore _draftStore = const B05OnboardingDraftStore();
   Future<void> _draftWrite = Future<void>.value();
   var _draftLoading = true;
   var _draftLoaded = false;
   String? _draftError;
   var _isCompleting = false;
+  var _isSkipping = false;
   String? _completionError;
+  String? _skipError;
 
   @override
   void initState() {
@@ -71,7 +72,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _ageController.addListener(_validateAge);
     _heightController.addListener(_validateHeight);
     _weightController.addListener(_validateWeight);
-    _targetWeightController.addListener(_validateTargetWeight);
     _loadDraft();
   }
 
@@ -87,7 +87,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (!mounted) return;
       if (draft != null) {
         setState(() {
-          _currentPage = draft.currentPage.clamp(0, _totalPages - 1);
+          _currentPage = _stageForLegacyPage(
+            draft.currentPage,
+            draft.flowVersion,
+          );
           _sex = draft.sex;
           _activityLevel = draft.activityLevel;
           _goal = draft.goal;
@@ -134,12 +137,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       goal: _goal,
       targetWeight: _targetWeightController.text,
       dietPreference: _dietPreference,
+      flowVersion: 2,
     );
     final next = _draftWrite
         .catchError((_) {})
         .then((_) => _draftStore.saveProfileDraft(draft));
     _draftWrite = next;
     return next;
+  }
+
+  /// Old releases stored one page for each body field. R6 keeps those answers
+  /// but resumes them inside the shorter consumer stages.
+  int _stageForLegacyPage(int page, int flowVersion) {
+    if (flowVersion >= 2) return page.clamp(0, _totalPages - 1);
+    if (page <= 3) return 0;
+    if (page <= 4) return 2;
+    if (page <= 6) return 1;
+    return 3;
   }
 
   void _dismissInputFocus() {
@@ -185,17 +199,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     });
   }
 
-  void _validateTargetWeight() {
-    final v = double.tryParse(_targetWeightController.text);
-    setState(() {
-      if (v == null || v < 25 || v > 350) {
-        _targetWeightError = 'Enter target weight between 25 and 350 kg.';
-      } else {
-        _targetWeightError = null;
-      }
-    });
-  }
-
   @override
   void dispose() {
     _pageController.dispose();
@@ -215,45 +218,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _dismissInputFocus();
     if (_currentPage == 0 && _sex == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select your biological sex to proceed.'),
-        ),
+        const SnackBar(content: Text('Choose an option above to continue.')),
       );
       return;
-    } else if (_currentPage == 1 && _ageError != null) {
+    } else if (_currentPage == 0 && _ageError != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(_ageError!)));
       return;
-    } else if (_currentPage == 2 && _heightError != null) {
+    } else if (_currentPage == 0 && _heightError != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(_heightError!)));
       return;
-    } else if (_currentPage == 3 && _weightError != null) {
+    } else if (_currentPage == 0 && _weightError != null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(_weightError!)));
       return;
-    } else if (_currentPage == 6 && _targetWeightError != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_targetWeightError!)));
-      return;
-    }
-
-    // Smart pre-fill for target weight when leaving weight page
-    if (_currentPage == 3) {
-      final currentW = double.tryParse(_weightController.text) ?? 70.0;
-      if (_targetWeightController.text == '70' ||
-          _targetWeightController.text.isEmpty) {
-        final recTarget = switch (_goal) {
-          'lose' => (currentW * 0.9).roundToDouble(),
-          'gain' => (currentW * 1.05).roundToDouble(),
-          _ => currentW,
-        };
-        _targetWeightController.text = recTarget.toStringAsFixed(1);
-      }
     }
 
     unawaited(_saveDraft().catchError((_) {}));
@@ -290,10 +272,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Mifflin-St Jeor formula for BMR + TDEE multiplier + deficit/surplus adjustments
   Future<void> _completeOnboarding() async {
-    if (_isCompleting) return;
+    if (_isCompleting || _isSkipping) return;
     setState(() {
       _isCompleting = true;
       _completionError = null;
+      _skipError = null;
     });
     try {
       await _saveDraft();
@@ -311,6 +294,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
     } finally {
       if (mounted) setState(() => _isCompleting = false);
+    }
+  }
+
+  Future<void> _skipOnboarding() async {
+    if (_isCompleting || _isSkipping || !_draftLoaded) return;
+    _dismissInputFocus();
+    setState(() {
+      _isSkipping = true;
+      _skipError = null;
+      _completionError = null;
+    });
+    try {
+      await _draftWrite;
+      await _draftStore.markProfileOnboardingSkipped();
+      ref.read(onboardingCompletedProvider.notifier).state = true;
+      if (mounted) context.go('/');
+    } catch (_) {
+      if (mounted) {
+        setState(() => _skipError = 'Your setup was not skipped. Try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _isSkipping = false);
     }
   }
 
@@ -371,6 +376,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       double.parse(dailyFat.toStringAsFixed(1)),
     );
 
+    // Store user parameters. Target weight is derived only when the user did
+    // not provide one in the legacy draft; it is not a required setup step.
+    _targetWeight = switch (_goal) {
+      'lose' => (_weight * 0.9).roundToDouble(),
+      'gain' => (_weight * 1.05).roundToDouble(),
+      _ => _weight,
+    };
+
     // Store user parameters
     if (_nameController.text.trim().isNotEmpty) {
       await prefs.setString('user_name', _nameController.text.trim());
@@ -394,6 +407,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     // Complete onboarding flag
     await prefs.setBool('onboarding_completed', true);
+    await prefs.remove('onboarding_skipped');
 
     // Notify router that onboarding is now complete
     ref.read(onboardingCompletedProvider.notifier).state = true;
@@ -402,15 +416,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // profile. The save queue was awaited by _completeOnboarding.
     await _draftStore.clearProfileDraft();
 
-    // Chain to RoutineWizardScreen with mapped training goal
-    final trainingGoal = switch (_goal) {
-      'lose' => 'weight_loss',
-      'gain' => 'hypertrophy',
-      _ => 'hypertrophy',
-    };
-
     if (mounted) {
-      context.go('/routine-wizard?goal=$trainingGoal');
+      context.go('/');
     }
   }
 
@@ -423,6 +430,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       padding: EdgeInsets.zero,
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              B05Layout.space16,
+              B05Layout.space4,
+              B05Layout.space16,
+              0,
+            ),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _draftLoaded && !_isCompleting && !_isSkipping
+                    ? _skipOnboarding
+                    : null,
+                child: const Text('Skip for now'),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               B05Layout.space16,
@@ -452,7 +476,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
                 const SizedBox(width: B05Layout.space12),
                 Text(
-                  '${_currentPage + 1}/$_totalPages',
+                  '${_currentPage + 1} of $_totalPages',
                   style: B05Typography.label(
                     context,
                   ).copyWith(color: colors.textSecondary),
@@ -470,6 +494,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onRetry: _isCompleting ? null : _completeOnboarding,
               ),
             ),
+          if (_skipError != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: ConsumerStatusRow(
+                label: 'Setup could not be skipped',
+                detail: _skipError,
+                error: true,
+                onRetry: _isSkipping ? null : _skipOnboarding,
+              ),
+            ),
           Expanded(
             child: PageView(
               controller: _pageController,
@@ -480,13 +514,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 unawaited(_saveDraft().catchError((_) {}));
               },
               children: [
-                _buildSexPage(),
-                _buildAgePage(),
-                _buildHeightPage(),
-                _buildWeightPage(),
-                _buildActivityPage(),
+                _buildAboutPage(),
                 _buildGoalPage(),
-                _buildTargetWeightPage(),
+                _buildActivityPage(),
                 _buildDietPage(),
               ],
             ),
@@ -499,7 +529,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             : _completionError != null && _currentPage == _totalPages - 1
             ? 'Retry setup'
             : _currentPage == _totalPages - 1
-            ? 'Create my plan'
+            ? 'Finish setup'
             : 'Next Step',
         onPressed: _isCompleting ? null : _nextPage,
       ),
@@ -545,11 +575,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildSexPage() {
+  Widget _buildAboutPage() {
     final colors = context.b05Colors;
     return OnboardingPageContainer(
       title: 'Welcome to IndiFit!',
-      subtitle: 'Your intelligent fitness & Indian nutrition companion.',
+      subtitle: 'A few details help us make your starting point useful.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -605,64 +635,47 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
             ),
           ),
+          const SizedBox(height: B05Layout.space20),
+          Text('How old are you?', style: B05Typography.label(context)),
+          const SizedBox(height: B05Layout.space8),
+          OnboardingNumberInputField(
+            controller: _ageController,
+            label: 'Age',
+            suffix: 'years',
+            icon: Icons.calendar_today,
+            errorText: _ageError,
+            onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
+            onEditingComplete: _dismissInputFocus,
+          ),
+          const SizedBox(height: B05Layout.space12),
+          OnboardingNumberInputField(
+            controller: _heightController,
+            label: 'Height',
+            suffix: 'cm',
+            icon: Icons.height,
+            errorText: _heightError,
+            onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
+            onEditingComplete: _dismissInputFocus,
+          ),
+          const SizedBox(height: B05Layout.space12),
+          OnboardingNumberInputField(
+            controller: _weightController,
+            label: 'Current weight',
+            suffix: 'kg',
+            icon: Icons.scale,
+            errorText: _weightError,
+            onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
+            onEditingComplete: _dismissInputFocus,
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAgePage() {
-    return OnboardingPageContainer(
-      title: 'How old are you?',
-      subtitle: 'Your age helps us compute changes in calorie metabolism.',
-      child: OnboardingNumberInputField(
-        controller: _ageController,
-        label: 'Age',
-        suffix: 'years',
-        icon: Icons.calendar_today,
-        errorText: _ageError,
-        onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
-        onEditingComplete: _dismissInputFocus,
-      ),
-    );
-  }
-
-  Widget _buildHeightPage() {
-    return OnboardingPageContainer(
-      title: 'How tall are you?',
-      subtitle: 'Height is vital for calculating structural metabolic needs.',
-      child: OnboardingNumberInputField(
-        controller: _heightController,
-        label: 'Height',
-        suffix: 'cm',
-        icon: Icons.height,
-        errorText: _heightError,
-        onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
-        onEditingComplete: _dismissInputFocus,
-      ),
-    );
-  }
-
-  Widget _buildWeightPage() {
-    return OnboardingPageContainer(
-      title: "What's your current weight?",
-      subtitle: 'Used to determine daily macro limits and starting points.',
-      child: OnboardingNumberInputField(
-        controller: _weightController,
-        label: 'Weight',
-        suffix: 'kg',
-        icon: Icons.scale,
-        errorText: _weightError,
-        onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
-        onEditingComplete: _dismissInputFocus,
       ),
     );
   }
 
   Widget _buildActivityPage() {
     return OnboardingPageContainer(
-      title: 'What is your activity level?',
-      subtitle:
-          'Estimates your TDEE multiplier based on gym/lifestyle workouts.',
+      title: 'How do you move most days?',
+      subtitle: 'Choose the description that feels closest right now.',
       child: Column(
         children: [
           OnboardingSelectionCard(
@@ -708,59 +721,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildGoalPage() {
     return OnboardingPageContainer(
       title: 'What is your main goal?',
-      subtitle: 'We will tailor your caloric balance to hit this goal.',
+      subtitle: 'You can change this later as your focus changes.',
       child: Column(
         children: [
           OnboardingSelectionCard(
-            title: 'Lose Weight',
-            subtitle: 'Burn fat with a healthy calorie deficit',
+            title: 'Lose weight',
+            subtitle: 'Reduce body weight while supporting training.',
             icon: Icons.trending_down,
             selected: _goal == 'lose',
             onTap: () => _selectOnboardingChoice(() => _goal = 'lose'),
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
-            title: 'Maintain Weight',
-            subtitle: 'Stay active, stay fit, and lock in current weight',
+            title: 'Maintain',
+            subtitle: 'Keep your weight around its current level.',
             icon: Icons.compare_arrows,
             selected: _goal == 'maintain',
             onTap: () => _selectOnboardingChoice(() => _goal = 'maintain'),
           ),
           const SizedBox(height: 16),
           OnboardingSelectionCard(
-            title: 'Gain Muscle',
-            subtitle: 'Build lean bulk with a caloric surplus',
+            title: 'Gain / build muscle',
+            subtitle: 'Support muscle and body-weight gain.',
             icon: Icons.trending_up,
             selected: _goal == 'gain',
             onTap: () => _selectOnboardingChoice(() => _goal = 'gain'),
           ),
-          const SizedBox(height: 20),
-          B05AdaptiveLessonPath(selectedGoal: _goal),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTargetWeightPage() {
-    return OnboardingPageContainer(
-      title: 'What is your target weight?',
-      subtitle: 'The goal weight you are striving to reach.',
-      child: OnboardingNumberInputField(
-        controller: _targetWeightController,
-        label: 'Target Weight',
-        suffix: 'kg',
-        icon: Icons.track_changes,
-        errorText: _targetWeightError,
-        onChanged: (_) => unawaited(_saveDraft().catchError((_) {})),
-        onEditingComplete: _dismissInputFocus,
       ),
     );
   }
 
   Widget _buildDietPage() {
     return OnboardingPageContainer(
-      title: 'Dietary preference?',
-      subtitle: 'Tailors AI meal options and search recommendations.',
+      title: 'How do you like to eat?',
+      subtitle: 'This helps recommendations fit your everyday meals.',
       child: Column(
         children: [
           OnboardingSelectionCard(

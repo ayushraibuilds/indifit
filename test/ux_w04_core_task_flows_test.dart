@@ -115,6 +115,7 @@ void main() {
 
     expect(find.text('Welcome to IndiFit!'), findsOneWidget);
     expect(find.text('Select your biological sex:'), findsOneWidget);
+    expect(find.text('Skip for now'), findsOneWidget);
     expect(find.text('Next Step'), findsOneWidget);
     expect(find.textContaining('0/100'), findsNothing);
     expect(tester.takeException(), isNull);

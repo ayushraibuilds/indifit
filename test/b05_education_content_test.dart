@@ -509,8 +509,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Exercise education'), findsOneWidget);
-      expect(find.text('Offline exercise media'), findsOneWidget);
-      expect(find.text('Exercise media is unavailable'), findsOneWidget);
+      expect(find.text('Offline exercise media'), findsNothing);
+      expect(find.text('Exercise media is unavailable'), findsNothing);
+      expect(find.text('Form checklist'), findsOneWidget);
       expect(find.text('INSTRUCTION VIDEO'), findsNothing);
       expect(find.byIcon(Icons.play_circle_fill_rounded), findsNothing);
       expect(find.byType(Image), findsNothing);

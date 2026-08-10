@@ -121,13 +121,13 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.bySemanticsLabel('Complete in player'), findsOneWidget);
+    expect(find.bySemanticsLabel('Start workout'), findsOneWidget);
     expect(find.bySemanticsLabel('Skip workout'), findsOneWidget);
     // The normal playlist entry is intentionally omitted when no approved
     // provider is registered; this prevents a dead-end setup route.
     expect(find.bySemanticsLabel('Playlist launcher'), findsNothing);
     expect(
-      tester.getSize(find.bySemanticsLabel('Complete in player')).height,
+      tester.getSize(find.bySemanticsLabel('Start workout')).height,
       greaterThanOrEqualTo(48),
     );
 

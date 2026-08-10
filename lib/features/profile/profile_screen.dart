@@ -7,8 +7,11 @@ import '../../core/presentation/secondary_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
 import '../dashboard/dashboard_controller.dart';
+import '../onboarding/onboarding_screen.dart';
+import '../settings/unit_preference.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -31,6 +34,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String? _dietPreferenceSourceValue;
   var _dietPreferenceChanged = false;
   String _selectedEquipment = 'full_gym';
+  String _displayUnits = UnitPreferenceNotifier.metric;
+  var _heightChanged = false;
+  var _weightChanged = false;
 
   String? _sourceSex;
   String? _sourceGoal;
@@ -53,19 +59,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _injuriesController = TextEditingController();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void _initializeFromProfile(UserProfileState p, String units) {
     if (!_initialized) {
-      final p = ref.watch(userProfileProvider);
+      _displayUnits = units;
       _nameController.text = p.userName ?? '';
       _ageController.text = p.userAge > 0 ? p.userAge.toString() : '25';
-      _heightController.text = (p.userHeight != null && p.userHeight! > 0)
-          ? p.userHeight!.round().toString()
-          : '170';
-      _weightController.text = p.currentWeight > 0
-          ? p.currentWeight.toStringAsFixed(1)
-          : '70.0';
+      _setMeasurementDisplay(p, units);
       _injuriesController.text = p.injuriesLimitations;
 
       _sourceSex = p.userSex;
@@ -97,6 +96,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  void _setMeasurementDisplay(UserProfileState profile, String units) {
+    if (!_heightChanged && profile.userHeight != null) {
+      _heightController.text = UnitPreferencePresentation.heightForDisplay(
+        profile.userHeight!,
+        units,
+      ).toStringAsFixed(UnitPreferencePresentation.isImperial(units) ? 1 : 0);
+    }
+    if (!_weightChanged) {
+      _weightController.text = UnitPreferencePresentation.weightForDisplay(
+        profile.currentWeight,
+        units,
+      ).toStringAsFixed(1);
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -108,9 +122,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _handleSave() async {
+    final p = ref.read(userProfileProvider);
     final age = int.tryParse(_ageController.text.trim());
-    final height = double.tryParse(_heightController.text.trim());
-    final weight = double.tryParse(_weightController.text.trim());
+    final displayedHeight = double.tryParse(_heightController.text.trim());
+    final displayedWeight = double.tryParse(_weightController.text.trim());
+    final height = !_heightChanged
+        ? p.userHeight
+        : displayedHeight == null
+        ? null
+        : UnitPreferencePresentation.heightForStorage(
+            displayedHeight,
+            _displayUnits,
+          );
+    final weight = !_weightChanged
+        ? p.currentWeight
+        : displayedWeight == null
+        ? null
+        : UnitPreferencePresentation.weightForStorage(
+            displayedWeight,
+            _displayUnits,
+          );
     final name = _nameController.text.trim();
     final injuries = _injuriesController.text.trim();
     final sex = ProfilePresentation.valueForSave(
@@ -140,15 +171,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return;
     }
     if (height == null || height < 100 || height > 250) {
-      _showError('Please enter a valid height between 100 and 250 cm.');
+      _showError(
+        UnitPreferencePresentation.isImperial(_displayUnits)
+            ? 'Please enter a valid height between 39.4 and 98.4 in.'
+            : 'Please enter a valid height between 100 and 250 cm.',
+      );
       return;
     }
     if (weight == null || weight < 30 || weight > 300) {
-      _showError('Please enter a valid weight between 30 and 300 kg.');
+      _showError(
+        UnitPreferencePresentation.isImperial(_displayUnits)
+            ? 'Please enter a valid weight between 66.1 and 661.4 lb.'
+            : 'Please enter a valid weight between 30 and 300 kg.',
+      );
       return;
     }
 
-    final p = ref.read(userProfileProvider);
     final bodyOrGoalChanged =
         p.userAge != age ||
         (p.userHeight ?? 0) != height ||
@@ -293,14 +331,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(userProfileProvider);
+    final units = ref.watch(unitPreferenceProvider);
+    if (!profile.isLoaded) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Profile')),
+        body: const Padding(
+          padding: EdgeInsets.all(B05Layout.space16),
+          child: ConsumerStatusRow(
+            label: 'Loading profile',
+            detail: 'Getting your details ready.',
+            loading: true,
+          ),
+        ),
+      );
+    }
+    if (!profile.hasProfile) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Profile')),
+        body: ProductEmptyState(
+          icon: Icons.person_add_alt_1_outlined,
+          title: 'Complete your profile when you’re ready',
+          message:
+              'Add your details to personalize goals and recommendations. Basic logging remains available without them.',
+          actionLabel: 'Complete profile',
+          actionIcon: Icons.arrow_forward_rounded,
+          action: () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+          ),
+        ),
+      );
+    }
+    _initializeFromProfile(profile, units);
+    if (_displayUnits != units) {
+      _displayUnits = units;
+      _setMeasurementDisplay(profile, units);
+    }
     return Scaffold(
-      appBar: AppBar(title: const Text('Your profile'), elevation: 0),
+      appBar: AppBar(title: const Text('Profile'), elevation: 0),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(B05Layout.space20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader(context, 'About you'),
+            _buildSectionHeader(context, 'Personal details'),
             const SizedBox(height: B05Layout.space8),
             B05Surface(
               padding: const EdgeInsets.all(B05Layout.space16),
@@ -309,7 +383,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   TextField(
                     controller: _nameController,
                     decoration: const InputDecoration(
-                      labelText: 'Display Name',
+                      labelText: 'Name (optional)',
                       prefixIcon: Icon(Icons.person_outline_rounded),
                     ),
                   ),
@@ -319,7 +393,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       TextField(
                         controller: _ageController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Age (years)',
                           suffixText: 'yrs',
                         ),
@@ -352,22 +426,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     children: [
                       TextField(
                         controller: _heightController,
+                        onChanged: (_) => _heightChanged = true,
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Height',
-                          suffixText: 'cm',
+                          suffixText: UnitPreferencePresentation.heightSymbol(
+                            units,
+                          ),
                         ),
                       ),
                       TextField(
                         controller: _weightController,
+                        onChanged: (_) => _weightChanged = true,
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Weight',
-                          suffixText: 'kg',
+                          suffixText: UnitPreferencePresentation.weightSymbol(
+                            units,
+                          ),
                         ),
                       ),
                     ],
@@ -377,7 +457,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: B05Layout.space24),
 
-            _buildSectionHeader(context, 'Goals and routine'),
+            _buildSectionHeader(context, 'Goals'),
             const SizedBox(height: B05Layout.space8),
             B05Surface(
               padding: const EdgeInsets.all(B05Layout.space16),
@@ -455,7 +535,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: B05Layout.space24),
 
-            _buildSectionHeader(context, 'Food preferences'),
+            _buildSectionHeader(context, 'Nutrition preferences'),
             const SizedBox(height: B05Layout.space8),
             B05Surface(
               padding: const EdgeInsets.all(B05Layout.space16),
@@ -464,7 +544,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 decoration: InputDecoration(
                   labelText: 'How do you like to eat?',
                   helperText: _selectedDiet == null
-                      ? 'Choose your dietary preference.'
+                      ? 'Choose your dietary pattern.'
                       : null,
                   prefixIcon: const Icon(Icons.restaurant_rounded),
                 ),
@@ -480,7 +560,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: B05Layout.space24),
 
-            _buildSectionHeader(context, 'Training setup'),
+            _buildSectionHeader(context, 'Training preferences'),
             const SizedBox(height: B05Layout.space8),
             B05Surface(
               padding: const EdgeInsets.all(B05Layout.space16),

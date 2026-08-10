@@ -5,7 +5,13 @@ import '../../core/fixtures/b05_foundation_registry.dart';
 /// This is deliberately a packaged capability hint, not an evaluation of a
 /// workout, nutrition, progress, or coaching fact. B05-04 supplies the
 /// corresponding read adapters from the existing B01–B04 authorities.
-enum DashboardModuleEligibility { workout, nutrition, progress, nextAction }
+enum DashboardModuleEligibility {
+  workout,
+  nutrition,
+  activity,
+  progress,
+  nextAction,
+}
 
 /// A packaged dashboard module descriptor. Persisted data can name only the
 /// stable [id]; it cannot select a widget, plugin, size, or executable
@@ -158,30 +164,44 @@ class DashboardPersonalizationValidationException extends FormatException {
 final DashboardModuleRegistry standardDashboardModuleRegistry =
     DashboardModuleRegistry([
       const DashboardModuleDescriptor(
-        id: 'today.next_action',
+        id: 'today.meals',
         defaultOrdinal: 0,
-        label: 'Daily focus',
-        customizationLabel: 'Daily focus',
+        label: 'Nutrition',
+        customizationLabel: 'Nutrition hero',
+        eligibility: DashboardModuleEligibility.nutrition,
+      ),
+      const DashboardModuleDescriptor(
+        id: 'today.next_action',
+        defaultOrdinal: 1,
+        label: 'Next up',
+        customizationLabel: 'Next up',
         eligibility: DashboardModuleEligibility.nextAction,
         collapsible: false,
       ),
       const DashboardModuleDescriptor(
+        id: 'today.meal_rows',
+        defaultOrdinal: 2,
+        label: 'Meals',
+        customizationLabel: 'Meals',
+        eligibility: DashboardModuleEligibility.nutrition,
+      ),
+      const DashboardModuleDescriptor(
         id: 'today.workout',
-        defaultOrdinal: 1,
+        defaultOrdinal: 3,
         label: 'Workout',
         customizationLabel: 'Workout',
         eligibility: DashboardModuleEligibility.workout,
       ),
       const DashboardModuleDescriptor(
-        id: 'today.meals',
-        defaultOrdinal: 2,
-        label: 'Nutrition',
-        customizationLabel: 'Nutrition and meals',
-        eligibility: DashboardModuleEligibility.nutrition,
+        id: 'today.activity',
+        defaultOrdinal: 4,
+        label: 'Activity',
+        customizationLabel: 'Activity and recovery',
+        eligibility: DashboardModuleEligibility.activity,
       ),
       const DashboardModuleDescriptor(
         id: 'today.progress',
-        defaultOrdinal: 3,
+        defaultOrdinal: 5,
         label: 'Progress',
         customizationLabel: 'Progress',
         eligibility: DashboardModuleEligibility.progress,

@@ -5,6 +5,7 @@ import 'package:indifit/core/fixtures/b04_adaptive_coaching_fixture_matrix.dart'
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_constraints.dart';
 import 'package:indifit/core/nutrition_consumption_snapshots.dart';
+import 'package:indifit/core/nutrition_household_measures.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/typed_quantities.dart';
@@ -197,6 +198,7 @@ void main() {
         db: db,
         registry: registry,
         userId: '1',
+        nutritionUserId: kLocalNutritionUserScopeId,
       );
       await db.into(db.userProfiles).insert(UserProfilesCompanion.insert());
       container = _container(db: db, registry: registry);
@@ -214,6 +216,42 @@ void main() {
       expect(controller.state.status, B04CurrentFoodControllerStatus.ready);
       expect(controller.state.guidance!.cards, hasLength(1));
       expect(controller.state.guidance!.cards.single.subjectId, 'food-1');
+    },
+  );
+
+  test(
+    'production current-food safety reads B03 constraints under the local nutrition scope',
+    () async {
+      final scenario = await _seedScenario(
+        db: db,
+        registry: registry,
+        userId: '1',
+        nutritionUserId: kLocalNutritionUserScopeId,
+        addAllergyWithoutFoodEvidence: true,
+      );
+      await db.into(db.userProfiles).insert(UserProfilesCompanion.insert());
+      container = _container(db: db, registry: registry);
+
+      final context = await container!.read(
+        b04ProductionRecommendationContextProvider.future,
+      );
+      expect(context.userId, scenario.userId);
+
+      final controller = container!.read(
+        b04CurrentFoodControllerProvider.notifier,
+      );
+      await controller.loadProduction(context: context);
+
+      expect(
+        controller.state.status,
+        B04CurrentFoodControllerStatus.unavailable,
+      );
+      expect(controller.state.guidance!.cards, isEmpty);
+      expect(controller.state.guidance!.excludedCandidates, hasLength(1));
+      expect(
+        controller.state.guidance!.excludedCandidates.single.reasonCodes,
+        contains('dietary_unavailable'),
+      );
     },
   );
 
@@ -397,10 +435,12 @@ Future<_Scenario> _seedScenario({
   required AppDatabase db,
   required NutrientRegistry registry,
   String userId = 'user-1',
+  String? nutritionUserId,
   bool includeConsumption = true,
   bool addAllergyWithoutFoodEvidence = false,
   bool includeAdaptiveLineage = true,
 }) async {
+  final nutritionOwner = nutritionUserId ?? userId;
   const timezoneId = 'Asia/Kolkata';
   final dates = LocalScheduleDateService();
   final nowUtc = DateTime.now().toUtc();
@@ -483,7 +523,7 @@ Future<_Scenario> _seedScenario({
       final date = dates.addCalendarDays(weekStart, timezoneId, index);
       await consumption.finalizeConsumption(
         NutritionConsumptionFinalizeRequest(
-          userId: userId,
+          userId: nutritionOwner,
           consumptionId: 'consumption-$index',
           commandId: 'command-$index',
           loggedAtUtc: nowUtc.subtract(Duration(days: 6 - index)),
@@ -516,7 +556,7 @@ Future<_Scenario> _seedScenario({
       database: db,
       nowUtc: () => nowUtc,
     ).createUserConstraint(
-      userId: userId,
+      userId: nutritionOwner,
       type: NutritionConstraintType.allergy,
       target: NutritionConstraintTarget(
         type: NutritionConstraintTargetType.allergen,

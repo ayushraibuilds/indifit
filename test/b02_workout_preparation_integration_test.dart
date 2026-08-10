@@ -331,6 +331,28 @@ void main() {
     },
   );
 
+  test('elapsed rest closes through the durable B02 rest path', () async {
+    final controller = B02StrengthExecutionController(adapter);
+    addTearDown(controller.dispose);
+
+    await controller.startUnscheduled(
+      routineName: 'Elapsed rest press',
+      executionSnapshotJson: snapshot(),
+    );
+    final slot = controller.state.slots.single;
+    await controller.recordSet(slot: slot, reps: 8, loadKg: 80, rpe: 8);
+    await controller.beginRest(slot);
+
+    final period = controller.state.launch!.state.restPeriods.single;
+    final endedAt = period.startedAtUtc.add(const Duration(seconds: 91));
+    await controller.completeRest(period.id, endedAtUtc: endedAt);
+
+    final completed = controller.state.launch!.state.restPeriods.single;
+    expect(completed.endedAtUtc, endedAt);
+    expect(completed.actualSeconds, 91);
+    expect(completed.endReason, B02RestEndReason.elapsed);
+  });
+
   test(
     'prescribed rest remains ahead of automatic rest in production slots',
     () async {

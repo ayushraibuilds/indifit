@@ -270,6 +270,7 @@ class B05ProfileOnboardingDraft {
   final String goal;
   final String targetWeight;
   final String dietPreference;
+  final int flowVersion;
 
   const B05ProfileOnboardingDraft({
     required this.currentPage,
@@ -282,6 +283,7 @@ class B05ProfileOnboardingDraft {
     required this.goal,
     required this.targetWeight,
     required this.dietPreference,
+    this.flowVersion = 1,
   });
 }
 
@@ -296,6 +298,7 @@ class B05OnboardingDraftStore {
   static const _profileGoalKey = 'onboarding_draft_goal';
   static const _profileTargetWeightKey = 'onboarding_draft_target_weight';
   static const _profileDietKey = 'onboarding_draft_diet';
+  static const _profileFlowVersionKey = 'onboarding_draft_flow_version';
 
   static const _routineStepKey = 'onboarding_draft_routine_step';
   static const _routineGoalKey = 'onboarding_draft_routine_goal';
@@ -332,6 +335,7 @@ class B05OnboardingDraftStore {
         maxLength: 16,
       ),
       dietPreference: normalizeDiet(prefs.getString(_profileDietKey)),
+      flowVersion: prefs.getInt(_profileFlowVersionKey) ?? 1,
     );
   }
 
@@ -369,6 +373,7 @@ class B05OnboardingDraftStore {
       _bounded(draft.targetWeight, maxLength: 16),
     );
     await prefs.setString(_profileDietKey, normalizeDiet(draft.dietPreference));
+    await prefs.setInt(_profileFlowVersionKey, draft.flowVersion);
   }
 
   Future<void> clearProfileDraft() async {
@@ -384,9 +389,19 @@ class B05OnboardingDraftStore {
       _profileGoalKey,
       _profileTargetWeightKey,
       _profileDietKey,
+      _profileFlowVersionKey,
     ]) {
       await prefs.remove(key);
     }
+  }
+
+  /// Marks profile setup as intentionally deferred without creating a
+  /// profile, target, eligibility, or adaptive recommendation from defaults.
+  Future<void> markProfileOnboardingSkipped() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_completed', true);
+    await prefs.setBool('onboarding_skipped', true);
+    await clearProfileDraft();
   }
 
   Future<B05RoutineWizardDraft?> readRoutineDraft() async {

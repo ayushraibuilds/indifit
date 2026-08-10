@@ -446,37 +446,13 @@ class B05ExerciseMediaPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(b05MediaBundleControllerProvider);
+    ref.watch(b05MediaBundleControllerProvider);
     final view = ref
         .read(b05MediaBundleControllerProvider.notifier)
         .exercise(exerciseId);
-    final body = switch (view.status) {
-      B05MediaExerciseStatus.loading => const B05StatusMessage(
-        status: B05SemanticStatus.info,
-        label: 'Checking bundled exercise media',
-      ),
-      B05MediaExerciseStatus.available => _available(context, view),
-      B05MediaExerciseStatus.unavailable => B05StatusMessage(
-        status: B05SemanticStatus.unavailable,
-        label: 'Exercise media is unavailable',
-        value: view.message,
-      ),
-      B05MediaExerciseStatus.absent => B05StatusMessage(
-        status: B05SemanticStatus.unavailable,
-        label: 'Movement guide is not installed',
-        value: view.message,
-      ),
-      B05MediaExerciseStatus.invalid => B05StatusMessage(
-        status: B05SemanticStatus.danger,
-        label: 'Movement guide is unavailable',
-        value: view.message,
-      ),
-      B05MediaExerciseStatus.error => B05StatusMessage(
-        status: B05SemanticStatus.danger,
-        label: 'Exercise media could not be checked',
-        value: view.message,
-      ),
-    };
+    if (view.status != B05MediaExerciseStatus.available) {
+      return const SizedBox.shrink();
+    }
     return Semantics(
       container: true,
       label: 'Exercise media',
@@ -486,20 +462,9 @@ class B05ExerciseMediaPanel extends ConsumerWidget {
           children: [
             Text('Offline exercise media', style: B05Typography.title(context)),
             const SizedBox(height: B05Layout.space8),
-            body,
+            _available(context, view),
             const SizedBox(height: B05Layout.space8),
             _textAlternative(context, view),
-            if (state.status == B05MediaBundleStatus.error) ...[
-              const SizedBox(height: B05Layout.space8),
-              B05ActionButton(
-                label: 'Retry media check',
-                icon: Icons.refresh_rounded,
-                emphasis: B05ActionEmphasis.secondary,
-                onPressed: ref
-                    .read(b05MediaBundleControllerProvider.notifier)
-                    .retry,
-              ),
-            ],
           ],
         ),
       ),

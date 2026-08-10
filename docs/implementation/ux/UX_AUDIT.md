@@ -1,6 +1,15 @@
 # IndiFit UX Stabilization Audit
 
-Status: canonical planning document; presentation and UX scope only
+Status: historical audit and implementation evidence; roadmap superseded by
+[`UX_PRODUCT_RESET.md`](UX_PRODUCT_RESET.md)
+
+> **Supersession notice:** Keep this audit as the detailed record of observed
+> defects, screenshots, and presentation anti-patterns. Its suggested Wave 0–3
+> roadmap—and the completed historical Wave 1–6 UI implementation program—are
+> no longer the active product UX roadmap. UX-R1–R7 in
+> [`UX_PRODUCT_RESET.md`](UX_PRODUCT_RESET.md) now govern consumer navigation,
+> information architecture, feature prominence, and presentation priorities.
+> B01–B05 domain authorities remain unchanged.
 
 This audit is based on the physical-iPhone screenshots `IMG_1143.PNG` through
 `IMG_1158.PNG` and a corresponding inspection of the production Flutter
@@ -279,7 +288,11 @@ presentation/state layer before screen-by-screen visual polish.
 7. **Permanent diagnostic copy.** Reserve explanation for deliberate details;
    default states should communicate outcome plus one meaningful next action.
 
-## Suggested implementation waves
+## Superseded implementation waves (historical)
+
+The following waves are preserved as the audit's historical recommendation.
+They are not an active implementation plan; use UX-R1–R7 in
+[`UX_PRODUCT_RESET.md`](UX_PRODUCT_RESET.md).
 
 ### Wave 0 — Release stabilization
 

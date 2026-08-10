@@ -130,11 +130,13 @@ class B04ProductionRecommendationOrchestrator {
 
   Future<B04RecommendationContext> loadCurrentFoodContext({
     required String userId,
+    String? nutritionUserId,
     required String localDate,
     required String timezoneId,
   }) async {
     final result = await loadCurrentFood(
       userId: userId,
+      nutritionUserId: nutritionUserId,
       localDate: localDate,
       timezoneId: timezoneId,
     );
@@ -143,18 +145,26 @@ class B04ProductionRecommendationOrchestrator {
 
   Future<B04ProductionCurrentFoodResult> loadCurrentFood({
     required String userId,
+    String? nutritionUserId,
     required String localDate,
     required String timezoneId,
   }) async {
     final owner = userId.trim();
+    final nutritionOwner = _nutritionOwner(nutritionUserId, fallback: owner);
     final date = _dates.normalizeLocalDate(localDate);
     final zone = timezoneId.trim();
     _dates.validateTimezone(zone);
-    final key = 'current-food:$owner:$date:$zone';
+    final key = _currentFoodKey(
+      userId: owner,
+      nutritionUserId: nutritionOwner,
+      localDate: date,
+      timezoneId: zone,
+    );
     final existing = _currentRuns[key];
     if (existing != null) return existing;
     final future = _loadCurrentFood(
       userId: owner,
+      nutritionUserId: nutritionOwner,
       localDate: date,
       timezoneId: zone,
     );
@@ -172,11 +182,16 @@ class B04ProductionRecommendationOrchestrator {
 
   Future<B04ProductionCurrentFoodResult> reloadCurrentFood({
     required String userId,
+    String? nutritionUserId,
     required String localDate,
     required String timezoneId,
   }) async {
     final key = _currentFoodKey(
       userId: userId,
+      nutritionUserId: _nutritionOwner(
+        nutritionUserId,
+        fallback: userId.trim(),
+      ),
       localDate: localDate,
       timezoneId: timezoneId,
     );
@@ -188,6 +203,7 @@ class B04ProductionRecommendationOrchestrator {
     }
     return loadCurrentFood(
       userId: userId,
+      nutritionUserId: nutritionUserId,
       localDate: localDate,
       timezoneId: timezoneId,
     );
@@ -249,12 +265,14 @@ class B04ProductionRecommendationOrchestrator {
 
   Future<B04ProductionCurrentFoodResult> _loadCurrentFood({
     required String userId,
+    required String nutritionUserId,
     required String localDate,
     required String timezoneId,
   }) async {
     final period = await _buildReplayablePeriod(
       scope: B04RecommendationHistoryScope.mealOpportunity,
       userId: userId,
+      nutritionUserId: nutritionUserId,
       startLocalDate: localDate,
       endLocalDate: localDate,
       timezoneId: timezoneId,
@@ -277,12 +295,14 @@ class B04ProductionRecommendationOrchestrator {
   Future<_ProductionPeriod> _buildReplayablePeriod({
     required B04RecommendationHistoryScope scope,
     required String userId,
+    String? nutritionUserId,
     required String startLocalDate,
     required String endLocalDate,
     required String timezoneId,
     required bool includeMealCandidates,
   }) async {
     final owner = userId.trim();
+    final nutritionOwner = _nutritionOwner(nutritionUserId, fallback: owner);
     final start = _dates.normalizeLocalDate(startLocalDate);
     final end = _dates.normalizeLocalDate(endLocalDate);
     final zone = timezoneId.trim();
@@ -291,6 +311,7 @@ class B04ProductionRecommendationOrchestrator {
     final initial = await _buildPeriod(
       scope: scope,
       userId: owner,
+      nutritionUserId: nutritionOwner,
       startLocalDate: start,
       endLocalDate: end,
       timezoneId: zone,
@@ -308,6 +329,7 @@ class B04ProductionRecommendationOrchestrator {
       final replay = await _buildPeriod(
         scope: scope,
         userId: owner,
+        nutritionUserId: nutritionOwner,
         startLocalDate: start,
         endLocalDate: end,
         timezoneId: zone,
@@ -332,6 +354,7 @@ class B04ProductionRecommendationOrchestrator {
       return _buildPeriod(
         scope: scope,
         userId: owner,
+        nutritionUserId: nutritionOwner,
         startLocalDate: start,
         endLocalDate: end,
         timezoneId: zone,
@@ -397,19 +420,34 @@ class B04ProductionRecommendationOrchestrator {
 
   String _currentFoodKey({
     required String userId,
+    required String nutritionUserId,
     required String localDate,
     required String timezoneId,
   }) {
     final owner = userId.trim();
+    final nutritionOwner = nutritionUserId.trim();
     final date = _dates.normalizeLocalDate(localDate);
     final zone = timezoneId.trim();
     _dates.validateTimezone(zone);
-    return 'current-food:$owner:$date:$zone';
+    return 'current-food:$owner:$nutritionOwner:$date:$zone';
+  }
+
+  String _nutritionOwner(String? value, {required String fallback}) {
+    final owner = value?.trim() ?? fallback;
+    if (owner.isEmpty) {
+      throw ArgumentError.value(
+        value,
+        'nutritionUserId',
+        'Nutrition evidence owner must not be blank.',
+      );
+    }
+    return owner;
   }
 
   Future<_ProductionPeriod> _buildPeriod({
     required B04RecommendationHistoryScope scope,
     required String userId,
+    required String nutritionUserId,
     required String startLocalDate,
     required String endLocalDate,
     required String timezoneId,
@@ -436,6 +474,7 @@ class B04ProductionRecommendationOrchestrator {
     }
     final sources = await _loadSources(
       userId: userId,
+      nutritionUserId: nutritionUserId,
       startLocalDate: startLocalDate,
       endLocalDate: endLocalDate,
       timezoneId: timezoneId,
@@ -443,7 +482,7 @@ class B04ProductionRecommendationOrchestrator {
     );
     final candidates = includeMealCandidates
         ? await _loadCurrentFoodCandidates(
-            userId: userId,
+            nutritionUserId: nutritionUserId,
             localDate: endLocalDate,
             atUtc: sourceAtUtc,
             constraints: sources.constraints,
@@ -494,6 +533,8 @@ class B04ProductionRecommendationOrchestrator {
           timezoneId: timezoneId,
         ),
         userId: userId,
+        nutritionUserId: nutritionUserId,
+        constraintUserId: nutritionUserId,
         period: scope == B04RecommendationHistoryScope.weekly
             ? B04RecommendationPeriod.weekly
             : B04RecommendationPeriod.daily,
@@ -547,6 +588,7 @@ class B04ProductionRecommendationOrchestrator {
 
   Future<_ProductionSources> _loadSources({
     required String userId,
+    required String nutritionUserId,
     required String startLocalDate,
     required String endLocalDate,
     required String timezoneId,
@@ -592,14 +634,18 @@ class B04ProductionRecommendationOrchestrator {
     var cursor = startLocalDate;
     while (true) {
       final day = await _readOrNull(
-        () => _nutrition.dailyTotals(userId: userId, localDate: cursor),
+        () =>
+            _nutrition.dailyTotals(userId: nutritionUserId, localDate: cursor),
       );
       if (day != null) nutritionDays.add(day);
       if (cursor == endLocalDate) break;
       cursor = _dates.addCalendarDays(cursor, timezoneId, 1);
     }
     final constraints = await _readOrNull(
-      () => _constraints.listActiveConstraints(userId: userId, atUtc: atUtc),
+      () => _constraints.listActiveConstraints(
+        userId: nutritionUserId,
+        atUtc: atUtc,
+      ),
     );
     return _ProductionSources(
       activeGoal: activeGoal,
@@ -614,7 +660,7 @@ class B04ProductionRecommendationOrchestrator {
   }
 
   Future<_ProductionCandidateSet> _loadCurrentFoodCandidates({
-    required String userId,
+    required String nutritionUserId,
     required String localDate,
     required DateTime atUtc,
     required List<NutritionUserConstraint> constraints,
@@ -634,7 +680,7 @@ class B04ProductionRecommendationOrchestrator {
             try {
               final nutrientEvidence = _aggregateFacts(item.facts);
               final evaluation = await _constraints.evaluateFood(
-                userId: userId,
+                userId: nutritionUserId,
                 foodId: item.foodId!,
                 atUtc: atUtc,
               );
@@ -644,7 +690,6 @@ class B04ProductionRecommendationOrchestrator {
                   source: B04MealCandidateSource.canonicalFood,
                   subjectId: item.foodId!,
                   displayLabel: item.displayLabel ?? 'Canonical food',
-                  userId: userId,
                   nutrientEvidence: nutrientEvidence,
                   evaluation: evaluation,
                   constraints: constraints,
@@ -660,7 +705,7 @@ class B04ProductionRecommendationOrchestrator {
                   source: B04MealCandidateSource.canonicalFood,
                   subjectId: item.foodId!,
                   displayLabel: item.displayLabel ?? 'Canonical food',
-                  userId: userId,
+                  userId: nutritionUserId,
                   errorCode: 'food_evidence_unavailable',
                   identityReference: 'food:${item.foodId}',
                   nutrientReference: 'snapshot-item:${item.stableId}',
@@ -673,7 +718,7 @@ class B04ProductionRecommendationOrchestrator {
             try {
               final nutrientEvidence = _aggregateFacts(item.facts);
               final evaluation = await _constraints.evaluateRecipeVersion(
-                userId: userId,
+                userId: nutritionUserId,
                 recipeVersionId: item.recipeVersionId!,
                 atUtc: atUtc,
               );
@@ -683,7 +728,6 @@ class B04ProductionRecommendationOrchestrator {
                   source: B04MealCandidateSource.publishedRecipeVersion,
                   subjectId: item.recipeVersionId!,
                   displayLabel: item.displayLabel ?? 'Published recipe',
-                  userId: userId,
                   nutrientEvidence: nutrientEvidence,
                   evaluation: evaluation,
                   constraints: constraints,
@@ -699,7 +743,7 @@ class B04ProductionRecommendationOrchestrator {
                   source: B04MealCandidateSource.publishedRecipeVersion,
                   subjectId: item.recipeVersionId!,
                   displayLabel: item.displayLabel ?? 'Published recipe',
-                  userId: userId,
+                  userId: nutritionUserId,
                   errorCode: 'recipe_evidence_unavailable',
                   identityReference: 'recipe-version:${item.recipeVersionId}',
                   nutrientReference: 'snapshot-item:${item.stableId}',
@@ -711,7 +755,7 @@ class B04ProductionRecommendationOrchestrator {
       }
     }
     final recipeOptions = await _readOrNull(
-      () => _thalis.searchRecipes(userId: userId),
+      () => _thalis.searchRecipes(userId: nutritionUserId),
     );
     for (final option in recipeOptions ?? const []) {
       final selectionId = 'saved-recipe:${option.recipeVersionId}';
@@ -731,14 +775,14 @@ class B04ProductionRecommendationOrchestrator {
             ? NutritionRecipeLogAmount.wholeRecipe()
             : NutritionRecipeLogAmount.declaredServing();
         final preview = await _recipeLogging.preview(
-          userId: userId,
+          userId: nutritionUserId,
           recipeId: option.recipeId,
           recipeVersionId: option.recipeVersionId,
           amount: amount,
         );
         final nutrientEvidence = _aggregateFacts(preview.calculation.facts);
         final evaluation = await _constraints.evaluateRecipeVersion(
-          userId: userId,
+          userId: nutritionUserId,
           recipeVersionId: option.recipeVersionId,
           atUtc: atUtc,
         );
@@ -748,7 +792,6 @@ class B04ProductionRecommendationOrchestrator {
             source: B04MealCandidateSource.publishedRecipeVersion,
             subjectId: option.recipeVersionId,
             displayLabel: displayLabel,
-            userId: userId,
             nutrientEvidence: nutrientEvidence,
             evaluation: evaluation,
             constraints: constraints,
@@ -765,7 +808,7 @@ class B04ProductionRecommendationOrchestrator {
             source: B04MealCandidateSource.publishedRecipeVersion,
             subjectId: option.recipeVersionId,
             displayLabel: displayLabel,
-            userId: userId,
+            userId: nutritionUserId,
             errorCode: 'recipe_evidence_unavailable',
             identityReference: 'recipe-version:${option.recipeVersionId}',
             nutrientReference: 'recipe-version:${option.recipeVersionId}',
@@ -773,7 +816,9 @@ class B04ProductionRecommendationOrchestrator {
         );
       }
     }
-    final drafts = await _readOrNull(() => _thalis.listDrafts(userId: userId));
+    final drafts = await _readOrNull(
+      () => _thalis.listDrafts(userId: nutritionUserId),
+    );
     for (final draft in drafts ?? const []) {
       final selectionId = 'saved-thali:${draft.id}:${draft.currentVersion}';
       if (!selectionIds.add(selectionId)) continue;
@@ -795,7 +840,6 @@ class B04ProductionRecommendationOrchestrator {
             source: B04MealCandidateSource.savedThali,
             subjectId: draft.id,
             displayLabel: draft.name,
-            userId: userId,
             nutrientEvidence: preview.aggregate,
             evaluation: evaluation,
             constraints: constraints,
@@ -811,7 +855,7 @@ class B04ProductionRecommendationOrchestrator {
             source: B04MealCandidateSource.savedThali,
             subjectId: draft.id,
             displayLabel: draft.name,
-            userId: userId,
+            userId: nutritionUserId,
             errorCode: 'thali_evidence_unavailable',
             identityReference: 'thali:${draft.id}:${draft.currentVersion}',
             nutrientReference: 'thali:${draft.id}:${draft.currentVersion}',
@@ -831,7 +875,6 @@ class B04ProductionRecommendationOrchestrator {
     required B04MealCandidateSource source,
     required String subjectId,
     required String displayLabel,
-    required String userId,
     required NutrientAggregationResult? nutrientEvidence,
     required NutritionConstraintEvaluationResult evaluation,
     required List<NutritionUserConstraint> constraints,
