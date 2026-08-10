@@ -344,7 +344,7 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      final addConstraint = find.text('Add a constraint');
+      final addConstraint = find.text('Add dietary need');
       await tester.scrollUntilVisible(addConstraint, 360);
       await tester.tap(addConstraint);
       await tester.pumpAndSettle();

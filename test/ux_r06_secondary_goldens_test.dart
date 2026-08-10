@@ -159,7 +159,7 @@ Future<void> _expectGolden(
     ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(_r6GoldenDatabase),
-        userProfileProvider.overrideWith((ref) => UserProfileNotifier()),
+        userProfileProvider.overrideWith((ref) => _GoldenProfileNotifier()),
         ...extraOverrides,
       ],
       child: MediaQuery(
@@ -235,6 +235,30 @@ class _GoldenConstraintRepository extends NutritionConstraintRepository {
   Future<List<NutritionUserConstraint>> listAllConstraints({
     required String userId,
   }) async => const [];
+}
+
+class _GoldenProfileNotifier extends UserProfileNotifier {
+  _GoldenProfileNotifier() : super() {
+    state = const UserProfileState(
+      isLoaded: true,
+      hasProfile: true,
+      calorieGoal: 2200,
+      proteinGoal: 140,
+      carbsGoal: 250,
+      fatGoal: 70,
+      currentWeight: 80,
+      userHeight: 180,
+      userName: 'Ayush',
+      userSex: 'male',
+      userAge: 30,
+      userActivityLevel: 'moderate',
+      userGoal: 'gain',
+      dietPreference: 'non-veg',
+    );
+  }
+
+  @override
+  Future<void> loadProfile() async {}
 }
 
 class _GoldenConstraintController

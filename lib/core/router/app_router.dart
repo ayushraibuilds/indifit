@@ -17,7 +17,6 @@ import '../../features/equipment/exercise_preference_editor_screen.dart';
 import '../../features/exercise_library/exercise_library_screen.dart';
 import '../../features/food_log/ai_meal_logger_screen.dart';
 import '../../features/food_log/ai_meal_planner_screen.dart';
-import '../../features/food_log/food_search_screen.dart';
 import '../../features/food_log/nutrition_estimate_review_screen.dart';
 import '../../features/food_log/nutrition_recipe_editor_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
@@ -64,6 +63,22 @@ DateTime? parseFoodRouteDate(String? raw) {
   }
   return parsed;
 }
+
+String parseFoodRouteMealType(String? raw) {
+  final value = raw?.trim().toLowerCase();
+  return switch (value) {
+    'breakfast' || 'lunch' || 'dinner' || 'snacks' => value!,
+    'snack' => 'snacks',
+    _ => 'breakfast',
+  };
+}
+
+MainNavigationScaffold foodRouteDestination({String? mealType, String? date}) =>
+    MainNavigationScaffold(
+      initialIndex: 2,
+      foodMealType: parseFoodRouteMealType(mealType),
+      foodSelectedDate: parseFoodRouteDate(date),
+    );
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -125,16 +140,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/food',
-        builder: (context, state) {
-          final mealType = state.uri.queryParameters['mealType'] ?? 'breakfast';
-          final selectedDate = parseFoodRouteDate(
-            state.uri.queryParameters['date'],
-          );
-          return FoodSearchScreen(
-            mealType: mealType,
-            selectedDate: selectedDate,
-          );
-        },
+        builder: (context, state) => foodRouteDestination(
+          mealType: state.uri.queryParameters['mealType'],
+          date: state.uri.queryParameters['date'],
+        ),
       ),
       GoRoute(
         path: '/food/ai',

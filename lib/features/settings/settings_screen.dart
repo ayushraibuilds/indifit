@@ -74,22 +74,28 @@ class SettingsScreen extends ConsumerWidget {
                     _SettingsRow(
                       icon: Icons.flag_outlined,
                       title: 'Goal',
-                      summary: SecondaryConsumerCopy.goal(profile.userGoal),
+                      summary: profile.hasProfile
+                          ? SecondaryConsumerCopy.goal(profile.userGoal)
+                          : 'Complete your profile',
                       onTap: () => _push(context, const ProfileScreen()),
                     ),
                     _SettingsRow(
                       icon: Icons.restaurant_outlined,
                       title: 'Nutrition preferences',
-                      summary: _dietLabel(profile.dietPreference),
+                      summary: profile.hasProfile
+                          ? _dietLabel(profile.dietPreference)
+                          : 'Choose a dietary pattern',
                       onTap: () =>
                           _push(context, const NutritionConstraintsScreen()),
                     ),
                     _SettingsRow(
                       icon: Icons.directions_run_outlined,
                       title: 'Training preferences',
-                      summary: SecondaryConsumerCopy.activity(
-                        profile.userActivityLevel,
-                      ),
+                      summary: profile.hasProfile
+                          ? SecondaryConsumerCopy.activity(
+                              profile.userActivityLevel,
+                            )
+                          : 'Complete your profile',
                       onTap: () => _push(context, const ProfileScreen()),
                     ),
                   ],

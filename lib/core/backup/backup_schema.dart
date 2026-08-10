@@ -269,6 +269,7 @@ class BackupData {
         'offline_only',
         'onboarding_completed',
         'onboarding_skipped',
+        'display_units',
         'water_logged',
         'water_goal',
         'water_glass_size',

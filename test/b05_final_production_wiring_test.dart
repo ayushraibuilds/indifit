@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -44,48 +46,10 @@ void main() {
         initialLogs = await database.select(database.foodLogs).get();
       });
 
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(database),
-          foodRepositoryProvider.overrideWithValue(repository),
-          foodLogsForDayProvider.overrideWith((ref, date) {
-            final isPast =
-                date.year == past.year &&
-                date.month == past.month &&
-                date.day == past.day;
-            return Future.value(isPast ? initialLogs : const <FoodLog>[]);
-          }),
-        ],
-      );
-      final router = container.read(appRouterProvider);
-      addTearDown(() async {
-        router.dispose();
-        container.dispose();
-        await database.close();
-      });
-
-      SharedPreferences.setMockInitialValues({'onboarding_completed': true});
-      router.go(_foodLocation(past));
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: router,
-            theme: AppTheme.lightTheme,
-          ),
-        ),
-      );
-      await _pumpSettled(tester);
-      await _expectLoggingDate(tester, past);
-      expect(find.byType(FoodSearchScreen), findsOneWidget);
-      expect(find.text('Log breakfast'), findsOneWidget);
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 10)),
-      );
-
       // The gateway below is the real B03 repository boundary (not a fake
       // test gateway); contextual actions remain covered by their own Today
-      // surface tests.
+      // surface tests. Exercise writes before mounting the indexed shell so
+      // its offstage read subscriptions cannot contend with this fixture.
       final gateway = FoodRepositoryContextualActionGateway(repository);
       final source = initialLogs.single;
       late List<FoodLog> rowsAfterCopy;
@@ -128,6 +92,54 @@ void main() {
       });
       expect(corrections, hasLength(1));
 
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          userProfileProvider.overrideWith((ref) => _LoadedProfileNotifier()),
+          foodRepositoryProvider.overrideWithValue(repository),
+          foodLogsForDayProvider.overrideWith((ref, date) {
+            final isPast =
+                date.year == past.year &&
+                date.month == past.month &&
+                date.day == past.day;
+            return Future.value(isPast ? initialLogs : const <FoodLog>[]);
+          }),
+        ],
+      );
+      final router = container.read(appRouterProvider);
+      addTearDown(() async {
+        // `/food` is hosted by the indexed app shell. Unmount every tab before
+        // closing the shared database so offstage dashboard subscriptions can
+        // cancel cleanly.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        router.dispose();
+        container.dispose();
+        // Drift's watched-query close can wait on the Flutter fake-async zone.
+        // Disposal above releases every listener; let the native close finish
+        // without holding the test teardown open.
+        unawaited(database.close());
+      });
+
+      SharedPreferences.setMockInitialValues({'onboarding_completed': true});
+      router.go(_foodLocation(past));
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: router,
+            theme: AppTheme.lightTheme,
+          ),
+        ),
+      );
+      await _pumpSettled(tester);
+      await _expectLoggingDate(tester, past);
+      expect(find.byType(FoodSearchScreen), findsOneWidget);
+      expect(find.text('Log breakfast'), findsOneWidget);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 10)),
+      );
+
       for (final date in [current, future]) {
         router.go(_foodLocation(date));
         await _pumpSettled(tester);
@@ -147,6 +159,23 @@ void main() {
   );
 }
 
+class _LoadedProfileNotifier extends UserProfileNotifier {
+  _LoadedProfileNotifier() : super() {
+    state = const UserProfileState(
+      isLoaded: true,
+      hasProfile: true,
+      calorieGoal: 2000,
+      proteinGoal: 120,
+      carbsGoal: 230,
+      fatGoal: 65,
+      currentWeight: 74.5,
+    );
+  }
+
+  @override
+  Future<void> loadProfile() async {}
+}
+
 String _foodLocation(DateTime date) {
   final value =
       '${date.year.toString().padLeft(4, '0')}-'
@@ -160,7 +189,13 @@ String _foodLocation(DateTime date) {
 
 Future<void> _expectLoggingDate(WidgetTester tester, DateTime date) async {
   final label = ConsumerDateLabel.dateTime(date, today: DateTime.now());
-  expect(find.text(label), findsOneWidget);
+  expect(
+    find.descendant(
+      of: find.byType(FoodSearchScreen),
+      matching: find.text(label),
+    ),
+    findsOneWidget,
+  );
 }
 
 Future<void> _pumpSettled(WidgetTester tester) async {

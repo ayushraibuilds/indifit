@@ -124,7 +124,7 @@ class NutritionConstraintEvaluationReviewCard extends StatelessWidget {
           const Card(
             child: Padding(
               padding: EdgeInsets.all(16),
-              child: Text('No active dietary constraints were evaluated.'),
+              child: Text('No active dietary needs were evaluated.'),
             ),
           ),
       ],

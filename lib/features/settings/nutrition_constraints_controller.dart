@@ -119,7 +119,7 @@ class NutritionConstraintManagementController
       state = state.copyWith(
         status: NutritionConstraintManagementStatus.success,
         constraints: next,
-        message: 'Constraint saved.',
+        message: 'Dietary need saved.',
         clearError: true,
       );
     } catch (error) {
@@ -149,7 +149,7 @@ class NutritionConstraintManagementController
             ? NutritionConstraintManagementStatus.empty
             : NutritionConstraintManagementStatus.success,
         constraints: next,
-        message: 'Constraint archived.',
+        message: 'Dietary need archived.',
         clearError: true,
       );
     } catch (error) {
@@ -162,7 +162,7 @@ class NutritionConstraintManagementController
       _failure(
         const NutritionConstraintValidationError(
           'constraint_ownership',
-          'A dietary constraint can only be edited by its owner.',
+          'A dietary need can only be edited by its owner.',
         ),
       );
       return;
@@ -181,7 +181,7 @@ class NutritionConstraintManagementController
       state = state.copyWith(
         status: NutritionConstraintManagementStatus.success,
         constraints: next,
-        message: 'Constraint updated.',
+        message: 'Dietary need updated.',
         clearError: true,
       );
     } catch (error) {
@@ -206,7 +206,7 @@ class NutritionConstraintManagementController
       errorCode: typed?.code ?? 'constraint_operation_failed',
       message: ProductFailurePresentation.fromCode(
         typed?.code ?? 'constraint_operation_failed',
-        title: 'Dietary preferences unavailable',
+        title: 'Dietary needs unavailable',
       ).message,
     );
   }
