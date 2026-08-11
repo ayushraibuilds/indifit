@@ -553,6 +553,11 @@ class WorkoutRepository {
     return rows.isEmpty ? null : rows.first;
   }
 
+  /// Emits only after the active draft table changes. The initial Drift
+  /// snapshot is skipped so consumers do not invalidate while mounting.
+  Stream<void> watchActiveDraftInvalidation() =>
+      _db.select(_db.workoutDrafts).watch().skip(1).map<void>((_) {});
+
   Future<int> saveWorkoutDraft(WorkoutDraftsCompanion draft) async {
     // Delete any previous drafts first to maintain at most one active draft
     await _db.delete(_db.workoutDrafts).go();

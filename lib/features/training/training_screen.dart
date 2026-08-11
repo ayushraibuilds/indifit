@@ -15,6 +15,8 @@ import '../calendar/program_calendar_screen.dart';
 import '../calendar/workout_contextual_launcher.dart';
 import '../exercise_library/exercise_library_screen.dart';
 import '../travel/travel_mode_screen.dart';
+import '../workout_player/b02_strength_execution_controller.dart';
+import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/routine_display_screen.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
 
@@ -30,6 +32,7 @@ class TrainingLandingSnapshot {
     required this.upcoming,
     required this.recentSessions,
     required this.activeProgramName,
+    this.activeStrengthDraft,
   });
 
   final String localDate;
@@ -38,6 +41,7 @@ class TrainingLandingSnapshot {
   final List<CalendarOccurrenceReadItem> upcoming;
   final List<WorkoutSession> recentSessions;
   final String? activeProgramName;
+  final WorkoutDraft? activeStrengthDraft;
 
   CalendarOccurrenceReadItem? get currentPlanContext =>
       todayWorkout ?? (upcoming.isEmpty ? null : upcoming.first);
@@ -100,12 +104,18 @@ final trainingLandingSnapshotProvider =
         (_) => ref.invalidateSelf(),
       );
       ref.onDispose(invalidationSubscription.cancel);
+      final workoutRepository = ref.watch(workoutRepositoryProvider);
+      final draftSubscription = workoutRepository
+          .watchActiveDraftInvalidation()
+          .listen((_) => ref.invalidateSelf());
+      ref.onDispose(draftSubscription.cancel);
       final calendar = await calendarRepository.readSnapshot(
         startLocalDate: localDate,
         endLocalDate: endDate,
         timezoneId: timezoneId,
       );
-      final sessions = await ref.watch(workoutRepositoryProvider).getSessions();
+      final sessions = await workoutRepository.getSessions();
+      final activeDraft = await workoutRepository.getActiveDraft();
       final today = selectTrainingTodayWorkout(
         calendar.rangeOccurrences,
         localDate,
@@ -125,6 +135,12 @@ final trainingLandingSnapshotProvider =
         upcoming: upcoming,
         recentSessions: sessions.take(3).toList(growable: false),
         activeProgramName: calendar.activeProgramName,
+        activeStrengthDraft:
+            activeDraft?.activityType == 'strength' &&
+                activeDraft?.executionStateJson != null &&
+                activeDraft?.scheduledOccurrenceId == null
+            ? activeDraft
+            : null,
       );
     });
 
@@ -141,8 +157,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   Future<void> _openStartWorkout(
     BuildContext context,
     WidgetRef ref,
-    CalendarOccurrenceReadItem? today,
+    TrainingLandingSnapshot data,
   ) async {
+    final today = data.todayWorkout;
+    final activeDraft = data.activeStrengthDraft;
     final choice = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
@@ -160,20 +178,28 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               title: Text('Start workout'),
               subtitle: Text('Train right now or follow today’s plan.'),
             ),
-            ListTile(
-              leading: const Icon(Icons.bolt_rounded),
-              title: const Text('Quick workout'),
-              subtitle: const Text(
-                'Start immediately and choose exercises as you go.',
+            if (activeDraft != null)
+              ListTile(
+                leading: const Icon(Icons.play_arrow_rounded),
+                title: Text('Resume ${activeDraft.routineName}'),
+                subtitle: const Text('Continue your saved workout first.'),
+                onTap: () => Navigator.pop(sheetContext, 'resume'),
               ),
-              onTap: () => Navigator.pop(sheetContext, 'quick'),
-            ),
             if (today != null && canLaunchTrainingOccurrence(today))
               ListTile(
                 leading: const Icon(Icons.calendar_today_outlined),
                 title: Text('Today’s workout · ${today.template.name}'),
                 subtitle: const Text('Use the scheduled workout and targets.'),
                 onTap: () => Navigator.pop(sheetContext, 'today'),
+              ),
+            if (activeDraft == null)
+              ListTile(
+                leading: const Icon(Icons.bolt_rounded),
+                title: const Text('Quick workout'),
+                subtitle: const Text(
+                  'Start immediately and choose exercises as you go.',
+                ),
+                onTap: () => Navigator.pop(sheetContext, 'quick'),
               ),
             ListTile(
               leading: const Icon(Icons.route_outlined),
@@ -189,6 +215,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     );
     if (!context.mounted || choice == null) return;
     switch (choice) {
+      case 'resume':
+        if (activeDraft != null) {
+          await _resumeDraft(context, ref, activeDraft);
+        }
       case 'quick':
         await context.push('/quick-workout');
       case 'today':
@@ -199,6 +229,44 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         ).push(MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()));
     }
     if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
+  }
+
+  Future<void> _resumeDraft(
+    BuildContext context,
+    WidgetRef ref,
+    WorkoutDraft draft,
+  ) async {
+    if (_isLaunching) return;
+    setState(() => _isLaunching = true);
+    try {
+      final controller = ref.read(
+        b02StrengthExecutionControllerProvider.notifier,
+      );
+      await controller.recover(draft.id);
+      final recovered = ref.read(b02StrengthExecutionControllerProvider);
+      if (!context.mounted) return;
+      if (recovered.launch == null ||
+          recovered.status == B02StrengthExecutionStatus.recovery ||
+          recovered.status == B02StrengthExecutionStatus.failure) {
+        throw StateError('The saved workout could not be recovered.');
+      }
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => B02StrengthPlayerScreen(launch: recovered.launch!),
+        ),
+      );
+      if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Saved workout unavailable. Try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLaunching = false);
+    }
   }
 
   Future<void> _startWorkout(
@@ -313,8 +381,10 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           data: data,
           isLaunching: _isLaunching,
           onStartWorkout: (item) => _startWorkout(context, ref, item),
-          onStartTraining: () =>
-              _openStartWorkout(context, ref, data.todayWorkout),
+          onStartTraining: () => _openStartWorkout(context, ref, data),
+          onResumeDraft: data.activeStrengthDraft == null
+              ? null
+              : () => _resumeDraft(context, ref, data.activeStrengthDraft!),
           onOpenPlan: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()),
           ),
@@ -414,6 +484,7 @@ class _TrainingLandingBody extends StatelessWidget {
     required this.isLaunching,
     required this.onStartWorkout,
     required this.onStartTraining,
+    required this.onResumeDraft,
     required this.onOpenPlan,
     required this.onOpenCalendar,
     required this.onOpenExercises,
@@ -424,6 +495,7 @@ class _TrainingLandingBody extends StatelessWidget {
   final bool isLaunching;
   final ValueChanged<CalendarOccurrenceReadItem> onStartWorkout;
   final VoidCallback onStartTraining;
+  final VoidCallback? onResumeDraft;
   final VoidCallback onOpenPlan;
   final VoidCallback onOpenCalendar;
   final VoidCallback onOpenExercises;
@@ -437,7 +509,8 @@ class _TrainingLandingBody extends StatelessWidget {
         today == null &&
         data.upcoming.isEmpty &&
         data.recentSessions.isEmpty &&
-        data.activeProgramName?.trim().isNotEmpty != true;
+        data.activeProgramName?.trim().isNotEmpty != true &&
+        data.activeStrengthDraft == null;
     if (isEmpty) {
       return ListView(
         padding: const EdgeInsets.fromLTRB(
@@ -465,6 +538,22 @@ class _TrainingLandingBody extends StatelessWidget {
         B05Layout.space32,
       ),
       children: [
+        if (data.activeStrengthDraft != null) ...[
+          B05Surface(
+            tone: B05SurfaceTone.selected,
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.play_circle_outline_rounded),
+              title: Text('Resume ${data.activeStrengthDraft!.routineName}'),
+              subtitle: const Text(
+                'Your exercises, sets, and active time are saved.',
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: onResumeDraft,
+            ),
+          ),
+          const SizedBox(height: B05Layout.space16),
+        ],
         _SectionLabel(label: 'TODAY'),
         const SizedBox(height: B05Layout.space8),
         _TodayTrainingSurface(

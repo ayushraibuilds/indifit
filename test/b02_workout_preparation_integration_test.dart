@@ -269,6 +269,16 @@ void main() {
       expect(openRest.source, B02RestSource.automatic);
       expect(openRest.recommendedSeconds, 90);
       expect(openRest.selectedSeconds, 90);
+      await controller.adjustRest(openRest.id, seconds: -15);
+      expect(
+        controller.state.launch!.state.restPeriods.single.selectedSeconds,
+        75,
+      );
+      await controller.adjustRest(openRest.id, seconds: 15);
+      expect(
+        controller.state.launch!.state.restPeriods.single.selectedSeconds,
+        90,
+      );
       await controller.extendRest(openRest.id);
       expect(
         controller.state.launch!.state.restPeriods.single.selectedSeconds,

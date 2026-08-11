@@ -357,8 +357,11 @@ void main() {
       test(
         '7.$trainingDays consumer $trainingDays-day template activates canonical Training and Calendar once',
         () async {
+          final planName = trainingDays == 3
+              ? 'Suggested PPL'
+              : '$trainingDays-Day Device Template';
           final routineId = await workoutRepo.saveRoutine(
-            name: '$trainingDays-Day Device Template',
+            name: planName,
             goal: 'General fitness',
             days: [
               for (var day = 1; day <= 7; day++)
@@ -385,6 +388,20 @@ void main() {
             db,
             dates: dates,
           );
+          final readRepository = CalendarReadRepository(db, dates: dates);
+          final invalidated = trainingDays == 3
+              ? readRepository
+                    .watchInvalidation(
+                      startLocalDate: '2026-08-03',
+                      endLocalDate: '2026-08-09',
+                      timezoneId: 'Asia/Kolkata',
+                    )
+                    .first
+                    .timeout(const Duration(seconds: 2))
+              : null;
+          // Let each Drift watch establish and skip its initial snapshot. The
+          // following activation must then notify an already-mounted reader.
+          await Future<void>.delayed(Duration.zero);
 
           final first = await legacyAdapter.activateLegacyRoutineAsCanonical(
             legacyRoutineId: routineId,
@@ -402,6 +419,7 @@ void main() {
             activationLocalDate: '2026-08-03',
             commandId: 'activate-device-template-$trainingDays',
           );
+          await invalidated;
 
           expect(first.occurrences, hasLength(trainingDays));
           expect(first.occurrences.map((row) => row.effectiveLocalDate), [
@@ -422,16 +440,12 @@ void main() {
           expect(selection.type, ActivePlanType.b01Program);
           expect(selection.programVersionId, first.programVersionId);
 
-          final calendar = await CalendarReadRepository(db, dates: dates)
-              .readSnapshot(
-                startLocalDate: '2026-08-03',
-                endLocalDate: '2026-08-09',
-                timezoneId: 'Asia/Kolkata',
-              );
-          expect(
-            calendar.activeProgramName,
-            '$trainingDays-Day Device Template',
+          final calendar = await readRepository.readSnapshot(
+            startLocalDate: '2026-08-03',
+            endLocalDate: '2026-08-09',
+            timezoneId: 'Asia/Kolkata',
           );
+          expect(calendar.activeProgramName, planName);
           expect(calendar.rangeOccurrences, hasLength(trainingDays));
           expect(calendar.rangeOccurrences.map((item) => item.template.name), [
             for (var day = 1; day <= trainingDays; day++) 'Training $day',

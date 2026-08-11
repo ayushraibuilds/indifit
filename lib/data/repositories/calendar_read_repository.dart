@@ -96,7 +96,11 @@ class CalendarReadRepository {
         ];
         for (final stream in streams) {
           subscriptions.add(
-            stream.listen(controller.add, onError: controller.addError),
+            // Drift watches emit their current snapshot immediately. That
+            // first value establishes the watch and must not invalidate the
+            // provider that just created it, otherwise the subscription can
+            // continuously recreate itself without a database change.
+            stream.skip(1).listen(controller.add, onError: controller.addError),
           );
         }
       },

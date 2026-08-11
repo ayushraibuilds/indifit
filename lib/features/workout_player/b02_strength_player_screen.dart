@@ -28,7 +28,8 @@ class B02StrengthPlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _B02StrengthPlayerScreenState
-    extends ConsumerState<B02StrengthPlayerScreen> {
+    extends ConsumerState<B02StrengthPlayerScreen>
+    with WidgetsBindingObserver {
   final _reps = <String, String>{};
   final _loads = <String, String>{};
   final _rpes = <String, String>{};
@@ -41,17 +42,37 @@ class _B02StrengthPlayerScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        ref
-            .read(
-              b02StrengthExecutionScreenControllerProvider(
-                widget.launch,
-              ).notifier,
-            )
-            .loadSlots();
+        final provider = b02StrengthExecutionScreenControllerProvider(
+          widget.launch,
+        );
+        if (ref.read(provider).slots.isEmpty) {
+          ref.read(provider.notifier).loadSlots();
+        }
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = ref.read(
+      b02StrengthExecutionScreenControllerProvider(widget.launch).notifier,
+    );
+    if (state == AppLifecycleState.resumed) {
+      controller.resumeElapsed();
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      unawaited(controller.pauseElapsed());
+    }
   }
 
   @override
@@ -65,7 +86,7 @@ class _B02StrengthPlayerScreenState
       appBar: AppBar(
         leading: IconButton(
           tooltip: 'Close workout',
-          onPressed: ui.isBusy ? null : () => context.pop(),
+          onPressed: ui.isBusy ? null : () => _closeWorkout(provider),
           icon: const Icon(Icons.close_rounded),
         ),
         title: Text(launch.state.routineName),
@@ -76,10 +97,7 @@ class _B02StrengthPlayerScreenState
             onSelected: (value) {
               switch (value) {
                 case 'review':
-                  context.push(
-                    '/b02-strength-summary',
-                    extra: {'launch': ui.launch ?? launch},
-                  );
+                  unawaited(_openSummary(provider));
                 case 'discard':
                   _discard(provider);
               }
@@ -117,6 +135,9 @@ class _B02StrengthPlayerScreenState
     }
     final slots = ui.slots;
     if (slots.isEmpty) {
+      final hasPerformedSets = launch.state.performedExercises.any(
+        (exercise) => exercise.sets.isNotEmpty,
+      );
       return ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -130,7 +151,15 @@ class _B02StrengthPlayerScreenState
               icon: const Icon(Icons.add_rounded),
               label: const Text('Add exercise'),
             ),
-          TextButton(onPressed: () => context.pop(), child: const Text('Back')),
+          if (hasPerformedSets)
+            FilledButton.tonal(
+              onPressed: ui.isBusy ? null : () => _openSummary(provider),
+              child: const Text('Review and finish saved sets'),
+            ),
+          TextButton(
+            onPressed: ui.isBusy ? null : () => _closeWorkout(provider),
+            child: const Text('Back'),
+          ),
         ],
       );
     }
@@ -140,7 +169,6 @@ class _B02StrengthPlayerScreenState
     );
     _selectedSlotId ??= selected.id;
     final workingSetCount = _workingSetCount(launch.state, selected);
-    final hasLoggedSet = _hasLoggedSet(launch.state, selected);
     final hasOpenRest = _hasOpenRest(launch.state, selected);
     final isQuick = launch.occurrenceId == null;
     final exerciseComplete =
@@ -175,7 +203,7 @@ class _B02StrengthPlayerScreenState
                   Semantics(
                     header: true,
                     child: Text(
-                      selected.exerciseNameSnapshot,
+                      _actualExerciseName(launch.state, selected),
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),
@@ -201,6 +229,7 @@ class _B02StrengthPlayerScreenState
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
+          isExpanded: true,
           initialValue: selected.id,
           decoration: const InputDecoration(labelText: 'Exercise'),
           items: [
@@ -245,7 +274,9 @@ class _B02StrengthPlayerScreenState
                   decimal: true,
                 ),
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(labelText: 'Weight (kg)'),
+                decoration: InputDecoration(
+                  labelText: _loadLabel(selected.targetLoadBasis),
+                ),
                 onChanged: (value) => _loads[selected.id] = value,
               ),
               TextFormField(
@@ -267,6 +298,7 @@ class _B02StrengthPlayerScreenState
             ],
           ),
           DropdownButtonFormField<String>(
+            isExpanded: true,
             initialValue: _warmup ? 'warmup' : 'working',
             decoration: const InputDecoration(labelText: 'Set type'),
             items: const [
@@ -350,10 +382,6 @@ class _B02StrengthPlayerScreenState
                 label: const Text('Skip exercise'),
               ),
             ),
-          if (hasLoggedSet) ...[
-            _buildRestCard(provider, ui, launch, selected),
-            const SizedBox(height: 12),
-          ],
         ],
         ExpansionTile(
           tilePadding: EdgeInsets.zero,
@@ -374,17 +402,30 @@ class _B02StrengthPlayerScreenState
         _GroupProgressCard(launch: launch, slots: slots),
         const SizedBox(height: 12),
         FilledButton.tonal(
-          onPressed: ui.isBusy
-              ? null
-              : () => context.push(
-                  '/b02-strength-summary',
-                  extra: {'launch': ui.launch ?? launch},
-                ),
+          onPressed: ui.isBusy ? null : () => _openSummary(provider),
           child: Text(isQuick ? 'Finish workout' : 'Review and finish'),
         ),
       ],
     );
   }
+
+  String _actualExerciseName(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    final performed = state.performedExercises.where(
+      (exercise) => exercise.id == 'performed:${slot.id}',
+    );
+    return performed.isEmpty
+        ? (_substitutionNames[slot.id] ?? slot.exerciseNameSnapshot)
+        : performed.first.actualExerciseNameSnapshot;
+  }
+
+  String _loadLabel(B02LoadBasis? basis) => switch (basis) {
+    B02LoadBasis.perSide => 'Weight per side (kg)',
+    B02LoadBasis.perImplement => 'Weight per implement (kg)',
+    _ => 'Weight (kg)',
+  };
 
   int _workingSetCount(
     B02ExecutionDraftState state,
@@ -498,7 +539,12 @@ class _B02StrengthPlayerScreenState
       final saved = ref.read(provider);
       if (saved.status != B02StrengthExecutionStatus.failure &&
           saved.status != B02StrengthExecutionStatus.recovery) {
-        await HapticFeedback.lightImpact();
+        try {
+          await HapticFeedback.lightImpact();
+        } on MissingPluginException {
+          // Haptics are optional presentation feedback; durable logging and
+          // the rest transition must still complete when unavailable.
+        }
         if (!_warmup) {
           await controller.beginRest(slot);
         }
@@ -553,6 +599,10 @@ class _B02StrengthPlayerScreenState
     B02StrengthExecutionSlot slot,
   ) async {
     final isQuick = launchForProvider(provider)?.occurrenceId == null;
+    final hasLoggedSets = _hasLoggedSet(
+      launchForProvider(provider)?.state ?? widget.launch.state,
+      slot,
+    );
     final action = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
@@ -577,11 +627,19 @@ class _B02StrengthPlayerScreenState
                 title: const Text('Remove exercise'),
                 onTap: () => Navigator.pop(sheetContext, 'remove'),
               ),
-            if (!isQuick)
+            if (!isQuick && !hasLoggedSets)
               ListTile(
                 leading: const Icon(Icons.swap_horiz_rounded),
                 title: const Text('Substitute exercise'),
                 onTap: () => Navigator.pop(sheetContext, 'substitute'),
+              ),
+            if (!isQuick && hasLoggedSets)
+              const ListTile(
+                leading: Icon(Icons.lock_outline_rounded),
+                title: Text('Substitution locked'),
+                subtitle: Text(
+                  'A different exercise cannot replace sets already logged.',
+                ),
               ),
           ],
         ),
@@ -598,7 +656,9 @@ class _B02StrengthPlayerScreenState
         builder: (dialogContext) => AlertDialog(
           title: const Text('Remove exercise?'),
           content: Text(
-            'Remove ${slot.exerciseNameSnapshot} from this workout?',
+            hasLoggedSets
+                ? 'Remove ${slot.exerciseNameSnapshot} from the active list? Its logged sets will stay in the workout and remain available to finish.'
+                : 'Remove ${slot.exerciseNameSnapshot} from this workout?',
           ),
           actions: [
             TextButton(
@@ -634,6 +694,41 @@ class _B02StrengthPlayerScreenState
         indiFitSuccessSnackBar('Substitution ready for the next set'),
       );
     }
+  }
+
+  Future<void> _openSummary(dynamic provider) async {
+    final controller = ref.read(provider.notifier);
+    await controller.pauseElapsed();
+    if (!mounted) return;
+    final launch = ref.read(provider).launch;
+    if (launch == null) return;
+    await context.push('/b02-strength-summary', extra: {'launch': launch});
+    if (mounted) controller.resumeElapsed();
+  }
+
+  Future<void> _closeWorkout(dynamic provider) async {
+    final close = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Save and close workout?'),
+        content: const Text(
+          'Your sets and elapsed workout time will be saved so you can resume later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep training'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Save and close'),
+          ),
+        ],
+      ),
+    );
+    if (close != true || !mounted) return;
+    await ref.read(provider.notifier).pauseElapsed();
+    if (mounted) context.pop();
   }
 
   Future<void> _overrideTarget(
@@ -891,6 +986,7 @@ class _RpeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<int>(
+    isExpanded: true,
     initialValue: value,
     decoration: const InputDecoration(labelText: 'RPE'),
     items: [
@@ -1133,33 +1229,28 @@ class _RestCardState extends State<_RestCard> {
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: widget.onDecrease == null
-                          ? null
-                          : () => widget.onDecrease?.call(period.id),
-                      child: const Text('−15 sec'),
-                    ),
+                  OutlinedButton(
+                    onPressed: widget.onDecrease == null
+                        ? null
+                        : () => widget.onDecrease?.call(period.id),
+                    child: const Text('−15 sec'),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: widget.onExtend == null
-                          ? null
-                          : () => widget.onExtend?.call(period.id),
-                      child: const Text('+15 sec'),
-                    ),
+                  OutlinedButton(
+                    onPressed: widget.onExtend == null
+                        ? null
+                        : () => widget.onExtend?.call(period.id),
+                    child: const Text('+15 sec'),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextButton(
-                      onPressed: widget.onSkip == null
-                          ? null
-                          : () => widget.onSkip?.call(period.id),
-                      child: const Text('Skip'),
-                    ),
+                  TextButton(
+                    onPressed: widget.onSkip == null
+                        ? null
+                        : () => widget.onSkip?.call(period.id),
+                    child: const Text('Skip'),
                   ),
                 ],
               ),
@@ -1171,16 +1262,10 @@ class _RestCardState extends State<_RestCard> {
   }
 
   String _remainingLabel(B02RestPeriod period) {
-    final remaining = _remainingSeconds(period, _now);
+    final remaining = b02RestRemainingSeconds(period, _now);
     final minutes = remaining ~/ 60;
     final seconds = remaining % 60;
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  int _remainingSeconds(B02RestPeriod period, DateTime now) {
-    final total = period.selectedSeconds ?? period.recommendedSeconds ?? 0;
-    final elapsed = now.difference(period.startedAtUtc).inSeconds;
-    return (total - elapsed).clamp(0, total);
   }
 
   B02RestPeriod? _openPeriod(_RestCard value) {
@@ -1205,12 +1290,16 @@ class _RestCardState extends State<_RestCard> {
           _syncTicker();
           return;
         }
-        if (_remainingSeconds(open, now) == 0) {
+        if (b02RestRemainingSeconds(open, now) == 0) {
           _ticker?.cancel();
           _ticker = null;
           if (!_finishingElapsedRest) {
             _finishingElapsedRest = true;
-            HapticFeedback.mediumImpact();
+            unawaited(
+              HapticFeedback.mediumImpact().catchError((_) {
+                // Optional feedback must never block durable rest completion.
+              }),
+            );
             widget.onElapsed(open.id);
           }
           return;
@@ -1223,6 +1312,13 @@ class _RestCardState extends State<_RestCard> {
       _finishingElapsedRest = false;
     }
   }
+}
+
+@visibleForTesting
+int b02RestRemainingSeconds(B02RestPeriod period, DateTime now) {
+  final total = period.selectedSeconds ?? period.recommendedSeconds ?? 0;
+  final elapsed = now.toUtc().difference(period.startedAtUtc).inSeconds;
+  return (total - elapsed).clamp(0, total);
 }
 
 class _ErrorState extends StatelessWidget {

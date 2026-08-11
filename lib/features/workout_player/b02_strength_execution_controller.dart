@@ -55,14 +55,18 @@ class B02StrengthExecutionController
   final StrengthExecutionCompatibilityAdapter _adapter;
   final B02StrengthExecutionDraftService _draftService;
   final B02RestDraftCoordinator _restCoordinator;
+  final DateTime Function() _nowUtc;
+  DateTime? _activeStartedAtUtc;
 
   B02StrengthExecutionController(
     this._adapter, {
     B02StrengthExecutionLaunch? initialLaunch,
     B02StrengthExecutionDraftService? draftService,
     B02RestDraftCoordinator? restCoordinator,
+    DateTime Function()? nowUtc,
   }) : _draftService = draftService ?? const B02StrengthExecutionDraftService(),
        _restCoordinator = restCoordinator ?? const B02RestDraftCoordinator(),
+       _nowUtc = nowUtc ?? _systemNowUtc,
        super(
          initialLaunch == null
              ? const B02StrengthExecutionUiState.initial()
@@ -70,7 +74,11 @@ class B02StrengthExecutionController
                  status: B02StrengthExecutionStatus.ready,
                  launch: initialLaunch,
                ),
-       );
+       ) {
+    _activeStartedAtUtc = _nowUtc().toUtc();
+  }
+
+  static DateTime _systemNowUtc() => DateTime.now().toUtc();
 
   Future<void> startScheduled({
     required String occurrenceId,
@@ -120,11 +128,12 @@ class B02StrengthExecutionController
       clearError: true,
     );
     try {
-      await _adapter.saveDraft(draftId: current.draftId, state: draft);
+      final durableDraft = _stampElapsed(draft);
+      await _adapter.saveDraft(draftId: current.draftId, state: durableDraft);
       if (!mounted) return;
       state = state.copyWith(
         status: B02StrengthExecutionStatus.partial,
-        launch: current.copyWith(state: draft),
+        launch: current.copyWith(state: durableDraft),
         clearError: true,
       );
     } catch (error) {
@@ -165,6 +174,7 @@ class B02StrengthExecutionController
     required B02StrengthExecutionSlot slot,
     required int reps,
     double? loadKg,
+    B02LoadBasis? actualLoadBasis,
     int? rpe,
     B02SetRole role = B02SetRole.working,
     B02TechniqueFields? technique,
@@ -186,6 +196,7 @@ class B02StrengthExecutionController
         slot: slot,
         reps: reps,
         loadKg: loadKg,
+        actualLoadBasis: actualLoadBasis,
         rpe: rpe,
         role: role,
         technique: technique,
@@ -347,7 +358,7 @@ class B02StrengthExecutionController
         selectedSeconds: recommendation.selectedSeconds,
         actualSeconds: null,
         source: recommendation.source,
-        startedAtUtc: DateTime.now().toUtc(),
+        startedAtUtc: _nowUtc().toUtc(),
       );
       await saveDraft(_restCoordinator.begin(current.state, period));
     } catch (error) {
@@ -447,12 +458,21 @@ class B02StrengthExecutionController
       );
       final selected =
           (period.selectedSeconds ?? period.recommendedSeconds ?? 0) + seconds;
+      final adjusted = selected.clamp(0, 3600);
+      final now = _nowUtc().toUtc();
+      final elapsed = now
+          .difference(period.startedAtUtc)
+          .inSeconds
+          .clamp(0, 86400);
       await saveDraft(
-        _restCoordinator.select(
-          current.state,
-          periodId,
-          selected.clamp(0, 3600),
-        ),
+        adjusted <= elapsed
+            ? _restCoordinator.finish(
+                current.state,
+                periodId,
+                endedAtUtc: now,
+                endReason: B02RestEndReason.elapsed,
+              )
+            : _restCoordinator.select(current.state, periodId, adjusted),
       );
     } catch (error) {
       _setFailure(error, current);
@@ -467,7 +487,7 @@ class B02StrengthExecutionController
         _restCoordinator.skip(
           current.state,
           periodId,
-          endedAtUtc: DateTime.now().toUtc(),
+          endedAtUtc: _nowUtc().toUtc(),
         ),
       );
     } catch (error) {
@@ -486,7 +506,7 @@ class B02StrengthExecutionController
         _restCoordinator.finish(
           current.state,
           periodId,
-          endedAtUtc: (endedAtUtc ?? DateTime.now()).toUtc(),
+          endedAtUtc: (endedAtUtc ?? _nowUtc()).toUtc(),
           endReason: B02RestEndReason.elapsed,
         ),
       );
@@ -514,10 +534,12 @@ class B02StrengthExecutionController
       clearError: true,
     );
     try {
+      final finalState = _stampElapsed(current.state);
+      await _adapter.saveDraft(draftId: current.draftId, state: finalState);
       await _adapter.finalizeDraft(
         draftId: current.draftId,
         commandId: commandId,
-        state: current.state,
+        state: finalState,
         completionKind: completionKind,
         reason: reason,
         completedAtUtc: completedAtUtc,
@@ -526,6 +548,7 @@ class B02StrengthExecutionController
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
       );
+      _activeStartedAtUtc = null;
     } on B02StrengthExecutionRecoveryException catch (error) {
       _setFailure(error, current, recovery: true);
     } catch (error) {
@@ -546,6 +569,7 @@ class B02StrengthExecutionController
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
       );
+      _activeStartedAtUtc = null;
     } catch (error) {
       _setFailure(error, current);
     }
@@ -562,6 +586,7 @@ class B02StrengthExecutionController
         launch: launch.copyWith(state: prepared.state),
         slots: prepared.slots,
       );
+      _activeStartedAtUtc = _nowUtc().toUtc();
     } catch (error) {
       _setFailure(error, null, recovery: true);
     }
@@ -584,11 +609,37 @@ class B02StrengthExecutionController
         launch: launch.copyWith(state: prepared.state),
         slots: prepared.slots,
       );
+      _activeStartedAtUtc = _nowUtc().toUtc();
     } on B02StrengthExecutionRecoveryException catch (error) {
       _setFailure(error, prior, recovery: true);
     } catch (error) {
       _setFailure(error, prior);
     }
+  }
+
+  /// Persists active wall-clock time before the player leaves the foreground.
+  Future<void> pauseElapsed() async {
+    final current = state.launch;
+    if (current == null || _activeStartedAtUtc == null) return;
+    await saveDraft(current.state);
+    _activeStartedAtUtc = null;
+  }
+
+  /// Starts a fresh foreground interval without counting background time.
+  void resumeElapsed() {
+    if (state.launch != null && _activeStartedAtUtc == null) {
+      _activeStartedAtUtc = _nowUtc().toUtc();
+    }
+  }
+
+  B02ExecutionDraftState _stampElapsed(B02ExecutionDraftState draft) {
+    final started = _activeStartedAtUtc;
+    if (started == null) return draft;
+    final now = _nowUtc().toUtc();
+    final added = now.difference(started).inSeconds;
+    _activeStartedAtUtc = now;
+    if (added <= 0) return draft;
+    return draft.copyWith(elapsedSeconds: draft.elapsedSeconds + added);
   }
 
   void _setFailure(

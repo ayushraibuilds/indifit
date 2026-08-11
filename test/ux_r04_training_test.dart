@@ -87,6 +87,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'Training exposes a saved Quick Workout as the first resume action',
+    (tester) async {
+      _setViewport(tester, const Size(320, 568));
+      final draft = WorkoutDraft(
+        id: 7,
+        routineName: 'Quick workout',
+        currentExerciseIndex: 0,
+        currentSetIndex: 0,
+        elapsedSeconds: 75,
+        loggedSetsJson: '{}',
+        updatedAt: DateTime.utc(2026, 8, 11),
+        executionSnapshotJson: '{"version":1}',
+        draftSchemaVersion: 2,
+        activityType: 'strength',
+        executionStateJson: '{}',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            trainingLandingSnapshotProvider.overrideWith(
+              (ref) async => TrainingLandingSnapshot(
+                localDate: '2026-08-11',
+                timezoneId: 'Asia/Kolkata',
+                todayWorkout: null,
+                upcoming: const [],
+                recentSessions: const [],
+                activeProgramName: null,
+                activeStrengthDraft: draft,
+              ),
+            ),
+          ],
+          child: _app(AppTheme.lightTheme, const TrainingScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Resume Quick workout'), findsOneWidget);
+      expect(find.textContaining('active time'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('Training keeps Travel inside More and only with a plan', (
     tester,
   ) async {

@@ -113,4 +113,55 @@ void main() {
     expect(skipped.performedExercises.single.status, 'skipped');
     expect(skipped.performedExercises.single.substitutionReason, 'No time');
   });
+
+  test('preserves a substituted actual exercise across resumed sets', () {
+    final substituted = service.recordSet(
+      state: draft(),
+      slot: slot,
+      reps: 8,
+      actualExerciseId: 'exercise-2',
+      actualExerciseNameSnapshot: 'Dumbbell press',
+      substitutionReason: 'Equipment unavailable',
+    );
+    final resumed = service.recordSet(state: substituted, slot: slot, reps: 7);
+
+    expect(resumed.performedExercises.single.actualExerciseId, 'exercise-2');
+    expect(
+      resumed.performedExercises.single.actualExerciseNameSnapshot,
+      'Dumbbell press',
+    );
+    expect(resumed.performedExercises.single.sets, hasLength(2));
+  });
+
+  test('loaded Quick sets default to a canonical total-external basis', () {
+    final quickSlot = B02StrengthExecutionSlot(
+      id: 'quick-slot',
+      groupId: null,
+      groupType: null,
+      groupLabel: null,
+      groupOrdinal: null,
+      roundOrdinal: null,
+      memberOrdinal: null,
+      prescriptionId: 'quick-prescription',
+      exerciseId: 'exercise-1',
+      exerciseNameSnapshot: 'Bench press',
+      plannedSets: 1,
+      targetRepsMin: null,
+      targetRepsMax: null,
+      targetRpe: null,
+      targetLoadKg: null,
+      targetLoadBasis: null,
+    );
+    final logged = service.recordSet(
+      state: draft(),
+      slot: quickSlot,
+      reps: 8,
+      loadKg: 60,
+      useSlotPrescription: false,
+    );
+    expect(
+      logged.performedExercises.single.sets.single.actualLoadBasis,
+      B02LoadBasis.totalExternal,
+    );
+  });
 }

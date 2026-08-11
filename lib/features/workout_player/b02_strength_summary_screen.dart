@@ -10,23 +10,42 @@ import 'b02_strength_execution_controller.dart';
 
 /// Final review for B02 strength execution. Full and partial completion are
 /// explicit actions; a failed finalization keeps the linked draft visible.
-class B02StrengthSummaryScreen extends ConsumerWidget {
+class B02StrengthSummaryScreen extends ConsumerStatefulWidget {
   final B02StrengthExecutionLaunch launch;
 
   const B02StrengthSummaryScreen({super.key, required this.launch});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = b02StrengthExecutionScreenControllerProvider(launch);
+  ConsumerState<B02StrengthSummaryScreen> createState() =>
+      _B02StrengthSummaryScreenState();
+}
+
+class _B02StrengthSummaryScreenState
+    extends ConsumerState<B02StrengthSummaryScreen> {
+  late final String _completionCommandId;
+  var _isFinalizing = false;
+  B02StrengthExecutionLaunch? _completionLaunch;
+
+  @override
+  void initState() {
+    super.initState();
+    _completionCommandId = const Uuid().v4();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = b02StrengthExecutionScreenControllerProvider(
+      widget.launch,
+    );
     final ui = ref.watch(provider);
-    final current = ui.launch ?? launch;
+    final current = ui.launch ?? widget.launch;
     final completed =
         ui.status == B02StrengthExecutionStatus.ready && ui.launch == null;
     if (completed) {
       return Scaffold(
         appBar: AppBar(title: const Text('Workout complete')),
         body: B02WorkoutCompletionSuccess(
-          launch: launch,
+          launch: _completionLaunch ?? widget.launch,
           onDone: () => context.go('/training'),
         ),
       );
@@ -39,22 +58,18 @@ class B02StrengthSummaryScreen extends ConsumerWidget {
         onRetry: ui.launch == null
             ? null
             : () => ref.read(provider.notifier).loadSlots(),
-        onFull: ui.isBusy
+        onFull: ui.isBusy || _isFinalizing
             ? null
-            : () => _complete(context, ref, provider, CompletionKind.full),
-        onPartial: ui.isBusy
+            : () => _complete(context, provider, CompletionKind.full),
+        onPartial: ui.isBusy || _isFinalizing
             ? null
-            : () => _confirmPartial(context, ref, provider),
+            : () => _confirmPartial(context, provider),
         onBack: () => context.pop(),
       ),
     );
   }
 
-  Future<void> _confirmPartial(
-    BuildContext context,
-    WidgetRef ref,
-    dynamic provider,
-  ) async {
+  Future<void> _confirmPartial(BuildContext context, dynamic provider) async {
     final reason = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -82,30 +97,30 @@ class B02StrengthSummaryScreen extends ConsumerWidget {
       },
     );
     if (reason == null || !context.mounted) return;
-    await _complete(
-      context,
-      ref,
-      provider,
-      CompletionKind.partial,
-      reason: reason,
-    );
+    await _complete(context, provider, CompletionKind.partial, reason: reason);
   }
 
   Future<void> _complete(
     BuildContext context,
-    WidgetRef ref,
     dynamic provider,
     CompletionKind kind, {
     String? reason,
   }) async {
-    await ref
-        .read(provider.notifier)
-        .finalize(
-          commandId: const Uuid().v4(),
-          completionKind: kind,
-          reason: reason?.isEmpty == true ? null : reason,
-        );
+    if (_isFinalizing) return;
+    setState(() => _isFinalizing = true);
+    final controller = ref.read(provider.notifier);
+    await controller.pauseElapsed();
+    if (!mounted) return;
+    _completionLaunch = ref.read(provider).launch ?? widget.launch;
+    await controller.finalize(
+      commandId: _completionCommandId,
+      completionKind: kind,
+      reason: reason?.isEmpty == true ? null : reason,
+    );
     if (!context.mounted) return;
+    if (ref.read(provider).launch != null) {
+      setState(() => _isFinalizing = false);
+    }
   }
 }
 
@@ -135,32 +150,45 @@ class B02WorkoutCompletionSuccess extends StatelessWidget {
       '${exercises.length} ${exercises.length == 1 ? 'exercise' : 'exercises'}',
       '$setCount ${setCount == 1 ? 'set' : 'sets'}',
     ];
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle_rounded, size: 56),
-            const SizedBox(height: 16),
-            Text(
-              'Workout complete',
-              style: Theme.of(context).textTheme.headlineSmall,
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: (constraints.maxHeight - 48).clamp(0, double.infinity),
             ),
-            const SizedBox(height: 8),
-            Text(
-              launch.state.routineName,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.check_circle_rounded, size: 56),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Workout complete',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    launch.state.routineName,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(details.join(' · '), textAlign: TextAlign.center),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: onDone,
+                      child: const Text('Done'),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(details.join(' · '), textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(onPressed: onDone, child: const Text('Done')),
-            ),
-          ],
+          ),
         ),
       ),
     );

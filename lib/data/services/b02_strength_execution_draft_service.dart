@@ -11,6 +11,7 @@ class B02StrengthExecutionDraftService {
     required B02StrengthExecutionSlot slot,
     required int reps,
     double? loadKg,
+    B02LoadBasis? actualLoadBasis,
     int? rpe,
     B02SetRole role = B02SetRole.working,
     B02TechniqueFields? technique,
@@ -23,12 +24,6 @@ class B02StrengthExecutionDraftService {
     if (reps < 1) {
       throw const B02ValidationException('Repetitions must be positive.');
     }
-    final canonicalExerciseId = (actualExerciseId ?? slot.exerciseId)?.trim();
-    if (canonicalExerciseId == null || canonicalExerciseId.isEmpty) {
-      throw const B02ValidationException(
-        'This slot has no resolved canonical exercise; recover the draft before logging it.',
-      );
-    }
     final performedId = 'performed:${slot.id}';
     final existingIndex = state.performedExercises.indexWhere(
       (exercise) => exercise.id == performedId,
@@ -36,6 +31,17 @@ class B02StrengthExecutionDraftService {
     final existing = existingIndex < 0
         ? null
         : state.performedExercises[existingIndex];
+    // A recovered substitution remains the actual exercise until the user
+    // explicitly chooses another one. Falling back to the planned slot here
+    // would silently reattribute all earlier performed sets after resume.
+    final canonicalExerciseId =
+        (actualExerciseId ?? existing?.actualExerciseId ?? slot.exerciseId)
+            ?.trim();
+    if (canonicalExerciseId == null || canonicalExerciseId.isEmpty) {
+      throw const B02ValidationException(
+        'This slot has no resolved canonical exercise; recover the draft before logging it.',
+      );
+    }
     final offeredRecommendation =
         existing?.targetRecommendation ?? state.targetRecommendations[slot.id];
     final override = state.targetOverrides[slot.id];
@@ -51,7 +57,10 @@ class B02StrengthExecutionDraftService {
       targetRepsMax: override?.targetRepsMax ?? slot.targetRepsMax,
       targetRpe: override?.targetRpe ?? slot.targetRpe,
       actualLoadKg: loadKg,
-      actualLoadBasis: slot.targetLoadBasis,
+      actualLoadBasis:
+          actualLoadBasis ??
+          slot.targetLoadBasis ??
+          (loadKg == null ? null : B02LoadBasis.totalExternal),
       actualReps: reps,
       actualRpe: rpe,
       technique: technique,
@@ -74,7 +83,9 @@ class B02StrengthExecutionDraftService {
       expectedExerciseNameSnapshot: slot.exerciseNameSnapshot,
       actualExerciseId: canonicalExerciseId,
       actualExerciseNameSnapshot:
-          actualExerciseNameSnapshot ?? slot.exerciseNameSnapshot,
+          actualExerciseNameSnapshot ??
+          existing?.actualExerciseNameSnapshot ??
+          slot.exerciseNameSnapshot,
       status: completed ? 'completed' : 'partial',
       substitutionReason: substitutionReason ?? existing?.substitutionReason,
       sets: sets,
