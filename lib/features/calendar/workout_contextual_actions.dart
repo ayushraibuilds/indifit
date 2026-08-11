@@ -7,6 +7,7 @@ import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../media/b05_playlist_launcher.dart';
@@ -38,6 +39,7 @@ class _WorkoutContextualActionsState
     extends ConsumerState<WorkoutContextualActions> {
   var _isLaunching = false;
   String? _launchError;
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _undoFeedback;
 
   CalendarOccurrenceReadItem get _item => widget.item;
 
@@ -88,6 +90,7 @@ class _WorkoutContextualActionsState
         confirmedOutsideEffectiveDate: needsConfirmation,
       );
       if (!mounted) return;
+      dismissIndiFitFeedback(context);
       await WorkoutContextualLauncher.push(context, target);
       if (mounted) await _reconcile();
     } catch (error) {
@@ -155,16 +158,16 @@ class _WorkoutContextualActionsState
   void _showUndo(WorkoutOccurrenceUndoOffer offer) {
     final messenger = ScaffoldMessenger.of(context);
     final duration = offer.expiresAtUtc.difference(DateTime.now().toUtc());
+    messenger.clearSnackBars();
     final snackBar = messenger.showSnackBar(
-      SnackBar(
-        content: const Text('Workout skipped.'),
+      indiFitUndoSnackBar(
+        context,
+        message: 'Workout skipped.',
         duration: duration.isNegative ? const Duration(seconds: 1) : duration,
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () => unawaited(_undo()),
-        ),
+        onUndo: () => unawaited(_undo()),
       ),
     );
+    _undoFeedback = snackBar;
     unawaited(
       snackBar.closed.then((_) {
         if (mounted) {
@@ -191,6 +194,12 @@ class _WorkoutContextualActionsState
 
   Future<void> _reconcile() =>
       ref.read(calendarControllerProvider.notifier).refresh();
+
+  @override
+  void dispose() {
+    _undoFeedback?.close();
+    super.dispose();
+  }
 
   Future<bool> _onSwipe(DismissDirection direction) async {
     if (_isLaunching || !_canLaunch) return false;
@@ -223,7 +232,9 @@ class _WorkoutContextualActionsState
           ? 'Swipe right to open the workout player or left to skip. Buttons provide the same actions.'
           : occurrence.status == OccurrenceStatus.completed.dbValue
           ? 'Open the completed workout to review its details.'
-          : 'Workout actions are unavailable for this status. Open details for history and supported actions.',
+          : occurrence.status == OccurrenceStatus.skipped.dbValue
+          ? 'This workout was skipped.'
+          : 'Open details for this workout.',
       child: Dismissible(
         key: ValueKey('workout-contextual-${occurrence.id}'),
         direction: _canLaunch
@@ -342,10 +353,17 @@ class _WorkoutContextualActionsState
                         label: 'View workout',
                         hint: 'Review this completed workout.',
                         icon: Icons.open_in_new_rounded,
-                        onPressed: busy ? null : widget.onOpenDetails,
+                        onPressed: busy
+                            ? null
+                            : () {
+                                dismissIndiFitFeedback(context);
+                                widget.onOpenDetails();
+                              },
                       ),
                     ],
                   )
+                else if (occurrence.status == OccurrenceStatus.skipped.dbValue)
+                  const SizedBox.shrink()
                 else
                   const B05StatusMessage(
                     status: B05SemanticStatus.unavailable,

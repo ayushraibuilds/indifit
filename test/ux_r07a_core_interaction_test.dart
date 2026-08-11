@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
+import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/core/widgets/indi_fit_bottom_sheet.dart';
 import 'package:indifit/core/widgets/indi_fit_feedback.dart';
 import 'package:indifit/data/database/app_database.dart';
@@ -26,6 +27,32 @@ void main() {
     expect(snackBar.backgroundColor, isNull);
     expect((snackBar.content as Text).data, '✓ Workout logged');
   });
+
+  testWidgets(
+    'skip feedback is themed, floating, and cleared before workout navigation',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: const _FeedbackNavigationHarness(),
+        ),
+      );
+
+      await tester.tap(find.text('Skip workout'));
+      await tester.pump();
+      final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
+      expect(snackBar.behavior, SnackBarBehavior.floating);
+      expect(snackBar.backgroundColor, B05SemanticColors.dark.section);
+      expect(find.text('Workout skipped.'), findsOneWidget);
+      expect(find.text('Undo'), findsOneWidget);
+
+      await tester.tap(find.text('Open workout player'));
+      await tester.pumpAndSettle();
+      expect(find.text('Review Workout'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(find.text('Workout skipped.'), findsNothing);
+    },
+  );
 
   testWidgets('Custom Food remains readable in light mode', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -293,6 +320,47 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+}
+
+class _FeedbackNavigationHarness extends StatelessWidget {
+  const _FeedbackNavigationHarness();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FilledButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                indiFitUndoSnackBar(
+                  context,
+                  message: 'Workout skipped.',
+                  duration: const Duration(seconds: 30),
+                  onUndo: () {},
+                ),
+              );
+            },
+            child: const Text('Skip workout'),
+          ),
+          FilledButton(
+            onPressed: () {
+              dismissIndiFitFeedback(context);
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const Scaffold(
+                    body: Center(child: Text('Review Workout')),
+                  ),
+                ),
+              );
+            },
+            child: const Text('Open workout player'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _FakeProfileNotifier extends UserProfileNotifier {

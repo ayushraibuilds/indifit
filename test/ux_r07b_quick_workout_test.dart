@@ -11,6 +11,7 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
+import 'package:indifit/data/repositories/program_repository.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
 import 'package:indifit/data/services/b02_rest_recommendation_service.dart';
 import 'package:indifit/data/services/b02_strength_execution_draft_service.dart';
@@ -184,6 +185,65 @@ void main() {
     },
   );
 
+  test(
+    'active training program without a draft does not block Quick',
+    () async {
+      final programs = ProgramRepository(db);
+      final programId = await programs.createProgram(
+        name: 'Active strength plan',
+        blocks: const [],
+      );
+      final version = (await programs.getVersionsForProgram(programId)).single;
+      await (db.update(db.programVersions)
+            ..where((row) => row.id.equals(version.id)))
+          .write(const ProgramVersionsCompanion(status: Value('published')));
+      await (db.update(
+        db.trainingPlanSettings,
+      )..where((row) => row.id.equals(1))).write(
+        TrainingPlanSettingsCompanion(
+          activeProgramVersionId: Value(version.id),
+          updatedAtUtc: Value(DateTime.utc(2026, 8, 10, 8)),
+        ),
+      );
+
+      final launch = await executions.startUnscheduledDraft(
+        routineName: 'Quick workout',
+        executionSnapshotJson: quickWorkoutSnapshotJson('Quick workout'),
+        snapshotId: 'program-does-not-block-quick',
+      );
+
+      expect(launch.occurrenceId, isNull);
+      expect(await db.select(db.workoutDrafts).get(), hasLength(1));
+    },
+  );
+
+  test('discard followed by Quick start leaves exactly one draft', () async {
+    final existing = await executions.startUnscheduledDraft(
+      routineName: 'Quick workout',
+      executionSnapshotJson: quickWorkoutSnapshotJson('Quick workout'),
+      snapshotId: 'discarded-quick',
+    );
+    await executions.discardDraft(draftId: existing.draftId);
+
+    final replacement = await executions.startUnscheduledDraft(
+      routineName: 'Quick workout',
+      executionSnapshotJson: quickWorkoutSnapshotJson('Quick workout'),
+      snapshotId: 'replacement-quick',
+    );
+
+    final drafts = await db.select(db.workoutDrafts).get();
+    expect(drafts, hasLength(1));
+    expect(drafts.single.id, replacement.draftId);
+    await expectLater(
+      executions.startUnscheduledDraft(
+        routineName: 'Quick workout',
+        executionSnapshotJson: quickWorkoutSnapshotJson('Quick workout'),
+        snapshotId: 'duplicate-replacement',
+      ),
+      throwsA(isA<B02StrengthExecutionException>()),
+    );
+  });
+
   testWidgets('Quick Workout is a first-class empty entry surface', (
     tester,
   ) async {
@@ -191,7 +251,15 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
-      MaterialApp(theme: AppTheme.lightTheme, home: const QuickWorkoutScreen()),
+      ProviderScope(
+        overrides: [
+          quickWorkoutActiveDraftProvider.overrideWith((ref) async => null),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const QuickWorkoutScreen(),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
     expect(find.text('Quick workout'), findsOneWidget);
@@ -202,6 +270,90 @@ void main() {
     await expectLater(
       find.byType(QuickWorkoutScreen),
       matchesGoldenFile('goldens/ux_r07b_quick_workout_empty_light.png'),
+    );
+  });
+
+  for (final planned in [false, true]) {
+    testWidgets(
+      '${planned ? 'planned' : 'Quick'} draft presents consumer recovery actions',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final draft = _conflictingDraft(planned: planned);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              quickWorkoutActiveDraftProvider.overrideWith(
+                (ref) async => draft,
+              ),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.darkTheme,
+              home: const QuickWorkoutScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(
+            planned ? 'You have a workout in progress' : 'Workout in progress',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(planned ? 'Resume planned workout' : 'Resume workout'),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            planned
+                ? 'Discard draft and start Quick Workout'
+                : 'Discard and start new',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Cancel'), findsOneWidget);
+        expect(
+          find.textContaining('B02StrengthExecutionException'),
+          findsNothing,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('Quick draft recovery has a compact dark golden', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(
+          body: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: QuickWorkoutConflictSurface(
+                draft: _conflictingDraft(planned: false),
+                isBusy: false,
+                onResume: () {},
+                onDiscard: () {},
+                onCancel: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byType(QuickWorkoutConflictSurface),
+      matchesGoldenFile(
+        'goldens/ux_r07b_quick_workout_conflict_compact_dark.png',
+      ),
     );
   });
 
@@ -381,3 +533,18 @@ void main() {
 }
 
 void _noop() {}
+
+WorkoutDraft _conflictingDraft({required bool planned}) => WorkoutDraft(
+  id: planned ? 42 : 41,
+  routineName: planned ? 'Day 3: Legs & Lower Body' : 'Quick workout',
+  currentExerciseIndex: 0,
+  currentSetIndex: 0,
+  elapsedSeconds: 75,
+  loggedSetsJson: '{}',
+  updatedAt: DateTime.utc(2026, 8, 12),
+  scheduledOccurrenceId: planned ? 'planned-occurrence' : null,
+  executionSnapshotJson: '{"version":1}',
+  draftSchemaVersion: B02ExecutionDraftState.schemaVersion,
+  activityType: B02ActivityType.strength.dbValue,
+  executionStateJson: '{}',
+);

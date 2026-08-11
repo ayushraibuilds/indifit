@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
@@ -376,13 +377,42 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
   Widget build(BuildContext context) {
     if (_activeProgramVersionId != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Training Program')),
-        body: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(28),
-            child: Text(
-              'This route edits legacy splits only. The active program is immutable; create a replacement version from the training-program flow.',
-              textAlign: TextAlign.center,
+        appBar: AppBar(title: const Text('Training plan')),
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.route_rounded,
+                  size: 52,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Your current plan is already scheduled.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Open the calendar to view upcoming workouts, or create a new plan when you want to change your training.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () => context.push('/calendar'),
+                  icon: const Icon(Icons.calendar_today_rounded),
+                  label: const Text('Open calendar'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/program-author'),
+                  icon: const Icon(Icons.swap_horiz_rounded),
+                  label: const Text('Change plan'),
+                ),
+              ],
             ),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/di/providers.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -26,6 +27,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   bool _loading = false;
   Set<int> _completedDayOfWeeks = {};
   String? _activeProgramVersionId;
+  String? _activeProgramName;
 
   @override
   void initState() {
@@ -74,14 +76,19 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         setState(() {
           _activeRoutine = active;
           _activeProgramVersionId = null;
+          _activeProgramName = null;
           _routineDays = details;
           _completedDayOfWeeks = completed;
           _loading = false;
         });
       } else if (selection.type == ActivePlanType.b01Program) {
+        final detail = await ref
+            .read(programRepositoryProvider)
+            .getProgramVersionDetail(selection.programVersionId!);
         setState(() {
           _activeRoutine = null;
           _activeProgramVersionId = selection.programVersionId;
+          _activeProgramName = detail?.program.name;
           _routineDays = [];
           _completedDayOfWeeks = completed;
           _loading = false;
@@ -90,6 +97,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         setState(() {
           _activeRoutine = null;
           _activeProgramVersionId = null;
+          _activeProgramName = null;
           _routineDays = [];
           _completedDayOfWeeks = completed;
           _loading = false;
@@ -104,7 +112,9 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Training Split'),
+        title: Text(
+          _activeProgramVersionId == null ? 'Training Split' : 'Training plan',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.directions_run_rounded),
@@ -161,35 +171,10 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   }
 
   Widget _buildActiveProgramState() {
-    final colors = context.b05Colors;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.calendar_month_rounded, size: 56, color: colors.action),
-            const SizedBox(height: 20),
-            Text(
-              'A scheduled training program is active',
-              textAlign: TextAlign.center,
-              style: B05Typography.title(context),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Legacy split editing is unavailable while this program is active. Your scheduled workouts remain separate from older routines.',
-              textAlign: TextAlign.center,
-              style: B05Typography.body(context),
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: () => context.push('/calendar'),
-              icon: const Icon(Icons.calendar_today_rounded),
-              label: const Text('Open training calendar'),
-            ),
-          ],
-        ),
-      ),
+    return ActiveProgramManagementSurface(
+      planName: _activeProgramName,
+      onOpenCalendar: () => context.push('/calendar'),
+      onChangePlan: () => context.push('/program-author'),
     );
   }
 
@@ -561,6 +546,63 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class ActiveProgramManagementSurface extends StatelessWidget {
+  const ActiveProgramManagementSurface({
+    required this.planName,
+    required this.onOpenCalendar,
+    required this.onChangePlan,
+    super.key,
+  });
+
+  final String? planName;
+  final VoidCallback onOpenCalendar;
+  final VoidCallback onChangePlan;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.calendar_month_rounded, size: 56, color: colors.action),
+            const SizedBox(height: 20),
+            Text(
+              planName ?? 'Current training plan',
+              textAlign: TextAlign.center,
+              style: B05Typography.title(context),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Your workouts are scheduled and ready. Open the calendar to train, or choose a different plan when you are ready for a change.',
+              textAlign: TextAlign.center,
+              style: B05Typography.body(context),
+            ),
+            const SizedBox(height: 20),
+            B05ActionGroup(
+              children: [
+                B05ActionButton(
+                  label: 'Open calendar',
+                  icon: Icons.calendar_today_rounded,
+                  onPressed: onOpenCalendar,
+                ),
+                B05ActionButton(
+                  label: 'Change plan',
+                  icon: Icons.swap_horiz_rounded,
+                  emphasis: B05ActionEmphasis.secondary,
+                  onPressed: onChangePlan,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,9 +1,10 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
@@ -101,6 +102,7 @@ abstract final class WorkoutContextualLauncher {
     BuildContext context,
     WorkoutOccurrenceLaunchTarget target,
   ) {
+    dismissIndiFitFeedback(context);
     return switch (target) {
       B02WorkoutOccurrenceLaunchTarget() => context.push(
         '/b02-strength-player',

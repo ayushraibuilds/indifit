@@ -137,8 +137,7 @@ final trainingLandingSnapshotProvider =
         activeProgramName: calendar.activeProgramName,
         activeStrengthDraft:
             activeDraft?.activityType == 'strength' &&
-                activeDraft?.executionStateJson != null &&
-                activeDraft?.scheduledOccurrenceId == null
+                activeDraft?.executionStateJson != null
             ? activeDraft
             : null,
       );
@@ -382,6 +381,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           isLaunching: _isLaunching,
           onStartWorkout: (item) => _startWorkout(context, ref, item),
           onStartTraining: () => _openStartWorkout(context, ref, data),
+          onStartQuickWorkout: () => context.push('/quick-workout'),
           onResumeDraft: data.activeStrengthDraft == null
               ? null
               : () => _resumeDraft(context, ref, data.activeStrengthDraft!),
@@ -484,6 +484,7 @@ class _TrainingLandingBody extends StatelessWidget {
     required this.isLaunching,
     required this.onStartWorkout,
     required this.onStartTraining,
+    required this.onStartQuickWorkout,
     required this.onResumeDraft,
     required this.onOpenPlan,
     required this.onOpenCalendar,
@@ -495,6 +496,7 @@ class _TrainingLandingBody extends StatelessWidget {
   final bool isLaunching;
   final ValueChanged<CalendarOccurrenceReadItem> onStartWorkout;
   final VoidCallback onStartTraining;
+  final VoidCallback onStartQuickWorkout;
   final VoidCallback? onResumeDraft;
   final VoidCallback onOpenPlan;
   final VoidCallback onOpenCalendar;
@@ -562,6 +564,7 @@ class _TrainingLandingBody extends StatelessWidget {
           onStart: today == null || !canLaunchTrainingOccurrence(today)
               ? onStartTraining
               : onStartTraining,
+          onStartQuickWorkout: onStartQuickWorkout,
           onOpenPlan: onOpenPlan,
           onLogWorkout: onLogWorkout,
         ),
@@ -693,6 +696,7 @@ class _TodayTrainingSurface extends StatelessWidget {
     required this.item,
     required this.isLaunching,
     required this.onStart,
+    required this.onStartQuickWorkout,
     required this.onOpenPlan,
     required this.onLogWorkout,
   });
@@ -700,6 +704,7 @@ class _TodayTrainingSurface extends StatelessWidget {
   final CalendarOccurrenceReadItem? item;
   final bool isLaunching;
   final VoidCallback? onStart;
+  final VoidCallback onStartQuickWorkout;
   final VoidCallback onOpenPlan;
   final VoidCallback onLogWorkout;
 
@@ -787,12 +792,19 @@ class _TodayTrainingSurface extends StatelessWidget {
             ],
           ),
           const SizedBox(height: B05Layout.space12),
-          if (isCompleted)
+          if (isCompleted) ...[
             Text(
               'Workout complete for today.',
               style: B05Typography.body(context),
-            )
-          else
+            ),
+            const SizedBox(height: B05Layout.space12),
+            B05ActionButton(
+              label: 'Quick Workout',
+              icon: Icons.bolt_rounded,
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: isLaunching ? null : onStartQuickWorkout,
+            ),
+          ] else
             B05ActionButton(
               label: isLaunching ? 'Opening workout…' : actionLabel,
               icon: Icons.play_arrow_rounded,

@@ -22,16 +22,36 @@ void main() {
       expect(results, hasLength(1));
       expect(results.single.name, 'Fixture shake');
       expect(results.single.protein, 20);
-      expect(adapter.options!.uri.host, 'world.openfoodfacts.org');
-      expect(adapter.options!.uri.path, '/cgi/search.pl');
+      expect(adapter.options!.uri.host, 'search.openfoodfacts.org');
+      expect(adapter.options!.uri.path, '/search');
+      expect(adapter.options!.method, 'POST');
       expect(adapter.options!.headers['User-Agent'], kOpenFoodFactsUserAgent);
       expect(adapter.options!.headers, isNot(contains('x-indifit-key')));
-      expect(
-        adapter.options!.queryParameters['fields'],
-        'code,product_name,nutriments,serving_quantity,serving_quantity_unit',
-      );
+      final body = adapter.options!.data as Map<String, dynamic>;
+      expect(body['q'], 'protein shake');
+      expect(body['fields'], [
+        'code',
+        'product_name',
+        'nutriments',
+        'serving_quantity',
+        'serving_quantity_unit',
+      ]);
+      expect(adapter.options!.queryParameters, isEmpty);
     },
   );
+
+  test('provider HTTP failure remains a typed bad-response failure', () async {
+    final dio = Dio()..httpClientAdapter = _BadResponseAdapter();
+
+    await expectLater(
+      FoodApiService(dio).searchOnline('protein shake'),
+      throwsA(
+        isA<DioException>()
+            .having((error) => error.type, 'type', DioExceptionType.badResponse)
+            .having((error) => error.response?.statusCode, 'status', 503),
+      ),
+    );
+  });
 
   test('provider timeout remains a typed timeout failure', () async {
     final dio = Dio()..httpClientAdapter = _TimeoutAdapter();
@@ -82,7 +102,7 @@ class _SuccessAdapter implements HttpClientAdapter {
   ) async {
     this.options = options;
     return ResponseBody.fromString(
-      '''{"products":[{"code":"123","product_name":"Fixture shake","serving_quantity":330,"serving_quantity_unit":"g","nutriments":{"energy-kcal_100g":120,"proteins_100g":20,"carbohydrates_100g":6,"fat_100g":2}}]}''',
+      '''{"hits":[{"code":"123","product_name":"Fixture shake","serving_quantity":330,"serving_quantity_unit":"g","nutriments":{"energy-kcal_100g":120,"proteins_100g":20,"carbohydrates_100g":6,"fat_100g":2}}]}''',
       200,
       headers: {
         Headers.contentTypeHeader: ['application/json'],
@@ -107,6 +127,24 @@ class _TimeoutAdapter implements HttpClientAdapter {
       message: 'fixture timeout',
     );
   }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _BadResponseAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<List<int>>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString(
+    '{"detail":"provider unavailable"}',
+    503,
+    headers: {
+      Headers.contentTypeHeader: ['application/json'],
+    },
+  );
 
   @override
   void close({bool force = false}) {}

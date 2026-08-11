@@ -593,6 +593,92 @@ void main() {
     expect(find.text('Stale first result'), findsNothing);
   });
 
+  testWidgets('remote provider results remain distinct from local foods', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    final database = AppDatabase.memory();
+    late ProviderContainer container;
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      container.dispose();
+      tester.view.reset();
+      await database.close();
+    });
+    await tester.pumpWidget(
+      _foodApp(
+        database: database,
+        repository: _TestFoodRepository(database),
+        apiService: _SuccessfulFoodApiService(),
+        mealType: 'breakfast',
+        selectedDate: DateTime(2026, 8, 12),
+      ),
+    );
+    container = ProviderScope.containerOf(
+      tester.element(find.byType(FoodSearchScreen)),
+    );
+    await _pumpFood(tester);
+
+    await tester.enterText(find.byType(TextField).first, 'protein shake');
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump();
+
+    expect(find.text('Provider protein shake'), findsOneWidget);
+    expect(find.text('More results'), findsOneWidget);
+    expect(find.text('Foods on this device'), findsNothing);
+  });
+
+  testWidgets('HTTP failure keeps local food usable with quiet fallback', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    final database = AppDatabase.memory();
+    late ProviderContainer container;
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      container.dispose();
+      tester.view.reset();
+      await database.close();
+    });
+    await tester.pumpWidget(
+      _foodApp(
+        database: database,
+        repository: _TestFoodRepository(
+          database,
+          searchResults: const [
+            FoodItem(
+              id: 9,
+              name: 'Local protein smoothie',
+              calories: 180,
+              proteinG: 18,
+              carbsG: 20,
+              fatG: 3,
+              servingSize: 1,
+              servingUnit: 'glass',
+              category: 'Local',
+              isCustom: false,
+            ),
+          ],
+        ),
+        apiService: _HttpFailureFoodApiService(),
+        mealType: 'breakfast',
+        selectedDate: DateTime(2026, 8, 12),
+      ),
+    );
+    container = ProviderScope.containerOf(
+      tester.element(find.byType(FoodSearchScreen)),
+    );
+    await _pumpFood(tester);
+
+    await tester.enterText(find.byType(TextField).first, 'protein');
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump();
+
+    expect(find.text('Local protein smoothie'), findsOneWidget);
+    expect(find.text('Showing available results'), findsOneWidget);
+    expect(find.text('Online search unavailable'), findsNothing);
+  });
+
   testWidgets('AI completion unwinds the food entry route to its caller', (
     tester,
   ) async {
@@ -1099,6 +1185,40 @@ class _TestFoodApiService extends FoodApiService {
     String query, {
     CancelToken? cancelToken,
   }) async => const [];
+}
+
+class _SuccessfulFoodApiService extends FoodApiService {
+  @override
+  Future<List<FoodApiResult>> searchOnline(
+    String query, {
+    CancelToken? cancelToken,
+  }) async => [
+    FoodApiResult(
+      name: 'Provider protein shake',
+      calories: 120,
+      protein: 20,
+      carbs: 6,
+      fat: 2,
+      servingSize: 330,
+      servingUnit: 'g',
+      barcode: 'provider-123',
+    ),
+  ];
+}
+
+class _HttpFailureFoodApiService extends FoodApiService {
+  @override
+  Future<List<FoodApiResult>> searchOnline(
+    String query, {
+    CancelToken? cancelToken,
+  }) {
+    final request = RequestOptions(path: kOpenFoodFactsSearchUrl);
+    throw DioException(
+      requestOptions: request,
+      response: Response<void>(requestOptions: request, statusCode: 503),
+      type: DioExceptionType.badResponse,
+    );
+  }
 }
 
 class _DelayedFoodApiService extends FoodApiService {

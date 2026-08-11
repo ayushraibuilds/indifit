@@ -169,6 +169,36 @@ void main() {
       expect(find.text('Workout actions unavailable'), findsNothing);
     },
   );
+
+  testWidgets('skipped workout stays quiet and consumer-facing', (
+    tester,
+  ) async {
+    final gateway = _FakeGateway(_occurrence(status: 'skipped'));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          workoutOccurrenceActionGatewayProvider.overrideWithValue(gateway),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: WorkoutContextualActions(
+              item: _item(gateway.occurrence!),
+              onOpenDetails: _noop,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Skipped'), findsOneWidget);
+    expect(find.text('Workout actions unavailable'), findsNothing);
+    expect(
+      find.text('Open details to review history and supported actions.'),
+      findsNothing,
+    );
+  });
 }
 
 void _noop() {}

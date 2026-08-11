@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
@@ -10,6 +11,7 @@ import 'package:indifit/features/calendar/calendar_read_model.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
 import 'package:indifit/features/exercise_library/exercise_details_sheet.dart';
 import 'package:indifit/features/training/training_screen.dart';
+import 'package:indifit/features/workout_player/routine_display_screen.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
 
 void main() {
@@ -129,6 +131,85 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'scheduled completion keeps Quick Workout immediately reachable',
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      final completedSnapshot = TrainingLandingSnapshot(
+        localDate: '2026-08-12',
+        timezoneId: 'Asia/Kolkata',
+        todayWorkout: _calendarItem(
+          name: 'Day 3: Legs & Lower Body',
+          localDate: '2026-08-12',
+          status: 'completed',
+          prescriptionCount: 5,
+        ),
+        upcoming: const [],
+        recentSessions: const [],
+        activeProgramName: 'Suggested PPL',
+      );
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const TrainingScreen()),
+          GoRoute(
+            path: '/quick-workout',
+            builder: (_, _) => const Scaffold(body: Text('Quick route opened')),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            trainingLandingSnapshotProvider.overrideWith(
+              (ref) async => completedSnapshot,
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.darkTheme,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Workout complete for today.'), findsOneWidget);
+      expect(find.text('Quick Workout'), findsOneWidget);
+      await tester.tap(find.text('Quick Workout'));
+      await tester.pumpAndSettle();
+      expect(find.text('Quick route opened'), findsOneWidget);
+    },
+  );
+
+  testWidgets('active scheduled plan uses consumer plan-management copy', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await tester.pumpWidget(
+      _app(
+        AppTheme.darkTheme,
+        ActiveProgramManagementSurface(
+          planName: 'Upper / Lower Strength',
+          onOpenCalendar: () {},
+          onChangePlan: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Upper / Lower Strength'), findsOneWidget);
+    expect(find.text('Open calendar'), findsOneWidget);
+    expect(find.text('Change plan'), findsOneWidget);
+    expect(
+      find.textContaining('legacy split', findRichText: true),
+      findsNothing,
+    );
+    expect(
+      find.textContaining('program version', findRichText: true),
+      findsNothing,
+    );
+  });
 
   testWidgets('Training keeps Travel inside More and only with a plan', (
     tester,
@@ -404,7 +485,7 @@ final _populatedTrainingSnapshot = TrainingLandingSnapshot(
   upcoming: [
     _calendarItem(
       name: 'Lower body',
-      localDate: '2026-08-11',
+      localDate: _todayIsoDate(),
       status: 'planned',
       prescriptionCount: 5,
     ),
@@ -424,6 +505,13 @@ final _populatedTrainingSnapshot = TrainingLandingSnapshot(
   ],
   activeProgramName: 'Upper / Lower Strength',
 );
+
+String _todayIsoDate() {
+  final today = DateTime.now();
+  return '${today.year.toString().padLeft(4, '0')}-'
+      '${today.month.toString().padLeft(2, '0')}-'
+      '${today.day.toString().padLeft(2, '0')}';
+}
 
 CalendarOccurrenceReadItem _calendarItem({
   required String name,

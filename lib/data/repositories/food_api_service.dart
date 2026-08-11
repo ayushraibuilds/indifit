@@ -12,6 +12,8 @@ const Duration kOpenFoodFactsConnectTimeout = Duration(seconds: 8);
 const Duration kOpenFoodFactsReceiveTimeout = Duration(seconds: 12);
 const Duration kOpenFoodFactsSendTimeout = Duration(seconds: 8);
 const String kOpenFoodFactsUserAgent = 'IndiFit/1.0.0 (https://indifit.app)';
+const String kOpenFoodFactsSearchUrl =
+    'https://search.openfoodfacts.org/search';
 
 final foodApiServiceProvider = Provider<FoodApiService>((ref) {
   final dio = ref.watch(openFoodFactsDioProvider);
@@ -124,7 +126,9 @@ class FoodApiService {
     }
   }
 
-  // 2. Search products online (Open Food Facts Search API)
+  // 2. Search products online through Open Food Facts Search-a-licious.
+  // Full-text queries use POST so the search text is not placed in URLs or
+  // ordinary access logs. The dedicated Dio client carries no IndiFit key.
   Future<List<FoodApiResult>> searchOnline(
     String query, {
     CancelToken? cancelToken,
@@ -136,73 +140,84 @@ class FoodApiService {
       );
     }
 
-    const url = 'https://world.openfoodfacts.org/cgi/search.pl';
+    final uri = Uri.parse(kOpenFoodFactsSearchUrl);
     final stopwatch = Stopwatch()..start();
-    if (kDebugMode) unawaited(_logDns(Uri.parse(url).host));
+    if (kDebugMode) unawaited(_logDns(uri.host));
     AppLogger.info(
-      'event=request_start host=world.openfoodfacts.org path=/cgi/search.pl '
+      'event=request_start host=${uri.host} path=${uri.path} method=POST '
           'query_length=${query.trim().length} connect_timeout_ms='
           '${_dio.options.connectTimeout?.inMilliseconds} receive_timeout_ms='
           '${_dio.options.receiveTimeout?.inMilliseconds}',
       'OpenFoodFacts',
     );
     try {
-      final response = await _dio.get(
-        url,
+      final response = await _dio.post(
+        kOpenFoodFactsSearchUrl,
         cancelToken: cancelToken,
-        queryParameters: {
-          'search_terms': query,
-          'search_simple': 1,
-          'action': 'process',
-          'json': 1,
+        data: {
+          'q': query.trim(),
           'page_size': 10,
-          'fields':
-              'code,product_name,nutriments,serving_quantity,serving_quantity_unit',
+          'page': 1,
+          'langs': const ['en'],
+          'fields': const [
+            'code',
+            'product_name',
+            'nutriments',
+            'serving_quantity',
+            'serving_quantity_unit',
+          ],
         },
       );
       stopwatch.stop();
       AppLogger.info(
-        'event=request_complete host=world.openfoodfacts.org '
-            'path=/cgi/search.pl status=${response.statusCode ?? 0} '
+        'event=request_complete host=${uri.host} path=${uri.path} '
+            'status=${response.statusCode ?? 0} '
             'elapsed_ms=${stopwatch.elapsedMilliseconds}',
         'OpenFoodFacts',
       );
 
-      if (response.statusCode == 200 && response.data != null) {
-        final products = response.data['products'] as List?;
-        if (products == null) return [];
+      if (response.statusCode == 200 && response.data is Map) {
+        final hits = (response.data as Map)['hits'];
+        if (hits is! List) return [];
 
-        return products.map((p) {
-          final nutriments = p['nutriments'] ?? {};
-          final name = p['product_name'] ?? 'Unknown Product';
+        return hits
+            .whereType<Map>()
+            .map((raw) {
+              final p = Map<String, dynamic>.from(raw);
+              final nutriments = p['nutriments'] ?? {};
+              final name = p['product_name']?.toString().trim() ?? '';
 
-          final double? kcal = _readNumber(nutriments['energy-kcal_100g']);
-          final double? protein = _readNumber(nutriments['proteins_100g']);
-          final double? carbs = _readNumber(nutriments['carbohydrates_100g']);
-          final double? fat = _readNumber(nutriments['fat_100g']);
+              final double? kcal = _readNumber(nutriments['energy-kcal_100g']);
+              final double? protein = _readNumber(nutriments['proteins_100g']);
+              final double? carbs = _readNumber(
+                nutriments['carbohydrates_100g'],
+              );
+              final double? fat = _readNumber(nutriments['fat_100g']);
 
-          final servingQtyText = p['serving_quantity']?.toString() ?? '100';
-          final servingSize = double.tryParse(servingQtyText) ?? 100.0;
-          final servingUnit = p['serving_quantity_unit'] ?? 'g';
+              final servingQtyText = p['serving_quantity']?.toString() ?? '100';
+              final servingSize = double.tryParse(servingQtyText) ?? 100.0;
+              final servingUnit = p['serving_quantity_unit'] ?? 'g';
 
-          return FoodApiResult(
-            name: name,
-            calories: kcal,
-            protein: protein,
-            carbs: carbs,
-            fat: fat,
-            servingSize: servingSize,
-            servingUnit: servingUnit,
-            barcode: _readReference(p['code'] ?? p['id']),
-          );
-        }).toList();
+              return FoodApiResult(
+                name: name,
+                calories: kcal,
+                protein: protein,
+                carbs: carbs,
+                fat: fat,
+                servingSize: servingSize,
+                servingUnit: servingUnit,
+                barcode: _readReference(p['code'] ?? p['id']),
+              );
+            })
+            .where((result) => result.name.isNotEmpty)
+            .toList(growable: false);
       }
       return [];
     } on DioException catch (error) {
       stopwatch.stop();
       AppLogger.warning(
-        'event=request_failed host=world.openfoodfacts.org '
-            'path=/cgi/search.pl type=${error.type.name} '
+        'event=request_failed host=${uri.host} path=${uri.path} '
+            'type=${error.type.name} '
             'status=${error.response?.statusCode ?? 0} '
             'tls_failure=${error.type == DioExceptionType.badCertificate} '
             'cancelled=${CancelToken.isCancel(error)} '
