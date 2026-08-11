@@ -95,7 +95,10 @@ Future<T?> showIndiFitBottomSheet<T>({
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
-    useSafeArea: false,
+    // showModalBottomSheet removes top MediaQuery padding when this is false,
+    // so an inner SafeArea can no longer recover the status-bar/Dynamic Island
+    // inset. Preserve the real route inset at the presentation boundary.
+    useSafeArea: true,
     requestFocus: false,
     builder: (sheetContext) => IndiFitBottomSheet(
       maxHeightFactor: maxHeightFactor,

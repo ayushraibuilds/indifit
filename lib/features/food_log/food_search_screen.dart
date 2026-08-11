@@ -15,6 +15,7 @@ import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_api_service.dart';
@@ -151,13 +152,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   bool _loadingRecent = true;
   String? _recentFailureMessage;
   Timer? _debounceTimer;
+  CancelToken? _onlineSearchCancelToken;
   final Set<Timer> _recentTimeouts = {};
   bool _isOnlineSearchOffline = false;
   String? _onlineFailureMessage;
-  String? _selectedMealType;
 
   String? get _activeMealType {
-    final value = (_selectedMealType ?? widget.mealType)?.trim().toLowerCase();
+    final value = widget.mealType?.trim().toLowerCase();
     if (value == null || value.isEmpty) return null;
     return value == 'snacks' ? 'snack' : value;
   }
@@ -203,12 +204,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         ),
       ),
     );
-    if (selected != null && mounted) {
-      setState(() => _selectedMealType = selected);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _searchFocusNode.requestFocus();
-      });
-    }
     return selected;
   }
 
@@ -216,6 +211,24 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final current = _activeMealType;
     if (current != null) return current;
     return _chooseMealContext();
+  }
+
+  Future<void> _openMealLogger(String mealType) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => FoodSearchScreen(
+          mealType: mealType,
+          selectedDate: widget.selectedDate,
+          returnToParentOnSave: true,
+        ),
+      ),
+    );
+    if (saved == true && mounted) await _retryRecentFoods();
+  }
+
+  Future<void> _chooseMealAndOpenLogger() async {
+    final mealType = await _chooseMealContext();
+    if (mealType != null && mounted) await _openMealLogger(mealType);
   }
 
   Future<void> _loadRecentFoods() async {
@@ -281,6 +294,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _onlineSearchCancelToken?.cancel('Food search disposed');
     for (final timer in _recentTimeouts) {
       timer.cancel();
     }
@@ -293,7 +307,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   void _onSearchChanged() {
     if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 375), () {
+    _onlineSearchCancelToken?.cancel('Food search query changed');
+    _searchGeneration++;
+    _debounceTimer = Timer(const Duration(milliseconds: 700), () {
       _performSearch(_searchController.text);
     });
   }
@@ -302,7 +318,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     if (!mounted) return;
     final query = text.trim();
     final generation = ++_searchGeneration;
+    _onlineSearchCancelToken?.cancel('New food search started');
     if (query.isEmpty) {
+      _onlineSearchCancelToken = null;
       setState(() {
         _localResults = [];
         _onlineResults = [];
@@ -313,6 +331,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       });
       return;
     }
+    final cancelToken = CancelToken();
+    _onlineSearchCancelToken = cancelToken;
 
     setState(() {
       _searching = true;
@@ -338,7 +358,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     });
 
     try {
-      final online = await ref.read(foodApiServiceProvider).searchOnline(query);
+      final online = await ref
+          .read(foodApiServiceProvider)
+          .searchOnline(query, cancelToken: cancelToken);
       if (!mounted || generation != _searchGeneration) return;
       setState(() {
         _onlineResults = online;
@@ -347,6 +369,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       });
     } catch (error) {
       if (!mounted || generation != _searchGeneration) return;
+      if (error is DioException && CancelToken.isCancel(error)) return;
       final offlinePolicy = error is StateError;
       setState(() {
         _onlineResults = [];
@@ -360,6 +383,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         setState(() {
           if (generation == _searchGeneration) _searchingOnline = false;
         });
+      }
+      if (identical(_onlineSearchCancelToken, cancelToken)) {
+        _onlineSearchCancelToken = null;
       }
     }
   }
@@ -604,7 +630,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                               labelText: 'Amount',
                               errorText: amountError,
                               suffixText: compatibleUnits.length == 1
-                                  ? _quantityUnitLabel(selectedQuantity)
+                                  ? _quantityUnitLabel(
+                                      selectedQuantity,
+                                      option: option,
+                                    )
                                   : null,
                             ),
                             onTapOutside: (_) =>
@@ -619,28 +648,47 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                           const SizedBox(width: 8),
                           Semantics(
                             label: 'Unit',
-                            value: _quantityUnitLabel(selectedQuantity),
-                            child: DropdownButton<QuantityUnit>(
-                              value: selectedQuantity.unit,
-                              items: compatibleUnits
-                                  .map(
-                                    (unit) => DropdownMenuItem(
-                                      value: unit,
-                                      child: Text(
-                                        QuantityUnitRegistry.definitionFor(
-                                          unit,
-                                        ).symbol,
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (unit) {
-                                if (unit == null) return;
-                                setQuantity(
-                                  selectedQuantity.convertTo(unit),
-                                  setModalState,
-                                );
-                              },
+                            value: _quantityUnitLabel(
+                              selectedQuantity,
+                              option: option,
+                            ),
+                            child: SizedBox(
+                              width: 104,
+                              child: InputDecorator(
+                                decoration: const InputDecoration(
+                                  labelText: 'Unit',
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<QuantityUnit>(
+                                    isDense: true,
+                                    value: selectedQuantity.unit,
+                                    items: compatibleUnits
+                                        .map(
+                                          (unit) => DropdownMenuItem(
+                                            value: unit,
+                                            child: Text(
+                                              QuantityUnitRegistry.definitionFor(
+                                                unit,
+                                              ).symbol,
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
+                                    onChanged: (unit) {
+                                      if (unit == null) return;
+                                      setQuantity(
+                                        selectedQuantity.convertTo(unit),
+                                        setModalState,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -952,13 +1000,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       // route, otherwise `maybePop` can run while the navigator is locked.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            content: Text(
-              supersedesSnapshotId == null
-                  ? '✓ Food added to ${_mealLabel(selectedMealType)}'
-                  : '✓ Food entry updated',
-            ),
+          indiFitSuccessSnackBar(
+            supersedesSnapshotId == null
+                ? '✓ Food added to ${_mealLabel(selectedMealType)}'
+                : '✓ Food entry updated',
           ),
         );
       }
@@ -1023,13 +1068,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  mealType == null ? 'Food' : 'Add ${_mealLabel(mealType)}',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                if (mealType != null) ...[
+                  Text(
+                    'Add ${_mealLabel(mealType)}',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
+                  const SizedBox(height: 14),
+                ],
                 if (mealType != null) ...[
                   TextField(
                     controller: _searchController,
@@ -1277,18 +1324,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Widget _buildNeutralFoodEntry() => B05Surface(
     subtle: true,
+    padding: const EdgeInsets.all(12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Add food', style: B05Typography.title(context)),
         const SizedBox(height: 4),
-        Text(
-          'Choose a meal when you are ready to log something.',
-          style: B05Typography.body(context),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         FilledButton.icon(
-          onPressed: _chooseMealContext,
+          onPressed: _chooseMealAndOpenLogger,
           icon: const Icon(Icons.add_rounded),
           label: const Text('Add food'),
         ),
@@ -1304,11 +1348,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               ('snack', 'Snack'),
             ])
               OutlinedButton(
-                onPressed: () async {
-                  if (!mounted) return;
-                  setState(() => _selectedMealType = meal.$1);
-                  _searchFocusNode.requestFocus();
-                },
+                onPressed: () => _openMealLogger(meal.$1),
                 child: Text(meal.$2),
               ),
           ],
@@ -1534,9 +1574,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     };
   }
 
-  String _quantityUnitLabel(Quantity quantity) =>
+  String _quantityUnitLabel(Quantity quantity, {NutritionFoodOption? option}) =>
       quantity.unit == QuantityUnit.householdReference
       ? quantity.context.householdMeasure!.measureType
+      : quantity.unit == QuantityUnit.serving &&
+            option?.servingUnitLabel?.trim().isNotEmpty == true
+      ? option!.servingUnitLabel!.trim()
       : quantity.definition.displayLabel;
 
   String _transformationLabel(dynamic transformation) {

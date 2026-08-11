@@ -3,13 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_count_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/repositories/ai_routine_service.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -42,6 +45,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   String? _draftError;
   bool _savingRoutine = false;
   bool _skipping = false;
+  String? _activationCommandId;
   String? _actionError;
   GeneratedRoutineResult? _generatedRoutine;
   final B05OnboardingDraftStore _draftStore = const B05OnboardingDraftStore();
@@ -236,19 +240,38 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
         return;
       }
       final workoutRepo = ref.read(workoutRepositoryProvider);
-      await workoutRepo.saveRoutine(
+      final routineId = await workoutRepo.saveRoutine(
         name: _generatedRoutine!.name,
         goal: _selectedGoal,
         notes: _generatedRoutine!.notes,
         days: _generatedRoutine!.days,
       );
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      _activationCommandId ??=
+          'suggested-routine-activation::${const Uuid().v4()}';
+      final activation = await ref
+          .read(legacyProgramCompatibilityAdapterProvider)
+          .activateLegacyRoutineAsCanonical(
+            legacyRoutineId: routineId,
+            activationCoordinator: ref.read(
+              programActivationCoordinatorProvider,
+            ),
+            dates: ref.read(localScheduleDateServiceProvider),
+            timezoneId: timezoneId,
+            commandId: _activationCommandId!,
+          );
+      if (activation.occurrences.isEmpty) {
+        throw StateError('Canonical activation created no workouts.');
+      }
       await _draftStore.clearRoutineDraft();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Workout routine activated successfully!'),
-            backgroundColor: AppColors.success,
+          indiFitSuccessSnackBar(
+            '✓ Program activated · '
+            '${ConsumerCountLabel.format(activation.occurrences.length, 'workout')} scheduled',
           ),
         );
         context.go('/');

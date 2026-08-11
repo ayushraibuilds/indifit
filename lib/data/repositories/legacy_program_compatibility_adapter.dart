@@ -1,7 +1,9 @@
 import 'package:drift/drift.dart';
 
+import '../../core/services/local_schedule_date_service.dart';
 import '../database/app_database.dart';
 import '../database/b01_legacy_import_support.dart';
+import 'program_activation_coordinator.dart';
 
 enum ActivePlanType { none, legacyRoutine, b01Program }
 
@@ -220,9 +222,11 @@ class LegacyProgramCompatibilityAdapter {
             ),
           );
 
-      // Insert session templates & prescriptions for days
-      for (int i = 0; i < days.length; i++) {
-        final day = days[i];
+      // Rest days are schedule gaps, not executable B01 sessions. Only
+      // training days become contiguous session templates/occurrences.
+      var sessionOrdinal = 0;
+      for (final day in days) {
+        if (day.isRestDay) continue;
         final templateId = B01LegacyImportSupport.sessionTemplateId(
           legacyRoutineId,
           day.id,
@@ -235,50 +239,77 @@ class LegacyProgramCompatibilityAdapter {
                 id: templateId,
                 programWeekId: weekId,
                 name: day.name,
-                ordinal: i,
+                ordinal: sessionOrdinal,
                 plannedWeekday: day.dayOfWeek,
               ),
             );
 
-        if (!day.isRestDay) {
-          final exercises =
-              await (_db.select(_db.routineExercises)
-                    ..where((t) => t.dayId.equals(day.id))
-                    ..orderBy([
-                      (t) => OrderingTerm(
-                        expression: t.orderIndex,
-                        mode: OrderingMode.asc,
-                      ),
-                    ]))
-                  .get();
+        final exercises =
+            await (_db.select(_db.routineExercises)
+                  ..where((t) => t.dayId.equals(day.id))
+                  ..orderBy([
+                    (t) => OrderingTerm(
+                      expression: t.orderIndex,
+                      mode: OrderingMode.asc,
+                    ),
+                  ]))
+                .get();
 
-          for (int j = 0; j < exercises.length; j++) {
-            final ex = exercises[j];
-            final presId = B01LegacyImportSupport.prescriptionId(
-              legacyRoutineId,
-              ex.id,
-            );
-            final lookup = B01LegacyImportSupport.lookupExerciseName(
-              ex.exerciseName,
-            );
+        for (int j = 0; j < exercises.length; j++) {
+          final ex = exercises[j];
+          final presId = B01LegacyImportSupport.prescriptionId(
+            legacyRoutineId,
+            ex.id,
+          );
+          final lookup = B01LegacyImportSupport.lookupExerciseName(
+            ex.exerciseName,
+          );
 
-            await _db
-                .into(_db.exercisePrescriptions)
-                .insert(
-                  ExercisePrescriptionsCompanion.insert(
-                    id: presId,
-                    sessionTemplateId: templateId,
-                    exerciseId: Value(lookup.canonicalUuid),
-                    exerciseNameSnapshot: ex.exerciseName,
-                    plannedSets: ex.sets,
-                    repsRange: ex.repsRange,
-                    ordinal: j,
-                  ),
-                );
-          }
+          await _db
+              .into(_db.exercisePrescriptions)
+              .insert(
+                ExercisePrescriptionsCompanion.insert(
+                  id: presId,
+                  sessionTemplateId: templateId,
+                  exerciseId: Value(lookup.canonicalUuid),
+                  exerciseNameSnapshot: ex.exerciseName,
+                  plannedSets: ex.sets,
+                  repsRange: ex.repsRange,
+                  ordinal: j,
+                ),
+              );
         }
+        sessionOrdinal++;
       }
     });
+  }
+
+  /// Publishes the deterministic legacy-import snapshot through the single
+  /// canonical B01 activation authority. Consumer flows must use this after a
+  /// legacy/template save before claiming that a plan was activated.
+  Future<ActivationResult> activateLegacyRoutineAsCanonical({
+    required int legacyRoutineId,
+    required ProgramActivationCoordinator activationCoordinator,
+    required LocalScheduleDateService dates,
+    required String timezoneId,
+    required String commandId,
+    String? activationLocalDate,
+  }) async {
+    final versionId = B01LegacyImportSupport.programVersionId(legacyRoutineId);
+    final existing = await (_db.select(
+      _db.programVersions,
+    )..where((row) => row.id.equals(versionId))).getSingleOrNull();
+    if (existing == null || existing.status == 'draft') {
+      await syncLegacyRoutineToImportVersion(legacyRoutineId);
+    }
+    return activationCoordinator.activate(
+      ActivateProgramVersionCommand(
+        programVersionId: versionId,
+        commandId: commandId,
+        activationLocalDate: activationLocalDate ?? dates.todayIn(timezoneId),
+        timezoneId: timezoneId,
+      ),
+    );
   }
 
   /// Syncs all saved legacy routines into B01 legacyImport program version snapshots.

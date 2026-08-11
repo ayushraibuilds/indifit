@@ -1,7 +1,17 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/privacy/privacy_policy.dart';
+import '../../core/utils/app_logger.dart';
+
+const Duration kOpenFoodFactsConnectTimeout = Duration(seconds: 8);
+const Duration kOpenFoodFactsReceiveTimeout = Duration(seconds: 12);
+const Duration kOpenFoodFactsSendTimeout = Duration(seconds: 8);
+const String kOpenFoodFactsUserAgent = 'IndiFit/1.0.0 (https://indifit.app)';
 
 final foodApiServiceProvider = Provider<FoodApiService>((ref) {
   final dio = ref.watch(openFoodFactsDioProvider);
@@ -14,9 +24,10 @@ final foodApiServiceProvider = Provider<FoodApiService>((ref) {
 final openFoodFactsDioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
-      connectTimeout: const Duration(seconds: 3),
-      receiveTimeout: const Duration(seconds: 5),
-      sendTimeout: const Duration(seconds: 5),
+      connectTimeout: kOpenFoodFactsConnectTimeout,
+      receiveTimeout: kOpenFoodFactsReceiveTimeout,
+      sendTimeout: kOpenFoodFactsSendTimeout,
+      headers: const {'User-Agent': kOpenFoodFactsUserAgent},
     ),
   );
   ref.onDispose(() => dio.close(force: true));
@@ -54,8 +65,10 @@ class FoodApiService {
           dio ??
           Dio(
             BaseOptions(
-              connectTimeout: const Duration(seconds: 3),
-              receiveTimeout: const Duration(seconds: 5),
+              connectTimeout: kOpenFoodFactsConnectTimeout,
+              receiveTimeout: kOpenFoodFactsReceiveTimeout,
+              sendTimeout: kOpenFoodFactsSendTimeout,
+              headers: const {'User-Agent': kOpenFoodFactsUserAgent},
             ),
           ),
       _policy = policy;
@@ -112,7 +125,10 @@ class FoodApiService {
   }
 
   // 2. Search products online (Open Food Facts Search API)
-  Future<List<FoodApiResult>> searchOnline(String query) async {
+  Future<List<FoodApiResult>> searchOnline(
+    String query, {
+    CancelToken? cancelToken,
+  }) async {
     if (query.trim().isEmpty) return [];
     if (_policy != null && !_policy.isOpenFoodFactsAllowed) {
       throw StateError(
@@ -120,17 +136,36 @@ class FoodApiService {
       );
     }
 
+    const url = 'https://world.openfoodfacts.org/cgi/search.pl';
+    final stopwatch = Stopwatch()..start();
+    if (kDebugMode) unawaited(_logDns(Uri.parse(url).host));
+    AppLogger.info(
+      'event=request_start host=world.openfoodfacts.org path=/cgi/search.pl '
+          'query_length=${query.trim().length} connect_timeout_ms='
+          '${_dio.options.connectTimeout?.inMilliseconds} receive_timeout_ms='
+          '${_dio.options.receiveTimeout?.inMilliseconds}',
+      'OpenFoodFacts',
+    );
     try {
-      final url = 'https://world.openfoodfacts.org/cgi/search.pl';
       final response = await _dio.get(
         url,
+        cancelToken: cancelToken,
         queryParameters: {
           'search_terms': query,
           'search_simple': 1,
           'action': 'process',
           'json': 1,
           'page_size': 10,
+          'fields':
+              'code,product_name,nutriments,serving_quantity,serving_quantity_unit',
         },
+      );
+      stopwatch.stop();
+      AppLogger.info(
+        'event=request_complete host=world.openfoodfacts.org '
+            'path=/cgi/search.pl status=${response.statusCode ?? 0} '
+            'elapsed_ms=${stopwatch.elapsedMilliseconds}',
+        'OpenFoodFacts',
       );
 
       if (response.statusCode == 200 && response.data != null) {
@@ -163,8 +198,41 @@ class FoodApiService {
         }).toList();
       }
       return [];
-    } on DioException {
+    } on DioException catch (error) {
+      stopwatch.stop();
+      AppLogger.warning(
+        'event=request_failed host=world.openfoodfacts.org '
+            'path=/cgi/search.pl type=${error.type.name} '
+            'status=${error.response?.statusCode ?? 0} '
+            'tls_failure=${error.type == DioExceptionType.badCertificate} '
+            'cancelled=${CancelToken.isCancel(error)} '
+            'elapsed_ms=${stopwatch.elapsedMilliseconds}',
+        'OpenFoodFacts',
+      );
       rethrow;
+    }
+  }
+
+  static Future<void> _logDns(String host) async {
+    final stopwatch = Stopwatch()..start();
+    try {
+      final addresses = await InternetAddress.lookup(
+        host,
+      ).timeout(const Duration(seconds: 4));
+      stopwatch.stop();
+      AppLogger.info(
+        'event=dns_result host=$host addresses='
+            '${addresses.map((address) => address.address).join(',')} '
+            'elapsed_ms=${stopwatch.elapsedMilliseconds}',
+        'OpenFoodFacts',
+      );
+    } catch (error) {
+      stopwatch.stop();
+      AppLogger.warning(
+        'event=dns_failed host=$host error_type=${error.runtimeType} '
+            'elapsed_ms=${stopwatch.elapsedMilliseconds}',
+        'OpenFoodFacts',
+      );
     }
   }
 

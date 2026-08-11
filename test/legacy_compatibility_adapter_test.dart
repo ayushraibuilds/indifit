@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/data/database/app_database.dart';
+import 'package:indifit/data/repositories/calendar_read_repository.dart';
 import 'package:indifit/data/repositories/legacy_program_compatibility_adapter.dart';
 import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
@@ -351,5 +352,92 @@ void main() {
         );
       },
     );
+
+    for (final trainingDays in const [3, 4, 5]) {
+      test(
+        '7.$trainingDays consumer $trainingDays-day template activates canonical Training and Calendar once',
+        () async {
+          final routineId = await workoutRepo.saveRoutine(
+            name: '$trainingDays-Day Device Template',
+            goal: 'General fitness',
+            days: [
+              for (var day = 1; day <= 7; day++)
+                RoutineDayWithExercises(
+                  dayName: day <= trainingDays ? 'Training $day' : 'Rest $day',
+                  dayOfWeek: day,
+                  isRestDay: day > trainingDays,
+                  exercises: day <= trainingDays
+                      ? [
+                          RoutineExerciseInput(
+                            name: 'Fixture Exercise $day',
+                            sets: 3,
+                            repsRange: '8-12',
+                          ),
+                        ]
+                      : const [],
+                ),
+            ],
+          );
+          final dates = LocalScheduleDateService(
+            nowUtc: () => DateTime.utc(2026, 8, 3, 6),
+          );
+          final activationCoordinator = ProgramActivationCoordinator(
+            db,
+            dates: dates,
+          );
+
+          final first = await legacyAdapter.activateLegacyRoutineAsCanonical(
+            legacyRoutineId: routineId,
+            activationCoordinator: activationCoordinator,
+            dates: dates,
+            timezoneId: 'Asia/Kolkata',
+            activationLocalDate: '2026-08-03',
+            commandId: 'activate-device-template-$trainingDays',
+          );
+          final replay = await legacyAdapter.activateLegacyRoutineAsCanonical(
+            legacyRoutineId: routineId,
+            activationCoordinator: activationCoordinator,
+            dates: dates,
+            timezoneId: 'Asia/Kolkata',
+            activationLocalDate: '2026-08-03',
+            commandId: 'activate-device-template-$trainingDays',
+          );
+
+          expect(first.occurrences, hasLength(trainingDays));
+          expect(first.occurrences.map((row) => row.effectiveLocalDate), [
+            '2026-08-03',
+            '2026-08-04',
+            '2026-08-05',
+            if (trainingDays >= 4) '2026-08-06',
+            if (trainingDays >= 5) '2026-08-07',
+          ]);
+          expect(replay.wasIdempotent, isTrue);
+          expect(replay.occurrences, hasLength(trainingDays));
+          expect(
+            await db.select(db.scheduledSessionOccurrences).get(),
+            hasLength(trainingDays),
+          );
+
+          final selection = await legacyAdapter.resolveActivePlanSelection();
+          expect(selection.type, ActivePlanType.b01Program);
+          expect(selection.programVersionId, first.programVersionId);
+
+          final calendar = await CalendarReadRepository(db, dates: dates)
+              .readSnapshot(
+                startLocalDate: '2026-08-03',
+                endLocalDate: '2026-08-09',
+                timezoneId: 'Asia/Kolkata',
+              );
+          expect(
+            calendar.activeProgramName,
+            '$trainingDays-Day Device Template',
+          );
+          expect(calendar.rangeOccurrences, hasLength(trainingDays));
+          expect(calendar.rangeOccurrences.map((item) => item.template.name), [
+            for (var day = 1; day <= trainingDays; day++) 'Training $day',
+          ]);
+        },
+      );
+    }
   });
 }

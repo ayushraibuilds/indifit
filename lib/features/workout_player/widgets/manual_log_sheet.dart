@@ -8,6 +8,7 @@ import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/consumer_task_primitives.dart';
 import '../../../core/widgets/indi_fit_bottom_sheet.dart';
+import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../../core/widgets/responsive_form_primitives.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/workout_repository.dart';
@@ -186,14 +187,9 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
 
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Logged "$name" for ${widget.selectedDate.day}/${widget.selectedDate.month}!',
-            ),
-            backgroundColor: context.b05Colors.success.indicator,
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(indiFitSuccessSnackBar('✓ Workout logged'));
         Navigator.pop(context, true);
       }
     } catch (error) {

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/widgets/indi_fit_bottom_sheet.dart';
+import 'package:indifit/core/widgets/indi_fit_feedback.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/features/dashboard/dashboard_controller.dart';
@@ -17,6 +18,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+
+  test('ordinary success feedback is compact and semantically concise', () {
+    final snackBar = indiFitSuccessSnackBar('✓ Workout logged');
+
+    expect(snackBar.behavior, SnackBarBehavior.floating);
+    expect(snackBar.backgroundColor, isNull);
+    expect((snackBar.content as Text).data, '✓ Workout logged');
+  });
 
   testWidgets('Custom Food remains readable in light mode', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -221,6 +230,69 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('manual workout presenter preserves real modal route insets', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    final database = AppDatabase.memory();
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      tester.view.reset();
+      await database.close();
+    });
+    const topInset = 59.0;
+    const bottomInset = 34.0;
+    const keyboardInset = 280.0;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(database)],
+        child: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(390, 844),
+            padding: EdgeInsets.only(top: topInset, bottom: bottomInset),
+            viewPadding: EdgeInsets.only(top: topInset, bottom: bottomInset),
+            viewInsets: EdgeInsets.only(bottom: keyboardInset),
+          ),
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: FilledButton(
+                  onPressed: () => showIndiFitBottomSheet<void>(
+                    context: context,
+                    semanticLabel: 'Log completed workout',
+                    builder: (_) =>
+                        ManualLogSheet(selectedDate: DateTime(2026, 8, 9)),
+                  ),
+                  child: const Text('Open manual workout'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open manual workout'));
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Log completed workout'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Log Completed Workout')).dy,
+      greaterThanOrEqualTo(topInset),
+    );
+    expect(
+      tester.getTopRight(find.byTooltip('Close')).dy,
+      greaterThanOrEqualTo(topInset),
+    );
+    expect(
+      tester.getBottomRight(find.text('Save Workout Session')).dy,
+      lessThanOrEqualTo(844 - keyboardInset - bottomInset),
+    );
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _FakeProfileNotifier extends UserProfileNotifier {

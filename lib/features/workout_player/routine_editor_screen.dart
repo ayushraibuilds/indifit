@@ -3,10 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_count_label.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -32,6 +35,8 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
 
   List<dynamic> _templates = [];
   bool _loadingTemplates = true;
+  bool _applyingTemplate = false;
+  String? _templateActivationCommandId;
 
   @override
   void initState() {
@@ -126,6 +131,8 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
   }
 
   Future<void> _applyTemplate(Map<String, dynamic> tpl) async {
+    if (_applyingTemplate) return;
+    setState(() => _applyingTemplate = true);
     final repo = ref.read(workoutRepositoryProvider);
     final String name = tpl['name'] ?? 'Workout Split';
     final String goal = tpl['goal'] ?? 'general';
@@ -159,21 +166,70 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
       );
     }
 
-    await repo.saveRoutine(
-      name: name,
-      goal: goal,
-      notes: description,
-      days: daysData,
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved routine: $name!'),
-          backgroundColor: AppColors.success,
-        ),
+    try {
+      final selection = await ref
+          .read(legacyProgramCompatibilityAdapterProvider)
+          .resolveActivePlanSelection();
+      if (selection.type == ActivePlanType.b01Program) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text(
+                'A scheduled program is already active. Manage it before choosing another split.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      final routineId = await repo.saveRoutine(
+        name: name,
+        goal: goal,
+        notes: description,
+        days: daysData,
       );
-      Navigator.pop(context, true);
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      _templateActivationCommandId ??=
+          'template-routine-activation::${const Uuid().v4()}';
+      final activation = await ref
+          .read(legacyProgramCompatibilityAdapterProvider)
+          .activateLegacyRoutineAsCanonical(
+            legacyRoutineId: routineId,
+            activationCoordinator: ref.read(
+              programActivationCoordinatorProvider,
+            ),
+            dates: ref.read(localScheduleDateServiceProvider),
+            timezoneId: timezoneId,
+            commandId: _templateActivationCommandId!,
+          );
+      if (activation.occurrences.isEmpty) {
+        throw StateError('Canonical activation created no workouts.');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          indiFitSuccessSnackBar(
+            '✓ Program activated · '
+            '${ConsumerCountLabel.format(activation.occurrences.length, 'workout')} scheduled',
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (error) {
+      AppLogger.warning('Template activation failed: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Program could not be activated. Try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _applyingTemplate = false);
     }
   }
 
@@ -483,7 +539,9 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () => _applyTemplate(tpl),
+                    onPressed: _applyingTemplate
+                        ? null
+                        : () => _applyTemplate(tpl),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -496,9 +554,9 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                       Icons.check_circle_outline_rounded,
                       size: 18,
                     ),
-                    label: const Text(
-                      'Use This Split',
-                      style: TextStyle(
+                    label: Text(
+                      _applyingTemplate ? 'Activating…' : 'Use This Split',
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
