@@ -13,8 +13,12 @@ import '../dashboard/dashboard_controller.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../settings/unit_preference.dart';
 
+enum ProfileEditorFocus { all, personal, goal, training }
+
 class ProfileScreen extends ConsumerStatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.focus = ProfileEditorFocus.all});
+
+  final ProfileEditorFocus focus;
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -368,249 +372,272 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _setMeasurementDisplay(profile, units);
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile'), elevation: 0),
+      appBar: AppBar(
+        title: Text(switch (widget.focus) {
+          ProfileEditorFocus.personal => 'Personal details',
+          ProfileEditorFocus.goal => 'Goal',
+          ProfileEditorFocus.training => 'Training preferences',
+          ProfileEditorFocus.all => 'Profile',
+        }),
+        elevation: 0,
+      ),
       body: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.all(B05Layout.space20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader(context, 'Personal details'),
-            const SizedBox(height: B05Layout.space8),
-            B05Surface(
-              padding: const EdgeInsets.all(B05Layout.space16),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name (optional)',
-                      prefixIcon: Icon(Icons.person_outline_rounded),
+            if (widget.focus == ProfileEditorFocus.all ||
+                widget.focus == ProfileEditorFocus.personal) ...[
+              _buildSectionHeader(context, 'Personal details'),
+              const SizedBox(height: B05Layout.space8),
+              B05Surface(
+                padding: const EdgeInsets.all(B05Layout.space16),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Name (optional)',
+                        prefixIcon: Icon(Icons.person_outline_rounded),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  IndiFitResponsiveFieldGroup(
-                    children: [
-                      TextField(
-                        controller: _ageController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Age (years)',
-                          suffixText: 'yrs',
-                        ),
-                      ),
-                      DropdownButtonFormField<String>(
-                        // ignore: deprecated_member_use
-                        value: _selectedSex,
-                        isExpanded: true,
-                        decoration: const InputDecoration(labelText: 'Sex'),
-                        items: const [
-                          DropdownMenuItem(value: 'male', child: Text('Male')),
-                          DropdownMenuItem(
-                            value: 'female',
-                            child: Text('Female'),
-                          ),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              _selectedSex = val;
-                              _sexChanged = true;
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  IndiFitResponsiveFieldGroup(
-                    children: [
-                      TextField(
-                        controller: _heightController,
-                        onChanged: (_) => _heightChanged = true,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'Height',
-                          suffixText: UnitPreferencePresentation.heightSymbol(
-                            units,
+                    const SizedBox(height: 16),
+                    IndiFitResponsiveFieldGroup(
+                      children: [
+                        TextField(
+                          controller: _ageController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Age (years)',
+                            suffixText: 'yrs',
                           ),
                         ),
-                      ),
-                      TextField(
-                        controller: _weightController,
-                        onChanged: (_) => _weightChanged = true,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
+                        DropdownButtonFormField<String>(
+                          // ignore: deprecated_member_use
+                          value: _selectedSex,
+                          isExpanded: true,
+                          decoration: const InputDecoration(labelText: 'Sex'),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'male',
+                              child: Text('Male'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'female',
+                              child: Text('Female'),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _selectedSex = val;
+                                _sexChanged = true;
+                              });
+                            }
+                          },
                         ),
-                        decoration: InputDecoration(
-                          labelText: 'Weight',
-                          suffixText: UnitPreferencePresentation.weightSymbol(
-                            units,
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    IndiFitResponsiveFieldGroup(
+                      children: [
+                        TextField(
+                          controller: _heightController,
+                          onChanged: (_) => _heightChanged = true,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'Height',
+                            suffixText: UnitPreferencePresentation.heightSymbol(
+                              units,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: B05Layout.space24),
-
-            _buildSectionHeader(context, 'Goals'),
-            const SizedBox(height: B05Layout.space8),
-            B05Surface(
-              padding: const EdgeInsets.all(B05Layout.space16),
-              child: Column(
-                children: [
-                  DropdownButtonFormField<String>(
-                    // ignore: deprecated_member_use
-                    value: _selectedGoal,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'What are you working toward?',
-                      prefixIcon: Icon(Icons.flag_rounded),
+                        TextField(
+                          controller: _weightController,
+                          onChanged: (_) => _weightChanged = true,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'Weight',
+                            suffixText: UnitPreferencePresentation.weightSymbol(
+                              units,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'lose',
-                        child: Text('Lose weight'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'maintain',
-                        child: Text('Maintain and feel strong'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'gain',
-                        child: Text('Build muscle'),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedGoal = val;
-                          _goalChanged = true;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    // ignore: deprecated_member_use
-                    value: _selectedActivity,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'How active are most days?',
-                      prefixIcon: Icon(Icons.directions_run_rounded),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'sedentary',
-                        child: Text('Mostly seated'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'light',
-                        child: Text('Lightly active'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'moderate',
-                        child: Text('Moderately active'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'active',
-                        child: Text('Very active'),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedActivity = val;
-                          _activityChanged = true;
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: B05Layout.space24),
-
-            _buildSectionHeader(context, 'Nutrition preferences'),
-            const SizedBox(height: B05Layout.space8),
-            B05Surface(
-              padding: const EdgeInsets.all(B05Layout.space16),
-              child: DietPreferenceDropdown(
-                selectedUiValue: _selectedDiet,
-                decoration: InputDecoration(
-                  labelText: 'How do you like to eat?',
-                  helperText: _selectedDiet == null
-                      ? 'Choose your dietary pattern.'
-                      : null,
-                  prefixIcon: const Icon(Icons.restaurant_rounded),
+                  ],
                 ),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedDiet = value;
-                      _dietPreferenceChanged = true;
-                    });
-                  }
-                },
               ),
-            ),
-            const SizedBox(height: B05Layout.space24),
+              const SizedBox(height: B05Layout.space24),
+            ],
 
-            _buildSectionHeader(context, 'Training preferences'),
-            const SizedBox(height: B05Layout.space8),
-            B05Surface(
-              padding: const EdgeInsets.all(B05Layout.space16),
-              child: Column(
-                children: [
-                  DropdownButtonFormField<String>(
-                    // ignore: deprecated_member_use
-                    value: _selectedEquipment,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'What equipment do you have?',
-                      prefixIcon: Icon(Icons.fitness_center_rounded),
+            if (widget.focus == ProfileEditorFocus.all ||
+                widget.focus == ProfileEditorFocus.goal) ...[
+              _buildSectionHeader(context, 'Goals'),
+              const SizedBox(height: B05Layout.space8),
+              B05Surface(
+                padding: const EdgeInsets.all(B05Layout.space16),
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<String>(
+                      // ignore: deprecated_member_use
+                      value: _selectedGoal,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'What are you working toward?',
+                        prefixIcon: Icon(Icons.flag_rounded),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'lose',
+                          child: Text('Lose weight'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'maintain',
+                          child: Text('Maintain and feel strong'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'gain',
+                          child: Text('Build muscle'),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedGoal = val;
+                            _goalChanged = true;
+                          });
+                        }
+                      },
                     ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'full_gym',
-                        child: Text('Full gym'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'dumbbells',
-                        child: Text('Dumbbells'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'bodyweight',
-                        child: Text('Bodyweight'),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedEquipment = val;
-                          _equipmentChanged = true;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _injuriesController,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Anything we should work around?',
-                      hintText: 'e.g. lower back pain or a shoulder issue',
-                      prefixIcon: Icon(Icons.medical_services_outlined),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: B05Layout.space24),
+              const SizedBox(height: B05Layout.space24),
+            ],
+
+            if (widget.focus == ProfileEditorFocus.all) ...[
+              _buildSectionHeader(context, 'Nutrition preferences'),
+              const SizedBox(height: B05Layout.space8),
+              B05Surface(
+                padding: const EdgeInsets.all(B05Layout.space16),
+                child: DietPreferenceDropdown(
+                  selectedUiValue: _selectedDiet,
+                  decoration: InputDecoration(
+                    labelText: 'How do you like to eat?',
+                    helperText: _selectedDiet == null
+                        ? 'Choose your dietary pattern.'
+                        : null,
+                    prefixIcon: const Icon(Icons.restaurant_rounded),
+                  ),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedDiet = value;
+                        _dietPreferenceChanged = true;
+                      });
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: B05Layout.space24),
+            ],
+
+            if (widget.focus == ProfileEditorFocus.all ||
+                widget.focus == ProfileEditorFocus.training) ...[
+              _buildSectionHeader(context, 'Training preferences'),
+              const SizedBox(height: B05Layout.space8),
+              B05Surface(
+                padding: const EdgeInsets.all(B05Layout.space16),
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<String>(
+                      // ignore: deprecated_member_use
+                      value: _selectedActivity,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'How active are most days?',
+                        prefixIcon: Icon(Icons.directions_run_rounded),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'sedentary',
+                          child: Text('Mostly seated'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'light',
+                          child: Text('Lightly active'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'moderate',
+                          child: Text('Moderately active'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'active',
+                          child: Text('Very active'),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedActivity = val;
+                            _activityChanged = true;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      // ignore: deprecated_member_use
+                      value: _selectedEquipment,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'What equipment do you have?',
+                        prefixIcon: Icon(Icons.fitness_center_rounded),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'full_gym',
+                          child: Text('Full gym'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'dumbbells',
+                          child: Text('Dumbbells'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'bodyweight',
+                          child: Text('Bodyweight'),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedEquipment = val;
+                            _equipmentChanged = true;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _injuriesController,
+                      maxLines: 2,
+                      decoration: const InputDecoration(
+                        labelText: 'Anything we should work around?',
+                        hintText: 'e.g. lower back pain or a shoulder issue',
+                        prefixIcon: Icon(Icons.medical_services_outlined),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: B05Layout.space24),
+            ],
 
             SizedBox(
               width: double.infinity,

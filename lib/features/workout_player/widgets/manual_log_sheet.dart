@@ -78,6 +78,7 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                       prefixIcon: Icon(Icons.search),
                       hintText: 'Search exercise library...',
                     ),
+                    onTapOutside: (_) => FocusScope.of(ctx).unfocus(),
                     onChanged: (val) => setModalState(() => query = val),
                   ),
                   const SizedBox(height: 12),
@@ -316,6 +317,8 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                               labelText: 'Weight (kg)',
                               isDense: true,
                             ),
+                            onTapOutside: (_) =>
+                                FocusScope.of(context).unfocus(),
                             onChanged: (value) => setInput.weightKg =
                                 double.tryParse(value) ?? 0.0,
                           ),
@@ -326,6 +329,8 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                               labelText: 'Reps',
                               isDense: true,
                             ),
+                            onTapOutside: (_) =>
+                                FocusScope.of(context).unfocus(),
                             onChanged: (value) =>
                                 setInput.reps = int.tryParse(value) ?? 0,
                           ),
@@ -350,7 +355,8 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
       color: context.b05Colors.section,
       surfaceTintColor: Colors.transparent,
       child: SafeArea(
-        top: false,
+        top: true,
+        bottom: true,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           child: Column(
@@ -358,6 +364,8 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,6 +438,8 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                               labelText: 'Workout Title',
                               isDense: true,
                             ),
+                            onTapOutside: (_) =>
+                                FocusScope.of(context).unfocus(),
                           ),
                           TextField(
                             controller: _durationController,
@@ -438,6 +448,8 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
                               labelText: 'Duration (min)',
                               isDense: true,
                             ),
+                            onTapOutside: (_) =>
+                                FocusScope.of(context).unfocus(),
                           ),
                         ],
                       ),

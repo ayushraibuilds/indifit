@@ -221,6 +221,8 @@ class _WorkoutContextualActionsState
       value: 'Status ${_spokenStatus(occurrence.status)}',
       hint: _canLaunch
           ? 'Swipe right to open the workout player or left to skip. Buttons provide the same actions.'
+          : occurrence.status == OccurrenceStatus.completed.dbValue
+          ? 'Open the completed workout to review its details.'
           : 'Workout actions are unavailable for this status. Open details for history and supported actions.',
       child: Dismissible(
         key: ValueKey('workout-contextual-${occurrence.id}'),
@@ -330,6 +332,18 @@ class _WorkoutContextualActionsState
                           focusOrder: 2,
                         ),
                       const WorkoutPlaylistLauncherSlot(),
+                    ],
+                  )
+                else if (occurrence.status ==
+                    OccurrenceStatus.completed.dbValue)
+                  B05ActionGroup(
+                    children: [
+                      B05ActionButton(
+                        label: 'View workout',
+                        hint: 'Review this completed workout.',
+                        icon: Icons.open_in_new_rounded,
+                        onPressed: busy ? null : widget.onOpenDetails,
+                      ),
                     ],
                   )
                 else

@@ -10,13 +10,15 @@ class MainNavigationScaffold extends StatefulWidget {
   const MainNavigationScaffold({
     super.key,
     this.initialIndex = 0,
-    this.foodMealType = 'breakfast',
+    this.foodMealType,
     this.foodSelectedDate,
+    this.foodReturnToParentOnSave = false,
   });
 
   final int initialIndex;
-  final String foodMealType;
+  final String? foodMealType;
   final DateTime? foodSelectedDate;
+  final bool foodReturnToParentOnSave;
 
   @override
   State<MainNavigationScaffold> createState() => _MainNavigationScaffoldState();
@@ -44,7 +46,8 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   void didUpdateWidget(covariant MainNavigationScaffold oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.foodMealType != widget.foodMealType ||
-        oldWidget.foodSelectedDate != widget.foodSelectedDate) {
+        oldWidget.foodSelectedDate != widget.foodSelectedDate ||
+        oldWidget.foodReturnToParentOnSave != widget.foodReturnToParentOnSave) {
       if (_visitedIndexes.contains(2)) _screens[2] = _screenFor(2);
     }
     if (oldWidget.initialIndex != widget.initialIndex) {
@@ -63,6 +66,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     2 => FoodSearchScreen(
       mealType: widget.foodMealType,
       selectedDate: widget.foodSelectedDate,
+      returnToParentOnSave: widget.foodReturnToParentOnSave,
     ),
     3 => const ProgressScreen(),
     _ => const SizedBox.shrink(),
@@ -75,6 +79,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
+          if (index != 2) FocusManager.instance.primaryFocus?.unfocus();
           setState(() {
             _currentIndex = index;
             _activateScreen(index);

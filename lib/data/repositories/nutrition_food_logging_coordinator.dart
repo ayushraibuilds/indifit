@@ -210,6 +210,9 @@ class NutritionFoodLoggingCoordinator {
     String? mealGroupId,
     String? consumptionId,
     String? commandId,
+    String? supersedesSnapshotId,
+    String? correctionId,
+    String? correctionReason,
   }) async {
     final normalizedCommand = commandId?.trim().isNotEmpty == true
         ? commandId!.trim()
@@ -246,6 +249,9 @@ class NutritionFoodLoggingCoordinator {
       loggedAtUtc: loggedAt,
       mealCategory: mealCategory,
       mealGroupId: mealGroupId,
+      supersedesSnapshotId: supersedesSnapshotId,
+      correctionId: correctionId,
+      correctionReason: correctionReason,
       sourceType: 'direct_food',
       localDate: localDate,
       timezoneId: timezoneId,

@@ -64,12 +64,15 @@ DateTime? parseFoodRouteDate(String? raw) {
   return parsed;
 }
 
-String parseFoodRouteMealType(String? raw) {
+String? parseFoodRouteMealType(String? raw) {
   final value = raw?.trim().toLowerCase();
   return switch (value) {
-    'breakfast' || 'lunch' || 'dinner' || 'snacks' => value!,
-    'snack' => 'snacks',
-    _ => 'breakfast',
+    'breakfast' ||
+    'lunch' ||
+    'dinner' ||
+    'snack' ||
+    'snacks' => value == 'snacks' ? 'snack' : value,
+    _ => null,
   };
 }
 
@@ -78,6 +81,7 @@ MainNavigationScaffold foodRouteDestination({String? mealType, String? date}) =>
       initialIndex: 2,
       foodMealType: parseFoodRouteMealType(mealType),
       foodSelectedDate: parseFoodRouteDate(date),
+      foodReturnToParentOnSave: true,
     );
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -148,7 +152,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/food/ai',
         builder: (context, state) {
-          final mealType = state.uri.queryParameters['mealType'] ?? 'breakfast';
+          final mealType = parseFoodRouteMealType(
+            state.uri.queryParameters['mealType'],
+          );
+          if (mealType == null) {
+            return foodRouteDestination(
+              date: state.uri.queryParameters['date'],
+            );
+          }
           final selectedDate = parseFoodRouteDate(
             state.uri.queryParameters['date'],
           );
@@ -326,7 +337,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/calendar',
-        builder: (context, state) => const ProgramCalendarScreen(),
+        builder: (context, state) => ProgramCalendarScreen(
+          initialLocalDate: state.uri.queryParameters['date'],
+        ),
       ),
       GoRoute(
         path: '/equipment-profiles',

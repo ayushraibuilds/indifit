@@ -72,7 +72,7 @@ void main() {
       goal: TodayDomainRead.available(_goal()),
     );
 
-    expect(withRange.calories?.value, '1200–1500');
+    expect(withRange.calories?.value, '1,200–1,500');
     expect(withRange.calories?.isRange, isTrue);
     expect(withRange.calories?.targetValue, 2200);
     expect(withRange.macros.map((metric) => metric.label), [
@@ -310,7 +310,7 @@ void main() {
     container.read(_refreshSnapshotProvider.notifier).state =
         _populatedSnapshot(DateTime(2026, 8, 9));
     await _settleToday(tester);
-    expect(find.bySemanticsLabel(RegExp('Calories.*1840')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'Calories.*1,840')), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('Breakfast.*420')), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('Protein:.*118.*150')), findsOneWidget);
   });

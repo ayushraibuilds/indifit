@@ -130,6 +130,7 @@ void main() {
           theme: AppTheme.lightTheme,
           mealType: 'lunch',
           selectedDate: selectedDate,
+          mediaSize: const Size(390, 844),
         ),
       );
       container = ProviderScope.containerOf(
@@ -148,23 +149,138 @@ void main() {
       expect(find.text('servings'), findsOneWidget);
       expect(find.text('Add Meal'), findsOneWidget);
       final amountField = find.widgetWithText(TextField, 'Amount');
-      await tester.enterText(amountField, '0');
+      await tester.enterText(amountField, '');
       await tester.pump();
-      expect(find.text('Enter an amount greater than zero.'), findsOneWidget);
+      expect(
+        find.text('Enter an amount to preview nutrition.'),
+        findsOneWidget,
+      );
       expect(
         tester
             .widget<ElevatedButton>(
               find.widgetWithText(ElevatedButton, 'Add Meal'),
             )
             .onPressed,
-        isNull,
+        isNotNull,
       );
-      await tester.enterText(amountField, '2.5');
+      await tester.enterText(amountField, '0.5');
       await tester.pump();
-      expect(coordinator.lastPreviewQuantity?.amount.toString(), '2.5');
+      expect(coordinator.lastPreviewQuantity?.amount.toString(), '0.5');
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('top-level Food opens neutral with keyboard closed', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    final database = AppDatabase.memory();
+    final repository = _TestFoodRepository(database);
+    late ProviderContainer container;
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      container.dispose();
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      await database.close();
+    });
+
+    await tester.pumpWidget(
+      _foodApp(
+        database: database,
+        repository: repository,
+        mealType: null,
+        selectedDate: DateTime(2026, 8, 9),
+      ),
+    );
+    container = ProviderScope.containerOf(
+      tester.element(find.byType(FoodSearchScreen)),
+    );
+    await _pumpFood(tester);
+
+    expect(find.text('Log breakfast'), findsNothing);
+    expect(find.text('Add breakfast'), findsNothing);
+    expect(find.text('Search foods'), findsNothing);
+    expect(find.text('Add food'), findsWidgets);
+    expect(find.byType(TextField), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mass-authority foods expose canonical mass units', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    final database = AppDatabase.memory();
+    final registry = NutrientRegistry.fromAssetFileSync(
+      'assets/data/nutrient_registry.json',
+    );
+    final catalog = _TestFoodCatalog(database, registry, massAuthority: true);
+    final coordinator = _TestCoordinator(
+      database: database,
+      registry: registry,
+      catalog: catalog,
+    );
+    late ProviderContainer container;
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      container.dispose();
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      await database.close();
+    });
+
+    await tester.pumpWidget(
+      _foodApp(
+        database: database,
+        repository: _TestFoodRepository(
+          database,
+          recent: const [
+            FoodItem(
+              id: -3,
+              name: 'Mass authority food',
+              calories: 120,
+              proteinG: 4,
+              carbsG: 20,
+              fatG: 2,
+              servingSize: 100,
+              servingUnit: 'g',
+              category: 'Recent',
+              isCustom: false,
+            ),
+          ],
+        ),
+        catalog: catalog,
+        coordinator: coordinator,
+        mealType: 'breakfast',
+        selectedDate: DateTime(2026, 8, 9),
+        mediaSize: const Size(390, 844),
+      ),
+    );
+    container = ProviderScope.containerOf(
+      tester.element(find.byType(FoodSearchScreen)),
+    );
+    await _pumpFood(tester);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Add'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    final unitDropdown = find.byType(DropdownButton<QuantityUnit>);
+    expect(unitDropdown, findsOneWidget);
+    await tester.dragUntilVisible(
+      unitDropdown,
+      find.byType(SingleChildScrollView).last,
+      const Offset(0, -120),
+    );
+    await tester.tap(unitDropdown);
+    await tester.pump();
+    expect(find.text('kg'), findsOneWidget);
+    expect(find.text('servings'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('canonical recent history displaces legacy fallback', (
     tester,
@@ -519,6 +635,7 @@ void main() {
         theme: AppTheme.darkTheme,
         mealType: 'breakfast',
         selectedDate: DateTime(2026, 8, 9),
+        mediaSize: const Size(390, 844),
       ),
     );
     container = ProviderScope.containerOf(
@@ -611,7 +728,8 @@ Widget _foodApp({
   FoodApiService? apiService,
   List<CanonicalRecentFood> canonicalRecent = const [],
   double textScale = 1,
-  required String mealType,
+  Size? mediaSize,
+  required String? mealType,
   required DateTime selectedDate,
   Widget? home,
 }) => ProviderScope(
@@ -643,7 +761,10 @@ Widget _foodApp({
     canonicalFoodRecordsForDayProvider.overrideWith((ref, date) async => []),
   ],
   child: MediaQuery(
-    data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+    data: MediaQueryData(
+      size: mediaSize ?? Size.zero,
+      textScaler: TextScaler.linear(textScale),
+    ),
     child: MaterialApp(
       theme: theme ?? AppTheme.darkTheme,
       builder: (context, child) => RepaintBoundary(
@@ -852,10 +973,14 @@ class _FailingDioAdapter implements HttpClientAdapter {
 
 class _TestFoodCatalog extends NutritionFoodCatalogRepository {
   // ignore: use_super_parameters
-  _TestFoodCatalog(AppDatabase database, this.registry)
-    : super(db: database, registry: registry);
+  _TestFoodCatalog(
+    AppDatabase database,
+    this.registry, {
+    this.massAuthority = false,
+  }) : super(db: database, registry: registry);
 
   final NutrientRegistry registry;
+  final bool massAuthority;
 
   @override
   Future<NutritionFoodOption> ensureLegacyFood(FoodItem item) async {
@@ -873,14 +998,17 @@ class _TestFoodCatalog extends NutritionFoodCatalogRepository {
     final facts = <String, NutrientFact>{};
     for (final definition in registry.definitions) {
       final value = values[definition.id];
+      final basis = massAuthority
+          ? NutrientBasis(NutrientBasisKind.per100Grams)
+          : NutrientBasis(
+              NutrientBasisKind.perServing,
+              servingDefinition: serving,
+            );
       facts[definition.id] = value == null
           ? NutrientFact.missing(
               nutrientId: definition.id,
               unit: definition.unit,
-              basis: NutrientBasis(
-                NutrientBasisKind.perServing,
-                servingDefinition: serving,
-              ),
+              basis: basis,
               source: NutrientSourceType.legacy,
               sourceReference: 'ux-r03-test:${item.name}',
             )
@@ -890,10 +1018,7 @@ class _TestFoodCatalog extends NutritionFoodCatalogRepository {
                 value: QuantityAmount.fromNum(value),
                 unit: definition.unit,
               ),
-              basis: NutrientBasis(
-                NutrientBasisKind.perServing,
-                servingDefinition: serving,
-              ),
+              basis: basis,
               source: NutrientSourceType.legacy,
               sourceReference: 'ux-r03-test:${item.name}',
             );
@@ -901,7 +1026,9 @@ class _TestFoodCatalog extends NutritionFoodCatalogRepository {
     return NutritionFoodOption(
       id: 'ux-r03:${item.name.toLowerCase()}',
       displayName: item.name,
-      baseQuantity: Quantity.serving(amount: '1', definition: serving),
+      baseQuantity: massAuthority
+          ? Quantity.fromDecimal(amount: '100', unit: QuantityUnit.gram)
+          : Quantity.serving(amount: '1', definition: serving),
       facts: facts,
       sourceType: 'legacy',
       sourceReference: 'ux-r03-test:${item.name}',

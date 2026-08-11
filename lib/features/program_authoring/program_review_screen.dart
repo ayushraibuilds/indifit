@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_count_label.dart';
 import '../../core/theme/colors.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
@@ -89,14 +91,34 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
       );
 
       if (mounted) {
+        if (result.occurrences.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text(
+                'Program activated, but no workouts were scheduled. Review the plan before leaving this screen.',
+              ),
+            ),
+          );
+          return;
+        }
+        final firstDate = result.occurrences
+            .map((occurrence) => occurrence.effectiveLocalDate)
+            .reduce((first, date) => date.compareTo(first) < 0 ? date : first);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
+            behavior: SnackBarBehavior.floating,
             content: Text(
-              'Program activated successfully! (${result.occurrences.length} scheduled workouts created)',
+              '✓ Program activated · ${ConsumerCountLabel.format(result.occurrences.length, 'workout')} scheduled',
             ),
           ),
         );
-        context.go('/calendar');
+        context.go(
+          Uri(
+            path: '/calendar',
+            queryParameters: {'date': firstDate},
+          ).toString(),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -145,6 +167,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
           : detail == null
           ? const SizedBox()
           : SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +189,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${detail.blocks.length} blocks • ${detail.weeks.length} weeks',
+                            '${ConsumerCountLabel.format(detail.blocks.length, 'block')} • ${ConsumerCountLabel.format(detail.weeks.length, 'week')}',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],
@@ -189,7 +212,11 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     title: const Text('Start Local Date'),
-                    subtitle: Text(_selectedDate),
+                    subtitle: Text(
+                      DateFormat(
+                        'd MMM y',
+                      ).format(DateTime.parse('${_selectedDate}T12:00:00')),
+                    ),
                     trailing: const Icon(Icons.calendar_today_rounded),
                     onTap: _selectDate,
                   ),
@@ -260,7 +287,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${weekTemplates.length} Workouts Scheduled',
+                                '${ConsumerCountLabel.format(weekTemplates.length, 'workout')} scheduled',
                               ),
                               ...weekGroups.map((group) {
                                 final memberCount = detail.groupMembers

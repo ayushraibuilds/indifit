@@ -51,7 +51,7 @@ void main() {
     );
 
     expect(presentation.state, TodayPresentationState.ready);
-    expect(presentation.calories?.value, '1200–1500');
+    expect(presentation.calories?.value, '1,200–1,500');
     expect(presentation.calories?.unit, 'kcal');
     expect(presentation.macros.map((item) => item.label), [
       'Protein',

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_count_label.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
@@ -19,7 +21,9 @@ import 'workout_contextual_actions.dart';
 /// Calendar MVP for dated B01 occurrences. The selected date and view are
 /// Riverpod-memory state; occurrence data remains repository-owned.
 class ProgramCalendarScreen extends ConsumerWidget {
-  const ProgramCalendarScreen({super.key});
+  const ProgramCalendarScreen({super.key, this.initialLocalDate});
+
+  final String? initialLocalDate;
 
   void _showActions(BuildContext context, CalendarOccurrenceReadItem item) {
     showIndiFitBottomSheet<void>(
@@ -93,16 +97,31 @@ class ProgramCalendarScreen extends ConsumerWidget {
 
   static String _selectedDateLabel(CalendarView view, String localDate) {
     return switch (view) {
-      CalendarView.day => ConsumerDateLabel.day(localDate),
-      CalendarView.week => ConsumerDateLabel.range(
+      CalendarView.day => _humanDate(localDate),
+      CalendarView.week => _humanRange(
         _weekStart(localDate),
         _weekEnd(localDate),
       ),
-      CalendarView.month => ConsumerDateLabel.range(
-        _monthStart(localDate),
-        _monthEnd(localDate),
-      ),
+      CalendarView.month => DateFormat(
+        'MMMM y',
+      ).format(DateTime.parse('${localDate}T12:00:00')),
     };
+  }
+
+  static String _humanDate(String localDate) =>
+      DateFormat('d MMM y').format(DateTime.parse('${localDate}T12:00:00'));
+
+  static String _humanRange(String start, String end) {
+    final first = DateTime.parse('${start}T12:00:00');
+    final last = DateTime.parse('${end}T12:00:00');
+    final sameYear = first.year == last.year;
+    final sameMonth = sameYear && first.month == last.month;
+    if (sameMonth) {
+      return '${first.day}–${last.day} ${DateFormat('MMM').format(last)}';
+    }
+    final firstLabel = DateFormat(sameYear ? 'd MMM' : 'd MMM y').format(first);
+    final lastLabel = DateFormat('d MMM y').format(last);
+    return '$firstLabel–$lastLabel';
   }
 
   static String _weekStart(String localDate) {
@@ -113,16 +132,6 @@ class ProgramCalendarScreen extends ConsumerWidget {
   static String _weekEnd(String localDate) {
     final date = DateTime.parse('${localDate}T12:00:00');
     return _formatDate(date.add(Duration(days: 7 - date.weekday)));
-  }
-
-  static String _monthStart(String localDate) {
-    final date = DateTime.parse('${localDate}T12:00:00');
-    return _formatDate(DateTime(date.year, date.month, 1));
-  }
-
-  static String _monthEnd(String localDate) {
-    final date = DateTime.parse('${localDate}T12:00:00');
-    return _formatDate(DateTime(date.year, date.month + 1, 0));
   }
 
   Widget _buildOccurrenceCard(
@@ -170,6 +179,18 @@ class ProgramCalendarScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(calendarControllerProvider);
     final controller = ref.read(calendarControllerProvider.notifier);
+    final requestedDate = initialLocalDate;
+    if (requestedDate != null &&
+        _isLocalDate(requestedDate) &&
+        requestedDate != state.selectedLocalDate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          ref
+              .read(calendarControllerProvider.notifier)
+              .selectDate(requestedDate);
+        }
+      });
+    }
     final travelState = ref.watch(travelControllerProvider);
     final visibleItems = switch (state.view) {
       CalendarView.day => state.selectedDateOccurrences,
@@ -272,7 +293,7 @@ class ProgramCalendarScreen extends ConsumerWidget {
                 child: SizedBox(
                   width: double.infinity,
                   child: Text(
-                    'Travel mode is on for ${travelState.activeTravelOccurrenceIds.length} workout${travelState.activeTravelOccurrenceIds.length == 1 ? '' : 's'} (${ConsumerDateLabel.range(travel.startLocalDate, travel.endLocalDate)}).',
+                    'Travel mode is on for ${ConsumerCountLabel.format(travelState.activeTravelOccurrenceIds.length, 'workout')} (${ConsumerDateLabel.range(travel.startLocalDate, travel.endLocalDate)}).',
                     style: B05Typography.body(context),
                   ),
                 ),
@@ -302,6 +323,12 @@ class ProgramCalendarScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  static bool _isLocalDate(String value) {
+    if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) return false;
+    final parsed = DateTime.tryParse('${value}T12:00:00');
+    return parsed != null && _formatDate(parsed) == value;
   }
 }
 

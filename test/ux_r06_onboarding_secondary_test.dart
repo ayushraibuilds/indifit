@@ -444,8 +444,8 @@ void main() {
     expect(destination.initialIndex, 2);
     expect(destination.foodMealType, 'dinner');
     expect(destination.foodSelectedDate, DateTime(2026, 8, 9));
-    expect(parseFoodRouteMealType('snack'), 'snacks');
-    expect(parseFoodRouteMealType('unsupported'), 'breakfast');
+    expect(parseFoodRouteMealType('snack'), 'snack');
+    expect(parseFoodRouteMealType('unsupported'), isNull);
   });
 
   testWidgets('all onboarding stages remain reachable at 320pt and 2x text', (

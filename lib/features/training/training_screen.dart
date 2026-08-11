@@ -7,6 +7,7 @@ import '../../core/presentation/consumer_date_label.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/workout_repository.dart';
@@ -187,10 +188,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     BuildContext context,
     TrainingLandingSnapshot data,
   ) async {
-    final logged = await showModalBottomSheet<bool>(
+    final logged = await showIndiFitBottomSheet<bool>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      semanticLabel: 'Log completed workout',
       builder: (_) => ManualLogSheet(
         selectedDate: DateTime.parse('${data.localDate}T12:00:00'),
       ),

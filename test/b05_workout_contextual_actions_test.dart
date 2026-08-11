@@ -141,6 +141,34 @@ void main() {
     await tester.pump();
     expect(find.byType(WorkoutContextualActions), findsOneWidget);
   });
+
+  testWidgets(
+    'completed workout presents view details without an error panel',
+    (tester) async {
+      final gateway = _FakeGateway(_occurrence(status: 'completed'));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            workoutOccurrenceActionGatewayProvider.overrideWithValue(gateway),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: WorkoutContextualActions(
+                item: _item(gateway.occurrence!),
+                onOpenDetails: _noop,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Completed'), findsOneWidget);
+      expect(find.text('View workout'), findsOneWidget);
+      expect(find.text('Workout actions unavailable'), findsNothing);
+    },
+  );
 }
 
 void _noop() {}

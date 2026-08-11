@@ -5,11 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/nutrition_legacy_read_models.dart';
+import '../../core/presentation/consumer_count_label.dart';
+import '../../core/presentation/consumer_number_label.dart';
 import '../../core/presentation/daypart_greeting.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/models/b02_progress_read_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../food_log/food_log_surface.dart';
+import '../food_log/food_search_screen.dart';
 import 'dashboard_module_registry.dart';
 import 'dashboard_personalization_controller.dart';
 import 'today_consumer_presentation.dart';
@@ -264,6 +268,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         onLogMeal: _openMeal,
                         onStartWorkout: _startWorkout,
                         onOpenFoodGuidance: onOpenFoodGuidance ?? () {},
+                        selectedDate: selectedDate,
                         onExpand: () => personalizationController.setCollapsed(
                           item.moduleId,
                           false,
@@ -316,6 +321,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     required ValueChanged<CalendarOccurrenceReadItem> onStartWorkout,
     required VoidCallback onOpenFoodGuidance,
     required Future<void> Function() onExpand,
+    required DateTime selectedDate,
   }) {
     if (item.isCollapsed && item.descriptor.collapsible) {
       return _CollapsedTodayModule(
@@ -326,7 +332,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     return switch (item.moduleId) {
       'today.meals' => _TodayNutritionHero(
         presentation: nutrition,
-        onLogFood: () => onLogMeal('breakfast'),
+        onLogFood: () => onLogMeal(''),
         onOpenFoodGuidance: onOpenFoodGuidance,
         onOpenTargetSetup: onOpenSettings,
         onRetry: onRetry,
@@ -334,7 +340,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
       'today.next_action' => _TodayNextUpModule(
         presentation: nextUp,
         onOpenWorkoutPlan: onOpenWorkoutPlan,
-        onLogMeal: () => onLogMeal('breakfast'),
+        onLogMeal: () => onLogMeal(''),
         onReturnToToday: () => onDateChanged(now ?? DateTime.now()),
         onStartWorkout: onStartWorkout,
         onRetry: onRetry,
@@ -345,6 +351,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
         unavailable: nutrition.state == TodayPresentationState.unavailable,
         onLogMeal: onLogMeal,
         onRetry: onRetry,
+        selectedDate: selectedDate,
       ),
       // When visible, Next Up owns the single workout CTA for this state. The
       // independently customizable Workout module remains available whenever
@@ -1169,6 +1176,7 @@ class _TodayMealsModule extends StatelessWidget {
     required this.unavailable,
     required this.onLogMeal,
     required this.onRetry,
+    required this.selectedDate,
   });
 
   final List<TodayMealPresentation> meals;
@@ -1176,6 +1184,7 @@ class _TodayMealsModule extends StatelessWidget {
   final bool unavailable;
   final ValueChanged<String> onLogMeal;
   final VoidCallback onRetry;
+  final DateTime selectedDate;
 
   @override
   Widget build(BuildContext context) {
@@ -1201,6 +1210,7 @@ class _TodayMealsModule extends StatelessWidget {
               _TodayMealRow(
                 meal: meals[index],
                 onAdd: () => onLogMeal(meals[index].mealType),
+                selectedDate: selectedDate,
               ),
               if (index < meals.length - 1)
                 Divider(
@@ -1216,10 +1226,15 @@ class _TodayMealsModule extends StatelessWidget {
 }
 
 class _TodayMealRow extends StatelessWidget {
-  const _TodayMealRow({required this.meal, required this.onAdd});
+  const _TodayMealRow({
+    required this.meal,
+    required this.onAdd,
+    required this.selectedDate,
+  });
 
   final TodayMealPresentation meal;
   final VoidCallback onAdd;
+  final DateTime selectedDate;
 
   @override
   Widget build(BuildContext context) {
@@ -1241,7 +1256,8 @@ class _TodayMealRow extends StatelessWidget {
       showModalBottomSheet<void>(
         context: context,
         backgroundColor: Colors.transparent,
-        builder: (context) => _MealDetailsSheet(meal: meal),
+        builder: (context) =>
+            _MealDetailsSheet(meal: meal, selectedDate: selectedDate),
       );
     }
 
@@ -1342,46 +1358,86 @@ class _MealIcon extends StatelessWidget {
 }
 
 class _MealDetailsSheet extends StatelessWidget {
-  const _MealDetailsSheet({required this.meal});
+  const _MealDetailsSheet({required this.meal, required this.selectedDate});
 
   final TodayMealPresentation meal;
+  final DateTime selectedDate;
 
   @override
   Widget build(BuildContext context) => SafeArea(
     child: Padding(
       padding: const EdgeInsets.all(B05Layout.space12),
-      child: B05Surface(
-        radius: B05SurfaceRadius.large,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * .86,
+        ),
+        child: B05Surface(
+          radius: B05SurfaceRadius.large,
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(meal.label, style: B05Typography.title(context)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        meal.label,
+                        style: B05Typography.title(context),
+                      ),
+                    ),
+                    B05IconAction(
+                      icon: Icons.close_rounded,
+                      label: 'Close meal details',
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
                 ),
-                B05IconAction(
-                  icon: Icons.close_rounded,
-                  label: 'Close meal details',
-                  onPressed: () => Navigator.of(context).pop(),
+                Text(
+                  '${ConsumerCountLabel.format(meal.itemLabels.length, 'item')} · ${meal.calorieLabel}',
+                  style: B05Typography.body(context),
+                ),
+                const SizedBox(height: B05Layout.space12),
+                if (meal.itemLabels.isEmpty)
+                  Text(
+                    'Meal details are not available yet.',
+                    style: B05Typography.body(context),
+                  )
+                else
+                  for (final item in meal.itemLabels)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: B05Layout.space4),
+                      child: Text(
+                        '• $item',
+                        style: B05Typography.body(context),
+                      ),
+                    ),
+                const SizedBox(height: B05Layout.space12),
+                FoodLogEntriesPanel(
+                  date: selectedDate,
+                  mealType: meal.mealType,
+                ),
+                const SizedBox(height: B05Layout.space8),
+                B05ActionButton(
+                  label: 'Open food log',
+                  hint:
+                      'Open this meal in Food to edit or copy logged entries.',
+                  icon: Icons.restaurant_outlined,
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FoodSearchScreen(
+                          mealType: meal.mealType,
+                          selectedDate: selectedDate,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
-            Text(meal.calorieLabel, style: B05Typography.body(context)),
-            const SizedBox(height: B05Layout.space12),
-            if (meal.itemLabels.isEmpty)
-              Text(
-                'Meal details are not available yet.',
-                style: B05Typography.body(context),
-              )
-            else
-              for (final item in meal.itemLabels)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: B05Layout.space4),
-                  child: Text('• $item', style: B05Typography.body(context)),
-                ),
-          ],
+          ),
         ),
       ),
     ),
@@ -1783,6 +1839,5 @@ TextStyle _eyebrow(BuildContext context) => B05Typography.caption(
 ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.1);
 
 String _formatMetric(double value) {
-  if (value == value.roundToDouble()) return value.toInt().toString();
-  return value.toString();
+  return ConsumerNumberLabel.rounded(value);
 }
