@@ -8,6 +8,7 @@ import '../../../core/theme/colors.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/food_repository.dart';
 import '../../food_log/ai_meal_logger_screen.dart';
+import '../../food_log/canonical_food_delete.dart';
 import '../../food_log/food_search_screen.dart';
 import '../../food_log/meal_templates_screen.dart';
 import '../../food_log/thali_builder_screen.dart';
@@ -706,7 +707,21 @@ class _MealCard extends ConsumerWidget {
           else ...[
             ...mealLogs.map((log) => _LoggedItemRow(log: log)),
             ...?canonicalRecords?.map(
-              (record) => _CanonicalItemRow(record: record),
+              (record) => _CanonicalItemRow(
+                record: record,
+                onDelete:
+                    record.items.any(
+                      (item) =>
+                          item.originSourceType == 'direct_food' &&
+                          item.foodId != null,
+                    )
+                    ? () => showCanonicalFoodDelete(
+                        context: context,
+                        ref: ref,
+                        record: record,
+                      )
+                    : null,
+              ),
             ),
             const Divider(color: AppColors.border, height: 20),
             Row(
@@ -754,8 +769,9 @@ class _MealCard extends ConsumerWidget {
 
 class _CanonicalItemRow extends StatelessWidget {
   final NutritionHistoricalReadRecord record;
+  final Future<bool> Function()? onDelete;
 
-  const _CanonicalItemRow({required this.record});
+  const _CanonicalItemRow({required this.record, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -817,11 +833,19 @@ class _CanonicalItemRow extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(
-            Icons.lock_outline_rounded,
-            size: 16,
-            color: AppColors.textMuted,
-          ),
+          if (onDelete == null)
+            const Icon(
+              Icons.lock_outline_rounded,
+              size: 16,
+              color: AppColors.textMuted,
+            )
+          else
+            IconButton(
+              tooltip: 'Delete ${record.displayLabel}',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => onDelete!(),
+              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+            ),
         ],
       ),
     );

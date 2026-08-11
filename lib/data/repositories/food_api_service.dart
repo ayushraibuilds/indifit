@@ -4,9 +4,23 @@ import '../../core/di/providers.dart';
 import '../../core/privacy/privacy_policy.dart';
 
 final foodApiServiceProvider = Provider<FoodApiService>((ref) {
-  final dio = ref.watch(dioProvider);
+  final dio = ref.watch(openFoodFactsDioProvider);
   final policy = ref.watch(privacyPolicyProvider);
   return FoodApiService(dio, policy);
+});
+
+/// Open Food Facts is a public third-party provider and must never receive the
+/// IndiFit backend bootstrap credential carried by [dioProvider].
+final openFoodFactsDioProvider = Provider<Dio>((ref) {
+  final dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 3),
+      receiveTimeout: const Duration(seconds: 5),
+      sendTimeout: const Duration(seconds: 5),
+    ),
+  );
+  ref.onDispose(() => dio.close(force: true));
+  return dio;
 });
 
 class FoodApiResult {

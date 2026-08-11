@@ -270,7 +270,7 @@ class _CanonicalFoodRow extends StatelessWidget {
                         ),
                       if (actionTap != null)
                         Text(
-                          'Tap to edit or copy this entry.',
+                          'Tap to edit, copy, or delete this entry.',
                           style: B05Typography.caption(context),
                         ),
                     ],
@@ -280,7 +280,7 @@ class _CanonicalFoodRow extends StatelessWidget {
                   B05IconAction(
                     icon: Icons.more_horiz_rounded,
                     label: 'Actions for $displayName',
-                    hint: 'Edit amount or copy this entry.',
+                    hint: 'Edit, copy, or delete this entry.',
                     onPressed: () => actionTap(record),
                   ),
               ],

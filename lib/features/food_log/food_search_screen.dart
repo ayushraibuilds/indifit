@@ -1,4 +1,6 @@
 import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +24,7 @@ import '../../data/repositories/nutrition_food_logging_coordinator.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'ai_meal_logger_screen.dart';
 import 'barcode_scanner_screen.dart';
+import 'canonical_food_delete.dart';
 import 'custom_food_editor_screen.dart';
 import 'food_log_surface.dart';
 import 'saved_recipe_log_screen.dart';
@@ -342,12 +345,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _isOnlineSearchOffline = false;
         _onlineFailureMessage = null;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted || generation != _searchGeneration) return;
+      final offlinePolicy = error is StateError;
       setState(() {
         _onlineResults = [];
         _isOnlineSearchOffline = true;
-        _onlineFailureMessage = 'Online results are unavailable right now.';
+        _onlineFailureMessage = offlinePolicy
+            ? 'Online food search is disabled in Offline Mode.'
+            : _onlineSearchFailureMessage(error);
       });
     } finally {
       if (mounted) {
@@ -356,6 +362,26 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         });
       }
     }
+  }
+
+  String _onlineSearchFailureMessage(Object error) {
+    if (error is! DioException) {
+      return 'Online results are unavailable right now.';
+    }
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.transformTimeout =>
+        'Online food search timed out. Local results are still available.',
+      DioExceptionType.connectionError || DioExceptionType.unknown =>
+        'Online food search could not reach the provider. Check your connection.',
+      DioExceptionType.badResponse =>
+        'The online food provider is unavailable right now.',
+      DioExceptionType.badCertificate =>
+        'A secure connection to online food search could not be established.',
+      DioExceptionType.cancel => 'Online food search was cancelled.',
+    };
   }
 
   Future<void> _openLegacyLogDialog(FoodItem food) async {
@@ -1464,6 +1490,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 onPressed: () =>
                     Navigator.of(sheetContext).pop(_CanonicalFoodAction.copy),
               ),
+              B05ActionButton(
+                label: 'Delete food',
+                icon: Icons.delete_outline_rounded,
+                emphasis: B05ActionEmphasis.secondary,
+                onPressed: () =>
+                    Navigator.of(sheetContext).pop(_CanonicalFoodAction.delete),
+              ),
             ],
           ),
         ),
@@ -1480,6 +1513,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         );
       case _CanonicalFoodAction.copy:
         await _showLogDialog(option, mealType: record.mealCategory);
+      case _CanonicalFoodAction.delete:
+        await showCanonicalFoodDelete(
+          context: context,
+          ref: ref,
+          record: record,
+        );
       case null:
         break;
     }
@@ -1708,4 +1747,4 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 }
 
-enum _CanonicalFoodAction { edit, copy }
+enum _CanonicalFoodAction { edit, copy, delete }

@@ -291,6 +291,129 @@ class NutritionConsumptionRepository {
     }
   }
 
+  /// Appends an idempotent B03 correction marker that removes one direct-food
+  /// snapshot from effective consumer history without mutating its immutable
+  /// audit rows.
+  ///
+  /// The expected meal and local date are part of the command boundary so a
+  /// stale or mis-routed UI action cannot retract a different meal occurrence.
+  Future<NutritionConsumptionSnapshot> retractConsumption({
+    required String userId,
+    required String snapshotId,
+    required String expectedLocalDate,
+    required String expectedMealCategory,
+    required String commandId,
+    String reason = 'User deleted logged food.',
+  }) async {
+    final normalizedUserId = userId.trim();
+    final normalizedSnapshotId = snapshotId.trim();
+    final normalizedDate = expectedLocalDate.trim();
+    final normalizedMeal = expectedMealCategory.trim().toLowerCase();
+    final normalizedCommand = commandId.trim();
+    final normalizedReason = reason.trim();
+    if (normalizedUserId.isEmpty ||
+        normalizedSnapshotId.isEmpty ||
+        normalizedDate.isEmpty ||
+        normalizedMeal.isEmpty ||
+        normalizedCommand.isEmpty ||
+        normalizedReason.isEmpty) {
+      throw const NutritionConsumptionValidationError(
+        'invalid_retraction_command',
+        'Retraction identity, meal, date, command, and reason are required.',
+      );
+    }
+
+    final predecessor = await getSnapshot(
+      userId: normalizedUserId,
+      consumptionId: normalizedSnapshotId,
+    );
+    if (predecessor == null) {
+      throw const NutritionConsumptionValidationError(
+        'missing_retraction_predecessor',
+        'The logged food to delete no longer exists.',
+      );
+    }
+    if (predecessor.sourceType != 'direct_food' || predecessor.isRetraction) {
+      throw const NutritionConsumptionValidationError(
+        'unsupported_retraction_source',
+        'Only an active direct-food snapshot can be deleted here.',
+      );
+    }
+    if (predecessor.localDate != normalizedDate ||
+        predecessor.mealCategory.trim().toLowerCase() != normalizedMeal) {
+      throw const NutritionConsumptionValidationError(
+        'retraction_context_mismatch',
+        'The logged food does not belong to the expected meal and date.',
+      );
+    }
+
+    final digest = sha256
+        .convert(
+          utf8.encode(
+            '$normalizedUserId\u0000$normalizedSnapshotId\u0000$normalizedCommand',
+          ),
+        )
+        .toString();
+    final retractionId = 'consumption-retraction::$digest';
+    final requestedNutrients = predecessor.completeness.requestedNutrientIds;
+    final items = <NutritionConsumptionItemInput>[];
+    for (var index = 0; index < predecessor.items.length; index++) {
+      final item = predecessor.items[index];
+      items.add(
+        NutritionConsumptionItemInput(
+          id: '$retractionId::item::$index',
+          position: index,
+          sourceType: item.sourceType,
+          foodId: item.foodId,
+          recipeVersionId: item.recipeVersionId,
+          preparationId: item.preparationId,
+          sourceReference: item.sourceReference,
+          displayLabel: item.displayLabel,
+          quantity: item.quantity,
+          calculation: NutritionConsumptionCalculationSnapshot.fromFacts(
+            facts: item.facts,
+            registry: _registry,
+            requestedNutrientIds: requestedNutrients,
+            calculatorVersion: predecessor.calculatorVersion,
+            calculationFingerprint:
+                'retraction::$normalizedSnapshotId::${item.id}::${predecessor.lineage.contentFingerprint}',
+            lineage: {
+              'retracted_snapshot_id': normalizedSnapshotId,
+              'retracted_item_id': item.id,
+            },
+          ),
+          evidence: {'retracted_item_id': item.id},
+        ),
+      );
+    }
+
+    return finalizeConsumption(
+      NutritionConsumptionFinalizeRequest(
+        userId: normalizedUserId,
+        consumptionId: retractionId,
+        commandId: normalizedCommand,
+        loggedAtUtc: predecessor.loggedAtUtc,
+        mealCategory: predecessor.mealCategory,
+        mealGroupId: predecessor.mealGroupId,
+        sourceType: predecessor.sourceType,
+        localDate: predecessor.localDate,
+        timezoneId: predecessor.timezoneId,
+        calculatorVersion: predecessor.calculatorVersion,
+        items: items,
+        evidence: {
+          'retraction': {
+            'contract_version': kNutritionConsumptionRetractionContractVersion,
+            'predecessor_snapshot_id': normalizedSnapshotId,
+            'reason': normalizedReason,
+          },
+        },
+        supersedesSnapshotId: normalizedSnapshotId,
+        correctionId: 'retraction::$digest',
+        correctionReason: normalizedReason,
+      ),
+    );
+  }
+
   Future<NutritionConsumptionSnapshot?> getSnapshot({
     required String userId,
     required String consumptionId,
@@ -404,7 +527,10 @@ class NutritionConsumptionRepository {
       if (predecessor != null) superseded.add(predecessor);
     }
     final active = snapshots
-        .where((snapshot) => !superseded.contains(snapshot.id))
+        .where(
+          (snapshot) =>
+              !superseded.contains(snapshot.id) && !snapshot.isRetraction,
+        )
         .toList(growable: false);
     final requested = <String>{};
     final contributions = <NutrientContribution>[];
@@ -494,6 +620,20 @@ class NutritionConsumptionRepository {
       _invalid(
         'reserved_constraint_evidence_key',
         'Dietary evaluation lineage must be supplied through its typed fields.',
+      );
+    }
+    final retraction = request.evidence['retraction'];
+    if (retraction != null &&
+        (request.sourceType != 'direct_food' ||
+            retraction is! Map ||
+            retraction['contract_version'] !=
+                kNutritionConsumptionRetractionContractVersion ||
+            retraction['predecessor_snapshot_id'] !=
+                request.supersedesSnapshotId ||
+            retraction['reason'] != request.correctionReason)) {
+      _invalid(
+        'invalid_retraction_evidence',
+        'Retraction evidence must match its direct-food correction lineage.',
       );
     }
     final items = request.items.toList(growable: false);

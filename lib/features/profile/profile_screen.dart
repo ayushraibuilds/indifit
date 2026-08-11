@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -127,6 +129,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _handleSave() async {
     final p = ref.read(userProfileProvider);
+    final editsPersonal =
+        widget.focus == ProfileEditorFocus.all ||
+        widget.focus == ProfileEditorFocus.personal;
+    final editsGoal =
+        widget.focus == ProfileEditorFocus.all ||
+        widget.focus == ProfileEditorFocus.goal;
+    final editsTraining =
+        widget.focus == ProfileEditorFocus.all ||
+        widget.focus == ProfileEditorFocus.training;
     final age = int.tryParse(_ageController.text.trim());
     final displayedHeight = double.tryParse(_heightController.text.trim());
     final displayedWeight = double.tryParse(_weightController.text.trim());
@@ -170,11 +181,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
 
     // Validation
-    if (age == null || age < 13 || age > 120) {
+    if (editsPersonal && (age == null || age < 13 || age > 120)) {
       _showError('Please enter a valid age between 13 and 120 years.');
       return;
     }
-    if (height == null || height < 100 || height > 250) {
+    if (editsPersonal && (height == null || height < 100 || height > 250)) {
       _showError(
         UnitPreferencePresentation.isImperial(_displayUnits)
             ? 'Please enter a valid height between 39.4 and 98.4 in.'
@@ -182,7 +193,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
       return;
     }
-    if (weight == null || weight < 30 || weight > 300) {
+    if (editsPersonal && (weight == null || weight < 30 || weight > 300)) {
       _showError(
         UnitPreferencePresentation.isImperial(_displayUnits)
             ? 'Please enter a valid weight between 66.1 and 661.4 lb.'
@@ -192,12 +203,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
 
     final bodyOrGoalChanged =
-        p.userAge != age ||
-        (p.userHeight ?? 0) != height ||
-        p.currentWeight != weight ||
-        p.userSex != sex ||
-        p.userGoal != goal ||
-        p.userActivityLevel != activity;
+        (editsPersonal &&
+            (p.userAge != age ||
+                (p.userHeight ?? 0) != height ||
+                p.currentWeight != weight ||
+                p.userSex != sex)) ||
+        (editsGoal && p.userGoal != goal) ||
+        (editsTraining && p.userActivityLevel != activity);
 
     bool recalculateGoals = false;
 
@@ -258,9 +270,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
       final bmr = TdeeCalculator.calculateBmr(
         gender: gender,
-        weightKg: weight,
-        heightCm: height,
-        ageYears: age,
+        weightKg: weight ?? p.currentWeight,
+        heightCm: height ?? p.userHeight ?? 170,
+        ageYears: age ?? p.userAge,
       );
       final tdee = TdeeCalculator.calculateTdee(
         bmr: bmr,
@@ -269,7 +281,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final macros = TdeeCalculator.calculateMacros(
         tdee: tdee,
         goal: fitnessGoal,
-        weightKg: weight,
+        weightKg: weight ?? p.currentWeight,
       );
 
       newCals = macros.calories;
@@ -278,24 +290,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       newFat = macros.fatG;
     }
 
-    await HapticFeedback.mediumImpact();
+    // Haptics are optional feedback and must never delay or prevent the
+    // persisted profile patch.
+    unawaited(HapticFeedback.mediumImpact().catchError((_) {}));
     await ref
         .read(userProfileProvider.notifier)
         .updateProfile(
-          name: name,
-          age: age,
-          height: height,
-          weight: weight,
-          sex: sex,
-          activityLevel: activity,
-          goal: _goalChanged ? _selectedGoal : null,
-          dietPreference: DietPreferencePresentation.persistedValueFor(
-            originalValue: _dietPreferenceSourceValue,
-            uiValue: _selectedDiet,
-            userChanged: _dietPreferenceChanged,
-          ),
-          equipmentAccess: equipment,
-          injuriesLimitations: injuries,
+          name: editsPersonal ? name : null,
+          age: editsPersonal ? age : null,
+          height: editsPersonal ? height : null,
+          weight: editsPersonal ? weight : null,
+          sex: editsPersonal ? sex : null,
+          activityLevel: editsTraining ? activity : null,
+          goal: editsGoal && _goalChanged ? _selectedGoal : null,
+          dietPreference:
+              widget.focus == ProfileEditorFocus.all && _dietPreferenceChanged
+              ? DietPreferencePresentation.persistedValueFor(
+                  originalValue: _dietPreferenceSourceValue,
+                  uiValue: _selectedDiet,
+                  userChanged: true,
+                )
+              : null,
+          equipmentAccess: editsTraining ? equipment : null,
+          injuriesLimitations: editsTraining ? injuries : null,
           calorieGoal: newCals,
           proteinGoal: newProtein,
           carbsGoal: newCarbs,
