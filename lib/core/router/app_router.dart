@@ -34,6 +34,7 @@ import '../../features/settings/settings_screen.dart';
 import '../../features/travel/travel_mode_screen.dart';
 import '../../features/workout_player/b02_strength_player_screen.dart';
 import '../../features/workout_player/b02_strength_summary_screen.dart';
+import '../../features/workout_player/quick_workout_screen.dart';
 import '../../features/workout_player/routine_display_screen.dart';
 import '../../features/workout_player/routine_editor_screen.dart';
 import '../../features/workout_player/workout_player_screen.dart';
@@ -298,6 +299,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           }
           return B02StrengthSummaryScreen(launch: launch);
         },
+      ),
+      GoRoute(
+        path: '/quick-workout',
+        builder: (context, state) => const QuickWorkoutScreen(),
       ),
       GoRoute(
         path: '/activity-create',

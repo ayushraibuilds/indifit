@@ -90,13 +90,21 @@ final trainingLandingSnapshotProvider =
           .currentTimezoneId();
       final localDate = dates.todayIn(timezoneId);
       final endDate = dates.addCalendarDays(localDate, timezoneId, 14);
-      final calendar = await ref
-          .watch(calendarReadRepositoryProvider)
-          .readSnapshot(
-            startLocalDate: localDate,
-            endLocalDate: endDate,
-            timezoneId: timezoneId,
-          );
+      final calendarRepository = ref.watch(calendarReadRepositoryProvider);
+      final invalidation = calendarRepository.watchInvalidation(
+        startLocalDate: localDate,
+        endLocalDate: endDate,
+        timezoneId: timezoneId,
+      );
+      final invalidationSubscription = invalidation.listen(
+        (_) => ref.invalidateSelf(),
+      );
+      ref.onDispose(invalidationSubscription.cancel);
+      final calendar = await calendarRepository.readSnapshot(
+        startLocalDate: localDate,
+        endLocalDate: endDate,
+        timezoneId: timezoneId,
+      );
       final sessions = await ref.watch(workoutRepositoryProvider).getSessions();
       final today = selectTrainingTodayWorkout(
         calendar.rangeOccurrences,
@@ -129,6 +137,69 @@ class TrainingScreen extends ConsumerStatefulWidget {
 
 class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   var _isLaunching = false;
+
+  Future<void> _openStartWorkout(
+    BuildContext context,
+    WidgetRef ref,
+    CalendarOccurrenceReadItem? today,
+  ) async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(
+            B05Layout.space8,
+            B05Layout.space8,
+            B05Layout.space8,
+            B05Layout.space16,
+          ),
+          children: [
+            const ListTile(
+              title: Text('Start workout'),
+              subtitle: Text('Train right now or follow today’s plan.'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.bolt_rounded),
+              title: const Text('Quick workout'),
+              subtitle: const Text(
+                'Start immediately and choose exercises as you go.',
+              ),
+              onTap: () => Navigator.pop(sheetContext, 'quick'),
+            ),
+            if (today != null && canLaunchTrainingOccurrence(today))
+              ListTile(
+                leading: const Icon(Icons.calendar_today_outlined),
+                title: Text('Today’s workout · ${today.template.name}'),
+                subtitle: const Text('Use the scheduled workout and targets.'),
+                onTap: () => Navigator.pop(sheetContext, 'today'),
+              ),
+            ListTile(
+              leading: const Icon(Icons.route_outlined),
+              title: const Text('Choose a plan'),
+              subtitle: const Text(
+                'Review or build a training plan for later.',
+              ),
+              onTap: () => Navigator.pop(sheetContext, 'plan'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted || choice == null) return;
+    switch (choice) {
+      case 'quick':
+        await context.push('/quick-workout');
+      case 'today':
+        if (today != null) await _startWorkout(context, ref, today);
+      case 'plan':
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()));
+    }
+    if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
+  }
 
   Future<void> _startWorkout(
     BuildContext context,
@@ -242,6 +313,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           data: data,
           isLaunching: _isLaunching,
           onStartWorkout: (item) => _startWorkout(context, ref, item),
+          onStartTraining: () =>
+              _openStartWorkout(context, ref, data.todayWorkout),
           onOpenPlan: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()),
           ),
@@ -314,6 +387,19 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                   context.push('/equipment-profiles');
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.history_rounded),
+                title: const Text('Log completed workout'),
+                subtitle: const Text('Add a workout you already finished.'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  final data = ref
+                      .read(trainingLandingSnapshotProvider)
+                      .asData
+                      ?.value;
+                  if (data != null) _logWorkout(context, data);
+                },
+              ),
             ],
           ),
         ),
@@ -327,6 +413,7 @@ class _TrainingLandingBody extends StatelessWidget {
     required this.data,
     required this.isLaunching,
     required this.onStartWorkout,
+    required this.onStartTraining,
     required this.onOpenPlan,
     required this.onOpenCalendar,
     required this.onOpenExercises,
@@ -336,6 +423,7 @@ class _TrainingLandingBody extends StatelessWidget {
   final TrainingLandingSnapshot data;
   final bool isLaunching;
   final ValueChanged<CalendarOccurrenceReadItem> onStartWorkout;
+  final VoidCallback onStartTraining;
   final VoidCallback onOpenPlan;
   final VoidCallback onOpenCalendar;
   final VoidCallback onOpenExercises;
@@ -345,6 +433,30 @@ class _TrainingLandingBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final today = data.todayWorkout;
     final planContext = data.currentPlanContext;
+    final isEmpty =
+        today == null &&
+        data.upcoming.isEmpty &&
+        data.recentSessions.isEmpty &&
+        data.activeProgramName?.trim().isNotEmpty != true;
+    if (isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(
+          B05Layout.space16,
+          B05Layout.space16,
+          B05Layout.space16,
+          B05Layout.space32,
+        ),
+        children: [
+          _SectionLabel(label: 'START TRAINING'),
+          const SizedBox(height: B05Layout.space8),
+          _TrainingEmptySurface(
+            onStart: onStartTraining,
+            onChoosePlan: onOpenPlan,
+            onLogWorkout: onLogWorkout,
+          ),
+        ],
+      );
+    }
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         B05Layout.space16,
@@ -359,8 +471,8 @@ class _TrainingLandingBody extends StatelessWidget {
           item: today,
           isLaunching: isLaunching,
           onStart: today == null || !canLaunchTrainingOccurrence(today)
-              ? null
-              : () => onStartWorkout(today),
+              ? onStartTraining
+              : onStartTraining,
           onOpenPlan: onOpenPlan,
           onLogWorkout: onLogWorkout,
         ),
@@ -609,6 +721,66 @@ class _TodayTrainingSurface extends StatelessWidget {
     'rescheduled' => 'rescheduled',
     _ => 'scheduled',
   };
+}
+
+class _TrainingEmptySurface extends StatelessWidget {
+  const _TrainingEmptySurface({
+    required this.onStart,
+    required this.onChoosePlan,
+    required this.onLogWorkout,
+  });
+
+  final VoidCallback onStart;
+  final VoidCallback onChoosePlan;
+  final VoidCallback onLogWorkout;
+
+  @override
+  Widget build(BuildContext context) => B05Surface(
+    tone: B05SurfaceTone.inset,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.fitness_center_outlined, color: context.b05Colors.action),
+        const SizedBox(height: B05Layout.space8),
+        Text('Nothing planned today', style: B05Typography.title(context)),
+        const SizedBox(height: B05Layout.space4),
+        Text('No training plan yet', style: B05Typography.body(context)),
+        const SizedBox(height: B05Layout.space4),
+        Text(
+          'Start with one meaningful action.',
+          style: B05Typography.body(context),
+        ),
+        const SizedBox(height: B05Layout.space16),
+        SizedBox(
+          width: double.infinity,
+          child: B05ActionButton(
+            label: 'Start quick workout',
+            icon: Icons.play_arrow_rounded,
+            onPressed: onStart,
+          ),
+        ),
+        const SizedBox(height: B05Layout.space8),
+        Wrap(
+          spacing: B05Layout.space8,
+          runSpacing: B05Layout.space8,
+          children: [
+            B05ActionButton(
+              label: 'View plan',
+              icon: Icons.route_outlined,
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: onChoosePlan,
+            ),
+            B05ActionButton(
+              label: 'Log workout',
+              icon: Icons.edit_note_rounded,
+              emphasis: B05ActionEmphasis.tertiary,
+              onPressed: onLogWorkout,
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 }
 
 class _UpcomingTrainingRow extends StatelessWidget {

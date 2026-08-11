@@ -17,6 +17,8 @@ class B02StrengthExecutionDraftService {
     String? actualExerciseId,
     String? actualExerciseNameSnapshot,
     String? substitutionReason,
+    String? sourceExercisePrescriptionId,
+    bool useSlotPrescription = true,
   }) {
     if (reps < 1) {
       throw const B02ValidationException('Repetitions must be positive.');
@@ -62,7 +64,9 @@ class B02StrengthExecutionDraftService {
     final performed = B02PerformedExerciseDraft(
       id: performedId,
       performedExerciseGroupId: slot.groupId,
-      sourceExercisePrescriptionId: slot.prescriptionId,
+      sourceExercisePrescriptionId: useSlotPrescription
+          ? sourceExercisePrescriptionId ?? slot.prescriptionId
+          : null,
       groupMemberOrdinal: slot.memberOrdinal,
       groupRoundOrdinal: slot.roundOrdinal,
       ordinal: existing?.ordinal ?? state.performedExercises.length,

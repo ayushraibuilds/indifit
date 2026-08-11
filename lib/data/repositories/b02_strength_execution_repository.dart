@@ -48,11 +48,15 @@ class B02StrengthExecutionLaunch {
     required this.state,
   });
 
-  B02StrengthExecutionLaunch copyWith({B02ExecutionDraftState? state}) {
+  B02StrengthExecutionLaunch copyWith({
+    B02ExecutionDraftState? state,
+    String? executionSnapshotJson,
+  }) {
     return B02StrengthExecutionLaunch(
       draftId: draftId,
       occurrenceId: occurrenceId,
-      executionSnapshotJson: executionSnapshotJson,
+      executionSnapshotJson:
+          executionSnapshotJson ?? this.executionSnapshotJson,
       state: state ?? this.state,
     );
   }
@@ -296,6 +300,121 @@ class StrengthExecutionRepository {
         occurrenceId: null,
       );
     });
+  }
+
+  /// Appends a canonical exercise to an unscheduled Quick Workout snapshot.
+  ///
+  /// Quick Workout is intentionally not represented as a B01 occurrence. Its
+  /// mutable exercise list still lives beside the B02 draft and its performed
+  /// sets are finalized by the same canonical session writer.
+  Future<B02StrengthExecutionLaunch> addUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String exerciseId,
+    required String exerciseName,
+    int plannedSets = 1,
+    String repsRange = '1-20',
+  }) async {
+    if (launch.occurrenceId != null) {
+      throw const B02StrengthExecutionException(
+        'Scheduled workout exercises must use the planned substitution path.',
+      );
+    }
+    final stableId = _requiredText(exerciseId, 'Exercise ID');
+    final name = _requiredText(exerciseName, 'Exercise name');
+    if (plannedSets < 1) {
+      throw const B02StrengthExecutionException(
+        'Quick Workout exercises need at least one planned set.',
+      );
+    }
+    final snapshot = _decodeSnapshot(launch.executionSnapshotJson);
+    final rawPrescriptions = snapshot['prescriptions'] is List
+        ? (snapshot['prescriptions'] as List)
+              .whereType<Map>()
+              .map((raw) => Map<String, dynamic>.from(raw))
+              .toList()
+        : <Map<String, dynamic>>[];
+    final prescriptionId = 'quick:${_uuid.v4()}';
+    rawPrescriptions.add({
+      'id': prescriptionId,
+      'exerciseId': stableId,
+      'exerciseNameSnapshot': name,
+      'plannedSets': plannedSets,
+      'repsRange': repsRange,
+    });
+    final encoded = jsonEncode({
+      ...snapshot,
+      'prescriptions': rawPrescriptions,
+    });
+    final changed =
+        await (_db.update(
+          _db.workoutDrafts,
+        )..where((table) => table.id.equals(launch.draftId))).write(
+          WorkoutDraftsCompanion(
+            executionSnapshotJson: Value(encoded),
+            updatedAt: Value(_nowUtc().toUtc()),
+          ),
+        );
+    if (changed != 1) {
+      throw const B02StrengthExecutionRecoveryException(
+        'The Quick Workout draft changed before the exercise could be added.',
+      );
+    }
+    return launch.copyWith(executionSnapshotJson: encoded);
+  }
+
+  /// Removes a Quick Workout exercise from the active picker while retaining
+  /// any performed data already attached to the session. This means an
+  /// exercise with history is never silently destroyed; it simply stops being
+  /// an active, selectable slot for the remainder of the draft.
+  Future<B02StrengthExecutionLaunch> removeUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String prescriptionId,
+  }) async {
+    if (launch.occurrenceId != null) {
+      throw const B02StrengthExecutionException(
+        'Scheduled workout exercises cannot be removed from the Quick Workout path.',
+      );
+    }
+    final id = _requiredText(prescriptionId, 'Exercise prescription ID');
+    final snapshot = _decodeSnapshot(launch.executionSnapshotJson);
+    final rawPrescriptions = snapshot['prescriptions'] is List
+        ? (snapshot['prescriptions'] as List)
+              .whereType<Map>()
+              .map((raw) => Map<String, dynamic>.from(raw))
+              .where((raw) => raw['id'] != id)
+              .toList()
+        : <Map<String, dynamic>>[];
+    final encoded = jsonEncode({
+      ...snapshot,
+      'prescriptions': rawPrescriptions,
+    });
+    final slotId = 'standalone:$id';
+    final nextState = launch.state.copyWith(
+      targetRecommendations: {
+        for (final entry in launch.state.targetRecommendations.entries)
+          if (entry.key != slotId) entry.key: entry.value,
+      },
+      targetOverrides: {
+        for (final entry in launch.state.targetOverrides.entries)
+          if (entry.key != slotId) entry.key: entry.value,
+      },
+    );
+    final changed =
+        await (_db.update(
+          _db.workoutDrafts,
+        )..where((table) => table.id.equals(launch.draftId))).write(
+          WorkoutDraftsCompanion(
+            executionSnapshotJson: Value(encoded),
+            executionStateJson: Value(B02ExecutionDraftCodec.encode(nextState)),
+            updatedAt: Value(_nowUtc().toUtc()),
+          ),
+        );
+    if (changed != 1) {
+      throw const B02StrengthExecutionRecoveryException(
+        'The Quick Workout draft changed before the exercise could be removed.',
+      );
+    }
+    return launch.copyWith(executionSnapshotJson: encoded, state: nextState);
   }
 
   Future<B02StrengthExecutionLaunch> readDraft(int draftId) async {
@@ -783,6 +902,7 @@ class StrengthExecutionRepository {
       await _validateBeforeMutation(
         state: state,
         completionKind: completionKind,
+        requirePrescriptionAncestry: occurrence != null,
       );
 
       final sessionId = await _db
@@ -1077,6 +1197,7 @@ class StrengthExecutionRepository {
   Future<void> _validateBeforeMutation({
     required B02ExecutionDraftState state,
     required CompletionKind completionKind,
+    required bool requirePrescriptionAncestry,
   }) async {
     if (state.elapsedSeconds < 1) {
       throw const B02StrengthExecutionFinalizationException(
@@ -1162,7 +1283,7 @@ class StrengthExecutionRepository {
         );
       }
     }
-    if (prescriptionIds.isNotEmpty) {
+    if (requirePrescriptionAncestry && prescriptionIds.isNotEmpty) {
       final prescriptionRows = await (_db.select(
         _db.exercisePrescriptions,
       )..where((table) => table.id.isIn(prescriptionIds))).get();
@@ -1615,6 +1736,28 @@ class StrengthExecutionCompatibilityAdapter {
     executionSnapshotJson: executionSnapshotJson,
     groups: groups,
     snapshotId: snapshotId,
+  );
+
+  Future<B02StrengthExecutionLaunch> addUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String exerciseId,
+    required String exerciseName,
+    int plannedSets = 1,
+    String repsRange = '1-20',
+  }) => _repository.addUnscheduledExercise(
+    launch: launch,
+    exerciseId: exerciseId,
+    exerciseName: exerciseName,
+    plannedSets: plannedSets,
+    repsRange: repsRange,
+  );
+
+  Future<B02StrengthExecutionLaunch> removeUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String prescriptionId,
+  }) => _repository.removeUnscheduledExercise(
+    launch: launch,
+    prescriptionId: prescriptionId,
   );
 
   Future<void> saveDraft({

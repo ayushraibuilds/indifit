@@ -192,6 +192,10 @@ class B02StrengthExecutionController
         actualExerciseId: actualExerciseId,
         actualExerciseNameSnapshot: actualExerciseNameSnapshot,
         substitutionReason: substitutionReason,
+        sourceExercisePrescriptionId: current.occurrenceId == null
+            ? null
+            : slot.prescriptionId,
+        useSlotPrescription: current.occurrenceId != null,
       );
       await saveDraft(next);
     } catch (error) {
@@ -220,6 +224,52 @@ class B02StrengthExecutionController
     }
   }
 
+  Future<void> addUnscheduledExercise({
+    required String exerciseId,
+    required String exerciseName,
+  }) async {
+    final current = state.launch;
+    if (current == null || current.occurrenceId != null) return;
+    state = state.copyWith(status: B02StrengthExecutionStatus.loading);
+    try {
+      final updated = await _adapter.addUnscheduledExercise(
+        launch: current,
+        exerciseId: exerciseId,
+        exerciseName: exerciseName,
+      );
+      final prepared = await _adapter.prepareExecution(updated);
+      if (!mounted) return;
+      state = B02StrengthExecutionUiState(
+        status: B02StrengthExecutionStatus.ready,
+        launch: updated.copyWith(state: prepared.state),
+        slots: prepared.slots,
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  Future<void> removeUnscheduledExercise(B02StrengthExecutionSlot slot) async {
+    final current = state.launch;
+    if (current == null || current.occurrenceId != null) return;
+    state = state.copyWith(status: B02StrengthExecutionStatus.loading);
+    try {
+      final updated = await _adapter.removeUnscheduledExercise(
+        launch: current,
+        prescriptionId: slot.prescriptionId,
+      );
+      final prepared = await _adapter.prepareExecution(updated);
+      if (!mounted) return;
+      state = B02StrengthExecutionUiState(
+        status: B02StrengthExecutionStatus.ready,
+        launch: updated.copyWith(state: prepared.state),
+        slots: prepared.slots,
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
   Future<void> beginRest(
     B02StrengthExecutionSlot slot, {
     int? selectedSeconds,
@@ -229,9 +279,10 @@ class B02StrengthExecutionController
     try {
       final performed = current.state.performedExercises.where(
         (exercise) =>
-            exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
-            exercise.groupRoundOrdinal == slot.roundOrdinal &&
-            exercise.groupMemberOrdinal == slot.memberOrdinal,
+            exercise.id == 'performed:${slot.id}' ||
+            (exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+                exercise.groupRoundOrdinal == slot.roundOrdinal &&
+                exercise.groupMemberOrdinal == slot.memberOrdinal),
       );
       final sets = performed.expand((exercise) => exercise.sets).toList();
       final lastSet = sets.isEmpty ? null : sets.last;
@@ -381,6 +432,27 @@ class B02StrengthExecutionController
     try {
       await saveDraft(
         _restCoordinator.extend(current.state, periodId, seconds: seconds),
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  Future<void> adjustRest(String periodId, {required int seconds}) async {
+    final current = state.launch;
+    if (current == null) return;
+    try {
+      final period = current.state.restPeriods.firstWhere(
+        (candidate) => candidate.id == periodId,
+      );
+      final selected =
+          (period.selectedSeconds ?? period.recommendedSeconds ?? 0) + seconds;
+      await saveDraft(
+        _restCoordinator.select(
+          current.state,
+          periodId,
+          selected.clamp(0, 3600),
+        ),
       );
     } catch (error) {
       _setFailure(error, current);
