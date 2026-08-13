@@ -591,6 +591,7 @@ class _TrainingLandingBody extends StatelessWidget {
         _TodayTrainingSurface(
           item: today,
           isLaunching: isLaunching,
+          hasActiveDraft: data.activeStrengthDraft != null,
           onStart: today == null || !canLaunchTrainingOccurrence(today)
               ? onStartTraining
               : onStartTraining,
@@ -725,6 +726,7 @@ class _TodayTrainingSurface extends StatelessWidget {
   const _TodayTrainingSurface({
     required this.item,
     required this.isLaunching,
+    required this.hasActiveDraft,
     required this.onStart,
     required this.onStartQuickWorkout,
     required this.onOpenPlan,
@@ -733,6 +735,7 @@ class _TodayTrainingSurface extends StatelessWidget {
 
   final CalendarOccurrenceReadItem? item;
   final bool isLaunching;
+  final bool hasActiveDraft;
   final VoidCallback? onStart;
   final VoidCallback onStartQuickWorkout;
   final VoidCallback onOpenPlan;
@@ -754,18 +757,22 @@ class _TodayTrainingSurface extends StatelessWidget {
             Text('Nothing planned today', style: B05Typography.title(context)),
             const SizedBox(height: B05Layout.space4),
             Text(
-              'Choose a workout or enjoy a recovery day.',
+              hasActiveDraft
+                  ? 'Resume your saved workout before starting another.'
+                  : 'Choose a workout or enjoy a recovery day.',
               style: B05Typography.body(context),
             ),
-            const SizedBox(height: B05Layout.space12),
-            SizedBox(
-              width: double.infinity,
-              child: B05ActionButton(
-                label: 'Quick Workout',
-                icon: Icons.bolt_rounded,
-                onPressed: isLaunching ? null : onStartQuickWorkout,
+            if (!hasActiveDraft) ...[
+              const SizedBox(height: B05Layout.space12),
+              SizedBox(
+                width: double.infinity,
+                child: B05ActionButton(
+                  label: 'Quick Workout',
+                  icon: Icons.bolt_rounded,
+                  onPressed: isLaunching ? null : onStartQuickWorkout,
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: B05Layout.space8),
             Wrap(
               spacing: B05Layout.space8,
@@ -797,6 +804,13 @@ class _TodayTrainingSurface extends StatelessWidget {
     final actionLabel = occurrence.status == 'inProgress'
         ? 'Resume workout'
         : 'Start workout';
+    final prescriptionPreview = item!.prescriptions
+        .take(2)
+        .map(
+          (prescription) =>
+              '${prescription.exerciseNameSnapshot} · ${prescription.plannedSets} × ${prescription.repsRange}',
+        )
+        .join('  ·  ');
     return B05Surface(
       tone: B05SurfaceTone.selected,
       child: Column(
@@ -825,6 +839,13 @@ class _TodayTrainingSurface extends StatelessWidget {
                       '${item!.prescriptions.length} ${item!.prescriptions.length == 1 ? 'exercise' : 'exercises'} · $status',
                       style: B05Typography.body(context),
                     ),
+                    if (!isCompleted && prescriptionPreview.isNotEmpty) ...[
+                      const SizedBox(height: B05Layout.space4),
+                      Text(
+                        prescriptionPreview,
+                        style: B05Typography.caption(context),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -837,13 +858,24 @@ class _TodayTrainingSurface extends StatelessWidget {
               style: B05Typography.body(context),
             ),
             const SizedBox(height: B05Layout.space12),
-            B05ActionButton(
-              label: 'Quick Workout',
-              icon: Icons.bolt_rounded,
-              emphasis: B05ActionEmphasis.secondary,
-              onPressed: isLaunching ? null : onStartQuickWorkout,
-            ),
-          ] else
+            if (hasActiveDraft)
+              Text(
+                'Resume your saved workout before starting another.',
+                style: B05Typography.body(context),
+              )
+            else
+              B05ActionButton(
+                label: 'Quick Workout',
+                icon: Icons.bolt_rounded,
+                emphasis: B05ActionEmphasis.secondary,
+                onPressed: isLaunching ? null : onStartQuickWorkout,
+              ),
+          ] else if (hasActiveDraft)
+            Text(
+              'Resume your saved workout before starting today’s plan.',
+              style: B05Typography.body(context),
+            )
+          else
             B05ActionButton(
               label: isLaunching ? 'Opening workout…' : actionLabel,
               icon: Icons.play_arrow_rounded,

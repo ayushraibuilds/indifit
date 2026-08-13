@@ -133,6 +133,59 @@ void main() {
   );
 
   testWidgets(
+    'Training does not offer a competing planned start while a draft exists',
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      final draft = WorkoutDraft(
+        id: 8,
+        routineName: 'Saved push workout',
+        currentExerciseIndex: 0,
+        currentSetIndex: 1,
+        elapsedSeconds: 120,
+        loggedSetsJson: '{}',
+        updatedAt: DateTime.utc(2026, 8, 12),
+        executionSnapshotJson: '{"version":1}',
+        draftSchemaVersion: 2,
+        activityType: 'strength',
+        executionStateJson: '{}',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            trainingLandingSnapshotProvider.overrideWith(
+              (ref) async => TrainingLandingSnapshot(
+                localDate: '2026-08-12',
+                timezoneId: 'Asia/Kolkata',
+                todayWorkout: _calendarItem(
+                  name: 'Push day',
+                  localDate: '2026-08-12',
+                  status: 'planned',
+                  prescriptionCount: 2,
+                ),
+                upcoming: const [],
+                recentSessions: const [],
+                activeProgramName: 'Upper / Lower Strength',
+                activeStrengthDraft: draft,
+              ),
+            ),
+          ],
+          child: _app(AppTheme.lightTheme, const TrainingScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Resume Saved push workout'), findsOneWidget);
+      expect(find.text('Start workout'), findsNothing);
+      expect(
+        find.text('Resume your saved workout before starting today’s plan.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Exercise 1 · 3 × 8–10'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'scheduled completion keeps Quick Workout immediately reachable',
     (tester) async {
       _setViewport(tester, const Size(390, 844));

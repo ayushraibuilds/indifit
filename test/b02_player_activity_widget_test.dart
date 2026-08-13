@@ -74,7 +74,7 @@ void main() {
         ),
       );
       expect(find.textContaining('Target vs actual'), findsNothing);
-      expect(find.textContaining('target reps'), findsOneWidget);
+      expect(find.textContaining('Target · 8–10 reps'), findsOneWidget);
       expect(find.text('Finish partially…'), findsOneWidget);
       expect(find.text('Complete workout'), findsOneWidget);
     },

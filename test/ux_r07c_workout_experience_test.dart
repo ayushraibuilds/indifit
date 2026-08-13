@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
+import 'package:indifit/data/repositories/b02_exercise_performance_read_repository.dart';
 import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
 import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/data/services/b02_rest_recommendation_service.dart';
@@ -60,6 +62,12 @@ void main() {
 
     expect(find.text('Log set'), findsOneWidget);
     expect(find.text('Suggested'), findsNothing);
+    final fields = find.byType(TextFormField);
+    expect(fields, findsNWidgets(2));
+    final loadBounds = tester.getRect(fields.at(0));
+    final repsBounds = tester.getRect(fields.at(1));
+    expect(repsBounds.left, greaterThan(loadBounds.left));
+    expect(repsBounds.top, closeTo(loadBounds.top, 0.1));
     expect(tester.takeException(), isNull);
     await expectLater(
       find.byType(B02StrengthPlayerScreen),
@@ -71,12 +79,18 @@ void main() {
     tester,
   ) async {
     _setViewport(tester, const Size(390, 844));
-    final launch =
-        (await tester.runAsync(() => _launchPlannedLike(executions)))!;
+    final launch = (await tester.runAsync(
+      () => _launchPlannedLike(executions),
+    ))!;
     await _pumpPlayer(tester, launch, executions, AppTheme.lightTheme);
 
     expect(find.text('Suggested'), findsOneWidget);
     expect(find.text('Log set'), findsOneWidget);
+    await tester.tap(find.text('Apply'));
+    await tester.pump();
+    final inputs = find.byType(EditableText);
+    expect(tester.widget<EditableText>(inputs.at(0)).controller.text, '60.0');
+    expect(tester.widget<EditableText>(inputs.at(1)).controller.text, '8');
     expect(tester.takeException(), isNull);
     await expectLater(
       find.byType(B02StrengthPlayerScreen),
@@ -94,8 +108,7 @@ void main() {
     tester,
   ) async {
     _setViewport(tester, const Size(390, 844));
-    final launch =
-        (await tester.runAsync(() => _launchWithRest(executions)))!;
+    final launch = (await tester.runAsync(() => _launchWithRest(executions)))!;
     await _pumpPlayer(tester, launch, executions, AppTheme.darkTheme);
 
     expect(find.text('REST'), findsOneWidget);
@@ -113,11 +126,15 @@ void main() {
     tester,
   ) async {
     _setViewport(tester, const Size(390, 844));
-    final exercises =
-        (await tester.runAsync(() => db.select(db.exercises).get()))!;
-    final exercise = exercises.firstWhere((value) => value.name == 'Bench press');
+    final exercises = (await tester.runAsync(
+      () => db.select(db.exercises).get(),
+    ))!;
+    final exercise = exercises.firstWhere(
+      (value) => value.name == 'Bench press',
+    );
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(db)],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
           home: Scaffold(body: ExerciseDetailsSheet(exercise: exercise)),
@@ -134,6 +151,97 @@ void main() {
       find.byType(ExerciseDetailsSheet),
       matchesGoldenFile('goldens/ux_r07c_guide.png'),
     );
+  });
+
+  testWidgets('R07C Performance shows canonical actual sets without 1RM', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    final history = [
+      B02ExercisePerformanceRecord(
+        sessionId: 1,
+        performedExerciseId: 'r07c-performed-bench',
+        sessionName: 'Push day',
+        completedAt: DateTime.utc(2026, 8, 12, 9),
+        exerciseStatus: 'completed',
+        exerciseOrdinal: 0,
+        sets: [
+          B02PerformedSet(
+            id: 'r07c-warmup',
+            performedExerciseId: 'r07c-performed-bench',
+            ordinal: 0,
+            role: B02SetRole.warmup,
+            actualLoadKg: 40,
+            actualLoadBasis: B02LoadBasis.totalExternal,
+            actualReps: 10,
+          ),
+          B02PerformedSet(
+            id: 'r07c-working',
+            performedExerciseId: 'r07c-performed-bench',
+            ordinal: 1,
+            role: B02SetRole.working,
+            actualLoadKg: 60,
+            actualLoadBasis: B02LoadBasis.totalExternal,
+            actualReps: 8,
+            actualRpe: 8,
+          ),
+        ],
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          b02ExercisePerformanceReadRepositoryProvider.overrideWithValue(
+            _FakeExercisePerformanceReadRepository(db, history),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const ExerciseHistoryScreen(
+            exerciseName: 'Bench press',
+            stableExerciseId: 'r07c-bench',
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Actual performance'), findsOneWidget);
+    expect(find.text('Set 1 · Warm-up · 40 kg × 10'), findsOneWidget);
+    expect(find.text('Set 2 · 60 kg × 8 · RPE 8'), findsOneWidget);
+    expect(find.textContaining('1RM'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('R07C player remains usable across the phone matrix', (
+    tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    final launch = (await tester.runAsync(() => _launch(executions)))!;
+    for (final size in const [Size(320, 568), Size(390, 844), Size(430, 932)]) {
+      for (final scale in const [1.0, 1.5, 2.0]) {
+        for (final theme in [AppTheme.lightTheme, AppTheme.darkTheme]) {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          await _pumpPlayer(
+            tester,
+            launch,
+            executions,
+            theme,
+            textScale: scale,
+          );
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'Player overflowed at ${size.width}pt, ${scale}x.',
+          );
+        }
+      }
+    }
   });
 
   testWidgets('R07C Performance empty state does not invent a chart', (
@@ -167,8 +275,9 @@ Future<void> _pumpPlayer(
   WidgetTester tester,
   B02StrengthExecutionLaunch launch,
   StrengthExecutionRepository executions,
-  ThemeData theme,
-) async {
+  ThemeData theme, {
+  double textScale = 1,
+}) async {
   final controller = B02StrengthExecutionController(
     StrengthExecutionCompatibilityAdapter(executions),
     initialLaunch: launch,
@@ -181,7 +290,16 @@ Future<void> _pumpPlayer(
           (ref, _) => controller,
         ),
       ],
-      child: MaterialApp(theme: theme, home: B02StrengthPlayerScreen(launch: launch)),
+      child: MaterialApp(
+        theme: theme,
+        home: MediaQuery(
+          data: MediaQueryData.fromView(tester.view).copyWith(
+            textScaler: TextScaler.linear(textScale),
+            disableAnimations: true,
+          ),
+          child: B02StrengthPlayerScreen(launch: launch),
+        ),
+      ),
     ),
   );
   for (var pump = 0; pump < 8; pump++) {
@@ -229,7 +347,9 @@ Future<B02StrengthExecutionLaunch> _launchWithRest(
       recommendedSeconds: 120,
       selectedSeconds: 120,
       source: B02RestSource.automatic,
-      startedAtUtc: DateTime.now().toUtc().subtract(const Duration(seconds: 28)),
+      startedAtUtc: DateTime.now().toUtc().subtract(
+        const Duration(seconds: 28),
+      ),
     ),
   );
   return launch.copyWith(state: resting);
@@ -276,4 +396,19 @@ Future<B02StrengthExecutionLaunch> _launchPlannedLike(
     executionSnapshotJson: launch.executionSnapshotJson,
     state: prepared.state,
   );
+}
+
+class _FakeExercisePerformanceReadRepository
+    extends B02ExercisePerformanceReadRepository {
+  _FakeExercisePerformanceReadRepository(super.database, this.records);
+
+  final List<B02ExercisePerformanceRecord> records;
+
+  @override
+  Future<List<B02ExercisePerformanceRecord>> read({
+    required String stableExerciseId,
+  }) async {
+    expect(stableExerciseId, 'r07c-bench');
+    return records;
+  }
 }

@@ -452,17 +452,10 @@ class B05ExerciseChecklistItem {
 class B05ExerciseEducationCatalog {
   const B05ExerciseEducationCatalog();
 
-  List<B05ExerciseChecklistItem> checklist({
-    required String exerciseName,
-    List<String> catalogueCues = const [],
-  }) {
+  List<B05ExerciseChecklistItem> checklist({required String exerciseName}) {
     final cleanName = exerciseName.trim().isEmpty
         ? 'this exercise'
         : exerciseName.trim();
-    final cue = catalogueCues.firstWhere(
-      (value) => value.trim().isNotEmpty,
-      orElse: () => 'Keep a controlled range that feels safe for $cleanName.',
-    );
     return [
       B05ExerciseChecklistItem(
         id: 'setup',
@@ -472,7 +465,6 @@ class B05ExerciseEducationCatalog {
         id: 'brace',
         label: 'Use a stable brace and starting position.',
       ),
-      B05ExerciseChecklistItem(id: 'cue', label: cue.trim()),
       const B05ExerciseChecklistItem(
         id: 'control',
         label: 'Control the movement; do not rush the return.',
@@ -906,7 +898,6 @@ final b05ExerciseEducationProvider = FutureProvider.autoDispose
         ].where((cue) => cue.isNotEmpty).toList(growable: false),
         checklist: B05ExerciseEducationCatalog().checklist(
           exerciseName: query.exerciseName,
-          catalogueCues: cues,
         ),
         muscles: B05MuscleLabelMapper().map(mapping),
       );

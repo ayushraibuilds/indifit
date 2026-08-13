@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
+import '../../data/repositories/b02_exercise_performance_read_repository.dart';
 import '../../data/repositories/b02_progress_read_repository.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/b04_briefing_read_repositories.dart';
@@ -868,6 +869,12 @@ final strengthExecutionRepositoryProvider =
         db: ref.watch(databaseProvider),
         calendarRepo: ref.watch(calendarRepositoryProvider),
       ),
+    );
+
+final b02ExercisePerformanceReadRepositoryProvider =
+    Provider<B02ExercisePerformanceReadRepository>(
+      (ref) =>
+          B02ExercisePerformanceReadRepository(ref.watch(databaseProvider)),
     );
 
 final strengthExecutionCompatibilityAdapterProvider =

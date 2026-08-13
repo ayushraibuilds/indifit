@@ -115,8 +115,10 @@ class ExerciseDetailsSheet extends ConsumerWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          ExerciseHistoryScreen(exerciseName: exercise.name),
+                      builder: (context) => ExerciseHistoryScreen(
+                        exerciseName: exercise.name,
+                        stableExerciseId: exercise.stableId,
+                      ),
                     ),
                   );
                 },
@@ -221,42 +223,6 @@ class _ExerciseGuideContent extends StatelessWidget {
           Text('Exercise guide', style: B05Typography.pageTitle(context)),
           const SizedBox(height: B05Layout.space4),
           Text(exercise.name, style: B05Typography.body(context)),
-          const SizedBox(height: B05Layout.space20),
-          Text('Form cues', style: B05Typography.title(context)),
-          const SizedBox(height: B05Layout.space8),
-          if (cues.isEmpty)
-            Text(
-              'Form cues are not available yet.',
-              style: B05Typography.body(context),
-            )
-          else
-            for (final cue in cues)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  Icons.check_rounded,
-                  color: context.b05Colors.action,
-                ),
-                title: Text(cue),
-              ),
-          const SizedBox(height: B05Layout.space12),
-          Text('Common mistakes', style: B05Typography.title(context)),
-          const SizedBox(height: B05Layout.space8),
-          if (mistakes.isEmpty)
-            Text(
-              'Common mistakes are not available yet.',
-              style: B05Typography.body(context),
-            )
-          else
-            for (final mistake in mistakes)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  Icons.close_rounded,
-                  color: context.b05Colors.danger.foreground,
-                ),
-                title: Text(mistake),
-              ),
           const SizedBox(height: B05Layout.space16),
           B05ExerciseEducationPanel(
             exerciseName: exercise.name,

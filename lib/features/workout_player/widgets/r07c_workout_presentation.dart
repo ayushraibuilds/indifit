@@ -32,7 +32,12 @@ String r07cFormatPerformedSet(B02PerformedSet set) {
     (false, null) => load,
     (false, final value) => '$load × $value',
   };
-  return set.actualRpe == null ? main : '$main · RPE ${set.actualRpe}';
+  return [
+    'Set ${set.ordinal + 1}',
+    if (set.role == B02SetRole.warmup) 'Warm-up',
+    main,
+    if (set.actualRpe != null) 'RPE ${set.actualRpe}',
+  ].join(' · ');
 }
 
 String? r07cFormatTarget({
@@ -127,9 +132,9 @@ class R07CPerformedSetList extends StatelessWidget {
                     Expanded(
                       child: Text(
                         r07cFormatPerformedSet(set),
-                        style: B05Typography.body(context).copyWith(
-                          color: colors.textPrimary,
-                        ),
+                        style: B05Typography.body(
+                          context,
+                        ).copyWith(color: colors.textPrimary),
                       ),
                     ),
                   ],

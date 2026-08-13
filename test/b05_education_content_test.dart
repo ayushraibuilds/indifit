@@ -377,6 +377,7 @@ void main() {
       expect(find.bySemanticsLabel('Exercise education'), findsOneWidget);
       expect(find.text('Form checklist'), findsOneWidget);
       expect(find.text('Catalogue guidance'), findsOneWidget);
+      expect(find.text('Keep your feet grounded.'), findsOneWidget);
       expect(find.text('Your personal cues'), findsOneWidget);
       expect(
         find.bySemanticsLabel('Unavailable: Muscle contribution is unknown'),
@@ -438,6 +439,8 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('View full guide'));
     await tester.pumpAndSettle();
     expect(find.text('Exercise education'), findsOneWidget);
     expect(find.text('Interactive muscle diagram'), findsOneWidget);
@@ -506,6 +509,8 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('View full guide'));
       await tester.pumpAndSettle();
 
       expect(find.text('Exercise education'), findsOneWidget);

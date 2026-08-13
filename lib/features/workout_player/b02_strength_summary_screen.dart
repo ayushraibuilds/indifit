@@ -226,15 +226,9 @@ class B02WorkoutCompletionSuccess extends StatelessWidget {
                           label: 'Exercises',
                           value: '${exercises.length}',
                         ),
-                        R07CMetricTile(
-                          label: 'Sets',
-                          value: '$setCount',
-                        ),
+                        R07CMetricTile(label: 'Sets', value: '$setCount'),
                         if (knownReps > 0)
-                          R07CMetricTile(
-                            label: 'Reps',
-                            value: '$knownReps',
-                          ),
+                          R07CMetricTile(label: 'Reps', value: '$knownReps'),
                         if (hasVolume)
                           R07CMetricTile(
                             label: 'External volume',
@@ -423,22 +417,24 @@ class _PerformedCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-              Text(exercise.status),
+              Text(
+                _statusLabel(exercise.status),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ),
           const SizedBox(height: 8),
           R07CPerformedSetList(sets: exercise.sets),
-          const SizedBox(height: 6),
-          Text(
-            _targetSummary(exercise.sets),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          if (_targetSummary(exercise.sets) case final targetSummary?) ...[
+            const SizedBox(height: 6),
+            Text(targetSummary, style: Theme.of(context).textTheme.bodySmall),
+          ],
         ],
       ),
     );
   }
 
-  String _targetSummary(List<B02PerformedSet> sets) {
+  String? _targetSummary(List<B02PerformedSet> sets) {
     final targets = sets
         .map(
           (set) => r07cFormatTarget(
@@ -450,9 +446,16 @@ class _PerformedCard extends StatelessWidget {
           ),
         )
         .whereType<String>()
+        .toSet()
         .toList(growable: false);
-    return targets.isEmpty
-        ? 'Target not recorded'
-        : 'target reps: ${targets.join(' · ')}';
+    return targets.isEmpty ? null : 'Target · ${targets.join(' · ')}';
   }
+
+  static String _statusLabel(String status) => switch (status) {
+    'completed' => 'Completed',
+    'partial' => 'Partially complete',
+    'skipped' => 'Skipped',
+    'inProgress' => 'In progress',
+    _ => 'Logged',
+  };
 }

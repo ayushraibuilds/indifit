@@ -246,6 +246,7 @@ class _B02StrengthPlayerScreenState
                 const SizedBox(height: 10),
                 IndiFitResponsiveFieldGroup(
                   spacing: 10,
+                  breakpoint: 350,
                   children: [
                     TextFormField(
                       key: ValueKey('load-${selected.id}'),
@@ -315,9 +316,8 @@ class _B02StrengthPlayerScreenState
                       ],
                       onChanged: ui.isBusy
                           ? null
-                          : (value) => setState(
-                                () => _warmup = value == 'warmup',
-                              ),
+                          : (value) =>
+                                setState(() => _warmup = value == 'warmup'),
                     ),
                     if (launch.state.warmupRecommendation != null)
                       Padding(
@@ -499,10 +499,22 @@ class _B02StrengthPlayerScreenState
     final recommendation = state.targetRecommendations[slot.id];
     final override = state.targetOverrides[slot.id];
     final usefulTarget = r07cHasUsefulTarget(
-      loadKg: override?.loadKg ?? recommendation?.recommendedLoadKg ?? slot.targetLoadKg,
-      loadBasis: override?.loadBasis ?? recommendation?.loadBasis ?? slot.targetLoadBasis,
-      minReps: override?.targetRepsMin ?? recommendation?.targetRepsMin ?? slot.targetRepsMin,
-      maxReps: override?.targetRepsMax ?? recommendation?.targetRepsMax ?? slot.targetRepsMax,
+      loadKg:
+          override?.loadKg ??
+          recommendation?.recommendedLoadKg ??
+          slot.targetLoadKg,
+      loadBasis:
+          override?.loadBasis ??
+          recommendation?.loadBasis ??
+          slot.targetLoadBasis,
+      minReps:
+          override?.targetRepsMin ??
+          recommendation?.targetRepsMin ??
+          slot.targetRepsMin,
+      maxReps:
+          override?.targetRepsMax ??
+          recommendation?.targetRepsMax ??
+          slot.targetRepsMax,
       rpe: override?.targetRpe ?? recommendation?.targetRpe ?? slot.targetRpe,
     );
     final last = r07cFormatLastPerformance(
@@ -999,7 +1011,8 @@ class _R07CExecutionHeader extends StatelessWidget {
     final position = isQuick
         ? 'Quick workout'
         : 'Exercise ${exerciseIndex + 1} of $exerciseCount';
-    final status = groupContext ??
+    final status =
+        groupContext ??
         (exerciseComplete
             ? 'Exercise complete'
             : 'Set $currentSet${isQuick ? '' : ' of $plannedSets'}');
@@ -1086,10 +1099,7 @@ class _R07CExerciseStrip extends StatelessWidget {
     );
   }
 
-  Widget _exerciseChip(
-    BuildContext context,
-    B02StrengthExecutionSlot slot,
-  ) {
+  Widget _exerciseChip(BuildContext context, B02StrengthExecutionSlot slot) {
     final selected = slot.id == selectedId;
     final complete = state.performedExercises.any(
       (exercise) =>
@@ -1107,9 +1117,7 @@ class _R07CExerciseStrip extends StatelessWidget {
       onTap: onSelected == null ? null : () => onSelected!(slot.id),
       child: ChoiceChip(
         selected: selected,
-        onSelected: onSelected == null
-            ? null
-            : (_) => onSelected!(slot.id),
+        onSelected: onSelected == null ? null : (_) => onSelected!(slot.id),
         avatar: complete ? const Icon(Icons.check_rounded, size: 16) : null,
         label: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 180),
@@ -1137,14 +1145,24 @@ class _R07CTargetContext extends StatelessWidget {
   Widget build(BuildContext context) {
     final recommendation = state.targetRecommendations[slot.id];
     final override = state.targetOverrides[slot.id];
-    final load = override?.loadKg ?? recommendation?.recommendedLoadKg ?? slot.targetLoadKg;
+    final load =
+        override?.loadKg ??
+        recommendation?.recommendedLoadKg ??
+        slot.targetLoadKg;
     final loadBasis =
-        override?.loadBasis ?? recommendation?.loadBasis ?? slot.targetLoadBasis;
+        override?.loadBasis ??
+        recommendation?.loadBasis ??
+        slot.targetLoadBasis;
     final minReps =
-        override?.targetRepsMin ?? recommendation?.targetRepsMin ?? slot.targetRepsMin;
+        override?.targetRepsMin ??
+        recommendation?.targetRepsMin ??
+        slot.targetRepsMin;
     final maxReps =
-        override?.targetRepsMax ?? recommendation?.targetRepsMax ?? slot.targetRepsMax;
-    final rpe = override?.targetRpe ?? recommendation?.targetRpe ?? slot.targetRpe;
+        override?.targetRepsMax ??
+        recommendation?.targetRepsMax ??
+        slot.targetRepsMax;
+    final rpe =
+        override?.targetRpe ?? recommendation?.targetRpe ?? slot.targetRpe;
     final hasTarget = r07cHasUsefulTarget(
       loadKg: load,
       loadBasis: loadBasis,
