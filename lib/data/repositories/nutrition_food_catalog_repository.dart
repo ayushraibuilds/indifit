@@ -22,6 +22,7 @@ class NutritionFoodOption {
   final String sourceType;
   final String? sourceReference;
   final String? preparationId;
+  final String? brand;
   final String? servingUnitLabel;
 
   const NutritionFoodOption({
@@ -32,6 +33,7 @@ class NutritionFoodOption {
     required this.sourceType,
     required this.sourceReference,
     required this.preparationId,
+    this.brand,
     this.servingUnitLabel,
   });
 
@@ -93,6 +95,7 @@ class NutritionFoodCatalogRepository {
       sourceType: item.isCustom ? 'user' : 'legacy',
       sourceReference: 'legacy-food-item:${item.id}',
       preparationId: null,
+      brand: item.brand,
       servingUnitLabel: authority.servingUnitLabel,
     );
   }
@@ -109,6 +112,7 @@ class NutritionFoodCatalogRepository {
     required double? proteinG,
     required double? carbohydrateG,
     required double? fatG,
+    String? brand,
   }) async {
     if (!servingSize.isFinite || servingSize <= 0) {
       throw const NutritionFoodCatalogError(
@@ -150,6 +154,7 @@ class NutritionFoodCatalogRepository {
       sourceType: 'provider',
       sourceReference: normalizedReference,
       sourceVersion: 'open-food-facts-v2',
+      brand: brand,
     );
     await _ensureFacts(
       foodId: id,
@@ -165,6 +170,7 @@ class NutritionFoodCatalogRepository {
       sourceType: 'imported_provider',
       sourceReference: normalizedReference,
       preparationId: null,
+      brand: brand,
       servingUnitLabel: null,
     );
   }
@@ -277,6 +283,7 @@ class NutritionFoodCatalogRepository {
       sourceType: 'user',
       sourceReference: sourceReference,
       preparationId: null,
+      brand: null,
       servingUnitLabel: '${_numberLabel(servingSize)} $unit',
     );
   }
@@ -295,6 +302,7 @@ class NutritionFoodCatalogRepository {
       sourceType: row.sourceType,
       sourceReference: row.sourceRef,
       preparationId: null,
+      brand: row.brand,
       servingUnitLabel: await _servingUnitLabelFor(row.sourceRef),
     );
   }
@@ -347,6 +355,44 @@ class NutritionFoodCatalogRepository {
     return List.unmodifiable(result);
   }
 
+  /// Retrieves user-created canonical foods for active discovery without
+  /// adapting the full legacy catalogue on each keystroke. The caller supplies
+  /// retrieval-only variants; identity and nutrient facts remain unchanged.
+  Future<List<NutritionFoodOption>> searchCustomFoods({
+    required Iterable<String> queries,
+  }) async {
+    final terms = queries
+        .map((query) => query.trim().toLowerCase())
+        .where((query) => query.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (terms.isEmpty) return const [];
+
+    final rows =
+        await (_db.select(_db.nutritionFoods)
+              ..where((table) {
+                Expression<bool> matches = table.displayName.lower().contains(
+                  terms.first,
+                );
+                for (final term in terms.skip(1)) {
+                  matches = matches | table.displayName.lower().contains(term);
+                }
+                return table.lifecycle.equals('active') &
+                    table.sourceType.equals('user') &
+                    matches;
+              })
+              ..orderBy([
+                (table) => OrderingTerm(expression: table.displayName),
+              ]))
+            .get();
+    final options = <NutritionFoodOption>[];
+    for (final row in rows) {
+      final option = await getOption(row.id);
+      if (option != null) options.add(option);
+    }
+    return List.unmodifiable(options);
+  }
+
   Future<String> _legacyIdentity(FoodItem item) async {
     final mapping = await (_db.select(
       _db.nutritionLegacyFoodMappings,
@@ -378,11 +424,27 @@ class NutritionFoodCatalogRepository {
     required String sourceType,
     required String sourceReference,
     required String sourceVersion,
+    String? brand,
   }) async {
     final existing = await (_db.select(
       _db.nutritionFoods,
     )..where((row) => row.id.equals(id))).getSingleOrNull();
-    if (existing != null) return;
+    if (existing != null) {
+      final cleanBrand = brand?.trim();
+      if ((existing.brand == null || existing.brand!.trim().isEmpty) &&
+          cleanBrand != null &&
+          cleanBrand.isNotEmpty) {
+        await (_db.update(
+          _db.nutritionFoods,
+        )..where((row) => row.id.equals(id))).write(
+          NutritionFoodsCompanion(
+            brand: Value(cleanBrand),
+            updatedAt: Value(_nowUtc()),
+          ),
+        );
+      }
+      return;
+    }
     await _db
         .into(_db.nutritionFoods)
         .insert(
@@ -394,6 +456,7 @@ class NutritionFoodCatalogRepository {
             sourceType: sourceType,
             sourceRef: Value(sourceReference),
             sourceVersion: Value(sourceVersion),
+            brand: Value(brand),
             lifecycle: 'active',
             createdAt: Value(_nowUtc()),
             updatedAt: Value(_nowUtc()),

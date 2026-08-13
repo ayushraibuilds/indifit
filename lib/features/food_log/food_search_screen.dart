@@ -22,6 +22,7 @@ import '../../data/repositories/food_api_service.dart';
 import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_food_logging_coordinator.dart';
+import '../../data/services/nutrition_food_search_ranking.dart';
 import '../dashboard/today_consumer_presentation.dart';
 import '../dashboard/today_surface_controller.dart';
 import '../dashboard/widgets/dashboard_date_bar.dart';
@@ -178,6 +179,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   List<FoodItem> _localResults = [];
   List<NutritionFoodOption> _canonicalResults = [];
   List<FoodApiResult> _onlineResults = [];
+  List<NutritionFoodSearchResult> _rankedSearchResults = [];
   List<FoodItem> _recentResults = [];
   List<CanonicalRecentFood> _canonicalRecentResults = [];
   bool _searching = false;
@@ -398,6 +400,98 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     });
   }
 
+  NutritionFoodSearchHistory _searchHistory() {
+    final frequency = <String, int>{};
+    final recent = <String>{};
+    for (final item in _canonicalRecentResults) {
+      final key = 'canonical::${item.option.id}';
+      frequency[key] = item.frequencyCount;
+      recent.add(key);
+      const legacyMarker = 'legacy-food-item:';
+      final sourceReference = item.option.sourceReference;
+      if (sourceReference?.startsWith(legacyMarker) == true) {
+        final legacyKey =
+            'canonical::legacy-food-item::${sourceReference!.substring(legacyMarker.length)}';
+        frequency[legacyKey] = item.frequencyCount;
+        recent.add(legacyKey);
+      }
+      final providerKey = _providerHistoryKey(sourceReference);
+      if (providerKey != null) {
+        frequency[providerKey] = item.frequencyCount;
+        recent.add(providerKey);
+      }
+    }
+    for (final item in _recentResults) {
+      final key = 'canonical::legacy-food-item::${item.id}';
+      frequency.putIfAbsent(key, () => 1);
+      recent.add(key);
+    }
+    return NutritionFoodSearchHistory(
+      frequencyByIdentity: frequency,
+      recentIdentities: recent,
+    );
+  }
+
+  String? _providerHistoryKey(String? sourceReference) {
+    final reference = sourceReference?.trim();
+    if (reference == null || reference.isEmpty) return null;
+    for (final prefix in const [
+      'open-food-facts:barcode:',
+      'open-food-facts:product:',
+    ]) {
+      if (!reference.startsWith(prefix)) continue;
+      final providerId = reference.substring(prefix.length).trim();
+      return providerId.isEmpty ? null : 'provider::$providerId';
+    }
+    return null;
+  }
+
+  void _rebuildSearchRanking(String query) {
+    final candidates = <NutritionFoodSearchCandidate>[
+      for (final food in _localResults)
+        NutritionFoodSearchCandidate.legacy(food),
+      for (final option in _canonicalResults)
+        NutritionFoodSearchCandidate.canonical(option),
+      for (final food in _onlineResults)
+        NutritionFoodSearchCandidate.remote(food),
+    ];
+    _rankedSearchResults = NutritionFoodSearchRanking.rank(
+      query: query,
+      candidates: candidates,
+      history: _searchHistory(),
+    );
+  }
+
+  Future<List<FoodItem>> _loadLocalSearchResults(String query) async {
+    final repository = ref.read(foodRepositoryProvider);
+    final byId = <int, FoodItem>{};
+    final normalized = NutritionFoodSearchVocabulary.normalize(query);
+    final variants = NutritionFoodSearchVocabulary.expand(query);
+    for (final variant in variants) {
+      try {
+        for (final item in await repository.searchFoodLocal(variant)) {
+          byId[item.id] = item;
+        }
+      } catch (_) {
+        // A single retrieval-vocabulary expansion must not block the others.
+      }
+    }
+    if (normalized.length >= 4) {
+      final firstToken = normalized.split(' ').first;
+      if (firstToken.length >= 3) {
+        final prefix = firstToken.substring(0, 3);
+        try {
+          for (final item in await repository.searchFoodLocal(prefix)) {
+            byId[item.id] = item;
+          }
+        } catch (_) {
+          // The provider path remains available if prefix retrieval fails.
+        }
+      }
+    }
+    return byId.values.toList(growable: false);
+  }
+
   Future<void> _performSearch(String text) async {
     if (!mounted) return;
     final query = text.trim();
@@ -425,23 +519,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       _isOnlineSearchOffline = false;
       _onlineFailureMessage = null;
       _onlineResults = [];
+      _rankedSearchResults = [];
     });
+    unawaited(_loadCustomSearchResults(query, generation));
 
-    List<FoodItem> local = const [];
-    try {
-      final repo = ref.read(foodRepositoryProvider);
-      local = await repo.searchFoodLocal(query);
-    } catch (_) {
-      // Online search may still be useful when the local compatibility store
-      // is temporarily unavailable.
-    }
+    final local = await _loadLocalSearchResults(query);
     if (!mounted || generation != _searchGeneration) return;
     setState(() {
       _localResults = local;
-      _canonicalResults = [];
+      _rebuildSearchRanking(query);
       _searching = false;
       _searchingOnline = true;
     });
+
     try {
       final online = await ref
           .read(foodApiServiceProvider)
@@ -449,6 +539,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       if (!mounted || generation != _searchGeneration) return;
       setState(() {
         _onlineResults = online;
+        _rebuildSearchRanking(query);
         _isOnlineSearchOffline = false;
         _onlineFailureMessage = null;
       });
@@ -458,6 +549,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       final offlinePolicy = error is StateError;
       setState(() {
         _onlineResults = [];
+        _rebuildSearchRanking(query);
         _isOnlineSearchOffline = true;
         _onlineFailureMessage = offlinePolicy
             ? 'Online food search is disabled in Offline Mode.'
@@ -473,29 +565,21 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _onlineSearchCancelToken = null;
       }
     }
-    if (local.isEmpty &&
-        mounted &&
-        generation == _searchGeneration &&
-        _onlineResults.isEmpty) {
-      await _loadCanonicalSearchResults(query, generation);
-    }
   }
 
-  Future<void> _loadCanonicalSearchResults(String query, int generation) async {
+  Future<void> _loadCustomSearchResults(String query, int generation) async {
     try {
       final catalog = await ref.read(
         nutritionFoodCatalogRepositoryProvider.future,
       );
-      final canonical = (await catalog.search(query: query))
-          .where(
-            (option) =>
-                option.sourceType == 'user' &&
-                option.sourceReference?.startsWith('user-custom-food::') ==
-                    true,
-          )
-          .toList(growable: false);
+      final canonical = await catalog.searchCustomFoods(
+        queries: NutritionFoodSearchVocabulary.expand(query),
+      );
       if (!mounted || generation != _searchGeneration) return;
-      setState(() => _canonicalResults = canonical);
+      setState(() {
+        _canonicalResults = canonical;
+        _rebuildSearchRanking(query);
+      });
     } catch (_) {
       // The legacy/local compatibility search remains usable on its own.
     }
@@ -519,6 +603,20 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         'A secure connection to online food search could not be established.',
       DioExceptionType.cancel => 'Online food search was cancelled.',
     };
+  }
+
+  String _providerReference(FoodApiResult result) {
+    final barcode = result.barcode?.trim();
+    if (barcode != null && barcode.isNotEmpty) {
+      // Preserve the R07D-1 provider identity namespace for barcode-backed
+      // products so retries reuse existing B03 identities.
+      return 'open-food-facts:barcode:$barcode';
+    }
+    final stableId = result.providerId ?? result.barcode;
+    if (stableId != null && stableId.trim().isNotEmpty) {
+      return 'open-food-facts:product:${stableId.trim()}';
+    }
+    return 'open-food-facts:search:${NutritionFoodSearchVocabulary.normalize(result.name)}';
   }
 
   Future<void> _openLegacyLogDialog(FoodItem food) async {
@@ -554,9 +652,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Future<void> _openProviderLogDialog(FoodApiResult result) async {
     try {
-      final reference = result.barcode == null
-          ? 'open-food-facts:search:${result.name.trim().toLowerCase()}'
-          : 'open-food-facts:barcode:${result.barcode}';
+      final reference = _providerReference(result);
       final catalog = await ref.read(
         nutritionFoodCatalogRepositoryProvider.future,
       );
@@ -569,6 +665,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         proteinG: result.protein,
         carbohydrateG: result.carbs,
         fatG: result.fat,
+        brand: result.brand,
       );
       await _showLogDialog(option);
     } catch (error) {
@@ -582,9 +679,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Future<void> _openProviderFastAdd(FoodApiResult result) async {
     try {
-      final reference = result.barcode == null
-          ? 'open-food-facts:search:${result.name.trim().toLowerCase()}'
-          : 'open-food-facts:barcode:${result.barcode}';
+      final reference = _providerReference(result);
       final catalog = await ref.read(
         nutritionFoodCatalogRepositoryProvider.future,
       );
@@ -597,6 +692,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         proteinG: result.protein,
         carbohydrateG: result.carbs,
         fatG: result.fat,
+        brand: result.brand,
       );
       await _addOptionFast(option);
     } catch (_) {
@@ -1409,9 +1505,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Future<void> _toggleOnlineSelection(FoodApiResult food) async {
-    final reference = food.barcode == null
-        ? 'open-food-facts:search:${food.name.trim().toLowerCase()}'
-        : 'open-food-facts:barcode:${food.barcode}';
+    final reference = _providerReference(food);
     final key = 'provider-food:$reference';
     if (_selectionLoading.contains(key)) return;
     final selectedOption = _selectedOptions.entries
@@ -1439,6 +1533,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         proteinG: food.protein,
         carbohydrateG: food.carbs,
         fatG: food.fat,
+        brand: food.brand,
       );
       if (!mounted) return;
       setState(() {
@@ -1892,43 +1987,44 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     children: [
       if (_isOnlineSearchOffline)
         ConsumerStatusRow(
-          label: _localResults.isNotEmpty
-              ? 'Showing available results'
+          label: _rankedSearchResults.isNotEmpty
+              ? 'Showing matching foods'
               : 'Online search unavailable',
-          detail: _localResults.isNotEmpty
+          detail: _rankedSearchResults.isNotEmpty
               ? 'Online results are temporarily unavailable.'
               : _onlineFailureMessage ?? 'Try again or choose from Recent.',
-          error: _localResults.isEmpty,
+          error: _rankedSearchResults.isEmpty,
           onRetry: () => _performSearch(_searchController.text),
         ),
-      if (_localResults.isNotEmpty) ...[
-        _sectionHeader(title: 'Foods on this device'),
-        ..._canonicalResults.map(_buildCanonicalSearchRow),
-        ..._localResults.map(_buildLocalItemRow),
-      ],
-      if (_localResults.isEmpty && _canonicalResults.isNotEmpty) ...[
-        _sectionHeader(title: 'Foods on this device'),
-        ..._canonicalResults.map(_buildCanonicalSearchRow),
-      ],
-      if (_onlineResults.isNotEmpty) ...[
-        const SizedBox(height: 12),
-        _sectionHeader(title: 'More results'),
-        ..._onlineResults.map(_buildOnlineItemRow),
+      if (_rankedSearchResults.isNotEmpty) ...[
+        _sectionHeader(title: 'Search results'),
+        ..._rankedSearchResults.map(_buildRankedSearchRow),
       ],
       if (_searchingOnline)
         const ConsumerStatusRow(
-          label: 'Searching more foods',
-          detail: 'Foods on this device are ready to use.',
+          label: 'Searching for more matches',
+          detail: 'Matching foods are ready to use.',
           loading: true,
         ),
       if (!_searchingOnline &&
           !_isOnlineSearchOffline &&
-          _localResults.isEmpty &&
-          _canonicalResults.isEmpty &&
-          _onlineResults.isEmpty)
+          _rankedSearchResults.isEmpty)
         _buildNoResultsState(),
     ],
   );
+
+  Widget _buildRankedSearchRow(NutritionFoodSearchResult result) {
+    final candidate = result.candidate;
+    return switch (candidate.source) {
+      NutritionFoodSearchSource.legacy => _buildLocalItemRow(candidate.food!),
+      NutritionFoodSearchSource.canonical => _buildCanonicalSearchRow(
+        candidate.option!,
+      ),
+      NutritionFoodSearchSource.remote => _buildOnlineItemRow(
+        candidate.remote!,
+      ),
+    };
+  }
 
   Widget _sectionHeader({required String title, String? subtitle}) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
@@ -2034,13 +2130,38 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Widget _buildCanonicalSearchRow(NutritionFoodOption option) {
     final energy = _optionFactLabel(option, 'energy', 'kcal', 0);
     final protein = _optionFactLabel(option, 'protein', 'g protein', 1);
+    final brand = option.brand?.trim();
+    final isCustom =
+        option.sourceType == 'user' || option.sourceType == 'user_entered';
+    final identityLabel = brand == null || brand.isEmpty
+        ? option.displayName
+        : '$brand ${option.displayName}';
+    final title = brand == null || brand.isEmpty
+        ? Text(option.displayName, maxLines: 2, overflow: TextOverflow.ellipsis)
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                option.displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                brand,
+                style: B05Typography.caption(context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          );
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Semantics(
         container: true,
         explicitChildNodes: true,
         button: true,
-        label: '${option.displayName}, $energy, $protein',
+        label:
+            '$identityLabel${isCustom ? ', custom food' : ''}, $energy, $protein',
         hint:
             'Tap Add to log the listed serving, or open to adjust the amount.',
         child: ListTile(
@@ -2052,10 +2173,25 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               onChanged: (_) => _toggleCanonicalSelection(option),
             ),
           ),
-          title: Text(
-            option.displayName,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          title: Row(
+            children: [
+              Expanded(child: title),
+              if (isCustom)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Chip(
+                    label: const Text('Custom'),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    labelStyle: TextStyle(
+                      color: context.b05Colors.success.foreground,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    backgroundColor: context.b05Colors.success.container,
+                  ),
+                ),
+            ],
           ),
           subtitle: Text(
             '${_quantityUnitLabel(option.baseQuantity, option: option)} · $energy · $protein',
@@ -2073,13 +2209,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final option = recent.option;
     final energy = _optionFactLabel(option, 'energy', 'kcal', 0);
     final protein = _optionFactLabel(option, 'protein', 'g protein', 1);
+    final brand = option.brand?.trim();
+    final identityLabel = brand == null || brand.isEmpty
+        ? option.displayName
+        : '$brand ${option.displayName}';
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Semantics(
         container: true,
         explicitChildNodes: true,
         button: true,
-        label: '${option.displayName}, $energy, $protein',
+        label: '$identityLabel, $energy, $protein',
         hint:
             'Tap Add to log the listed serving, or open to adjust the amount.',
         child: ListTile(
@@ -2091,12 +2231,30 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               onChanged: (_) => _toggleCanonicalSelection(option),
             ),
           ),
-          title: Text(
-            option.displayName,
-            style: B05Typography.label(context),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          title: brand == null || brand.isEmpty
+              ? Text(
+                  option.displayName,
+                  style: B05Typography.label(context),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      option.displayName,
+                      style: B05Typography.label(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      brand,
+                      style: B05Typography.caption(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
           subtitle: Text(
             '${recent.quantityLabel} · ${_lastLoggedLabel(recent.loggedAtUtc)} · ${recent.frequencyCount} logged · $energy · $protein',
             maxLines: 2,
@@ -2479,9 +2637,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Widget _buildOnlineItemRow(FoodApiResult food) {
     final serving =
         '${_formatProviderNumber(food.servingSize)} ${food.servingUnit}';
-    final reference = food.barcode == null
-        ? 'open-food-facts:search:${food.name.trim().toLowerCase()}'
-        : 'open-food-facts:barcode:${food.barcode}';
+    final brand = food.brand?.trim();
+    final packageQuantity = food.packageQuantity?.trim();
+    final packageDetail = packageQuantity == null || packageQuantity.isEmpty
+        ? ''
+        : ' · $packageQuantity pack';
+    final identityLabel = brand == null || brand.isEmpty
+        ? food.name
+        : '$brand ${food.name}';
+    final reference = _providerReference(food);
     final isSelected = _selectedOptions.values.any(
       (option) => option.sourceReference == reference,
     );
@@ -2492,7 +2656,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         explicitChildNodes: true,
         button: true,
         label:
-            '${food.name}, ${_formatProviderValue(food.calories, 'kcal')}, $serving',
+            '$identityLabel, ${_formatProviderValue(food.calories, 'kcal')}$packageDetail, $serving',
         hint:
             'Tap Add to use a supported serving or open to adjust the amount.',
         child: ListTile(
@@ -2504,14 +2668,32 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               onChanged: (_) => unawaited(_toggleOnlineSelection(food)),
             ),
           ),
-          title: Text(
-            food.name,
-            style: B05Typography.label(context),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          title: brand == null || brand.isEmpty
+              ? Text(
+                  food.name,
+                  style: B05Typography.label(context),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      food.name,
+                      style: B05Typography.label(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      brand,
+                      style: B05Typography.caption(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
           subtitle: Text(
-            '${_formatProviderValue(food.calories, 'kcal')} · ${_formatProviderValue(food.protein, 'g protein')} · $serving',
+            '${_formatProviderValue(food.calories, 'kcal')} · ${_formatProviderValue(food.protein, 'g protein')} · $serving$packageDetail',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
