@@ -7,6 +7,7 @@ import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
@@ -42,6 +43,28 @@ final canonicalFoodRecordsForDayProvider = FutureProvider.autoDispose
       return records
           .where((record) => !record.isLegacy)
           .toList(growable: false);
+    });
+
+class FoodDiaryReadModel {
+  const FoodDiaryReadModel({required this.daily});
+
+  final NutritionDailyReadModel daily;
+}
+
+/// Food-root read boundary. It asks the canonical B03 read model for both the
+/// day records and its authoritative aggregation without pulling in Today’s
+/// unrelated calendar, activity, or coaching reads.
+final foodDiaryReadModelProvider = FutureProvider.autoDispose
+    .family<FoodDiaryReadModel, DateTime>((ref, date) async {
+      ref.watch(todayNutritionRevisionProvider);
+      final repository = await ref.watch(
+        nutritionReadModelRepositoryProvider.future,
+      );
+      final daily = await repository.dailyTotals(
+        userId: kLocalNutritionUserScopeId,
+        localDate: _localDateKey(date),
+      );
+      return FoodDiaryReadModel(daily: daily);
     });
 
 /// A compact production food-log surface used by the existing food-search/log
@@ -216,6 +239,10 @@ class _CanonicalFoodRow extends StatelessWidget {
         .where((value) => value.trim().isNotEmpty)
         .join(', ');
     final displayName = label.isEmpty ? record.displayLabel : label;
+    final serving = record.items
+        .map((item) => _historicalQuantityLabel(item.quantity))
+        .where((value) => value != null)
+        .join(' · ');
     final actionTap =
         onTap != null &&
             record.items.any(
@@ -235,9 +262,8 @@ class _CanonicalFoodRow extends StatelessWidget {
         child: InkWell(
           onTap: actionTap == null ? null : () => actionTap(record),
           borderRadius: B05Radii.smallRadius,
-          child: B05Surface(
-            padding: const EdgeInsets.all(B05Layout.space12),
-            radius: B05SurfaceRadius.small,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: B05Layout.space8),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -256,21 +282,21 @@ class _CanonicalFoodRow extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(displayName, style: B05Typography.title(context)),
+                      Text(displayName, style: B05Typography.label(context)),
                       const SizedBox(height: B05Layout.space4),
                       Text(
-                        '${presentation.label} · $energy · $protein',
-                        style: B05Typography.body(context),
+                        [
+                          presentation.label,
+                          if (serving.isNotEmpty) serving,
+                          energy,
+                          protein,
+                        ].join(' · '),
+                        style: B05Typography.caption(context),
                       ),
                       if (record.completeness.state !=
                           NutrientCompletenessState.complete)
                         Text(
                           'Some nutrition information is missing',
-                          style: B05Typography.caption(context),
-                        ),
-                      if (actionTap != null)
-                        Text(
-                          'Tap to edit, copy, or delete this entry.',
                           style: B05Typography.caption(context),
                         ),
                     ],
@@ -290,6 +316,15 @@ class _CanonicalFoodRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String? _historicalQuantityLabel(NutritionHistoricalQuantity quantity) {
+  final typed = quantity.quantity;
+  if (typed != null) return QuantityFormatter.format(typed);
+  if (quantity.storedAmount == null || quantity.storedUnit.trim().isEmpty) {
+    return null;
+  }
+  return '${quantity.storedAmount} ${quantity.storedUnit}';
 }
 
 String _factLabel(NutrientFact? fact, String unit, int precision) {

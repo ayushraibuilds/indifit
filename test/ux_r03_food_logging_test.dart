@@ -8,6 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
+import 'package:indifit/core/nutrition_household_measures.dart';
+import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/raw_cooked_transformations.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
@@ -141,7 +143,7 @@ void main() {
 
       expect(find.text('Roti'), findsOneWidget);
       expect(find.text('Recent'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TextButton, 'Add'));
+      await tester.tap(find.text('Roti'));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 100)),
       );
@@ -236,9 +238,9 @@ void main() {
     );
     await _pumpFood(tester);
 
-    expect(find.text('Food'), findsNWidgets(2));
+    expect(find.text('Food'), findsOneWidget);
     expect(find.text('Add lunch'), findsNothing);
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Lunch'));
+    await tester.tap(find.bySemanticsLabel('Add Lunch'));
     await tester.pumpAndSettle();
 
     expect(find.text('Add lunch'), findsOneWidget);
@@ -306,16 +308,17 @@ void main() {
       tester.element(find.byType(MainNavigationScaffold)),
     );
     await _pumpFood(tester);
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Lunch'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Add Lunch'));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
     await tester.enterText(find.byType(TextField).first, 'roti');
     await tester.pump(const Duration(milliseconds: 800));
     await tester.pump();
-    await tester.tap(find.widgetWithText(TextButton, 'Add'));
+    await tester.tap(find.text('Lunch roti'));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 100)),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 250));
     Navigator.of(
       tester.element(
         find.byKey(const ValueKey('food_quantity_review_surface')),
@@ -386,7 +389,7 @@ void main() {
     );
     await _pumpFood(tester);
 
-    await tester.tap(find.widgetWithText(TextButton, 'Add'));
+    await tester.tap(find.text('Mass authority food'));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 100)),
     );
@@ -914,7 +917,7 @@ void main() {
       tester.element(find.byType(FoodSearchScreen)),
     );
     await _pumpFood(tester);
-    await tester.tap(find.widgetWithText(TextButton, 'Add'));
+    await tester.tap(find.text('Roti'));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 100)),
     );
@@ -1031,6 +1034,31 @@ Widget _foodApp({
     canonicalRecentFoodsProvider.overrideWith((ref) async => canonicalRecent),
     foodLogsForDayProvider.overrideWith((ref, date) async => []),
     canonicalFoodRecordsForDayProvider.overrideWith((ref, date) async => []),
+    foodDiaryReadModelProvider.overrideWith((ref, date) async {
+      final registry = await ref.watch(nutritionRegistryProvider.future);
+      final totals = NutrientAggregationService.aggregate(
+        registry: registry,
+        contributions: const <NutrientContribution>[],
+        requestedNutrientIds: registry.definitions
+            .map((definition) => definition.id)
+            .toSet(),
+      );
+      final localDate =
+          '${date.year.toString().padLeft(4, '0')}-'
+          '${date.month.toString().padLeft(2, '0')}-'
+          '${date.day.toString().padLeft(2, '0')}';
+      return FoodDiaryReadModel(
+        daily: NutritionDailyReadModel(
+          userId: kLocalNutritionUserScopeId,
+          localDate: localDate,
+          records: const [],
+          recordIds: const [],
+          totals: totals,
+          sourceCounts: const {},
+          issues: const [],
+        ),
+      );
+    }),
   ],
   child: MediaQuery(
     data: MediaQueryData(

@@ -1,10 +1,8 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../data/database/app_database.dart';
-import '../../data/repositories/food_repository.dart';
 
 class CustomFoodEditorScreen extends ConsumerStatefulWidget {
   final String? initialBarcode;
@@ -47,34 +45,20 @@ class _CustomFoodEditorScreenState
   Future<void> _saveCustomFood() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final repo = ref.read(foodRepositoryProvider);
-
-    final calories = int.tryParse(_caloriesController.text) ?? 0;
-    final protein = double.tryParse(_proteinController.text) ?? 0.0;
-    final carbs = double.tryParse(_carbsController.text) ?? 0.0;
-    final fat = double.tryParse(_fatController.text) ?? 0.0;
-    final servingSize = double.tryParse(_servingSizeController.text) ?? 100.0;
-
-    final companion = FoodItemsCompanion.insert(
-      name: _nameController.text.trim(),
-      nameHindi: _nameHindiController.text.trim().isNotEmpty
-          ? Value(_nameHindiController.text.trim())
-          : const Value.absent(),
-      brand: _brandController.text.trim().isNotEmpty
-          ? Value(_brandController.text.trim())
-          : const Value.absent(),
-      calories: calories,
-      proteinG: protein,
-      carbsG: carbs,
-      fatG: fat,
-      servingSize: servingSize,
-      servingUnit: _servingUnitController.text.trim(),
-      category: _categoryController.text.trim(),
-      isCustom: const Value(true),
-    );
-
     try {
-      await repo.insertCustomFood(companion);
+      final servingSize = double.parse(_servingSizeController.text.trim());
+      final catalog = await ref.read(
+        nutritionFoodCatalogRepositoryProvider.future,
+      );
+      await catalog.createUserFood(
+        displayName: _nameController.text,
+        servingSize: servingSize,
+        servingUnit: _servingUnitController.text,
+        energyKcal: double.parse(_caloriesController.text.trim()),
+        proteinG: _optionalDouble(_proteinController),
+        carbohydrateG: _optionalDouble(_carbsController),
+        fatG: _optionalDouble(_fatController),
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -98,6 +82,11 @@ class _CustomFoodEditorScreenState
     }
   }
 
+  double? _optionalDouble(TextEditingController controller) {
+    final value = controller.text.trim();
+    return value.isEmpty ? null : double.parse(value);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,7 +94,7 @@ class _CustomFoodEditorScreenState
       body: SafeArea(
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           child: TapRegion(
             onTapOutside: (_) => FocusScope.of(context).unfocus(),
             child: Form(
@@ -113,11 +102,16 @@ class _CustomFoodEditorScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'Save a food you make or buy often.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(
-                      labelText: 'Food Name (English) *',
-                      hintText: 'e.g., Homemade Paneer Bhurji',
+                      labelText: 'Food name *',
+                      hintText: 'e.g. Homemade paneer bhurji',
                     ),
                     validator: (val) =>
                         val == null || val.trim().isEmpty ? 'Required' : null,
@@ -126,16 +120,16 @@ class _CustomFoodEditorScreenState
                   TextFormField(
                     controller: _nameHindiController,
                     decoration: const InputDecoration(
-                      labelText: 'Food Name (Hindi/Optional)',
-                      hintText: 'e.g., पनीर भुर्जी',
+                      labelText: 'Local name (optional)',
+                      hintText: 'e.g. पनीर भुर्जी',
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _brandController,
                     decoration: const InputDecoration(
-                      labelText: 'Brand (Optional)',
-                      hintText: 'e.g., Amul, Mother Dairy, Haldirams',
+                      labelText: 'Brand (optional)',
+                      hintText: 'e.g. Amul or homemade',
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -149,11 +143,14 @@ class _CustomFoodEditorScreenState
                           ),
                           decoration: const InputDecoration(
                             labelText: 'Serving Size *',
+                            hintText: 'e.g. 100',
                           ),
-                          validator: (val) =>
-                              val == null || double.tryParse(val) == null
-                              ? 'Invalid'
-                              : null,
+                          validator: (val) {
+                            final parsed = double.tryParse(val ?? '');
+                            return parsed == null || parsed <= 0
+                                ? 'Enter a positive size'
+                                : null;
+                          },
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -162,6 +159,7 @@ class _CustomFoodEditorScreenState
                           controller: _servingUnitController,
                           decoration: const InputDecoration(
                             labelText: 'Serving Unit (e.g. g, ml, pc) *',
+                            hintText: 'g, ml, piece',
                           ),
                           validator: (val) => val == null || val.trim().isEmpty
                               ? 'Required'
@@ -176,62 +174,57 @@ class _CustomFoodEditorScreenState
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Calories (kcal) *',
+                      hintText: 'Per serving',
                     ),
-                    validator: (val) => val == null || int.tryParse(val) == null
-                        ? 'Invalid'
-                        : null,
+                    validator: (val) {
+                      final parsed = double.tryParse(val ?? '');
+                      return parsed == null || parsed < 0
+                          ? 'Enter calories'
+                          : null;
+                    },
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _proteinController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
+                  Text(
+                    'Macros (optional)',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Leave a value blank when it is not known.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 10),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = (constraints.maxWidth - 12) / 2;
+                      return Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          SizedBox(
+                            width: width,
+                            child: _macroField(
+                              controller: _proteinController,
+                              label: 'Protein (g)',
+                            ),
                           ),
-                          decoration: const InputDecoration(
-                            labelText: 'Protein (g) *',
+                          SizedBox(
+                            width: width,
+                            child: _macroField(
+                              controller: _carbsController,
+                              label: 'Carbs (g)',
+                            ),
                           ),
-                          validator: (val) =>
-                              val == null || double.tryParse(val) == null
-                              ? 'Invalid'
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _carbsController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
+                          SizedBox(
+                            width: width,
+                            child: _macroField(
+                              controller: _fatController,
+                              label: 'Fat (g)',
+                            ),
                           ),
-                          decoration: const InputDecoration(
-                            labelText: 'Carbs (g) *',
-                          ),
-                          validator: (val) =>
-                              val == null || double.tryParse(val) == null
-                              ? 'Invalid'
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _fatController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'Fat (g) *',
-                          ),
-                          validator: (val) =>
-                              val == null || double.tryParse(val) == null
-                              ? 'Invalid'
-                              : null,
-                        ),
-                      ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton(
@@ -257,4 +250,17 @@ class _CustomFoodEditorScreenState
       ),
     );
   }
+
+  Widget _macroField({
+    required TextEditingController controller,
+    required String label,
+  }) => TextFormField(
+    controller: controller,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    decoration: InputDecoration(labelText: label),
+    validator: (value) {
+      if (value == null || value.trim().isEmpty) return null;
+      return double.tryParse(value) == null ? 'Enter a number' : null;
+    },
+  );
 }
