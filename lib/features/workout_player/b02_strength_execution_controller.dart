@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
@@ -549,11 +550,43 @@ class B02StrengthExecutionController
         status: B02StrengthExecutionStatus.ready,
       );
       _activeStartedAtUtc = null;
-    } on B02StrengthExecutionRecoveryException catch (error) {
+    } on B02StrengthExecutionRecoveryException catch (error, stackTrace) {
+      _logFinalizationFailure(
+        error,
+        stackTrace,
+        current: current,
+        commandId: commandId,
+        completionKind: completionKind,
+      );
       _setFailure(error, current, recovery: true);
-    } catch (error) {
+    } catch (error, stackTrace) {
+      _logFinalizationFailure(
+        error,
+        stackTrace,
+        current: current,
+        commandId: commandId,
+        completionKind: completionKind,
+      );
       _setFailure(error, current);
     }
+  }
+
+  void _logFinalizationFailure(
+    Object error,
+    StackTrace stackTrace, {
+    required B02StrengthExecutionLaunch current,
+    required String commandId,
+    required CompletionKind completionKind,
+  }) {
+    AppLogger.error(
+      'Workout finalization failed '
+          '[draftId=${current.draftId}, occurrenceId=${current.occurrenceId ?? 'quick'}, '
+          'commandId=$commandId, completionKind=${completionKind.name}, '
+          'errorType=${error.runtimeType}]',
+      error,
+      stackTrace,
+      'B02Finalization',
+    );
   }
 
   Future<void> discard() async {

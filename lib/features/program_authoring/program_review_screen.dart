@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_count_label.dart';
 import '../../core/theme/colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
 
@@ -37,6 +39,8 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
   bool _isLoading = true;
   ProgramDetailAggregate? _versionDetail;
   String? _errorMessage;
+  String? _activationError;
+  String? _activationCommandId;
 
   @override
   void initState() {
@@ -76,61 +80,68 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
     final detail = _versionDetail;
     if (detail == null) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _activationError = null;
+    });
+    late final ActivationResult result;
     try {
       final coordinator = ref.read(programActivationCoordinatorProvider);
-      final commandId = 'cmd-act-${DateTime.now().millisecondsSinceEpoch}';
+      _activationCommandId ??= 'program-activation::${const Uuid().v4()}';
 
-      final result = await coordinator.activate(
+      result = await coordinator.activate(
         ActivateProgramVersionCommand(
           programVersionId: detail.version.id,
-          commandId: commandId,
+          commandId: _activationCommandId!,
           activationLocalDate: _selectedDate,
           timezoneId: _selectedTimezone,
         ),
       );
-
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Program activation failed '
+            '[programVersionId=${detail.version.id}, commandId=$_activationCommandId, '
+            'errorType=${error.runtimeType}]',
+        error,
+        stackTrace,
+        'ProgramActivation',
+      );
       if (mounted) {
-        if (result.occurrences.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              behavior: SnackBarBehavior.floating,
-              content: Text(
-                'Program activated, but no workouts were scheduled. Review the plan before leaving this screen.',
-              ),
-            ),
-          );
-          return;
-        }
-        final firstDate = result.occurrences
-            .map((occurrence) => occurrence.effectiveLocalDate)
-            .reduce((first, date) => date.compareTo(first) < 0 ? date : first);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            content: Text(
-              '✓ Program activated · ${ConsumerCountLabel.format(result.occurrences.length, 'workout')} scheduled',
-            ),
-          ),
-        );
-        context.go(
-          Uri(
-            path: '/calendar',
-            queryParameters: {'date': firstDate},
-          ).toString(),
-        );
+        setState(() {
+          _activationError = _activationFailureMessage(error);
+          _isLoading = false;
+        });
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('The program could not be activated. Try again.'),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      return;
     }
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    if (result.occurrences.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'Program activated, but no workouts were scheduled. Review the plan before leaving this screen.',
+          ),
+        ),
+      );
+      return;
+    }
+    final firstDate = result.occurrences
+        .map((occurrence) => occurrence.effectiveLocalDate)
+        .reduce((first, date) => date.compareTo(first) < 0 ? date : first);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          '✓ Program activated · ${ConsumerCountLabel.format(result.occurrences.length, 'workout')} scheduled',
+        ),
+      ),
+    );
+    context.go(
+      Uri(path: '/calendar', queryParameters: {'date': firstDate}).toString(),
+    );
   }
 
   Future<void> _selectDate() async {
@@ -145,6 +156,8 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
       setState(() {
         _selectedDate =
             '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+        _activationCommandId = null;
+        _activationError = null;
       });
     }
   }
@@ -238,7 +251,11 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                         .toList(growable: false),
                     onChanged: (timezone) {
                       if (timezone != null) {
-                        setState(() => _selectedTimezone = timezone);
+                        setState(() {
+                          _selectedTimezone = timezone;
+                          _activationCommandId = null;
+                          _activationError = null;
+                        });
                       }
                     },
                   ),
@@ -307,13 +324,27 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     );
                   }),
                   const SizedBox(height: 32),
+                  if (_activationError != null) ...[
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.error_outline),
+                        title: const Text('Program not activated'),
+                        subtitle: Text(_activationError!),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton.icon(
                       onPressed: _activateProgram,
                       icon: const Icon(Icons.rocket_launch_rounded),
-                      label: const Text('Publish & Activate Program'),
+                      label: Text(
+                        _activationError == null
+                            ? 'Publish & Activate Program'
+                            : 'Retry activation',
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.black,
@@ -330,4 +361,12 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
             ),
     );
   }
+}
+
+String _activationFailureMessage(Object error) {
+  if (error is ActivationRejectedException &&
+      error.message.contains('existing workout draft')) {
+    return 'Finish or discard your current workout before activating this program.';
+  }
+  return 'The program could not be activated. Your plan is still available to review and retry.';
 }

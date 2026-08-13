@@ -10,11 +10,13 @@ import '../../core/presentation/consumer_count_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/repositories/ai_routine_service.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/workout_repository.dart';
 import 'b05_adaptive_onboarding.dart';
 
@@ -46,6 +48,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
   bool _savingRoutine = false;
   bool _skipping = false;
   String? _activationCommandId;
+  int? _pendingRoutineId;
   String? _actionError;
   GeneratedRoutineResult? _generatedRoutine;
   final B05OnboardingDraftStore _draftStore = const B05OnboardingDraftStore();
@@ -196,6 +199,8 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
 
       setState(() {
         _generatedRoutine = result;
+        _activationCommandId = null;
+        _pendingRoutineId = null;
         _loading = false;
         _currentStep = 5; // Preview step
       });
@@ -222,6 +227,7 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       _actionError = null;
     });
 
+    int? scheduledCount;
     try {
       await _draftWrite;
       final selection = await ref
@@ -241,11 +247,13 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       }
       final workoutRepo = ref.read(workoutRepositoryProvider);
       final routineId = await workoutRepo.saveRoutine(
+        routineId: _pendingRoutineId,
         name: _generatedRoutine!.name,
         goal: _selectedGoal,
         notes: _generatedRoutine!.notes,
         days: _generatedRoutine!.days,
       );
+      _pendingRoutineId = routineId;
       final timezoneId = await ref
           .read(localTimezoneServiceProvider)
           .currentTimezoneId();
@@ -265,32 +273,46 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       if (activation.occurrences.isEmpty) {
         throw StateError('Canonical activation created no workouts.');
       }
-      await _draftStore.clearRoutineDraft();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          indiFitSuccessSnackBar(
-            '✓ Program activated · '
-            '${ConsumerCountLabel.format(activation.occurrences.length, 'workout')} scheduled',
-          ),
-        );
-        context.go('/');
-      }
-    } catch (e) {
+      scheduledCount = activation.occurrences.length;
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Suggested routine activation failed '
+            '[routineId=$_pendingRoutineId, commandId=$_activationCommandId, '
+            'errorType=${error.runtimeType}]',
+        error,
+        stackTrace,
+        'SuggestedRoutineActivation',
+      );
       if (mounted) {
         setState(
-          () => _actionError = 'Your routine could not be saved. Try again.',
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Your routine could not be saved. Try again.'),
-            backgroundColor: AppColors.danger,
-          ),
+          () => _actionError = _suggestedActivationFailureMessage(error),
         );
       }
     } finally {
       if (mounted) setState(() => _savingRoutine = false);
     }
+
+    if (!mounted || scheduledCount == null) return;
+    try {
+      await _draftStore.clearRoutineDraft();
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Routine draft cleanup failed after successful activation '
+            '[routineId=$_pendingRoutineId, commandId=$_activationCommandId, '
+            'errorType=${error.runtimeType}]',
+        error,
+        stackTrace,
+        'SuggestedRoutineActivation',
+      );
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      indiFitSuccessSnackBar(
+        '✓ Program activated · '
+        '${ConsumerCountLabel.format(scheduledCount, 'workout')} scheduled',
+      ),
+    );
+    context.go('/');
   }
 
   Future<void> _skipOnboarding() async {
@@ -907,4 +929,12 @@ class _RoutineWizardScreenState extends ConsumerState<RoutineWizardScreen> {
       ),
     );
   }
+}
+
+String _suggestedActivationFailureMessage(Object error) {
+  if (error is ActivationRejectedException &&
+      error.message.contains('existing workout draft')) {
+    return 'Finish or discard your current workout before activating this routine.';
+  }
+  return 'Your routine could not be activated. It is still available to review and retry.';
 }

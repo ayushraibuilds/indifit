@@ -25,6 +25,8 @@ class _B02StrengthSummaryScreenState
   late final String _completionCommandId;
   var _isFinalizing = false;
   B02StrengthExecutionLaunch? _completionLaunch;
+  CompletionKind? _pendingCompletionKind;
+  String? _pendingCompletionReason;
 
   @override
   void initState() {
@@ -55,9 +57,14 @@ class _B02StrengthSummaryScreenState
       body: _Body(
         launch: current,
         ui: ui,
-        onRetry: ui.launch == null
+        onRetry: ui.launch == null || _pendingCompletionKind == null
             ? null
-            : () => ref.read(provider.notifier).loadSlots(),
+            : () => _complete(
+                context,
+                provider,
+                _pendingCompletionKind!,
+                reason: _pendingCompletionReason,
+              ),
         onFull: ui.isBusy || _isFinalizing
             ? null
             : () => _complete(context, provider, CompletionKind.full),
@@ -107,19 +114,23 @@ class _B02StrengthSummaryScreenState
     String? reason,
   }) async {
     if (_isFinalizing) return;
-    setState(() => _isFinalizing = true);
+    setState(() {
+      _isFinalizing = true;
+      _pendingCompletionKind = kind;
+      _pendingCompletionReason = reason?.isEmpty == true ? null : reason;
+    });
     final controller = ref.read(provider.notifier);
-    await controller.pauseElapsed();
-    if (!mounted) return;
-    _completionLaunch = ref.read(provider).launch ?? widget.launch;
-    await controller.finalize(
-      commandId: _completionCommandId,
-      completionKind: kind,
-      reason: reason?.isEmpty == true ? null : reason,
-    );
-    if (!context.mounted) return;
-    if (ref.read(provider).launch != null) {
-      setState(() => _isFinalizing = false);
+    try {
+      await controller.pauseElapsed();
+      if (!mounted) return;
+      _completionLaunch = ref.read(provider).launch ?? widget.launch;
+      await controller.finalize(
+        commandId: _completionCommandId,
+        completionKind: kind,
+        reason: _pendingCompletionReason,
+      );
+    } finally {
+      if (mounted) setState(() => _isFinalizing = false);
     }
   }
 }
@@ -236,12 +247,17 @@ class _Body extends StatelessWidget {
                 ui.errorMessage ?? 'Finalization needs recovery.',
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 8),
+              const Text(
+                'Your workout is still saved as a draft. Try finishing again or return to the workout.',
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 16),
               if (onRetry != null)
                 FilledButton(onPressed: onRetry, child: const Text('Retry')),
               TextButton(
                 onPressed: onBack,
-                child: const Text('Keep draft and go back'),
+                child: const Text('Return to workout'),
               ),
             ],
           ),

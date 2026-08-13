@@ -13,6 +13,7 @@ import '../../core/utils/app_logger.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/workout_repository.dart';
 
 class RoutineEditorScreen extends ConsumerStatefulWidget {
@@ -38,6 +39,8 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
   bool _loadingTemplates = true;
   bool _applyingTemplate = false;
   String? _templateActivationCommandId;
+  String? _templateActivationKey;
+  int? _templateRoutineId;
 
   @override
   void initState() {
@@ -139,6 +142,12 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
     final String goal = tpl['goal'] ?? 'general';
     final String description = tpl['description'] ?? '';
     final List<dynamic> rawDays = tpl['days'] ?? [];
+    final templateKey = tpl['id']?.toString() ?? name;
+    if (_templateActivationKey != templateKey) {
+      _templateActivationKey = templateKey;
+      _templateActivationCommandId = null;
+      _templateRoutineId = null;
+    }
 
     final daysData = <RoutineDayWithExercises>[];
     for (final d in rawDays) {
@@ -167,6 +176,7 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
       );
     }
 
+    int? scheduledCount;
     try {
       final selection = await ref
           .read(legacyProgramCompatibilityAdapterProvider)
@@ -185,11 +195,13 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
         return;
       }
       final routineId = await repo.saveRoutine(
+        routineId: _templateRoutineId,
         name: name,
         goal: goal,
         notes: description,
         days: daysData,
       );
+      _templateRoutineId = routineId;
       final timezoneId = await ref
           .read(localTimezoneServiceProvider)
           .currentTimezoneId();
@@ -209,29 +221,36 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
       if (activation.occurrences.isEmpty) {
         throw StateError('Canonical activation created no workouts.');
       }
-
+      scheduledCount = activation.occurrences.length;
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Template activation failed '
+            '[templateKey=$templateKey, routineId=$_templateRoutineId, '
+            'commandId=$_templateActivationCommandId, errorType=${error.runtimeType}]',
+        error,
+        stackTrace,
+        'TemplateActivation',
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          indiFitSuccessSnackBar(
-            '✓ Program activated · '
-            '${ConsumerCountLabel.format(activation.occurrences.length, 'workout')} scheduled',
-          ),
-        );
-        Navigator.pop(context, true);
-      }
-    } catch (error) {
-      AppLogger.warning('Template activation failed: $error');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             behavior: SnackBarBehavior.floating,
-            content: Text('Program could not be activated. Try again.'),
+            content: Text(_templateActivationFailureMessage(error)),
           ),
         );
       }
     } finally {
       if (mounted) setState(() => _applyingTemplate = false);
     }
+
+    if (!mounted || scheduledCount == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      indiFitSuccessSnackBar(
+        '✓ Program activated · '
+        '${ConsumerCountLabel.format(scheduledCount, 'workout')} scheduled',
+      ),
+    );
+    Navigator.pop(context, true);
   }
 
   Future<void> _saveManualRoutine() async {
@@ -819,6 +838,14 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
       ],
     );
   }
+}
+
+String _templateActivationFailureMessage(Object error) {
+  if (error is ActivationRejectedException &&
+      error.message.contains('existing workout draft')) {
+    return 'Finish or discard your current workout before activating this program.';
+  }
+  return 'Program could not be activated. Your selected template is still available to retry.';
 }
 
 class _BuilderDayData {
