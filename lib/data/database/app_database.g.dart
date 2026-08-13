@@ -47053,6 +47053,11986 @@ class NutritionSnapshotConstraintResultEvidenceCompanion
   }
 }
 
+class $NutritionGoalVersionsTable extends NutritionGoalVersions
+    with TableInfo<$NutritionGoalVersionsTable, NutritionGoalVersion> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionGoalVersionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionNumberMeta = const VerificationMeta(
+    'versionNumber',
+  );
+  @override
+  late final GeneratedColumn<int> versionNumber = GeneratedColumn<int>(
+    'version_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _goalTypeMeta = const VerificationMeta(
+    'goalType',
+  );
+  @override
+  late final GeneratedColumn<String> goalType = GeneratedColumn<String>(
+    'goal_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetSourceMeta = const VerificationMeta(
+    'targetSource',
+  );
+  @override
+  late final GeneratedColumn<String> targetSource = GeneratedColumn<String>(
+    'target_source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _calorieTargetKcalMeta = const VerificationMeta(
+    'calorieTargetKcal',
+  );
+  @override
+  late final GeneratedColumn<int> calorieTargetKcal = GeneratedColumn<int>(
+    'calorie_target_kcal',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _proteinTargetGMeta = const VerificationMeta(
+    'proteinTargetG',
+  );
+  @override
+  late final GeneratedColumn<double> proteinTargetG = GeneratedColumn<double>(
+    'protein_target_g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _carbsTargetGMeta = const VerificationMeta(
+    'carbsTargetG',
+  );
+  @override
+  late final GeneratedColumn<double> carbsTargetG = GeneratedColumn<double>(
+    'carbs_target_g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fatTargetGMeta = const VerificationMeta(
+    'fatTargetG',
+  );
+  @override
+  late final GeneratedColumn<double> fatTargetG = GeneratedColumn<double>(
+    'fat_target_g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _policyVersionMeta = const VerificationMeta(
+    'policyVersion',
+  );
+  @override
+  late final GeneratedColumn<String> policyVersion = GeneratedColumn<String>(
+    'policy_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _calculationVersionMeta =
+      const VerificationMeta('calculationVersion');
+  @override
+  late final GeneratedColumn<String> calculationVersion =
+      GeneratedColumn<String>(
+        'calculation_version',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _algorithmVersionMeta = const VerificationMeta(
+    'algorithmVersion',
+  );
+  @override
+  late final GeneratedColumn<String> algorithmVersion = GeneratedColumn<String>(
+    'algorithm_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _effectiveFromLocalDateMeta =
+      const VerificationMeta('effectiveFromLocalDate');
+  @override
+  late final GeneratedColumn<String> effectiveFromLocalDate =
+      GeneratedColumn<String>(
+        'effective_from_local_date',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _effectiveToLocalDateMeta =
+      const VerificationMeta('effectiveToLocalDate');
+  @override
+  late final GeneratedColumn<String> effectiveToLocalDate =
+      GeneratedColumn<String>(
+        'effective_to_local_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _timezoneIdMeta = const VerificationMeta(
+    'timezoneId',
+  );
+  @override
+  late final GeneratedColumn<String> timezoneId = GeneratedColumn<String>(
+    'timezone_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _supersedesGoalVersionIdMeta =
+      const VerificationMeta('supersedesGoalVersionId');
+  @override
+  late final GeneratedColumn<String> supersedesGoalVersionId =
+      GeneratedColumn<String>(
+        'supersedes_goal_version_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES nutrition_goal_versions (id)',
+        ),
+      );
+  static const VerificationMeta _evidenceFingerprintMeta =
+      const VerificationMeta('evidenceFingerprint');
+  @override
+  late final GeneratedColumn<String> evidenceFingerprint =
+      GeneratedColumn<String>(
+        'evidence_fingerprint',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _exactResultNumeratorMeta =
+      const VerificationMeta('exactResultNumerator');
+  @override
+  late final GeneratedColumn<String> exactResultNumerator =
+      GeneratedColumn<String>(
+        'exact_result_numerator',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _exactResultDenominatorMeta =
+      const VerificationMeta('exactResultDenominator');
+  @override
+  late final GeneratedColumn<String> exactResultDenominator =
+      GeneratedColumn<String>(
+        'exact_result_denominator',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _normalizedMaintenanceKcalMeta =
+      const VerificationMeta('normalizedMaintenanceKcal');
+  @override
+  late final GeneratedColumn<int> normalizedMaintenanceKcal =
+      GeneratedColumn<int>(
+        'normalized_maintenance_kcal',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    versionNumber,
+    goalType,
+    targetSource,
+    calorieTargetKcal,
+    proteinTargetG,
+    carbsTargetG,
+    fatTargetG,
+    policyVersion,
+    calculationVersion,
+    algorithmVersion,
+    effectiveFromLocalDate,
+    effectiveToLocalDate,
+    timezoneId,
+    supersedesGoalVersionId,
+    evidenceFingerprint,
+    exactResultNumerator,
+    exactResultDenominator,
+    normalizedMaintenanceKcal,
+    createdAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_goal_versions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionGoalVersion> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('version_number')) {
+      context.handle(
+        _versionNumberMeta,
+        versionNumber.isAcceptableOrUnknown(
+          data['version_number']!,
+          _versionNumberMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_versionNumberMeta);
+    }
+    if (data.containsKey('goal_type')) {
+      context.handle(
+        _goalTypeMeta,
+        goalType.isAcceptableOrUnknown(data['goal_type']!, _goalTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_goalTypeMeta);
+    }
+    if (data.containsKey('target_source')) {
+      context.handle(
+        _targetSourceMeta,
+        targetSource.isAcceptableOrUnknown(
+          data['target_source']!,
+          _targetSourceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_targetSourceMeta);
+    }
+    if (data.containsKey('calorie_target_kcal')) {
+      context.handle(
+        _calorieTargetKcalMeta,
+        calorieTargetKcal.isAcceptableOrUnknown(
+          data['calorie_target_kcal']!,
+          _calorieTargetKcalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('protein_target_g')) {
+      context.handle(
+        _proteinTargetGMeta,
+        proteinTargetG.isAcceptableOrUnknown(
+          data['protein_target_g']!,
+          _proteinTargetGMeta,
+        ),
+      );
+    }
+    if (data.containsKey('carbs_target_g')) {
+      context.handle(
+        _carbsTargetGMeta,
+        carbsTargetG.isAcceptableOrUnknown(
+          data['carbs_target_g']!,
+          _carbsTargetGMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fat_target_g')) {
+      context.handle(
+        _fatTargetGMeta,
+        fatTargetG.isAcceptableOrUnknown(
+          data['fat_target_g']!,
+          _fatTargetGMeta,
+        ),
+      );
+    }
+    if (data.containsKey('policy_version')) {
+      context.handle(
+        _policyVersionMeta,
+        policyVersion.isAcceptableOrUnknown(
+          data['policy_version']!,
+          _policyVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('calculation_version')) {
+      context.handle(
+        _calculationVersionMeta,
+        calculationVersion.isAcceptableOrUnknown(
+          data['calculation_version']!,
+          _calculationVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('algorithm_version')) {
+      context.handle(
+        _algorithmVersionMeta,
+        algorithmVersion.isAcceptableOrUnknown(
+          data['algorithm_version']!,
+          _algorithmVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('effective_from_local_date')) {
+      context.handle(
+        _effectiveFromLocalDateMeta,
+        effectiveFromLocalDate.isAcceptableOrUnknown(
+          data['effective_from_local_date']!,
+          _effectiveFromLocalDateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_effectiveFromLocalDateMeta);
+    }
+    if (data.containsKey('effective_to_local_date')) {
+      context.handle(
+        _effectiveToLocalDateMeta,
+        effectiveToLocalDate.isAcceptableOrUnknown(
+          data['effective_to_local_date']!,
+          _effectiveToLocalDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('timezone_id')) {
+      context.handle(
+        _timezoneIdMeta,
+        timezoneId.isAcceptableOrUnknown(data['timezone_id']!, _timezoneIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timezoneIdMeta);
+    }
+    if (data.containsKey('supersedes_goal_version_id')) {
+      context.handle(
+        _supersedesGoalVersionIdMeta,
+        supersedesGoalVersionId.isAcceptableOrUnknown(
+          data['supersedes_goal_version_id']!,
+          _supersedesGoalVersionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('evidence_fingerprint')) {
+      context.handle(
+        _evidenceFingerprintMeta,
+        evidenceFingerprint.isAcceptableOrUnknown(
+          data['evidence_fingerprint']!,
+          _evidenceFingerprintMeta,
+        ),
+      );
+    }
+    if (data.containsKey('exact_result_numerator')) {
+      context.handle(
+        _exactResultNumeratorMeta,
+        exactResultNumerator.isAcceptableOrUnknown(
+          data['exact_result_numerator']!,
+          _exactResultNumeratorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('exact_result_denominator')) {
+      context.handle(
+        _exactResultDenominatorMeta,
+        exactResultDenominator.isAcceptableOrUnknown(
+          data['exact_result_denominator']!,
+          _exactResultDenominatorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('normalized_maintenance_kcal')) {
+      context.handle(
+        _normalizedMaintenanceKcalMeta,
+        normalizedMaintenanceKcal.isAcceptableOrUnknown(
+          data['normalized_maintenance_kcal']!,
+          _normalizedMaintenanceKcalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, versionNumber},
+  ];
+  @override
+  NutritionGoalVersion map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionGoalVersion(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      versionNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version_number'],
+      )!,
+      goalType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}goal_type'],
+      )!,
+      targetSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_source'],
+      )!,
+      calorieTargetKcal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calorie_target_kcal'],
+      ),
+      proteinTargetG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}protein_target_g'],
+      ),
+      carbsTargetG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}carbs_target_g'],
+      ),
+      fatTargetG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}fat_target_g'],
+      ),
+      policyVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}policy_version'],
+      ),
+      calculationVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}calculation_version'],
+      ),
+      algorithmVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_version'],
+      ),
+      effectiveFromLocalDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}effective_from_local_date'],
+      )!,
+      effectiveToLocalDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}effective_to_local_date'],
+      ),
+      timezoneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}timezone_id'],
+      )!,
+      supersedesGoalVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supersedes_goal_version_id'],
+      ),
+      evidenceFingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evidence_fingerprint'],
+      ),
+      exactResultNumerator: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exact_result_numerator'],
+      ),
+      exactResultDenominator: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exact_result_denominator'],
+      ),
+      normalizedMaintenanceKcal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}normalized_maintenance_kcal'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionGoalVersionsTable createAlias(String alias) {
+    return $NutritionGoalVersionsTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionGoalVersion extends DataClass
+    implements Insertable<NutritionGoalVersion> {
+  final String id;
+  final String userId;
+  final int versionNumber;
+  final String goalType;
+  final String targetSource;
+  final int? calorieTargetKcal;
+  final double? proteinTargetG;
+  final double? carbsTargetG;
+  final double? fatTargetG;
+  final String? policyVersion;
+  final String? calculationVersion;
+  final String? algorithmVersion;
+  final String effectiveFromLocalDate;
+  final String? effectiveToLocalDate;
+  final String timezoneId;
+  final String? supersedesGoalVersionId;
+  final String? evidenceFingerprint;
+  final String? exactResultNumerator;
+  final String? exactResultDenominator;
+  final int? normalizedMaintenanceKcal;
+  final DateTime createdAtUtc;
+  const NutritionGoalVersion({
+    required this.id,
+    required this.userId,
+    required this.versionNumber,
+    required this.goalType,
+    required this.targetSource,
+    this.calorieTargetKcal,
+    this.proteinTargetG,
+    this.carbsTargetG,
+    this.fatTargetG,
+    this.policyVersion,
+    this.calculationVersion,
+    this.algorithmVersion,
+    required this.effectiveFromLocalDate,
+    this.effectiveToLocalDate,
+    required this.timezoneId,
+    this.supersedesGoalVersionId,
+    this.evidenceFingerprint,
+    this.exactResultNumerator,
+    this.exactResultDenominator,
+    this.normalizedMaintenanceKcal,
+    required this.createdAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['version_number'] = Variable<int>(versionNumber);
+    map['goal_type'] = Variable<String>(goalType);
+    map['target_source'] = Variable<String>(targetSource);
+    if (!nullToAbsent || calorieTargetKcal != null) {
+      map['calorie_target_kcal'] = Variable<int>(calorieTargetKcal);
+    }
+    if (!nullToAbsent || proteinTargetG != null) {
+      map['protein_target_g'] = Variable<double>(proteinTargetG);
+    }
+    if (!nullToAbsent || carbsTargetG != null) {
+      map['carbs_target_g'] = Variable<double>(carbsTargetG);
+    }
+    if (!nullToAbsent || fatTargetG != null) {
+      map['fat_target_g'] = Variable<double>(fatTargetG);
+    }
+    if (!nullToAbsent || policyVersion != null) {
+      map['policy_version'] = Variable<String>(policyVersion);
+    }
+    if (!nullToAbsent || calculationVersion != null) {
+      map['calculation_version'] = Variable<String>(calculationVersion);
+    }
+    if (!nullToAbsent || algorithmVersion != null) {
+      map['algorithm_version'] = Variable<String>(algorithmVersion);
+    }
+    map['effective_from_local_date'] = Variable<String>(effectiveFromLocalDate);
+    if (!nullToAbsent || effectiveToLocalDate != null) {
+      map['effective_to_local_date'] = Variable<String>(effectiveToLocalDate);
+    }
+    map['timezone_id'] = Variable<String>(timezoneId);
+    if (!nullToAbsent || supersedesGoalVersionId != null) {
+      map['supersedes_goal_version_id'] = Variable<String>(
+        supersedesGoalVersionId,
+      );
+    }
+    if (!nullToAbsent || evidenceFingerprint != null) {
+      map['evidence_fingerprint'] = Variable<String>(evidenceFingerprint);
+    }
+    if (!nullToAbsent || exactResultNumerator != null) {
+      map['exact_result_numerator'] = Variable<String>(exactResultNumerator);
+    }
+    if (!nullToAbsent || exactResultDenominator != null) {
+      map['exact_result_denominator'] = Variable<String>(
+        exactResultDenominator,
+      );
+    }
+    if (!nullToAbsent || normalizedMaintenanceKcal != null) {
+      map['normalized_maintenance_kcal'] = Variable<int>(
+        normalizedMaintenanceKcal,
+      );
+    }
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    return map;
+  }
+
+  NutritionGoalVersionsCompanion toCompanion(bool nullToAbsent) {
+    return NutritionGoalVersionsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      versionNumber: Value(versionNumber),
+      goalType: Value(goalType),
+      targetSource: Value(targetSource),
+      calorieTargetKcal: calorieTargetKcal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(calorieTargetKcal),
+      proteinTargetG: proteinTargetG == null && nullToAbsent
+          ? const Value.absent()
+          : Value(proteinTargetG),
+      carbsTargetG: carbsTargetG == null && nullToAbsent
+          ? const Value.absent()
+          : Value(carbsTargetG),
+      fatTargetG: fatTargetG == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fatTargetG),
+      policyVersion: policyVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(policyVersion),
+      calculationVersion: calculationVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(calculationVersion),
+      algorithmVersion: algorithmVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(algorithmVersion),
+      effectiveFromLocalDate: Value(effectiveFromLocalDate),
+      effectiveToLocalDate: effectiveToLocalDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(effectiveToLocalDate),
+      timezoneId: Value(timezoneId),
+      supersedesGoalVersionId: supersedesGoalVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersedesGoalVersionId),
+      evidenceFingerprint: evidenceFingerprint == null && nullToAbsent
+          ? const Value.absent()
+          : Value(evidenceFingerprint),
+      exactResultNumerator: exactResultNumerator == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exactResultNumerator),
+      exactResultDenominator: exactResultDenominator == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exactResultDenominator),
+      normalizedMaintenanceKcal:
+          normalizedMaintenanceKcal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(normalizedMaintenanceKcal),
+      createdAtUtc: Value(createdAtUtc),
+    );
+  }
+
+  factory NutritionGoalVersion.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionGoalVersion(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      versionNumber: serializer.fromJson<int>(json['versionNumber']),
+      goalType: serializer.fromJson<String>(json['goalType']),
+      targetSource: serializer.fromJson<String>(json['targetSource']),
+      calorieTargetKcal: serializer.fromJson<int?>(json['calorieTargetKcal']),
+      proteinTargetG: serializer.fromJson<double?>(json['proteinTargetG']),
+      carbsTargetG: serializer.fromJson<double?>(json['carbsTargetG']),
+      fatTargetG: serializer.fromJson<double?>(json['fatTargetG']),
+      policyVersion: serializer.fromJson<String?>(json['policyVersion']),
+      calculationVersion: serializer.fromJson<String?>(
+        json['calculationVersion'],
+      ),
+      algorithmVersion: serializer.fromJson<String?>(json['algorithmVersion']),
+      effectiveFromLocalDate: serializer.fromJson<String>(
+        json['effectiveFromLocalDate'],
+      ),
+      effectiveToLocalDate: serializer.fromJson<String?>(
+        json['effectiveToLocalDate'],
+      ),
+      timezoneId: serializer.fromJson<String>(json['timezoneId']),
+      supersedesGoalVersionId: serializer.fromJson<String?>(
+        json['supersedesGoalVersionId'],
+      ),
+      evidenceFingerprint: serializer.fromJson<String?>(
+        json['evidenceFingerprint'],
+      ),
+      exactResultNumerator: serializer.fromJson<String?>(
+        json['exactResultNumerator'],
+      ),
+      exactResultDenominator: serializer.fromJson<String?>(
+        json['exactResultDenominator'],
+      ),
+      normalizedMaintenanceKcal: serializer.fromJson<int?>(
+        json['normalizedMaintenanceKcal'],
+      ),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'versionNumber': serializer.toJson<int>(versionNumber),
+      'goalType': serializer.toJson<String>(goalType),
+      'targetSource': serializer.toJson<String>(targetSource),
+      'calorieTargetKcal': serializer.toJson<int?>(calorieTargetKcal),
+      'proteinTargetG': serializer.toJson<double?>(proteinTargetG),
+      'carbsTargetG': serializer.toJson<double?>(carbsTargetG),
+      'fatTargetG': serializer.toJson<double?>(fatTargetG),
+      'policyVersion': serializer.toJson<String?>(policyVersion),
+      'calculationVersion': serializer.toJson<String?>(calculationVersion),
+      'algorithmVersion': serializer.toJson<String?>(algorithmVersion),
+      'effectiveFromLocalDate': serializer.toJson<String>(
+        effectiveFromLocalDate,
+      ),
+      'effectiveToLocalDate': serializer.toJson<String?>(effectiveToLocalDate),
+      'timezoneId': serializer.toJson<String>(timezoneId),
+      'supersedesGoalVersionId': serializer.toJson<String?>(
+        supersedesGoalVersionId,
+      ),
+      'evidenceFingerprint': serializer.toJson<String?>(evidenceFingerprint),
+      'exactResultNumerator': serializer.toJson<String?>(exactResultNumerator),
+      'exactResultDenominator': serializer.toJson<String?>(
+        exactResultDenominator,
+      ),
+      'normalizedMaintenanceKcal': serializer.toJson<int?>(
+        normalizedMaintenanceKcal,
+      ),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+    };
+  }
+
+  NutritionGoalVersion copyWith({
+    String? id,
+    String? userId,
+    int? versionNumber,
+    String? goalType,
+    String? targetSource,
+    Value<int?> calorieTargetKcal = const Value.absent(),
+    Value<double?> proteinTargetG = const Value.absent(),
+    Value<double?> carbsTargetG = const Value.absent(),
+    Value<double?> fatTargetG = const Value.absent(),
+    Value<String?> policyVersion = const Value.absent(),
+    Value<String?> calculationVersion = const Value.absent(),
+    Value<String?> algorithmVersion = const Value.absent(),
+    String? effectiveFromLocalDate,
+    Value<String?> effectiveToLocalDate = const Value.absent(),
+    String? timezoneId,
+    Value<String?> supersedesGoalVersionId = const Value.absent(),
+    Value<String?> evidenceFingerprint = const Value.absent(),
+    Value<String?> exactResultNumerator = const Value.absent(),
+    Value<String?> exactResultDenominator = const Value.absent(),
+    Value<int?> normalizedMaintenanceKcal = const Value.absent(),
+    DateTime? createdAtUtc,
+  }) => NutritionGoalVersion(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    versionNumber: versionNumber ?? this.versionNumber,
+    goalType: goalType ?? this.goalType,
+    targetSource: targetSource ?? this.targetSource,
+    calorieTargetKcal: calorieTargetKcal.present
+        ? calorieTargetKcal.value
+        : this.calorieTargetKcal,
+    proteinTargetG: proteinTargetG.present
+        ? proteinTargetG.value
+        : this.proteinTargetG,
+    carbsTargetG: carbsTargetG.present ? carbsTargetG.value : this.carbsTargetG,
+    fatTargetG: fatTargetG.present ? fatTargetG.value : this.fatTargetG,
+    policyVersion: policyVersion.present
+        ? policyVersion.value
+        : this.policyVersion,
+    calculationVersion: calculationVersion.present
+        ? calculationVersion.value
+        : this.calculationVersion,
+    algorithmVersion: algorithmVersion.present
+        ? algorithmVersion.value
+        : this.algorithmVersion,
+    effectiveFromLocalDate:
+        effectiveFromLocalDate ?? this.effectiveFromLocalDate,
+    effectiveToLocalDate: effectiveToLocalDate.present
+        ? effectiveToLocalDate.value
+        : this.effectiveToLocalDate,
+    timezoneId: timezoneId ?? this.timezoneId,
+    supersedesGoalVersionId: supersedesGoalVersionId.present
+        ? supersedesGoalVersionId.value
+        : this.supersedesGoalVersionId,
+    evidenceFingerprint: evidenceFingerprint.present
+        ? evidenceFingerprint.value
+        : this.evidenceFingerprint,
+    exactResultNumerator: exactResultNumerator.present
+        ? exactResultNumerator.value
+        : this.exactResultNumerator,
+    exactResultDenominator: exactResultDenominator.present
+        ? exactResultDenominator.value
+        : this.exactResultDenominator,
+    normalizedMaintenanceKcal: normalizedMaintenanceKcal.present
+        ? normalizedMaintenanceKcal.value
+        : this.normalizedMaintenanceKcal,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+  );
+  NutritionGoalVersion copyWithCompanion(NutritionGoalVersionsCompanion data) {
+    return NutritionGoalVersion(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      versionNumber: data.versionNumber.present
+          ? data.versionNumber.value
+          : this.versionNumber,
+      goalType: data.goalType.present ? data.goalType.value : this.goalType,
+      targetSource: data.targetSource.present
+          ? data.targetSource.value
+          : this.targetSource,
+      calorieTargetKcal: data.calorieTargetKcal.present
+          ? data.calorieTargetKcal.value
+          : this.calorieTargetKcal,
+      proteinTargetG: data.proteinTargetG.present
+          ? data.proteinTargetG.value
+          : this.proteinTargetG,
+      carbsTargetG: data.carbsTargetG.present
+          ? data.carbsTargetG.value
+          : this.carbsTargetG,
+      fatTargetG: data.fatTargetG.present
+          ? data.fatTargetG.value
+          : this.fatTargetG,
+      policyVersion: data.policyVersion.present
+          ? data.policyVersion.value
+          : this.policyVersion,
+      calculationVersion: data.calculationVersion.present
+          ? data.calculationVersion.value
+          : this.calculationVersion,
+      algorithmVersion: data.algorithmVersion.present
+          ? data.algorithmVersion.value
+          : this.algorithmVersion,
+      effectiveFromLocalDate: data.effectiveFromLocalDate.present
+          ? data.effectiveFromLocalDate.value
+          : this.effectiveFromLocalDate,
+      effectiveToLocalDate: data.effectiveToLocalDate.present
+          ? data.effectiveToLocalDate.value
+          : this.effectiveToLocalDate,
+      timezoneId: data.timezoneId.present
+          ? data.timezoneId.value
+          : this.timezoneId,
+      supersedesGoalVersionId: data.supersedesGoalVersionId.present
+          ? data.supersedesGoalVersionId.value
+          : this.supersedesGoalVersionId,
+      evidenceFingerprint: data.evidenceFingerprint.present
+          ? data.evidenceFingerprint.value
+          : this.evidenceFingerprint,
+      exactResultNumerator: data.exactResultNumerator.present
+          ? data.exactResultNumerator.value
+          : this.exactResultNumerator,
+      exactResultDenominator: data.exactResultDenominator.present
+          ? data.exactResultDenominator.value
+          : this.exactResultDenominator,
+      normalizedMaintenanceKcal: data.normalizedMaintenanceKcal.present
+          ? data.normalizedMaintenanceKcal.value
+          : this.normalizedMaintenanceKcal,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionGoalVersion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('versionNumber: $versionNumber, ')
+          ..write('goalType: $goalType, ')
+          ..write('targetSource: $targetSource, ')
+          ..write('calorieTargetKcal: $calorieTargetKcal, ')
+          ..write('proteinTargetG: $proteinTargetG, ')
+          ..write('carbsTargetG: $carbsTargetG, ')
+          ..write('fatTargetG: $fatTargetG, ')
+          ..write('policyVersion: $policyVersion, ')
+          ..write('calculationVersion: $calculationVersion, ')
+          ..write('algorithmVersion: $algorithmVersion, ')
+          ..write('effectiveFromLocalDate: $effectiveFromLocalDate, ')
+          ..write('effectiveToLocalDate: $effectiveToLocalDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('supersedesGoalVersionId: $supersedesGoalVersionId, ')
+          ..write('evidenceFingerprint: $evidenceFingerprint, ')
+          ..write('exactResultNumerator: $exactResultNumerator, ')
+          ..write('exactResultDenominator: $exactResultDenominator, ')
+          ..write('normalizedMaintenanceKcal: $normalizedMaintenanceKcal, ')
+          ..write('createdAtUtc: $createdAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    userId,
+    versionNumber,
+    goalType,
+    targetSource,
+    calorieTargetKcal,
+    proteinTargetG,
+    carbsTargetG,
+    fatTargetG,
+    policyVersion,
+    calculationVersion,
+    algorithmVersion,
+    effectiveFromLocalDate,
+    effectiveToLocalDate,
+    timezoneId,
+    supersedesGoalVersionId,
+    evidenceFingerprint,
+    exactResultNumerator,
+    exactResultDenominator,
+    normalizedMaintenanceKcal,
+    createdAtUtc,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionGoalVersion &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.versionNumber == this.versionNumber &&
+          other.goalType == this.goalType &&
+          other.targetSource == this.targetSource &&
+          other.calorieTargetKcal == this.calorieTargetKcal &&
+          other.proteinTargetG == this.proteinTargetG &&
+          other.carbsTargetG == this.carbsTargetG &&
+          other.fatTargetG == this.fatTargetG &&
+          other.policyVersion == this.policyVersion &&
+          other.calculationVersion == this.calculationVersion &&
+          other.algorithmVersion == this.algorithmVersion &&
+          other.effectiveFromLocalDate == this.effectiveFromLocalDate &&
+          other.effectiveToLocalDate == this.effectiveToLocalDate &&
+          other.timezoneId == this.timezoneId &&
+          other.supersedesGoalVersionId == this.supersedesGoalVersionId &&
+          other.evidenceFingerprint == this.evidenceFingerprint &&
+          other.exactResultNumerator == this.exactResultNumerator &&
+          other.exactResultDenominator == this.exactResultDenominator &&
+          other.normalizedMaintenanceKcal == this.normalizedMaintenanceKcal &&
+          other.createdAtUtc == this.createdAtUtc);
+}
+
+class NutritionGoalVersionsCompanion
+    extends UpdateCompanion<NutritionGoalVersion> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<int> versionNumber;
+  final Value<String> goalType;
+  final Value<String> targetSource;
+  final Value<int?> calorieTargetKcal;
+  final Value<double?> proteinTargetG;
+  final Value<double?> carbsTargetG;
+  final Value<double?> fatTargetG;
+  final Value<String?> policyVersion;
+  final Value<String?> calculationVersion;
+  final Value<String?> algorithmVersion;
+  final Value<String> effectiveFromLocalDate;
+  final Value<String?> effectiveToLocalDate;
+  final Value<String> timezoneId;
+  final Value<String?> supersedesGoalVersionId;
+  final Value<String?> evidenceFingerprint;
+  final Value<String?> exactResultNumerator;
+  final Value<String?> exactResultDenominator;
+  final Value<int?> normalizedMaintenanceKcal;
+  final Value<DateTime> createdAtUtc;
+  final Value<int> rowid;
+  const NutritionGoalVersionsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.versionNumber = const Value.absent(),
+    this.goalType = const Value.absent(),
+    this.targetSource = const Value.absent(),
+    this.calorieTargetKcal = const Value.absent(),
+    this.proteinTargetG = const Value.absent(),
+    this.carbsTargetG = const Value.absent(),
+    this.fatTargetG = const Value.absent(),
+    this.policyVersion = const Value.absent(),
+    this.calculationVersion = const Value.absent(),
+    this.algorithmVersion = const Value.absent(),
+    this.effectiveFromLocalDate = const Value.absent(),
+    this.effectiveToLocalDate = const Value.absent(),
+    this.timezoneId = const Value.absent(),
+    this.supersedesGoalVersionId = const Value.absent(),
+    this.evidenceFingerprint = const Value.absent(),
+    this.exactResultNumerator = const Value.absent(),
+    this.exactResultDenominator = const Value.absent(),
+    this.normalizedMaintenanceKcal = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionGoalVersionsCompanion.insert({
+    required String id,
+    required String userId,
+    required int versionNumber,
+    required String goalType,
+    required String targetSource,
+    this.calorieTargetKcal = const Value.absent(),
+    this.proteinTargetG = const Value.absent(),
+    this.carbsTargetG = const Value.absent(),
+    this.fatTargetG = const Value.absent(),
+    this.policyVersion = const Value.absent(),
+    this.calculationVersion = const Value.absent(),
+    this.algorithmVersion = const Value.absent(),
+    required String effectiveFromLocalDate,
+    this.effectiveToLocalDate = const Value.absent(),
+    required String timezoneId,
+    this.supersedesGoalVersionId = const Value.absent(),
+    this.evidenceFingerprint = const Value.absent(),
+    this.exactResultNumerator = const Value.absent(),
+    this.exactResultDenominator = const Value.absent(),
+    this.normalizedMaintenanceKcal = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       versionNumber = Value(versionNumber),
+       goalType = Value(goalType),
+       targetSource = Value(targetSource),
+       effectiveFromLocalDate = Value(effectiveFromLocalDate),
+       timezoneId = Value(timezoneId);
+  static Insertable<NutritionGoalVersion> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<int>? versionNumber,
+    Expression<String>? goalType,
+    Expression<String>? targetSource,
+    Expression<int>? calorieTargetKcal,
+    Expression<double>? proteinTargetG,
+    Expression<double>? carbsTargetG,
+    Expression<double>? fatTargetG,
+    Expression<String>? policyVersion,
+    Expression<String>? calculationVersion,
+    Expression<String>? algorithmVersion,
+    Expression<String>? effectiveFromLocalDate,
+    Expression<String>? effectiveToLocalDate,
+    Expression<String>? timezoneId,
+    Expression<String>? supersedesGoalVersionId,
+    Expression<String>? evidenceFingerprint,
+    Expression<String>? exactResultNumerator,
+    Expression<String>? exactResultDenominator,
+    Expression<int>? normalizedMaintenanceKcal,
+    Expression<DateTime>? createdAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (versionNumber != null) 'version_number': versionNumber,
+      if (goalType != null) 'goal_type': goalType,
+      if (targetSource != null) 'target_source': targetSource,
+      if (calorieTargetKcal != null) 'calorie_target_kcal': calorieTargetKcal,
+      if (proteinTargetG != null) 'protein_target_g': proteinTargetG,
+      if (carbsTargetG != null) 'carbs_target_g': carbsTargetG,
+      if (fatTargetG != null) 'fat_target_g': fatTargetG,
+      if (policyVersion != null) 'policy_version': policyVersion,
+      if (calculationVersion != null) 'calculation_version': calculationVersion,
+      if (algorithmVersion != null) 'algorithm_version': algorithmVersion,
+      if (effectiveFromLocalDate != null)
+        'effective_from_local_date': effectiveFromLocalDate,
+      if (effectiveToLocalDate != null)
+        'effective_to_local_date': effectiveToLocalDate,
+      if (timezoneId != null) 'timezone_id': timezoneId,
+      if (supersedesGoalVersionId != null)
+        'supersedes_goal_version_id': supersedesGoalVersionId,
+      if (evidenceFingerprint != null)
+        'evidence_fingerprint': evidenceFingerprint,
+      if (exactResultNumerator != null)
+        'exact_result_numerator': exactResultNumerator,
+      if (exactResultDenominator != null)
+        'exact_result_denominator': exactResultDenominator,
+      if (normalizedMaintenanceKcal != null)
+        'normalized_maintenance_kcal': normalizedMaintenanceKcal,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionGoalVersionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<int>? versionNumber,
+    Value<String>? goalType,
+    Value<String>? targetSource,
+    Value<int?>? calorieTargetKcal,
+    Value<double?>? proteinTargetG,
+    Value<double?>? carbsTargetG,
+    Value<double?>? fatTargetG,
+    Value<String?>? policyVersion,
+    Value<String?>? calculationVersion,
+    Value<String?>? algorithmVersion,
+    Value<String>? effectiveFromLocalDate,
+    Value<String?>? effectiveToLocalDate,
+    Value<String>? timezoneId,
+    Value<String?>? supersedesGoalVersionId,
+    Value<String?>? evidenceFingerprint,
+    Value<String?>? exactResultNumerator,
+    Value<String?>? exactResultDenominator,
+    Value<int?>? normalizedMaintenanceKcal,
+    Value<DateTime>? createdAtUtc,
+    Value<int>? rowid,
+  }) {
+    return NutritionGoalVersionsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      versionNumber: versionNumber ?? this.versionNumber,
+      goalType: goalType ?? this.goalType,
+      targetSource: targetSource ?? this.targetSource,
+      calorieTargetKcal: calorieTargetKcal ?? this.calorieTargetKcal,
+      proteinTargetG: proteinTargetG ?? this.proteinTargetG,
+      carbsTargetG: carbsTargetG ?? this.carbsTargetG,
+      fatTargetG: fatTargetG ?? this.fatTargetG,
+      policyVersion: policyVersion ?? this.policyVersion,
+      calculationVersion: calculationVersion ?? this.calculationVersion,
+      algorithmVersion: algorithmVersion ?? this.algorithmVersion,
+      effectiveFromLocalDate:
+          effectiveFromLocalDate ?? this.effectiveFromLocalDate,
+      effectiveToLocalDate: effectiveToLocalDate ?? this.effectiveToLocalDate,
+      timezoneId: timezoneId ?? this.timezoneId,
+      supersedesGoalVersionId:
+          supersedesGoalVersionId ?? this.supersedesGoalVersionId,
+      evidenceFingerprint: evidenceFingerprint ?? this.evidenceFingerprint,
+      exactResultNumerator: exactResultNumerator ?? this.exactResultNumerator,
+      exactResultDenominator:
+          exactResultDenominator ?? this.exactResultDenominator,
+      normalizedMaintenanceKcal:
+          normalizedMaintenanceKcal ?? this.normalizedMaintenanceKcal,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (versionNumber.present) {
+      map['version_number'] = Variable<int>(versionNumber.value);
+    }
+    if (goalType.present) {
+      map['goal_type'] = Variable<String>(goalType.value);
+    }
+    if (targetSource.present) {
+      map['target_source'] = Variable<String>(targetSource.value);
+    }
+    if (calorieTargetKcal.present) {
+      map['calorie_target_kcal'] = Variable<int>(calorieTargetKcal.value);
+    }
+    if (proteinTargetG.present) {
+      map['protein_target_g'] = Variable<double>(proteinTargetG.value);
+    }
+    if (carbsTargetG.present) {
+      map['carbs_target_g'] = Variable<double>(carbsTargetG.value);
+    }
+    if (fatTargetG.present) {
+      map['fat_target_g'] = Variable<double>(fatTargetG.value);
+    }
+    if (policyVersion.present) {
+      map['policy_version'] = Variable<String>(policyVersion.value);
+    }
+    if (calculationVersion.present) {
+      map['calculation_version'] = Variable<String>(calculationVersion.value);
+    }
+    if (algorithmVersion.present) {
+      map['algorithm_version'] = Variable<String>(algorithmVersion.value);
+    }
+    if (effectiveFromLocalDate.present) {
+      map['effective_from_local_date'] = Variable<String>(
+        effectiveFromLocalDate.value,
+      );
+    }
+    if (effectiveToLocalDate.present) {
+      map['effective_to_local_date'] = Variable<String>(
+        effectiveToLocalDate.value,
+      );
+    }
+    if (timezoneId.present) {
+      map['timezone_id'] = Variable<String>(timezoneId.value);
+    }
+    if (supersedesGoalVersionId.present) {
+      map['supersedes_goal_version_id'] = Variable<String>(
+        supersedesGoalVersionId.value,
+      );
+    }
+    if (evidenceFingerprint.present) {
+      map['evidence_fingerprint'] = Variable<String>(evidenceFingerprint.value);
+    }
+    if (exactResultNumerator.present) {
+      map['exact_result_numerator'] = Variable<String>(
+        exactResultNumerator.value,
+      );
+    }
+    if (exactResultDenominator.present) {
+      map['exact_result_denominator'] = Variable<String>(
+        exactResultDenominator.value,
+      );
+    }
+    if (normalizedMaintenanceKcal.present) {
+      map['normalized_maintenance_kcal'] = Variable<int>(
+        normalizedMaintenanceKcal.value,
+      );
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionGoalVersionsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('versionNumber: $versionNumber, ')
+          ..write('goalType: $goalType, ')
+          ..write('targetSource: $targetSource, ')
+          ..write('calorieTargetKcal: $calorieTargetKcal, ')
+          ..write('proteinTargetG: $proteinTargetG, ')
+          ..write('carbsTargetG: $carbsTargetG, ')
+          ..write('fatTargetG: $fatTargetG, ')
+          ..write('policyVersion: $policyVersion, ')
+          ..write('calculationVersion: $calculationVersion, ')
+          ..write('algorithmVersion: $algorithmVersion, ')
+          ..write('effectiveFromLocalDate: $effectiveFromLocalDate, ')
+          ..write('effectiveToLocalDate: $effectiveToLocalDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('supersedesGoalVersionId: $supersedesGoalVersionId, ')
+          ..write('evidenceFingerprint: $evidenceFingerprint, ')
+          ..write('exactResultNumerator: $exactResultNumerator, ')
+          ..write('exactResultDenominator: $exactResultDenominator, ')
+          ..write('normalizedMaintenanceKcal: $normalizedMaintenanceKcal, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CoachingConsentEventsTable extends CoachingConsentEvents
+    with TableInfo<$CoachingConsentEventsTable, CoachingConsentEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CoachingConsentEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _consentCategoryMeta = const VerificationMeta(
+    'consentCategory',
+  );
+  @override
+  late final GeneratedColumn<String> consentCategory = GeneratedColumn<String>(
+    'consent_category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _actionMeta = const VerificationMeta('action');
+  @override
+  late final GeneratedColumn<String> action = GeneratedColumn<String>(
+    'action',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _consentPolicyVersionMeta =
+      const VerificationMeta('consentPolicyVersion');
+  @override
+  late final GeneratedColumn<String> consentPolicyVersion =
+      GeneratedColumn<String>(
+        'consent_policy_version',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _copyVersionMeta = const VerificationMeta(
+    'copyVersion',
+  );
+  @override
+  late final GeneratedColumn<String> copyVersion = GeneratedColumn<String>(
+    'copy_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timestampUtcMeta = const VerificationMeta(
+    'timestampUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> timestampUtc = GeneratedColumn<DateTime>(
+    'timestamp_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localDateMeta = const VerificationMeta(
+    'localDate',
+  );
+  @override
+  late final GeneratedColumn<String> localDate = GeneratedColumn<String>(
+    'local_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timezoneIdMeta = const VerificationMeta(
+    'timezoneId',
+  );
+  @override
+  late final GeneratedColumn<String> timezoneId = GeneratedColumn<String>(
+    'timezone_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _actorSourceMeta = const VerificationMeta(
+    'actorSource',
+  );
+  @override
+  late final GeneratedColumn<String> actorSource = GeneratedColumn<String>(
+    'actor_source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _relatedOrSupersededEventIdMeta =
+      const VerificationMeta('relatedOrSupersededEventId');
+  @override
+  late final GeneratedColumn<String> relatedOrSupersededEventId =
+      GeneratedColumn<String>(
+        'related_or_superseded_event_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES coaching_consent_events (id)',
+        ),
+      );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    consentCategory,
+    action,
+    consentPolicyVersion,
+    copyVersion,
+    timestampUtc,
+    localDate,
+    timezoneId,
+    actorSource,
+    relatedOrSupersededEventId,
+    createdAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'coaching_consent_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CoachingConsentEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('consent_category')) {
+      context.handle(
+        _consentCategoryMeta,
+        consentCategory.isAcceptableOrUnknown(
+          data['consent_category']!,
+          _consentCategoryMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_consentCategoryMeta);
+    }
+    if (data.containsKey('action')) {
+      context.handle(
+        _actionMeta,
+        action.isAcceptableOrUnknown(data['action']!, _actionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_actionMeta);
+    }
+    if (data.containsKey('consent_policy_version')) {
+      context.handle(
+        _consentPolicyVersionMeta,
+        consentPolicyVersion.isAcceptableOrUnknown(
+          data['consent_policy_version']!,
+          _consentPolicyVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_consentPolicyVersionMeta);
+    }
+    if (data.containsKey('copy_version')) {
+      context.handle(
+        _copyVersionMeta,
+        copyVersion.isAcceptableOrUnknown(
+          data['copy_version']!,
+          _copyVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_copyVersionMeta);
+    }
+    if (data.containsKey('timestamp_utc')) {
+      context.handle(
+        _timestampUtcMeta,
+        timestampUtc.isAcceptableOrUnknown(
+          data['timestamp_utc']!,
+          _timestampUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_timestampUtcMeta);
+    }
+    if (data.containsKey('local_date')) {
+      context.handle(
+        _localDateMeta,
+        localDate.isAcceptableOrUnknown(data['local_date']!, _localDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localDateMeta);
+    }
+    if (data.containsKey('timezone_id')) {
+      context.handle(
+        _timezoneIdMeta,
+        timezoneId.isAcceptableOrUnknown(data['timezone_id']!, _timezoneIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timezoneIdMeta);
+    }
+    if (data.containsKey('actor_source')) {
+      context.handle(
+        _actorSourceMeta,
+        actorSource.isAcceptableOrUnknown(
+          data['actor_source']!,
+          _actorSourceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_actorSourceMeta);
+    }
+    if (data.containsKey('related_or_superseded_event_id')) {
+      context.handle(
+        _relatedOrSupersededEventIdMeta,
+        relatedOrSupersededEventId.isAcceptableOrUnknown(
+          data['related_or_superseded_event_id']!,
+          _relatedOrSupersededEventIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, consentCategory, action, timestampUtc},
+  ];
+  @override
+  CoachingConsentEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CoachingConsentEvent(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      consentCategory: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}consent_category'],
+      )!,
+      action: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}action'],
+      )!,
+      consentPolicyVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}consent_policy_version'],
+      )!,
+      copyVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}copy_version'],
+      )!,
+      timestampUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}timestamp_utc'],
+      )!,
+      localDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_date'],
+      )!,
+      timezoneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}timezone_id'],
+      )!,
+      actorSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}actor_source'],
+      )!,
+      relatedOrSupersededEventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}related_or_superseded_event_id'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $CoachingConsentEventsTable createAlias(String alias) {
+    return $CoachingConsentEventsTable(attachedDatabase, alias);
+  }
+}
+
+class CoachingConsentEvent extends DataClass
+    implements Insertable<CoachingConsentEvent> {
+  final String id;
+  final String userId;
+  final String consentCategory;
+  final String action;
+  final String consentPolicyVersion;
+  final String copyVersion;
+  final DateTime timestampUtc;
+  final String localDate;
+  final String timezoneId;
+  final String actorSource;
+  final String? relatedOrSupersededEventId;
+  final DateTime createdAtUtc;
+  const CoachingConsentEvent({
+    required this.id,
+    required this.userId,
+    required this.consentCategory,
+    required this.action,
+    required this.consentPolicyVersion,
+    required this.copyVersion,
+    required this.timestampUtc,
+    required this.localDate,
+    required this.timezoneId,
+    required this.actorSource,
+    this.relatedOrSupersededEventId,
+    required this.createdAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['consent_category'] = Variable<String>(consentCategory);
+    map['action'] = Variable<String>(action);
+    map['consent_policy_version'] = Variable<String>(consentPolicyVersion);
+    map['copy_version'] = Variable<String>(copyVersion);
+    map['timestamp_utc'] = Variable<DateTime>(timestampUtc);
+    map['local_date'] = Variable<String>(localDate);
+    map['timezone_id'] = Variable<String>(timezoneId);
+    map['actor_source'] = Variable<String>(actorSource);
+    if (!nullToAbsent || relatedOrSupersededEventId != null) {
+      map['related_or_superseded_event_id'] = Variable<String>(
+        relatedOrSupersededEventId,
+      );
+    }
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    return map;
+  }
+
+  CoachingConsentEventsCompanion toCompanion(bool nullToAbsent) {
+    return CoachingConsentEventsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      consentCategory: Value(consentCategory),
+      action: Value(action),
+      consentPolicyVersion: Value(consentPolicyVersion),
+      copyVersion: Value(copyVersion),
+      timestampUtc: Value(timestampUtc),
+      localDate: Value(localDate),
+      timezoneId: Value(timezoneId),
+      actorSource: Value(actorSource),
+      relatedOrSupersededEventId:
+          relatedOrSupersededEventId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(relatedOrSupersededEventId),
+      createdAtUtc: Value(createdAtUtc),
+    );
+  }
+
+  factory CoachingConsentEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CoachingConsentEvent(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      consentCategory: serializer.fromJson<String>(json['consentCategory']),
+      action: serializer.fromJson<String>(json['action']),
+      consentPolicyVersion: serializer.fromJson<String>(
+        json['consentPolicyVersion'],
+      ),
+      copyVersion: serializer.fromJson<String>(json['copyVersion']),
+      timestampUtc: serializer.fromJson<DateTime>(json['timestampUtc']),
+      localDate: serializer.fromJson<String>(json['localDate']),
+      timezoneId: serializer.fromJson<String>(json['timezoneId']),
+      actorSource: serializer.fromJson<String>(json['actorSource']),
+      relatedOrSupersededEventId: serializer.fromJson<String?>(
+        json['relatedOrSupersededEventId'],
+      ),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'consentCategory': serializer.toJson<String>(consentCategory),
+      'action': serializer.toJson<String>(action),
+      'consentPolicyVersion': serializer.toJson<String>(consentPolicyVersion),
+      'copyVersion': serializer.toJson<String>(copyVersion),
+      'timestampUtc': serializer.toJson<DateTime>(timestampUtc),
+      'localDate': serializer.toJson<String>(localDate),
+      'timezoneId': serializer.toJson<String>(timezoneId),
+      'actorSource': serializer.toJson<String>(actorSource),
+      'relatedOrSupersededEventId': serializer.toJson<String?>(
+        relatedOrSupersededEventId,
+      ),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+    };
+  }
+
+  CoachingConsentEvent copyWith({
+    String? id,
+    String? userId,
+    String? consentCategory,
+    String? action,
+    String? consentPolicyVersion,
+    String? copyVersion,
+    DateTime? timestampUtc,
+    String? localDate,
+    String? timezoneId,
+    String? actorSource,
+    Value<String?> relatedOrSupersededEventId = const Value.absent(),
+    DateTime? createdAtUtc,
+  }) => CoachingConsentEvent(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    consentCategory: consentCategory ?? this.consentCategory,
+    action: action ?? this.action,
+    consentPolicyVersion: consentPolicyVersion ?? this.consentPolicyVersion,
+    copyVersion: copyVersion ?? this.copyVersion,
+    timestampUtc: timestampUtc ?? this.timestampUtc,
+    localDate: localDate ?? this.localDate,
+    timezoneId: timezoneId ?? this.timezoneId,
+    actorSource: actorSource ?? this.actorSource,
+    relatedOrSupersededEventId: relatedOrSupersededEventId.present
+        ? relatedOrSupersededEventId.value
+        : this.relatedOrSupersededEventId,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+  );
+  CoachingConsentEvent copyWithCompanion(CoachingConsentEventsCompanion data) {
+    return CoachingConsentEvent(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      consentCategory: data.consentCategory.present
+          ? data.consentCategory.value
+          : this.consentCategory,
+      action: data.action.present ? data.action.value : this.action,
+      consentPolicyVersion: data.consentPolicyVersion.present
+          ? data.consentPolicyVersion.value
+          : this.consentPolicyVersion,
+      copyVersion: data.copyVersion.present
+          ? data.copyVersion.value
+          : this.copyVersion,
+      timestampUtc: data.timestampUtc.present
+          ? data.timestampUtc.value
+          : this.timestampUtc,
+      localDate: data.localDate.present ? data.localDate.value : this.localDate,
+      timezoneId: data.timezoneId.present
+          ? data.timezoneId.value
+          : this.timezoneId,
+      actorSource: data.actorSource.present
+          ? data.actorSource.value
+          : this.actorSource,
+      relatedOrSupersededEventId: data.relatedOrSupersededEventId.present
+          ? data.relatedOrSupersededEventId.value
+          : this.relatedOrSupersededEventId,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachingConsentEvent(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('consentCategory: $consentCategory, ')
+          ..write('action: $action, ')
+          ..write('consentPolicyVersion: $consentPolicyVersion, ')
+          ..write('copyVersion: $copyVersion, ')
+          ..write('timestampUtc: $timestampUtc, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('actorSource: $actorSource, ')
+          ..write('relatedOrSupersededEventId: $relatedOrSupersededEventId, ')
+          ..write('createdAtUtc: $createdAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    consentCategory,
+    action,
+    consentPolicyVersion,
+    copyVersion,
+    timestampUtc,
+    localDate,
+    timezoneId,
+    actorSource,
+    relatedOrSupersededEventId,
+    createdAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CoachingConsentEvent &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.consentCategory == this.consentCategory &&
+          other.action == this.action &&
+          other.consentPolicyVersion == this.consentPolicyVersion &&
+          other.copyVersion == this.copyVersion &&
+          other.timestampUtc == this.timestampUtc &&
+          other.localDate == this.localDate &&
+          other.timezoneId == this.timezoneId &&
+          other.actorSource == this.actorSource &&
+          other.relatedOrSupersededEventId == this.relatedOrSupersededEventId &&
+          other.createdAtUtc == this.createdAtUtc);
+}
+
+class CoachingConsentEventsCompanion
+    extends UpdateCompanion<CoachingConsentEvent> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> consentCategory;
+  final Value<String> action;
+  final Value<String> consentPolicyVersion;
+  final Value<String> copyVersion;
+  final Value<DateTime> timestampUtc;
+  final Value<String> localDate;
+  final Value<String> timezoneId;
+  final Value<String> actorSource;
+  final Value<String?> relatedOrSupersededEventId;
+  final Value<DateTime> createdAtUtc;
+  final Value<int> rowid;
+  const CoachingConsentEventsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.consentCategory = const Value.absent(),
+    this.action = const Value.absent(),
+    this.consentPolicyVersion = const Value.absent(),
+    this.copyVersion = const Value.absent(),
+    this.timestampUtc = const Value.absent(),
+    this.localDate = const Value.absent(),
+    this.timezoneId = const Value.absent(),
+    this.actorSource = const Value.absent(),
+    this.relatedOrSupersededEventId = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CoachingConsentEventsCompanion.insert({
+    required String id,
+    required String userId,
+    required String consentCategory,
+    required String action,
+    required String consentPolicyVersion,
+    required String copyVersion,
+    required DateTime timestampUtc,
+    required String localDate,
+    required String timezoneId,
+    required String actorSource,
+    this.relatedOrSupersededEventId = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       consentCategory = Value(consentCategory),
+       action = Value(action),
+       consentPolicyVersion = Value(consentPolicyVersion),
+       copyVersion = Value(copyVersion),
+       timestampUtc = Value(timestampUtc),
+       localDate = Value(localDate),
+       timezoneId = Value(timezoneId),
+       actorSource = Value(actorSource);
+  static Insertable<CoachingConsentEvent> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? consentCategory,
+    Expression<String>? action,
+    Expression<String>? consentPolicyVersion,
+    Expression<String>? copyVersion,
+    Expression<DateTime>? timestampUtc,
+    Expression<String>? localDate,
+    Expression<String>? timezoneId,
+    Expression<String>? actorSource,
+    Expression<String>? relatedOrSupersededEventId,
+    Expression<DateTime>? createdAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (consentCategory != null) 'consent_category': consentCategory,
+      if (action != null) 'action': action,
+      if (consentPolicyVersion != null)
+        'consent_policy_version': consentPolicyVersion,
+      if (copyVersion != null) 'copy_version': copyVersion,
+      if (timestampUtc != null) 'timestamp_utc': timestampUtc,
+      if (localDate != null) 'local_date': localDate,
+      if (timezoneId != null) 'timezone_id': timezoneId,
+      if (actorSource != null) 'actor_source': actorSource,
+      if (relatedOrSupersededEventId != null)
+        'related_or_superseded_event_id': relatedOrSupersededEventId,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CoachingConsentEventsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? consentCategory,
+    Value<String>? action,
+    Value<String>? consentPolicyVersion,
+    Value<String>? copyVersion,
+    Value<DateTime>? timestampUtc,
+    Value<String>? localDate,
+    Value<String>? timezoneId,
+    Value<String>? actorSource,
+    Value<String?>? relatedOrSupersededEventId,
+    Value<DateTime>? createdAtUtc,
+    Value<int>? rowid,
+  }) {
+    return CoachingConsentEventsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      consentCategory: consentCategory ?? this.consentCategory,
+      action: action ?? this.action,
+      consentPolicyVersion: consentPolicyVersion ?? this.consentPolicyVersion,
+      copyVersion: copyVersion ?? this.copyVersion,
+      timestampUtc: timestampUtc ?? this.timestampUtc,
+      localDate: localDate ?? this.localDate,
+      timezoneId: timezoneId ?? this.timezoneId,
+      actorSource: actorSource ?? this.actorSource,
+      relatedOrSupersededEventId:
+          relatedOrSupersededEventId ?? this.relatedOrSupersededEventId,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (consentCategory.present) {
+      map['consent_category'] = Variable<String>(consentCategory.value);
+    }
+    if (action.present) {
+      map['action'] = Variable<String>(action.value);
+    }
+    if (consentPolicyVersion.present) {
+      map['consent_policy_version'] = Variable<String>(
+        consentPolicyVersion.value,
+      );
+    }
+    if (copyVersion.present) {
+      map['copy_version'] = Variable<String>(copyVersion.value);
+    }
+    if (timestampUtc.present) {
+      map['timestamp_utc'] = Variable<DateTime>(timestampUtc.value);
+    }
+    if (localDate.present) {
+      map['local_date'] = Variable<String>(localDate.value);
+    }
+    if (timezoneId.present) {
+      map['timezone_id'] = Variable<String>(timezoneId.value);
+    }
+    if (actorSource.present) {
+      map['actor_source'] = Variable<String>(actorSource.value);
+    }
+    if (relatedOrSupersededEventId.present) {
+      map['related_or_superseded_event_id'] = Variable<String>(
+        relatedOrSupersededEventId.value,
+      );
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachingConsentEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('consentCategory: $consentCategory, ')
+          ..write('action: $action, ')
+          ..write('consentPolicyVersion: $consentPolicyVersion, ')
+          ..write('copyVersion: $copyVersion, ')
+          ..write('timestampUtc: $timestampUtc, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('actorSource: $actorSource, ')
+          ..write('relatedOrSupersededEventId: $relatedOrSupersededEventId, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NutritionCoachingPreferencesTable extends NutritionCoachingPreferences
+    with
+        TableInfo<
+          $NutritionCoachingPreferencesTable,
+          NutritionCoachingPreference
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NutritionCoachingPreferencesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _adaptiveCoachingEnabledMeta =
+      const VerificationMeta('adaptiveCoachingEnabled');
+  @override
+  late final GeneratedColumn<bool> adaptiveCoachingEnabled =
+      GeneratedColumn<bool>(
+        'adaptive_coaching_enabled',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("adaptive_coaching_enabled" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
+  static const VerificationMeta _optionalAiEnabledMeta = const VerificationMeta(
+    'optionalAiEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> optionalAiEnabled = GeneratedColumn<bool>(
+    'optional_ai_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("optional_ai_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _projectionVersionMeta = const VerificationMeta(
+    'projectionVersion',
+  );
+  @override
+  late final GeneratedColumn<int> projectionVersion = GeneratedColumn<int>(
+    'projection_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    adaptiveCoachingEnabled,
+    optionalAiEnabled,
+    projectionVersion,
+    isArchived,
+    createdAtUtc,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nutrition_coaching_preferences';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NutritionCoachingPreference> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('adaptive_coaching_enabled')) {
+      context.handle(
+        _adaptiveCoachingEnabledMeta,
+        adaptiveCoachingEnabled.isAcceptableOrUnknown(
+          data['adaptive_coaching_enabled']!,
+          _adaptiveCoachingEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('optional_ai_enabled')) {
+      context.handle(
+        _optionalAiEnabledMeta,
+        optionalAiEnabled.isAcceptableOrUnknown(
+          data['optional_ai_enabled']!,
+          _optionalAiEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('projection_version')) {
+      context.handle(
+        _projectionVersionMeta,
+        projectionVersion.isAcceptableOrUnknown(
+          data['projection_version']!,
+          _projectionVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId},
+  ];
+  @override
+  NutritionCoachingPreference map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NutritionCoachingPreference(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      adaptiveCoachingEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}adaptive_coaching_enabled'],
+      )!,
+      optionalAiEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}optional_ai_enabled'],
+      )!,
+      projectionVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}projection_version'],
+      )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $NutritionCoachingPreferencesTable createAlias(String alias) {
+    return $NutritionCoachingPreferencesTable(attachedDatabase, alias);
+  }
+}
+
+class NutritionCoachingPreference extends DataClass
+    implements Insertable<NutritionCoachingPreference> {
+  final String id;
+  final String userId;
+  final bool adaptiveCoachingEnabled;
+  final bool optionalAiEnabled;
+  final int projectionVersion;
+  final bool isArchived;
+  final DateTime createdAtUtc;
+  final DateTime updatedAtUtc;
+  const NutritionCoachingPreference({
+    required this.id,
+    required this.userId,
+    required this.adaptiveCoachingEnabled,
+    required this.optionalAiEnabled,
+    required this.projectionVersion,
+    required this.isArchived,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['adaptive_coaching_enabled'] = Variable<bool>(adaptiveCoachingEnabled);
+    map['optional_ai_enabled'] = Variable<bool>(optionalAiEnabled);
+    map['projection_version'] = Variable<int>(projectionVersion);
+    map['is_archived'] = Variable<bool>(isArchived);
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  NutritionCoachingPreferencesCompanion toCompanion(bool nullToAbsent) {
+    return NutritionCoachingPreferencesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      adaptiveCoachingEnabled: Value(adaptiveCoachingEnabled),
+      optionalAiEnabled: Value(optionalAiEnabled),
+      projectionVersion: Value(projectionVersion),
+      isArchived: Value(isArchived),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory NutritionCoachingPreference.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NutritionCoachingPreference(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      adaptiveCoachingEnabled: serializer.fromJson<bool>(
+        json['adaptiveCoachingEnabled'],
+      ),
+      optionalAiEnabled: serializer.fromJson<bool>(json['optionalAiEnabled']),
+      projectionVersion: serializer.fromJson<int>(json['projectionVersion']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'adaptiveCoachingEnabled': serializer.toJson<bool>(
+        adaptiveCoachingEnabled,
+      ),
+      'optionalAiEnabled': serializer.toJson<bool>(optionalAiEnabled),
+      'projectionVersion': serializer.toJson<int>(projectionVersion),
+      'isArchived': serializer.toJson<bool>(isArchived),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  NutritionCoachingPreference copyWith({
+    String? id,
+    String? userId,
+    bool? adaptiveCoachingEnabled,
+    bool? optionalAiEnabled,
+    int? projectionVersion,
+    bool? isArchived,
+    DateTime? createdAtUtc,
+    DateTime? updatedAtUtc,
+  }) => NutritionCoachingPreference(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    adaptiveCoachingEnabled:
+        adaptiveCoachingEnabled ?? this.adaptiveCoachingEnabled,
+    optionalAiEnabled: optionalAiEnabled ?? this.optionalAiEnabled,
+    projectionVersion: projectionVersion ?? this.projectionVersion,
+    isArchived: isArchived ?? this.isArchived,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  NutritionCoachingPreference copyWithCompanion(
+    NutritionCoachingPreferencesCompanion data,
+  ) {
+    return NutritionCoachingPreference(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      adaptiveCoachingEnabled: data.adaptiveCoachingEnabled.present
+          ? data.adaptiveCoachingEnabled.value
+          : this.adaptiveCoachingEnabled,
+      optionalAiEnabled: data.optionalAiEnabled.present
+          ? data.optionalAiEnabled.value
+          : this.optionalAiEnabled,
+      projectionVersion: data.projectionVersion.present
+          ? data.projectionVersion.value
+          : this.projectionVersion,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionCoachingPreference(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('adaptiveCoachingEnabled: $adaptiveCoachingEnabled, ')
+          ..write('optionalAiEnabled: $optionalAiEnabled, ')
+          ..write('projectionVersion: $projectionVersion, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    adaptiveCoachingEnabled,
+    optionalAiEnabled,
+    projectionVersion,
+    isArchived,
+    createdAtUtc,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NutritionCoachingPreference &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.adaptiveCoachingEnabled == this.adaptiveCoachingEnabled &&
+          other.optionalAiEnabled == this.optionalAiEnabled &&
+          other.projectionVersion == this.projectionVersion &&
+          other.isArchived == this.isArchived &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class NutritionCoachingPreferencesCompanion
+    extends UpdateCompanion<NutritionCoachingPreference> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<bool> adaptiveCoachingEnabled;
+  final Value<bool> optionalAiEnabled;
+  final Value<int> projectionVersion;
+  final Value<bool> isArchived;
+  final Value<DateTime> createdAtUtc;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const NutritionCoachingPreferencesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.adaptiveCoachingEnabled = const Value.absent(),
+    this.optionalAiEnabled = const Value.absent(),
+    this.projectionVersion = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NutritionCoachingPreferencesCompanion.insert({
+    required String id,
+    required String userId,
+    this.adaptiveCoachingEnabled = const Value.absent(),
+    this.optionalAiEnabled = const Value.absent(),
+    this.projectionVersion = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId);
+  static Insertable<NutritionCoachingPreference> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<bool>? adaptiveCoachingEnabled,
+    Expression<bool>? optionalAiEnabled,
+    Expression<int>? projectionVersion,
+    Expression<bool>? isArchived,
+    Expression<DateTime>? createdAtUtc,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (adaptiveCoachingEnabled != null)
+        'adaptive_coaching_enabled': adaptiveCoachingEnabled,
+      if (optionalAiEnabled != null) 'optional_ai_enabled': optionalAiEnabled,
+      if (projectionVersion != null) 'projection_version': projectionVersion,
+      if (isArchived != null) 'is_archived': isArchived,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NutritionCoachingPreferencesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<bool>? adaptiveCoachingEnabled,
+    Value<bool>? optionalAiEnabled,
+    Value<int>? projectionVersion,
+    Value<bool>? isArchived,
+    Value<DateTime>? createdAtUtc,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return NutritionCoachingPreferencesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      adaptiveCoachingEnabled:
+          adaptiveCoachingEnabled ?? this.adaptiveCoachingEnabled,
+      optionalAiEnabled: optionalAiEnabled ?? this.optionalAiEnabled,
+      projectionVersion: projectionVersion ?? this.projectionVersion,
+      isArchived: isArchived ?? this.isArchived,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (adaptiveCoachingEnabled.present) {
+      map['adaptive_coaching_enabled'] = Variable<bool>(
+        adaptiveCoachingEnabled.value,
+      );
+    }
+    if (optionalAiEnabled.present) {
+      map['optional_ai_enabled'] = Variable<bool>(optionalAiEnabled.value);
+    }
+    if (projectionVersion.present) {
+      map['projection_version'] = Variable<int>(projectionVersion.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NutritionCoachingPreferencesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('adaptiveCoachingEnabled: $adaptiveCoachingEnabled, ')
+          ..write('optionalAiEnabled: $optionalAiEnabled, ')
+          ..write('projectionVersion: $projectionVersion, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RecoveryObservationsTable extends RecoveryObservations
+    with TableInfo<$RecoveryObservationsTable, RecoveryObservation> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecoveryObservationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _observedAtUtcMeta = const VerificationMeta(
+    'observedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> observedAtUtc =
+      GeneratedColumn<DateTime>(
+        'observed_at_utc',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _localDateMeta = const VerificationMeta(
+    'localDate',
+  );
+  @override
+  late final GeneratedColumn<String> localDate = GeneratedColumn<String>(
+    'local_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timezoneIdMeta = const VerificationMeta(
+    'timezoneId',
+  );
+  @override
+  late final GeneratedColumn<String> timezoneId = GeneratedColumn<String>(
+    'timezone_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<double> value = GeneratedColumn<double>(
+    'value',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _provenanceMeta = const VerificationMeta(
+    'provenance',
+  );
+  @override
+  late final GeneratedColumn<String> provenance = GeneratedColumn<String>(
+    'provenance',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _freshnessMeta = const VerificationMeta(
+    'freshness',
+  );
+  @override
+  late final GeneratedColumn<String> freshness = GeneratedColumn<String>(
+    'freshness',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _providerExternalIdMeta =
+      const VerificationMeta('providerExternalId');
+  @override
+  late final GeneratedColumn<String> providerExternalId =
+      GeneratedColumn<String>(
+        'provider_external_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _sourceVersionMeta = const VerificationMeta(
+    'sourceVersion',
+  );
+  @override
+  late final GeneratedColumn<String> sourceVersion = GeneratedColumn<String>(
+    'source_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _evidenceTimestampUtcMeta =
+      const VerificationMeta('evidenceTimestampUtc');
+  @override
+  late final GeneratedColumn<DateTime> evidenceTimestampUtc =
+      GeneratedColumn<DateTime>(
+        'evidence_timestamp_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    kind,
+    observedAtUtc,
+    localDate,
+    timezoneId,
+    status,
+    unit,
+    value,
+    lower,
+    upper,
+    source,
+    provenance,
+    freshness,
+    providerExternalId,
+    sourceVersion,
+    evidenceTimestampUtc,
+    createdAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'recovery_observations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RecoveryObservation> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('observed_at_utc')) {
+      context.handle(
+        _observedAtUtcMeta,
+        observedAtUtc.isAcceptableOrUnknown(
+          data['observed_at_utc']!,
+          _observedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_observedAtUtcMeta);
+    }
+    if (data.containsKey('local_date')) {
+      context.handle(
+        _localDateMeta,
+        localDate.isAcceptableOrUnknown(data['local_date']!, _localDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localDateMeta);
+    }
+    if (data.containsKey('timezone_id')) {
+      context.handle(
+        _timezoneIdMeta,
+        timezoneId.isAcceptableOrUnknown(data['timezone_id']!, _timezoneIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timezoneIdMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_unitMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('provenance')) {
+      context.handle(
+        _provenanceMeta,
+        provenance.isAcceptableOrUnknown(data['provenance']!, _provenanceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_provenanceMeta);
+    }
+    if (data.containsKey('freshness')) {
+      context.handle(
+        _freshnessMeta,
+        freshness.isAcceptableOrUnknown(data['freshness']!, _freshnessMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_freshnessMeta);
+    }
+    if (data.containsKey('provider_external_id')) {
+      context.handle(
+        _providerExternalIdMeta,
+        providerExternalId.isAcceptableOrUnknown(
+          data['provider_external_id']!,
+          _providerExternalIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_version')) {
+      context.handle(
+        _sourceVersionMeta,
+        sourceVersion.isAcceptableOrUnknown(
+          data['source_version']!,
+          _sourceVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('evidence_timestamp_utc')) {
+      context.handle(
+        _evidenceTimestampUtcMeta,
+        evidenceTimestampUtc.isAcceptableOrUnknown(
+          data['evidence_timestamp_utc']!,
+          _evidenceTimestampUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, source, providerExternalId},
+  ];
+  @override
+  RecoveryObservation map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RecoveryObservation(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      observedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}observed_at_utc'],
+      )!,
+      localDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_date'],
+      )!,
+      timezoneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}timezone_id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}value'],
+      ),
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      provenance: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provenance'],
+      )!,
+      freshness: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}freshness'],
+      )!,
+      providerExternalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider_external_id'],
+      ),
+      sourceVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_version'],
+      ),
+      evidenceTimestampUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}evidence_timestamp_utc'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $RecoveryObservationsTable createAlias(String alias) {
+    return $RecoveryObservationsTable(attachedDatabase, alias);
+  }
+}
+
+class RecoveryObservation extends DataClass
+    implements Insertable<RecoveryObservation> {
+  final String id;
+  final String userId;
+  final String kind;
+  final DateTime observedAtUtc;
+  final String localDate;
+  final String timezoneId;
+  final String status;
+  final String unit;
+  final double? value;
+  final double? lower;
+  final double? upper;
+  final String source;
+  final String provenance;
+  final String freshness;
+  final String? providerExternalId;
+  final String? sourceVersion;
+  final DateTime? evidenceTimestampUtc;
+  final DateTime createdAtUtc;
+  const RecoveryObservation({
+    required this.id,
+    required this.userId,
+    required this.kind,
+    required this.observedAtUtc,
+    required this.localDate,
+    required this.timezoneId,
+    required this.status,
+    required this.unit,
+    this.value,
+    this.lower,
+    this.upper,
+    required this.source,
+    required this.provenance,
+    required this.freshness,
+    this.providerExternalId,
+    this.sourceVersion,
+    this.evidenceTimestampUtc,
+    required this.createdAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['kind'] = Variable<String>(kind);
+    map['observed_at_utc'] = Variable<DateTime>(observedAtUtc);
+    map['local_date'] = Variable<String>(localDate);
+    map['timezone_id'] = Variable<String>(timezoneId);
+    map['status'] = Variable<String>(status);
+    map['unit'] = Variable<String>(unit);
+    if (!nullToAbsent || value != null) {
+      map['value'] = Variable<double>(value);
+    }
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    map['source'] = Variable<String>(source);
+    map['provenance'] = Variable<String>(provenance);
+    map['freshness'] = Variable<String>(freshness);
+    if (!nullToAbsent || providerExternalId != null) {
+      map['provider_external_id'] = Variable<String>(providerExternalId);
+    }
+    if (!nullToAbsent || sourceVersion != null) {
+      map['source_version'] = Variable<String>(sourceVersion);
+    }
+    if (!nullToAbsent || evidenceTimestampUtc != null) {
+      map['evidence_timestamp_utc'] = Variable<DateTime>(evidenceTimestampUtc);
+    }
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    return map;
+  }
+
+  RecoveryObservationsCompanion toCompanion(bool nullToAbsent) {
+    return RecoveryObservationsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      kind: Value(kind),
+      observedAtUtc: Value(observedAtUtc),
+      localDate: Value(localDate),
+      timezoneId: Value(timezoneId),
+      status: Value(status),
+      unit: Value(unit),
+      value: value == null && nullToAbsent
+          ? const Value.absent()
+          : Value(value),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      source: Value(source),
+      provenance: Value(provenance),
+      freshness: Value(freshness),
+      providerExternalId: providerExternalId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(providerExternalId),
+      sourceVersion: sourceVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceVersion),
+      evidenceTimestampUtc: evidenceTimestampUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(evidenceTimestampUtc),
+      createdAtUtc: Value(createdAtUtc),
+    );
+  }
+
+  factory RecoveryObservation.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RecoveryObservation(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      observedAtUtc: serializer.fromJson<DateTime>(json['observedAtUtc']),
+      localDate: serializer.fromJson<String>(json['localDate']),
+      timezoneId: serializer.fromJson<String>(json['timezoneId']),
+      status: serializer.fromJson<String>(json['status']),
+      unit: serializer.fromJson<String>(json['unit']),
+      value: serializer.fromJson<double?>(json['value']),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      source: serializer.fromJson<String>(json['source']),
+      provenance: serializer.fromJson<String>(json['provenance']),
+      freshness: serializer.fromJson<String>(json['freshness']),
+      providerExternalId: serializer.fromJson<String?>(
+        json['providerExternalId'],
+      ),
+      sourceVersion: serializer.fromJson<String?>(json['sourceVersion']),
+      evidenceTimestampUtc: serializer.fromJson<DateTime?>(
+        json['evidenceTimestampUtc'],
+      ),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'kind': serializer.toJson<String>(kind),
+      'observedAtUtc': serializer.toJson<DateTime>(observedAtUtc),
+      'localDate': serializer.toJson<String>(localDate),
+      'timezoneId': serializer.toJson<String>(timezoneId),
+      'status': serializer.toJson<String>(status),
+      'unit': serializer.toJson<String>(unit),
+      'value': serializer.toJson<double?>(value),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'source': serializer.toJson<String>(source),
+      'provenance': serializer.toJson<String>(provenance),
+      'freshness': serializer.toJson<String>(freshness),
+      'providerExternalId': serializer.toJson<String?>(providerExternalId),
+      'sourceVersion': serializer.toJson<String?>(sourceVersion),
+      'evidenceTimestampUtc': serializer.toJson<DateTime?>(
+        evidenceTimestampUtc,
+      ),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+    };
+  }
+
+  RecoveryObservation copyWith({
+    String? id,
+    String? userId,
+    String? kind,
+    DateTime? observedAtUtc,
+    String? localDate,
+    String? timezoneId,
+    String? status,
+    String? unit,
+    Value<double?> value = const Value.absent(),
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    String? source,
+    String? provenance,
+    String? freshness,
+    Value<String?> providerExternalId = const Value.absent(),
+    Value<String?> sourceVersion = const Value.absent(),
+    Value<DateTime?> evidenceTimestampUtc = const Value.absent(),
+    DateTime? createdAtUtc,
+  }) => RecoveryObservation(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    kind: kind ?? this.kind,
+    observedAtUtc: observedAtUtc ?? this.observedAtUtc,
+    localDate: localDate ?? this.localDate,
+    timezoneId: timezoneId ?? this.timezoneId,
+    status: status ?? this.status,
+    unit: unit ?? this.unit,
+    value: value.present ? value.value : this.value,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    source: source ?? this.source,
+    provenance: provenance ?? this.provenance,
+    freshness: freshness ?? this.freshness,
+    providerExternalId: providerExternalId.present
+        ? providerExternalId.value
+        : this.providerExternalId,
+    sourceVersion: sourceVersion.present
+        ? sourceVersion.value
+        : this.sourceVersion,
+    evidenceTimestampUtc: evidenceTimestampUtc.present
+        ? evidenceTimestampUtc.value
+        : this.evidenceTimestampUtc,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+  );
+  RecoveryObservation copyWithCompanion(RecoveryObservationsCompanion data) {
+    return RecoveryObservation(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      observedAtUtc: data.observedAtUtc.present
+          ? data.observedAtUtc.value
+          : this.observedAtUtc,
+      localDate: data.localDate.present ? data.localDate.value : this.localDate,
+      timezoneId: data.timezoneId.present
+          ? data.timezoneId.value
+          : this.timezoneId,
+      status: data.status.present ? data.status.value : this.status,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      value: data.value.present ? data.value.value : this.value,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      source: data.source.present ? data.source.value : this.source,
+      provenance: data.provenance.present
+          ? data.provenance.value
+          : this.provenance,
+      freshness: data.freshness.present ? data.freshness.value : this.freshness,
+      providerExternalId: data.providerExternalId.present
+          ? data.providerExternalId.value
+          : this.providerExternalId,
+      sourceVersion: data.sourceVersion.present
+          ? data.sourceVersion.value
+          : this.sourceVersion,
+      evidenceTimestampUtc: data.evidenceTimestampUtc.present
+          ? data.evidenceTimestampUtc.value
+          : this.evidenceTimestampUtc,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecoveryObservation(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('kind: $kind, ')
+          ..write('observedAtUtc: $observedAtUtc, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('status: $status, ')
+          ..write('unit: $unit, ')
+          ..write('value: $value, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('source: $source, ')
+          ..write('provenance: $provenance, ')
+          ..write('freshness: $freshness, ')
+          ..write('providerExternalId: $providerExternalId, ')
+          ..write('sourceVersion: $sourceVersion, ')
+          ..write('evidenceTimestampUtc: $evidenceTimestampUtc, ')
+          ..write('createdAtUtc: $createdAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    kind,
+    observedAtUtc,
+    localDate,
+    timezoneId,
+    status,
+    unit,
+    value,
+    lower,
+    upper,
+    source,
+    provenance,
+    freshness,
+    providerExternalId,
+    sourceVersion,
+    evidenceTimestampUtc,
+    createdAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RecoveryObservation &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.kind == this.kind &&
+          other.observedAtUtc == this.observedAtUtc &&
+          other.localDate == this.localDate &&
+          other.timezoneId == this.timezoneId &&
+          other.status == this.status &&
+          other.unit == this.unit &&
+          other.value == this.value &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.source == this.source &&
+          other.provenance == this.provenance &&
+          other.freshness == this.freshness &&
+          other.providerExternalId == this.providerExternalId &&
+          other.sourceVersion == this.sourceVersion &&
+          other.evidenceTimestampUtc == this.evidenceTimestampUtc &&
+          other.createdAtUtc == this.createdAtUtc);
+}
+
+class RecoveryObservationsCompanion
+    extends UpdateCompanion<RecoveryObservation> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> kind;
+  final Value<DateTime> observedAtUtc;
+  final Value<String> localDate;
+  final Value<String> timezoneId;
+  final Value<String> status;
+  final Value<String> unit;
+  final Value<double?> value;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String> source;
+  final Value<String> provenance;
+  final Value<String> freshness;
+  final Value<String?> providerExternalId;
+  final Value<String?> sourceVersion;
+  final Value<DateTime?> evidenceTimestampUtc;
+  final Value<DateTime> createdAtUtc;
+  final Value<int> rowid;
+  const RecoveryObservationsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.observedAtUtc = const Value.absent(),
+    this.localDate = const Value.absent(),
+    this.timezoneId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.value = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.source = const Value.absent(),
+    this.provenance = const Value.absent(),
+    this.freshness = const Value.absent(),
+    this.providerExternalId = const Value.absent(),
+    this.sourceVersion = const Value.absent(),
+    this.evidenceTimestampUtc = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RecoveryObservationsCompanion.insert({
+    required String id,
+    required String userId,
+    required String kind,
+    required DateTime observedAtUtc,
+    required String localDate,
+    required String timezoneId,
+    required String status,
+    required String unit,
+    this.value = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    required String source,
+    required String provenance,
+    required String freshness,
+    this.providerExternalId = const Value.absent(),
+    this.sourceVersion = const Value.absent(),
+    this.evidenceTimestampUtc = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       kind = Value(kind),
+       observedAtUtc = Value(observedAtUtc),
+       localDate = Value(localDate),
+       timezoneId = Value(timezoneId),
+       status = Value(status),
+       unit = Value(unit),
+       source = Value(source),
+       provenance = Value(provenance),
+       freshness = Value(freshness);
+  static Insertable<RecoveryObservation> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? kind,
+    Expression<DateTime>? observedAtUtc,
+    Expression<String>? localDate,
+    Expression<String>? timezoneId,
+    Expression<String>? status,
+    Expression<String>? unit,
+    Expression<double>? value,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? source,
+    Expression<String>? provenance,
+    Expression<String>? freshness,
+    Expression<String>? providerExternalId,
+    Expression<String>? sourceVersion,
+    Expression<DateTime>? evidenceTimestampUtc,
+    Expression<DateTime>? createdAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (kind != null) 'kind': kind,
+      if (observedAtUtc != null) 'observed_at_utc': observedAtUtc,
+      if (localDate != null) 'local_date': localDate,
+      if (timezoneId != null) 'timezone_id': timezoneId,
+      if (status != null) 'status': status,
+      if (unit != null) 'unit': unit,
+      if (value != null) 'value': value,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (source != null) 'source': source,
+      if (provenance != null) 'provenance': provenance,
+      if (freshness != null) 'freshness': freshness,
+      if (providerExternalId != null)
+        'provider_external_id': providerExternalId,
+      if (sourceVersion != null) 'source_version': sourceVersion,
+      if (evidenceTimestampUtc != null)
+        'evidence_timestamp_utc': evidenceTimestampUtc,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RecoveryObservationsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? kind,
+    Value<DateTime>? observedAtUtc,
+    Value<String>? localDate,
+    Value<String>? timezoneId,
+    Value<String>? status,
+    Value<String>? unit,
+    Value<double?>? value,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String>? source,
+    Value<String>? provenance,
+    Value<String>? freshness,
+    Value<String?>? providerExternalId,
+    Value<String?>? sourceVersion,
+    Value<DateTime?>? evidenceTimestampUtc,
+    Value<DateTime>? createdAtUtc,
+    Value<int>? rowid,
+  }) {
+    return RecoveryObservationsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      kind: kind ?? this.kind,
+      observedAtUtc: observedAtUtc ?? this.observedAtUtc,
+      localDate: localDate ?? this.localDate,
+      timezoneId: timezoneId ?? this.timezoneId,
+      status: status ?? this.status,
+      unit: unit ?? this.unit,
+      value: value ?? this.value,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      source: source ?? this.source,
+      provenance: provenance ?? this.provenance,
+      freshness: freshness ?? this.freshness,
+      providerExternalId: providerExternalId ?? this.providerExternalId,
+      sourceVersion: sourceVersion ?? this.sourceVersion,
+      evidenceTimestampUtc: evidenceTimestampUtc ?? this.evidenceTimestampUtc,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (observedAtUtc.present) {
+      map['observed_at_utc'] = Variable<DateTime>(observedAtUtc.value);
+    }
+    if (localDate.present) {
+      map['local_date'] = Variable<String>(localDate.value);
+    }
+    if (timezoneId.present) {
+      map['timezone_id'] = Variable<String>(timezoneId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<double>(value.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (provenance.present) {
+      map['provenance'] = Variable<String>(provenance.value);
+    }
+    if (freshness.present) {
+      map['freshness'] = Variable<String>(freshness.value);
+    }
+    if (providerExternalId.present) {
+      map['provider_external_id'] = Variable<String>(providerExternalId.value);
+    }
+    if (sourceVersion.present) {
+      map['source_version'] = Variable<String>(sourceVersion.value);
+    }
+    if (evidenceTimestampUtc.present) {
+      map['evidence_timestamp_utc'] = Variable<DateTime>(
+        evidenceTimestampUtc.value,
+      );
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecoveryObservationsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('kind: $kind, ')
+          ..write('observedAtUtc: $observedAtUtc, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('status: $status, ')
+          ..write('unit: $unit, ')
+          ..write('value: $value, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('source: $source, ')
+          ..write('provenance: $provenance, ')
+          ..write('freshness: $freshness, ')
+          ..write('providerExternalId: $providerExternalId, ')
+          ..write('sourceVersion: $sourceVersion, ')
+          ..write('evidenceTimestampUtc: $evidenceTimestampUtc, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReadinessSnapshotsTable extends ReadinessSnapshots
+    with TableInfo<$ReadinessSnapshotsTable, ReadinessSnapshot> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReadinessSnapshotsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localDateMeta = const VerificationMeta(
+    'localDate',
+  );
+  @override
+  late final GeneratedColumn<String> localDate = GeneratedColumn<String>(
+    'local_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timezoneIdMeta = const VerificationMeta(
+    'timezoneId',
+  );
+  @override
+  late final GeneratedColumn<String> timezoneId = GeneratedColumn<String>(
+    'timezone_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _completenessMeta = const VerificationMeta(
+    'completeness',
+  );
+  @override
+  late final GeneratedColumn<String> completeness = GeneratedColumn<String>(
+    'completeness',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bandMeta = const VerificationMeta('band');
+  @override
+  late final GeneratedColumn<String> band = GeneratedColumn<String>(
+    'band',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _calculationVersionMeta =
+      const VerificationMeta('calculationVersion');
+  @override
+  late final GeneratedColumn<String> calculationVersion =
+      GeneratedColumn<String>(
+        'calculation_version',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _policyVersionMeta = const VerificationMeta(
+    'policyVersion',
+  );
+  @override
+  late final GeneratedColumn<String> policyVersion = GeneratedColumn<String>(
+    'policy_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _unavailableReasonMeta = const VerificationMeta(
+    'unavailableReason',
+  );
+  @override
+  late final GeneratedColumn<String> unavailableReason =
+      GeneratedColumn<String>(
+        'unavailable_reason',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _evidenceFingerprintMeta =
+      const VerificationMeta('evidenceFingerprint');
+  @override
+  late final GeneratedColumn<String> evidenceFingerprint =
+      GeneratedColumn<String>(
+        'evidence_fingerprint',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _supersededAtUtcMeta = const VerificationMeta(
+    'supersededAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> supersededAtUtc =
+      GeneratedColumn<DateTime>(
+        'superseded_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _supersedesSnapshotIdMeta =
+      const VerificationMeta('supersedesSnapshotId');
+  @override
+  late final GeneratedColumn<String> supersedesSnapshotId =
+      GeneratedColumn<String>(
+        'supersedes_snapshot_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES readiness_snapshots (id)',
+        ),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    localDate,
+    timezoneId,
+    completeness,
+    status,
+    band,
+    confidence,
+    calculationVersion,
+    policyVersion,
+    unavailableReason,
+    evidenceFingerprint,
+    createdAtUtc,
+    supersededAtUtc,
+    supersedesSnapshotId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'readiness_snapshots';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReadinessSnapshot> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('local_date')) {
+      context.handle(
+        _localDateMeta,
+        localDate.isAcceptableOrUnknown(data['local_date']!, _localDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localDateMeta);
+    }
+    if (data.containsKey('timezone_id')) {
+      context.handle(
+        _timezoneIdMeta,
+        timezoneId.isAcceptableOrUnknown(data['timezone_id']!, _timezoneIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timezoneIdMeta);
+    }
+    if (data.containsKey('completeness')) {
+      context.handle(
+        _completenessMeta,
+        completeness.isAcceptableOrUnknown(
+          data['completeness']!,
+          _completenessMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_completenessMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('band')) {
+      context.handle(
+        _bandMeta,
+        band.isAcceptableOrUnknown(data['band']!, _bandMeta),
+      );
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    }
+    if (data.containsKey('calculation_version')) {
+      context.handle(
+        _calculationVersionMeta,
+        calculationVersion.isAcceptableOrUnknown(
+          data['calculation_version']!,
+          _calculationVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_calculationVersionMeta);
+    }
+    if (data.containsKey('policy_version')) {
+      context.handle(
+        _policyVersionMeta,
+        policyVersion.isAcceptableOrUnknown(
+          data['policy_version']!,
+          _policyVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('unavailable_reason')) {
+      context.handle(
+        _unavailableReasonMeta,
+        unavailableReason.isAcceptableOrUnknown(
+          data['unavailable_reason']!,
+          _unavailableReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('evidence_fingerprint')) {
+      context.handle(
+        _evidenceFingerprintMeta,
+        evidenceFingerprint.isAcceptableOrUnknown(
+          data['evidence_fingerprint']!,
+          _evidenceFingerprintMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('superseded_at_utc')) {
+      context.handle(
+        _supersededAtUtcMeta,
+        supersededAtUtc.isAcceptableOrUnknown(
+          data['superseded_at_utc']!,
+          _supersededAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supersedes_snapshot_id')) {
+      context.handle(
+        _supersedesSnapshotIdMeta,
+        supersedesSnapshotId.isAcceptableOrUnknown(
+          data['supersedes_snapshot_id']!,
+          _supersedesSnapshotIdMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, localDate, calculationVersion},
+  ];
+  @override
+  ReadinessSnapshot map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReadinessSnapshot(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      localDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_date'],
+      )!,
+      timezoneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}timezone_id'],
+      )!,
+      completeness: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}completeness'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      band: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}band'],
+      ),
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      ),
+      calculationVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}calculation_version'],
+      )!,
+      policyVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}policy_version'],
+      ),
+      unavailableReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unavailable_reason'],
+      ),
+      evidenceFingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evidence_fingerprint'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      supersededAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}superseded_at_utc'],
+      ),
+      supersedesSnapshotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supersedes_snapshot_id'],
+      ),
+    );
+  }
+
+  @override
+  $ReadinessSnapshotsTable createAlias(String alias) {
+    return $ReadinessSnapshotsTable(attachedDatabase, alias);
+  }
+}
+
+class ReadinessSnapshot extends DataClass
+    implements Insertable<ReadinessSnapshot> {
+  final String id;
+  final String userId;
+  final String localDate;
+  final String timezoneId;
+  final String completeness;
+  final String status;
+  final String? band;
+  final double? confidence;
+  final String calculationVersion;
+  final String? policyVersion;
+  final String? unavailableReason;
+  final String? evidenceFingerprint;
+  final DateTime createdAtUtc;
+  final DateTime? supersededAtUtc;
+  final String? supersedesSnapshotId;
+  const ReadinessSnapshot({
+    required this.id,
+    required this.userId,
+    required this.localDate,
+    required this.timezoneId,
+    required this.completeness,
+    required this.status,
+    this.band,
+    this.confidence,
+    required this.calculationVersion,
+    this.policyVersion,
+    this.unavailableReason,
+    this.evidenceFingerprint,
+    required this.createdAtUtc,
+    this.supersededAtUtc,
+    this.supersedesSnapshotId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['local_date'] = Variable<String>(localDate);
+    map['timezone_id'] = Variable<String>(timezoneId);
+    map['completeness'] = Variable<String>(completeness);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || band != null) {
+      map['band'] = Variable<String>(band);
+    }
+    if (!nullToAbsent || confidence != null) {
+      map['confidence'] = Variable<double>(confidence);
+    }
+    map['calculation_version'] = Variable<String>(calculationVersion);
+    if (!nullToAbsent || policyVersion != null) {
+      map['policy_version'] = Variable<String>(policyVersion);
+    }
+    if (!nullToAbsent || unavailableReason != null) {
+      map['unavailable_reason'] = Variable<String>(unavailableReason);
+    }
+    if (!nullToAbsent || evidenceFingerprint != null) {
+      map['evidence_fingerprint'] = Variable<String>(evidenceFingerprint);
+    }
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    if (!nullToAbsent || supersededAtUtc != null) {
+      map['superseded_at_utc'] = Variable<DateTime>(supersededAtUtc);
+    }
+    if (!nullToAbsent || supersedesSnapshotId != null) {
+      map['supersedes_snapshot_id'] = Variable<String>(supersedesSnapshotId);
+    }
+    return map;
+  }
+
+  ReadinessSnapshotsCompanion toCompanion(bool nullToAbsent) {
+    return ReadinessSnapshotsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      localDate: Value(localDate),
+      timezoneId: Value(timezoneId),
+      completeness: Value(completeness),
+      status: Value(status),
+      band: band == null && nullToAbsent ? const Value.absent() : Value(band),
+      confidence: confidence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confidence),
+      calculationVersion: Value(calculationVersion),
+      policyVersion: policyVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(policyVersion),
+      unavailableReason: unavailableReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(unavailableReason),
+      evidenceFingerprint: evidenceFingerprint == null && nullToAbsent
+          ? const Value.absent()
+          : Value(evidenceFingerprint),
+      createdAtUtc: Value(createdAtUtc),
+      supersededAtUtc: supersededAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersededAtUtc),
+      supersedesSnapshotId: supersedesSnapshotId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersedesSnapshotId),
+    );
+  }
+
+  factory ReadinessSnapshot.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReadinessSnapshot(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      localDate: serializer.fromJson<String>(json['localDate']),
+      timezoneId: serializer.fromJson<String>(json['timezoneId']),
+      completeness: serializer.fromJson<String>(json['completeness']),
+      status: serializer.fromJson<String>(json['status']),
+      band: serializer.fromJson<String?>(json['band']),
+      confidence: serializer.fromJson<double?>(json['confidence']),
+      calculationVersion: serializer.fromJson<String>(
+        json['calculationVersion'],
+      ),
+      policyVersion: serializer.fromJson<String?>(json['policyVersion']),
+      unavailableReason: serializer.fromJson<String?>(
+        json['unavailableReason'],
+      ),
+      evidenceFingerprint: serializer.fromJson<String?>(
+        json['evidenceFingerprint'],
+      ),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+      supersededAtUtc: serializer.fromJson<DateTime?>(json['supersededAtUtc']),
+      supersedesSnapshotId: serializer.fromJson<String?>(
+        json['supersedesSnapshotId'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'localDate': serializer.toJson<String>(localDate),
+      'timezoneId': serializer.toJson<String>(timezoneId),
+      'completeness': serializer.toJson<String>(completeness),
+      'status': serializer.toJson<String>(status),
+      'band': serializer.toJson<String?>(band),
+      'confidence': serializer.toJson<double?>(confidence),
+      'calculationVersion': serializer.toJson<String>(calculationVersion),
+      'policyVersion': serializer.toJson<String?>(policyVersion),
+      'unavailableReason': serializer.toJson<String?>(unavailableReason),
+      'evidenceFingerprint': serializer.toJson<String?>(evidenceFingerprint),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+      'supersededAtUtc': serializer.toJson<DateTime?>(supersededAtUtc),
+      'supersedesSnapshotId': serializer.toJson<String?>(supersedesSnapshotId),
+    };
+  }
+
+  ReadinessSnapshot copyWith({
+    String? id,
+    String? userId,
+    String? localDate,
+    String? timezoneId,
+    String? completeness,
+    String? status,
+    Value<String?> band = const Value.absent(),
+    Value<double?> confidence = const Value.absent(),
+    String? calculationVersion,
+    Value<String?> policyVersion = const Value.absent(),
+    Value<String?> unavailableReason = const Value.absent(),
+    Value<String?> evidenceFingerprint = const Value.absent(),
+    DateTime? createdAtUtc,
+    Value<DateTime?> supersededAtUtc = const Value.absent(),
+    Value<String?> supersedesSnapshotId = const Value.absent(),
+  }) => ReadinessSnapshot(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    localDate: localDate ?? this.localDate,
+    timezoneId: timezoneId ?? this.timezoneId,
+    completeness: completeness ?? this.completeness,
+    status: status ?? this.status,
+    band: band.present ? band.value : this.band,
+    confidence: confidence.present ? confidence.value : this.confidence,
+    calculationVersion: calculationVersion ?? this.calculationVersion,
+    policyVersion: policyVersion.present
+        ? policyVersion.value
+        : this.policyVersion,
+    unavailableReason: unavailableReason.present
+        ? unavailableReason.value
+        : this.unavailableReason,
+    evidenceFingerprint: evidenceFingerprint.present
+        ? evidenceFingerprint.value
+        : this.evidenceFingerprint,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    supersededAtUtc: supersededAtUtc.present
+        ? supersededAtUtc.value
+        : this.supersededAtUtc,
+    supersedesSnapshotId: supersedesSnapshotId.present
+        ? supersedesSnapshotId.value
+        : this.supersedesSnapshotId,
+  );
+  ReadinessSnapshot copyWithCompanion(ReadinessSnapshotsCompanion data) {
+    return ReadinessSnapshot(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      localDate: data.localDate.present ? data.localDate.value : this.localDate,
+      timezoneId: data.timezoneId.present
+          ? data.timezoneId.value
+          : this.timezoneId,
+      completeness: data.completeness.present
+          ? data.completeness.value
+          : this.completeness,
+      status: data.status.present ? data.status.value : this.status,
+      band: data.band.present ? data.band.value : this.band,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
+      calculationVersion: data.calculationVersion.present
+          ? data.calculationVersion.value
+          : this.calculationVersion,
+      policyVersion: data.policyVersion.present
+          ? data.policyVersion.value
+          : this.policyVersion,
+      unavailableReason: data.unavailableReason.present
+          ? data.unavailableReason.value
+          : this.unavailableReason,
+      evidenceFingerprint: data.evidenceFingerprint.present
+          ? data.evidenceFingerprint.value
+          : this.evidenceFingerprint,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      supersededAtUtc: data.supersededAtUtc.present
+          ? data.supersededAtUtc.value
+          : this.supersededAtUtc,
+      supersedesSnapshotId: data.supersedesSnapshotId.present
+          ? data.supersedesSnapshotId.value
+          : this.supersedesSnapshotId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadinessSnapshot(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('completeness: $completeness, ')
+          ..write('status: $status, ')
+          ..write('band: $band, ')
+          ..write('confidence: $confidence, ')
+          ..write('calculationVersion: $calculationVersion, ')
+          ..write('policyVersion: $policyVersion, ')
+          ..write('unavailableReason: $unavailableReason, ')
+          ..write('evidenceFingerprint: $evidenceFingerprint, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('supersededAtUtc: $supersededAtUtc, ')
+          ..write('supersedesSnapshotId: $supersedesSnapshotId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    localDate,
+    timezoneId,
+    completeness,
+    status,
+    band,
+    confidence,
+    calculationVersion,
+    policyVersion,
+    unavailableReason,
+    evidenceFingerprint,
+    createdAtUtc,
+    supersededAtUtc,
+    supersedesSnapshotId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReadinessSnapshot &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.localDate == this.localDate &&
+          other.timezoneId == this.timezoneId &&
+          other.completeness == this.completeness &&
+          other.status == this.status &&
+          other.band == this.band &&
+          other.confidence == this.confidence &&
+          other.calculationVersion == this.calculationVersion &&
+          other.policyVersion == this.policyVersion &&
+          other.unavailableReason == this.unavailableReason &&
+          other.evidenceFingerprint == this.evidenceFingerprint &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.supersededAtUtc == this.supersededAtUtc &&
+          other.supersedesSnapshotId == this.supersedesSnapshotId);
+}
+
+class ReadinessSnapshotsCompanion extends UpdateCompanion<ReadinessSnapshot> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> localDate;
+  final Value<String> timezoneId;
+  final Value<String> completeness;
+  final Value<String> status;
+  final Value<String?> band;
+  final Value<double?> confidence;
+  final Value<String> calculationVersion;
+  final Value<String?> policyVersion;
+  final Value<String?> unavailableReason;
+  final Value<String?> evidenceFingerprint;
+  final Value<DateTime> createdAtUtc;
+  final Value<DateTime?> supersededAtUtc;
+  final Value<String?> supersedesSnapshotId;
+  final Value<int> rowid;
+  const ReadinessSnapshotsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.localDate = const Value.absent(),
+    this.timezoneId = const Value.absent(),
+    this.completeness = const Value.absent(),
+    this.status = const Value.absent(),
+    this.band = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.calculationVersion = const Value.absent(),
+    this.policyVersion = const Value.absent(),
+    this.unavailableReason = const Value.absent(),
+    this.evidenceFingerprint = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.supersededAtUtc = const Value.absent(),
+    this.supersedesSnapshotId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ReadinessSnapshotsCompanion.insert({
+    required String id,
+    required String userId,
+    required String localDate,
+    required String timezoneId,
+    required String completeness,
+    required String status,
+    this.band = const Value.absent(),
+    this.confidence = const Value.absent(),
+    required String calculationVersion,
+    this.policyVersion = const Value.absent(),
+    this.unavailableReason = const Value.absent(),
+    this.evidenceFingerprint = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.supersededAtUtc = const Value.absent(),
+    this.supersedesSnapshotId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       localDate = Value(localDate),
+       timezoneId = Value(timezoneId),
+       completeness = Value(completeness),
+       status = Value(status),
+       calculationVersion = Value(calculationVersion);
+  static Insertable<ReadinessSnapshot> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? localDate,
+    Expression<String>? timezoneId,
+    Expression<String>? completeness,
+    Expression<String>? status,
+    Expression<String>? band,
+    Expression<double>? confidence,
+    Expression<String>? calculationVersion,
+    Expression<String>? policyVersion,
+    Expression<String>? unavailableReason,
+    Expression<String>? evidenceFingerprint,
+    Expression<DateTime>? createdAtUtc,
+    Expression<DateTime>? supersededAtUtc,
+    Expression<String>? supersedesSnapshotId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (localDate != null) 'local_date': localDate,
+      if (timezoneId != null) 'timezone_id': timezoneId,
+      if (completeness != null) 'completeness': completeness,
+      if (status != null) 'status': status,
+      if (band != null) 'band': band,
+      if (confidence != null) 'confidence': confidence,
+      if (calculationVersion != null) 'calculation_version': calculationVersion,
+      if (policyVersion != null) 'policy_version': policyVersion,
+      if (unavailableReason != null) 'unavailable_reason': unavailableReason,
+      if (evidenceFingerprint != null)
+        'evidence_fingerprint': evidenceFingerprint,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (supersededAtUtc != null) 'superseded_at_utc': supersededAtUtc,
+      if (supersedesSnapshotId != null)
+        'supersedes_snapshot_id': supersedesSnapshotId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ReadinessSnapshotsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? localDate,
+    Value<String>? timezoneId,
+    Value<String>? completeness,
+    Value<String>? status,
+    Value<String?>? band,
+    Value<double?>? confidence,
+    Value<String>? calculationVersion,
+    Value<String?>? policyVersion,
+    Value<String?>? unavailableReason,
+    Value<String?>? evidenceFingerprint,
+    Value<DateTime>? createdAtUtc,
+    Value<DateTime?>? supersededAtUtc,
+    Value<String?>? supersedesSnapshotId,
+    Value<int>? rowid,
+  }) {
+    return ReadinessSnapshotsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      localDate: localDate ?? this.localDate,
+      timezoneId: timezoneId ?? this.timezoneId,
+      completeness: completeness ?? this.completeness,
+      status: status ?? this.status,
+      band: band ?? this.band,
+      confidence: confidence ?? this.confidence,
+      calculationVersion: calculationVersion ?? this.calculationVersion,
+      policyVersion: policyVersion ?? this.policyVersion,
+      unavailableReason: unavailableReason ?? this.unavailableReason,
+      evidenceFingerprint: evidenceFingerprint ?? this.evidenceFingerprint,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      supersededAtUtc: supersededAtUtc ?? this.supersededAtUtc,
+      supersedesSnapshotId: supersedesSnapshotId ?? this.supersedesSnapshotId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (localDate.present) {
+      map['local_date'] = Variable<String>(localDate.value);
+    }
+    if (timezoneId.present) {
+      map['timezone_id'] = Variable<String>(timezoneId.value);
+    }
+    if (completeness.present) {
+      map['completeness'] = Variable<String>(completeness.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (band.present) {
+      map['band'] = Variable<String>(band.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
+    if (calculationVersion.present) {
+      map['calculation_version'] = Variable<String>(calculationVersion.value);
+    }
+    if (policyVersion.present) {
+      map['policy_version'] = Variable<String>(policyVersion.value);
+    }
+    if (unavailableReason.present) {
+      map['unavailable_reason'] = Variable<String>(unavailableReason.value);
+    }
+    if (evidenceFingerprint.present) {
+      map['evidence_fingerprint'] = Variable<String>(evidenceFingerprint.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (supersededAtUtc.present) {
+      map['superseded_at_utc'] = Variable<DateTime>(supersededAtUtc.value);
+    }
+    if (supersedesSnapshotId.present) {
+      map['supersedes_snapshot_id'] = Variable<String>(
+        supersedesSnapshotId.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadinessSnapshotsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('completeness: $completeness, ')
+          ..write('status: $status, ')
+          ..write('band: $band, ')
+          ..write('confidence: $confidence, ')
+          ..write('calculationVersion: $calculationVersion, ')
+          ..write('policyVersion: $policyVersion, ')
+          ..write('unavailableReason: $unavailableReason, ')
+          ..write('evidenceFingerprint: $evidenceFingerprint, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('supersededAtUtc: $supersededAtUtc, ')
+          ..write('supersedesSnapshotId: $supersedesSnapshotId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReadinessSnapshotEvidenceTable extends ReadinessSnapshotEvidence
+    with
+        TableInfo<
+          $ReadinessSnapshotEvidenceTable,
+          ReadinessSnapshotEvidenceData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReadinessSnapshotEvidenceTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _readinessSnapshotIdMeta =
+      const VerificationMeta('readinessSnapshotId');
+  @override
+  late final GeneratedColumn<String> readinessSnapshotId =
+      GeneratedColumn<String>(
+        'readiness_snapshot_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES readiness_snapshots (id)',
+        ),
+      );
+  static const VerificationMeta _observationIdMeta = const VerificationMeta(
+    'observationId',
+  );
+  @override
+  late final GeneratedColumn<String> observationId = GeneratedColumn<String>(
+    'observation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES recovery_observations (id)',
+    ),
+  );
+  static const VerificationMeta _evidenceKindMeta = const VerificationMeta(
+    'evidenceKind',
+  );
+  @override
+  late final GeneratedColumn<String> evidenceKind = GeneratedColumn<String>(
+    'evidence_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<double> value = GeneratedColumn<double>(
+    'value',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceVersionMeta = const VerificationMeta(
+    'sourceVersion',
+  );
+  @override
+  late final GeneratedColumn<String> sourceVersion = GeneratedColumn<String>(
+    'source_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    readinessSnapshotId,
+    observationId,
+    evidenceKind,
+    status,
+    value,
+    lower,
+    upper,
+    unit,
+    sourceVersion,
+    createdAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'readiness_snapshot_evidence';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReadinessSnapshotEvidenceData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('readiness_snapshot_id')) {
+      context.handle(
+        _readinessSnapshotIdMeta,
+        readinessSnapshotId.isAcceptableOrUnknown(
+          data['readiness_snapshot_id']!,
+          _readinessSnapshotIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_readinessSnapshotIdMeta);
+    }
+    if (data.containsKey('observation_id')) {
+      context.handle(
+        _observationIdMeta,
+        observationId.isAcceptableOrUnknown(
+          data['observation_id']!,
+          _observationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_observationIdMeta);
+    }
+    if (data.containsKey('evidence_kind')) {
+      context.handle(
+        _evidenceKindMeta,
+        evidenceKind.isAcceptableOrUnknown(
+          data['evidence_kind']!,
+          _evidenceKindMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_evidenceKindMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    }
+    if (data.containsKey('source_version')) {
+      context.handle(
+        _sourceVersionMeta,
+        sourceVersion.isAcceptableOrUnknown(
+          data['source_version']!,
+          _sourceVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {readinessSnapshotId, observationId},
+  ];
+  @override
+  ReadinessSnapshotEvidenceData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReadinessSnapshotEvidenceData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      readinessSnapshotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}readiness_snapshot_id'],
+      )!,
+      observationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}observation_id'],
+      )!,
+      evidenceKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evidence_kind'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}value'],
+      ),
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      ),
+      sourceVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_version'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $ReadinessSnapshotEvidenceTable createAlias(String alias) {
+    return $ReadinessSnapshotEvidenceTable(attachedDatabase, alias);
+  }
+}
+
+class ReadinessSnapshotEvidenceData extends DataClass
+    implements Insertable<ReadinessSnapshotEvidenceData> {
+  final String id;
+  final String readinessSnapshotId;
+  final String observationId;
+  final String evidenceKind;
+  final String status;
+  final double? value;
+  final double? lower;
+  final double? upper;
+  final String? unit;
+  final String? sourceVersion;
+  final DateTime createdAtUtc;
+  const ReadinessSnapshotEvidenceData({
+    required this.id,
+    required this.readinessSnapshotId,
+    required this.observationId,
+    required this.evidenceKind,
+    required this.status,
+    this.value,
+    this.lower,
+    this.upper,
+    this.unit,
+    this.sourceVersion,
+    required this.createdAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['readiness_snapshot_id'] = Variable<String>(readinessSnapshotId);
+    map['observation_id'] = Variable<String>(observationId);
+    map['evidence_kind'] = Variable<String>(evidenceKind);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || value != null) {
+      map['value'] = Variable<double>(value);
+    }
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    if (!nullToAbsent || unit != null) {
+      map['unit'] = Variable<String>(unit);
+    }
+    if (!nullToAbsent || sourceVersion != null) {
+      map['source_version'] = Variable<String>(sourceVersion);
+    }
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    return map;
+  }
+
+  ReadinessSnapshotEvidenceCompanion toCompanion(bool nullToAbsent) {
+    return ReadinessSnapshotEvidenceCompanion(
+      id: Value(id),
+      readinessSnapshotId: Value(readinessSnapshotId),
+      observationId: Value(observationId),
+      evidenceKind: Value(evidenceKind),
+      status: Value(status),
+      value: value == null && nullToAbsent
+          ? const Value.absent()
+          : Value(value),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      unit: unit == null && nullToAbsent ? const Value.absent() : Value(unit),
+      sourceVersion: sourceVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceVersion),
+      createdAtUtc: Value(createdAtUtc),
+    );
+  }
+
+  factory ReadinessSnapshotEvidenceData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReadinessSnapshotEvidenceData(
+      id: serializer.fromJson<String>(json['id']),
+      readinessSnapshotId: serializer.fromJson<String>(
+        json['readinessSnapshotId'],
+      ),
+      observationId: serializer.fromJson<String>(json['observationId']),
+      evidenceKind: serializer.fromJson<String>(json['evidenceKind']),
+      status: serializer.fromJson<String>(json['status']),
+      value: serializer.fromJson<double?>(json['value']),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      unit: serializer.fromJson<String?>(json['unit']),
+      sourceVersion: serializer.fromJson<String?>(json['sourceVersion']),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'readinessSnapshotId': serializer.toJson<String>(readinessSnapshotId),
+      'observationId': serializer.toJson<String>(observationId),
+      'evidenceKind': serializer.toJson<String>(evidenceKind),
+      'status': serializer.toJson<String>(status),
+      'value': serializer.toJson<double?>(value),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'unit': serializer.toJson<String?>(unit),
+      'sourceVersion': serializer.toJson<String?>(sourceVersion),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+    };
+  }
+
+  ReadinessSnapshotEvidenceData copyWith({
+    String? id,
+    String? readinessSnapshotId,
+    String? observationId,
+    String? evidenceKind,
+    String? status,
+    Value<double?> value = const Value.absent(),
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    Value<String?> unit = const Value.absent(),
+    Value<String?> sourceVersion = const Value.absent(),
+    DateTime? createdAtUtc,
+  }) => ReadinessSnapshotEvidenceData(
+    id: id ?? this.id,
+    readinessSnapshotId: readinessSnapshotId ?? this.readinessSnapshotId,
+    observationId: observationId ?? this.observationId,
+    evidenceKind: evidenceKind ?? this.evidenceKind,
+    status: status ?? this.status,
+    value: value.present ? value.value : this.value,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    unit: unit.present ? unit.value : this.unit,
+    sourceVersion: sourceVersion.present
+        ? sourceVersion.value
+        : this.sourceVersion,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+  );
+  ReadinessSnapshotEvidenceData copyWithCompanion(
+    ReadinessSnapshotEvidenceCompanion data,
+  ) {
+    return ReadinessSnapshotEvidenceData(
+      id: data.id.present ? data.id.value : this.id,
+      readinessSnapshotId: data.readinessSnapshotId.present
+          ? data.readinessSnapshotId.value
+          : this.readinessSnapshotId,
+      observationId: data.observationId.present
+          ? data.observationId.value
+          : this.observationId,
+      evidenceKind: data.evidenceKind.present
+          ? data.evidenceKind.value
+          : this.evidenceKind,
+      status: data.status.present ? data.status.value : this.status,
+      value: data.value.present ? data.value.value : this.value,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      sourceVersion: data.sourceVersion.present
+          ? data.sourceVersion.value
+          : this.sourceVersion,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadinessSnapshotEvidenceData(')
+          ..write('id: $id, ')
+          ..write('readinessSnapshotId: $readinessSnapshotId, ')
+          ..write('observationId: $observationId, ')
+          ..write('evidenceKind: $evidenceKind, ')
+          ..write('status: $status, ')
+          ..write('value: $value, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('unit: $unit, ')
+          ..write('sourceVersion: $sourceVersion, ')
+          ..write('createdAtUtc: $createdAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    readinessSnapshotId,
+    observationId,
+    evidenceKind,
+    status,
+    value,
+    lower,
+    upper,
+    unit,
+    sourceVersion,
+    createdAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReadinessSnapshotEvidenceData &&
+          other.id == this.id &&
+          other.readinessSnapshotId == this.readinessSnapshotId &&
+          other.observationId == this.observationId &&
+          other.evidenceKind == this.evidenceKind &&
+          other.status == this.status &&
+          other.value == this.value &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.unit == this.unit &&
+          other.sourceVersion == this.sourceVersion &&
+          other.createdAtUtc == this.createdAtUtc);
+}
+
+class ReadinessSnapshotEvidenceCompanion
+    extends UpdateCompanion<ReadinessSnapshotEvidenceData> {
+  final Value<String> id;
+  final Value<String> readinessSnapshotId;
+  final Value<String> observationId;
+  final Value<String> evidenceKind;
+  final Value<String> status;
+  final Value<double?> value;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String?> unit;
+  final Value<String?> sourceVersion;
+  final Value<DateTime> createdAtUtc;
+  final Value<int> rowid;
+  const ReadinessSnapshotEvidenceCompanion({
+    this.id = const Value.absent(),
+    this.readinessSnapshotId = const Value.absent(),
+    this.observationId = const Value.absent(),
+    this.evidenceKind = const Value.absent(),
+    this.status = const Value.absent(),
+    this.value = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.sourceVersion = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ReadinessSnapshotEvidenceCompanion.insert({
+    required String id,
+    required String readinessSnapshotId,
+    required String observationId,
+    required String evidenceKind,
+    required String status,
+    this.value = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.sourceVersion = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       readinessSnapshotId = Value(readinessSnapshotId),
+       observationId = Value(observationId),
+       evidenceKind = Value(evidenceKind),
+       status = Value(status);
+  static Insertable<ReadinessSnapshotEvidenceData> custom({
+    Expression<String>? id,
+    Expression<String>? readinessSnapshotId,
+    Expression<String>? observationId,
+    Expression<String>? evidenceKind,
+    Expression<String>? status,
+    Expression<double>? value,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? unit,
+    Expression<String>? sourceVersion,
+    Expression<DateTime>? createdAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (readinessSnapshotId != null)
+        'readiness_snapshot_id': readinessSnapshotId,
+      if (observationId != null) 'observation_id': observationId,
+      if (evidenceKind != null) 'evidence_kind': evidenceKind,
+      if (status != null) 'status': status,
+      if (value != null) 'value': value,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (unit != null) 'unit': unit,
+      if (sourceVersion != null) 'source_version': sourceVersion,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ReadinessSnapshotEvidenceCompanion copyWith({
+    Value<String>? id,
+    Value<String>? readinessSnapshotId,
+    Value<String>? observationId,
+    Value<String>? evidenceKind,
+    Value<String>? status,
+    Value<double?>? value,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String?>? unit,
+    Value<String?>? sourceVersion,
+    Value<DateTime>? createdAtUtc,
+    Value<int>? rowid,
+  }) {
+    return ReadinessSnapshotEvidenceCompanion(
+      id: id ?? this.id,
+      readinessSnapshotId: readinessSnapshotId ?? this.readinessSnapshotId,
+      observationId: observationId ?? this.observationId,
+      evidenceKind: evidenceKind ?? this.evidenceKind,
+      status: status ?? this.status,
+      value: value ?? this.value,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      unit: unit ?? this.unit,
+      sourceVersion: sourceVersion ?? this.sourceVersion,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (readinessSnapshotId.present) {
+      map['readiness_snapshot_id'] = Variable<String>(
+        readinessSnapshotId.value,
+      );
+    }
+    if (observationId.present) {
+      map['observation_id'] = Variable<String>(observationId.value);
+    }
+    if (evidenceKind.present) {
+      map['evidence_kind'] = Variable<String>(evidenceKind.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<double>(value.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (sourceVersion.present) {
+      map['source_version'] = Variable<String>(sourceVersion.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadinessSnapshotEvidenceCompanion(')
+          ..write('id: $id, ')
+          ..write('readinessSnapshotId: $readinessSnapshotId, ')
+          ..write('observationId: $observationId, ')
+          ..write('evidenceKind: $evidenceKind, ')
+          ..write('status: $status, ')
+          ..write('value: $value, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('unit: $unit, ')
+          ..write('sourceVersion: $sourceVersion, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RecommendationsTable extends Recommendations
+    with TableInfo<$RecommendationsTable, Recommendation> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecommendationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scopeMeta = const VerificationMeta('scope');
+  @override
+  late final GeneratedColumn<String> scope = GeneratedColumn<String>(
+    'scope',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localPeriodStartMeta = const VerificationMeta(
+    'localPeriodStart',
+  );
+  @override
+  late final GeneratedColumn<String> localPeriodStart = GeneratedColumn<String>(
+    'local_period_start',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localPeriodEndMeta = const VerificationMeta(
+    'localPeriodEnd',
+  );
+  @override
+  late final GeneratedColumn<String> localPeriodEnd = GeneratedColumn<String>(
+    'local_period_end',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timezoneIdMeta = const VerificationMeta(
+    'timezoneId',
+  );
+  @override
+  late final GeneratedColumn<String> timezoneId = GeneratedColumn<String>(
+    'timezone_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _priorityMeta = const VerificationMeta(
+    'priority',
+  );
+  @override
+  late final GeneratedColumn<int> priority = GeneratedColumn<int>(
+    'priority',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _completenessMeta = const VerificationMeta(
+    'completeness',
+  );
+  @override
+  late final GeneratedColumn<String> completeness = GeneratedColumn<String>(
+    'completeness',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actionMeta = const VerificationMeta('action');
+  @override
+  late final GeneratedColumn<String> action = GeneratedColumn<String>(
+    'action',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _explanationMeta = const VerificationMeta(
+    'explanation',
+  );
+  @override
+  late final GeneratedColumn<String> explanation = GeneratedColumn<String>(
+    'explanation',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _missingInputsMeta = const VerificationMeta(
+    'missingInputs',
+  );
+  @override
+  late final GeneratedColumn<String> missingInputs = GeneratedColumn<String>(
+    'missing_inputs',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _uncertaintyMeta = const VerificationMeta(
+    'uncertainty',
+  );
+  @override
+  late final GeneratedColumn<String> uncertainty = GeneratedColumn<String>(
+    'uncertainty',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _alternativesMeta = const VerificationMeta(
+    'alternatives',
+  );
+  @override
+  late final GeneratedColumn<String> alternatives = GeneratedColumn<String>(
+    'alternatives',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ruleVersionMeta = const VerificationMeta(
+    'ruleVersion',
+  );
+  @override
+  late final GeneratedColumn<String> ruleVersion = GeneratedColumn<String>(
+    'rule_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _calculationVersionMeta =
+      const VerificationMeta('calculationVersion');
+  @override
+  late final GeneratedColumn<String> calculationVersion =
+      GeneratedColumn<String>(
+        'calculation_version',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _algorithmVersionMeta = const VerificationMeta(
+    'algorithmVersion',
+  );
+  @override
+  late final GeneratedColumn<String> algorithmVersion = GeneratedColumn<String>(
+    'algorithm_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _modelVersionMeta = const VerificationMeta(
+    'modelVersion',
+  );
+  @override
+  late final GeneratedColumn<String> modelVersion = GeneratedColumn<String>(
+    'model_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _providerVersionMeta = const VerificationMeta(
+    'providerVersion',
+  );
+  @override
+  late final GeneratedColumn<String> providerVersion = GeneratedColumn<String>(
+    'provider_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _policyVersionMeta = const VerificationMeta(
+    'policyVersion',
+  );
+  @override
+  late final GeneratedColumn<String> policyVersion = GeneratedColumn<String>(
+    'policy_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _goalVersionIdMeta = const VerificationMeta(
+    'goalVersionId',
+  );
+  @override
+  late final GeneratedColumn<String> goalVersionId = GeneratedColumn<String>(
+    'goal_version_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_goal_versions (id)',
+    ),
+  );
+  static const VerificationMeta _readinessSnapshotIdMeta =
+      const VerificationMeta('readinessSnapshotId');
+  @override
+  late final GeneratedColumn<String> readinessSnapshotId =
+      GeneratedColumn<String>(
+        'readiness_snapshot_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES readiness_snapshots (id)',
+        ),
+      );
+  static const VerificationMeta _contextFingerprintMeta =
+      const VerificationMeta('contextFingerprint');
+  @override
+  late final GeneratedColumn<String> contextFingerprint =
+      GeneratedColumn<String>(
+        'context_fingerprint',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _evidenceFingerprintMeta =
+      const VerificationMeta('evidenceFingerprint');
+  @override
+  late final GeneratedColumn<String> evidenceFingerprint =
+      GeneratedColumn<String>(
+        'evidence_fingerprint',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _exactResultNumeratorMeta =
+      const VerificationMeta('exactResultNumerator');
+  @override
+  late final GeneratedColumn<String> exactResultNumerator =
+      GeneratedColumn<String>(
+        'exact_result_numerator',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _exactResultDenominatorMeta =
+      const VerificationMeta('exactResultDenominator');
+  @override
+  late final GeneratedColumn<String> exactResultDenominator =
+      GeneratedColumn<String>(
+        'exact_result_denominator',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _normalizedMaintenanceKcalMeta =
+      const VerificationMeta('normalizedMaintenanceKcal');
+  @override
+  late final GeneratedColumn<int> normalizedMaintenanceKcal =
+      GeneratedColumn<int>(
+        'normalized_maintenance_kcal',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _proposedDeltaKcalMeta = const VerificationMeta(
+    'proposedDeltaKcal',
+  );
+  @override
+  late final GeneratedColumn<int> proposedDeltaKcal = GeneratedColumn<int>(
+    'proposed_delta_kcal',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _effectiveAtUtcMeta = const VerificationMeta(
+    'effectiveAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> effectiveAtUtc =
+      GeneratedColumn<DateTime>(
+        'effective_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _supersededAtUtcMeta = const VerificationMeta(
+    'supersededAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> supersededAtUtc =
+      GeneratedColumn<DateTime>(
+        'superseded_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _supersedesRecommendationIdMeta =
+      const VerificationMeta('supersedesRecommendationId');
+  @override
+  late final GeneratedColumn<String> supersedesRecommendationId =
+      GeneratedColumn<String>(
+        'supersedes_recommendation_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES recommendations (id)',
+        ),
+      );
+  static const VerificationMeta _replayHashMeta = const VerificationMeta(
+    'replayHash',
+  );
+  @override
+  late final GeneratedColumn<String> replayHash = GeneratedColumn<String>(
+    'replay_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    scope,
+    localPeriodStart,
+    localPeriodEnd,
+    timezoneId,
+    status,
+    priority,
+    confidence,
+    completeness,
+    action,
+    explanation,
+    missingInputs,
+    uncertainty,
+    alternatives,
+    ruleVersion,
+    calculationVersion,
+    algorithmVersion,
+    modelVersion,
+    providerVersion,
+    policyVersion,
+    goalVersionId,
+    readinessSnapshotId,
+    contextFingerprint,
+    evidenceFingerprint,
+    exactResultNumerator,
+    exactResultDenominator,
+    normalizedMaintenanceKcal,
+    proposedDeltaKcal,
+    createdAtUtc,
+    effectiveAtUtc,
+    supersededAtUtc,
+    supersedesRecommendationId,
+    replayHash,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'recommendations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Recommendation> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('scope')) {
+      context.handle(
+        _scopeMeta,
+        scope.isAcceptableOrUnknown(data['scope']!, _scopeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scopeMeta);
+    }
+    if (data.containsKey('local_period_start')) {
+      context.handle(
+        _localPeriodStartMeta,
+        localPeriodStart.isAcceptableOrUnknown(
+          data['local_period_start']!,
+          _localPeriodStartMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_localPeriodStartMeta);
+    }
+    if (data.containsKey('local_period_end')) {
+      context.handle(
+        _localPeriodEndMeta,
+        localPeriodEnd.isAcceptableOrUnknown(
+          data['local_period_end']!,
+          _localPeriodEndMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_localPeriodEndMeta);
+    }
+    if (data.containsKey('timezone_id')) {
+      context.handle(
+        _timezoneIdMeta,
+        timezoneId.isAcceptableOrUnknown(data['timezone_id']!, _timezoneIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timezoneIdMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('priority')) {
+      context.handle(
+        _priorityMeta,
+        priority.isAcceptableOrUnknown(data['priority']!, _priorityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_priorityMeta);
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    }
+    if (data.containsKey('completeness')) {
+      context.handle(
+        _completenessMeta,
+        completeness.isAcceptableOrUnknown(
+          data['completeness']!,
+          _completenessMeta,
+        ),
+      );
+    }
+    if (data.containsKey('action')) {
+      context.handle(
+        _actionMeta,
+        action.isAcceptableOrUnknown(data['action']!, _actionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_actionMeta);
+    }
+    if (data.containsKey('explanation')) {
+      context.handle(
+        _explanationMeta,
+        explanation.isAcceptableOrUnknown(
+          data['explanation']!,
+          _explanationMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_explanationMeta);
+    }
+    if (data.containsKey('missing_inputs')) {
+      context.handle(
+        _missingInputsMeta,
+        missingInputs.isAcceptableOrUnknown(
+          data['missing_inputs']!,
+          _missingInputsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('uncertainty')) {
+      context.handle(
+        _uncertaintyMeta,
+        uncertainty.isAcceptableOrUnknown(
+          data['uncertainty']!,
+          _uncertaintyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('alternatives')) {
+      context.handle(
+        _alternativesMeta,
+        alternatives.isAcceptableOrUnknown(
+          data['alternatives']!,
+          _alternativesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rule_version')) {
+      context.handle(
+        _ruleVersionMeta,
+        ruleVersion.isAcceptableOrUnknown(
+          data['rule_version']!,
+          _ruleVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_ruleVersionMeta);
+    }
+    if (data.containsKey('calculation_version')) {
+      context.handle(
+        _calculationVersionMeta,
+        calculationVersion.isAcceptableOrUnknown(
+          data['calculation_version']!,
+          _calculationVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('algorithm_version')) {
+      context.handle(
+        _algorithmVersionMeta,
+        algorithmVersion.isAcceptableOrUnknown(
+          data['algorithm_version']!,
+          _algorithmVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('model_version')) {
+      context.handle(
+        _modelVersionMeta,
+        modelVersion.isAcceptableOrUnknown(
+          data['model_version']!,
+          _modelVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('provider_version')) {
+      context.handle(
+        _providerVersionMeta,
+        providerVersion.isAcceptableOrUnknown(
+          data['provider_version']!,
+          _providerVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('policy_version')) {
+      context.handle(
+        _policyVersionMeta,
+        policyVersion.isAcceptableOrUnknown(
+          data['policy_version']!,
+          _policyVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('goal_version_id')) {
+      context.handle(
+        _goalVersionIdMeta,
+        goalVersionId.isAcceptableOrUnknown(
+          data['goal_version_id']!,
+          _goalVersionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('readiness_snapshot_id')) {
+      context.handle(
+        _readinessSnapshotIdMeta,
+        readinessSnapshotId.isAcceptableOrUnknown(
+          data['readiness_snapshot_id']!,
+          _readinessSnapshotIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('context_fingerprint')) {
+      context.handle(
+        _contextFingerprintMeta,
+        contextFingerprint.isAcceptableOrUnknown(
+          data['context_fingerprint']!,
+          _contextFingerprintMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_contextFingerprintMeta);
+    }
+    if (data.containsKey('evidence_fingerprint')) {
+      context.handle(
+        _evidenceFingerprintMeta,
+        evidenceFingerprint.isAcceptableOrUnknown(
+          data['evidence_fingerprint']!,
+          _evidenceFingerprintMeta,
+        ),
+      );
+    }
+    if (data.containsKey('exact_result_numerator')) {
+      context.handle(
+        _exactResultNumeratorMeta,
+        exactResultNumerator.isAcceptableOrUnknown(
+          data['exact_result_numerator']!,
+          _exactResultNumeratorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('exact_result_denominator')) {
+      context.handle(
+        _exactResultDenominatorMeta,
+        exactResultDenominator.isAcceptableOrUnknown(
+          data['exact_result_denominator']!,
+          _exactResultDenominatorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('normalized_maintenance_kcal')) {
+      context.handle(
+        _normalizedMaintenanceKcalMeta,
+        normalizedMaintenanceKcal.isAcceptableOrUnknown(
+          data['normalized_maintenance_kcal']!,
+          _normalizedMaintenanceKcalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('proposed_delta_kcal')) {
+      context.handle(
+        _proposedDeltaKcalMeta,
+        proposedDeltaKcal.isAcceptableOrUnknown(
+          data['proposed_delta_kcal']!,
+          _proposedDeltaKcalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('effective_at_utc')) {
+      context.handle(
+        _effectiveAtUtcMeta,
+        effectiveAtUtc.isAcceptableOrUnknown(
+          data['effective_at_utc']!,
+          _effectiveAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('superseded_at_utc')) {
+      context.handle(
+        _supersededAtUtcMeta,
+        supersededAtUtc.isAcceptableOrUnknown(
+          data['superseded_at_utc']!,
+          _supersededAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supersedes_recommendation_id')) {
+      context.handle(
+        _supersedesRecommendationIdMeta,
+        supersedesRecommendationId.isAcceptableOrUnknown(
+          data['supersedes_recommendation_id']!,
+          _supersedesRecommendationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('replay_hash')) {
+      context.handle(
+        _replayHashMeta,
+        replayHash.isAcceptableOrUnknown(data['replay_hash']!, _replayHashMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, replayHash},
+  ];
+  @override
+  Recommendation map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Recommendation(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      scope: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scope'],
+      )!,
+      localPeriodStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_period_start'],
+      )!,
+      localPeriodEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_period_end'],
+      )!,
+      timezoneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}timezone_id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      priority: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}priority'],
+      )!,
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      ),
+      completeness: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}completeness'],
+      ),
+      action: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}action'],
+      )!,
+      explanation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}explanation'],
+      )!,
+      missingInputs: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}missing_inputs'],
+      ),
+      uncertainty: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uncertainty'],
+      ),
+      alternatives: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}alternatives'],
+      ),
+      ruleVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rule_version'],
+      )!,
+      calculationVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}calculation_version'],
+      ),
+      algorithmVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_version'],
+      ),
+      modelVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_version'],
+      ),
+      providerVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider_version'],
+      ),
+      policyVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}policy_version'],
+      ),
+      goalVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}goal_version_id'],
+      ),
+      readinessSnapshotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}readiness_snapshot_id'],
+      ),
+      contextFingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}context_fingerprint'],
+      )!,
+      evidenceFingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evidence_fingerprint'],
+      ),
+      exactResultNumerator: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exact_result_numerator'],
+      ),
+      exactResultDenominator: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exact_result_denominator'],
+      ),
+      normalizedMaintenanceKcal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}normalized_maintenance_kcal'],
+      ),
+      proposedDeltaKcal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}proposed_delta_kcal'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      effectiveAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}effective_at_utc'],
+      ),
+      supersededAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}superseded_at_utc'],
+      ),
+      supersedesRecommendationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}supersedes_recommendation_id'],
+      ),
+      replayHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}replay_hash'],
+      ),
+    );
+  }
+
+  @override
+  $RecommendationsTable createAlias(String alias) {
+    return $RecommendationsTable(attachedDatabase, alias);
+  }
+}
+
+class Recommendation extends DataClass implements Insertable<Recommendation> {
+  final String id;
+  final String userId;
+  final String scope;
+  final String localPeriodStart;
+  final String localPeriodEnd;
+  final String timezoneId;
+  final String status;
+  final int priority;
+  final double? confidence;
+  final String? completeness;
+  final String action;
+  final String explanation;
+  final String? missingInputs;
+  final String? uncertainty;
+  final String? alternatives;
+  final String ruleVersion;
+  final String? calculationVersion;
+  final String? algorithmVersion;
+  final String? modelVersion;
+  final String? providerVersion;
+  final String? policyVersion;
+  final String? goalVersionId;
+  final String? readinessSnapshotId;
+  final String contextFingerprint;
+  final String? evidenceFingerprint;
+  final String? exactResultNumerator;
+  final String? exactResultDenominator;
+  final int? normalizedMaintenanceKcal;
+  final int? proposedDeltaKcal;
+  final DateTime createdAtUtc;
+  final DateTime? effectiveAtUtc;
+  final DateTime? supersededAtUtc;
+  final String? supersedesRecommendationId;
+  final String? replayHash;
+  const Recommendation({
+    required this.id,
+    required this.userId,
+    required this.scope,
+    required this.localPeriodStart,
+    required this.localPeriodEnd,
+    required this.timezoneId,
+    required this.status,
+    required this.priority,
+    this.confidence,
+    this.completeness,
+    required this.action,
+    required this.explanation,
+    this.missingInputs,
+    this.uncertainty,
+    this.alternatives,
+    required this.ruleVersion,
+    this.calculationVersion,
+    this.algorithmVersion,
+    this.modelVersion,
+    this.providerVersion,
+    this.policyVersion,
+    this.goalVersionId,
+    this.readinessSnapshotId,
+    required this.contextFingerprint,
+    this.evidenceFingerprint,
+    this.exactResultNumerator,
+    this.exactResultDenominator,
+    this.normalizedMaintenanceKcal,
+    this.proposedDeltaKcal,
+    required this.createdAtUtc,
+    this.effectiveAtUtc,
+    this.supersededAtUtc,
+    this.supersedesRecommendationId,
+    this.replayHash,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['scope'] = Variable<String>(scope);
+    map['local_period_start'] = Variable<String>(localPeriodStart);
+    map['local_period_end'] = Variable<String>(localPeriodEnd);
+    map['timezone_id'] = Variable<String>(timezoneId);
+    map['status'] = Variable<String>(status);
+    map['priority'] = Variable<int>(priority);
+    if (!nullToAbsent || confidence != null) {
+      map['confidence'] = Variable<double>(confidence);
+    }
+    if (!nullToAbsent || completeness != null) {
+      map['completeness'] = Variable<String>(completeness);
+    }
+    map['action'] = Variable<String>(action);
+    map['explanation'] = Variable<String>(explanation);
+    if (!nullToAbsent || missingInputs != null) {
+      map['missing_inputs'] = Variable<String>(missingInputs);
+    }
+    if (!nullToAbsent || uncertainty != null) {
+      map['uncertainty'] = Variable<String>(uncertainty);
+    }
+    if (!nullToAbsent || alternatives != null) {
+      map['alternatives'] = Variable<String>(alternatives);
+    }
+    map['rule_version'] = Variable<String>(ruleVersion);
+    if (!nullToAbsent || calculationVersion != null) {
+      map['calculation_version'] = Variable<String>(calculationVersion);
+    }
+    if (!nullToAbsent || algorithmVersion != null) {
+      map['algorithm_version'] = Variable<String>(algorithmVersion);
+    }
+    if (!nullToAbsent || modelVersion != null) {
+      map['model_version'] = Variable<String>(modelVersion);
+    }
+    if (!nullToAbsent || providerVersion != null) {
+      map['provider_version'] = Variable<String>(providerVersion);
+    }
+    if (!nullToAbsent || policyVersion != null) {
+      map['policy_version'] = Variable<String>(policyVersion);
+    }
+    if (!nullToAbsent || goalVersionId != null) {
+      map['goal_version_id'] = Variable<String>(goalVersionId);
+    }
+    if (!nullToAbsent || readinessSnapshotId != null) {
+      map['readiness_snapshot_id'] = Variable<String>(readinessSnapshotId);
+    }
+    map['context_fingerprint'] = Variable<String>(contextFingerprint);
+    if (!nullToAbsent || evidenceFingerprint != null) {
+      map['evidence_fingerprint'] = Variable<String>(evidenceFingerprint);
+    }
+    if (!nullToAbsent || exactResultNumerator != null) {
+      map['exact_result_numerator'] = Variable<String>(exactResultNumerator);
+    }
+    if (!nullToAbsent || exactResultDenominator != null) {
+      map['exact_result_denominator'] = Variable<String>(
+        exactResultDenominator,
+      );
+    }
+    if (!nullToAbsent || normalizedMaintenanceKcal != null) {
+      map['normalized_maintenance_kcal'] = Variable<int>(
+        normalizedMaintenanceKcal,
+      );
+    }
+    if (!nullToAbsent || proposedDeltaKcal != null) {
+      map['proposed_delta_kcal'] = Variable<int>(proposedDeltaKcal);
+    }
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    if (!nullToAbsent || effectiveAtUtc != null) {
+      map['effective_at_utc'] = Variable<DateTime>(effectiveAtUtc);
+    }
+    if (!nullToAbsent || supersededAtUtc != null) {
+      map['superseded_at_utc'] = Variable<DateTime>(supersededAtUtc);
+    }
+    if (!nullToAbsent || supersedesRecommendationId != null) {
+      map['supersedes_recommendation_id'] = Variable<String>(
+        supersedesRecommendationId,
+      );
+    }
+    if (!nullToAbsent || replayHash != null) {
+      map['replay_hash'] = Variable<String>(replayHash);
+    }
+    return map;
+  }
+
+  RecommendationsCompanion toCompanion(bool nullToAbsent) {
+    return RecommendationsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      scope: Value(scope),
+      localPeriodStart: Value(localPeriodStart),
+      localPeriodEnd: Value(localPeriodEnd),
+      timezoneId: Value(timezoneId),
+      status: Value(status),
+      priority: Value(priority),
+      confidence: confidence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confidence),
+      completeness: completeness == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completeness),
+      action: Value(action),
+      explanation: Value(explanation),
+      missingInputs: missingInputs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(missingInputs),
+      uncertainty: uncertainty == null && nullToAbsent
+          ? const Value.absent()
+          : Value(uncertainty),
+      alternatives: alternatives == null && nullToAbsent
+          ? const Value.absent()
+          : Value(alternatives),
+      ruleVersion: Value(ruleVersion),
+      calculationVersion: calculationVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(calculationVersion),
+      algorithmVersion: algorithmVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(algorithmVersion),
+      modelVersion: modelVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(modelVersion),
+      providerVersion: providerVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(providerVersion),
+      policyVersion: policyVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(policyVersion),
+      goalVersionId: goalVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(goalVersionId),
+      readinessSnapshotId: readinessSnapshotId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(readinessSnapshotId),
+      contextFingerprint: Value(contextFingerprint),
+      evidenceFingerprint: evidenceFingerprint == null && nullToAbsent
+          ? const Value.absent()
+          : Value(evidenceFingerprint),
+      exactResultNumerator: exactResultNumerator == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exactResultNumerator),
+      exactResultDenominator: exactResultDenominator == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exactResultDenominator),
+      normalizedMaintenanceKcal:
+          normalizedMaintenanceKcal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(normalizedMaintenanceKcal),
+      proposedDeltaKcal: proposedDeltaKcal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(proposedDeltaKcal),
+      createdAtUtc: Value(createdAtUtc),
+      effectiveAtUtc: effectiveAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(effectiveAtUtc),
+      supersededAtUtc: supersededAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersededAtUtc),
+      supersedesRecommendationId:
+          supersedesRecommendationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersedesRecommendationId),
+      replayHash: replayHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replayHash),
+    );
+  }
+
+  factory Recommendation.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Recommendation(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      scope: serializer.fromJson<String>(json['scope']),
+      localPeriodStart: serializer.fromJson<String>(json['localPeriodStart']),
+      localPeriodEnd: serializer.fromJson<String>(json['localPeriodEnd']),
+      timezoneId: serializer.fromJson<String>(json['timezoneId']),
+      status: serializer.fromJson<String>(json['status']),
+      priority: serializer.fromJson<int>(json['priority']),
+      confidence: serializer.fromJson<double?>(json['confidence']),
+      completeness: serializer.fromJson<String?>(json['completeness']),
+      action: serializer.fromJson<String>(json['action']),
+      explanation: serializer.fromJson<String>(json['explanation']),
+      missingInputs: serializer.fromJson<String?>(json['missingInputs']),
+      uncertainty: serializer.fromJson<String?>(json['uncertainty']),
+      alternatives: serializer.fromJson<String?>(json['alternatives']),
+      ruleVersion: serializer.fromJson<String>(json['ruleVersion']),
+      calculationVersion: serializer.fromJson<String?>(
+        json['calculationVersion'],
+      ),
+      algorithmVersion: serializer.fromJson<String?>(json['algorithmVersion']),
+      modelVersion: serializer.fromJson<String?>(json['modelVersion']),
+      providerVersion: serializer.fromJson<String?>(json['providerVersion']),
+      policyVersion: serializer.fromJson<String?>(json['policyVersion']),
+      goalVersionId: serializer.fromJson<String?>(json['goalVersionId']),
+      readinessSnapshotId: serializer.fromJson<String?>(
+        json['readinessSnapshotId'],
+      ),
+      contextFingerprint: serializer.fromJson<String>(
+        json['contextFingerprint'],
+      ),
+      evidenceFingerprint: serializer.fromJson<String?>(
+        json['evidenceFingerprint'],
+      ),
+      exactResultNumerator: serializer.fromJson<String?>(
+        json['exactResultNumerator'],
+      ),
+      exactResultDenominator: serializer.fromJson<String?>(
+        json['exactResultDenominator'],
+      ),
+      normalizedMaintenanceKcal: serializer.fromJson<int?>(
+        json['normalizedMaintenanceKcal'],
+      ),
+      proposedDeltaKcal: serializer.fromJson<int?>(json['proposedDeltaKcal']),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+      effectiveAtUtc: serializer.fromJson<DateTime?>(json['effectiveAtUtc']),
+      supersededAtUtc: serializer.fromJson<DateTime?>(json['supersededAtUtc']),
+      supersedesRecommendationId: serializer.fromJson<String?>(
+        json['supersedesRecommendationId'],
+      ),
+      replayHash: serializer.fromJson<String?>(json['replayHash']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'scope': serializer.toJson<String>(scope),
+      'localPeriodStart': serializer.toJson<String>(localPeriodStart),
+      'localPeriodEnd': serializer.toJson<String>(localPeriodEnd),
+      'timezoneId': serializer.toJson<String>(timezoneId),
+      'status': serializer.toJson<String>(status),
+      'priority': serializer.toJson<int>(priority),
+      'confidence': serializer.toJson<double?>(confidence),
+      'completeness': serializer.toJson<String?>(completeness),
+      'action': serializer.toJson<String>(action),
+      'explanation': serializer.toJson<String>(explanation),
+      'missingInputs': serializer.toJson<String?>(missingInputs),
+      'uncertainty': serializer.toJson<String?>(uncertainty),
+      'alternatives': serializer.toJson<String?>(alternatives),
+      'ruleVersion': serializer.toJson<String>(ruleVersion),
+      'calculationVersion': serializer.toJson<String?>(calculationVersion),
+      'algorithmVersion': serializer.toJson<String?>(algorithmVersion),
+      'modelVersion': serializer.toJson<String?>(modelVersion),
+      'providerVersion': serializer.toJson<String?>(providerVersion),
+      'policyVersion': serializer.toJson<String?>(policyVersion),
+      'goalVersionId': serializer.toJson<String?>(goalVersionId),
+      'readinessSnapshotId': serializer.toJson<String?>(readinessSnapshotId),
+      'contextFingerprint': serializer.toJson<String>(contextFingerprint),
+      'evidenceFingerprint': serializer.toJson<String?>(evidenceFingerprint),
+      'exactResultNumerator': serializer.toJson<String?>(exactResultNumerator),
+      'exactResultDenominator': serializer.toJson<String?>(
+        exactResultDenominator,
+      ),
+      'normalizedMaintenanceKcal': serializer.toJson<int?>(
+        normalizedMaintenanceKcal,
+      ),
+      'proposedDeltaKcal': serializer.toJson<int?>(proposedDeltaKcal),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+      'effectiveAtUtc': serializer.toJson<DateTime?>(effectiveAtUtc),
+      'supersededAtUtc': serializer.toJson<DateTime?>(supersededAtUtc),
+      'supersedesRecommendationId': serializer.toJson<String?>(
+        supersedesRecommendationId,
+      ),
+      'replayHash': serializer.toJson<String?>(replayHash),
+    };
+  }
+
+  Recommendation copyWith({
+    String? id,
+    String? userId,
+    String? scope,
+    String? localPeriodStart,
+    String? localPeriodEnd,
+    String? timezoneId,
+    String? status,
+    int? priority,
+    Value<double?> confidence = const Value.absent(),
+    Value<String?> completeness = const Value.absent(),
+    String? action,
+    String? explanation,
+    Value<String?> missingInputs = const Value.absent(),
+    Value<String?> uncertainty = const Value.absent(),
+    Value<String?> alternatives = const Value.absent(),
+    String? ruleVersion,
+    Value<String?> calculationVersion = const Value.absent(),
+    Value<String?> algorithmVersion = const Value.absent(),
+    Value<String?> modelVersion = const Value.absent(),
+    Value<String?> providerVersion = const Value.absent(),
+    Value<String?> policyVersion = const Value.absent(),
+    Value<String?> goalVersionId = const Value.absent(),
+    Value<String?> readinessSnapshotId = const Value.absent(),
+    String? contextFingerprint,
+    Value<String?> evidenceFingerprint = const Value.absent(),
+    Value<String?> exactResultNumerator = const Value.absent(),
+    Value<String?> exactResultDenominator = const Value.absent(),
+    Value<int?> normalizedMaintenanceKcal = const Value.absent(),
+    Value<int?> proposedDeltaKcal = const Value.absent(),
+    DateTime? createdAtUtc,
+    Value<DateTime?> effectiveAtUtc = const Value.absent(),
+    Value<DateTime?> supersededAtUtc = const Value.absent(),
+    Value<String?> supersedesRecommendationId = const Value.absent(),
+    Value<String?> replayHash = const Value.absent(),
+  }) => Recommendation(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    scope: scope ?? this.scope,
+    localPeriodStart: localPeriodStart ?? this.localPeriodStart,
+    localPeriodEnd: localPeriodEnd ?? this.localPeriodEnd,
+    timezoneId: timezoneId ?? this.timezoneId,
+    status: status ?? this.status,
+    priority: priority ?? this.priority,
+    confidence: confidence.present ? confidence.value : this.confidence,
+    completeness: completeness.present ? completeness.value : this.completeness,
+    action: action ?? this.action,
+    explanation: explanation ?? this.explanation,
+    missingInputs: missingInputs.present
+        ? missingInputs.value
+        : this.missingInputs,
+    uncertainty: uncertainty.present ? uncertainty.value : this.uncertainty,
+    alternatives: alternatives.present ? alternatives.value : this.alternatives,
+    ruleVersion: ruleVersion ?? this.ruleVersion,
+    calculationVersion: calculationVersion.present
+        ? calculationVersion.value
+        : this.calculationVersion,
+    algorithmVersion: algorithmVersion.present
+        ? algorithmVersion.value
+        : this.algorithmVersion,
+    modelVersion: modelVersion.present ? modelVersion.value : this.modelVersion,
+    providerVersion: providerVersion.present
+        ? providerVersion.value
+        : this.providerVersion,
+    policyVersion: policyVersion.present
+        ? policyVersion.value
+        : this.policyVersion,
+    goalVersionId: goalVersionId.present
+        ? goalVersionId.value
+        : this.goalVersionId,
+    readinessSnapshotId: readinessSnapshotId.present
+        ? readinessSnapshotId.value
+        : this.readinessSnapshotId,
+    contextFingerprint: contextFingerprint ?? this.contextFingerprint,
+    evidenceFingerprint: evidenceFingerprint.present
+        ? evidenceFingerprint.value
+        : this.evidenceFingerprint,
+    exactResultNumerator: exactResultNumerator.present
+        ? exactResultNumerator.value
+        : this.exactResultNumerator,
+    exactResultDenominator: exactResultDenominator.present
+        ? exactResultDenominator.value
+        : this.exactResultDenominator,
+    normalizedMaintenanceKcal: normalizedMaintenanceKcal.present
+        ? normalizedMaintenanceKcal.value
+        : this.normalizedMaintenanceKcal,
+    proposedDeltaKcal: proposedDeltaKcal.present
+        ? proposedDeltaKcal.value
+        : this.proposedDeltaKcal,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    effectiveAtUtc: effectiveAtUtc.present
+        ? effectiveAtUtc.value
+        : this.effectiveAtUtc,
+    supersededAtUtc: supersededAtUtc.present
+        ? supersededAtUtc.value
+        : this.supersededAtUtc,
+    supersedesRecommendationId: supersedesRecommendationId.present
+        ? supersedesRecommendationId.value
+        : this.supersedesRecommendationId,
+    replayHash: replayHash.present ? replayHash.value : this.replayHash,
+  );
+  Recommendation copyWithCompanion(RecommendationsCompanion data) {
+    return Recommendation(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      scope: data.scope.present ? data.scope.value : this.scope,
+      localPeriodStart: data.localPeriodStart.present
+          ? data.localPeriodStart.value
+          : this.localPeriodStart,
+      localPeriodEnd: data.localPeriodEnd.present
+          ? data.localPeriodEnd.value
+          : this.localPeriodEnd,
+      timezoneId: data.timezoneId.present
+          ? data.timezoneId.value
+          : this.timezoneId,
+      status: data.status.present ? data.status.value : this.status,
+      priority: data.priority.present ? data.priority.value : this.priority,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
+      completeness: data.completeness.present
+          ? data.completeness.value
+          : this.completeness,
+      action: data.action.present ? data.action.value : this.action,
+      explanation: data.explanation.present
+          ? data.explanation.value
+          : this.explanation,
+      missingInputs: data.missingInputs.present
+          ? data.missingInputs.value
+          : this.missingInputs,
+      uncertainty: data.uncertainty.present
+          ? data.uncertainty.value
+          : this.uncertainty,
+      alternatives: data.alternatives.present
+          ? data.alternatives.value
+          : this.alternatives,
+      ruleVersion: data.ruleVersion.present
+          ? data.ruleVersion.value
+          : this.ruleVersion,
+      calculationVersion: data.calculationVersion.present
+          ? data.calculationVersion.value
+          : this.calculationVersion,
+      algorithmVersion: data.algorithmVersion.present
+          ? data.algorithmVersion.value
+          : this.algorithmVersion,
+      modelVersion: data.modelVersion.present
+          ? data.modelVersion.value
+          : this.modelVersion,
+      providerVersion: data.providerVersion.present
+          ? data.providerVersion.value
+          : this.providerVersion,
+      policyVersion: data.policyVersion.present
+          ? data.policyVersion.value
+          : this.policyVersion,
+      goalVersionId: data.goalVersionId.present
+          ? data.goalVersionId.value
+          : this.goalVersionId,
+      readinessSnapshotId: data.readinessSnapshotId.present
+          ? data.readinessSnapshotId.value
+          : this.readinessSnapshotId,
+      contextFingerprint: data.contextFingerprint.present
+          ? data.contextFingerprint.value
+          : this.contextFingerprint,
+      evidenceFingerprint: data.evidenceFingerprint.present
+          ? data.evidenceFingerprint.value
+          : this.evidenceFingerprint,
+      exactResultNumerator: data.exactResultNumerator.present
+          ? data.exactResultNumerator.value
+          : this.exactResultNumerator,
+      exactResultDenominator: data.exactResultDenominator.present
+          ? data.exactResultDenominator.value
+          : this.exactResultDenominator,
+      normalizedMaintenanceKcal: data.normalizedMaintenanceKcal.present
+          ? data.normalizedMaintenanceKcal.value
+          : this.normalizedMaintenanceKcal,
+      proposedDeltaKcal: data.proposedDeltaKcal.present
+          ? data.proposedDeltaKcal.value
+          : this.proposedDeltaKcal,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      effectiveAtUtc: data.effectiveAtUtc.present
+          ? data.effectiveAtUtc.value
+          : this.effectiveAtUtc,
+      supersededAtUtc: data.supersededAtUtc.present
+          ? data.supersededAtUtc.value
+          : this.supersededAtUtc,
+      supersedesRecommendationId: data.supersedesRecommendationId.present
+          ? data.supersedesRecommendationId.value
+          : this.supersedesRecommendationId,
+      replayHash: data.replayHash.present
+          ? data.replayHash.value
+          : this.replayHash,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Recommendation(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('scope: $scope, ')
+          ..write('localPeriodStart: $localPeriodStart, ')
+          ..write('localPeriodEnd: $localPeriodEnd, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('status: $status, ')
+          ..write('priority: $priority, ')
+          ..write('confidence: $confidence, ')
+          ..write('completeness: $completeness, ')
+          ..write('action: $action, ')
+          ..write('explanation: $explanation, ')
+          ..write('missingInputs: $missingInputs, ')
+          ..write('uncertainty: $uncertainty, ')
+          ..write('alternatives: $alternatives, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('calculationVersion: $calculationVersion, ')
+          ..write('algorithmVersion: $algorithmVersion, ')
+          ..write('modelVersion: $modelVersion, ')
+          ..write('providerVersion: $providerVersion, ')
+          ..write('policyVersion: $policyVersion, ')
+          ..write('goalVersionId: $goalVersionId, ')
+          ..write('readinessSnapshotId: $readinessSnapshotId, ')
+          ..write('contextFingerprint: $contextFingerprint, ')
+          ..write('evidenceFingerprint: $evidenceFingerprint, ')
+          ..write('exactResultNumerator: $exactResultNumerator, ')
+          ..write('exactResultDenominator: $exactResultDenominator, ')
+          ..write('normalizedMaintenanceKcal: $normalizedMaintenanceKcal, ')
+          ..write('proposedDeltaKcal: $proposedDeltaKcal, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('effectiveAtUtc: $effectiveAtUtc, ')
+          ..write('supersededAtUtc: $supersededAtUtc, ')
+          ..write('supersedesRecommendationId: $supersedesRecommendationId, ')
+          ..write('replayHash: $replayHash')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    userId,
+    scope,
+    localPeriodStart,
+    localPeriodEnd,
+    timezoneId,
+    status,
+    priority,
+    confidence,
+    completeness,
+    action,
+    explanation,
+    missingInputs,
+    uncertainty,
+    alternatives,
+    ruleVersion,
+    calculationVersion,
+    algorithmVersion,
+    modelVersion,
+    providerVersion,
+    policyVersion,
+    goalVersionId,
+    readinessSnapshotId,
+    contextFingerprint,
+    evidenceFingerprint,
+    exactResultNumerator,
+    exactResultDenominator,
+    normalizedMaintenanceKcal,
+    proposedDeltaKcal,
+    createdAtUtc,
+    effectiveAtUtc,
+    supersededAtUtc,
+    supersedesRecommendationId,
+    replayHash,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Recommendation &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.scope == this.scope &&
+          other.localPeriodStart == this.localPeriodStart &&
+          other.localPeriodEnd == this.localPeriodEnd &&
+          other.timezoneId == this.timezoneId &&
+          other.status == this.status &&
+          other.priority == this.priority &&
+          other.confidence == this.confidence &&
+          other.completeness == this.completeness &&
+          other.action == this.action &&
+          other.explanation == this.explanation &&
+          other.missingInputs == this.missingInputs &&
+          other.uncertainty == this.uncertainty &&
+          other.alternatives == this.alternatives &&
+          other.ruleVersion == this.ruleVersion &&
+          other.calculationVersion == this.calculationVersion &&
+          other.algorithmVersion == this.algorithmVersion &&
+          other.modelVersion == this.modelVersion &&
+          other.providerVersion == this.providerVersion &&
+          other.policyVersion == this.policyVersion &&
+          other.goalVersionId == this.goalVersionId &&
+          other.readinessSnapshotId == this.readinessSnapshotId &&
+          other.contextFingerprint == this.contextFingerprint &&
+          other.evidenceFingerprint == this.evidenceFingerprint &&
+          other.exactResultNumerator == this.exactResultNumerator &&
+          other.exactResultDenominator == this.exactResultDenominator &&
+          other.normalizedMaintenanceKcal == this.normalizedMaintenanceKcal &&
+          other.proposedDeltaKcal == this.proposedDeltaKcal &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.effectiveAtUtc == this.effectiveAtUtc &&
+          other.supersededAtUtc == this.supersededAtUtc &&
+          other.supersedesRecommendationId == this.supersedesRecommendationId &&
+          other.replayHash == this.replayHash);
+}
+
+class RecommendationsCompanion extends UpdateCompanion<Recommendation> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> scope;
+  final Value<String> localPeriodStart;
+  final Value<String> localPeriodEnd;
+  final Value<String> timezoneId;
+  final Value<String> status;
+  final Value<int> priority;
+  final Value<double?> confidence;
+  final Value<String?> completeness;
+  final Value<String> action;
+  final Value<String> explanation;
+  final Value<String?> missingInputs;
+  final Value<String?> uncertainty;
+  final Value<String?> alternatives;
+  final Value<String> ruleVersion;
+  final Value<String?> calculationVersion;
+  final Value<String?> algorithmVersion;
+  final Value<String?> modelVersion;
+  final Value<String?> providerVersion;
+  final Value<String?> policyVersion;
+  final Value<String?> goalVersionId;
+  final Value<String?> readinessSnapshotId;
+  final Value<String> contextFingerprint;
+  final Value<String?> evidenceFingerprint;
+  final Value<String?> exactResultNumerator;
+  final Value<String?> exactResultDenominator;
+  final Value<int?> normalizedMaintenanceKcal;
+  final Value<int?> proposedDeltaKcal;
+  final Value<DateTime> createdAtUtc;
+  final Value<DateTime?> effectiveAtUtc;
+  final Value<DateTime?> supersededAtUtc;
+  final Value<String?> supersedesRecommendationId;
+  final Value<String?> replayHash;
+  final Value<int> rowid;
+  const RecommendationsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.scope = const Value.absent(),
+    this.localPeriodStart = const Value.absent(),
+    this.localPeriodEnd = const Value.absent(),
+    this.timezoneId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.priority = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.completeness = const Value.absent(),
+    this.action = const Value.absent(),
+    this.explanation = const Value.absent(),
+    this.missingInputs = const Value.absent(),
+    this.uncertainty = const Value.absent(),
+    this.alternatives = const Value.absent(),
+    this.ruleVersion = const Value.absent(),
+    this.calculationVersion = const Value.absent(),
+    this.algorithmVersion = const Value.absent(),
+    this.modelVersion = const Value.absent(),
+    this.providerVersion = const Value.absent(),
+    this.policyVersion = const Value.absent(),
+    this.goalVersionId = const Value.absent(),
+    this.readinessSnapshotId = const Value.absent(),
+    this.contextFingerprint = const Value.absent(),
+    this.evidenceFingerprint = const Value.absent(),
+    this.exactResultNumerator = const Value.absent(),
+    this.exactResultDenominator = const Value.absent(),
+    this.normalizedMaintenanceKcal = const Value.absent(),
+    this.proposedDeltaKcal = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.effectiveAtUtc = const Value.absent(),
+    this.supersededAtUtc = const Value.absent(),
+    this.supersedesRecommendationId = const Value.absent(),
+    this.replayHash = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RecommendationsCompanion.insert({
+    required String id,
+    required String userId,
+    required String scope,
+    required String localPeriodStart,
+    required String localPeriodEnd,
+    required String timezoneId,
+    required String status,
+    required int priority,
+    this.confidence = const Value.absent(),
+    this.completeness = const Value.absent(),
+    required String action,
+    required String explanation,
+    this.missingInputs = const Value.absent(),
+    this.uncertainty = const Value.absent(),
+    this.alternatives = const Value.absent(),
+    required String ruleVersion,
+    this.calculationVersion = const Value.absent(),
+    this.algorithmVersion = const Value.absent(),
+    this.modelVersion = const Value.absent(),
+    this.providerVersion = const Value.absent(),
+    this.policyVersion = const Value.absent(),
+    this.goalVersionId = const Value.absent(),
+    this.readinessSnapshotId = const Value.absent(),
+    required String contextFingerprint,
+    this.evidenceFingerprint = const Value.absent(),
+    this.exactResultNumerator = const Value.absent(),
+    this.exactResultDenominator = const Value.absent(),
+    this.normalizedMaintenanceKcal = const Value.absent(),
+    this.proposedDeltaKcal = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.effectiveAtUtc = const Value.absent(),
+    this.supersededAtUtc = const Value.absent(),
+    this.supersedesRecommendationId = const Value.absent(),
+    this.replayHash = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       scope = Value(scope),
+       localPeriodStart = Value(localPeriodStart),
+       localPeriodEnd = Value(localPeriodEnd),
+       timezoneId = Value(timezoneId),
+       status = Value(status),
+       priority = Value(priority),
+       action = Value(action),
+       explanation = Value(explanation),
+       ruleVersion = Value(ruleVersion),
+       contextFingerprint = Value(contextFingerprint);
+  static Insertable<Recommendation> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? scope,
+    Expression<String>? localPeriodStart,
+    Expression<String>? localPeriodEnd,
+    Expression<String>? timezoneId,
+    Expression<String>? status,
+    Expression<int>? priority,
+    Expression<double>? confidence,
+    Expression<String>? completeness,
+    Expression<String>? action,
+    Expression<String>? explanation,
+    Expression<String>? missingInputs,
+    Expression<String>? uncertainty,
+    Expression<String>? alternatives,
+    Expression<String>? ruleVersion,
+    Expression<String>? calculationVersion,
+    Expression<String>? algorithmVersion,
+    Expression<String>? modelVersion,
+    Expression<String>? providerVersion,
+    Expression<String>? policyVersion,
+    Expression<String>? goalVersionId,
+    Expression<String>? readinessSnapshotId,
+    Expression<String>? contextFingerprint,
+    Expression<String>? evidenceFingerprint,
+    Expression<String>? exactResultNumerator,
+    Expression<String>? exactResultDenominator,
+    Expression<int>? normalizedMaintenanceKcal,
+    Expression<int>? proposedDeltaKcal,
+    Expression<DateTime>? createdAtUtc,
+    Expression<DateTime>? effectiveAtUtc,
+    Expression<DateTime>? supersededAtUtc,
+    Expression<String>? supersedesRecommendationId,
+    Expression<String>? replayHash,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (scope != null) 'scope': scope,
+      if (localPeriodStart != null) 'local_period_start': localPeriodStart,
+      if (localPeriodEnd != null) 'local_period_end': localPeriodEnd,
+      if (timezoneId != null) 'timezone_id': timezoneId,
+      if (status != null) 'status': status,
+      if (priority != null) 'priority': priority,
+      if (confidence != null) 'confidence': confidence,
+      if (completeness != null) 'completeness': completeness,
+      if (action != null) 'action': action,
+      if (explanation != null) 'explanation': explanation,
+      if (missingInputs != null) 'missing_inputs': missingInputs,
+      if (uncertainty != null) 'uncertainty': uncertainty,
+      if (alternatives != null) 'alternatives': alternatives,
+      if (ruleVersion != null) 'rule_version': ruleVersion,
+      if (calculationVersion != null) 'calculation_version': calculationVersion,
+      if (algorithmVersion != null) 'algorithm_version': algorithmVersion,
+      if (modelVersion != null) 'model_version': modelVersion,
+      if (providerVersion != null) 'provider_version': providerVersion,
+      if (policyVersion != null) 'policy_version': policyVersion,
+      if (goalVersionId != null) 'goal_version_id': goalVersionId,
+      if (readinessSnapshotId != null)
+        'readiness_snapshot_id': readinessSnapshotId,
+      if (contextFingerprint != null) 'context_fingerprint': contextFingerprint,
+      if (evidenceFingerprint != null)
+        'evidence_fingerprint': evidenceFingerprint,
+      if (exactResultNumerator != null)
+        'exact_result_numerator': exactResultNumerator,
+      if (exactResultDenominator != null)
+        'exact_result_denominator': exactResultDenominator,
+      if (normalizedMaintenanceKcal != null)
+        'normalized_maintenance_kcal': normalizedMaintenanceKcal,
+      if (proposedDeltaKcal != null) 'proposed_delta_kcal': proposedDeltaKcal,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (effectiveAtUtc != null) 'effective_at_utc': effectiveAtUtc,
+      if (supersededAtUtc != null) 'superseded_at_utc': supersededAtUtc,
+      if (supersedesRecommendationId != null)
+        'supersedes_recommendation_id': supersedesRecommendationId,
+      if (replayHash != null) 'replay_hash': replayHash,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RecommendationsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? scope,
+    Value<String>? localPeriodStart,
+    Value<String>? localPeriodEnd,
+    Value<String>? timezoneId,
+    Value<String>? status,
+    Value<int>? priority,
+    Value<double?>? confidence,
+    Value<String?>? completeness,
+    Value<String>? action,
+    Value<String>? explanation,
+    Value<String?>? missingInputs,
+    Value<String?>? uncertainty,
+    Value<String?>? alternatives,
+    Value<String>? ruleVersion,
+    Value<String?>? calculationVersion,
+    Value<String?>? algorithmVersion,
+    Value<String?>? modelVersion,
+    Value<String?>? providerVersion,
+    Value<String?>? policyVersion,
+    Value<String?>? goalVersionId,
+    Value<String?>? readinessSnapshotId,
+    Value<String>? contextFingerprint,
+    Value<String?>? evidenceFingerprint,
+    Value<String?>? exactResultNumerator,
+    Value<String?>? exactResultDenominator,
+    Value<int?>? normalizedMaintenanceKcal,
+    Value<int?>? proposedDeltaKcal,
+    Value<DateTime>? createdAtUtc,
+    Value<DateTime?>? effectiveAtUtc,
+    Value<DateTime?>? supersededAtUtc,
+    Value<String?>? supersedesRecommendationId,
+    Value<String?>? replayHash,
+    Value<int>? rowid,
+  }) {
+    return RecommendationsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      scope: scope ?? this.scope,
+      localPeriodStart: localPeriodStart ?? this.localPeriodStart,
+      localPeriodEnd: localPeriodEnd ?? this.localPeriodEnd,
+      timezoneId: timezoneId ?? this.timezoneId,
+      status: status ?? this.status,
+      priority: priority ?? this.priority,
+      confidence: confidence ?? this.confidence,
+      completeness: completeness ?? this.completeness,
+      action: action ?? this.action,
+      explanation: explanation ?? this.explanation,
+      missingInputs: missingInputs ?? this.missingInputs,
+      uncertainty: uncertainty ?? this.uncertainty,
+      alternatives: alternatives ?? this.alternatives,
+      ruleVersion: ruleVersion ?? this.ruleVersion,
+      calculationVersion: calculationVersion ?? this.calculationVersion,
+      algorithmVersion: algorithmVersion ?? this.algorithmVersion,
+      modelVersion: modelVersion ?? this.modelVersion,
+      providerVersion: providerVersion ?? this.providerVersion,
+      policyVersion: policyVersion ?? this.policyVersion,
+      goalVersionId: goalVersionId ?? this.goalVersionId,
+      readinessSnapshotId: readinessSnapshotId ?? this.readinessSnapshotId,
+      contextFingerprint: contextFingerprint ?? this.contextFingerprint,
+      evidenceFingerprint: evidenceFingerprint ?? this.evidenceFingerprint,
+      exactResultNumerator: exactResultNumerator ?? this.exactResultNumerator,
+      exactResultDenominator:
+          exactResultDenominator ?? this.exactResultDenominator,
+      normalizedMaintenanceKcal:
+          normalizedMaintenanceKcal ?? this.normalizedMaintenanceKcal,
+      proposedDeltaKcal: proposedDeltaKcal ?? this.proposedDeltaKcal,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      effectiveAtUtc: effectiveAtUtc ?? this.effectiveAtUtc,
+      supersededAtUtc: supersededAtUtc ?? this.supersededAtUtc,
+      supersedesRecommendationId:
+          supersedesRecommendationId ?? this.supersedesRecommendationId,
+      replayHash: replayHash ?? this.replayHash,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (scope.present) {
+      map['scope'] = Variable<String>(scope.value);
+    }
+    if (localPeriodStart.present) {
+      map['local_period_start'] = Variable<String>(localPeriodStart.value);
+    }
+    if (localPeriodEnd.present) {
+      map['local_period_end'] = Variable<String>(localPeriodEnd.value);
+    }
+    if (timezoneId.present) {
+      map['timezone_id'] = Variable<String>(timezoneId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (priority.present) {
+      map['priority'] = Variable<int>(priority.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
+    if (completeness.present) {
+      map['completeness'] = Variable<String>(completeness.value);
+    }
+    if (action.present) {
+      map['action'] = Variable<String>(action.value);
+    }
+    if (explanation.present) {
+      map['explanation'] = Variable<String>(explanation.value);
+    }
+    if (missingInputs.present) {
+      map['missing_inputs'] = Variable<String>(missingInputs.value);
+    }
+    if (uncertainty.present) {
+      map['uncertainty'] = Variable<String>(uncertainty.value);
+    }
+    if (alternatives.present) {
+      map['alternatives'] = Variable<String>(alternatives.value);
+    }
+    if (ruleVersion.present) {
+      map['rule_version'] = Variable<String>(ruleVersion.value);
+    }
+    if (calculationVersion.present) {
+      map['calculation_version'] = Variable<String>(calculationVersion.value);
+    }
+    if (algorithmVersion.present) {
+      map['algorithm_version'] = Variable<String>(algorithmVersion.value);
+    }
+    if (modelVersion.present) {
+      map['model_version'] = Variable<String>(modelVersion.value);
+    }
+    if (providerVersion.present) {
+      map['provider_version'] = Variable<String>(providerVersion.value);
+    }
+    if (policyVersion.present) {
+      map['policy_version'] = Variable<String>(policyVersion.value);
+    }
+    if (goalVersionId.present) {
+      map['goal_version_id'] = Variable<String>(goalVersionId.value);
+    }
+    if (readinessSnapshotId.present) {
+      map['readiness_snapshot_id'] = Variable<String>(
+        readinessSnapshotId.value,
+      );
+    }
+    if (contextFingerprint.present) {
+      map['context_fingerprint'] = Variable<String>(contextFingerprint.value);
+    }
+    if (evidenceFingerprint.present) {
+      map['evidence_fingerprint'] = Variable<String>(evidenceFingerprint.value);
+    }
+    if (exactResultNumerator.present) {
+      map['exact_result_numerator'] = Variable<String>(
+        exactResultNumerator.value,
+      );
+    }
+    if (exactResultDenominator.present) {
+      map['exact_result_denominator'] = Variable<String>(
+        exactResultDenominator.value,
+      );
+    }
+    if (normalizedMaintenanceKcal.present) {
+      map['normalized_maintenance_kcal'] = Variable<int>(
+        normalizedMaintenanceKcal.value,
+      );
+    }
+    if (proposedDeltaKcal.present) {
+      map['proposed_delta_kcal'] = Variable<int>(proposedDeltaKcal.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (effectiveAtUtc.present) {
+      map['effective_at_utc'] = Variable<DateTime>(effectiveAtUtc.value);
+    }
+    if (supersededAtUtc.present) {
+      map['superseded_at_utc'] = Variable<DateTime>(supersededAtUtc.value);
+    }
+    if (supersedesRecommendationId.present) {
+      map['supersedes_recommendation_id'] = Variable<String>(
+        supersedesRecommendationId.value,
+      );
+    }
+    if (replayHash.present) {
+      map['replay_hash'] = Variable<String>(replayHash.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecommendationsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('scope: $scope, ')
+          ..write('localPeriodStart: $localPeriodStart, ')
+          ..write('localPeriodEnd: $localPeriodEnd, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('status: $status, ')
+          ..write('priority: $priority, ')
+          ..write('confidence: $confidence, ')
+          ..write('completeness: $completeness, ')
+          ..write('action: $action, ')
+          ..write('explanation: $explanation, ')
+          ..write('missingInputs: $missingInputs, ')
+          ..write('uncertainty: $uncertainty, ')
+          ..write('alternatives: $alternatives, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('calculationVersion: $calculationVersion, ')
+          ..write('algorithmVersion: $algorithmVersion, ')
+          ..write('modelVersion: $modelVersion, ')
+          ..write('providerVersion: $providerVersion, ')
+          ..write('policyVersion: $policyVersion, ')
+          ..write('goalVersionId: $goalVersionId, ')
+          ..write('readinessSnapshotId: $readinessSnapshotId, ')
+          ..write('contextFingerprint: $contextFingerprint, ')
+          ..write('evidenceFingerprint: $evidenceFingerprint, ')
+          ..write('exactResultNumerator: $exactResultNumerator, ')
+          ..write('exactResultDenominator: $exactResultDenominator, ')
+          ..write('normalizedMaintenanceKcal: $normalizedMaintenanceKcal, ')
+          ..write('proposedDeltaKcal: $proposedDeltaKcal, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('effectiveAtUtc: $effectiveAtUtc, ')
+          ..write('supersededAtUtc: $supersededAtUtc, ')
+          ..write('supersedesRecommendationId: $supersedesRecommendationId, ')
+          ..write('replayHash: $replayHash, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RecommendationEvidenceTable extends RecommendationEvidence
+    with TableInfo<$RecommendationEvidenceTable, RecommendationEvidenceData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecommendationEvidenceTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recommendationIdMeta = const VerificationMeta(
+    'recommendationId',
+  );
+  @override
+  late final GeneratedColumn<String> recommendationId = GeneratedColumn<String>(
+    'recommendation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES recommendations (id)',
+    ),
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _evidenceKindMeta = const VerificationMeta(
+    'evidenceKind',
+  );
+  @override
+  late final GeneratedColumn<String> evidenceKind = GeneratedColumn<String>(
+    'evidence_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceTypeMeta = const VerificationMeta(
+    'sourceType',
+  );
+  @override
+  late final GeneratedColumn<String> sourceType = GeneratedColumn<String>(
+    'source_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceIdMeta = const VerificationMeta(
+    'sourceId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceId = GeneratedColumn<String>(
+    'source_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceVersionMeta = const VerificationMeta(
+    'sourceVersion',
+  );
+  @override
+  late final GeneratedColumn<String> sourceVersion = GeneratedColumn<String>(
+    'source_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<double> value = GeneratedColumn<double>(
+    'value',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lowerMeta = const VerificationMeta('lower');
+  @override
+  late final GeneratedColumn<double> lower = GeneratedColumn<double>(
+    'lower',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _upperMeta = const VerificationMeta('upper');
+  @override
+  late final GeneratedColumn<double> upper = GeneratedColumn<double>(
+    'upper',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _exactResultNumeratorMeta =
+      const VerificationMeta('exactResultNumerator');
+  @override
+  late final GeneratedColumn<String> exactResultNumerator =
+      GeneratedColumn<String>(
+        'exact_result_numerator',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _exactResultDenominatorMeta =
+      const VerificationMeta('exactResultDenominator');
+  @override
+  late final GeneratedColumn<String> exactResultDenominator =
+      GeneratedColumn<String>(
+        'exact_result_denominator',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _normalizedMaintenanceKcalMeta =
+      const VerificationMeta('normalizedMaintenanceKcal');
+  @override
+  late final GeneratedColumn<int> normalizedMaintenanceKcal =
+      GeneratedColumn<int>(
+        'normalized_maintenance_kcal',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _localDateMeta = const VerificationMeta(
+    'localDate',
+  );
+  @override
+  late final GeneratedColumn<String> localDate = GeneratedColumn<String>(
+    'local_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _timezoneIdMeta = const VerificationMeta(
+    'timezoneId',
+  );
+  @override
+  late final GeneratedColumn<String> timezoneId = GeneratedColumn<String>(
+    'timezone_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    recommendationId,
+    userId,
+    evidenceKind,
+    sourceType,
+    sourceId,
+    sourceVersion,
+    status,
+    value,
+    lower,
+    upper,
+    unit,
+    exactResultNumerator,
+    exactResultDenominator,
+    normalizedMaintenanceKcal,
+    localDate,
+    timezoneId,
+    createdAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'recommendation_evidence';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RecommendationEvidenceData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('recommendation_id')) {
+      context.handle(
+        _recommendationIdMeta,
+        recommendationId.isAcceptableOrUnknown(
+          data['recommendation_id']!,
+          _recommendationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recommendationIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('evidence_kind')) {
+      context.handle(
+        _evidenceKindMeta,
+        evidenceKind.isAcceptableOrUnknown(
+          data['evidence_kind']!,
+          _evidenceKindMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_evidenceKindMeta);
+    }
+    if (data.containsKey('source_type')) {
+      context.handle(
+        _sourceTypeMeta,
+        sourceType.isAcceptableOrUnknown(data['source_type']!, _sourceTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceTypeMeta);
+    }
+    if (data.containsKey('source_id')) {
+      context.handle(
+        _sourceIdMeta,
+        sourceId.isAcceptableOrUnknown(data['source_id']!, _sourceIdMeta),
+      );
+    }
+    if (data.containsKey('source_version')) {
+      context.handle(
+        _sourceVersionMeta,
+        sourceVersion.isAcceptableOrUnknown(
+          data['source_version']!,
+          _sourceVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    }
+    if (data.containsKey('lower')) {
+      context.handle(
+        _lowerMeta,
+        lower.isAcceptableOrUnknown(data['lower']!, _lowerMeta),
+      );
+    }
+    if (data.containsKey('upper')) {
+      context.handle(
+        _upperMeta,
+        upper.isAcceptableOrUnknown(data['upper']!, _upperMeta),
+      );
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    }
+    if (data.containsKey('exact_result_numerator')) {
+      context.handle(
+        _exactResultNumeratorMeta,
+        exactResultNumerator.isAcceptableOrUnknown(
+          data['exact_result_numerator']!,
+          _exactResultNumeratorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('exact_result_denominator')) {
+      context.handle(
+        _exactResultDenominatorMeta,
+        exactResultDenominator.isAcceptableOrUnknown(
+          data['exact_result_denominator']!,
+          _exactResultDenominatorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('normalized_maintenance_kcal')) {
+      context.handle(
+        _normalizedMaintenanceKcalMeta,
+        normalizedMaintenanceKcal.isAcceptableOrUnknown(
+          data['normalized_maintenance_kcal']!,
+          _normalizedMaintenanceKcalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('local_date')) {
+      context.handle(
+        _localDateMeta,
+        localDate.isAcceptableOrUnknown(data['local_date']!, _localDateMeta),
+      );
+    }
+    if (data.containsKey('timezone_id')) {
+      context.handle(
+        _timezoneIdMeta,
+        timezoneId.isAcceptableOrUnknown(data['timezone_id']!, _timezoneIdMeta),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {recommendationId, evidenceKind, sourceId},
+  ];
+  @override
+  RecommendationEvidenceData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RecommendationEvidenceData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      recommendationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recommendation_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      evidenceKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evidence_kind'],
+      )!,
+      sourceType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_type'],
+      )!,
+      sourceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_id'],
+      ),
+      sourceVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_version'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}value'],
+      ),
+      lower: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lower'],
+      ),
+      upper: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upper'],
+      ),
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      ),
+      exactResultNumerator: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exact_result_numerator'],
+      ),
+      exactResultDenominator: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exact_result_denominator'],
+      ),
+      normalizedMaintenanceKcal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}normalized_maintenance_kcal'],
+      ),
+      localDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_date'],
+      ),
+      timezoneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}timezone_id'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $RecommendationEvidenceTable createAlias(String alias) {
+    return $RecommendationEvidenceTable(attachedDatabase, alias);
+  }
+}
+
+class RecommendationEvidenceData extends DataClass
+    implements Insertable<RecommendationEvidenceData> {
+  final String id;
+  final String recommendationId;
+  final String userId;
+  final String evidenceKind;
+  final String sourceType;
+  final String? sourceId;
+  final String? sourceVersion;
+  final String status;
+  final double? value;
+  final double? lower;
+  final double? upper;
+  final String? unit;
+  final String? exactResultNumerator;
+  final String? exactResultDenominator;
+  final int? normalizedMaintenanceKcal;
+  final String? localDate;
+  final String? timezoneId;
+  final DateTime createdAtUtc;
+  const RecommendationEvidenceData({
+    required this.id,
+    required this.recommendationId,
+    required this.userId,
+    required this.evidenceKind,
+    required this.sourceType,
+    this.sourceId,
+    this.sourceVersion,
+    required this.status,
+    this.value,
+    this.lower,
+    this.upper,
+    this.unit,
+    this.exactResultNumerator,
+    this.exactResultDenominator,
+    this.normalizedMaintenanceKcal,
+    this.localDate,
+    this.timezoneId,
+    required this.createdAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['recommendation_id'] = Variable<String>(recommendationId);
+    map['user_id'] = Variable<String>(userId);
+    map['evidence_kind'] = Variable<String>(evidenceKind);
+    map['source_type'] = Variable<String>(sourceType);
+    if (!nullToAbsent || sourceId != null) {
+      map['source_id'] = Variable<String>(sourceId);
+    }
+    if (!nullToAbsent || sourceVersion != null) {
+      map['source_version'] = Variable<String>(sourceVersion);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || value != null) {
+      map['value'] = Variable<double>(value);
+    }
+    if (!nullToAbsent || lower != null) {
+      map['lower'] = Variable<double>(lower);
+    }
+    if (!nullToAbsent || upper != null) {
+      map['upper'] = Variable<double>(upper);
+    }
+    if (!nullToAbsent || unit != null) {
+      map['unit'] = Variable<String>(unit);
+    }
+    if (!nullToAbsent || exactResultNumerator != null) {
+      map['exact_result_numerator'] = Variable<String>(exactResultNumerator);
+    }
+    if (!nullToAbsent || exactResultDenominator != null) {
+      map['exact_result_denominator'] = Variable<String>(
+        exactResultDenominator,
+      );
+    }
+    if (!nullToAbsent || normalizedMaintenanceKcal != null) {
+      map['normalized_maintenance_kcal'] = Variable<int>(
+        normalizedMaintenanceKcal,
+      );
+    }
+    if (!nullToAbsent || localDate != null) {
+      map['local_date'] = Variable<String>(localDate);
+    }
+    if (!nullToAbsent || timezoneId != null) {
+      map['timezone_id'] = Variable<String>(timezoneId);
+    }
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    return map;
+  }
+
+  RecommendationEvidenceCompanion toCompanion(bool nullToAbsent) {
+    return RecommendationEvidenceCompanion(
+      id: Value(id),
+      recommendationId: Value(recommendationId),
+      userId: Value(userId),
+      evidenceKind: Value(evidenceKind),
+      sourceType: Value(sourceType),
+      sourceId: sourceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceId),
+      sourceVersion: sourceVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceVersion),
+      status: Value(status),
+      value: value == null && nullToAbsent
+          ? const Value.absent()
+          : Value(value),
+      lower: lower == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lower),
+      upper: upper == null && nullToAbsent
+          ? const Value.absent()
+          : Value(upper),
+      unit: unit == null && nullToAbsent ? const Value.absent() : Value(unit),
+      exactResultNumerator: exactResultNumerator == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exactResultNumerator),
+      exactResultDenominator: exactResultDenominator == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exactResultDenominator),
+      normalizedMaintenanceKcal:
+          normalizedMaintenanceKcal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(normalizedMaintenanceKcal),
+      localDate: localDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localDate),
+      timezoneId: timezoneId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timezoneId),
+      createdAtUtc: Value(createdAtUtc),
+    );
+  }
+
+  factory RecommendationEvidenceData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RecommendationEvidenceData(
+      id: serializer.fromJson<String>(json['id']),
+      recommendationId: serializer.fromJson<String>(json['recommendationId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      evidenceKind: serializer.fromJson<String>(json['evidenceKind']),
+      sourceType: serializer.fromJson<String>(json['sourceType']),
+      sourceId: serializer.fromJson<String?>(json['sourceId']),
+      sourceVersion: serializer.fromJson<String?>(json['sourceVersion']),
+      status: serializer.fromJson<String>(json['status']),
+      value: serializer.fromJson<double?>(json['value']),
+      lower: serializer.fromJson<double?>(json['lower']),
+      upper: serializer.fromJson<double?>(json['upper']),
+      unit: serializer.fromJson<String?>(json['unit']),
+      exactResultNumerator: serializer.fromJson<String?>(
+        json['exactResultNumerator'],
+      ),
+      exactResultDenominator: serializer.fromJson<String?>(
+        json['exactResultDenominator'],
+      ),
+      normalizedMaintenanceKcal: serializer.fromJson<int?>(
+        json['normalizedMaintenanceKcal'],
+      ),
+      localDate: serializer.fromJson<String?>(json['localDate']),
+      timezoneId: serializer.fromJson<String?>(json['timezoneId']),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'recommendationId': serializer.toJson<String>(recommendationId),
+      'userId': serializer.toJson<String>(userId),
+      'evidenceKind': serializer.toJson<String>(evidenceKind),
+      'sourceType': serializer.toJson<String>(sourceType),
+      'sourceId': serializer.toJson<String?>(sourceId),
+      'sourceVersion': serializer.toJson<String?>(sourceVersion),
+      'status': serializer.toJson<String>(status),
+      'value': serializer.toJson<double?>(value),
+      'lower': serializer.toJson<double?>(lower),
+      'upper': serializer.toJson<double?>(upper),
+      'unit': serializer.toJson<String?>(unit),
+      'exactResultNumerator': serializer.toJson<String?>(exactResultNumerator),
+      'exactResultDenominator': serializer.toJson<String?>(
+        exactResultDenominator,
+      ),
+      'normalizedMaintenanceKcal': serializer.toJson<int?>(
+        normalizedMaintenanceKcal,
+      ),
+      'localDate': serializer.toJson<String?>(localDate),
+      'timezoneId': serializer.toJson<String?>(timezoneId),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+    };
+  }
+
+  RecommendationEvidenceData copyWith({
+    String? id,
+    String? recommendationId,
+    String? userId,
+    String? evidenceKind,
+    String? sourceType,
+    Value<String?> sourceId = const Value.absent(),
+    Value<String?> sourceVersion = const Value.absent(),
+    String? status,
+    Value<double?> value = const Value.absent(),
+    Value<double?> lower = const Value.absent(),
+    Value<double?> upper = const Value.absent(),
+    Value<String?> unit = const Value.absent(),
+    Value<String?> exactResultNumerator = const Value.absent(),
+    Value<String?> exactResultDenominator = const Value.absent(),
+    Value<int?> normalizedMaintenanceKcal = const Value.absent(),
+    Value<String?> localDate = const Value.absent(),
+    Value<String?> timezoneId = const Value.absent(),
+    DateTime? createdAtUtc,
+  }) => RecommendationEvidenceData(
+    id: id ?? this.id,
+    recommendationId: recommendationId ?? this.recommendationId,
+    userId: userId ?? this.userId,
+    evidenceKind: evidenceKind ?? this.evidenceKind,
+    sourceType: sourceType ?? this.sourceType,
+    sourceId: sourceId.present ? sourceId.value : this.sourceId,
+    sourceVersion: sourceVersion.present
+        ? sourceVersion.value
+        : this.sourceVersion,
+    status: status ?? this.status,
+    value: value.present ? value.value : this.value,
+    lower: lower.present ? lower.value : this.lower,
+    upper: upper.present ? upper.value : this.upper,
+    unit: unit.present ? unit.value : this.unit,
+    exactResultNumerator: exactResultNumerator.present
+        ? exactResultNumerator.value
+        : this.exactResultNumerator,
+    exactResultDenominator: exactResultDenominator.present
+        ? exactResultDenominator.value
+        : this.exactResultDenominator,
+    normalizedMaintenanceKcal: normalizedMaintenanceKcal.present
+        ? normalizedMaintenanceKcal.value
+        : this.normalizedMaintenanceKcal,
+    localDate: localDate.present ? localDate.value : this.localDate,
+    timezoneId: timezoneId.present ? timezoneId.value : this.timezoneId,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+  );
+  RecommendationEvidenceData copyWithCompanion(
+    RecommendationEvidenceCompanion data,
+  ) {
+    return RecommendationEvidenceData(
+      id: data.id.present ? data.id.value : this.id,
+      recommendationId: data.recommendationId.present
+          ? data.recommendationId.value
+          : this.recommendationId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      evidenceKind: data.evidenceKind.present
+          ? data.evidenceKind.value
+          : this.evidenceKind,
+      sourceType: data.sourceType.present
+          ? data.sourceType.value
+          : this.sourceType,
+      sourceId: data.sourceId.present ? data.sourceId.value : this.sourceId,
+      sourceVersion: data.sourceVersion.present
+          ? data.sourceVersion.value
+          : this.sourceVersion,
+      status: data.status.present ? data.status.value : this.status,
+      value: data.value.present ? data.value.value : this.value,
+      lower: data.lower.present ? data.lower.value : this.lower,
+      upper: data.upper.present ? data.upper.value : this.upper,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      exactResultNumerator: data.exactResultNumerator.present
+          ? data.exactResultNumerator.value
+          : this.exactResultNumerator,
+      exactResultDenominator: data.exactResultDenominator.present
+          ? data.exactResultDenominator.value
+          : this.exactResultDenominator,
+      normalizedMaintenanceKcal: data.normalizedMaintenanceKcal.present
+          ? data.normalizedMaintenanceKcal.value
+          : this.normalizedMaintenanceKcal,
+      localDate: data.localDate.present ? data.localDate.value : this.localDate,
+      timezoneId: data.timezoneId.present
+          ? data.timezoneId.value
+          : this.timezoneId,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecommendationEvidenceData(')
+          ..write('id: $id, ')
+          ..write('recommendationId: $recommendationId, ')
+          ..write('userId: $userId, ')
+          ..write('evidenceKind: $evidenceKind, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('sourceVersion: $sourceVersion, ')
+          ..write('status: $status, ')
+          ..write('value: $value, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('unit: $unit, ')
+          ..write('exactResultNumerator: $exactResultNumerator, ')
+          ..write('exactResultDenominator: $exactResultDenominator, ')
+          ..write('normalizedMaintenanceKcal: $normalizedMaintenanceKcal, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('createdAtUtc: $createdAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    recommendationId,
+    userId,
+    evidenceKind,
+    sourceType,
+    sourceId,
+    sourceVersion,
+    status,
+    value,
+    lower,
+    upper,
+    unit,
+    exactResultNumerator,
+    exactResultDenominator,
+    normalizedMaintenanceKcal,
+    localDate,
+    timezoneId,
+    createdAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RecommendationEvidenceData &&
+          other.id == this.id &&
+          other.recommendationId == this.recommendationId &&
+          other.userId == this.userId &&
+          other.evidenceKind == this.evidenceKind &&
+          other.sourceType == this.sourceType &&
+          other.sourceId == this.sourceId &&
+          other.sourceVersion == this.sourceVersion &&
+          other.status == this.status &&
+          other.value == this.value &&
+          other.lower == this.lower &&
+          other.upper == this.upper &&
+          other.unit == this.unit &&
+          other.exactResultNumerator == this.exactResultNumerator &&
+          other.exactResultDenominator == this.exactResultDenominator &&
+          other.normalizedMaintenanceKcal == this.normalizedMaintenanceKcal &&
+          other.localDate == this.localDate &&
+          other.timezoneId == this.timezoneId &&
+          other.createdAtUtc == this.createdAtUtc);
+}
+
+class RecommendationEvidenceCompanion
+    extends UpdateCompanion<RecommendationEvidenceData> {
+  final Value<String> id;
+  final Value<String> recommendationId;
+  final Value<String> userId;
+  final Value<String> evidenceKind;
+  final Value<String> sourceType;
+  final Value<String?> sourceId;
+  final Value<String?> sourceVersion;
+  final Value<String> status;
+  final Value<double?> value;
+  final Value<double?> lower;
+  final Value<double?> upper;
+  final Value<String?> unit;
+  final Value<String?> exactResultNumerator;
+  final Value<String?> exactResultDenominator;
+  final Value<int?> normalizedMaintenanceKcal;
+  final Value<String?> localDate;
+  final Value<String?> timezoneId;
+  final Value<DateTime> createdAtUtc;
+  final Value<int> rowid;
+  const RecommendationEvidenceCompanion({
+    this.id = const Value.absent(),
+    this.recommendationId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.evidenceKind = const Value.absent(),
+    this.sourceType = const Value.absent(),
+    this.sourceId = const Value.absent(),
+    this.sourceVersion = const Value.absent(),
+    this.status = const Value.absent(),
+    this.value = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.exactResultNumerator = const Value.absent(),
+    this.exactResultDenominator = const Value.absent(),
+    this.normalizedMaintenanceKcal = const Value.absent(),
+    this.localDate = const Value.absent(),
+    this.timezoneId = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RecommendationEvidenceCompanion.insert({
+    required String id,
+    required String recommendationId,
+    required String userId,
+    required String evidenceKind,
+    required String sourceType,
+    this.sourceId = const Value.absent(),
+    this.sourceVersion = const Value.absent(),
+    required String status,
+    this.value = const Value.absent(),
+    this.lower = const Value.absent(),
+    this.upper = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.exactResultNumerator = const Value.absent(),
+    this.exactResultDenominator = const Value.absent(),
+    this.normalizedMaintenanceKcal = const Value.absent(),
+    this.localDate = const Value.absent(),
+    this.timezoneId = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       recommendationId = Value(recommendationId),
+       userId = Value(userId),
+       evidenceKind = Value(evidenceKind),
+       sourceType = Value(sourceType),
+       status = Value(status);
+  static Insertable<RecommendationEvidenceData> custom({
+    Expression<String>? id,
+    Expression<String>? recommendationId,
+    Expression<String>? userId,
+    Expression<String>? evidenceKind,
+    Expression<String>? sourceType,
+    Expression<String>? sourceId,
+    Expression<String>? sourceVersion,
+    Expression<String>? status,
+    Expression<double>? value,
+    Expression<double>? lower,
+    Expression<double>? upper,
+    Expression<String>? unit,
+    Expression<String>? exactResultNumerator,
+    Expression<String>? exactResultDenominator,
+    Expression<int>? normalizedMaintenanceKcal,
+    Expression<String>? localDate,
+    Expression<String>? timezoneId,
+    Expression<DateTime>? createdAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (recommendationId != null) 'recommendation_id': recommendationId,
+      if (userId != null) 'user_id': userId,
+      if (evidenceKind != null) 'evidence_kind': evidenceKind,
+      if (sourceType != null) 'source_type': sourceType,
+      if (sourceId != null) 'source_id': sourceId,
+      if (sourceVersion != null) 'source_version': sourceVersion,
+      if (status != null) 'status': status,
+      if (value != null) 'value': value,
+      if (lower != null) 'lower': lower,
+      if (upper != null) 'upper': upper,
+      if (unit != null) 'unit': unit,
+      if (exactResultNumerator != null)
+        'exact_result_numerator': exactResultNumerator,
+      if (exactResultDenominator != null)
+        'exact_result_denominator': exactResultDenominator,
+      if (normalizedMaintenanceKcal != null)
+        'normalized_maintenance_kcal': normalizedMaintenanceKcal,
+      if (localDate != null) 'local_date': localDate,
+      if (timezoneId != null) 'timezone_id': timezoneId,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RecommendationEvidenceCompanion copyWith({
+    Value<String>? id,
+    Value<String>? recommendationId,
+    Value<String>? userId,
+    Value<String>? evidenceKind,
+    Value<String>? sourceType,
+    Value<String?>? sourceId,
+    Value<String?>? sourceVersion,
+    Value<String>? status,
+    Value<double?>? value,
+    Value<double?>? lower,
+    Value<double?>? upper,
+    Value<String?>? unit,
+    Value<String?>? exactResultNumerator,
+    Value<String?>? exactResultDenominator,
+    Value<int?>? normalizedMaintenanceKcal,
+    Value<String?>? localDate,
+    Value<String?>? timezoneId,
+    Value<DateTime>? createdAtUtc,
+    Value<int>? rowid,
+  }) {
+    return RecommendationEvidenceCompanion(
+      id: id ?? this.id,
+      recommendationId: recommendationId ?? this.recommendationId,
+      userId: userId ?? this.userId,
+      evidenceKind: evidenceKind ?? this.evidenceKind,
+      sourceType: sourceType ?? this.sourceType,
+      sourceId: sourceId ?? this.sourceId,
+      sourceVersion: sourceVersion ?? this.sourceVersion,
+      status: status ?? this.status,
+      value: value ?? this.value,
+      lower: lower ?? this.lower,
+      upper: upper ?? this.upper,
+      unit: unit ?? this.unit,
+      exactResultNumerator: exactResultNumerator ?? this.exactResultNumerator,
+      exactResultDenominator:
+          exactResultDenominator ?? this.exactResultDenominator,
+      normalizedMaintenanceKcal:
+          normalizedMaintenanceKcal ?? this.normalizedMaintenanceKcal,
+      localDate: localDate ?? this.localDate,
+      timezoneId: timezoneId ?? this.timezoneId,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (recommendationId.present) {
+      map['recommendation_id'] = Variable<String>(recommendationId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (evidenceKind.present) {
+      map['evidence_kind'] = Variable<String>(evidenceKind.value);
+    }
+    if (sourceType.present) {
+      map['source_type'] = Variable<String>(sourceType.value);
+    }
+    if (sourceId.present) {
+      map['source_id'] = Variable<String>(sourceId.value);
+    }
+    if (sourceVersion.present) {
+      map['source_version'] = Variable<String>(sourceVersion.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<double>(value.value);
+    }
+    if (lower.present) {
+      map['lower'] = Variable<double>(lower.value);
+    }
+    if (upper.present) {
+      map['upper'] = Variable<double>(upper.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (exactResultNumerator.present) {
+      map['exact_result_numerator'] = Variable<String>(
+        exactResultNumerator.value,
+      );
+    }
+    if (exactResultDenominator.present) {
+      map['exact_result_denominator'] = Variable<String>(
+        exactResultDenominator.value,
+      );
+    }
+    if (normalizedMaintenanceKcal.present) {
+      map['normalized_maintenance_kcal'] = Variable<int>(
+        normalizedMaintenanceKcal.value,
+      );
+    }
+    if (localDate.present) {
+      map['local_date'] = Variable<String>(localDate.value);
+    }
+    if (timezoneId.present) {
+      map['timezone_id'] = Variable<String>(timezoneId.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecommendationEvidenceCompanion(')
+          ..write('id: $id, ')
+          ..write('recommendationId: $recommendationId, ')
+          ..write('userId: $userId, ')
+          ..write('evidenceKind: $evidenceKind, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('sourceVersion: $sourceVersion, ')
+          ..write('status: $status, ')
+          ..write('value: $value, ')
+          ..write('lower: $lower, ')
+          ..write('upper: $upper, ')
+          ..write('unit: $unit, ')
+          ..write('exactResultNumerator: $exactResultNumerator, ')
+          ..write('exactResultDenominator: $exactResultDenominator, ')
+          ..write('normalizedMaintenanceKcal: $normalizedMaintenanceKcal, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CoachingEligibilityEvaluationsTable
+    extends CoachingEligibilityEvaluations
+    with
+        TableInfo<
+          $CoachingEligibilityEvaluationsTable,
+          CoachingEligibilityEvaluation
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CoachingEligibilityEvaluationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _resultMeta = const VerificationMeta('result');
+  @override
+  late final GeneratedColumn<String> result = GeneratedColumn<String>(
+    'result',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reasonCodeMeta = const VerificationMeta(
+    'reasonCode',
+  );
+  @override
+  late final GeneratedColumn<String> reasonCode = GeneratedColumn<String>(
+    'reason_code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ageInputSourceMeta = const VerificationMeta(
+    'ageInputSource',
+  );
+  @override
+  late final GeneratedColumn<String> ageInputSource = GeneratedColumn<String>(
+    'age_input_source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _evidenceTimestampUtcMeta =
+      const VerificationMeta('evidenceTimestampUtc');
+  @override
+  late final GeneratedColumn<DateTime> evidenceTimestampUtc =
+      GeneratedColumn<DateTime>(
+        'evidence_timestamp_utc',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _evaluationUtcMeta = const VerificationMeta(
+    'evaluationUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> evaluationUtc =
+      GeneratedColumn<DateTime>(
+        'evaluation_utc',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _evaluationLocalDateMeta =
+      const VerificationMeta('evaluationLocalDate');
+  @override
+  late final GeneratedColumn<String> evaluationLocalDate =
+      GeneratedColumn<String>(
+        'evaluation_local_date',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _timezoneIdMeta = const VerificationMeta(
+    'timezoneId',
+  );
+  @override
+  late final GeneratedColumn<String> timezoneId = GeneratedColumn<String>(
+    'timezone_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _policyVersionMeta = const VerificationMeta(
+    'policyVersion',
+  );
+  @override
+  late final GeneratedColumn<String> policyVersion = GeneratedColumn<String>(
+    'policy_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _minimumAgeRuleVersionMeta =
+      const VerificationMeta('minimumAgeRuleVersion');
+  @override
+  late final GeneratedColumn<String> minimumAgeRuleVersion =
+      GeneratedColumn<String>(
+        'minimum_age_rule_version',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _goalVersionIdMeta = const VerificationMeta(
+    'goalVersionId',
+  );
+  @override
+  late final GeneratedColumn<String> goalVersionId = GeneratedColumn<String>(
+    'goal_version_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES nutrition_goal_versions (id)',
+    ),
+  );
+  static const VerificationMeta _recommendationIdMeta = const VerificationMeta(
+    'recommendationId',
+  );
+  @override
+  late final GeneratedColumn<String> recommendationId = GeneratedColumn<String>(
+    'recommendation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES recommendations (id)',
+    ),
+  );
+  static const VerificationMeta _attemptedProposalIdMeta =
+      const VerificationMeta('attemptedProposalId');
+  @override
+  late final GeneratedColumn<String> attemptedProposalId =
+      GeneratedColumn<String>(
+        'attempted_proposal_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _evidenceFingerprintMeta =
+      const VerificationMeta('evidenceFingerprint');
+  @override
+  late final GeneratedColumn<String> evidenceFingerprint =
+      GeneratedColumn<String>(
+        'evidence_fingerprint',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    result,
+    reasonCode,
+    ageInputSource,
+    evidenceTimestampUtc,
+    evaluationUtc,
+    evaluationLocalDate,
+    timezoneId,
+    policyVersion,
+    minimumAgeRuleVersion,
+    goalVersionId,
+    recommendationId,
+    attemptedProposalId,
+    evidenceFingerprint,
+    createdAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'coaching_eligibility_evaluations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CoachingEligibilityEvaluation> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('result')) {
+      context.handle(
+        _resultMeta,
+        result.isAcceptableOrUnknown(data['result']!, _resultMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_resultMeta);
+    }
+    if (data.containsKey('reason_code')) {
+      context.handle(
+        _reasonCodeMeta,
+        reasonCode.isAcceptableOrUnknown(data['reason_code']!, _reasonCodeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reasonCodeMeta);
+    }
+    if (data.containsKey('age_input_source')) {
+      context.handle(
+        _ageInputSourceMeta,
+        ageInputSource.isAcceptableOrUnknown(
+          data['age_input_source']!,
+          _ageInputSourceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_ageInputSourceMeta);
+    }
+    if (data.containsKey('evidence_timestamp_utc')) {
+      context.handle(
+        _evidenceTimestampUtcMeta,
+        evidenceTimestampUtc.isAcceptableOrUnknown(
+          data['evidence_timestamp_utc']!,
+          _evidenceTimestampUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_evidenceTimestampUtcMeta);
+    }
+    if (data.containsKey('evaluation_utc')) {
+      context.handle(
+        _evaluationUtcMeta,
+        evaluationUtc.isAcceptableOrUnknown(
+          data['evaluation_utc']!,
+          _evaluationUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_evaluationUtcMeta);
+    }
+    if (data.containsKey('evaluation_local_date')) {
+      context.handle(
+        _evaluationLocalDateMeta,
+        evaluationLocalDate.isAcceptableOrUnknown(
+          data['evaluation_local_date']!,
+          _evaluationLocalDateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_evaluationLocalDateMeta);
+    }
+    if (data.containsKey('timezone_id')) {
+      context.handle(
+        _timezoneIdMeta,
+        timezoneId.isAcceptableOrUnknown(data['timezone_id']!, _timezoneIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timezoneIdMeta);
+    }
+    if (data.containsKey('policy_version')) {
+      context.handle(
+        _policyVersionMeta,
+        policyVersion.isAcceptableOrUnknown(
+          data['policy_version']!,
+          _policyVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_policyVersionMeta);
+    }
+    if (data.containsKey('minimum_age_rule_version')) {
+      context.handle(
+        _minimumAgeRuleVersionMeta,
+        minimumAgeRuleVersion.isAcceptableOrUnknown(
+          data['minimum_age_rule_version']!,
+          _minimumAgeRuleVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_minimumAgeRuleVersionMeta);
+    }
+    if (data.containsKey('goal_version_id')) {
+      context.handle(
+        _goalVersionIdMeta,
+        goalVersionId.isAcceptableOrUnknown(
+          data['goal_version_id']!,
+          _goalVersionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recommendation_id')) {
+      context.handle(
+        _recommendationIdMeta,
+        recommendationId.isAcceptableOrUnknown(
+          data['recommendation_id']!,
+          _recommendationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('attempted_proposal_id')) {
+      context.handle(
+        _attemptedProposalIdMeta,
+        attemptedProposalId.isAcceptableOrUnknown(
+          data['attempted_proposal_id']!,
+          _attemptedProposalIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('evidence_fingerprint')) {
+      context.handle(
+        _evidenceFingerprintMeta,
+        evidenceFingerprint.isAcceptableOrUnknown(
+          data['evidence_fingerprint']!,
+          _evidenceFingerprintMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, evaluationUtc, policyVersion},
+  ];
+  @override
+  CoachingEligibilityEvaluation map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CoachingEligibilityEvaluation(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      result: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}result'],
+      )!,
+      reasonCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason_code'],
+      )!,
+      ageInputSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}age_input_source'],
+      )!,
+      evidenceTimestampUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}evidence_timestamp_utc'],
+      )!,
+      evaluationUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}evaluation_utc'],
+      )!,
+      evaluationLocalDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evaluation_local_date'],
+      )!,
+      timezoneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}timezone_id'],
+      )!,
+      policyVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}policy_version'],
+      )!,
+      minimumAgeRuleVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}minimum_age_rule_version'],
+      )!,
+      goalVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}goal_version_id'],
+      ),
+      recommendationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recommendation_id'],
+      ),
+      attemptedProposalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attempted_proposal_id'],
+      ),
+      evidenceFingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evidence_fingerprint'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $CoachingEligibilityEvaluationsTable createAlias(String alias) {
+    return $CoachingEligibilityEvaluationsTable(attachedDatabase, alias);
+  }
+}
+
+class CoachingEligibilityEvaluation extends DataClass
+    implements Insertable<CoachingEligibilityEvaluation> {
+  final String id;
+  final String userId;
+  final String result;
+  final String reasonCode;
+  final String ageInputSource;
+  final DateTime evidenceTimestampUtc;
+  final DateTime evaluationUtc;
+  final String evaluationLocalDate;
+  final String timezoneId;
+  final String policyVersion;
+  final String minimumAgeRuleVersion;
+  final String? goalVersionId;
+  final String? recommendationId;
+  final String? attemptedProposalId;
+  final String? evidenceFingerprint;
+  final DateTime createdAtUtc;
+  const CoachingEligibilityEvaluation({
+    required this.id,
+    required this.userId,
+    required this.result,
+    required this.reasonCode,
+    required this.ageInputSource,
+    required this.evidenceTimestampUtc,
+    required this.evaluationUtc,
+    required this.evaluationLocalDate,
+    required this.timezoneId,
+    required this.policyVersion,
+    required this.minimumAgeRuleVersion,
+    this.goalVersionId,
+    this.recommendationId,
+    this.attemptedProposalId,
+    this.evidenceFingerprint,
+    required this.createdAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['result'] = Variable<String>(result);
+    map['reason_code'] = Variable<String>(reasonCode);
+    map['age_input_source'] = Variable<String>(ageInputSource);
+    map['evidence_timestamp_utc'] = Variable<DateTime>(evidenceTimestampUtc);
+    map['evaluation_utc'] = Variable<DateTime>(evaluationUtc);
+    map['evaluation_local_date'] = Variable<String>(evaluationLocalDate);
+    map['timezone_id'] = Variable<String>(timezoneId);
+    map['policy_version'] = Variable<String>(policyVersion);
+    map['minimum_age_rule_version'] = Variable<String>(minimumAgeRuleVersion);
+    if (!nullToAbsent || goalVersionId != null) {
+      map['goal_version_id'] = Variable<String>(goalVersionId);
+    }
+    if (!nullToAbsent || recommendationId != null) {
+      map['recommendation_id'] = Variable<String>(recommendationId);
+    }
+    if (!nullToAbsent || attemptedProposalId != null) {
+      map['attempted_proposal_id'] = Variable<String>(attemptedProposalId);
+    }
+    if (!nullToAbsent || evidenceFingerprint != null) {
+      map['evidence_fingerprint'] = Variable<String>(evidenceFingerprint);
+    }
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    return map;
+  }
+
+  CoachingEligibilityEvaluationsCompanion toCompanion(bool nullToAbsent) {
+    return CoachingEligibilityEvaluationsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      result: Value(result),
+      reasonCode: Value(reasonCode),
+      ageInputSource: Value(ageInputSource),
+      evidenceTimestampUtc: Value(evidenceTimestampUtc),
+      evaluationUtc: Value(evaluationUtc),
+      evaluationLocalDate: Value(evaluationLocalDate),
+      timezoneId: Value(timezoneId),
+      policyVersion: Value(policyVersion),
+      minimumAgeRuleVersion: Value(minimumAgeRuleVersion),
+      goalVersionId: goalVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(goalVersionId),
+      recommendationId: recommendationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recommendationId),
+      attemptedProposalId: attemptedProposalId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(attemptedProposalId),
+      evidenceFingerprint: evidenceFingerprint == null && nullToAbsent
+          ? const Value.absent()
+          : Value(evidenceFingerprint),
+      createdAtUtc: Value(createdAtUtc),
+    );
+  }
+
+  factory CoachingEligibilityEvaluation.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CoachingEligibilityEvaluation(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      result: serializer.fromJson<String>(json['result']),
+      reasonCode: serializer.fromJson<String>(json['reasonCode']),
+      ageInputSource: serializer.fromJson<String>(json['ageInputSource']),
+      evidenceTimestampUtc: serializer.fromJson<DateTime>(
+        json['evidenceTimestampUtc'],
+      ),
+      evaluationUtc: serializer.fromJson<DateTime>(json['evaluationUtc']),
+      evaluationLocalDate: serializer.fromJson<String>(
+        json['evaluationLocalDate'],
+      ),
+      timezoneId: serializer.fromJson<String>(json['timezoneId']),
+      policyVersion: serializer.fromJson<String>(json['policyVersion']),
+      minimumAgeRuleVersion: serializer.fromJson<String>(
+        json['minimumAgeRuleVersion'],
+      ),
+      goalVersionId: serializer.fromJson<String?>(json['goalVersionId']),
+      recommendationId: serializer.fromJson<String?>(json['recommendationId']),
+      attemptedProposalId: serializer.fromJson<String?>(
+        json['attemptedProposalId'],
+      ),
+      evidenceFingerprint: serializer.fromJson<String?>(
+        json['evidenceFingerprint'],
+      ),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'result': serializer.toJson<String>(result),
+      'reasonCode': serializer.toJson<String>(reasonCode),
+      'ageInputSource': serializer.toJson<String>(ageInputSource),
+      'evidenceTimestampUtc': serializer.toJson<DateTime>(evidenceTimestampUtc),
+      'evaluationUtc': serializer.toJson<DateTime>(evaluationUtc),
+      'evaluationLocalDate': serializer.toJson<String>(evaluationLocalDate),
+      'timezoneId': serializer.toJson<String>(timezoneId),
+      'policyVersion': serializer.toJson<String>(policyVersion),
+      'minimumAgeRuleVersion': serializer.toJson<String>(minimumAgeRuleVersion),
+      'goalVersionId': serializer.toJson<String?>(goalVersionId),
+      'recommendationId': serializer.toJson<String?>(recommendationId),
+      'attemptedProposalId': serializer.toJson<String?>(attemptedProposalId),
+      'evidenceFingerprint': serializer.toJson<String?>(evidenceFingerprint),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+    };
+  }
+
+  CoachingEligibilityEvaluation copyWith({
+    String? id,
+    String? userId,
+    String? result,
+    String? reasonCode,
+    String? ageInputSource,
+    DateTime? evidenceTimestampUtc,
+    DateTime? evaluationUtc,
+    String? evaluationLocalDate,
+    String? timezoneId,
+    String? policyVersion,
+    String? minimumAgeRuleVersion,
+    Value<String?> goalVersionId = const Value.absent(),
+    Value<String?> recommendationId = const Value.absent(),
+    Value<String?> attemptedProposalId = const Value.absent(),
+    Value<String?> evidenceFingerprint = const Value.absent(),
+    DateTime? createdAtUtc,
+  }) => CoachingEligibilityEvaluation(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    result: result ?? this.result,
+    reasonCode: reasonCode ?? this.reasonCode,
+    ageInputSource: ageInputSource ?? this.ageInputSource,
+    evidenceTimestampUtc: evidenceTimestampUtc ?? this.evidenceTimestampUtc,
+    evaluationUtc: evaluationUtc ?? this.evaluationUtc,
+    evaluationLocalDate: evaluationLocalDate ?? this.evaluationLocalDate,
+    timezoneId: timezoneId ?? this.timezoneId,
+    policyVersion: policyVersion ?? this.policyVersion,
+    minimumAgeRuleVersion: minimumAgeRuleVersion ?? this.minimumAgeRuleVersion,
+    goalVersionId: goalVersionId.present
+        ? goalVersionId.value
+        : this.goalVersionId,
+    recommendationId: recommendationId.present
+        ? recommendationId.value
+        : this.recommendationId,
+    attemptedProposalId: attemptedProposalId.present
+        ? attemptedProposalId.value
+        : this.attemptedProposalId,
+    evidenceFingerprint: evidenceFingerprint.present
+        ? evidenceFingerprint.value
+        : this.evidenceFingerprint,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+  );
+  CoachingEligibilityEvaluation copyWithCompanion(
+    CoachingEligibilityEvaluationsCompanion data,
+  ) {
+    return CoachingEligibilityEvaluation(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      result: data.result.present ? data.result.value : this.result,
+      reasonCode: data.reasonCode.present
+          ? data.reasonCode.value
+          : this.reasonCode,
+      ageInputSource: data.ageInputSource.present
+          ? data.ageInputSource.value
+          : this.ageInputSource,
+      evidenceTimestampUtc: data.evidenceTimestampUtc.present
+          ? data.evidenceTimestampUtc.value
+          : this.evidenceTimestampUtc,
+      evaluationUtc: data.evaluationUtc.present
+          ? data.evaluationUtc.value
+          : this.evaluationUtc,
+      evaluationLocalDate: data.evaluationLocalDate.present
+          ? data.evaluationLocalDate.value
+          : this.evaluationLocalDate,
+      timezoneId: data.timezoneId.present
+          ? data.timezoneId.value
+          : this.timezoneId,
+      policyVersion: data.policyVersion.present
+          ? data.policyVersion.value
+          : this.policyVersion,
+      minimumAgeRuleVersion: data.minimumAgeRuleVersion.present
+          ? data.minimumAgeRuleVersion.value
+          : this.minimumAgeRuleVersion,
+      goalVersionId: data.goalVersionId.present
+          ? data.goalVersionId.value
+          : this.goalVersionId,
+      recommendationId: data.recommendationId.present
+          ? data.recommendationId.value
+          : this.recommendationId,
+      attemptedProposalId: data.attemptedProposalId.present
+          ? data.attemptedProposalId.value
+          : this.attemptedProposalId,
+      evidenceFingerprint: data.evidenceFingerprint.present
+          ? data.evidenceFingerprint.value
+          : this.evidenceFingerprint,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachingEligibilityEvaluation(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('result: $result, ')
+          ..write('reasonCode: $reasonCode, ')
+          ..write('ageInputSource: $ageInputSource, ')
+          ..write('evidenceTimestampUtc: $evidenceTimestampUtc, ')
+          ..write('evaluationUtc: $evaluationUtc, ')
+          ..write('evaluationLocalDate: $evaluationLocalDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('policyVersion: $policyVersion, ')
+          ..write('minimumAgeRuleVersion: $minimumAgeRuleVersion, ')
+          ..write('goalVersionId: $goalVersionId, ')
+          ..write('recommendationId: $recommendationId, ')
+          ..write('attemptedProposalId: $attemptedProposalId, ')
+          ..write('evidenceFingerprint: $evidenceFingerprint, ')
+          ..write('createdAtUtc: $createdAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    result,
+    reasonCode,
+    ageInputSource,
+    evidenceTimestampUtc,
+    evaluationUtc,
+    evaluationLocalDate,
+    timezoneId,
+    policyVersion,
+    minimumAgeRuleVersion,
+    goalVersionId,
+    recommendationId,
+    attemptedProposalId,
+    evidenceFingerprint,
+    createdAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CoachingEligibilityEvaluation &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.result == this.result &&
+          other.reasonCode == this.reasonCode &&
+          other.ageInputSource == this.ageInputSource &&
+          other.evidenceTimestampUtc == this.evidenceTimestampUtc &&
+          other.evaluationUtc == this.evaluationUtc &&
+          other.evaluationLocalDate == this.evaluationLocalDate &&
+          other.timezoneId == this.timezoneId &&
+          other.policyVersion == this.policyVersion &&
+          other.minimumAgeRuleVersion == this.minimumAgeRuleVersion &&
+          other.goalVersionId == this.goalVersionId &&
+          other.recommendationId == this.recommendationId &&
+          other.attemptedProposalId == this.attemptedProposalId &&
+          other.evidenceFingerprint == this.evidenceFingerprint &&
+          other.createdAtUtc == this.createdAtUtc);
+}
+
+class CoachingEligibilityEvaluationsCompanion
+    extends UpdateCompanion<CoachingEligibilityEvaluation> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> result;
+  final Value<String> reasonCode;
+  final Value<String> ageInputSource;
+  final Value<DateTime> evidenceTimestampUtc;
+  final Value<DateTime> evaluationUtc;
+  final Value<String> evaluationLocalDate;
+  final Value<String> timezoneId;
+  final Value<String> policyVersion;
+  final Value<String> minimumAgeRuleVersion;
+  final Value<String?> goalVersionId;
+  final Value<String?> recommendationId;
+  final Value<String?> attemptedProposalId;
+  final Value<String?> evidenceFingerprint;
+  final Value<DateTime> createdAtUtc;
+  final Value<int> rowid;
+  const CoachingEligibilityEvaluationsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.result = const Value.absent(),
+    this.reasonCode = const Value.absent(),
+    this.ageInputSource = const Value.absent(),
+    this.evidenceTimestampUtc = const Value.absent(),
+    this.evaluationUtc = const Value.absent(),
+    this.evaluationLocalDate = const Value.absent(),
+    this.timezoneId = const Value.absent(),
+    this.policyVersion = const Value.absent(),
+    this.minimumAgeRuleVersion = const Value.absent(),
+    this.goalVersionId = const Value.absent(),
+    this.recommendationId = const Value.absent(),
+    this.attemptedProposalId = const Value.absent(),
+    this.evidenceFingerprint = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CoachingEligibilityEvaluationsCompanion.insert({
+    required String id,
+    required String userId,
+    required String result,
+    required String reasonCode,
+    required String ageInputSource,
+    required DateTime evidenceTimestampUtc,
+    required DateTime evaluationUtc,
+    required String evaluationLocalDate,
+    required String timezoneId,
+    required String policyVersion,
+    required String minimumAgeRuleVersion,
+    this.goalVersionId = const Value.absent(),
+    this.recommendationId = const Value.absent(),
+    this.attemptedProposalId = const Value.absent(),
+    this.evidenceFingerprint = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       result = Value(result),
+       reasonCode = Value(reasonCode),
+       ageInputSource = Value(ageInputSource),
+       evidenceTimestampUtc = Value(evidenceTimestampUtc),
+       evaluationUtc = Value(evaluationUtc),
+       evaluationLocalDate = Value(evaluationLocalDate),
+       timezoneId = Value(timezoneId),
+       policyVersion = Value(policyVersion),
+       minimumAgeRuleVersion = Value(minimumAgeRuleVersion);
+  static Insertable<CoachingEligibilityEvaluation> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? result,
+    Expression<String>? reasonCode,
+    Expression<String>? ageInputSource,
+    Expression<DateTime>? evidenceTimestampUtc,
+    Expression<DateTime>? evaluationUtc,
+    Expression<String>? evaluationLocalDate,
+    Expression<String>? timezoneId,
+    Expression<String>? policyVersion,
+    Expression<String>? minimumAgeRuleVersion,
+    Expression<String>? goalVersionId,
+    Expression<String>? recommendationId,
+    Expression<String>? attemptedProposalId,
+    Expression<String>? evidenceFingerprint,
+    Expression<DateTime>? createdAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (result != null) 'result': result,
+      if (reasonCode != null) 'reason_code': reasonCode,
+      if (ageInputSource != null) 'age_input_source': ageInputSource,
+      if (evidenceTimestampUtc != null)
+        'evidence_timestamp_utc': evidenceTimestampUtc,
+      if (evaluationUtc != null) 'evaluation_utc': evaluationUtc,
+      if (evaluationLocalDate != null)
+        'evaluation_local_date': evaluationLocalDate,
+      if (timezoneId != null) 'timezone_id': timezoneId,
+      if (policyVersion != null) 'policy_version': policyVersion,
+      if (minimumAgeRuleVersion != null)
+        'minimum_age_rule_version': minimumAgeRuleVersion,
+      if (goalVersionId != null) 'goal_version_id': goalVersionId,
+      if (recommendationId != null) 'recommendation_id': recommendationId,
+      if (attemptedProposalId != null)
+        'attempted_proposal_id': attemptedProposalId,
+      if (evidenceFingerprint != null)
+        'evidence_fingerprint': evidenceFingerprint,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CoachingEligibilityEvaluationsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? result,
+    Value<String>? reasonCode,
+    Value<String>? ageInputSource,
+    Value<DateTime>? evidenceTimestampUtc,
+    Value<DateTime>? evaluationUtc,
+    Value<String>? evaluationLocalDate,
+    Value<String>? timezoneId,
+    Value<String>? policyVersion,
+    Value<String>? minimumAgeRuleVersion,
+    Value<String?>? goalVersionId,
+    Value<String?>? recommendationId,
+    Value<String?>? attemptedProposalId,
+    Value<String?>? evidenceFingerprint,
+    Value<DateTime>? createdAtUtc,
+    Value<int>? rowid,
+  }) {
+    return CoachingEligibilityEvaluationsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      result: result ?? this.result,
+      reasonCode: reasonCode ?? this.reasonCode,
+      ageInputSource: ageInputSource ?? this.ageInputSource,
+      evidenceTimestampUtc: evidenceTimestampUtc ?? this.evidenceTimestampUtc,
+      evaluationUtc: evaluationUtc ?? this.evaluationUtc,
+      evaluationLocalDate: evaluationLocalDate ?? this.evaluationLocalDate,
+      timezoneId: timezoneId ?? this.timezoneId,
+      policyVersion: policyVersion ?? this.policyVersion,
+      minimumAgeRuleVersion:
+          minimumAgeRuleVersion ?? this.minimumAgeRuleVersion,
+      goalVersionId: goalVersionId ?? this.goalVersionId,
+      recommendationId: recommendationId ?? this.recommendationId,
+      attemptedProposalId: attemptedProposalId ?? this.attemptedProposalId,
+      evidenceFingerprint: evidenceFingerprint ?? this.evidenceFingerprint,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (result.present) {
+      map['result'] = Variable<String>(result.value);
+    }
+    if (reasonCode.present) {
+      map['reason_code'] = Variable<String>(reasonCode.value);
+    }
+    if (ageInputSource.present) {
+      map['age_input_source'] = Variable<String>(ageInputSource.value);
+    }
+    if (evidenceTimestampUtc.present) {
+      map['evidence_timestamp_utc'] = Variable<DateTime>(
+        evidenceTimestampUtc.value,
+      );
+    }
+    if (evaluationUtc.present) {
+      map['evaluation_utc'] = Variable<DateTime>(evaluationUtc.value);
+    }
+    if (evaluationLocalDate.present) {
+      map['evaluation_local_date'] = Variable<String>(
+        evaluationLocalDate.value,
+      );
+    }
+    if (timezoneId.present) {
+      map['timezone_id'] = Variable<String>(timezoneId.value);
+    }
+    if (policyVersion.present) {
+      map['policy_version'] = Variable<String>(policyVersion.value);
+    }
+    if (minimumAgeRuleVersion.present) {
+      map['minimum_age_rule_version'] = Variable<String>(
+        minimumAgeRuleVersion.value,
+      );
+    }
+    if (goalVersionId.present) {
+      map['goal_version_id'] = Variable<String>(goalVersionId.value);
+    }
+    if (recommendationId.present) {
+      map['recommendation_id'] = Variable<String>(recommendationId.value);
+    }
+    if (attemptedProposalId.present) {
+      map['attempted_proposal_id'] = Variable<String>(
+        attemptedProposalId.value,
+      );
+    }
+    if (evidenceFingerprint.present) {
+      map['evidence_fingerprint'] = Variable<String>(evidenceFingerprint.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachingEligibilityEvaluationsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('result: $result, ')
+          ..write('reasonCode: $reasonCode, ')
+          ..write('ageInputSource: $ageInputSource, ')
+          ..write('evidenceTimestampUtc: $evidenceTimestampUtc, ')
+          ..write('evaluationUtc: $evaluationUtc, ')
+          ..write('evaluationLocalDate: $evaluationLocalDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('policyVersion: $policyVersion, ')
+          ..write('minimumAgeRuleVersion: $minimumAgeRuleVersion, ')
+          ..write('goalVersionId: $goalVersionId, ')
+          ..write('recommendationId: $recommendationId, ')
+          ..write('attemptedProposalId: $attemptedProposalId, ')
+          ..write('evidenceFingerprint: $evidenceFingerprint, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RecommendationFeedbackTable extends RecommendationFeedback
+    with TableInfo<$RecommendationFeedbackTable, RecommendationFeedbackData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecommendationFeedbackTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recommendationIdMeta = const VerificationMeta(
+    'recommendationId',
+  );
+  @override
+  late final GeneratedColumn<String> recommendationId = GeneratedColumn<String>(
+    'recommendation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES recommendations (id)',
+    ),
+  );
+  static const VerificationMeta _actionMeta = const VerificationMeta('action');
+  @override
+  late final GeneratedColumn<String> action = GeneratedColumn<String>(
+    'action',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
+  @override
+  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
+    'reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localDateMeta = const VerificationMeta(
+    'localDate',
+  );
+  @override
+  late final GeneratedColumn<String> localDate = GeneratedColumn<String>(
+    'local_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timezoneIdMeta = const VerificationMeta(
+    'timezoneId',
+  );
+  @override
+  late final GeneratedColumn<String> timezoneId = GeneratedColumn<String>(
+    'timezone_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _relatedFeedbackIdMeta = const VerificationMeta(
+    'relatedFeedbackId',
+  );
+  @override
+  late final GeneratedColumn<String> relatedFeedbackId =
+      GeneratedColumn<String>(
+        'related_feedback_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES recommendation_feedback (id)',
+        ),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    recommendationId,
+    action,
+    reason,
+    source,
+    localDate,
+    timezoneId,
+    createdAtUtc,
+    relatedFeedbackId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'recommendation_feedback';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RecommendationFeedbackData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('recommendation_id')) {
+      context.handle(
+        _recommendationIdMeta,
+        recommendationId.isAcceptableOrUnknown(
+          data['recommendation_id']!,
+          _recommendationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recommendationIdMeta);
+    }
+    if (data.containsKey('action')) {
+      context.handle(
+        _actionMeta,
+        action.isAcceptableOrUnknown(data['action']!, _actionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_actionMeta);
+    }
+    if (data.containsKey('reason')) {
+      context.handle(
+        _reasonMeta,
+        reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('local_date')) {
+      context.handle(
+        _localDateMeta,
+        localDate.isAcceptableOrUnknown(data['local_date']!, _localDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localDateMeta);
+    }
+    if (data.containsKey('timezone_id')) {
+      context.handle(
+        _timezoneIdMeta,
+        timezoneId.isAcceptableOrUnknown(data['timezone_id']!, _timezoneIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timezoneIdMeta);
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('related_feedback_id')) {
+      context.handle(
+        _relatedFeedbackIdMeta,
+        relatedFeedbackId.isAcceptableOrUnknown(
+          data['related_feedback_id']!,
+          _relatedFeedbackIdMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, recommendationId, action, relatedFeedbackId},
+  ];
+  @override
+  RecommendationFeedbackData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RecommendationFeedbackData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      recommendationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recommendation_id'],
+      )!,
+      action: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}action'],
+      )!,
+      reason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason'],
+      ),
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      localDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_date'],
+      )!,
+      timezoneId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}timezone_id'],
+      )!,
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      relatedFeedbackId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}related_feedback_id'],
+      ),
+    );
+  }
+
+  @override
+  $RecommendationFeedbackTable createAlias(String alias) {
+    return $RecommendationFeedbackTable(attachedDatabase, alias);
+  }
+}
+
+class RecommendationFeedbackData extends DataClass
+    implements Insertable<RecommendationFeedbackData> {
+  final String id;
+  final String userId;
+  final String recommendationId;
+  final String action;
+  final String? reason;
+  final String source;
+  final String localDate;
+  final String timezoneId;
+  final DateTime createdAtUtc;
+  final String? relatedFeedbackId;
+  const RecommendationFeedbackData({
+    required this.id,
+    required this.userId,
+    required this.recommendationId,
+    required this.action,
+    this.reason,
+    required this.source,
+    required this.localDate,
+    required this.timezoneId,
+    required this.createdAtUtc,
+    this.relatedFeedbackId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['recommendation_id'] = Variable<String>(recommendationId);
+    map['action'] = Variable<String>(action);
+    if (!nullToAbsent || reason != null) {
+      map['reason'] = Variable<String>(reason);
+    }
+    map['source'] = Variable<String>(source);
+    map['local_date'] = Variable<String>(localDate);
+    map['timezone_id'] = Variable<String>(timezoneId);
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    if (!nullToAbsent || relatedFeedbackId != null) {
+      map['related_feedback_id'] = Variable<String>(relatedFeedbackId);
+    }
+    return map;
+  }
+
+  RecommendationFeedbackCompanion toCompanion(bool nullToAbsent) {
+    return RecommendationFeedbackCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      recommendationId: Value(recommendationId),
+      action: Value(action),
+      reason: reason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reason),
+      source: Value(source),
+      localDate: Value(localDate),
+      timezoneId: Value(timezoneId),
+      createdAtUtc: Value(createdAtUtc),
+      relatedFeedbackId: relatedFeedbackId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(relatedFeedbackId),
+    );
+  }
+
+  factory RecommendationFeedbackData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RecommendationFeedbackData(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      recommendationId: serializer.fromJson<String>(json['recommendationId']),
+      action: serializer.fromJson<String>(json['action']),
+      reason: serializer.fromJson<String?>(json['reason']),
+      source: serializer.fromJson<String>(json['source']),
+      localDate: serializer.fromJson<String>(json['localDate']),
+      timezoneId: serializer.fromJson<String>(json['timezoneId']),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+      relatedFeedbackId: serializer.fromJson<String?>(
+        json['relatedFeedbackId'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'recommendationId': serializer.toJson<String>(recommendationId),
+      'action': serializer.toJson<String>(action),
+      'reason': serializer.toJson<String?>(reason),
+      'source': serializer.toJson<String>(source),
+      'localDate': serializer.toJson<String>(localDate),
+      'timezoneId': serializer.toJson<String>(timezoneId),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+      'relatedFeedbackId': serializer.toJson<String?>(relatedFeedbackId),
+    };
+  }
+
+  RecommendationFeedbackData copyWith({
+    String? id,
+    String? userId,
+    String? recommendationId,
+    String? action,
+    Value<String?> reason = const Value.absent(),
+    String? source,
+    String? localDate,
+    String? timezoneId,
+    DateTime? createdAtUtc,
+    Value<String?> relatedFeedbackId = const Value.absent(),
+  }) => RecommendationFeedbackData(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    recommendationId: recommendationId ?? this.recommendationId,
+    action: action ?? this.action,
+    reason: reason.present ? reason.value : this.reason,
+    source: source ?? this.source,
+    localDate: localDate ?? this.localDate,
+    timezoneId: timezoneId ?? this.timezoneId,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    relatedFeedbackId: relatedFeedbackId.present
+        ? relatedFeedbackId.value
+        : this.relatedFeedbackId,
+  );
+  RecommendationFeedbackData copyWithCompanion(
+    RecommendationFeedbackCompanion data,
+  ) {
+    return RecommendationFeedbackData(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      recommendationId: data.recommendationId.present
+          ? data.recommendationId.value
+          : this.recommendationId,
+      action: data.action.present ? data.action.value : this.action,
+      reason: data.reason.present ? data.reason.value : this.reason,
+      source: data.source.present ? data.source.value : this.source,
+      localDate: data.localDate.present ? data.localDate.value : this.localDate,
+      timezoneId: data.timezoneId.present
+          ? data.timezoneId.value
+          : this.timezoneId,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      relatedFeedbackId: data.relatedFeedbackId.present
+          ? data.relatedFeedbackId.value
+          : this.relatedFeedbackId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecommendationFeedbackData(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('recommendationId: $recommendationId, ')
+          ..write('action: $action, ')
+          ..write('reason: $reason, ')
+          ..write('source: $source, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('relatedFeedbackId: $relatedFeedbackId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    recommendationId,
+    action,
+    reason,
+    source,
+    localDate,
+    timezoneId,
+    createdAtUtc,
+    relatedFeedbackId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RecommendationFeedbackData &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.recommendationId == this.recommendationId &&
+          other.action == this.action &&
+          other.reason == this.reason &&
+          other.source == this.source &&
+          other.localDate == this.localDate &&
+          other.timezoneId == this.timezoneId &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.relatedFeedbackId == this.relatedFeedbackId);
+}
+
+class RecommendationFeedbackCompanion
+    extends UpdateCompanion<RecommendationFeedbackData> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> recommendationId;
+  final Value<String> action;
+  final Value<String?> reason;
+  final Value<String> source;
+  final Value<String> localDate;
+  final Value<String> timezoneId;
+  final Value<DateTime> createdAtUtc;
+  final Value<String?> relatedFeedbackId;
+  final Value<int> rowid;
+  const RecommendationFeedbackCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.recommendationId = const Value.absent(),
+    this.action = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.source = const Value.absent(),
+    this.localDate = const Value.absent(),
+    this.timezoneId = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.relatedFeedbackId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RecommendationFeedbackCompanion.insert({
+    required String id,
+    required String userId,
+    required String recommendationId,
+    required String action,
+    this.reason = const Value.absent(),
+    required String source,
+    required String localDate,
+    required String timezoneId,
+    this.createdAtUtc = const Value.absent(),
+    this.relatedFeedbackId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       recommendationId = Value(recommendationId),
+       action = Value(action),
+       source = Value(source),
+       localDate = Value(localDate),
+       timezoneId = Value(timezoneId);
+  static Insertable<RecommendationFeedbackData> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? recommendationId,
+    Expression<String>? action,
+    Expression<String>? reason,
+    Expression<String>? source,
+    Expression<String>? localDate,
+    Expression<String>? timezoneId,
+    Expression<DateTime>? createdAtUtc,
+    Expression<String>? relatedFeedbackId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (recommendationId != null) 'recommendation_id': recommendationId,
+      if (action != null) 'action': action,
+      if (reason != null) 'reason': reason,
+      if (source != null) 'source': source,
+      if (localDate != null) 'local_date': localDate,
+      if (timezoneId != null) 'timezone_id': timezoneId,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (relatedFeedbackId != null) 'related_feedback_id': relatedFeedbackId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RecommendationFeedbackCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? recommendationId,
+    Value<String>? action,
+    Value<String?>? reason,
+    Value<String>? source,
+    Value<String>? localDate,
+    Value<String>? timezoneId,
+    Value<DateTime>? createdAtUtc,
+    Value<String?>? relatedFeedbackId,
+    Value<int>? rowid,
+  }) {
+    return RecommendationFeedbackCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      recommendationId: recommendationId ?? this.recommendationId,
+      action: action ?? this.action,
+      reason: reason ?? this.reason,
+      source: source ?? this.source,
+      localDate: localDate ?? this.localDate,
+      timezoneId: timezoneId ?? this.timezoneId,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      relatedFeedbackId: relatedFeedbackId ?? this.relatedFeedbackId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (recommendationId.present) {
+      map['recommendation_id'] = Variable<String>(recommendationId.value);
+    }
+    if (action.present) {
+      map['action'] = Variable<String>(action.value);
+    }
+    if (reason.present) {
+      map['reason'] = Variable<String>(reason.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (localDate.present) {
+      map['local_date'] = Variable<String>(localDate.value);
+    }
+    if (timezoneId.present) {
+      map['timezone_id'] = Variable<String>(timezoneId.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (relatedFeedbackId.present) {
+      map['related_feedback_id'] = Variable<String>(relatedFeedbackId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecommendationFeedbackCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('recommendationId: $recommendationId, ')
+          ..write('action: $action, ')
+          ..write('reason: $reason, ')
+          ..write('source: $source, ')
+          ..write('localDate: $localDate, ')
+          ..write('timezoneId: $timezoneId, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('relatedFeedbackId: $relatedFeedbackId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DashboardModulePreferencesTable extends DashboardModulePreferences
+    with
+        TableInfo<$DashboardModulePreferencesTable, DashboardModulePreference> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DashboardModulePreferencesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _moduleIdMeta = const VerificationMeta(
+    'moduleId',
+  );
+  @override
+  late final GeneratedColumn<String> moduleId = GeneratedColumn<String>(
+    'module_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ordinalMeta = const VerificationMeta(
+    'ordinal',
+  );
+  @override
+  late final GeneratedColumn<int> ordinal = GeneratedColumn<int>(
+    'ordinal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isVisibleMeta = const VerificationMeta(
+    'isVisible',
+  );
+  @override
+  late final GeneratedColumn<bool> isVisible = GeneratedColumn<bool>(
+    'is_visible',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_visible" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _isCollapsedMeta = const VerificationMeta(
+    'isCollapsed',
+  );
+  @override
+  late final GeneratedColumn<bool> isCollapsed = GeneratedColumn<bool>(
+    'is_collapsed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_collapsed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    moduleId,
+    ordinal,
+    isVisible,
+    isCollapsed,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'dashboard_module_preferences';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DashboardModulePreference> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('module_id')) {
+      context.handle(
+        _moduleIdMeta,
+        moduleId.isAcceptableOrUnknown(data['module_id']!, _moduleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_moduleIdMeta);
+    }
+    if (data.containsKey('ordinal')) {
+      context.handle(
+        _ordinalMeta,
+        ordinal.isAcceptableOrUnknown(data['ordinal']!, _ordinalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ordinalMeta);
+    }
+    if (data.containsKey('is_visible')) {
+      context.handle(
+        _isVisibleMeta,
+        isVisible.isAcceptableOrUnknown(data['is_visible']!, _isVisibleMeta),
+      );
+    }
+    if (data.containsKey('is_collapsed')) {
+      context.handle(
+        _isCollapsedMeta,
+        isCollapsed.isAcceptableOrUnknown(
+          data['is_collapsed']!,
+          _isCollapsedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, moduleId},
+  ];
+  @override
+  DashboardModulePreference map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DashboardModulePreference(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      moduleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}module_id'],
+      )!,
+      ordinal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ordinal'],
+      )!,
+      isVisible: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_visible'],
+      )!,
+      isCollapsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_collapsed'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $DashboardModulePreferencesTable createAlias(String alias) {
+    return $DashboardModulePreferencesTable(attachedDatabase, alias);
+  }
+}
+
+class DashboardModulePreference extends DataClass
+    implements Insertable<DashboardModulePreference> {
+  final String id;
+  final String userId;
+  final String moduleId;
+  final int ordinal;
+  final bool isVisible;
+  final bool isCollapsed;
+  final DateTime updatedAtUtc;
+  const DashboardModulePreference({
+    required this.id,
+    required this.userId,
+    required this.moduleId,
+    required this.ordinal,
+    required this.isVisible,
+    required this.isCollapsed,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['module_id'] = Variable<String>(moduleId);
+    map['ordinal'] = Variable<int>(ordinal);
+    map['is_visible'] = Variable<bool>(isVisible);
+    map['is_collapsed'] = Variable<bool>(isCollapsed);
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  DashboardModulePreferencesCompanion toCompanion(bool nullToAbsent) {
+    return DashboardModulePreferencesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      moduleId: Value(moduleId),
+      ordinal: Value(ordinal),
+      isVisible: Value(isVisible),
+      isCollapsed: Value(isCollapsed),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory DashboardModulePreference.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DashboardModulePreference(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      moduleId: serializer.fromJson<String>(json['moduleId']),
+      ordinal: serializer.fromJson<int>(json['ordinal']),
+      isVisible: serializer.fromJson<bool>(json['isVisible']),
+      isCollapsed: serializer.fromJson<bool>(json['isCollapsed']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'moduleId': serializer.toJson<String>(moduleId),
+      'ordinal': serializer.toJson<int>(ordinal),
+      'isVisible': serializer.toJson<bool>(isVisible),
+      'isCollapsed': serializer.toJson<bool>(isCollapsed),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  DashboardModulePreference copyWith({
+    String? id,
+    String? userId,
+    String? moduleId,
+    int? ordinal,
+    bool? isVisible,
+    bool? isCollapsed,
+    DateTime? updatedAtUtc,
+  }) => DashboardModulePreference(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    moduleId: moduleId ?? this.moduleId,
+    ordinal: ordinal ?? this.ordinal,
+    isVisible: isVisible ?? this.isVisible,
+    isCollapsed: isCollapsed ?? this.isCollapsed,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  DashboardModulePreference copyWithCompanion(
+    DashboardModulePreferencesCompanion data,
+  ) {
+    return DashboardModulePreference(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      moduleId: data.moduleId.present ? data.moduleId.value : this.moduleId,
+      ordinal: data.ordinal.present ? data.ordinal.value : this.ordinal,
+      isVisible: data.isVisible.present ? data.isVisible.value : this.isVisible,
+      isCollapsed: data.isCollapsed.present
+          ? data.isCollapsed.value
+          : this.isCollapsed,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DashboardModulePreference(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('moduleId: $moduleId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('isVisible: $isVisible, ')
+          ..write('isCollapsed: $isCollapsed, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    moduleId,
+    ordinal,
+    isVisible,
+    isCollapsed,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DashboardModulePreference &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.moduleId == this.moduleId &&
+          other.ordinal == this.ordinal &&
+          other.isVisible == this.isVisible &&
+          other.isCollapsed == this.isCollapsed &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class DashboardModulePreferencesCompanion
+    extends UpdateCompanion<DashboardModulePreference> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> moduleId;
+  final Value<int> ordinal;
+  final Value<bool> isVisible;
+  final Value<bool> isCollapsed;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const DashboardModulePreferencesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.moduleId = const Value.absent(),
+    this.ordinal = const Value.absent(),
+    this.isVisible = const Value.absent(),
+    this.isCollapsed = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DashboardModulePreferencesCompanion.insert({
+    required String id,
+    required String userId,
+    required String moduleId,
+    required int ordinal,
+    this.isVisible = const Value.absent(),
+    this.isCollapsed = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       moduleId = Value(moduleId),
+       ordinal = Value(ordinal);
+  static Insertable<DashboardModulePreference> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? moduleId,
+    Expression<int>? ordinal,
+    Expression<bool>? isVisible,
+    Expression<bool>? isCollapsed,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (moduleId != null) 'module_id': moduleId,
+      if (ordinal != null) 'ordinal': ordinal,
+      if (isVisible != null) 'is_visible': isVisible,
+      if (isCollapsed != null) 'is_collapsed': isCollapsed,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DashboardModulePreferencesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? moduleId,
+    Value<int>? ordinal,
+    Value<bool>? isVisible,
+    Value<bool>? isCollapsed,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return DashboardModulePreferencesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      moduleId: moduleId ?? this.moduleId,
+      ordinal: ordinal ?? this.ordinal,
+      isVisible: isVisible ?? this.isVisible,
+      isCollapsed: isCollapsed ?? this.isCollapsed,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (moduleId.present) {
+      map['module_id'] = Variable<String>(moduleId.value);
+    }
+    if (ordinal.present) {
+      map['ordinal'] = Variable<int>(ordinal.value);
+    }
+    if (isVisible.present) {
+      map['is_visible'] = Variable<bool>(isVisible.value);
+    }
+    if (isCollapsed.present) {
+      map['is_collapsed'] = Variable<bool>(isCollapsed.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DashboardModulePreferencesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('moduleId: $moduleId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('isVisible: $isVisible, ')
+          ..write('isCollapsed: $isCollapsed, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EducationContentProgressTable extends EducationContentProgress
+    with
+        TableInfo<$EducationContentProgressTable, EducationContentProgressRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EducationContentProgressTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentIdMeta = const VerificationMeta(
+    'contentId',
+  );
+  @override
+  late final GeneratedColumn<String> contentId = GeneratedColumn<String>(
+    'content_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentVersionMeta = const VerificationMeta(
+    'contentVersion',
+  );
+  @override
+  late final GeneratedColumn<String> contentVersion = GeneratedColumn<String>(
+    'content_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    contentId,
+    contentVersion,
+    state,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'education_content_progress';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EducationContentProgressRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('content_id')) {
+      context.handle(
+        _contentIdMeta,
+        contentId.isAcceptableOrUnknown(data['content_id']!, _contentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentIdMeta);
+    }
+    if (data.containsKey('content_version')) {
+      context.handle(
+        _contentVersionMeta,
+        contentVersion.isAcceptableOrUnknown(
+          data['content_version']!,
+          _contentVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_contentVersionMeta);
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stateMeta);
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, contentId, contentVersion},
+  ];
+  @override
+  EducationContentProgressRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EducationContentProgressRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      contentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_id'],
+      )!,
+      contentVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_version'],
+      )!,
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $EducationContentProgressTable createAlias(String alias) {
+    return $EducationContentProgressTable(attachedDatabase, alias);
+  }
+}
+
+class EducationContentProgressRow extends DataClass
+    implements Insertable<EducationContentProgressRow> {
+  final String id;
+  final String userId;
+  final String contentId;
+  final String contentVersion;
+  final String state;
+  final DateTime updatedAtUtc;
+  const EducationContentProgressRow({
+    required this.id,
+    required this.userId,
+    required this.contentId,
+    required this.contentVersion,
+    required this.state,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['content_id'] = Variable<String>(contentId);
+    map['content_version'] = Variable<String>(contentVersion);
+    map['state'] = Variable<String>(state);
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  EducationContentProgressCompanion toCompanion(bool nullToAbsent) {
+    return EducationContentProgressCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      contentId: Value(contentId),
+      contentVersion: Value(contentVersion),
+      state: Value(state),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory EducationContentProgressRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EducationContentProgressRow(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      contentId: serializer.fromJson<String>(json['contentId']),
+      contentVersion: serializer.fromJson<String>(json['contentVersion']),
+      state: serializer.fromJson<String>(json['state']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'contentId': serializer.toJson<String>(contentId),
+      'contentVersion': serializer.toJson<String>(contentVersion),
+      'state': serializer.toJson<String>(state),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  EducationContentProgressRow copyWith({
+    String? id,
+    String? userId,
+    String? contentId,
+    String? contentVersion,
+    String? state,
+    DateTime? updatedAtUtc,
+  }) => EducationContentProgressRow(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    contentId: contentId ?? this.contentId,
+    contentVersion: contentVersion ?? this.contentVersion,
+    state: state ?? this.state,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  EducationContentProgressRow copyWithCompanion(
+    EducationContentProgressCompanion data,
+  ) {
+    return EducationContentProgressRow(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      contentId: data.contentId.present ? data.contentId.value : this.contentId,
+      contentVersion: data.contentVersion.present
+          ? data.contentVersion.value
+          : this.contentVersion,
+      state: data.state.present ? data.state.value : this.state,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EducationContentProgressRow(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('contentId: $contentId, ')
+          ..write('contentVersion: $contentVersion, ')
+          ..write('state: $state, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, userId, contentId, contentVersion, state, updatedAtUtc);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EducationContentProgressRow &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.contentId == this.contentId &&
+          other.contentVersion == this.contentVersion &&
+          other.state == this.state &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class EducationContentProgressCompanion
+    extends UpdateCompanion<EducationContentProgressRow> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> contentId;
+  final Value<String> contentVersion;
+  final Value<String> state;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const EducationContentProgressCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.contentId = const Value.absent(),
+    this.contentVersion = const Value.absent(),
+    this.state = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EducationContentProgressCompanion.insert({
+    required String id,
+    required String userId,
+    required String contentId,
+    required String contentVersion,
+    required String state,
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       contentId = Value(contentId),
+       contentVersion = Value(contentVersion),
+       state = Value(state);
+  static Insertable<EducationContentProgressRow> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? contentId,
+    Expression<String>? contentVersion,
+    Expression<String>? state,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (contentId != null) 'content_id': contentId,
+      if (contentVersion != null) 'content_version': contentVersion,
+      if (state != null) 'state': state,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EducationContentProgressCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? contentId,
+    Value<String>? contentVersion,
+    Value<String>? state,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return EducationContentProgressCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      contentId: contentId ?? this.contentId,
+      contentVersion: contentVersion ?? this.contentVersion,
+      state: state ?? this.state,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (contentId.present) {
+      map['content_id'] = Variable<String>(contentId.value);
+    }
+    if (contentVersion.present) {
+      map['content_version'] = Variable<String>(contentVersion.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EducationContentProgressCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('contentId: $contentId, ')
+          ..write('contentVersion: $contentVersion, ')
+          ..write('state: $state, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MediaPackPreferencesTable extends MediaPackPreferences
+    with TableInfo<$MediaPackPreferencesTable, MediaPackPreference> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MediaPackPreferencesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packIdMeta = const VerificationMeta('packId');
+  @override
+  late final GeneratedColumn<String> packId = GeneratedColumn<String>(
+    'pack_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _manifestIdentityMeta = const VerificationMeta(
+    'manifestIdentity',
+  );
+  @override
+  late final GeneratedColumn<String> manifestIdentity = GeneratedColumn<String>(
+    'manifest_identity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastKnownInstalledVersionMeta =
+      const VerificationMeta('lastKnownInstalledVersion');
+  @override
+  late final GeneratedColumn<String> lastKnownInstalledVersion =
+      GeneratedColumn<String>(
+        'last_known_installed_version',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _downloadPreferenceMeta =
+      const VerificationMeta('downloadPreference');
+  @override
+  late final GeneratedColumn<String> downloadPreference =
+      GeneratedColumn<String>(
+        'download_preference',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('manual'),
+      );
+  static const VerificationMeta _deletionChoiceMeta = const VerificationMeta(
+    'deletionChoice',
+  );
+  @override
+  late final GeneratedColumn<String> deletionChoice = GeneratedColumn<String>(
+    'deletion_choice',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _contentAcknowledgementMeta =
+      const VerificationMeta('contentAcknowledgement');
+  @override
+  late final GeneratedColumn<String> contentAcknowledgement =
+      GeneratedColumn<String>(
+        'content_acknowledgement',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    packId,
+    manifestIdentity,
+    lastKnownInstalledVersion,
+    downloadPreference,
+    deletionChoice,
+    contentAcknowledgement,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'media_pack_preferences';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MediaPackPreference> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('pack_id')) {
+      context.handle(
+        _packIdMeta,
+        packId.isAcceptableOrUnknown(data['pack_id']!, _packIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_packIdMeta);
+    }
+    if (data.containsKey('manifest_identity')) {
+      context.handle(
+        _manifestIdentityMeta,
+        manifestIdentity.isAcceptableOrUnknown(
+          data['manifest_identity']!,
+          _manifestIdentityMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_manifestIdentityMeta);
+    }
+    if (data.containsKey('last_known_installed_version')) {
+      context.handle(
+        _lastKnownInstalledVersionMeta,
+        lastKnownInstalledVersion.isAcceptableOrUnknown(
+          data['last_known_installed_version']!,
+          _lastKnownInstalledVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('download_preference')) {
+      context.handle(
+        _downloadPreferenceMeta,
+        downloadPreference.isAcceptableOrUnknown(
+          data['download_preference']!,
+          _downloadPreferenceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deletion_choice')) {
+      context.handle(
+        _deletionChoiceMeta,
+        deletionChoice.isAcceptableOrUnknown(
+          data['deletion_choice']!,
+          _deletionChoiceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('content_acknowledgement')) {
+      context.handle(
+        _contentAcknowledgementMeta,
+        contentAcknowledgement.isAcceptableOrUnknown(
+          data['content_acknowledgement']!,
+          _contentAcknowledgementMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId, packId},
+  ];
+  @override
+  MediaPackPreference map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MediaPackPreference(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      packId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pack_id'],
+      )!,
+      manifestIdentity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manifest_identity'],
+      )!,
+      lastKnownInstalledVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_known_installed_version'],
+      ),
+      downloadPreference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}download_preference'],
+      )!,
+      deletionChoice: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deletion_choice'],
+      ),
+      contentAcknowledgement: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_acknowledgement'],
+      ),
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $MediaPackPreferencesTable createAlias(String alias) {
+    return $MediaPackPreferencesTable(attachedDatabase, alias);
+  }
+}
+
+class MediaPackPreference extends DataClass
+    implements Insertable<MediaPackPreference> {
+  final String id;
+  final String userId;
+  final String packId;
+  final String manifestIdentity;
+  final String? lastKnownInstalledVersion;
+  final String downloadPreference;
+  final String? deletionChoice;
+  final String? contentAcknowledgement;
+  final DateTime updatedAtUtc;
+  const MediaPackPreference({
+    required this.id,
+    required this.userId,
+    required this.packId,
+    required this.manifestIdentity,
+    this.lastKnownInstalledVersion,
+    required this.downloadPreference,
+    this.deletionChoice,
+    this.contentAcknowledgement,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['pack_id'] = Variable<String>(packId);
+    map['manifest_identity'] = Variable<String>(manifestIdentity);
+    if (!nullToAbsent || lastKnownInstalledVersion != null) {
+      map['last_known_installed_version'] = Variable<String>(
+        lastKnownInstalledVersion,
+      );
+    }
+    map['download_preference'] = Variable<String>(downloadPreference);
+    if (!nullToAbsent || deletionChoice != null) {
+      map['deletion_choice'] = Variable<String>(deletionChoice);
+    }
+    if (!nullToAbsent || contentAcknowledgement != null) {
+      map['content_acknowledgement'] = Variable<String>(contentAcknowledgement);
+    }
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  MediaPackPreferencesCompanion toCompanion(bool nullToAbsent) {
+    return MediaPackPreferencesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      packId: Value(packId),
+      manifestIdentity: Value(manifestIdentity),
+      lastKnownInstalledVersion:
+          lastKnownInstalledVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastKnownInstalledVersion),
+      downloadPreference: Value(downloadPreference),
+      deletionChoice: deletionChoice == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletionChoice),
+      contentAcknowledgement: contentAcknowledgement == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contentAcknowledgement),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory MediaPackPreference.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MediaPackPreference(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      packId: serializer.fromJson<String>(json['packId']),
+      manifestIdentity: serializer.fromJson<String>(json['manifestIdentity']),
+      lastKnownInstalledVersion: serializer.fromJson<String?>(
+        json['lastKnownInstalledVersion'],
+      ),
+      downloadPreference: serializer.fromJson<String>(
+        json['downloadPreference'],
+      ),
+      deletionChoice: serializer.fromJson<String?>(json['deletionChoice']),
+      contentAcknowledgement: serializer.fromJson<String?>(
+        json['contentAcknowledgement'],
+      ),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'packId': serializer.toJson<String>(packId),
+      'manifestIdentity': serializer.toJson<String>(manifestIdentity),
+      'lastKnownInstalledVersion': serializer.toJson<String?>(
+        lastKnownInstalledVersion,
+      ),
+      'downloadPreference': serializer.toJson<String>(downloadPreference),
+      'deletionChoice': serializer.toJson<String?>(deletionChoice),
+      'contentAcknowledgement': serializer.toJson<String?>(
+        contentAcknowledgement,
+      ),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  MediaPackPreference copyWith({
+    String? id,
+    String? userId,
+    String? packId,
+    String? manifestIdentity,
+    Value<String?> lastKnownInstalledVersion = const Value.absent(),
+    String? downloadPreference,
+    Value<String?> deletionChoice = const Value.absent(),
+    Value<String?> contentAcknowledgement = const Value.absent(),
+    DateTime? updatedAtUtc,
+  }) => MediaPackPreference(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    packId: packId ?? this.packId,
+    manifestIdentity: manifestIdentity ?? this.manifestIdentity,
+    lastKnownInstalledVersion: lastKnownInstalledVersion.present
+        ? lastKnownInstalledVersion.value
+        : this.lastKnownInstalledVersion,
+    downloadPreference: downloadPreference ?? this.downloadPreference,
+    deletionChoice: deletionChoice.present
+        ? deletionChoice.value
+        : this.deletionChoice,
+    contentAcknowledgement: contentAcknowledgement.present
+        ? contentAcknowledgement.value
+        : this.contentAcknowledgement,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  MediaPackPreference copyWithCompanion(MediaPackPreferencesCompanion data) {
+    return MediaPackPreference(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      packId: data.packId.present ? data.packId.value : this.packId,
+      manifestIdentity: data.manifestIdentity.present
+          ? data.manifestIdentity.value
+          : this.manifestIdentity,
+      lastKnownInstalledVersion: data.lastKnownInstalledVersion.present
+          ? data.lastKnownInstalledVersion.value
+          : this.lastKnownInstalledVersion,
+      downloadPreference: data.downloadPreference.present
+          ? data.downloadPreference.value
+          : this.downloadPreference,
+      deletionChoice: data.deletionChoice.present
+          ? data.deletionChoice.value
+          : this.deletionChoice,
+      contentAcknowledgement: data.contentAcknowledgement.present
+          ? data.contentAcknowledgement.value
+          : this.contentAcknowledgement,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaPackPreference(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('packId: $packId, ')
+          ..write('manifestIdentity: $manifestIdentity, ')
+          ..write('lastKnownInstalledVersion: $lastKnownInstalledVersion, ')
+          ..write('downloadPreference: $downloadPreference, ')
+          ..write('deletionChoice: $deletionChoice, ')
+          ..write('contentAcknowledgement: $contentAcknowledgement, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    packId,
+    manifestIdentity,
+    lastKnownInstalledVersion,
+    downloadPreference,
+    deletionChoice,
+    contentAcknowledgement,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MediaPackPreference &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.packId == this.packId &&
+          other.manifestIdentity == this.manifestIdentity &&
+          other.lastKnownInstalledVersion == this.lastKnownInstalledVersion &&
+          other.downloadPreference == this.downloadPreference &&
+          other.deletionChoice == this.deletionChoice &&
+          other.contentAcknowledgement == this.contentAcknowledgement &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class MediaPackPreferencesCompanion
+    extends UpdateCompanion<MediaPackPreference> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> packId;
+  final Value<String> manifestIdentity;
+  final Value<String?> lastKnownInstalledVersion;
+  final Value<String> downloadPreference;
+  final Value<String?> deletionChoice;
+  final Value<String?> contentAcknowledgement;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const MediaPackPreferencesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.packId = const Value.absent(),
+    this.manifestIdentity = const Value.absent(),
+    this.lastKnownInstalledVersion = const Value.absent(),
+    this.downloadPreference = const Value.absent(),
+    this.deletionChoice = const Value.absent(),
+    this.contentAcknowledgement = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MediaPackPreferencesCompanion.insert({
+    required String id,
+    required String userId,
+    required String packId,
+    required String manifestIdentity,
+    this.lastKnownInstalledVersion = const Value.absent(),
+    this.downloadPreference = const Value.absent(),
+    this.deletionChoice = const Value.absent(),
+    this.contentAcknowledgement = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       packId = Value(packId),
+       manifestIdentity = Value(manifestIdentity);
+  static Insertable<MediaPackPreference> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? packId,
+    Expression<String>? manifestIdentity,
+    Expression<String>? lastKnownInstalledVersion,
+    Expression<String>? downloadPreference,
+    Expression<String>? deletionChoice,
+    Expression<String>? contentAcknowledgement,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (packId != null) 'pack_id': packId,
+      if (manifestIdentity != null) 'manifest_identity': manifestIdentity,
+      if (lastKnownInstalledVersion != null)
+        'last_known_installed_version': lastKnownInstalledVersion,
+      if (downloadPreference != null) 'download_preference': downloadPreference,
+      if (deletionChoice != null) 'deletion_choice': deletionChoice,
+      if (contentAcknowledgement != null)
+        'content_acknowledgement': contentAcknowledgement,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MediaPackPreferencesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? packId,
+    Value<String>? manifestIdentity,
+    Value<String?>? lastKnownInstalledVersion,
+    Value<String>? downloadPreference,
+    Value<String?>? deletionChoice,
+    Value<String?>? contentAcknowledgement,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return MediaPackPreferencesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      packId: packId ?? this.packId,
+      manifestIdentity: manifestIdentity ?? this.manifestIdentity,
+      lastKnownInstalledVersion:
+          lastKnownInstalledVersion ?? this.lastKnownInstalledVersion,
+      downloadPreference: downloadPreference ?? this.downloadPreference,
+      deletionChoice: deletionChoice ?? this.deletionChoice,
+      contentAcknowledgement:
+          contentAcknowledgement ?? this.contentAcknowledgement,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (packId.present) {
+      map['pack_id'] = Variable<String>(packId.value);
+    }
+    if (manifestIdentity.present) {
+      map['manifest_identity'] = Variable<String>(manifestIdentity.value);
+    }
+    if (lastKnownInstalledVersion.present) {
+      map['last_known_installed_version'] = Variable<String>(
+        lastKnownInstalledVersion.value,
+      );
+    }
+    if (downloadPreference.present) {
+      map['download_preference'] = Variable<String>(downloadPreference.value);
+    }
+    if (deletionChoice.present) {
+      map['deletion_choice'] = Variable<String>(deletionChoice.value);
+    }
+    if (contentAcknowledgement.present) {
+      map['content_acknowledgement'] = Variable<String>(
+        contentAcknowledgement.value,
+      );
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaPackPreferencesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('packId: $packId, ')
+          ..write('manifestIdentity: $manifestIdentity, ')
+          ..write('lastKnownInstalledVersion: $lastKnownInstalledVersion, ')
+          ..write('downloadPreference: $downloadPreference, ')
+          ..write('deletionChoice: $deletionChoice, ')
+          ..write('contentAcknowledgement: $contentAcknowledgement, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $WorkoutPlaylistPreferencesTable extends WorkoutPlaylistPreferences
+    with
+        TableInfo<$WorkoutPlaylistPreferencesTable, WorkoutPlaylistPreference> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WorkoutPlaylistPreferencesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _providerIdMeta = const VerificationMeta(
+    'providerId',
+  );
+  @override
+  late final GeneratedColumn<String> providerId = GeneratedColumn<String>(
+    'provider_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _playlistReferenceMeta = const VerificationMeta(
+    'playlistReference',
+  );
+  @override
+  late final GeneratedColumn<String> playlistReference =
+      GeneratedColumn<String>(
+        'playlist_reference',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _displayLabelMeta = const VerificationMeta(
+    'displayLabel',
+  );
+  @override
+  late final GeneratedColumn<String> displayLabel = GeneratedColumn<String>(
+    'display_label',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    providerId,
+    playlistReference,
+    displayLabel,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'workout_playlist_preferences';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WorkoutPlaylistPreference> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('provider_id')) {
+      context.handle(
+        _providerIdMeta,
+        providerId.isAcceptableOrUnknown(data['provider_id']!, _providerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_providerIdMeta);
+    }
+    if (data.containsKey('playlist_reference')) {
+      context.handle(
+        _playlistReferenceMeta,
+        playlistReference.isAcceptableOrUnknown(
+          data['playlist_reference']!,
+          _playlistReferenceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_playlistReferenceMeta);
+    }
+    if (data.containsKey('display_label')) {
+      context.handle(
+        _displayLabelMeta,
+        displayLabel.isAcceptableOrUnknown(
+          data['display_label']!,
+          _displayLabelMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {userId},
+  ];
+  @override
+  WorkoutPlaylistPreference map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WorkoutPlaylistPreference(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      providerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider_id'],
+      )!,
+      playlistReference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}playlist_reference'],
+      )!,
+      displayLabel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_label'],
+      ),
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $WorkoutPlaylistPreferencesTable createAlias(String alias) {
+    return $WorkoutPlaylistPreferencesTable(attachedDatabase, alias);
+  }
+}
+
+class WorkoutPlaylistPreference extends DataClass
+    implements Insertable<WorkoutPlaylistPreference> {
+  final String id;
+  final String userId;
+  final String providerId;
+  final String playlistReference;
+  final String? displayLabel;
+  final DateTime updatedAtUtc;
+  const WorkoutPlaylistPreference({
+    required this.id,
+    required this.userId,
+    required this.providerId,
+    required this.playlistReference,
+    this.displayLabel,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['provider_id'] = Variable<String>(providerId);
+    map['playlist_reference'] = Variable<String>(playlistReference);
+    if (!nullToAbsent || displayLabel != null) {
+      map['display_label'] = Variable<String>(displayLabel);
+    }
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  WorkoutPlaylistPreferencesCompanion toCompanion(bool nullToAbsent) {
+    return WorkoutPlaylistPreferencesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      providerId: Value(providerId),
+      playlistReference: Value(playlistReference),
+      displayLabel: displayLabel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(displayLabel),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory WorkoutPlaylistPreference.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WorkoutPlaylistPreference(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      providerId: serializer.fromJson<String>(json['providerId']),
+      playlistReference: serializer.fromJson<String>(json['playlistReference']),
+      displayLabel: serializer.fromJson<String?>(json['displayLabel']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'providerId': serializer.toJson<String>(providerId),
+      'playlistReference': serializer.toJson<String>(playlistReference),
+      'displayLabel': serializer.toJson<String?>(displayLabel),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  WorkoutPlaylistPreference copyWith({
+    String? id,
+    String? userId,
+    String? providerId,
+    String? playlistReference,
+    Value<String?> displayLabel = const Value.absent(),
+    DateTime? updatedAtUtc,
+  }) => WorkoutPlaylistPreference(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    providerId: providerId ?? this.providerId,
+    playlistReference: playlistReference ?? this.playlistReference,
+    displayLabel: displayLabel.present ? displayLabel.value : this.displayLabel,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  WorkoutPlaylistPreference copyWithCompanion(
+    WorkoutPlaylistPreferencesCompanion data,
+  ) {
+    return WorkoutPlaylistPreference(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      providerId: data.providerId.present
+          ? data.providerId.value
+          : this.providerId,
+      playlistReference: data.playlistReference.present
+          ? data.playlistReference.value
+          : this.playlistReference,
+      displayLabel: data.displayLabel.present
+          ? data.displayLabel.value
+          : this.displayLabel,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkoutPlaylistPreference(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('providerId: $providerId, ')
+          ..write('playlistReference: $playlistReference, ')
+          ..write('displayLabel: $displayLabel, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    providerId,
+    playlistReference,
+    displayLabel,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WorkoutPlaylistPreference &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.providerId == this.providerId &&
+          other.playlistReference == this.playlistReference &&
+          other.displayLabel == this.displayLabel &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class WorkoutPlaylistPreferencesCompanion
+    extends UpdateCompanion<WorkoutPlaylistPreference> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> providerId;
+  final Value<String> playlistReference;
+  final Value<String?> displayLabel;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const WorkoutPlaylistPreferencesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.providerId = const Value.absent(),
+    this.playlistReference = const Value.absent(),
+    this.displayLabel = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WorkoutPlaylistPreferencesCompanion.insert({
+    required String id,
+    required String userId,
+    required String providerId,
+    required String playlistReference,
+    this.displayLabel = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       providerId = Value(providerId),
+       playlistReference = Value(playlistReference);
+  static Insertable<WorkoutPlaylistPreference> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? providerId,
+    Expression<String>? playlistReference,
+    Expression<String>? displayLabel,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (providerId != null) 'provider_id': providerId,
+      if (playlistReference != null) 'playlist_reference': playlistReference,
+      if (displayLabel != null) 'display_label': displayLabel,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WorkoutPlaylistPreferencesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? providerId,
+    Value<String>? playlistReference,
+    Value<String?>? displayLabel,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return WorkoutPlaylistPreferencesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      providerId: providerId ?? this.providerId,
+      playlistReference: playlistReference ?? this.playlistReference,
+      displayLabel: displayLabel ?? this.displayLabel,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (providerId.present) {
+      map['provider_id'] = Variable<String>(providerId.value);
+    }
+    if (playlistReference.present) {
+      map['playlist_reference'] = Variable<String>(playlistReference.value);
+    }
+    if (displayLabel.present) {
+      map['display_label'] = Variable<String>(displayLabel.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkoutPlaylistPreferencesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('providerId: $providerId, ')
+          ..write('playlistReference: $playlistReference, ')
+          ..write('displayLabel: $displayLabel, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -47201,6 +59181,35 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NutritionSnapshotConstraintResultEvidenceTable
   nutritionSnapshotConstraintResultEvidence =
       $NutritionSnapshotConstraintResultEvidenceTable(this);
+  late final $NutritionGoalVersionsTable nutritionGoalVersions =
+      $NutritionGoalVersionsTable(this);
+  late final $CoachingConsentEventsTable coachingConsentEvents =
+      $CoachingConsentEventsTable(this);
+  late final $NutritionCoachingPreferencesTable nutritionCoachingPreferences =
+      $NutritionCoachingPreferencesTable(this);
+  late final $RecoveryObservationsTable recoveryObservations =
+      $RecoveryObservationsTable(this);
+  late final $ReadinessSnapshotsTable readinessSnapshots =
+      $ReadinessSnapshotsTable(this);
+  late final $ReadinessSnapshotEvidenceTable readinessSnapshotEvidence =
+      $ReadinessSnapshotEvidenceTable(this);
+  late final $RecommendationsTable recommendations = $RecommendationsTable(
+    this,
+  );
+  late final $RecommendationEvidenceTable recommendationEvidence =
+      $RecommendationEvidenceTable(this);
+  late final $CoachingEligibilityEvaluationsTable
+  coachingEligibilityEvaluations = $CoachingEligibilityEvaluationsTable(this);
+  late final $RecommendationFeedbackTable recommendationFeedback =
+      $RecommendationFeedbackTable(this);
+  late final $DashboardModulePreferencesTable dashboardModulePreferences =
+      $DashboardModulePreferencesTable(this);
+  late final $EducationContentProgressTable educationContentProgress =
+      $EducationContentProgressTable(this);
+  late final $MediaPackPreferencesTable mediaPackPreferences =
+      $MediaPackPreferencesTable(this);
+  late final $WorkoutPlaylistPreferencesTable workoutPlaylistPreferences =
+      $WorkoutPlaylistPreferencesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -47280,6 +59289,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     nutritionUserConstraints,
     nutritionSnapshotConstraintResults,
     nutritionSnapshotConstraintResultEvidence,
+    nutritionGoalVersions,
+    coachingConsentEvents,
+    nutritionCoachingPreferences,
+    recoveryObservations,
+    readinessSnapshots,
+    readinessSnapshotEvidence,
+    recommendations,
+    recommendationEvidence,
+    coachingEligibilityEvaluations,
+    recommendationFeedback,
+    dashboardModulePreferences,
+    educationContentProgress,
+    mediaPackPreferences,
+    workoutPlaylistPreferences,
   ];
 }
 
@@ -69050,6 +81073,4811 @@ class $$NutritionSnapshotConstraintResultEvidenceTableOrderingComposer
   }
 }
 
+typedef $$NutritionGoalVersionsTableCreateCompanionBuilder =
+    NutritionGoalVersionsCompanion Function({
+      required String id,
+      required String userId,
+      required int versionNumber,
+      required String goalType,
+      required String targetSource,
+      Value<int?> calorieTargetKcal,
+      Value<double?> proteinTargetG,
+      Value<double?> carbsTargetG,
+      Value<double?> fatTargetG,
+      Value<String?> policyVersion,
+      Value<String?> calculationVersion,
+      Value<String?> algorithmVersion,
+      required String effectiveFromLocalDate,
+      Value<String?> effectiveToLocalDate,
+      required String timezoneId,
+      Value<String?> supersedesGoalVersionId,
+      Value<String?> evidenceFingerprint,
+      Value<String?> exactResultNumerator,
+      Value<String?> exactResultDenominator,
+      Value<int?> normalizedMaintenanceKcal,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+typedef $$NutritionGoalVersionsTableUpdateCompanionBuilder =
+    NutritionGoalVersionsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<int> versionNumber,
+      Value<String> goalType,
+      Value<String> targetSource,
+      Value<int?> calorieTargetKcal,
+      Value<double?> proteinTargetG,
+      Value<double?> carbsTargetG,
+      Value<double?> fatTargetG,
+      Value<String?> policyVersion,
+      Value<String?> calculationVersion,
+      Value<String?> algorithmVersion,
+      Value<String> effectiveFromLocalDate,
+      Value<String?> effectiveToLocalDate,
+      Value<String> timezoneId,
+      Value<String?> supersedesGoalVersionId,
+      Value<String?> evidenceFingerprint,
+      Value<String?> exactResultNumerator,
+      Value<String?> exactResultDenominator,
+      Value<int?> normalizedMaintenanceKcal,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+
+class $$NutritionGoalVersionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionGoalVersionsTable,
+          NutritionGoalVersion,
+          $$NutritionGoalVersionsTableFilterComposer,
+          $$NutritionGoalVersionsTableOrderingComposer,
+          $$NutritionGoalVersionsTableCreateCompanionBuilder,
+          $$NutritionGoalVersionsTableUpdateCompanionBuilder
+        > {
+  $$NutritionGoalVersionsTableTableManager(
+    _$AppDatabase db,
+    $NutritionGoalVersionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionGoalVersionsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionGoalVersionsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<int> versionNumber = const Value.absent(),
+                Value<String> goalType = const Value.absent(),
+                Value<String> targetSource = const Value.absent(),
+                Value<int?> calorieTargetKcal = const Value.absent(),
+                Value<double?> proteinTargetG = const Value.absent(),
+                Value<double?> carbsTargetG = const Value.absent(),
+                Value<double?> fatTargetG = const Value.absent(),
+                Value<String?> policyVersion = const Value.absent(),
+                Value<String?> calculationVersion = const Value.absent(),
+                Value<String?> algorithmVersion = const Value.absent(),
+                Value<String> effectiveFromLocalDate = const Value.absent(),
+                Value<String?> effectiveToLocalDate = const Value.absent(),
+                Value<String> timezoneId = const Value.absent(),
+                Value<String?> supersedesGoalVersionId = const Value.absent(),
+                Value<String?> evidenceFingerprint = const Value.absent(),
+                Value<String?> exactResultNumerator = const Value.absent(),
+                Value<String?> exactResultDenominator = const Value.absent(),
+                Value<int?> normalizedMaintenanceKcal = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionGoalVersionsCompanion(
+                id: id,
+                userId: userId,
+                versionNumber: versionNumber,
+                goalType: goalType,
+                targetSource: targetSource,
+                calorieTargetKcal: calorieTargetKcal,
+                proteinTargetG: proteinTargetG,
+                carbsTargetG: carbsTargetG,
+                fatTargetG: fatTargetG,
+                policyVersion: policyVersion,
+                calculationVersion: calculationVersion,
+                algorithmVersion: algorithmVersion,
+                effectiveFromLocalDate: effectiveFromLocalDate,
+                effectiveToLocalDate: effectiveToLocalDate,
+                timezoneId: timezoneId,
+                supersedesGoalVersionId: supersedesGoalVersionId,
+                evidenceFingerprint: evidenceFingerprint,
+                exactResultNumerator: exactResultNumerator,
+                exactResultDenominator: exactResultDenominator,
+                normalizedMaintenanceKcal: normalizedMaintenanceKcal,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required int versionNumber,
+                required String goalType,
+                required String targetSource,
+                Value<int?> calorieTargetKcal = const Value.absent(),
+                Value<double?> proteinTargetG = const Value.absent(),
+                Value<double?> carbsTargetG = const Value.absent(),
+                Value<double?> fatTargetG = const Value.absent(),
+                Value<String?> policyVersion = const Value.absent(),
+                Value<String?> calculationVersion = const Value.absent(),
+                Value<String?> algorithmVersion = const Value.absent(),
+                required String effectiveFromLocalDate,
+                Value<String?> effectiveToLocalDate = const Value.absent(),
+                required String timezoneId,
+                Value<String?> supersedesGoalVersionId = const Value.absent(),
+                Value<String?> evidenceFingerprint = const Value.absent(),
+                Value<String?> exactResultNumerator = const Value.absent(),
+                Value<String?> exactResultDenominator = const Value.absent(),
+                Value<int?> normalizedMaintenanceKcal = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionGoalVersionsCompanion.insert(
+                id: id,
+                userId: userId,
+                versionNumber: versionNumber,
+                goalType: goalType,
+                targetSource: targetSource,
+                calorieTargetKcal: calorieTargetKcal,
+                proteinTargetG: proteinTargetG,
+                carbsTargetG: carbsTargetG,
+                fatTargetG: fatTargetG,
+                policyVersion: policyVersion,
+                calculationVersion: calculationVersion,
+                algorithmVersion: algorithmVersion,
+                effectiveFromLocalDate: effectiveFromLocalDate,
+                effectiveToLocalDate: effectiveToLocalDate,
+                timezoneId: timezoneId,
+                supersedesGoalVersionId: supersedesGoalVersionId,
+                evidenceFingerprint: evidenceFingerprint,
+                exactResultNumerator: exactResultNumerator,
+                exactResultDenominator: exactResultDenominator,
+                normalizedMaintenanceKcal: normalizedMaintenanceKcal,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionGoalVersionsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionGoalVersionsTable> {
+  $$NutritionGoalVersionsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get versionNumber => $state.composableBuilder(
+    column: $state.table.versionNumber,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get goalType => $state.composableBuilder(
+    column: $state.table.goalType,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get targetSource => $state.composableBuilder(
+    column: $state.table.targetSource,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get calorieTargetKcal => $state.composableBuilder(
+    column: $state.table.calorieTargetKcal,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get proteinTargetG => $state.composableBuilder(
+    column: $state.table.proteinTargetG,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get carbsTargetG => $state.composableBuilder(
+    column: $state.table.carbsTargetG,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get fatTargetG => $state.composableBuilder(
+    column: $state.table.fatTargetG,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get policyVersion => $state.composableBuilder(
+    column: $state.table.policyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get calculationVersion => $state.composableBuilder(
+    column: $state.table.calculationVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get algorithmVersion => $state.composableBuilder(
+    column: $state.table.algorithmVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get effectiveFromLocalDate => $state.composableBuilder(
+    column: $state.table.effectiveFromLocalDate,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get effectiveToLocalDate => $state.composableBuilder(
+    column: $state.table.effectiveToLocalDate,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get evidenceFingerprint => $state.composableBuilder(
+    column: $state.table.evidenceFingerprint,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get exactResultNumerator => $state.composableBuilder(
+    column: $state.table.exactResultNumerator,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get exactResultDenominator => $state.composableBuilder(
+    column: $state.table.exactResultDenominator,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get normalizedMaintenanceKcal => $state.composableBuilder(
+    column: $state.table.normalizedMaintenanceKcal,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionGoalVersionsTableFilterComposer get supersedesGoalVersionId {
+    final $$NutritionGoalVersionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.supersedesGoalVersionId,
+          referencedTable: $state.db.nutritionGoalVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionGoalVersionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionGoalVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  ComposableFilter recommendationsRefs(
+    ComposableFilter Function($$RecommendationsTableFilterComposer f) f,
+  ) {
+    final $$RecommendationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.recommendations,
+          getReferencedColumn: (t) => t.goalVersionId,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter coachingEligibilityEvaluationsRefs(
+    ComposableFilter Function(
+      $$CoachingEligibilityEvaluationsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$CoachingEligibilityEvaluationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.coachingEligibilityEvaluations,
+          getReferencedColumn: (t) => t.goalVersionId,
+          builder: (joinBuilder, parentComposers) =>
+              $$CoachingEligibilityEvaluationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.coachingEligibilityEvaluations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$NutritionGoalVersionsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NutritionGoalVersionsTable> {
+  $$NutritionGoalVersionsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get versionNumber => $state.composableBuilder(
+    column: $state.table.versionNumber,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get goalType => $state.composableBuilder(
+    column: $state.table.goalType,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get targetSource => $state.composableBuilder(
+    column: $state.table.targetSource,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get calorieTargetKcal => $state.composableBuilder(
+    column: $state.table.calorieTargetKcal,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get proteinTargetG => $state.composableBuilder(
+    column: $state.table.proteinTargetG,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get carbsTargetG => $state.composableBuilder(
+    column: $state.table.carbsTargetG,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get fatTargetG => $state.composableBuilder(
+    column: $state.table.fatTargetG,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get policyVersion => $state.composableBuilder(
+    column: $state.table.policyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get calculationVersion => $state.composableBuilder(
+    column: $state.table.calculationVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get algorithmVersion => $state.composableBuilder(
+    column: $state.table.algorithmVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get effectiveFromLocalDate =>
+      $state.composableBuilder(
+        column: $state.table.effectiveFromLocalDate,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<String> get effectiveToLocalDate => $state.composableBuilder(
+    column: $state.table.effectiveToLocalDate,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get evidenceFingerprint => $state.composableBuilder(
+    column: $state.table.evidenceFingerprint,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get exactResultNumerator => $state.composableBuilder(
+    column: $state.table.exactResultNumerator,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get exactResultDenominator =>
+      $state.composableBuilder(
+        column: $state.table.exactResultDenominator,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<int> get normalizedMaintenanceKcal =>
+      $state.composableBuilder(
+        column: $state.table.normalizedMaintenanceKcal,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionGoalVersionsTableOrderingComposer get supersedesGoalVersionId {
+    final $$NutritionGoalVersionsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.supersedesGoalVersionId,
+          referencedTable: $state.db.nutritionGoalVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionGoalVersionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionGoalVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$CoachingConsentEventsTableCreateCompanionBuilder =
+    CoachingConsentEventsCompanion Function({
+      required String id,
+      required String userId,
+      required String consentCategory,
+      required String action,
+      required String consentPolicyVersion,
+      required String copyVersion,
+      required DateTime timestampUtc,
+      required String localDate,
+      required String timezoneId,
+      required String actorSource,
+      Value<String?> relatedOrSupersededEventId,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+typedef $$CoachingConsentEventsTableUpdateCompanionBuilder =
+    CoachingConsentEventsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> consentCategory,
+      Value<String> action,
+      Value<String> consentPolicyVersion,
+      Value<String> copyVersion,
+      Value<DateTime> timestampUtc,
+      Value<String> localDate,
+      Value<String> timezoneId,
+      Value<String> actorSource,
+      Value<String?> relatedOrSupersededEventId,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+
+class $$CoachingConsentEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CoachingConsentEventsTable,
+          CoachingConsentEvent,
+          $$CoachingConsentEventsTableFilterComposer,
+          $$CoachingConsentEventsTableOrderingComposer,
+          $$CoachingConsentEventsTableCreateCompanionBuilder,
+          $$CoachingConsentEventsTableUpdateCompanionBuilder
+        > {
+  $$CoachingConsentEventsTableTableManager(
+    _$AppDatabase db,
+    $CoachingConsentEventsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$CoachingConsentEventsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$CoachingConsentEventsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> consentCategory = const Value.absent(),
+                Value<String> action = const Value.absent(),
+                Value<String> consentPolicyVersion = const Value.absent(),
+                Value<String> copyVersion = const Value.absent(),
+                Value<DateTime> timestampUtc = const Value.absent(),
+                Value<String> localDate = const Value.absent(),
+                Value<String> timezoneId = const Value.absent(),
+                Value<String> actorSource = const Value.absent(),
+                Value<String?> relatedOrSupersededEventId =
+                    const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CoachingConsentEventsCompanion(
+                id: id,
+                userId: userId,
+                consentCategory: consentCategory,
+                action: action,
+                consentPolicyVersion: consentPolicyVersion,
+                copyVersion: copyVersion,
+                timestampUtc: timestampUtc,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                actorSource: actorSource,
+                relatedOrSupersededEventId: relatedOrSupersededEventId,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String consentCategory,
+                required String action,
+                required String consentPolicyVersion,
+                required String copyVersion,
+                required DateTime timestampUtc,
+                required String localDate,
+                required String timezoneId,
+                required String actorSource,
+                Value<String?> relatedOrSupersededEventId =
+                    const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CoachingConsentEventsCompanion.insert(
+                id: id,
+                userId: userId,
+                consentCategory: consentCategory,
+                action: action,
+                consentPolicyVersion: consentPolicyVersion,
+                copyVersion: copyVersion,
+                timestampUtc: timestampUtc,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                actorSource: actorSource,
+                relatedOrSupersededEventId: relatedOrSupersededEventId,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$CoachingConsentEventsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $CoachingConsentEventsTable> {
+  $$CoachingConsentEventsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get consentCategory => $state.composableBuilder(
+    column: $state.table.consentCategory,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get action => $state.composableBuilder(
+    column: $state.table.action,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get consentPolicyVersion => $state.composableBuilder(
+    column: $state.table.consentPolicyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get copyVersion => $state.composableBuilder(
+    column: $state.table.copyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get timestampUtc => $state.composableBuilder(
+    column: $state.table.timestampUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get actorSource => $state.composableBuilder(
+    column: $state.table.actorSource,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$CoachingConsentEventsTableFilterComposer get relatedOrSupersededEventId {
+    final $$CoachingConsentEventsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.relatedOrSupersededEventId,
+          referencedTable: $state.db.coachingConsentEvents,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$CoachingConsentEventsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.coachingConsentEvents,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$CoachingConsentEventsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $CoachingConsentEventsTable> {
+  $$CoachingConsentEventsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get consentCategory => $state.composableBuilder(
+    column: $state.table.consentCategory,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get action => $state.composableBuilder(
+    column: $state.table.action,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get consentPolicyVersion => $state.composableBuilder(
+    column: $state.table.consentPolicyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get copyVersion => $state.composableBuilder(
+    column: $state.table.copyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get timestampUtc => $state.composableBuilder(
+    column: $state.table.timestampUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get actorSource => $state.composableBuilder(
+    column: $state.table.actorSource,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$CoachingConsentEventsTableOrderingComposer get relatedOrSupersededEventId {
+    final $$CoachingConsentEventsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.relatedOrSupersededEventId,
+          referencedTable: $state.db.coachingConsentEvents,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$CoachingConsentEventsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.coachingConsentEvents,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$NutritionCoachingPreferencesTableCreateCompanionBuilder =
+    NutritionCoachingPreferencesCompanion Function({
+      required String id,
+      required String userId,
+      Value<bool> adaptiveCoachingEnabled,
+      Value<bool> optionalAiEnabled,
+      Value<int> projectionVersion,
+      Value<bool> isArchived,
+      Value<DateTime> createdAtUtc,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$NutritionCoachingPreferencesTableUpdateCompanionBuilder =
+    NutritionCoachingPreferencesCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<bool> adaptiveCoachingEnabled,
+      Value<bool> optionalAiEnabled,
+      Value<int> projectionVersion,
+      Value<bool> isArchived,
+      Value<DateTime> createdAtUtc,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$NutritionCoachingPreferencesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NutritionCoachingPreferencesTable,
+          NutritionCoachingPreference,
+          $$NutritionCoachingPreferencesTableFilterComposer,
+          $$NutritionCoachingPreferencesTableOrderingComposer,
+          $$NutritionCoachingPreferencesTableCreateCompanionBuilder,
+          $$NutritionCoachingPreferencesTableUpdateCompanionBuilder
+        > {
+  $$NutritionCoachingPreferencesTableTableManager(
+    _$AppDatabase db,
+    $NutritionCoachingPreferencesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$NutritionCoachingPreferencesTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$NutritionCoachingPreferencesTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<bool> adaptiveCoachingEnabled = const Value.absent(),
+                Value<bool> optionalAiEnabled = const Value.absent(),
+                Value<int> projectionVersion = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionCoachingPreferencesCompanion(
+                id: id,
+                userId: userId,
+                adaptiveCoachingEnabled: adaptiveCoachingEnabled,
+                optionalAiEnabled: optionalAiEnabled,
+                projectionVersion: projectionVersion,
+                isArchived: isArchived,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                Value<bool> adaptiveCoachingEnabled = const Value.absent(),
+                Value<bool> optionalAiEnabled = const Value.absent(),
+                Value<int> projectionVersion = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NutritionCoachingPreferencesCompanion.insert(
+                id: id,
+                userId: userId,
+                adaptiveCoachingEnabled: adaptiveCoachingEnabled,
+                optionalAiEnabled: optionalAiEnabled,
+                projectionVersion: projectionVersion,
+                isArchived: isArchived,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$NutritionCoachingPreferencesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NutritionCoachingPreferencesTable> {
+  $$NutritionCoachingPreferencesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get adaptiveCoachingEnabled => $state.composableBuilder(
+    column: $state.table.adaptiveCoachingEnabled,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get optionalAiEnabled => $state.composableBuilder(
+    column: $state.table.optionalAiEnabled,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get projectionVersion => $state.composableBuilder(
+    column: $state.table.projectionVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get isArchived => $state.composableBuilder(
+    column: $state.table.isArchived,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+}
+
+class $$NutritionCoachingPreferencesTableOrderingComposer
+    extends
+        OrderingComposer<_$AppDatabase, $NutritionCoachingPreferencesTable> {
+  $$NutritionCoachingPreferencesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get adaptiveCoachingEnabled => $state.composableBuilder(
+    column: $state.table.adaptiveCoachingEnabled,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get optionalAiEnabled => $state.composableBuilder(
+    column: $state.table.optionalAiEnabled,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get projectionVersion => $state.composableBuilder(
+    column: $state.table.projectionVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get isArchived => $state.composableBuilder(
+    column: $state.table.isArchived,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$RecoveryObservationsTableCreateCompanionBuilder =
+    RecoveryObservationsCompanion Function({
+      required String id,
+      required String userId,
+      required String kind,
+      required DateTime observedAtUtc,
+      required String localDate,
+      required String timezoneId,
+      required String status,
+      required String unit,
+      Value<double?> value,
+      Value<double?> lower,
+      Value<double?> upper,
+      required String source,
+      required String provenance,
+      required String freshness,
+      Value<String?> providerExternalId,
+      Value<String?> sourceVersion,
+      Value<DateTime?> evidenceTimestampUtc,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+typedef $$RecoveryObservationsTableUpdateCompanionBuilder =
+    RecoveryObservationsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> kind,
+      Value<DateTime> observedAtUtc,
+      Value<String> localDate,
+      Value<String> timezoneId,
+      Value<String> status,
+      Value<String> unit,
+      Value<double?> value,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String> source,
+      Value<String> provenance,
+      Value<String> freshness,
+      Value<String?> providerExternalId,
+      Value<String?> sourceVersion,
+      Value<DateTime?> evidenceTimestampUtc,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+
+class $$RecoveryObservationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RecoveryObservationsTable,
+          RecoveryObservation,
+          $$RecoveryObservationsTableFilterComposer,
+          $$RecoveryObservationsTableOrderingComposer,
+          $$RecoveryObservationsTableCreateCompanionBuilder,
+          $$RecoveryObservationsTableUpdateCompanionBuilder
+        > {
+  $$RecoveryObservationsTableTableManager(
+    _$AppDatabase db,
+    $RecoveryObservationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$RecoveryObservationsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$RecoveryObservationsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<DateTime> observedAtUtc = const Value.absent(),
+                Value<String> localDate = const Value.absent(),
+                Value<String> timezoneId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> unit = const Value.absent(),
+                Value<double?> value = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String> provenance = const Value.absent(),
+                Value<String> freshness = const Value.absent(),
+                Value<String?> providerExternalId = const Value.absent(),
+                Value<String?> sourceVersion = const Value.absent(),
+                Value<DateTime?> evidenceTimestampUtc = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecoveryObservationsCompanion(
+                id: id,
+                userId: userId,
+                kind: kind,
+                observedAtUtc: observedAtUtc,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                status: status,
+                unit: unit,
+                value: value,
+                lower: lower,
+                upper: upper,
+                source: source,
+                provenance: provenance,
+                freshness: freshness,
+                providerExternalId: providerExternalId,
+                sourceVersion: sourceVersion,
+                evidenceTimestampUtc: evidenceTimestampUtc,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String kind,
+                required DateTime observedAtUtc,
+                required String localDate,
+                required String timezoneId,
+                required String status,
+                required String unit,
+                Value<double?> value = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                required String source,
+                required String provenance,
+                required String freshness,
+                Value<String?> providerExternalId = const Value.absent(),
+                Value<String?> sourceVersion = const Value.absent(),
+                Value<DateTime?> evidenceTimestampUtc = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecoveryObservationsCompanion.insert(
+                id: id,
+                userId: userId,
+                kind: kind,
+                observedAtUtc: observedAtUtc,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                status: status,
+                unit: unit,
+                value: value,
+                lower: lower,
+                upper: upper,
+                source: source,
+                provenance: provenance,
+                freshness: freshness,
+                providerExternalId: providerExternalId,
+                sourceVersion: sourceVersion,
+                evidenceTimestampUtc: evidenceTimestampUtc,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$RecoveryObservationsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $RecoveryObservationsTable> {
+  $$RecoveryObservationsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get kind => $state.composableBuilder(
+    column: $state.table.kind,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get observedAtUtc => $state.composableBuilder(
+    column: $state.table.observedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get value => $state.composableBuilder(
+    column: $state.table.value,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get provenance => $state.composableBuilder(
+    column: $state.table.provenance,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get freshness => $state.composableBuilder(
+    column: $state.table.freshness,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get providerExternalId => $state.composableBuilder(
+    column: $state.table.providerExternalId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceVersion => $state.composableBuilder(
+    column: $state.table.sourceVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get evidenceTimestampUtc => $state.composableBuilder(
+    column: $state.table.evidenceTimestampUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ComposableFilter readinessSnapshotEvidenceRefs(
+    ComposableFilter Function($$ReadinessSnapshotEvidenceTableFilterComposer f)
+    f,
+  ) {
+    final $$ReadinessSnapshotEvidenceTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.readinessSnapshotEvidence,
+          getReferencedColumn: (t) => t.observationId,
+          builder: (joinBuilder, parentComposers) =>
+              $$ReadinessSnapshotEvidenceTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.readinessSnapshotEvidence,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$RecoveryObservationsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $RecoveryObservationsTable> {
+  $$RecoveryObservationsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get kind => $state.composableBuilder(
+    column: $state.table.kind,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get observedAtUtc => $state.composableBuilder(
+    column: $state.table.observedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get value => $state.composableBuilder(
+    column: $state.table.value,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get provenance => $state.composableBuilder(
+    column: $state.table.provenance,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get freshness => $state.composableBuilder(
+    column: $state.table.freshness,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get providerExternalId => $state.composableBuilder(
+    column: $state.table.providerExternalId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceVersion => $state.composableBuilder(
+    column: $state.table.sourceVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get evidenceTimestampUtc =>
+      $state.composableBuilder(
+        column: $state.table.evidenceTimestampUtc,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$ReadinessSnapshotsTableCreateCompanionBuilder =
+    ReadinessSnapshotsCompanion Function({
+      required String id,
+      required String userId,
+      required String localDate,
+      required String timezoneId,
+      required String completeness,
+      required String status,
+      Value<String?> band,
+      Value<double?> confidence,
+      required String calculationVersion,
+      Value<String?> policyVersion,
+      Value<String?> unavailableReason,
+      Value<String?> evidenceFingerprint,
+      Value<DateTime> createdAtUtc,
+      Value<DateTime?> supersededAtUtc,
+      Value<String?> supersedesSnapshotId,
+      Value<int> rowid,
+    });
+typedef $$ReadinessSnapshotsTableUpdateCompanionBuilder =
+    ReadinessSnapshotsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> localDate,
+      Value<String> timezoneId,
+      Value<String> completeness,
+      Value<String> status,
+      Value<String?> band,
+      Value<double?> confidence,
+      Value<String> calculationVersion,
+      Value<String?> policyVersion,
+      Value<String?> unavailableReason,
+      Value<String?> evidenceFingerprint,
+      Value<DateTime> createdAtUtc,
+      Value<DateTime?> supersededAtUtc,
+      Value<String?> supersedesSnapshotId,
+      Value<int> rowid,
+    });
+
+class $$ReadinessSnapshotsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReadinessSnapshotsTable,
+          ReadinessSnapshot,
+          $$ReadinessSnapshotsTableFilterComposer,
+          $$ReadinessSnapshotsTableOrderingComposer,
+          $$ReadinessSnapshotsTableCreateCompanionBuilder,
+          $$ReadinessSnapshotsTableUpdateCompanionBuilder
+        > {
+  $$ReadinessSnapshotsTableTableManager(
+    _$AppDatabase db,
+    $ReadinessSnapshotsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$ReadinessSnapshotsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$ReadinessSnapshotsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> localDate = const Value.absent(),
+                Value<String> timezoneId = const Value.absent(),
+                Value<String> completeness = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> band = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                Value<String> calculationVersion = const Value.absent(),
+                Value<String?> policyVersion = const Value.absent(),
+                Value<String?> unavailableReason = const Value.absent(),
+                Value<String?> evidenceFingerprint = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<DateTime?> supersededAtUtc = const Value.absent(),
+                Value<String?> supersedesSnapshotId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ReadinessSnapshotsCompanion(
+                id: id,
+                userId: userId,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                completeness: completeness,
+                status: status,
+                band: band,
+                confidence: confidence,
+                calculationVersion: calculationVersion,
+                policyVersion: policyVersion,
+                unavailableReason: unavailableReason,
+                evidenceFingerprint: evidenceFingerprint,
+                createdAtUtc: createdAtUtc,
+                supersededAtUtc: supersededAtUtc,
+                supersedesSnapshotId: supersedesSnapshotId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String localDate,
+                required String timezoneId,
+                required String completeness,
+                required String status,
+                Value<String?> band = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                required String calculationVersion,
+                Value<String?> policyVersion = const Value.absent(),
+                Value<String?> unavailableReason = const Value.absent(),
+                Value<String?> evidenceFingerprint = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<DateTime?> supersededAtUtc = const Value.absent(),
+                Value<String?> supersedesSnapshotId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ReadinessSnapshotsCompanion.insert(
+                id: id,
+                userId: userId,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                completeness: completeness,
+                status: status,
+                band: band,
+                confidence: confidence,
+                calculationVersion: calculationVersion,
+                policyVersion: policyVersion,
+                unavailableReason: unavailableReason,
+                evidenceFingerprint: evidenceFingerprint,
+                createdAtUtc: createdAtUtc,
+                supersededAtUtc: supersededAtUtc,
+                supersedesSnapshotId: supersedesSnapshotId,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$ReadinessSnapshotsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ReadinessSnapshotsTable> {
+  $$ReadinessSnapshotsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get completeness => $state.composableBuilder(
+    column: $state.table.completeness,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get band => $state.composableBuilder(
+    column: $state.table.band,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get calculationVersion => $state.composableBuilder(
+    column: $state.table.calculationVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get policyVersion => $state.composableBuilder(
+    column: $state.table.policyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get unavailableReason => $state.composableBuilder(
+    column: $state.table.unavailableReason,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get evidenceFingerprint => $state.composableBuilder(
+    column: $state.table.evidenceFingerprint,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get supersededAtUtc => $state.composableBuilder(
+    column: $state.table.supersededAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$ReadinessSnapshotsTableFilterComposer get supersedesSnapshotId {
+    final $$ReadinessSnapshotsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.supersedesSnapshotId,
+          referencedTable: $state.db.readinessSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$ReadinessSnapshotsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.readinessSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  ComposableFilter readinessSnapshotEvidenceRefs(
+    ComposableFilter Function($$ReadinessSnapshotEvidenceTableFilterComposer f)
+    f,
+  ) {
+    final $$ReadinessSnapshotEvidenceTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.readinessSnapshotEvidence,
+          getReferencedColumn: (t) => t.readinessSnapshotId,
+          builder: (joinBuilder, parentComposers) =>
+              $$ReadinessSnapshotEvidenceTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.readinessSnapshotEvidence,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter recommendationsRefs(
+    ComposableFilter Function($$RecommendationsTableFilterComposer f) f,
+  ) {
+    final $$RecommendationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.recommendations,
+          getReferencedColumn: (t) => t.readinessSnapshotId,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$ReadinessSnapshotsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ReadinessSnapshotsTable> {
+  $$ReadinessSnapshotsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get completeness => $state.composableBuilder(
+    column: $state.table.completeness,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get band => $state.composableBuilder(
+    column: $state.table.band,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get calculationVersion => $state.composableBuilder(
+    column: $state.table.calculationVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get policyVersion => $state.composableBuilder(
+    column: $state.table.policyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get unavailableReason => $state.composableBuilder(
+    column: $state.table.unavailableReason,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get evidenceFingerprint => $state.composableBuilder(
+    column: $state.table.evidenceFingerprint,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get supersededAtUtc => $state.composableBuilder(
+    column: $state.table.supersededAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$ReadinessSnapshotsTableOrderingComposer get supersedesSnapshotId {
+    final $$ReadinessSnapshotsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.supersedesSnapshotId,
+          referencedTable: $state.db.readinessSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$ReadinessSnapshotsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.readinessSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$ReadinessSnapshotEvidenceTableCreateCompanionBuilder =
+    ReadinessSnapshotEvidenceCompanion Function({
+      required String id,
+      required String readinessSnapshotId,
+      required String observationId,
+      required String evidenceKind,
+      required String status,
+      Value<double?> value,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String?> unit,
+      Value<String?> sourceVersion,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+typedef $$ReadinessSnapshotEvidenceTableUpdateCompanionBuilder =
+    ReadinessSnapshotEvidenceCompanion Function({
+      Value<String> id,
+      Value<String> readinessSnapshotId,
+      Value<String> observationId,
+      Value<String> evidenceKind,
+      Value<String> status,
+      Value<double?> value,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String?> unit,
+      Value<String?> sourceVersion,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+
+class $$ReadinessSnapshotEvidenceTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReadinessSnapshotEvidenceTable,
+          ReadinessSnapshotEvidenceData,
+          $$ReadinessSnapshotEvidenceTableFilterComposer,
+          $$ReadinessSnapshotEvidenceTableOrderingComposer,
+          $$ReadinessSnapshotEvidenceTableCreateCompanionBuilder,
+          $$ReadinessSnapshotEvidenceTableUpdateCompanionBuilder
+        > {
+  $$ReadinessSnapshotEvidenceTableTableManager(
+    _$AppDatabase db,
+    $ReadinessSnapshotEvidenceTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$ReadinessSnapshotEvidenceTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$ReadinessSnapshotEvidenceTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> readinessSnapshotId = const Value.absent(),
+                Value<String> observationId = const Value.absent(),
+                Value<String> evidenceKind = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<double?> value = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String?> unit = const Value.absent(),
+                Value<String?> sourceVersion = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ReadinessSnapshotEvidenceCompanion(
+                id: id,
+                readinessSnapshotId: readinessSnapshotId,
+                observationId: observationId,
+                evidenceKind: evidenceKind,
+                status: status,
+                value: value,
+                lower: lower,
+                upper: upper,
+                unit: unit,
+                sourceVersion: sourceVersion,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String readinessSnapshotId,
+                required String observationId,
+                required String evidenceKind,
+                required String status,
+                Value<double?> value = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String?> unit = const Value.absent(),
+                Value<String?> sourceVersion = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ReadinessSnapshotEvidenceCompanion.insert(
+                id: id,
+                readinessSnapshotId: readinessSnapshotId,
+                observationId: observationId,
+                evidenceKind: evidenceKind,
+                status: status,
+                value: value,
+                lower: lower,
+                upper: upper,
+                unit: unit,
+                sourceVersion: sourceVersion,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$ReadinessSnapshotEvidenceTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ReadinessSnapshotEvidenceTable> {
+  $$ReadinessSnapshotEvidenceTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get evidenceKind => $state.composableBuilder(
+    column: $state.table.evidenceKind,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get value => $state.composableBuilder(
+    column: $state.table.value,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceVersion => $state.composableBuilder(
+    column: $state.table.sourceVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$ReadinessSnapshotsTableFilterComposer get readinessSnapshotId {
+    final $$ReadinessSnapshotsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.readinessSnapshotId,
+          referencedTable: $state.db.readinessSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$ReadinessSnapshotsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.readinessSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$RecoveryObservationsTableFilterComposer get observationId {
+    final $$RecoveryObservationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.observationId,
+          referencedTable: $state.db.recoveryObservations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecoveryObservationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recoveryObservations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$ReadinessSnapshotEvidenceTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ReadinessSnapshotEvidenceTable> {
+  $$ReadinessSnapshotEvidenceTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get evidenceKind => $state.composableBuilder(
+    column: $state.table.evidenceKind,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get value => $state.composableBuilder(
+    column: $state.table.value,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceVersion => $state.composableBuilder(
+    column: $state.table.sourceVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$ReadinessSnapshotsTableOrderingComposer get readinessSnapshotId {
+    final $$ReadinessSnapshotsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.readinessSnapshotId,
+          referencedTable: $state.db.readinessSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$ReadinessSnapshotsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.readinessSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$RecoveryObservationsTableOrderingComposer get observationId {
+    final $$RecoveryObservationsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.observationId,
+          referencedTable: $state.db.recoveryObservations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecoveryObservationsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recoveryObservations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$RecommendationsTableCreateCompanionBuilder =
+    RecommendationsCompanion Function({
+      required String id,
+      required String userId,
+      required String scope,
+      required String localPeriodStart,
+      required String localPeriodEnd,
+      required String timezoneId,
+      required String status,
+      required int priority,
+      Value<double?> confidence,
+      Value<String?> completeness,
+      required String action,
+      required String explanation,
+      Value<String?> missingInputs,
+      Value<String?> uncertainty,
+      Value<String?> alternatives,
+      required String ruleVersion,
+      Value<String?> calculationVersion,
+      Value<String?> algorithmVersion,
+      Value<String?> modelVersion,
+      Value<String?> providerVersion,
+      Value<String?> policyVersion,
+      Value<String?> goalVersionId,
+      Value<String?> readinessSnapshotId,
+      required String contextFingerprint,
+      Value<String?> evidenceFingerprint,
+      Value<String?> exactResultNumerator,
+      Value<String?> exactResultDenominator,
+      Value<int?> normalizedMaintenanceKcal,
+      Value<int?> proposedDeltaKcal,
+      Value<DateTime> createdAtUtc,
+      Value<DateTime?> effectiveAtUtc,
+      Value<DateTime?> supersededAtUtc,
+      Value<String?> supersedesRecommendationId,
+      Value<String?> replayHash,
+      Value<int> rowid,
+    });
+typedef $$RecommendationsTableUpdateCompanionBuilder =
+    RecommendationsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> scope,
+      Value<String> localPeriodStart,
+      Value<String> localPeriodEnd,
+      Value<String> timezoneId,
+      Value<String> status,
+      Value<int> priority,
+      Value<double?> confidence,
+      Value<String?> completeness,
+      Value<String> action,
+      Value<String> explanation,
+      Value<String?> missingInputs,
+      Value<String?> uncertainty,
+      Value<String?> alternatives,
+      Value<String> ruleVersion,
+      Value<String?> calculationVersion,
+      Value<String?> algorithmVersion,
+      Value<String?> modelVersion,
+      Value<String?> providerVersion,
+      Value<String?> policyVersion,
+      Value<String?> goalVersionId,
+      Value<String?> readinessSnapshotId,
+      Value<String> contextFingerprint,
+      Value<String?> evidenceFingerprint,
+      Value<String?> exactResultNumerator,
+      Value<String?> exactResultDenominator,
+      Value<int?> normalizedMaintenanceKcal,
+      Value<int?> proposedDeltaKcal,
+      Value<DateTime> createdAtUtc,
+      Value<DateTime?> effectiveAtUtc,
+      Value<DateTime?> supersededAtUtc,
+      Value<String?> supersedesRecommendationId,
+      Value<String?> replayHash,
+      Value<int> rowid,
+    });
+
+class $$RecommendationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RecommendationsTable,
+          Recommendation,
+          $$RecommendationsTableFilterComposer,
+          $$RecommendationsTableOrderingComposer,
+          $$RecommendationsTableCreateCompanionBuilder,
+          $$RecommendationsTableUpdateCompanionBuilder
+        > {
+  $$RecommendationsTableTableManager(
+    _$AppDatabase db,
+    $RecommendationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$RecommendationsTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$RecommendationsTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> scope = const Value.absent(),
+                Value<String> localPeriodStart = const Value.absent(),
+                Value<String> localPeriodEnd = const Value.absent(),
+                Value<String> timezoneId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> priority = const Value.absent(),
+                Value<double?> confidence = const Value.absent(),
+                Value<String?> completeness = const Value.absent(),
+                Value<String> action = const Value.absent(),
+                Value<String> explanation = const Value.absent(),
+                Value<String?> missingInputs = const Value.absent(),
+                Value<String?> uncertainty = const Value.absent(),
+                Value<String?> alternatives = const Value.absent(),
+                Value<String> ruleVersion = const Value.absent(),
+                Value<String?> calculationVersion = const Value.absent(),
+                Value<String?> algorithmVersion = const Value.absent(),
+                Value<String?> modelVersion = const Value.absent(),
+                Value<String?> providerVersion = const Value.absent(),
+                Value<String?> policyVersion = const Value.absent(),
+                Value<String?> goalVersionId = const Value.absent(),
+                Value<String?> readinessSnapshotId = const Value.absent(),
+                Value<String> contextFingerprint = const Value.absent(),
+                Value<String?> evidenceFingerprint = const Value.absent(),
+                Value<String?> exactResultNumerator = const Value.absent(),
+                Value<String?> exactResultDenominator = const Value.absent(),
+                Value<int?> normalizedMaintenanceKcal = const Value.absent(),
+                Value<int?> proposedDeltaKcal = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<DateTime?> effectiveAtUtc = const Value.absent(),
+                Value<DateTime?> supersededAtUtc = const Value.absent(),
+                Value<String?> supersedesRecommendationId =
+                    const Value.absent(),
+                Value<String?> replayHash = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecommendationsCompanion(
+                id: id,
+                userId: userId,
+                scope: scope,
+                localPeriodStart: localPeriodStart,
+                localPeriodEnd: localPeriodEnd,
+                timezoneId: timezoneId,
+                status: status,
+                priority: priority,
+                confidence: confidence,
+                completeness: completeness,
+                action: action,
+                explanation: explanation,
+                missingInputs: missingInputs,
+                uncertainty: uncertainty,
+                alternatives: alternatives,
+                ruleVersion: ruleVersion,
+                calculationVersion: calculationVersion,
+                algorithmVersion: algorithmVersion,
+                modelVersion: modelVersion,
+                providerVersion: providerVersion,
+                policyVersion: policyVersion,
+                goalVersionId: goalVersionId,
+                readinessSnapshotId: readinessSnapshotId,
+                contextFingerprint: contextFingerprint,
+                evidenceFingerprint: evidenceFingerprint,
+                exactResultNumerator: exactResultNumerator,
+                exactResultDenominator: exactResultDenominator,
+                normalizedMaintenanceKcal: normalizedMaintenanceKcal,
+                proposedDeltaKcal: proposedDeltaKcal,
+                createdAtUtc: createdAtUtc,
+                effectiveAtUtc: effectiveAtUtc,
+                supersededAtUtc: supersededAtUtc,
+                supersedesRecommendationId: supersedesRecommendationId,
+                replayHash: replayHash,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String scope,
+                required String localPeriodStart,
+                required String localPeriodEnd,
+                required String timezoneId,
+                required String status,
+                required int priority,
+                Value<double?> confidence = const Value.absent(),
+                Value<String?> completeness = const Value.absent(),
+                required String action,
+                required String explanation,
+                Value<String?> missingInputs = const Value.absent(),
+                Value<String?> uncertainty = const Value.absent(),
+                Value<String?> alternatives = const Value.absent(),
+                required String ruleVersion,
+                Value<String?> calculationVersion = const Value.absent(),
+                Value<String?> algorithmVersion = const Value.absent(),
+                Value<String?> modelVersion = const Value.absent(),
+                Value<String?> providerVersion = const Value.absent(),
+                Value<String?> policyVersion = const Value.absent(),
+                Value<String?> goalVersionId = const Value.absent(),
+                Value<String?> readinessSnapshotId = const Value.absent(),
+                required String contextFingerprint,
+                Value<String?> evidenceFingerprint = const Value.absent(),
+                Value<String?> exactResultNumerator = const Value.absent(),
+                Value<String?> exactResultDenominator = const Value.absent(),
+                Value<int?> normalizedMaintenanceKcal = const Value.absent(),
+                Value<int?> proposedDeltaKcal = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<DateTime?> effectiveAtUtc = const Value.absent(),
+                Value<DateTime?> supersededAtUtc = const Value.absent(),
+                Value<String?> supersedesRecommendationId =
+                    const Value.absent(),
+                Value<String?> replayHash = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecommendationsCompanion.insert(
+                id: id,
+                userId: userId,
+                scope: scope,
+                localPeriodStart: localPeriodStart,
+                localPeriodEnd: localPeriodEnd,
+                timezoneId: timezoneId,
+                status: status,
+                priority: priority,
+                confidence: confidence,
+                completeness: completeness,
+                action: action,
+                explanation: explanation,
+                missingInputs: missingInputs,
+                uncertainty: uncertainty,
+                alternatives: alternatives,
+                ruleVersion: ruleVersion,
+                calculationVersion: calculationVersion,
+                algorithmVersion: algorithmVersion,
+                modelVersion: modelVersion,
+                providerVersion: providerVersion,
+                policyVersion: policyVersion,
+                goalVersionId: goalVersionId,
+                readinessSnapshotId: readinessSnapshotId,
+                contextFingerprint: contextFingerprint,
+                evidenceFingerprint: evidenceFingerprint,
+                exactResultNumerator: exactResultNumerator,
+                exactResultDenominator: exactResultDenominator,
+                normalizedMaintenanceKcal: normalizedMaintenanceKcal,
+                proposedDeltaKcal: proposedDeltaKcal,
+                createdAtUtc: createdAtUtc,
+                effectiveAtUtc: effectiveAtUtc,
+                supersededAtUtc: supersededAtUtc,
+                supersedesRecommendationId: supersedesRecommendationId,
+                replayHash: replayHash,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$RecommendationsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $RecommendationsTable> {
+  $$RecommendationsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get scope => $state.composableBuilder(
+    column: $state.table.scope,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get localPeriodStart => $state.composableBuilder(
+    column: $state.table.localPeriodStart,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get localPeriodEnd => $state.composableBuilder(
+    column: $state.table.localPeriodEnd,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get priority => $state.composableBuilder(
+    column: $state.table.priority,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get completeness => $state.composableBuilder(
+    column: $state.table.completeness,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get action => $state.composableBuilder(
+    column: $state.table.action,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get explanation => $state.composableBuilder(
+    column: $state.table.explanation,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get missingInputs => $state.composableBuilder(
+    column: $state.table.missingInputs,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get uncertainty => $state.composableBuilder(
+    column: $state.table.uncertainty,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get alternatives => $state.composableBuilder(
+    column: $state.table.alternatives,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get ruleVersion => $state.composableBuilder(
+    column: $state.table.ruleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get calculationVersion => $state.composableBuilder(
+    column: $state.table.calculationVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get algorithmVersion => $state.composableBuilder(
+    column: $state.table.algorithmVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get modelVersion => $state.composableBuilder(
+    column: $state.table.modelVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get providerVersion => $state.composableBuilder(
+    column: $state.table.providerVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get policyVersion => $state.composableBuilder(
+    column: $state.table.policyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get contextFingerprint => $state.composableBuilder(
+    column: $state.table.contextFingerprint,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get evidenceFingerprint => $state.composableBuilder(
+    column: $state.table.evidenceFingerprint,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get exactResultNumerator => $state.composableBuilder(
+    column: $state.table.exactResultNumerator,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get exactResultDenominator => $state.composableBuilder(
+    column: $state.table.exactResultDenominator,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get normalizedMaintenanceKcal => $state.composableBuilder(
+    column: $state.table.normalizedMaintenanceKcal,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get proposedDeltaKcal => $state.composableBuilder(
+    column: $state.table.proposedDeltaKcal,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get effectiveAtUtc => $state.composableBuilder(
+    column: $state.table.effectiveAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get supersededAtUtc => $state.composableBuilder(
+    column: $state.table.supersededAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get replayHash => $state.composableBuilder(
+    column: $state.table.replayHash,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionGoalVersionsTableFilterComposer get goalVersionId {
+    final $$NutritionGoalVersionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.goalVersionId,
+          referencedTable: $state.db.nutritionGoalVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionGoalVersionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionGoalVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$ReadinessSnapshotsTableFilterComposer get readinessSnapshotId {
+    final $$ReadinessSnapshotsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.readinessSnapshotId,
+          referencedTable: $state.db.readinessSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$ReadinessSnapshotsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.readinessSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$RecommendationsTableFilterComposer get supersedesRecommendationId {
+    final $$RecommendationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.supersedesRecommendationId,
+          referencedTable: $state.db.recommendations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  ComposableFilter recommendationEvidenceRefs(
+    ComposableFilter Function($$RecommendationEvidenceTableFilterComposer f) f,
+  ) {
+    final $$RecommendationEvidenceTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.recommendationEvidence,
+          getReferencedColumn: (t) => t.recommendationId,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationEvidenceTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendationEvidence,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter coachingEligibilityEvaluationsRefs(
+    ComposableFilter Function(
+      $$CoachingEligibilityEvaluationsTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$CoachingEligibilityEvaluationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.coachingEligibilityEvaluations,
+          getReferencedColumn: (t) => t.recommendationId,
+          builder: (joinBuilder, parentComposers) =>
+              $$CoachingEligibilityEvaluationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.coachingEligibilityEvaluations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+
+  ComposableFilter recommendationFeedbackRefs(
+    ComposableFilter Function($$RecommendationFeedbackTableFilterComposer f) f,
+  ) {
+    final $$RecommendationFeedbackTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $state.db.recommendationFeedback,
+          getReferencedColumn: (t) => t.recommendationId,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationFeedbackTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendationFeedback,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$RecommendationsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $RecommendationsTable> {
+  $$RecommendationsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get scope => $state.composableBuilder(
+    column: $state.table.scope,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get localPeriodStart => $state.composableBuilder(
+    column: $state.table.localPeriodStart,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get localPeriodEnd => $state.composableBuilder(
+    column: $state.table.localPeriodEnd,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get priority => $state.composableBuilder(
+    column: $state.table.priority,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get confidence => $state.composableBuilder(
+    column: $state.table.confidence,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get completeness => $state.composableBuilder(
+    column: $state.table.completeness,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get action => $state.composableBuilder(
+    column: $state.table.action,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get explanation => $state.composableBuilder(
+    column: $state.table.explanation,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get missingInputs => $state.composableBuilder(
+    column: $state.table.missingInputs,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get uncertainty => $state.composableBuilder(
+    column: $state.table.uncertainty,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get alternatives => $state.composableBuilder(
+    column: $state.table.alternatives,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get ruleVersion => $state.composableBuilder(
+    column: $state.table.ruleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get calculationVersion => $state.composableBuilder(
+    column: $state.table.calculationVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get algorithmVersion => $state.composableBuilder(
+    column: $state.table.algorithmVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get modelVersion => $state.composableBuilder(
+    column: $state.table.modelVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get providerVersion => $state.composableBuilder(
+    column: $state.table.providerVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get policyVersion => $state.composableBuilder(
+    column: $state.table.policyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get contextFingerprint => $state.composableBuilder(
+    column: $state.table.contextFingerprint,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get evidenceFingerprint => $state.composableBuilder(
+    column: $state.table.evidenceFingerprint,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get exactResultNumerator => $state.composableBuilder(
+    column: $state.table.exactResultNumerator,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get exactResultDenominator =>
+      $state.composableBuilder(
+        column: $state.table.exactResultDenominator,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<int> get normalizedMaintenanceKcal =>
+      $state.composableBuilder(
+        column: $state.table.normalizedMaintenanceKcal,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<int> get proposedDeltaKcal => $state.composableBuilder(
+    column: $state.table.proposedDeltaKcal,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get effectiveAtUtc => $state.composableBuilder(
+    column: $state.table.effectiveAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get supersededAtUtc => $state.composableBuilder(
+    column: $state.table.supersededAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get replayHash => $state.composableBuilder(
+    column: $state.table.replayHash,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionGoalVersionsTableOrderingComposer get goalVersionId {
+    final $$NutritionGoalVersionsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.goalVersionId,
+          referencedTable: $state.db.nutritionGoalVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionGoalVersionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionGoalVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$ReadinessSnapshotsTableOrderingComposer get readinessSnapshotId {
+    final $$ReadinessSnapshotsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.readinessSnapshotId,
+          referencedTable: $state.db.readinessSnapshots,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$ReadinessSnapshotsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.readinessSnapshots,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$RecommendationsTableOrderingComposer get supersedesRecommendationId {
+    final $$RecommendationsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.supersedesRecommendationId,
+          referencedTable: $state.db.recommendations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$RecommendationEvidenceTableCreateCompanionBuilder =
+    RecommendationEvidenceCompanion Function({
+      required String id,
+      required String recommendationId,
+      required String userId,
+      required String evidenceKind,
+      required String sourceType,
+      Value<String?> sourceId,
+      Value<String?> sourceVersion,
+      required String status,
+      Value<double?> value,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String?> unit,
+      Value<String?> exactResultNumerator,
+      Value<String?> exactResultDenominator,
+      Value<int?> normalizedMaintenanceKcal,
+      Value<String?> localDate,
+      Value<String?> timezoneId,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+typedef $$RecommendationEvidenceTableUpdateCompanionBuilder =
+    RecommendationEvidenceCompanion Function({
+      Value<String> id,
+      Value<String> recommendationId,
+      Value<String> userId,
+      Value<String> evidenceKind,
+      Value<String> sourceType,
+      Value<String?> sourceId,
+      Value<String?> sourceVersion,
+      Value<String> status,
+      Value<double?> value,
+      Value<double?> lower,
+      Value<double?> upper,
+      Value<String?> unit,
+      Value<String?> exactResultNumerator,
+      Value<String?> exactResultDenominator,
+      Value<int?> normalizedMaintenanceKcal,
+      Value<String?> localDate,
+      Value<String?> timezoneId,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+
+class $$RecommendationEvidenceTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RecommendationEvidenceTable,
+          RecommendationEvidenceData,
+          $$RecommendationEvidenceTableFilterComposer,
+          $$RecommendationEvidenceTableOrderingComposer,
+          $$RecommendationEvidenceTableCreateCompanionBuilder,
+          $$RecommendationEvidenceTableUpdateCompanionBuilder
+        > {
+  $$RecommendationEvidenceTableTableManager(
+    _$AppDatabase db,
+    $RecommendationEvidenceTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$RecommendationEvidenceTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$RecommendationEvidenceTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> recommendationId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> evidenceKind = const Value.absent(),
+                Value<String> sourceType = const Value.absent(),
+                Value<String?> sourceId = const Value.absent(),
+                Value<String?> sourceVersion = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<double?> value = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String?> unit = const Value.absent(),
+                Value<String?> exactResultNumerator = const Value.absent(),
+                Value<String?> exactResultDenominator = const Value.absent(),
+                Value<int?> normalizedMaintenanceKcal = const Value.absent(),
+                Value<String?> localDate = const Value.absent(),
+                Value<String?> timezoneId = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecommendationEvidenceCompanion(
+                id: id,
+                recommendationId: recommendationId,
+                userId: userId,
+                evidenceKind: evidenceKind,
+                sourceType: sourceType,
+                sourceId: sourceId,
+                sourceVersion: sourceVersion,
+                status: status,
+                value: value,
+                lower: lower,
+                upper: upper,
+                unit: unit,
+                exactResultNumerator: exactResultNumerator,
+                exactResultDenominator: exactResultDenominator,
+                normalizedMaintenanceKcal: normalizedMaintenanceKcal,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String recommendationId,
+                required String userId,
+                required String evidenceKind,
+                required String sourceType,
+                Value<String?> sourceId = const Value.absent(),
+                Value<String?> sourceVersion = const Value.absent(),
+                required String status,
+                Value<double?> value = const Value.absent(),
+                Value<double?> lower = const Value.absent(),
+                Value<double?> upper = const Value.absent(),
+                Value<String?> unit = const Value.absent(),
+                Value<String?> exactResultNumerator = const Value.absent(),
+                Value<String?> exactResultDenominator = const Value.absent(),
+                Value<int?> normalizedMaintenanceKcal = const Value.absent(),
+                Value<String?> localDate = const Value.absent(),
+                Value<String?> timezoneId = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecommendationEvidenceCompanion.insert(
+                id: id,
+                recommendationId: recommendationId,
+                userId: userId,
+                evidenceKind: evidenceKind,
+                sourceType: sourceType,
+                sourceId: sourceId,
+                sourceVersion: sourceVersion,
+                status: status,
+                value: value,
+                lower: lower,
+                upper: upper,
+                unit: unit,
+                exactResultNumerator: exactResultNumerator,
+                exactResultDenominator: exactResultDenominator,
+                normalizedMaintenanceKcal: normalizedMaintenanceKcal,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$RecommendationEvidenceTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $RecommendationEvidenceTable> {
+  $$RecommendationEvidenceTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get evidenceKind => $state.composableBuilder(
+    column: $state.table.evidenceKind,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceType => $state.composableBuilder(
+    column: $state.table.sourceType,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceId => $state.composableBuilder(
+    column: $state.table.sourceId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get sourceVersion => $state.composableBuilder(
+    column: $state.table.sourceVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get value => $state.composableBuilder(
+    column: $state.table.value,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get exactResultNumerator => $state.composableBuilder(
+    column: $state.table.exactResultNumerator,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get exactResultDenominator => $state.composableBuilder(
+    column: $state.table.exactResultDenominator,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get normalizedMaintenanceKcal => $state.composableBuilder(
+    column: $state.table.normalizedMaintenanceKcal,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$RecommendationsTableFilterComposer get recommendationId {
+    final $$RecommendationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recommendationId,
+          referencedTable: $state.db.recommendations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$RecommendationEvidenceTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $RecommendationEvidenceTable> {
+  $$RecommendationEvidenceTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get evidenceKind => $state.composableBuilder(
+    column: $state.table.evidenceKind,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceType => $state.composableBuilder(
+    column: $state.table.sourceType,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceId => $state.composableBuilder(
+    column: $state.table.sourceId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get sourceVersion => $state.composableBuilder(
+    column: $state.table.sourceVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+    column: $state.table.status,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get value => $state.composableBuilder(
+    column: $state.table.value,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get lower => $state.composableBuilder(
+    column: $state.table.lower,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<double> get upper => $state.composableBuilder(
+    column: $state.table.upper,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get unit => $state.composableBuilder(
+    column: $state.table.unit,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get exactResultNumerator => $state.composableBuilder(
+    column: $state.table.exactResultNumerator,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get exactResultDenominator =>
+      $state.composableBuilder(
+        column: $state.table.exactResultDenominator,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<int> get normalizedMaintenanceKcal =>
+      $state.composableBuilder(
+        column: $state.table.normalizedMaintenanceKcal,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$RecommendationsTableOrderingComposer get recommendationId {
+    final $$RecommendationsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recommendationId,
+          referencedTable: $state.db.recommendations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$CoachingEligibilityEvaluationsTableCreateCompanionBuilder =
+    CoachingEligibilityEvaluationsCompanion Function({
+      required String id,
+      required String userId,
+      required String result,
+      required String reasonCode,
+      required String ageInputSource,
+      required DateTime evidenceTimestampUtc,
+      required DateTime evaluationUtc,
+      required String evaluationLocalDate,
+      required String timezoneId,
+      required String policyVersion,
+      required String minimumAgeRuleVersion,
+      Value<String?> goalVersionId,
+      Value<String?> recommendationId,
+      Value<String?> attemptedProposalId,
+      Value<String?> evidenceFingerprint,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+typedef $$CoachingEligibilityEvaluationsTableUpdateCompanionBuilder =
+    CoachingEligibilityEvaluationsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> result,
+      Value<String> reasonCode,
+      Value<String> ageInputSource,
+      Value<DateTime> evidenceTimestampUtc,
+      Value<DateTime> evaluationUtc,
+      Value<String> evaluationLocalDate,
+      Value<String> timezoneId,
+      Value<String> policyVersion,
+      Value<String> minimumAgeRuleVersion,
+      Value<String?> goalVersionId,
+      Value<String?> recommendationId,
+      Value<String?> attemptedProposalId,
+      Value<String?> evidenceFingerprint,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+
+class $$CoachingEligibilityEvaluationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CoachingEligibilityEvaluationsTable,
+          CoachingEligibilityEvaluation,
+          $$CoachingEligibilityEvaluationsTableFilterComposer,
+          $$CoachingEligibilityEvaluationsTableOrderingComposer,
+          $$CoachingEligibilityEvaluationsTableCreateCompanionBuilder,
+          $$CoachingEligibilityEvaluationsTableUpdateCompanionBuilder
+        > {
+  $$CoachingEligibilityEvaluationsTableTableManager(
+    _$AppDatabase db,
+    $CoachingEligibilityEvaluationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$CoachingEligibilityEvaluationsTableFilterComposer(
+                ComposerState(db, table),
+              ),
+          orderingComposer:
+              $$CoachingEligibilityEvaluationsTableOrderingComposer(
+                ComposerState(db, table),
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> result = const Value.absent(),
+                Value<String> reasonCode = const Value.absent(),
+                Value<String> ageInputSource = const Value.absent(),
+                Value<DateTime> evidenceTimestampUtc = const Value.absent(),
+                Value<DateTime> evaluationUtc = const Value.absent(),
+                Value<String> evaluationLocalDate = const Value.absent(),
+                Value<String> timezoneId = const Value.absent(),
+                Value<String> policyVersion = const Value.absent(),
+                Value<String> minimumAgeRuleVersion = const Value.absent(),
+                Value<String?> goalVersionId = const Value.absent(),
+                Value<String?> recommendationId = const Value.absent(),
+                Value<String?> attemptedProposalId = const Value.absent(),
+                Value<String?> evidenceFingerprint = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CoachingEligibilityEvaluationsCompanion(
+                id: id,
+                userId: userId,
+                result: result,
+                reasonCode: reasonCode,
+                ageInputSource: ageInputSource,
+                evidenceTimestampUtc: evidenceTimestampUtc,
+                evaluationUtc: evaluationUtc,
+                evaluationLocalDate: evaluationLocalDate,
+                timezoneId: timezoneId,
+                policyVersion: policyVersion,
+                minimumAgeRuleVersion: minimumAgeRuleVersion,
+                goalVersionId: goalVersionId,
+                recommendationId: recommendationId,
+                attemptedProposalId: attemptedProposalId,
+                evidenceFingerprint: evidenceFingerprint,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String result,
+                required String reasonCode,
+                required String ageInputSource,
+                required DateTime evidenceTimestampUtc,
+                required DateTime evaluationUtc,
+                required String evaluationLocalDate,
+                required String timezoneId,
+                required String policyVersion,
+                required String minimumAgeRuleVersion,
+                Value<String?> goalVersionId = const Value.absent(),
+                Value<String?> recommendationId = const Value.absent(),
+                Value<String?> attemptedProposalId = const Value.absent(),
+                Value<String?> evidenceFingerprint = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CoachingEligibilityEvaluationsCompanion.insert(
+                id: id,
+                userId: userId,
+                result: result,
+                reasonCode: reasonCode,
+                ageInputSource: ageInputSource,
+                evidenceTimestampUtc: evidenceTimestampUtc,
+                evaluationUtc: evaluationUtc,
+                evaluationLocalDate: evaluationLocalDate,
+                timezoneId: timezoneId,
+                policyVersion: policyVersion,
+                minimumAgeRuleVersion: minimumAgeRuleVersion,
+                goalVersionId: goalVersionId,
+                recommendationId: recommendationId,
+                attemptedProposalId: attemptedProposalId,
+                evidenceFingerprint: evidenceFingerprint,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$CoachingEligibilityEvaluationsTableFilterComposer
+    extends
+        FilterComposer<_$AppDatabase, $CoachingEligibilityEvaluationsTable> {
+  $$CoachingEligibilityEvaluationsTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get result => $state.composableBuilder(
+    column: $state.table.result,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get reasonCode => $state.composableBuilder(
+    column: $state.table.reasonCode,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get ageInputSource => $state.composableBuilder(
+    column: $state.table.ageInputSource,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get evidenceTimestampUtc => $state.composableBuilder(
+    column: $state.table.evidenceTimestampUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get evaluationUtc => $state.composableBuilder(
+    column: $state.table.evaluationUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get evaluationLocalDate => $state.composableBuilder(
+    column: $state.table.evaluationLocalDate,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get policyVersion => $state.composableBuilder(
+    column: $state.table.policyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get minimumAgeRuleVersion => $state.composableBuilder(
+    column: $state.table.minimumAgeRuleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get attemptedProposalId => $state.composableBuilder(
+    column: $state.table.attemptedProposalId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get evidenceFingerprint => $state.composableBuilder(
+    column: $state.table.evidenceFingerprint,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionGoalVersionsTableFilterComposer get goalVersionId {
+    final $$NutritionGoalVersionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.goalVersionId,
+          referencedTable: $state.db.nutritionGoalVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionGoalVersionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionGoalVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$RecommendationsTableFilterComposer get recommendationId {
+    final $$RecommendationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recommendationId,
+          referencedTable: $state.db.recommendations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$CoachingEligibilityEvaluationsTableOrderingComposer
+    extends
+        OrderingComposer<_$AppDatabase, $CoachingEligibilityEvaluationsTable> {
+  $$CoachingEligibilityEvaluationsTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get result => $state.composableBuilder(
+    column: $state.table.result,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get reasonCode => $state.composableBuilder(
+    column: $state.table.reasonCode,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get ageInputSource => $state.composableBuilder(
+    column: $state.table.ageInputSource,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get evidenceTimestampUtc =>
+      $state.composableBuilder(
+        column: $state.table.evidenceTimestampUtc,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<DateTime> get evaluationUtc => $state.composableBuilder(
+    column: $state.table.evaluationUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get evaluationLocalDate => $state.composableBuilder(
+    column: $state.table.evaluationLocalDate,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get policyVersion => $state.composableBuilder(
+    column: $state.table.policyVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get minimumAgeRuleVersion => $state.composableBuilder(
+    column: $state.table.minimumAgeRuleVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get attemptedProposalId => $state.composableBuilder(
+    column: $state.table.attemptedProposalId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get evidenceFingerprint => $state.composableBuilder(
+    column: $state.table.evidenceFingerprint,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$NutritionGoalVersionsTableOrderingComposer get goalVersionId {
+    final $$NutritionGoalVersionsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.goalVersionId,
+          referencedTable: $state.db.nutritionGoalVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$NutritionGoalVersionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.nutritionGoalVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$RecommendationsTableOrderingComposer get recommendationId {
+    final $$RecommendationsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recommendationId,
+          referencedTable: $state.db.recommendations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$RecommendationFeedbackTableCreateCompanionBuilder =
+    RecommendationFeedbackCompanion Function({
+      required String id,
+      required String userId,
+      required String recommendationId,
+      required String action,
+      Value<String?> reason,
+      required String source,
+      required String localDate,
+      required String timezoneId,
+      Value<DateTime> createdAtUtc,
+      Value<String?> relatedFeedbackId,
+      Value<int> rowid,
+    });
+typedef $$RecommendationFeedbackTableUpdateCompanionBuilder =
+    RecommendationFeedbackCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> recommendationId,
+      Value<String> action,
+      Value<String?> reason,
+      Value<String> source,
+      Value<String> localDate,
+      Value<String> timezoneId,
+      Value<DateTime> createdAtUtc,
+      Value<String?> relatedFeedbackId,
+      Value<int> rowid,
+    });
+
+class $$RecommendationFeedbackTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RecommendationFeedbackTable,
+          RecommendationFeedbackData,
+          $$RecommendationFeedbackTableFilterComposer,
+          $$RecommendationFeedbackTableOrderingComposer,
+          $$RecommendationFeedbackTableCreateCompanionBuilder,
+          $$RecommendationFeedbackTableUpdateCompanionBuilder
+        > {
+  $$RecommendationFeedbackTableTableManager(
+    _$AppDatabase db,
+    $RecommendationFeedbackTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$RecommendationFeedbackTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$RecommendationFeedbackTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> recommendationId = const Value.absent(),
+                Value<String> action = const Value.absent(),
+                Value<String?> reason = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String> localDate = const Value.absent(),
+                Value<String> timezoneId = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<String?> relatedFeedbackId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecommendationFeedbackCompanion(
+                id: id,
+                userId: userId,
+                recommendationId: recommendationId,
+                action: action,
+                reason: reason,
+                source: source,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                createdAtUtc: createdAtUtc,
+                relatedFeedbackId: relatedFeedbackId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String recommendationId,
+                required String action,
+                Value<String?> reason = const Value.absent(),
+                required String source,
+                required String localDate,
+                required String timezoneId,
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<String?> relatedFeedbackId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecommendationFeedbackCompanion.insert(
+                id: id,
+                userId: userId,
+                recommendationId: recommendationId,
+                action: action,
+                reason: reason,
+                source: source,
+                localDate: localDate,
+                timezoneId: timezoneId,
+                createdAtUtc: createdAtUtc,
+                relatedFeedbackId: relatedFeedbackId,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$RecommendationFeedbackTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $RecommendationFeedbackTable> {
+  $$RecommendationFeedbackTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get action => $state.composableBuilder(
+    column: $state.table.action,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get reason => $state.composableBuilder(
+    column: $state.table.reason,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  $$RecommendationsTableFilterComposer get recommendationId {
+    final $$RecommendationsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recommendationId,
+          referencedTable: $state.db.recommendations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$RecommendationFeedbackTableFilterComposer get relatedFeedbackId {
+    final $$RecommendationFeedbackTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.relatedFeedbackId,
+          referencedTable: $state.db.recommendationFeedback,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationFeedbackTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendationFeedback,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$RecommendationFeedbackTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $RecommendationFeedbackTable> {
+  $$RecommendationFeedbackTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get action => $state.composableBuilder(
+    column: $state.table.action,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get reason => $state.composableBuilder(
+    column: $state.table.reason,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+    column: $state.table.source,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get localDate => $state.composableBuilder(
+    column: $state.table.localDate,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get timezoneId => $state.composableBuilder(
+    column: $state.table.timezoneId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $state.composableBuilder(
+    column: $state.table.createdAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  $$RecommendationsTableOrderingComposer get recommendationId {
+    final $$RecommendationsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.recommendationId,
+          referencedTable: $state.db.recommendations,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendations,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$RecommendationFeedbackTableOrderingComposer get relatedFeedbackId {
+    final $$RecommendationFeedbackTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.relatedFeedbackId,
+          referencedTable: $state.db.recommendationFeedback,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$RecommendationFeedbackTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.recommendationFeedback,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+}
+
+typedef $$DashboardModulePreferencesTableCreateCompanionBuilder =
+    DashboardModulePreferencesCompanion Function({
+      required String id,
+      required String userId,
+      required String moduleId,
+      required int ordinal,
+      Value<bool> isVisible,
+      Value<bool> isCollapsed,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$DashboardModulePreferencesTableUpdateCompanionBuilder =
+    DashboardModulePreferencesCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> moduleId,
+      Value<int> ordinal,
+      Value<bool> isVisible,
+      Value<bool> isCollapsed,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$DashboardModulePreferencesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DashboardModulePreferencesTable,
+          DashboardModulePreference,
+          $$DashboardModulePreferencesTableFilterComposer,
+          $$DashboardModulePreferencesTableOrderingComposer,
+          $$DashboardModulePreferencesTableCreateCompanionBuilder,
+          $$DashboardModulePreferencesTableUpdateCompanionBuilder
+        > {
+  $$DashboardModulePreferencesTableTableManager(
+    _$AppDatabase db,
+    $DashboardModulePreferencesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$DashboardModulePreferencesTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$DashboardModulePreferencesTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> moduleId = const Value.absent(),
+                Value<int> ordinal = const Value.absent(),
+                Value<bool> isVisible = const Value.absent(),
+                Value<bool> isCollapsed = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DashboardModulePreferencesCompanion(
+                id: id,
+                userId: userId,
+                moduleId: moduleId,
+                ordinal: ordinal,
+                isVisible: isVisible,
+                isCollapsed: isCollapsed,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String moduleId,
+                required int ordinal,
+                Value<bool> isVisible = const Value.absent(),
+                Value<bool> isCollapsed = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DashboardModulePreferencesCompanion.insert(
+                id: id,
+                userId: userId,
+                moduleId: moduleId,
+                ordinal: ordinal,
+                isVisible: isVisible,
+                isCollapsed: isCollapsed,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$DashboardModulePreferencesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $DashboardModulePreferencesTable> {
+  $$DashboardModulePreferencesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get moduleId => $state.composableBuilder(
+    column: $state.table.moduleId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<int> get ordinal => $state.composableBuilder(
+    column: $state.table.ordinal,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get isVisible => $state.composableBuilder(
+    column: $state.table.isVisible,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<bool> get isCollapsed => $state.composableBuilder(
+    column: $state.table.isCollapsed,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+}
+
+class $$DashboardModulePreferencesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $DashboardModulePreferencesTable> {
+  $$DashboardModulePreferencesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get moduleId => $state.composableBuilder(
+    column: $state.table.moduleId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<int> get ordinal => $state.composableBuilder(
+    column: $state.table.ordinal,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get isVisible => $state.composableBuilder(
+    column: $state.table.isVisible,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<bool> get isCollapsed => $state.composableBuilder(
+    column: $state.table.isCollapsed,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$EducationContentProgressTableCreateCompanionBuilder =
+    EducationContentProgressCompanion Function({
+      required String id,
+      required String userId,
+      required String contentId,
+      required String contentVersion,
+      required String state,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$EducationContentProgressTableUpdateCompanionBuilder =
+    EducationContentProgressCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> contentId,
+      Value<String> contentVersion,
+      Value<String> state,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$EducationContentProgressTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EducationContentProgressTable,
+          EducationContentProgressRow,
+          $$EducationContentProgressTableFilterComposer,
+          $$EducationContentProgressTableOrderingComposer,
+          $$EducationContentProgressTableCreateCompanionBuilder,
+          $$EducationContentProgressTableUpdateCompanionBuilder
+        > {
+  $$EducationContentProgressTableTableManager(
+    _$AppDatabase db,
+    $EducationContentProgressTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$EducationContentProgressTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$EducationContentProgressTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> contentId = const Value.absent(),
+                Value<String> contentVersion = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EducationContentProgressCompanion(
+                id: id,
+                userId: userId,
+                contentId: contentId,
+                contentVersion: contentVersion,
+                state: state,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String contentId,
+                required String contentVersion,
+                required String state,
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EducationContentProgressCompanion.insert(
+                id: id,
+                userId: userId,
+                contentId: contentId,
+                contentVersion: contentVersion,
+                state: state,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$EducationContentProgressTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $EducationContentProgressTable> {
+  $$EducationContentProgressTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get contentId => $state.composableBuilder(
+    column: $state.table.contentId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get contentVersion => $state.composableBuilder(
+    column: $state.table.contentVersion,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get state => $state.composableBuilder(
+    column: $state.table.state,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+}
+
+class $$EducationContentProgressTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $EducationContentProgressTable> {
+  $$EducationContentProgressTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get contentId => $state.composableBuilder(
+    column: $state.table.contentId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get contentVersion => $state.composableBuilder(
+    column: $state.table.contentVersion,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get state => $state.composableBuilder(
+    column: $state.table.state,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$MediaPackPreferencesTableCreateCompanionBuilder =
+    MediaPackPreferencesCompanion Function({
+      required String id,
+      required String userId,
+      required String packId,
+      required String manifestIdentity,
+      Value<String?> lastKnownInstalledVersion,
+      Value<String> downloadPreference,
+      Value<String?> deletionChoice,
+      Value<String?> contentAcknowledgement,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$MediaPackPreferencesTableUpdateCompanionBuilder =
+    MediaPackPreferencesCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> packId,
+      Value<String> manifestIdentity,
+      Value<String?> lastKnownInstalledVersion,
+      Value<String> downloadPreference,
+      Value<String?> deletionChoice,
+      Value<String?> contentAcknowledgement,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$MediaPackPreferencesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MediaPackPreferencesTable,
+          MediaPackPreference,
+          $$MediaPackPreferencesTableFilterComposer,
+          $$MediaPackPreferencesTableOrderingComposer,
+          $$MediaPackPreferencesTableCreateCompanionBuilder,
+          $$MediaPackPreferencesTableUpdateCompanionBuilder
+        > {
+  $$MediaPackPreferencesTableTableManager(
+    _$AppDatabase db,
+    $MediaPackPreferencesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$MediaPackPreferencesTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$MediaPackPreferencesTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> packId = const Value.absent(),
+                Value<String> manifestIdentity = const Value.absent(),
+                Value<String?> lastKnownInstalledVersion = const Value.absent(),
+                Value<String> downloadPreference = const Value.absent(),
+                Value<String?> deletionChoice = const Value.absent(),
+                Value<String?> contentAcknowledgement = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MediaPackPreferencesCompanion(
+                id: id,
+                userId: userId,
+                packId: packId,
+                manifestIdentity: manifestIdentity,
+                lastKnownInstalledVersion: lastKnownInstalledVersion,
+                downloadPreference: downloadPreference,
+                deletionChoice: deletionChoice,
+                contentAcknowledgement: contentAcknowledgement,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String packId,
+                required String manifestIdentity,
+                Value<String?> lastKnownInstalledVersion = const Value.absent(),
+                Value<String> downloadPreference = const Value.absent(),
+                Value<String?> deletionChoice = const Value.absent(),
+                Value<String?> contentAcknowledgement = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MediaPackPreferencesCompanion.insert(
+                id: id,
+                userId: userId,
+                packId: packId,
+                manifestIdentity: manifestIdentity,
+                lastKnownInstalledVersion: lastKnownInstalledVersion,
+                downloadPreference: downloadPreference,
+                deletionChoice: deletionChoice,
+                contentAcknowledgement: contentAcknowledgement,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$MediaPackPreferencesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $MediaPackPreferencesTable> {
+  $$MediaPackPreferencesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get packId => $state.composableBuilder(
+    column: $state.table.packId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get manifestIdentity => $state.composableBuilder(
+    column: $state.table.manifestIdentity,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get lastKnownInstalledVersion =>
+      $state.composableBuilder(
+        column: $state.table.lastKnownInstalledVersion,
+        builder: (column, joinBuilders) =>
+            ColumnFilters(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnFilters<String> get downloadPreference => $state.composableBuilder(
+    column: $state.table.downloadPreference,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get deletionChoice => $state.composableBuilder(
+    column: $state.table.deletionChoice,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get contentAcknowledgement => $state.composableBuilder(
+    column: $state.table.contentAcknowledgement,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+}
+
+class $$MediaPackPreferencesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $MediaPackPreferencesTable> {
+  $$MediaPackPreferencesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get packId => $state.composableBuilder(
+    column: $state.table.packId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get manifestIdentity => $state.composableBuilder(
+    column: $state.table.manifestIdentity,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get lastKnownInstalledVersion =>
+      $state.composableBuilder(
+        column: $state.table.lastKnownInstalledVersion,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<String> get downloadPreference => $state.composableBuilder(
+    column: $state.table.downloadPreference,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get deletionChoice => $state.composableBuilder(
+    column: $state.table.deletionChoice,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get contentAcknowledgement =>
+      $state.composableBuilder(
+        column: $state.table.contentAcknowledgement,
+        builder: (column, joinBuilders) =>
+            ColumnOrderings(column, joinBuilders: joinBuilders),
+      );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
+typedef $$WorkoutPlaylistPreferencesTableCreateCompanionBuilder =
+    WorkoutPlaylistPreferencesCompanion Function({
+      required String id,
+      required String userId,
+      required String providerId,
+      required String playlistReference,
+      Value<String?> displayLabel,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$WorkoutPlaylistPreferencesTableUpdateCompanionBuilder =
+    WorkoutPlaylistPreferencesCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> providerId,
+      Value<String> playlistReference,
+      Value<String?> displayLabel,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$WorkoutPlaylistPreferencesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WorkoutPlaylistPreferencesTable,
+          WorkoutPlaylistPreference,
+          $$WorkoutPlaylistPreferencesTableFilterComposer,
+          $$WorkoutPlaylistPreferencesTableOrderingComposer,
+          $$WorkoutPlaylistPreferencesTableCreateCompanionBuilder,
+          $$WorkoutPlaylistPreferencesTableUpdateCompanionBuilder
+        > {
+  $$WorkoutPlaylistPreferencesTableTableManager(
+    _$AppDatabase db,
+    $WorkoutPlaylistPreferencesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$WorkoutPlaylistPreferencesTableFilterComposer(
+            ComposerState(db, table),
+          ),
+          orderingComposer: $$WorkoutPlaylistPreferencesTableOrderingComposer(
+            ComposerState(db, table),
+          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> providerId = const Value.absent(),
+                Value<String> playlistReference = const Value.absent(),
+                Value<String?> displayLabel = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorkoutPlaylistPreferencesCompanion(
+                id: id,
+                userId: userId,
+                providerId: providerId,
+                playlistReference: playlistReference,
+                displayLabel: displayLabel,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String providerId,
+                required String playlistReference,
+                Value<String?> displayLabel = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorkoutPlaylistPreferencesCompanion.insert(
+                id: id,
+                userId: userId,
+                providerId: providerId,
+                playlistReference: playlistReference,
+                displayLabel: displayLabel,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+        ),
+      );
+}
+
+class $$WorkoutPlaylistPreferencesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $WorkoutPlaylistPreferencesTable> {
+  $$WorkoutPlaylistPreferencesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get providerId => $state.composableBuilder(
+    column: $state.table.providerId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get playlistReference => $state.composableBuilder(
+    column: $state.table.playlistReference,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get displayLabel => $state.composableBuilder(
+    column: $state.table.displayLabel,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+}
+
+class $$WorkoutPlaylistPreferencesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $WorkoutPlaylistPreferencesTable> {
+  $$WorkoutPlaylistPreferencesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+    column: $state.table.id,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get userId => $state.composableBuilder(
+    column: $state.table.userId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get providerId => $state.composableBuilder(
+    column: $state.table.providerId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get playlistReference => $state.composableBuilder(
+    column: $state.table.playlistReference,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get displayLabel => $state.composableBuilder(
+    column: $state.table.displayLabel,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $state.composableBuilder(
+    column: $state.table.updatedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -69304,5 +86132,61 @@ class $AppDatabaseManager {
       $$NutritionSnapshotConstraintResultEvidenceTableTableManager(
         _db,
         _db.nutritionSnapshotConstraintResultEvidence,
+      );
+  $$NutritionGoalVersionsTableTableManager get nutritionGoalVersions =>
+      $$NutritionGoalVersionsTableTableManager(_db, _db.nutritionGoalVersions);
+  $$CoachingConsentEventsTableTableManager get coachingConsentEvents =>
+      $$CoachingConsentEventsTableTableManager(_db, _db.coachingConsentEvents);
+  $$NutritionCoachingPreferencesTableTableManager
+  get nutritionCoachingPreferences =>
+      $$NutritionCoachingPreferencesTableTableManager(
+        _db,
+        _db.nutritionCoachingPreferences,
+      );
+  $$RecoveryObservationsTableTableManager get recoveryObservations =>
+      $$RecoveryObservationsTableTableManager(_db, _db.recoveryObservations);
+  $$ReadinessSnapshotsTableTableManager get readinessSnapshots =>
+      $$ReadinessSnapshotsTableTableManager(_db, _db.readinessSnapshots);
+  $$ReadinessSnapshotEvidenceTableTableManager get readinessSnapshotEvidence =>
+      $$ReadinessSnapshotEvidenceTableTableManager(
+        _db,
+        _db.readinessSnapshotEvidence,
+      );
+  $$RecommendationsTableTableManager get recommendations =>
+      $$RecommendationsTableTableManager(_db, _db.recommendations);
+  $$RecommendationEvidenceTableTableManager get recommendationEvidence =>
+      $$RecommendationEvidenceTableTableManager(
+        _db,
+        _db.recommendationEvidence,
+      );
+  $$CoachingEligibilityEvaluationsTableTableManager
+  get coachingEligibilityEvaluations =>
+      $$CoachingEligibilityEvaluationsTableTableManager(
+        _db,
+        _db.coachingEligibilityEvaluations,
+      );
+  $$RecommendationFeedbackTableTableManager get recommendationFeedback =>
+      $$RecommendationFeedbackTableTableManager(
+        _db,
+        _db.recommendationFeedback,
+      );
+  $$DashboardModulePreferencesTableTableManager
+  get dashboardModulePreferences =>
+      $$DashboardModulePreferencesTableTableManager(
+        _db,
+        _db.dashboardModulePreferences,
+      );
+  $$EducationContentProgressTableTableManager get educationContentProgress =>
+      $$EducationContentProgressTableTableManager(
+        _db,
+        _db.educationContentProgress,
+      );
+  $$MediaPackPreferencesTableTableManager get mediaPackPreferences =>
+      $$MediaPackPreferencesTableTableManager(_db, _db.mediaPackPreferences);
+  $$WorkoutPlaylistPreferencesTableTableManager
+  get workoutPlaylistPreferences =>
+      $$WorkoutPlaylistPreferencesTableTableManager(
+        _db,
+        _db.workoutPlaylistPreferences,
       );
 }

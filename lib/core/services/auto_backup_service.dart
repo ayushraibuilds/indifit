@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
-import '../backup/backup_schema.dart';
+import '../backup/backup_v10.dart';
 import '../utils/app_logger.dart';
 
 class AutoBackupService {
@@ -25,7 +25,7 @@ class AutoBackupService {
       }
 
       final prefs = await SharedPreferences.getInstance();
-      final backupData = await BackupData.createFromDatabase(_db, prefs);
+      final backupData = await BackupV10Data.createFromDatabase(_db, prefs);
       final jsonStr = jsonEncode(backupData.toJson());
 
       // Rotate existing backups (1 -> 2, 2 -> 3)

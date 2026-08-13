@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
+import '../dashboard/today_surface_controller.dart';
+import 'nutrition_recipe_editor_screen.dart';
 import 'saved_recipe_log_controller.dart';
 
 class SavedRecipeLogScreen extends ConsumerStatefulWidget {
@@ -58,9 +60,31 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     final selected = state.selectedRecipe;
     return Scaffold(
       appBar: AppBar(
-        title: Text(selected == null ? 'Saved Recipes' : 'Log Recipe'),
-        backgroundColor: AppColors.surface,
+        title: Text(selected == null ? 'Recipes' : 'Add recipe'),
+        backgroundColor: context.b05Colors.surface,
         elevation: 0,
+        actions: [
+          if (selected == null)
+            IconButton(
+              tooltip: 'Create recipe',
+              icon: const Icon(Icons.add_box_outlined),
+              onPressed: () async {
+                await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NutritionRecipeEditorScreen(),
+                  ),
+                );
+                if (mounted) {
+                  unawaited(
+                    ref
+                        .read(savedRecipeLogControllerProvider.notifier)
+                        .loadRecipes(),
+                  );
+                }
+              },
+            ),
+        ],
       ),
       body: selected == null
           ? _buildRecipeList(context, state)
@@ -95,12 +119,30 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
               state,
               onRetry: () => controller.loadRecipes(),
             ),
+          if (state.drafts.isNotEmpty) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'RECIPES IN PROGRESS',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: context.b05Colors.action,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...state.drafts.map(
+              (draft) => _buildDraftCard(context, draft, controller),
+            ),
+            const SizedBox(height: 12),
+          ],
           Expanded(
             child:
                 state.status == SavedRecipeLogStatus.loadingRecipes ||
                     state.status == SavedRecipeLogStatus.idle
                 ? const Center(child: CircularProgressIndicator())
-                : state.recipes.isEmpty
+                : state.recipes.isEmpty && state.drafts.isEmpty
                 ? _buildEmptyRecipes(state.query)
                 : ListView.separated(
                     padding: const EdgeInsets.only(top: 4, bottom: 24),
@@ -117,6 +159,43 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     );
   }
 
+  Widget _buildDraftCard(
+    BuildContext context,
+    NutritionRecipeDraftModel draft,
+    SavedRecipeLogController controller,
+  ) {
+    return Card(
+      key: ValueKey('recipe_draft_${draft.version.id}'),
+      color: context.b05Colors.action.withValues(alpha: 0.08),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: context.b05Colors.action.withValues(alpha: 0.12),
+          child: Icon(Icons.edit_note_rounded, color: context.b05Colors.action),
+        ),
+        title: Text(
+          draft.recipe.name,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Text(
+          '${draft.version.ingredients.length} ingredient${draft.version.ingredients.length == 1 ? '' : 's'} · Finish this recipe before logging it',
+        ),
+        trailing: Icon(Icons.edit_outlined, color: context.b05Colors.action),
+        onTap: () async {
+          await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => NutritionRecipeEditorScreen(
+                recipeId: draft.recipe.id,
+                draftVersionId: draft.version.id,
+              ),
+            ),
+          );
+          if (context.mounted) unawaited(controller.loadRecipes());
+        },
+      ),
+    );
+  }
+
   Widget _buildRecipeCard(
     BuildContext context,
     NutritionRecipeModel recipe,
@@ -125,9 +204,12 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     return Card(
       key: ValueKey('saved_recipe_${recipe.id}'),
       child: ListTile(
-        leading: const CircleAvatar(
-          backgroundColor: Color(0xFFE8F5E9),
-          child: Icon(Icons.menu_book_rounded, color: AppColors.success),
+        leading: CircleAvatar(
+          backgroundColor: context.b05Colors.success.container,
+          child: Icon(
+            Icons.menu_book_rounded,
+            color: context.b05Colors.success.indicator,
+          ),
         ),
         title: Text(
           recipe.name,
@@ -135,10 +217,29 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
         ),
         subtitle: Text(
           recipe.currentVersionId == null
-              ? 'No published version'
-              : 'Current published version available',
+              ? 'Still being prepared'
+              : 'Ready to add',
         ),
-        trailing: const Icon(Icons.chevron_right_rounded),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Edit recipe',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () async {
+                await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        NutritionRecipeEditorScreen(recipeId: recipe.id),
+                  ),
+                );
+                if (context.mounted) unawaited(controller.loadRecipes());
+              },
+            ),
+            const Icon(Icons.chevron_right_rounded),
+          ],
+        ),
         onTap: () => controller.selectRecipe(recipe),
       ),
     );
@@ -151,10 +252,10 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.menu_book_outlined,
               size: 56,
-              color: AppColors.textMuted,
+              color: context.b05Colors.textSecondary,
             ),
             const SizedBox(height: 12),
             Text(
@@ -165,10 +266,10 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Recipes must have a published immutable version before they can be logged.',
+            Text(
+              'Create a recipe for meals you make often.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: context.b05Colors.textSecondary),
             ),
           ],
         ),
@@ -230,22 +331,22 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Version ${version.versionNumber} • Updated ${_formatDate(version.updatedAt)}',
-            style: const TextStyle(color: AppColors.textSecondary),
+            'Updated ${_formatDate(version.updatedAt)}',
+            style: TextStyle(color: context.b05Colors.textSecondary),
           ),
           if (state.versions.length > 1) ...[
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: version.id,
               decoration: const InputDecoration(
-                labelText: 'Published recipe version',
+                labelText: 'Recipe update',
                 border: OutlineInputBorder(),
               ),
               items: [
                 for (final item in state.versions)
                   DropdownMenuItem(
                     value: item.id,
-                    child: Text('Version ${item.versionNumber}'),
+                    child: Text('Updated ${_formatDate(item.updatedAt)}'),
                   ),
               ],
               onChanged: isFinalizing
@@ -261,7 +362,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
           ],
           const SizedBox(height: 20),
           const Text(
-            'Amount to log',
+            'How much?',
             style: TextStyle(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
@@ -313,8 +414,8 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
               decoration: InputDecoration(
                 labelText:
                     state.amountKind == NutritionRecipeLogAmountKind.fraction
-                    ? 'Positive fraction'
-                    : 'Positive scale factor',
+                    ? 'Amount of the recipe'
+                    : 'How many recipes?',
                 helperText:
                     'Keep the exact value; nutrition is rounded only for display.',
                 border: const OutlineInputBorder(),
@@ -349,7 +450,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                         ? null
                         : () => controller.preview(),
                     child: Text(
-                      isPreviewLoading ? 'Calculating…' : 'Preview nutrition',
+                      isPreviewLoading ? 'Calculating…' : 'Review nutrition',
                     ),
                   ),
                 ),
@@ -392,7 +493,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     final facts = preview.calculation.facts;
     final incomplete = preview.isPartial || preview.isUnknown;
     return Card(
-      color: AppColors.surface,
+      color: context.b05Colors.surface,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -400,11 +501,11 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.calculate_outlined, color: AppColors.primary),
+                Icon(Icons.calculate_outlined, color: context.b05Colors.action),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Preview • ${preview.amount.displayLabel}',
+                    'Nutrition for ${preview.amount.displayLabel}',
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -412,9 +513,9 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Recipe version ${preview.version.versionNumber} is fixed for this preview.',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              'Using the latest saved ingredients for this recipe.',
+              style: TextStyle(
+                color: context.b05Colors.textSecondary,
                 fontSize: 12,
               ),
             ),
@@ -435,28 +536,16 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Completeness: ${preview.calculation.completeness.state.name}',
+              incomplete
+                  ? 'Some nutrition information is missing'
+                  : 'Nutrition information is available',
               style: TextStyle(
-                color: incomplete ? AppColors.warning : AppColors.success,
+                color: incomplete
+                    ? context.b05Colors.warning.foreground
+                    : context.b05Colors.success.foreground,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            if (preview.calculation.missingNutrientIds.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  'Unknown nutrients: ${preview.calculation.missingNutrientIds.join(', ')}',
-                  style: const TextStyle(color: AppColors.textSecondary),
-                ),
-              ),
-            if (preview.calculation.warnings.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  preview.calculation.warnings.join('\n'),
-                  style: const TextStyle(color: AppColors.warning),
-                ),
-              ),
             if (incomplete)
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
@@ -464,9 +553,9 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                 onChanged: (value) => ref
                     .read(savedRecipeLogControllerProvider.notifier)
                     .acknowledgePartial(value ?? false),
-                title: const Text('Log with incomplete nutrition'),
+                title: const Text('Add with missing nutrition'),
                 subtitle: const Text(
-                  'Unknown nutrients are preserved as unknown, not zero.',
+                  'Missing nutrition stays missing rather than becoming zero.',
                 ),
               ),
           ],
@@ -477,7 +566,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
 
   Widget _nutrientChip(String id, NutrientFact? fact) {
     final text = fact == null || !fact.isAvailable
-        ? 'Unknown'
+        ? '—'
         : _factDisplay(id, fact);
     final label = switch (id) {
       'energy' => 'Energy',
@@ -499,7 +588,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     final precision = id == 'energy' ? 0 : 1;
     final point = fact.point?.value.format(decimalPlaces: precision);
     if (fact.lower == null && fact.upper == null) {
-      return '${point ?? 'Unknown'}${id == 'energy' ? ' kcal' : ' g'}';
+      return '${point ?? '—'}${id == 'energy' ? ' kcal' : ' g'}';
     }
     final lower = fact.lower?.value.format(decimalPlaces: precision) ?? point;
     final upper = fact.upper?.value.format(decimalPlaces: precision) ?? point;
@@ -507,13 +596,14 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
   }
 
   Widget _buildSuccess(BuildContext context, SavedRecipeLogState state) => Card(
-    color: AppColors.success.withValues(alpha: 0.12),
+    color: context.b05Colors.success.container,
     child: ListTile(
-      leading: const Icon(Icons.check_circle_rounded, color: AppColors.success),
-      title: const Text('Recipe logged'),
-      subtitle: Text(
-        'Saved to immutable history${state.savedSnapshot?.recipeVersionId == null ? '' : ' • version preserved'}',
+      leading: Icon(
+        Icons.check_circle_rounded,
+        color: context.b05Colors.success.indicator,
       ),
+      title: const Text('Recipe added'),
+      subtitle: Text('Added to ${_mealLabel(widget.mealType)}'),
       trailing: TextButton(
         onPressed: () => Navigator.pop(context, true),
         child: const Text('Done'),
@@ -526,13 +616,16 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     SavedRecipeLogState state, {
     required VoidCallback onRetry,
   }) => Card(
-    color: AppColors.danger.withValues(alpha: 0.08),
+    color: context.b05Colors.danger.container,
     child: Padding(
       padding: const EdgeInsets.all(12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline_rounded, color: AppColors.danger),
+          Icon(
+            Icons.error_outline_rounded,
+            color: context.b05Colors.danger.indicator,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -567,39 +660,72 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
   Future<void> _finalizeWithStoredTimezone(
     SavedRecipeLogController controller,
   ) async {
-    final loggedAt = (widget.selectedDate ?? DateTime.now()).toUtc();
     final timezoneId = await ref
         .read(localTimezoneServiceProvider)
         .currentTimezoneId();
-    final localDate = ref
-        .read(localScheduleDateServiceProvider)
-        .localDateFor(loggedAt, timezoneId);
+    final dates = ref.read(localScheduleDateServiceProvider);
+    final localDate = widget.selectedDate == null
+        ? dates.localDateFor(DateTime.now().toUtc(), timezoneId)
+        : _localDateKey(widget.selectedDate!);
+    final loggedAt = widget.selectedDate == null
+        ? DateTime.now().toUtc()
+        : dates.instantForLocalDate(localDate, timezoneId);
     await controller.finalize(
       mealCategory: widget.mealType,
       loggedAt: loggedAt,
       localDate: localDate,
       timezoneId: timezoneId,
     );
+    await _returnToTodayAfterSuccessfulSave();
   }
 
   Future<void> _retryWithStoredTimezone(
     SavedRecipeLogController controller,
   ) async {
-    final loggedAt = (widget.selectedDate ?? DateTime.now()).toUtc();
     final timezoneId = await ref
         .read(localTimezoneServiceProvider)
         .currentTimezoneId();
-    final localDate = ref
-        .read(localScheduleDateServiceProvider)
-        .localDateFor(loggedAt, timezoneId);
+    final dates = ref.read(localScheduleDateServiceProvider);
+    final localDate = widget.selectedDate == null
+        ? dates.localDateFor(DateTime.now().toUtc(), timezoneId)
+        : _localDateKey(widget.selectedDate!);
+    final loggedAt = widget.selectedDate == null
+        ? DateTime.now().toUtc()
+        : dates.instantForLocalDate(localDate, timezoneId);
     await controller.retryFinalize(
       mealCategory: widget.mealType,
       loggedAt: loggedAt,
       localDate: localDate,
       timezoneId: timezoneId,
     );
+    await _returnToTodayAfterSuccessfulSave();
+  }
+
+  Future<void> _returnToTodayAfterSuccessfulSave() async {
+    if (!mounted ||
+        ref.read(savedRecipeLogControllerProvider).status !=
+            SavedRecipeLogStatus.success) {
+      return;
+    }
+    ref.read(todayNutritionRevisionProvider.notifier).state++;
+    ref.invalidate(b04ProductionRecommendationContextProvider);
+    ref.invalidate(b04CurrentFoodControllerProvider);
+    Navigator.of(context).pop(true);
   }
 
   String _formatDate(DateTime value) =>
       '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+
+  String _mealLabel(String value) => switch (value.trim().toLowerCase()) {
+    'breakfast' => 'breakfast',
+    'lunch' => 'lunch',
+    'dinner' => 'dinner',
+    'snack' || 'snacks' => 'snack',
+    _ => 'meal',
+  };
+
+  static String _localDateKey(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
 }

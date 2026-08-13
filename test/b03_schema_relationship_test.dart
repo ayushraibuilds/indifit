@@ -13,7 +13,7 @@ void main() {
             "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'nutrition_%'",
           )
           .get();
-      expect(tables, hasLength(26));
+      expect(tables, hasLength(28));
       final indexes = await db
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'nutrition_%'",

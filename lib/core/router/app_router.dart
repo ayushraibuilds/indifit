@@ -10,14 +10,18 @@ import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../features/activity/b02_activity_creation_screen.dart';
 import '../../features/calendar/program_calendar_screen.dart';
 import '../../features/dashboard/main_navigation_scaffold.dart';
+import '../../features/education/learn_screen.dart';
 import '../../features/equipment/equipment_profile_editor_screen.dart';
 import '../../features/equipment/equipment_profiles_screen.dart';
 import '../../features/equipment/exercise_preference_editor_screen.dart';
+import '../../features/exercise_library/exercise_library_screen.dart';
 import '../../features/food_log/ai_meal_logger_screen.dart';
 import '../../features/food_log/ai_meal_planner_screen.dart';
 import '../../features/food_log/nutrition_estimate_review_screen.dart';
+import '../../features/food_log/nutrition_recipe_editor_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/routine_wizard_screen.dart';
+import '../../features/profile/profile_screen.dart';
 import '../../features/program_authoring/program_author_screen.dart';
 import '../../features/program_authoring/program_review_screen.dart';
 import '../../features/progress/achievements_screen.dart';
@@ -30,6 +34,7 @@ import '../../features/settings/settings_screen.dart';
 import '../../features/travel/travel_mode_screen.dart';
 import '../../features/workout_player/b02_strength_player_screen.dart';
 import '../../features/workout_player/b02_strength_summary_screen.dart';
+import '../../features/workout_player/quick_workout_screen.dart';
 import '../../features/workout_player/routine_display_screen.dart';
 import '../../features/workout_player/routine_editor_screen.dart';
 import '../../features/workout_player/workout_player_screen.dart';
@@ -38,6 +43,47 @@ import '../../features/workout_player/workout_summary_screen.dart';
 /// Tracks whether the user has completed onboarding. Initialized from
 /// SharedPreferences in main.dart and updated when onboarding finishes.
 final onboardingCompletedProvider = StateProvider<bool>((ref) => false);
+
+/// Parses the food route's local civil date without applying a timezone or
+/// silently substituting the current day. The dashboard emits this exact
+/// `yyyy-MM-dd` form so the selected Today date survives navigation.
+DateTime? parseFoodRouteDate(String? raw) {
+  final value = raw?.trim();
+  if (value == null || !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
+    return null;
+  }
+  final parts = value.split('-');
+  final year = int.tryParse(parts[0]);
+  final month = int.tryParse(parts[1]);
+  final day = int.tryParse(parts[2]);
+  if (year == null || month == null || day == null) return null;
+
+  final parsed = DateTime(year, month, day);
+  if (parsed.year != year || parsed.month != month || parsed.day != day) {
+    return null;
+  }
+  return parsed;
+}
+
+String? parseFoodRouteMealType(String? raw) {
+  final value = raw?.trim().toLowerCase();
+  return switch (value) {
+    'breakfast' ||
+    'lunch' ||
+    'dinner' ||
+    'snack' ||
+    'snacks' => value == 'snacks' ? 'snack' : value,
+    _ => null,
+  };
+}
+
+MainNavigationScaffold foodRouteDestination({String? mealType, String? date}) =>
+    MainNavigationScaffold(
+      initialIndex: 2,
+      foodMealType: parseFoodRouteMealType(mealType),
+      foodSelectedDate: parseFoodRouteDate(date),
+      foodReturnToParentOnSave: true,
+    );
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -79,10 +125,49 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RoutineDisplayScreen(),
       ),
       GoRoute(
+        path: '/training',
+        builder: (context, state) =>
+            const MainNavigationScaffold(initialIndex: 1),
+      ),
+      GoRoute(
+        path: '/progress',
+        builder: (context, state) =>
+            const MainNavigationScaffold(initialIndex: 3),
+      ),
+      // Preserve the former Training entry point without reintroducing a
+      // competing bottom-navigation concept.
+      GoRoute(path: '/workouts', redirect: (context, state) => '/training'),
+      // Exercise Library now lives under Training, but a saved or external
+      // deep link still opens the same production library safely.
+      GoRoute(
+        path: '/exercises',
+        builder: (context, state) => const ExerciseLibraryScreen(),
+      ),
+      GoRoute(
         path: '/food',
+        builder: (context, state) => foodRouteDestination(
+          mealType: state.uri.queryParameters['mealType'],
+          date: state.uri.queryParameters['date'],
+        ),
+      ),
+      GoRoute(
+        path: '/food/ai',
         builder: (context, state) {
-          final mealType = state.uri.queryParameters['mealType'] ?? 'breakfast';
-          return AiMealLoggerScreen(mealType: mealType);
+          final mealType = parseFoodRouteMealType(
+            state.uri.queryParameters['mealType'],
+          );
+          if (mealType == null) {
+            return foodRouteDestination(
+              date: state.uri.queryParameters['date'],
+            );
+          }
+          final selectedDate = parseFoodRouteDate(
+            state.uri.queryParameters['date'],
+          );
+          return AiMealLoggerScreen(
+            mealType: mealType,
+            selectedDate: selectedDate,
+          );
         },
       ),
       GoRoute(
@@ -98,9 +183,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/food/recipes/edit',
+        builder: (context, state) => NutritionRecipeEditorScreen(
+          recipeId: state.uri.queryParameters['recipeId'],
+          draftVersionId: state.uri.queryParameters['draftVersionId'],
+        ),
+      ),
+      GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
       ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings/profile',
+        redirect: (context, state) => '/profile',
+      ),
+      GoRoute(path: '/learn', builder: (context, state) => const LearnScreen()),
       GoRoute(
         path: '/health-hub',
         builder: (context, state) => const HealthSyncHubScreen(),
@@ -200,6 +301,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/quick-workout',
+        builder: (context, state) => const QuickWorkoutScreen(),
+      ),
+      GoRoute(
         path: '/activity-create',
         builder: (context, state) {
           final rawType = state.uri.queryParameters['type'];
@@ -237,7 +342,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/calendar',
-        builder: (context, state) => const ProgramCalendarScreen(),
+        builder: (context, state) => ProgramCalendarScreen(
+          initialLocalDate: state.uri.queryParameters['date'],
+        ),
       ),
       GoRoute(
         path: '/equipment-profiles',

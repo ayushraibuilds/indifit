@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/nutrition_estimates.dart';
+import '../../core/presentation/consumer_copy.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/typed_quantities.dart';
 import 'nutrition_estimate_review_controller.dart';
 
@@ -48,7 +50,7 @@ class _NutritionEstimateReviewScreenState
       error: (error, _) => Scaffold(
         appBar: AppBar(title: const Text('Review estimate')),
         body: _ErrorBody(
-          message: 'The estimate repository is unavailable.',
+          message: 'Nutrition estimates aren’t ready right now. Try again.',
           onRetry: () => ref.invalidate(nutritionEstimateRepositoryProvider),
         ),
       ),
@@ -126,10 +128,14 @@ class _NutritionEstimateReviewScreenState
             estimate.quantity == null ||
             estimate.quantity!.unit != QuantityUnit.serving ||
             estimate.quantity!.amount.toString() != rawQuantity;
-      } on QuantityError catch (error) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.message)));
+      } on QuantityError {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ProductFailurePresentation.fromCode('invalid_amount').message,
+            ),
+          ),
+        );
         return;
       }
     }
@@ -203,8 +209,8 @@ class _ReviewBody extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Text(
                 estimate.completeness.missingNutrientIds.isEmpty
-                    ? 'Nutrition is unknown.'
-                    : 'Partial nutrition. Missing: ${estimate.completeness.missingNutrientIds.join(', ')}.',
+                    ? 'Nutrition details are not available yet.'
+                    : 'Some nutrition details are not available yet.',
               ),
             ),
           ),
@@ -251,7 +257,7 @@ class _ReviewBody extends StatelessWidget {
         if (state.status == NutritionEstimateReviewControllerStatus.accepted ||
             state.status == NutritionEstimateReviewControllerStatus.corrected)
           const Text(
-            'Saved. Historical consumption snapshots keep their original estimate lineage.',
+            'Saved. Previously logged meals keep their original estimate.',
           ),
         const Text(
           'Temporary photos are deleted after processing, cancellation, or failure. Photos and provider secrets are not backed up.',
@@ -290,15 +296,10 @@ class _MetadataCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lines = <String>[
-      'Source: ${estimate.source.stableId}',
-      'Review: ${estimate.reviewState.stableId}',
-      'Confidence: ${estimate.confidence.stableId}',
-      if (estimate.provider != null) 'Provider category: ${estimate.provider}',
-      if (estimate.model != null) 'Model metadata: ${estimate.model}',
-      if (estimate.ruleVersion != null) 'Rule version: ${estimate.ruleVersion}',
-      if (estimate.supersedesId != null)
-        'Corrects estimate: ${estimate.supersedesId}',
-      'Completeness: ${estimate.completeness.state.name}',
+      'Confidence: ${ConsumerCopy.state(estimate.confidence.stableId)}',
+      estimate.completeness.missingNutrientIds.isEmpty
+          ? 'All requested nutrition details are available.'
+          : 'Some nutrition details are not available yet.',
     ];
     return Card(
       child: Padding(
@@ -307,7 +308,7 @@ class _MetadataCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Provenance and uncertainty',
+              'About this estimate',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -342,7 +343,11 @@ class _NutrientRow extends StatelessWidget {
         contentPadding: EdgeInsets.zero,
         title: Text(label),
         subtitle: Text(value),
-        trailing: Text(fact?.status.stableId ?? 'missing'),
+        trailing: Text(
+          fact == null
+              ? 'Not available'
+              : ConsumerCopy.state(fact!.status.stableId),
+        ),
       ),
     );
   }

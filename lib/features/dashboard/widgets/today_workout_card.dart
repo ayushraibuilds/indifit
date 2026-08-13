@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/colors.dart';
+import '../../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/workout_repository.dart';
 import '../../workout_player/widgets/manual_log_sheet.dart';
@@ -26,13 +27,9 @@ class TodayWorkoutCard extends ConsumerWidget {
   });
 
   void _showManualLogSheet(BuildContext context) {
-    showModalBottomSheet(
+    showIndiFitBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      semanticLabel: 'Log completed workout',
       builder: (context) => ManualLogSheet(
         selectedDate: selectedDate,
         initialWorkoutName: isRestDay ? 'Extra Workout' : todayWorkoutName,

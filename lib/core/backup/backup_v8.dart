@@ -53,7 +53,7 @@ class BackupV8Data {
     return BackupV8Data(
       version: currentVersion,
       timestamp: legacy.timestamp,
-      schemaVersion: db.schemaVersion,
+      schemaVersion: db.schemaVersion > 18 ? 18 : db.schemaVersion,
       legacy: legacy,
       nutrition: graph,
     );

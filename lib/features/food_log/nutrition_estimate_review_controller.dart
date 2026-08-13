@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/nutrients.dart';
 import '../../core/nutrition_estimates.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/repositories/nutrition_estimate_repository.dart';
 
 enum NutritionEstimateReviewControllerStatus {
@@ -226,9 +227,7 @@ class NutritionEstimateReviewController
               ? error.code
               : 'estimate_operation_failed'
         : 'estimate_operation_failed';
-    final message = error is NutritionEstimateError
-        ? error.message
-        : 'The estimate could not be saved. You can retry.';
+    final message = ProductFailurePresentation.fromCode(code).message;
     state = state.copyWith(
       status: NutritionEstimateReviewControllerStatus.failure,
       errorCode: code,

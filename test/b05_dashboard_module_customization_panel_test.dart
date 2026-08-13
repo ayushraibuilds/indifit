@@ -1,0 +1,135 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/features/dashboard/dashboard_module_registry.dart';
+import 'package:indifit/features/dashboard/widgets/dashboard_module_customization_panel.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets(
+    'customization controls are semantic, focusable and provide non-drag reorder actions',
+    (tester) async {
+      final registry = DashboardModuleRegistry([
+        const DashboardModuleDescriptor(
+          id: 'workout',
+          defaultOrdinal: 0,
+          label: 'Workout',
+          customizationLabel: 'Workout',
+          eligibility: DashboardModuleEligibility.workout,
+        ),
+        const DashboardModuleDescriptor(
+          id: 'meals',
+          defaultOrdinal: 1,
+          label: 'Meals',
+          customizationLabel: 'Meals',
+          eligibility: DashboardModuleEligibility.nutrition,
+        ),
+        const DashboardModuleDescriptor(
+          id: 'next',
+          defaultOrdinal: 2,
+          label: 'Next action',
+          customizationLabel: 'Next action',
+          eligibility: DashboardModuleEligibility.nextAction,
+          collapsible: false,
+        ),
+      ]);
+      final layout = registry.normalize(const []);
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MediaQuery(
+              data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+              child: SizedBox(
+                width: 240,
+                height: 800,
+                child: DashboardModuleCustomizationList(
+                  layout: layout,
+                  isSaving: false,
+                  onMove: (_, _) async {},
+                  onVisibilityChanged: (_, _) async {},
+                  onCollapsedChanged: (moduleId, isCollapsed) =>
+                      Future<void>.value(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byTooltip('More options for Meals'), findsOneWidget);
+      expect(find.byTooltip('More options for Workout'), findsOneWidget);
+      expect(find.byType(FocusTraversalGroup), findsAtLeastNWidgets(1));
+      expect(
+        tester.getSize(find.byTooltip('More options for Meals')).height,
+        greaterThanOrEqualTo(48),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      expect(FocusManager.instance.primaryFocus, isNotNull);
+
+      semantics.dispose();
+    },
+  );
+
+  testWidgets('saving state is announced and disables repeat commands', (
+    tester,
+  ) async {
+    final registry = DashboardModuleRegistry([
+      const DashboardModuleDescriptor(
+        id: 'workout',
+        defaultOrdinal: 0,
+        label: 'Workout',
+        customizationLabel: 'Workout',
+        eligibility: DashboardModuleEligibility.workout,
+      ),
+      const DashboardModuleDescriptor(
+        id: 'meals',
+        defaultOrdinal: 1,
+        label: 'Meals',
+        customizationLabel: 'Meals',
+        eligibility: DashboardModuleEligibility.nutrition,
+      ),
+    ]);
+    final semantics = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 240,
+              height: 800,
+              child: DashboardModuleCustomizationList(
+                layout: registry.normalize(const []),
+                isSaving: true,
+                onMove: (_, _) => Future<void>.value(),
+                onVisibilityChanged: (_, _) => Future<void>.value(),
+                onCollapsedChanged: (_, _) => Future<void>.value(),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.bySemanticsLabel('Saving dashboard customization'),
+        findsOneWidget,
+      );
+      expect(
+        tester.getSemantics(find.byTooltip('More options for Meals')),
+        matchesSemantics(
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+          hasExpandedState: true,
+          isExpanded: false,
+          hasTapAction: false,
+        ),
+      );
+    } finally {
+      semantics.dispose();
+    }
+  });
+}

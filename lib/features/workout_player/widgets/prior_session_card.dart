@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/database/app_database.dart';
 
 class PriorSessionCard extends StatelessWidget {
@@ -17,121 +18,133 @@ class PriorSessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.history_rounded,
-                      color: AppColors.primary,
-                      size: 18,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Prior Session Performance',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-                if (bestPrSet != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text('👑 ', style: TextStyle(fontSize: 10)),
-                        Text(
-                          'PR: ${bestPrSet!.weight.toStringAsFixed(1)}kg x ${bestPrSet!.reps}',
-                          style: const TextStyle(
-                            color: Colors.amber,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (priorSets.isEmpty)
-              const Text(
-                'No previous logs found for this exercise. Start your baseline weight today!',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-              )
-            else
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: priorSets.map((s) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBackground,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Text(
-                      'Set ${s.setNumber}: ${s.weight.toStringAsFixed(1)} kg × ${s.reps}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
+    final colors = context.b05Colors;
+    return B05Surface(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stackHeader =
+                  constraints.maxWidth < B05Layout.compactBreakpoint ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.3;
+              final heading = Row(
                 children: [
-                  const Icon(
-                    Icons.auto_awesome_rounded,
-                    color: AppColors.primary,
-                    size: 14,
+                  Icon(
+                    Icons.history_rounded,
+                    color: colors.action,
+                    size: B05Layout.iconSmall,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: B05Layout.space8),
                   Expanded(
                     child: Text(
-                      'AI Recommendation: ${suggestedWeight.toStringAsFixed(1)} kg for progressive overload',
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                      ),
+                      'Last time',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
+                      style: B05Typography.label(context),
                     ),
                   ),
                 ],
-              ),
+              );
+              final prBadge = bestPrSet == null
+                  ? null
+                  : B05Surface(
+                      tone: B05SurfaceTone.inset,
+                      radius: B05SurfaceRadius.small,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: B05Layout.space8,
+                        vertical: B05Layout.space4,
+                      ),
+                      child: Text(
+                        'PR: ${bestPrSet!.weight.toStringAsFixed(1)} kg × ${bestPrSet!.reps}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: B05Typography.caption(context).copyWith(
+                          color: colors.warning.indicator,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+
+              if (prBadge == null) return heading;
+              if (stackHeader) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    heading,
+                    const SizedBox(height: B05Layout.space8),
+                    prBadge,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: heading),
+                  const SizedBox(width: B05Layout.space8),
+                  Flexible(child: prBadge),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          if (priorSets.isEmpty)
+            Text(
+              'No previous sets yet. Start with a comfortable baseline today.',
+              style: B05Typography.caption(context),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: priorSets.map((s) {
+                return B05Surface(
+                  tone: B05SurfaceTone.inset,
+                  radius: B05SurfaceRadius.small,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: B05Layout.space8,
+                    vertical: B05Layout.space4,
+                  ),
+                  child: Text(
+                    'Set ${s.setNumber}: ${s.weight.toStringAsFixed(1)} kg × ${s.reps}',
+                    style: B05Typography.caption(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w500),
+                  ),
+                );
+              }).toList(),
             ),
-          ],
-        ),
+          const SizedBox(height: 12),
+          B05Surface(
+            tone: B05SurfaceTone.selected,
+            radius: B05SurfaceRadius.small,
+            padding: const EdgeInsets.symmetric(
+              horizontal: B05Layout.space12,
+              vertical: B05Layout.space8,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  color: colors.action,
+                  size: B05Layout.iconSmall,
+                ),
+                const SizedBox(width: B05Layout.space8),
+                Expanded(
+                  child: Text(
+                    'Suggested starting weight: ${suggestedWeight.toStringAsFixed(1)} kg',
+                    style: B05Typography.caption(context).copyWith(
+                      color: colors.action,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

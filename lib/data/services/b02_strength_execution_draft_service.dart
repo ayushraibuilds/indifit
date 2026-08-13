@@ -11,21 +11,18 @@ class B02StrengthExecutionDraftService {
     required B02StrengthExecutionSlot slot,
     required int reps,
     double? loadKg,
+    B02LoadBasis? actualLoadBasis,
     int? rpe,
     B02SetRole role = B02SetRole.working,
     B02TechniqueFields? technique,
     String? actualExerciseId,
     String? actualExerciseNameSnapshot,
     String? substitutionReason,
+    String? sourceExercisePrescriptionId,
+    bool useSlotPrescription = true,
   }) {
     if (reps < 1) {
       throw const B02ValidationException('Repetitions must be positive.');
-    }
-    final canonicalExerciseId = (actualExerciseId ?? slot.exerciseId)?.trim();
-    if (canonicalExerciseId == null || canonicalExerciseId.isEmpty) {
-      throw const B02ValidationException(
-        'This slot has no resolved canonical exercise; recover the draft before logging it.',
-      );
     }
     final performedId = 'performed:${slot.id}';
     final existingIndex = state.performedExercises.indexWhere(
@@ -34,19 +31,36 @@ class B02StrengthExecutionDraftService {
     final existing = existingIndex < 0
         ? null
         : state.performedExercises[existingIndex];
+    // A recovered substitution remains the actual exercise until the user
+    // explicitly chooses another one. Falling back to the planned slot here
+    // would silently reattribute all earlier performed sets after resume.
+    final canonicalExerciseId =
+        (actualExerciseId ?? existing?.actualExerciseId ?? slot.exerciseId)
+            ?.trim();
+    if (canonicalExerciseId == null || canonicalExerciseId.isEmpty) {
+      throw const B02ValidationException(
+        'This slot has no resolved canonical exercise; recover the draft before logging it.',
+      );
+    }
+    final offeredRecommendation =
+        existing?.targetRecommendation ?? state.targetRecommendations[slot.id];
+    final override = state.targetOverrides[slot.id];
     final ordinal = existing?.sets.length ?? 0;
     final set = B02PerformedSet(
       id: '$performedId:set:$ordinal',
       performedExerciseId: performedId,
       ordinal: ordinal,
       role: role,
-      targetLoadKg: slot.targetLoadKg,
-      targetLoadBasis: slot.targetLoadBasis,
-      targetRepsMin: slot.targetRepsMin,
-      targetRepsMax: slot.targetRepsMax,
-      targetRpe: slot.targetRpe,
+      targetLoadKg: override?.loadKg ?? slot.targetLoadKg,
+      targetLoadBasis: override?.loadBasis ?? slot.targetLoadBasis,
+      targetRepsMin: override?.targetRepsMin ?? slot.targetRepsMin,
+      targetRepsMax: override?.targetRepsMax ?? slot.targetRepsMax,
+      targetRpe: override?.targetRpe ?? slot.targetRpe,
       actualLoadKg: loadKg,
-      actualLoadBasis: slot.targetLoadBasis,
+      actualLoadBasis:
+          actualLoadBasis ??
+          slot.targetLoadBasis ??
+          (loadKg == null ? null : B02LoadBasis.totalExternal),
       actualReps: reps,
       actualRpe: rpe,
       technique: technique,
@@ -59,7 +73,9 @@ class B02StrengthExecutionDraftService {
     final performed = B02PerformedExerciseDraft(
       id: performedId,
       performedExerciseGroupId: slot.groupId,
-      sourceExercisePrescriptionId: slot.prescriptionId,
+      sourceExercisePrescriptionId: useSlotPrescription
+          ? sourceExercisePrescriptionId ?? slot.prescriptionId
+          : null,
       groupMemberOrdinal: slot.memberOrdinal,
       groupRoundOrdinal: slot.roundOrdinal,
       ordinal: existing?.ordinal ?? state.performedExercises.length,
@@ -67,11 +83,13 @@ class B02StrengthExecutionDraftService {
       expectedExerciseNameSnapshot: slot.exerciseNameSnapshot,
       actualExerciseId: canonicalExerciseId,
       actualExerciseNameSnapshot:
-          actualExerciseNameSnapshot ?? slot.exerciseNameSnapshot,
+          actualExerciseNameSnapshot ??
+          existing?.actualExerciseNameSnapshot ??
+          slot.exerciseNameSnapshot,
       status: completed ? 'completed' : 'partial',
       substitutionReason: substitutionReason ?? existing?.substitutionReason,
       sets: sets,
-      targetRecommendation: existing?.targetRecommendation,
+      targetRecommendation: offeredRecommendation,
     );
     final updated = [...state.performedExercises];
     if (existingIndex < 0) {
@@ -87,6 +105,10 @@ class B02StrengthExecutionDraftService {
       currentMemberOrdinal: slot.memberOrdinal,
       currentExerciseOrdinal: performed.ordinal,
       currentSetOrdinal: ordinal,
+      targetRecommendations: {
+        ...state.targetRecommendations,
+        slot.id: ?offeredRecommendation,
+      },
       performedExercises: updated,
     );
   }
@@ -108,6 +130,8 @@ class B02StrengthExecutionDraftService {
     final existing = existingIndex < 0
         ? null
         : state.performedExercises[existingIndex];
+    final offeredRecommendation =
+        existing?.targetRecommendation ?? state.targetRecommendations[slot.id];
     final performed = B02PerformedExerciseDraft(
       id: performedId,
       performedExerciseGroupId: slot.groupId,
@@ -122,7 +146,7 @@ class B02StrengthExecutionDraftService {
       status: 'skipped',
       substitutionReason: reason,
       sets: existing?.sets ?? const [],
-      targetRecommendation: existing?.targetRecommendation,
+      targetRecommendation: offeredRecommendation,
     );
     final updated = [...state.performedExercises];
     if (existingIndex < 0) {
@@ -138,7 +162,61 @@ class B02StrengthExecutionDraftService {
       currentMemberOrdinal: slot.memberOrdinal,
       currentExerciseOrdinal: performed.ordinal,
       currentSetOrdinal: existing?.sets.length ?? 0,
+      targetRecommendations: {
+        ...state.targetRecommendations,
+        slot.id: ?offeredRecommendation,
+      },
       performedExercises: updated,
+    );
+  }
+
+  B02ExecutionDraftState applyTargetOverride({
+    required B02ExecutionDraftState state,
+    required B02StrengthExecutionSlot slot,
+    required B02TargetOverride override,
+  }) {
+    final recommendation = state.targetRecommendations[slot.id];
+    if (recommendation == null) {
+      throw const B02ValidationException(
+        'A target override requires an existing recommendation.',
+      );
+    }
+    final marked = recommendation.copyWith(wasOverridden: true);
+    final performedId = 'performed:${slot.id}';
+    final updatedExercises = [
+      for (final exercise in state.performedExercises)
+        exercise.id == performedId
+            ? exercise.copyWith(targetRecommendation: marked)
+            : exercise,
+    ];
+    return state.copyWith(
+      targetRecommendations: {...state.targetRecommendations, slot.id: marked},
+      targetOverrides: {...state.targetOverrides, slot.id: override},
+      performedExercises: updatedExercises,
+    );
+  }
+
+  B02ExecutionDraftState chooseWarmup(
+    B02ExecutionDraftState state,
+    B02WarmupDecision decision, {
+    List<B02WarmupSetProposal>? selectedProposals,
+  }) {
+    final recommendation = state.warmupRecommendation;
+    if (recommendation == null) {
+      throw const B02ValidationException(
+        'A warm-up decision requires an existing recommendation.',
+      );
+    }
+    final selected =
+        selectedProposals ??
+        (decision == B02WarmupDecision.accepted
+            ? recommendation.proposals
+            : const <B02WarmupSetProposal>[]);
+    return state.copyWith(
+      warmupRecommendation: recommendation.copyWith(
+        decision: decision,
+        selectedProposals: selected,
+      ),
     );
   }
 }

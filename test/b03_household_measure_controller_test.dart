@@ -61,8 +61,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Volume only'), findsOneWidget);
-      expect(find.text('SELECT A MEASURE'), findsOneWidget);
+      expect(find.text('A quick note about measuring'), findsOneWidget);
+      expect(find.text('STANDARD MEASURES'), findsOneWidget);
       expect(find.textContaining('mL'), findsWidgets);
       expect(
         find.bySemanticsLabel('Teaspoon, reviewed volume 5 mL'),

@@ -82,8 +82,15 @@ class NutritionReadModelRepository {
       );
     }
     final records = await listHistory(userId: userId);
+    final superseded = _supersededCanonicalIds(records);
     return records
-        .where((record) => record.localDate == normalizedDate)
+        .where(
+          (record) =>
+              record.localDate == normalizedDate &&
+              (record is! NutritionCanonicalSnapshotReadModel ||
+                  (!superseded.contains(record.stableId) &&
+                      !record.snapshot.isRetraction)),
+        )
         .toList(growable: false);
   }
 
@@ -92,13 +99,7 @@ class NutritionReadModelRepository {
     required String localDate,
   }) async {
     final allRecords = await listHistory(userId: userId);
-    final superseded = <String>{};
-    for (final record in allRecords) {
-      if (record is NutritionCanonicalSnapshotReadModel &&
-          record.snapshot.lineage.supersedesSnapshotId != null) {
-        superseded.add(record.snapshot.lineage.supersedesSnapshotId!);
-      }
-    }
+    final superseded = _supersededCanonicalIds(allRecords);
     final records = allRecords
         .where(
           (record) =>
@@ -106,7 +107,8 @@ class NutritionReadModelRepository {
               // Canonical correction lineage must not hide a legacy row with
               // the same text ID; history identity includes source type.
               (record is! NutritionCanonicalSnapshotReadModel ||
-                  !superseded.contains(record.stableId)),
+                  (!superseded.contains(record.stableId) &&
+                      !record.snapshot.isRetraction)),
         )
         .toList(growable: false);
     final contributions = records.expand(
@@ -182,6 +184,15 @@ class NutritionReadModelRepository {
       issues.where((issue) => seen.add('${issue.stableId}:${issue.field}')),
     );
   }
+
+  static Set<String> _supersededCanonicalIds(
+    Iterable<NutritionHistoricalReadRecord> records,
+  ) => {
+    for (final record in records)
+      if (record is NutritionCanonicalSnapshotReadModel &&
+          record.snapshot.lineage.supersedesSnapshotId != null)
+        record.snapshot.lineage.supersedesSnapshotId!,
+  };
 
   static bool _isIsoDate(String value) =>
       RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value) &&

@@ -268,6 +268,8 @@ class BackupData {
         'pref_offline_only',
         'offline_only',
         'onboarding_completed',
+        'onboarding_skipped',
+        'display_units',
         'water_logged',
         'water_goal',
         'water_glass_size',
@@ -329,7 +331,10 @@ class BackupData {
     return BackupData(
       version: currentVersion,
       timestamp: DateTime.now().toUtc().toIso8601String(),
-      schemaVersion: db.schemaVersion,
+      // Legacy BackupData remains a v7 compatibility payload. Newer schema
+      // extensions are represented by their successor envelopes instead of
+      // changing the meaning of this DTO's schema marker.
+      schemaVersion: db.schemaVersion > 18 ? 18 : db.schemaVersion,
       userProfile: userProfile,
       userSettings: userSettings,
       userPreferences: userPreferences,
@@ -4119,9 +4124,9 @@ class BackupEnvelope {
     }
 
     final version = (json['version'] as num?)?.toInt();
-    if (version == null || version < 3 || version > 8) {
+    if (version == null || version < 3 || version > 10) {
       throw FormatException(
-        'Unsupported backup envelope version ${json['version']} (latest supported is 8).',
+        'Unsupported backup envelope version ${json['version']} (latest supported is 10).',
       );
     }
 

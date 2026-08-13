@@ -1,16 +1,62 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/theme/colors.dart';
+import '../../core/di/providers.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/database/app_database.dart';
+import '../../data/models/b02_execution_models.dart';
+import '../../data/repositories/b02_exercise_performance_read_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../workout_player/widgets/r07c_workout_presentation.dart';
+
+class R07CPerformanceEmptyState extends StatelessWidget {
+  const R07CPerformanceEmptyState({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.fitness_center_rounded,
+              size: 64,
+              color: colors.textDisabled.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No performance logged yet',
+              style: B05Typography.title(context),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your logged sets will appear here after you train this exercise.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colors.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class ExerciseHistoryScreen extends ConsumerStatefulWidget {
   final String exerciseName;
+  final String? stableExerciseId;
 
-  const ExerciseHistoryScreen({super.key, required this.exerciseName});
+  const ExerciseHistoryScreen({
+    super.key,
+    required this.exerciseName,
+    this.stableExerciseId,
+  });
 
   @override
   ConsumerState<ExerciseHistoryScreen> createState() =>
@@ -26,12 +72,52 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   double _barWeight = 20.0;
   Map<double, int> _calculatedPlates = {};
   double _unmatchedWeight = 0.0;
+  late Future<_ExerciseHistory> _historyFuture;
+  var _historyInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _calculatePlatesNeeded();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_historyInitialized) {
+      _historyFuture = _loadHistory();
+      _historyInitialized = true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ExerciseHistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.exerciseName != widget.exerciseName ||
+        oldWidget.stableExerciseId != widget.stableExerciseId) {
+      _historyFuture = _loadHistory();
+    }
+  }
+
+  Future<_ExerciseHistory> _loadHistory() async {
+    final stableExerciseId = widget.stableExerciseId?.trim();
+    if (stableExerciseId != null && stableExerciseId.isNotEmpty) {
+      final canonical = await ref
+          .read(b02ExercisePerformanceReadRepositoryProvider)
+          .read(stableExerciseId: stableExerciseId);
+      if (canonical.isNotEmpty) {
+        return _ExerciseHistory.canonical(canonical);
+      }
+    }
+    final legacy = await ref
+        .read(workoutRepositoryProvider)
+        .getExerciseHistory(widget.exerciseName);
+    return _ExerciseHistory.legacy(legacy);
+  }
+
+  void _retryHistory() {
+    setState(() => _historyFuture = _loadHistory());
   }
 
   @override
@@ -81,308 +167,202 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final repo = ref.watch(workoutRepositoryProvider);
+    final colors = context.b05Colors;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.exerciseName),
-        backgroundColor: AppColors.background,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: colors.action,
+          labelColor: colors.action,
+          unselectedLabelColor: colors.textSecondary,
           tabs: const [
-            Tab(icon: Icon(Icons.history_rounded), text: 'History & 1RM'),
+            Tab(icon: Icon(Icons.insights_rounded), text: 'Performance'),
             Tab(icon: Icon(Icons.calculate_rounded), text: 'Plate Calc'),
           ],
         ),
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: repo.getExerciseHistory(widget.exerciseName),
+      body: FutureBuilder<_ExerciseHistory>(
+        future: _historyFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+            return TabBarView(
+              controller: _tabController,
+              children: [
+                Center(
+                  child: Semantics(
+                    label: 'Loading exercise history',
+                    child: CircularProgressIndicator(color: colors.action),
+                  ),
+                ),
+                _buildPlateCalculatorTab(),
+              ],
             );
           }
 
-          final history = snapshot.data ?? [];
+          final history = snapshot.data;
+          final historyTab = snapshot.hasError
+              ? _HistoryErrorState(onRetry: _retryHistory)
+              : history == null
+              ? const R07CPerformanceEmptyState()
+              : history.isCanonical
+              ? _buildCanonicalHistoryTab(history.canonical)
+              : _buildHistoryAndChartTab(history.legacy);
 
           return TabBarView(
             controller: _tabController,
-            children: [
-              _buildHistoryAndChartTab(history),
-              _buildPlateCalculatorTab(),
-            ],
+            children: [historyTab, _buildPlateCalculatorTab()],
           );
         },
       ),
     );
   }
 
+  Widget _buildCanonicalHistoryTab(List<B02ExercisePerformanceRecord> history) {
+    if (history.isEmpty) return const R07CPerformanceEmptyState();
+    return _buildActualHistory(
+      heading: 'Actual performance',
+      detail:
+          '${history.length} ${history.length == 1 ? 'session' : 'sessions'} saved for this exercise.',
+      records: [
+        for (final record in history)
+          _PerformanceHistoryItem(
+            date: record.completedAt,
+            sessionName: record.sessionName,
+            status: _statusLabel(record.exerciseStatus),
+            sets: record.sets,
+          ),
+      ],
+    );
+  }
+
   Widget _buildHistoryAndChartTab(List<Map<String, dynamic>> history) {
-    if (history.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    if (history.isEmpty) return const R07CPerformanceEmptyState();
+    return _buildActualHistory(
+      heading: 'Earlier workout records',
+      detail: 'Saved sets from earlier workouts are shown below.',
+      records: [
+        for (final entry in history)
+          _legacyHistoryItem(
+            entry['session'] as WorkoutSession,
+            entry['sets'] as List<WorkoutSet>,
+          ),
+      ],
+    );
+  }
+
+  _PerformanceHistoryItem _legacyHistoryItem(
+    WorkoutSession session,
+    List<WorkoutSet> sets,
+  ) => _PerformanceHistoryItem(
+    date: session.completedAt,
+    sessionName: session.name,
+    sets: [
+      for (final set in sets)
+        B02PerformedSet(
+          id: 'legacy-${session.id}-${set.id}',
+          performedExerciseId: 'legacy-${session.id}',
+          ordinal: set.setNumber > 0 ? set.setNumber - 1 : 0,
+          role: set.isWarmUp ? B02SetRole.warmup : B02SetRole.working,
+          actualLoadKg: set.weight > 0 ? set.weight : null,
+          actualReps: set.reps > 0 ? set.reps : null,
+          actualRpe: set.rpe,
+        ),
+    ],
+  );
+
+  Widget _buildActualHistory({
+    required String heading,
+    required String detail,
+    required List<_PerformanceHistoryItem> records,
+  }) => SingleChildScrollView(
+    padding: const EdgeInsets.all(B05Layout.space16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        B05Surface(
+          tone: B05SurfaceTone.selected,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.fitness_center_rounded,
-                size: 64,
-                color: AppColors.textMuted.withValues(alpha: 0.3),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'No sets logged yet',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'History logs and 1RM trend charts will appear here after you log sets in the workout player.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              Icon(Icons.history_rounded, color: context.b05Colors.action),
+              const SizedBox(width: B05Layout.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(heading, style: B05Typography.title(context)),
+                    const SizedBox(height: B05Layout.space4),
+                    Text(detail, style: B05Typography.body(context)),
+                  ],
+                ),
               ),
             ],
           ),
         ),
-      );
-    }
-
-    // Prepare 1RM points
-    final List<FlSpot> spots = [];
-    final List<Map<String, dynamic>> sortedHistory = List.from(
-      history.reversed,
-    );
-
-    for (int i = 0; i < sortedHistory.length; i++) {
-      final sets = sortedHistory[i]['sets'] as List<WorkoutSet>;
-
-      double best1Rm = 0.0;
-      for (final s in sets) {
-        final oneRm = s.weight * (1 + s.reps / 30.0);
-        if (oneRm > best1Rm) best1Rm = oneRm;
-      }
-      spots.add(FlSpot(i.toDouble(), best1Rm));
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. 1RM Trend Chart
-          if (spots.length >= 2) ...[
-            const Text(
-              'ESTIMATED 1RM TREND',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  top: 24,
-                  bottom: 12,
-                  right: 24,
-                  left: 12,
-                ),
-                child: SizedBox(
-                  height: 180,
-                  child: LineChart(
-                    LineChartData(
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        getDrawingHorizontalLine: (value) => const FlLine(
-                          color: AppColors.border,
-                          strokeWidth: 1,
-                        ),
-                      ),
-                      titlesData: FlTitlesData(
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 22,
-                            getTitlesWidget: (value, meta) {
-                              final index = value.toInt();
-                              if (index >= 0 && index < sortedHistory.length) {
-                                final date =
-                                    sortedHistory[index]['session'].completedAt
-                                        as DateTime;
-                                return Text(
-                                  DateFormat('dd/MM').format(date),
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 9,
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: spots,
-                          isCurved: true,
-                          color: AppColors.primary,
-                          barWidth: 3,
-                          dotData: const FlDotData(show: true),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                          ),
-                        ),
-                      ],
+        const SizedBox(height: B05Layout.space16),
+        Text('RECENT SESSIONS', style: B05Typography.label(context)),
+        const SizedBox(height: B05Layout.space8),
+        for (final record in records) ...[
+          B05Surface(
+            tone: B05SurfaceTone.section,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: B05Layout.space8,
+                  runSpacing: B05Layout.space4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      DateFormat('MMM d, y').format(record.date.toLocal()),
+                      style: B05Typography.label(context),
                     ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-
-          const Text(
-            'TRAINING SESSIONS',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // 2. History List
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: history.length,
-            itemBuilder: (context, index) {
-              final session = history[index]['session'] as WorkoutSession;
-              final sets = history[index]['sets'] as List<WorkoutSet>;
-
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12.0),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            DateFormat(
-                              'MMMM dd, yyyy',
-                            ).format(session.completedAt),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            'Volume: ${session.totalVolume.round()}kg',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
+                    if (record.status != null)
                       Text(
-                        session.name,
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        record.status!,
+                        style: B05Typography.caption(
+                          context,
+                        ).copyWith(color: context.b05Colors.textSecondary),
                       ),
-                      const Divider(color: AppColors.border, height: 24),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        children: sets
-                            .map(
-                              (s) => Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.surface,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Text(
-                                      '${s.setNumber}',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '${s.weight}kg x ${s.reps}',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  if (s.isPr) ...[
-                                    const SizedBox(width: 4),
-                                    const Icon(
-                                      Icons.emoji_events_rounded,
-                                      color: Colors.orangeAccent,
-                                      size: 14,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
-              );
-            },
+                const SizedBox(height: B05Layout.space4),
+                Text(record.sessionName, style: B05Typography.body(context)),
+                const SizedBox(height: B05Layout.space12),
+                R07CPerformedSetList(sets: record.sets),
+              ],
+            ),
           ),
+          const SizedBox(height: B05Layout.space12),
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+
+  static String _statusLabel(String status) => switch (status) {
+    'completed' => 'Completed',
+    'partial' => 'Partially complete',
+    'skipped' => 'Skipped',
+    'inProgress' => 'In progress',
+    _ => 'Logged',
+  };
 
   Widget _buildPlateCalculatorTab() {
+    final colors = context.b05Colors;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'PLATE LOADING CALCULATOR',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: colors.textSecondary,
               letterSpacing: 0.5,
             ),
           ),
@@ -392,78 +372,79 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 children: [
-                  Row(
+                  IndiFitResponsiveFieldGroup(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Target Weight (kg)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Target Weight (kg)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.textSecondary,
                             ),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: _targetWeightController,
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => _calculatePlatesNeeded(),
-                              decoration: const InputDecoration(
-                                hintText: 'e.g. 100',
-                              ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: _targetWeightController,
+                            keyboardType: TextInputType.number,
+                            onChanged: (_) => _calculatePlatesNeeded(),
+                            decoration: const InputDecoration(
+                              hintText: 'e.g. 100',
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Barbell Weight (kg)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Barbell Weight (kg)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<double>(
+                            initialValue: _barWeight,
+                            isExpanded: true,
+                            dropdownColor: Theme.of(
+                              context,
+                            ).colorScheme.surface,
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<double>(
-                              initialValue: _barWeight,
-                              dropdownColor: AppColors.surface,
-                              decoration: const InputDecoration(
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
+                            items: const [
+                              DropdownMenuItem(
+                                value: 20.0,
+                                child: Text(
+                                  '20 kg (Std)',
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 20.0,
-                                  child: Text('20 kg (Std)'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 15.0,
-                                  child: Text('15 kg'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 10.0,
-                                  child: Text('10 kg'),
-                                ),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() {
-                                    _barWeight = val;
-                                  });
-                                  _calculatePlatesNeeded();
-                                }
-                              },
-                            ),
-                          ],
-                        ),
+                              DropdownMenuItem(
+                                value: 15.0,
+                                child: Text('15 kg'),
+                              ),
+                              DropdownMenuItem(
+                                value: 10.0,
+                                child: Text('10 kg'),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _barWeight = val;
+                                });
+                                _calculatePlatesNeeded();
+                              }
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -473,106 +454,107 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
           ),
           const SizedBox(height: 24),
 
-          const Text(
+          Text(
             'LOADING PER SIDE',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: colors.textSecondary,
               letterSpacing: 0.5,
             ),
           ),
           const SizedBox(height: 12),
 
           if (_calculatedPlates.isEmpty && _unmatchedWeight == 0.0)
-            const Card(
+            B05Surface(
               child: Padding(
-                padding: EdgeInsets.all(20.0),
+                padding: const EdgeInsets.all(20.0),
                 child: Center(
                   child: Text(
                     'Target weight is equal to or less than the barbell weight.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                 ),
               ),
             )
           else
-            Card(
+            B05Surface(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
                   children: [
                     // Visual plate layout
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Barbell shaft left
-                        Container(width: 24, height: 6, color: Colors.grey),
-                        // Loaded plates list
-                        if (_calculatedPlates.isEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'Empty Bar',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textMuted,
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Barbell shaft left
+                          Container(width: 24, height: 6, color: Colors.grey),
+                          // Loaded plates list
+                          if (_calculatedPlates.isEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
-                            ),
-                          )
-                        else
-                          ..._calculatedPlates.entries.map((entry) {
-                            final double plateWeight = entry.key;
-                            final int count = entry.value;
-                            return Row(
-                              children: List.generate(
-                                count,
-                                (_) => Container(
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                  ),
-                                  width: plateWeight >= 20 ? 14 : 8,
-                                  height: plateWeight >= 20 ? 56 : 38,
-                                  decoration: BoxDecoration(
-                                    color: _getPlateColor(plateWeight),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: RotatedBox(
-                                    quarterTurns: 1,
-                                    child: Text(
-                                      plateWeight % 1 == 0
-                                          ? '${plateWeight.toInt()}'
-                                          : '$plateWeight',
-                                      style: TextStyle(
-                                        color:
-                                            plateWeight >= 20 ||
-                                                plateWeight <= 2.5
-                                            ? Colors.white
-                                            : Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 9,
+                              decoration: BoxDecoration(
+                                color: colors.surfaceSubtle,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'Empty Bar',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: colors.textDisabled,
+                                ),
+                              ),
+                            )
+                          else
+                            ..._calculatedPlates.entries.map((entry) {
+                              final double plateWeight = entry.key;
+                              final int count = entry.value;
+                              return Row(
+                                children: List.generate(
+                                  count,
+                                  (_) => Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 2,
+                                    ),
+                                    width: plateWeight >= 20 ? 14 : 8,
+                                    height: plateWeight >= 20 ? 56 : 38,
+                                    decoration: BoxDecoration(
+                                      color: _getPlateColor(plateWeight),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: colors.border),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: RotatedBox(
+                                      quarterTurns: 1,
+                                      child: Text(
+                                        plateWeight % 1 == 0
+                                            ? '${plateWeight.toInt()}'
+                                            : '$plateWeight',
+                                        style: TextStyle(
+                                          color:
+                                              plateWeight >= 20 ||
+                                                  plateWeight <= 2.5
+                                              ? Colors.white
+                                              : Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 9,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }),
-                        // Barbell sleeve end
-                        Container(width: 12, height: 12, color: Colors.grey),
-                      ],
+                              );
+                            }),
+                          // Barbell sleeve end
+                          Container(width: 12, height: 12, color: Colors.grey),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
 
@@ -580,8 +562,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                     ..._calculatedPlates.entries.map(
                       (entry) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          runSpacing: 8,
                           children: [
                             Row(
                               children: [
@@ -604,9 +587,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                             ),
                             Text(
                               'x ${entry.value} per side',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
+                                color: colors.action,
                               ),
                             ),
                           ],
@@ -615,19 +598,20 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
                     ),
 
                     if (_unmatchedWeight > 0.0) ...[
-                      const Divider(color: AppColors.border, height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Divider(color: colors.border, height: 24),
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        runSpacing: 8,
                         children: [
-                          const Text(
-                            'Unmatched remainder',
-                            style: TextStyle(color: Colors.orangeAccent),
+                          Text(
+                            'Still to load',
+                            style: TextStyle(color: colors.warning.foreground),
                           ),
                           Text(
                             '${_unmatchedWeight.toStringAsFixed(2)} kg per side',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.orangeAccent,
+                              color: colors.warning.foreground,
                             ),
                           ),
                         ],
@@ -641,4 +625,83 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
       ),
     );
   }
+}
+
+class _ExerciseHistory {
+  const _ExerciseHistory._({
+    required this.canonical,
+    required this.legacy,
+    required this.isCanonical,
+  });
+
+  factory _ExerciseHistory.canonical(
+    List<B02ExercisePerformanceRecord> records,
+  ) => _ExerciseHistory._(
+    canonical: List.unmodifiable(records),
+    legacy: const [],
+    isCanonical: true,
+  );
+
+  factory _ExerciseHistory.legacy(List<Map<String, dynamic>> records) =>
+      _ExerciseHistory._(
+        canonical: const [],
+        legacy: List.unmodifiable(records),
+        isCanonical: false,
+      );
+
+  final List<B02ExercisePerformanceRecord> canonical;
+  final List<Map<String, dynamic>> legacy;
+  final bool isCanonical;
+}
+
+class _PerformanceHistoryItem {
+  const _PerformanceHistoryItem({
+    required this.date,
+    required this.sessionName,
+    required this.sets,
+    this.status,
+  });
+
+  final DateTime date;
+  final String sessionName;
+  final String? status;
+  final List<B02PerformedSet> sets;
+}
+
+class _HistoryErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _HistoryErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(B05Layout.space24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.history_toggle_off_rounded, size: 42),
+          const SizedBox(height: B05Layout.space12),
+          Text(
+            'Exercise history is unavailable right now.',
+            style: B05Typography.title(context),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            'Your plate calculator is still ready to use. Try loading history again.',
+            style: B05Typography.body(context),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: B05Layout.space16),
+          B05ActionButton(
+            label: 'Retry history',
+            icon: Icons.refresh_rounded,
+            emphasis: B05ActionEmphasis.secondary,
+            onPressed: onRetry,
+          ),
+        ],
+      ),
+    ),
+  );
 }

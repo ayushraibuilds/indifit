@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/database/app_database.dart';
 
 class WorkoutPlayerHeader extends StatelessWidget {
@@ -28,69 +28,81 @@ class WorkoutPlayerHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    final routineDetail = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          routineName,
+          style: B05Typography.pageTitle(
+            context,
+          ).copyWith(fontSize: 24, letterSpacing: -0.5),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: B05Layout.space4),
+        Text(
+          'Exercise ${currentExerciseIndex + 1} of ${exercises.length}',
+          style: B05Typography.caption(
+            context,
+          ).copyWith(fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+    final timer = B05Surface(
+      tone: B05SurfaceTone.selected,
+      radius: B05SurfaceRadius.medium,
+      padding: const EdgeInsets.symmetric(
+        horizontal: B05Layout.space12,
+        vertical: B05Layout.space8,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.timer_outlined,
+            color: colors.action,
+            size: B05Layout.iconMedium,
+          ),
+          const SizedBox(width: B05Layout.space4),
+          Text(
+            _formatDuration(elapsedSeconds),
+            style: B05Typography.title(
+              context,
+            ).copyWith(color: colors.action, letterSpacing: 0.5),
+          ),
+        ],
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
+        LayoutBuilder(
+          builder: (context, _) {
+            final compact =
+                MediaQuery.sizeOf(context).width <
+                    B05Layout.compactBreakpoint ||
+                MediaQuery.textScalerOf(context).scale(1) > 1.3;
+            if (compact) {
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    routineName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
-                      letterSpacing: -0.5,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Exercise ${currentExerciseIndex + 1} of ${exercises.length}',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  routineDetail,
+                  const SizedBox(height: B05Layout.space8),
+                  Align(alignment: Alignment.centerRight, child: timer),
                 ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.4),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.timer_outlined,
-                    color: AppColors.primary,
-                    size: 22,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _formatDuration(elapsedSeconds),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                      fontSize: 18,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: routineDetail),
+                const SizedBox(width: B05Layout.space12),
+                timer,
+              ],
+            );
+          },
         ),
         const SizedBox(height: 12),
         SingleChildScrollView(
@@ -104,18 +116,16 @@ class WorkoutPlayerHeader extends StatelessWidget {
                   label: Text(
                     exercises[idx].exerciseName,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
                       fontWeight: isSelected
                           ? FontWeight.bold
                           : FontWeight.normal,
-                      color: isSelected
-                          ? Colors.white
-                          : AppColors.textSecondary,
+                      color: isSelected ? colors.action : colors.textSecondary,
                     ),
                   ),
                   selected: isSelected,
-                  selectedColor: AppColors.primary,
-                  backgroundColor: AppColors.cardBackground,
+                  selectedColor: colors.selected,
+                  backgroundColor: colors.inset,
                   onSelected: (_) => onExerciseSelected(idx),
                 ),
               );

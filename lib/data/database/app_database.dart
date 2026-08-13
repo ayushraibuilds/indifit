@@ -21,6 +21,7 @@ import '../models/b02_execution_models.dart';
 import 'b01_legacy_import_support.dart';
 import 'tables/achievement_tables.dart';
 import 'tables/b02_activity_tables.dart';
+import 'tables/b05_ui_tables.dart';
 import 'tables/food_tables.dart';
 import 'tables/health_tables.dart';
 import 'tables/hydration_tables.dart';
@@ -62,6 +63,26 @@ enum V17MigrationFailureStage {
 
 typedef V17MigrationFailureStageInjector =
     Future<void> Function(V17MigrationFailureStage stage);
+
+/// Test-only boundaries for the v17 -> v18 migration.
+enum V18MigrationFailureStage {
+  validation,
+  ddlAndDataMutation,
+  beforeTransactionCommit,
+}
+
+typedef V18MigrationFailureStageInjector =
+    Future<void> Function(V18MigrationFailureStage stage);
+
+/// Test-only boundaries for the v18 -> v19 B05 foundation migration.
+enum V19MigrationFailureStage {
+  validation,
+  ddlAndDataMutation,
+  beforeTransactionCommit,
+}
+
+typedef V19MigrationFailureStageInjector =
+    Future<void> Function(V19MigrationFailureStage stage);
 
 @DriftDatabase(
   tables: [
@@ -139,6 +160,20 @@ typedef V17MigrationFailureStageInjector =
     NutritionUserConstraints,
     NutritionSnapshotConstraintResults,
     NutritionSnapshotConstraintResultEvidence,
+    NutritionGoalVersions,
+    CoachingConsentEvents,
+    NutritionCoachingPreferences,
+    RecoveryObservations,
+    ReadinessSnapshots,
+    ReadinessSnapshotEvidence,
+    Recommendations,
+    RecommendationEvidence,
+    CoachingEligibilityEvaluations,
+    RecommendationFeedback,
+    DashboardModulePreferences,
+    EducationContentProgress,
+    MediaPackPreferences,
+    WorkoutPlaylistPreferences,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -147,6 +182,8 @@ class AppDatabase extends _$AppDatabase {
       v16MigrationFailureInjector = null,
       v16MigrationFailureStageInjector = null,
       v17MigrationFailureStageInjector = null,
+      v18MigrationFailureStageInjector = null,
+      v19MigrationFailureStageInjector = null,
       schemaVersionOverride = null,
       super(_openConnection());
   AppDatabase.memory({this.schemaVersionOverride})
@@ -154,6 +191,8 @@ class AppDatabase extends _$AppDatabase {
       v16MigrationFailureInjector = null,
       v16MigrationFailureStageInjector = null,
       v17MigrationFailureStageInjector = null,
+      v18MigrationFailureStageInjector = null,
+      v19MigrationFailureStageInjector = null,
       super(NativeDatabase.memory());
   AppDatabase.executor(
     super.executor, {
@@ -161,6 +200,8 @@ class AppDatabase extends _$AppDatabase {
     this.v16MigrationFailureInjector,
     this.v16MigrationFailureStageInjector,
     this.v17MigrationFailureStageInjector,
+    this.v18MigrationFailureStageInjector,
+    this.v19MigrationFailureStageInjector,
     this.schemaVersionOverride,
   });
 
@@ -180,16 +221,22 @@ class AppDatabase extends _$AppDatabase {
   /// Typed test-only seam for proving each supported v16 -> v17 boundary.
   final V17MigrationFailureStageInjector? v17MigrationFailureStageInjector;
 
-  /// Test-only read boundary for the immutable schema-v16 fixture. It allows
-  /// the baseline harness to inspect the file without triggering the v17
+  /// Typed test-only seam for proving each supported v17 -> v18 boundary.
+  final V18MigrationFailureStageInjector? v18MigrationFailureStageInjector;
+
+  /// Typed test-only seam for proving each supported v18 -> v19 boundary.
+  final V19MigrationFailureStageInjector? v19MigrationFailureStageInjector;
+
+  /// Test-only read boundary for immutable schema fixtures. It allows
+  /// baseline harnesses to inspect a legacy file without triggering the next
   /// migration; production instances always use the current version.
   final int? schemaVersionOverride;
 
-  /// Schema v17 retains the complete v16 graph and adds the B03 nutrition
-  /// persistence boundary.
+  /// Schema v19 retains the complete B04 graph and adds the B05 durable
+  /// personalization, education, media-preference, and playlist boundary.
   /// B01 program, occurrence, routine, set, and draft compatibility fields.
   @override
-  int get schemaVersion => schemaVersionOverride ?? 17;
+  int get schemaVersion => schemaVersionOverride ?? 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -266,6 +313,12 @@ class AppDatabase extends _$AppDatabase {
       if (from < 17 && to >= 17) {
         await _migrateV16ToV17(m);
       }
+      if (from < 18 && to >= 18) {
+        await _migrateV17ToV18(m);
+      }
+      if (from < 19 && to >= 19) {
+        await _migrateV18ToV19(m);
+      }
     },
 
     onCreate: (m) async {
@@ -279,9 +332,25 @@ class AppDatabase extends _$AppDatabase {
         await _seedReviewedMuscleCatalogIfPossible();
         return;
       }
+      if (schemaVersionOverride == 17) {
+        await _dropV18GraphForLegacyFixture();
+        await _createV17Indexes();
+        await _ensureTrainingPlanSettings();
+        await seedFoodsFromAsset();
+        await seedExercisesFromAsset();
+        await _seedReviewedMuscleCatalogIfPossible();
+        return;
+      }
+      if (schemaVersionOverride == 18) {
+        await _dropV19GraphForLegacyFixture();
+        await _createV18Indexes();
+        return;
+      }
       final contracts = await _loadV17Contracts();
       await _createV16IndexesAndTriggers();
       await _createV17Indexes();
+      await _createV18Indexes();
+      await _createV19Indexes();
       await _seedV17NutrientRegistry(contracts.registry);
       await _seedV17ConstraintTaxonomy();
       await _seedV17FoodIdentity(contracts.manifest);
@@ -300,6 +369,9 @@ class AppDatabase extends _$AppDatabase {
           // cannot bypass the same checks through raw SQL, restore, or a
           // second writer.
           await _createV17Indexes();
+          if (schemaVersionOverride != 17) {
+            await _createV18Indexes();
+          }
         }
       }
     },
@@ -709,6 +781,57 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  Future<void> _migrateV17ToV18(Migrator m) async {
+    final stageInjector = v18MigrationFailureStageInjector;
+    if (stageInjector != null) {
+      await stageInjector(V18MigrationFailureStage.validation);
+    }
+
+    await transaction(() async {
+      // B04 adds durable contracts only. No v17 row is interpreted or
+      // backfilled, so every new authority starts empty on upgrade.
+      await m.createTable(nutritionGoalVersions);
+      await m.createTable(coachingConsentEvents);
+      await m.createTable(nutritionCoachingPreferences);
+      await m.createTable(recoveryObservations);
+      await m.createTable(readinessSnapshots);
+      await m.createTable(readinessSnapshotEvidence);
+      await m.createTable(recommendations);
+      await m.createTable(recommendationEvidence);
+      await m.createTable(coachingEligibilityEvaluations);
+      await m.createTable(recommendationFeedback);
+      await _createV18Indexes();
+
+      if (stageInjector != null) {
+        await stageInjector(V18MigrationFailureStage.ddlAndDataMutation);
+        await stageInjector(V18MigrationFailureStage.beforeTransactionCommit);
+      }
+    });
+  }
+
+  Future<void> _migrateV18ToV19(Migrator m) async {
+    final stageInjector = v19MigrationFailureStageInjector;
+    if (stageInjector != null) {
+      await stageInjector(V19MigrationFailureStage.validation);
+    }
+
+    await transaction(() async {
+      // B05 stores only portable user intent and versioned content progress.
+      // Physical media availability, paths, bytes, and cache state remain
+      // device-local derived state and are intentionally absent here.
+      await m.createTable(dashboardModulePreferences);
+      await m.createTable(educationContentProgress);
+      await m.createTable(mediaPackPreferences);
+      await m.createTable(workoutPlaylistPreferences);
+      await _createV19Indexes();
+
+      if (stageInjector != null) {
+        await stageInjector(V19MigrationFailureStage.ddlAndDataMutation);
+        await stageInjector(V19MigrationFailureStage.beforeTransactionCommit);
+      }
+    });
+  }
+
   /// Validates both release contracts before a v17 graph can be created or
   /// seeded. This is validation only: migration deliberately does not create
   /// canonical food rows from legacy display names.
@@ -924,6 +1047,41 @@ class AppDatabase extends _$AppDatabase {
       'nutrition_food_preparations',
       'nutrition_food_aliases',
       'nutrition_foods',
+    ];
+    for (final table in tables) {
+      await customStatement('DROP TABLE IF EXISTS $table');
+    }
+    await _dropV18GraphForLegacyFixture();
+  }
+
+  Future<void> _dropV18GraphForLegacyFixture() async {
+    const tables = [
+      'workout_playlist_preferences',
+      'media_pack_preferences',
+      'education_content_progress',
+      'dashboard_module_preferences',
+      'recommendation_feedback',
+      'coaching_eligibility_evaluations',
+      'recommendation_evidence',
+      'recommendations',
+      'readiness_snapshot_evidence',
+      'readiness_snapshots',
+      'recovery_observations',
+      'nutrition_coaching_preferences',
+      'coaching_consent_events',
+      'nutrition_goal_versions',
+    ];
+    for (final table in tables) {
+      await customStatement('DROP TABLE IF EXISTS $table');
+    }
+  }
+
+  Future<void> _dropV19GraphForLegacyFixture() async {
+    const tables = [
+      'workout_playlist_preferences',
+      'media_pack_preferences',
+      'education_content_progress',
+      'dashboard_module_preferences',
     ];
     for (final table in tables) {
       await customStatement('DROP TABLE IF EXISTS $table');
@@ -1214,6 +1372,175 @@ class AppDatabase extends _$AppDatabase {
             JOIN nutrition_user_constraints c ON c.id = NEW.constraint_id
             WHERE s.id = NEW.snapshot_id AND c.user_id = s.user_id)
          BEGIN SELECT RAISE(ABORT, 'Snapshot constraint must belong to the snapshot user'); END''',
+    ];
+    for (final statement in statements) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _createV18Indexes() async {
+    const statements = [
+      'CREATE INDEX IF NOT EXISTS nutrition_goal_versions_user_effective_idx ON nutrition_goal_versions(user_id, effective_from_local_date, effective_to_local_date)',
+      'CREATE INDEX IF NOT EXISTS coaching_consent_events_user_date_idx ON coaching_consent_events(user_id, consent_category, local_date, timestamp_utc)',
+      'CREATE INDEX IF NOT EXISTS nutrition_coaching_preferences_user_idx ON nutrition_coaching_preferences(user_id)',
+      'CREATE INDEX IF NOT EXISTS recovery_observations_user_time_kind_idx ON recovery_observations(user_id, observed_at_utc, kind)',
+      'CREATE INDEX IF NOT EXISTS recovery_observations_user_date_idx ON recovery_observations(user_id, local_date, freshness)',
+      'CREATE INDEX IF NOT EXISTS readiness_snapshots_user_date_version_idx ON readiness_snapshots(user_id, local_date, calculation_version)',
+      'CREATE INDEX IF NOT EXISTS readiness_snapshot_evidence_snapshot_idx ON readiness_snapshot_evidence(readiness_snapshot_id, observation_id)',
+      'CREATE INDEX IF NOT EXISTS recommendations_user_scope_period_status_idx ON recommendations(user_id, scope, local_period_start, local_period_end, status)',
+      'CREATE INDEX IF NOT EXISTS recommendations_goal_readiness_idx ON recommendations(goal_version_id, readiness_snapshot_id)',
+      'CREATE INDEX IF NOT EXISTS recommendation_evidence_recommendation_source_idx ON recommendation_evidence(recommendation_id, source_type, source_id)',
+      'CREATE INDEX IF NOT EXISTS coaching_eligibility_evaluations_user_date_result_idx ON coaching_eligibility_evaluations(user_id, evaluation_local_date, result)',
+      'CREATE INDEX IF NOT EXISTS coaching_eligibility_evaluations_goal_recommendation_idx ON coaching_eligibility_evaluations(goal_version_id, recommendation_id)',
+      'CREATE INDEX IF NOT EXISTS recommendation_feedback_recommendation_time_idx ON recommendation_feedback(recommendation_id, created_at_utc)',
+      'CREATE INDEX IF NOT EXISTS recommendation_feedback_user_time_idx ON recommendation_feedback(user_id, created_at_utc)',
+      '''CREATE TRIGGER IF NOT EXISTS b04_goal_versions_append_only_update
+         BEFORE UPDATE ON nutrition_goal_versions
+         BEGIN SELECT RAISE(ABORT, 'B04 goal versions are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_goal_versions_append_only_delete
+         BEFORE DELETE ON nutrition_goal_versions
+         BEGIN SELECT RAISE(ABORT, 'B04 goal versions are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_goal_versions_owner_insert
+         BEFORE INSERT ON nutrition_goal_versions
+         WHEN NEW.supersedes_goal_version_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_goal_versions
+            WHERE id = NEW.supersedes_goal_version_id
+              AND user_id = NEW.user_id
+              AND version_number < NEW.version_number)
+         BEGIN SELECT RAISE(ABORT, 'Goal supersession must remain within one user and advance its version'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_goal_versions_owner_update
+         BEFORE UPDATE OF user_id, supersedes_goal_version_id ON nutrition_goal_versions
+         WHEN NEW.supersedes_goal_version_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_goal_versions
+            WHERE id = NEW.supersedes_goal_version_id
+              AND user_id = NEW.user_id
+              AND version_number < NEW.version_number)
+         BEGIN SELECT RAISE(ABORT, 'Goal supersession must remain within one user and advance its version'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_consent_events_append_only_update
+         BEFORE UPDATE ON coaching_consent_events
+         BEGIN SELECT RAISE(ABORT, 'B04 consent events are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_consent_events_append_only_delete
+         BEFORE DELETE ON coaching_consent_events
+         BEGIN SELECT RAISE(ABORT, 'B04 consent events are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_consent_events_related_owner_insert
+         BEFORE INSERT ON coaching_consent_events
+         WHEN NEW.related_or_superseded_event_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM coaching_consent_events
+            WHERE id = NEW.related_or_superseded_event_id
+              AND user_id = NEW.user_id
+              AND consent_category = NEW.consent_category
+              AND timestamp_utc < NEW.timestamp_utc)
+         BEGIN SELECT RAISE(ABORT, 'Consent event lineage is invalid'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_recovery_observations_append_only_update
+         BEFORE UPDATE ON recovery_observations
+         BEGIN SELECT RAISE(ABORT, 'B04 recovery observations are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_recovery_observations_append_only_delete
+         BEFORE DELETE ON recovery_observations
+         BEGIN SELECT RAISE(ABORT, 'B04 recovery observations are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_readiness_snapshots_append_only_update
+         BEFORE UPDATE ON readiness_snapshots
+         BEGIN SELECT RAISE(ABORT, 'B04 readiness snapshots are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_readiness_snapshots_append_only_delete
+         BEFORE DELETE ON readiness_snapshots
+         BEGIN SELECT RAISE(ABORT, 'B04 readiness snapshots are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_readiness_snapshots_owner_insert
+         BEFORE INSERT ON readiness_snapshots
+         WHEN NEW.supersedes_snapshot_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM readiness_snapshots
+            WHERE id = NEW.supersedes_snapshot_id AND user_id = NEW.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Readiness supersession must remain within one user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_readiness_snapshots_owner_update
+         BEFORE UPDATE OF user_id, supersedes_snapshot_id ON readiness_snapshots
+         WHEN NEW.supersedes_snapshot_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM readiness_snapshots
+            WHERE id = NEW.supersedes_snapshot_id AND user_id = NEW.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Readiness supersession must remain within one user'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_readiness_evidence_append_only_update
+         BEFORE UPDATE ON readiness_snapshot_evidence
+         BEGIN SELECT RAISE(ABORT, 'B04 readiness evidence is append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_readiness_evidence_append_only_delete
+         BEFORE DELETE ON readiness_snapshot_evidence
+         BEGIN SELECT RAISE(ABORT, 'B04 readiness evidence is append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_readiness_evidence_owner_insert
+         BEFORE INSERT ON readiness_snapshot_evidence
+         WHEN NOT EXISTS
+           (SELECT 1
+            FROM readiness_snapshots s
+            JOIN recovery_observations o ON o.id = NEW.observation_id
+            WHERE s.id = NEW.readiness_snapshot_id AND s.user_id = o.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Readiness evidence ownership is invalid'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_recommendations_append_only_update
+         BEFORE UPDATE ON recommendations
+         BEGIN SELECT RAISE(ABORT, 'B04 recommendations are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_recommendations_append_only_delete
+         BEFORE DELETE ON recommendations
+         BEGIN SELECT RAISE(ABORT, 'B04 recommendations are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_recommendations_owner_insert
+         BEFORE INSERT ON recommendations
+         WHEN (NEW.goal_version_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_goal_versions
+            WHERE id = NEW.goal_version_id AND user_id = NEW.user_id))
+           OR (NEW.readiness_snapshot_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM readiness_snapshots
+            WHERE id = NEW.readiness_snapshot_id AND user_id = NEW.user_id))
+           OR (NEW.supersedes_recommendation_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM recommendations
+            WHERE id = NEW.supersedes_recommendation_id AND user_id = NEW.user_id))
+         BEGIN SELECT RAISE(ABORT, 'Recommendation ownership is invalid'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_recommendation_evidence_append_only_update
+         BEFORE UPDATE ON recommendation_evidence
+         BEGIN SELECT RAISE(ABORT, 'B04 recommendation evidence is append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_recommendation_evidence_append_only_delete
+         BEFORE DELETE ON recommendation_evidence
+         BEGIN SELECT RAISE(ABORT, 'B04 recommendation evidence is append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_recommendation_evidence_owner_insert
+         BEFORE INSERT ON recommendation_evidence
+         WHEN NOT EXISTS
+           (SELECT 1 FROM recommendations
+            WHERE id = NEW.recommendation_id AND user_id = NEW.user_id)
+         BEGIN SELECT RAISE(ABORT, 'Recommendation evidence ownership is invalid'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_eligibility_append_only_update
+         BEFORE UPDATE ON coaching_eligibility_evaluations
+         BEGIN SELECT RAISE(ABORT, 'B04 eligibility evaluations are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_eligibility_append_only_delete
+         BEFORE DELETE ON coaching_eligibility_evaluations
+         BEGIN SELECT RAISE(ABORT, 'B04 eligibility evaluations are append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_eligibility_owner_insert
+         BEFORE INSERT ON coaching_eligibility_evaluations
+         WHEN (NEW.goal_version_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM nutrition_goal_versions
+            WHERE id = NEW.goal_version_id AND user_id = NEW.user_id))
+           OR (NEW.recommendation_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM recommendations
+            WHERE id = NEW.recommendation_id AND user_id = NEW.user_id))
+         BEGIN SELECT RAISE(ABORT, 'Eligibility ownership is invalid'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_feedback_append_only_update
+         BEFORE UPDATE ON recommendation_feedback
+         BEGIN SELECT RAISE(ABORT, 'B04 feedback is append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_feedback_append_only_delete
+         BEFORE DELETE ON recommendation_feedback
+         BEGIN SELECT RAISE(ABORT, 'B04 feedback is append-only'); END''',
+      '''CREATE TRIGGER IF NOT EXISTS b04_feedback_owner_insert
+         BEFORE INSERT ON recommendation_feedback
+         WHEN (NOT EXISTS
+           (SELECT 1 FROM recommendations
+            WHERE id = NEW.recommendation_id AND user_id = NEW.user_id))
+           OR (NEW.related_feedback_id IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM recommendation_feedback
+            WHERE id = NEW.related_feedback_id AND user_id = NEW.user_id))
+         BEGIN SELECT RAISE(ABORT, 'Feedback ownership is invalid'); END''',
+    ];
+    for (final statement in statements) {
+      await customStatement(statement);
+    }
+  }
+
+  Future<void> _createV19Indexes() async {
+    const statements = [
+      'CREATE INDEX IF NOT EXISTS b05_dashboard_module_preferences_user_ordinal_idx ON dashboard_module_preferences(user_id, ordinal, module_id)',
+      'CREATE INDEX IF NOT EXISTS b05_education_content_progress_user_updated_idx ON education_content_progress(user_id, updated_at_utc, content_id)',
+      'CREATE INDEX IF NOT EXISTS b05_media_pack_preferences_user_updated_idx ON media_pack_preferences(user_id, updated_at_utc, pack_id)',
+      'CREATE INDEX IF NOT EXISTS b05_workout_playlist_preferences_user_provider_idx ON workout_playlist_preferences(user_id, provider_id)',
     ];
     for (final statement in statements) {
       await customStatement(statement);
@@ -1691,6 +2018,41 @@ class AppDatabase extends _$AppDatabase {
     await _importLegacyRoutinePrograms();
     final defaultProfileId = await _importLegacyEquipmentProfile();
     await _ensureTrainingPlanSettings(defaultProfileId: defaultProfileId);
+  }
+
+  /// Runs the one narrowly-scoped B04 restore mutation that must replace the
+  /// current immutable projection. Ordinary application writes still use the
+  /// append-only triggers; this seam is called only from the versioned backup
+  /// transaction and recreates every trigger before the transaction can commit.
+  Future<T> withB04RestoreMutation<T>(Future<T> Function() action) async {
+    const appendOnlyTriggers = [
+      'b04_goal_versions_append_only_update',
+      'b04_goal_versions_append_only_delete',
+      'b04_consent_events_append_only_update',
+      'b04_consent_events_append_only_delete',
+      'b04_recovery_observations_append_only_update',
+      'b04_recovery_observations_append_only_delete',
+      'b04_readiness_snapshots_append_only_update',
+      'b04_readiness_snapshots_append_only_delete',
+      'b04_readiness_evidence_append_only_update',
+      'b04_readiness_evidence_append_only_delete',
+      'b04_recommendations_append_only_update',
+      'b04_recommendations_append_only_delete',
+      'b04_recommendation_evidence_append_only_update',
+      'b04_recommendation_evidence_append_only_delete',
+      'b04_eligibility_append_only_update',
+      'b04_eligibility_append_only_delete',
+      'b04_feedback_append_only_update',
+      'b04_feedback_append_only_delete',
+    ];
+    for (final trigger in appendOnlyTriggers) {
+      await customStatement('DROP TRIGGER IF EXISTS $trigger');
+    }
+    try {
+      return await action();
+    } finally {
+      await _createV18Indexes();
+    }
   }
 
   Future<String?> _importLegacyEquipmentProfile() async {

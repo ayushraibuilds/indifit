@@ -197,6 +197,19 @@ class WorkoutRepository {
         .watch();
   }
 
+  /// Reads the current completed-session snapshot for one-shot presentation
+  /// screens. Unlike [watchSessions], this cannot leave a consumer task
+  /// waiting for a stream emission when the table is empty.
+  Future<List<WorkoutSession>> getSessions() async {
+    return (_db.select(_db.workoutSessions)..orderBy([
+          (tbl) => OrderingTerm(
+            expression: tbl.completedAt,
+            mode: OrderingMode.desc,
+          ),
+        ]))
+        .get();
+  }
+
   // 6. Log a completed session and its sets in a transaction
   Future<int> logSession({
     required String name,
@@ -384,10 +397,13 @@ class WorkoutRepository {
         _db.bodyMeasurements,
       )..where((tbl) => tbl.id.equals(id))).write(
         BodyMeasurementsCompanion(
-          weight: Value(weight),
-          waist: Value(waist),
-          chest: Value(chest),
-          arms: Value(arms),
+          // A body-measurement entry and a weight entry can share today's
+          // canonical row. Leave an omitted field untouched so logging waist
+          // does not erase a weight that was already recorded today.
+          weight: weight == null ? const Value.absent() : Value(weight),
+          waist: waist == null ? const Value.absent() : Value(waist),
+          chest: chest == null ? const Value.absent() : Value(chest),
+          arms: arms == null ? const Value.absent() : Value(arms),
         ),
       );
       return id;
@@ -536,6 +552,11 @@ class WorkoutRepository {
             .get();
     return rows.isEmpty ? null : rows.first;
   }
+
+  /// Emits only after the active draft table changes. The initial Drift
+  /// snapshot is skipped so consumers do not invalidate while mounting.
+  Stream<void> watchActiveDraftInvalidation() =>
+      _db.select(_db.workoutDrafts).watch().skip(1).map<void>((_) {});
 
   Future<int> saveWorkoutDraft(WorkoutDraftsCompanion draft) async {
     // Delete any previous drafts first to maintain at most one active draft

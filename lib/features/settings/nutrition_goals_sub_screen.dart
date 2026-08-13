@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/di/user_profile_provider.dart';
-import '../../core/theme/colors.dart';
-import '../../core/utils/tdee_calculator.dart';
-import '../dashboard/dashboard_controller.dart';
 
+import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_date_label.dart';
+import '../../core/theme/colors.dart';
+import '../../data/models/b04_goal_models.dart';
+import '../coaching/b04_production_surface_controller.dart';
+import '../coaching/b04_production_surface_widgets.dart';
+
+/// Production B04 goal and consent surface.
+///
+/// The form is a command surface over the versioned goal repository. It does
+/// not calculate TDEE, apply legacy floors, or maintain a second target.
 class NutritionGoalsSubScreen extends ConsumerStatefulWidget {
   const NutritionGoalsSubScreen({super.key});
 
@@ -16,16 +22,15 @@ class NutritionGoalsSubScreen extends ConsumerStatefulWidget {
 
 class _NutritionGoalsSubScreenState
     extends ConsumerState<NutritionGoalsSubScreen> {
-  late TextEditingController _caloriesController;
-  late TextEditingController _proteinController;
-  late TextEditingController _carbsController;
-  late TextEditingController _fatController;
-
-  bool _initialized = false;
-  int? _recCalories;
-  double? _recProtein;
-  double? _recCarbs;
-  double? _recFat;
+  late final TextEditingController _caloriesController;
+  late final TextEditingController _proteinController;
+  late final TextEditingController _carbsController;
+  late final TextEditingController _fatController;
+  late final TextEditingController _dateOfBirthController;
+  NutritionGoalType _goalType = NutritionGoalType.maintenance;
+  bool _seeded = false;
+  bool _saving = false;
+  bool _savingEligibility = false;
 
   @override
   void initState() {
@@ -34,66 +39,7 @@ class _NutritionGoalsSubScreenState
     _proteinController = TextEditingController();
     _carbsController = TextEditingController();
     _fatController = TextEditingController();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_initialized) {
-      final profile = ref.watch(userProfileProvider);
-      _caloriesController.text = profile.calorieGoal.toString();
-      _proteinController.text = profile.proteinGoal.round().toString();
-      _carbsController.text = profile.carbsGoal.round().toString();
-      _fatController.text = profile.fatGoal.round().toString();
-
-      // Calculate TDEE recommendation
-      _calculateRecommendation(profile);
-      _initialized = true;
-    }
-  }
-
-  void _calculateRecommendation(UserProfileState profile) {
-    final weight = profile.currentWeight > 0 ? profile.currentWeight : 74.5;
-    final height = (profile.userHeight != null && profile.userHeight! > 0)
-        ? profile.userHeight!
-        : 170.0;
-
-    final gender = profile.userSex == 'female' ? Gender.female : Gender.male;
-    final age = profile.userAge > 0 ? profile.userAge : 25;
-    final actLevel = switch (profile.userActivityLevel) {
-      'sedentary' => ActivityLevel.sedentary,
-      'light' => ActivityLevel.lightlyActive,
-      'active' => ActivityLevel.veryActive,
-      _ => ActivityLevel.moderatelyActive,
-    };
-    final fitnessGoal = switch (profile.userGoal) {
-      'lose' => FitnessGoal.weightLoss,
-      'gain' => FitnessGoal.muscleGain,
-      _ => FitnessGoal.maintain,
-    };
-
-    final bmr = TdeeCalculator.calculateBmr(
-      gender: gender,
-      weightKg: weight,
-      heightCm: height,
-      ageYears: age,
-    );
-    final tdee = TdeeCalculator.calculateTdee(
-      bmr: bmr,
-      activityLevel: actLevel,
-    );
-    final macros = TdeeCalculator.calculateMacros(
-      tdee: tdee,
-      goal: fitnessGoal,
-      weightKg: weight,
-    );
-
-    setState(() {
-      _recCalories = macros.calories;
-      _recProtein = macros.proteinG;
-      _recCarbs = macros.carbsG;
-      _recFat = macros.fatG;
-    });
+    _dateOfBirthController = TextEditingController();
   }
 
   @override
@@ -102,313 +48,457 @@ class _NutritionGoalsSubScreenState
     _proteinController.dispose();
     _carbsController.dispose();
     _fatController.dispose();
+    _dateOfBirthController.dispose();
     super.dispose();
   }
 
-  Future<void> _saveGoals() async {
-    final cal = int.tryParse(_caloriesController.text.trim());
-    final pro = double.tryParse(_proteinController.text.trim());
-    final carb = double.tryParse(_carbsController.text.trim());
-    final fat = double.tryParse(_fatController.text.trim());
+  void _seed(B04GoalSettingsState state) {
+    if (_seeded || state.status != B04GoalSettingsStatus.ready) return;
+    final goal = state.activeGoal;
+    if (goal != null) {
+      _caloriesController.text = goal.calorieTargetKcal?.toString() ?? '';
+      _proteinController.text = goal.proteinTargetG?.toString() ?? '';
+      _carbsController.text = goal.carbsTargetG?.toString() ?? '';
+      _fatController.text = goal.fatTargetG?.toString() ?? '';
+      _goalType = goal.goalType;
+    }
+    _seeded = true;
+  }
 
-    if (cal == null || cal < 500 || cal > 10000) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please enter a valid calorie goal (500 - 10,000 kcal).',
-          ),
-          backgroundColor: AppColors.danger,
-        ),
+  Future<void> _save() async {
+    final calories = int.tryParse(_caloriesController.text.trim());
+    final protein = double.tryParse(_proteinController.text.trim());
+    final carbs = double.tryParse(_carbsController.text.trim());
+    final fat = double.tryParse(_fatController.text.trim());
+    if (calories == null ||
+        calories <= 0 ||
+        protein == null ||
+        protein < 0 ||
+        carbs == null ||
+        carbs < 0 ||
+        fat == null ||
+        fat < 0) {
+      _showMessage(
+        'Enter valid positive calories and non-negative macro values.',
       );
       return;
     }
-
-    await HapticFeedback.mediumImpact();
-    await ref
-        .read(userProfileProvider.notifier)
-        .updateGoals(
-          calorieGoal: cal,
-          proteinGoal: pro,
-          carbsGoal: carb,
-          fatGoal: fat,
-        );
-
-    // Refresh dashboard state so calorie ring & macro bars update live
-    await ref.read(dashboardControllerProvider.notifier).loadStateData();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nutrition goals updated successfully!')),
-      );
-      Navigator.pop(context);
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(b04GoalSettingsControllerProvider.notifier)
+          .saveUserSetGoal(
+            goalType: _goalType,
+            calorieTargetKcal: calories,
+            proteinTargetG: protein,
+            carbsTargetG: carbs,
+            fatTargetG: fat,
+          );
+      if (mounted) _showMessage('Your daily target was saved.');
+    } catch (error) {
+      if (mounted) _showMessage(_errorMessage(error));
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
+
+  Future<void> _enableConsent() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Review adaptive coaching'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Adaptive coaching uses your goals and recent activity to suggest changes. Suggestions are never applied automatically—you choose whether to accept each one. You can turn coaching off at any time. This is general wellness guidance, not medical advice.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Enable adaptive coaching'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(b04GoalSettingsControllerProvider.notifier)
+          .setAdaptiveConsent(CoachingConsentAction.enable);
+    } catch (error) {
+      if (mounted) _showMessage(_errorMessage(error));
+    }
+  }
+
+  Future<void> _setConsent(CoachingConsentAction action) async {
+    try {
+      await ref
+          .read(b04GoalSettingsControllerProvider.notifier)
+          .setAdaptiveConsent(action);
+    } catch (error) {
+      if (mounted) _showMessage(_errorMessage(error));
+    }
+  }
+
+  Future<void> _saveEligibility() async {
+    setState(() => _savingEligibility = true);
+    try {
+      await ref
+          .read(b04GoalSettingsControllerProvider.notifier)
+          .recordEligibility(dateOfBirthLocalDate: _dateOfBirthController.text);
+      if (mounted) {
+        _showMessage('Your age details were saved for adaptive coaching.');
+      }
+    } catch (error) {
+      if (mounted) _showMessage(_errorMessage(error));
+    } finally {
+      if (mounted) setState(() => _savingEligibility = false);
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _errorMessage(Object error) =>
+      'That change could not be saved. Try again.';
 
   @override
   Widget build(BuildContext context) {
-    final profile = ref.watch(userProfileProvider);
-    final currentCal =
-        int.tryParse(_caloriesController.text) ?? profile.calorieGoal;
-
-    // Check if custom target is >20% off recommendation
-    double diffPercent = 0.0;
-    if (_recCalories != null && _recCalories! > 0) {
-      diffPercent = ((currentCal - _recCalories!) / _recCalories! * 100);
-    }
-    final showWarning = diffPercent.abs() > 20;
-
+    final state = ref.watch(b04GoalSettingsControllerProvider);
+    _seed(state);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nutrition & Macro Goals'),
-        backgroundColor: AppColors.background,
+        title: const Text('Goals & adaptive coaching'),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Recommendation Card
-            Card(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                ),
+      body: state.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : state.status == B04GoalSettingsStatus.failure
+          ? B04ReadStatusCard(
+              title: 'Goals & adaptive coaching unavailable',
+              message:
+                  state.errorMessage ?? 'Try again when your profile is ready.',
+              action: TextButton(
+                onPressed: () =>
+                    ref.read(b04GoalSettingsControllerProvider.notifier).load(),
+                child: const Text('Retry'),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.auto_awesome_rounded,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Calculated Recommendation',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Based on your profile (${profile.currentWeight.toStringAsFixed(1)} kg, ${(profile.userHeight ?? 170).round()} cm):',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _recChip(
-                          'Calories',
-                          '${_recCalories ?? 2000} kcal',
-                          AppColors.primary,
-                        ),
-                        _recChip(
-                          'Protein',
-                          '${(_recProtein ?? 120).round()}g',
-                          AppColors.infoBlue,
-                        ),
-                        _recChip(
-                          'Carbs',
-                          '${(_recCarbs ?? 230).round()}g',
-                          AppColors.warning,
-                        ),
-                        _recChip(
-                          'Fat',
-                          '${(_recFat ?? 65).round()}g',
-                          AppColors.danger,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-            const Text(
-              'CUSTOM TARGETS',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textMuted,
-                letterSpacing: 1.0,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Soft warning if >20% off recommendation
-            if (showWarning) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.warning.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline_rounded,
-                      color: AppColors.warning,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Note: Your custom calorie target ($currentCal kcal) is ${diffPercent.abs().round()}% ${diffPercent > 0 ? 'higher' : 'lower'} than the calculated recommendation.',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Daily Calorie Goal Input
-            TextField(
-              controller: _caloriesController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Daily Calorie Target (kcal)',
-                suffixText: 'kcal',
-                prefixIcon: const Icon(
-                  Icons.local_fire_department_rounded,
-                  color: AppColors.primary,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 16),
-
-            // Protein Target Input
-            TextField(
-              controller: _proteinController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Protein Target (grams)',
-                suffixText: 'g',
-                prefixIcon: const Icon(
-                  Icons.fitness_center_rounded,
-                  color: AppColors.infoBlue,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Carbs Target Input
-            TextField(
-              controller: _carbsController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Carbohydrates Target (grams)',
-                suffixText: 'g',
-                prefixIcon: const Icon(
-                  Icons.grain_rounded,
-                  color: AppColors.warning,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Fat Target Input
-            TextField(
-              controller: _fatController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Fats Target (grams)',
-                suffixText: 'g',
-                prefixIcon: const Icon(
-                  Icons.opacity_rounded,
-                  color: AppColors.danger,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            // Save Button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _saveGoals,
-                icon: const Icon(Icons.check_circle_rounded),
-                label: const Text(
-                  'Save Nutrition Goals',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+            )
+          : _buildBody(context, state),
     );
   }
 
-  Widget _recChip(String label, String val, Color color) {
-    return Column(
+  Widget _buildBody(BuildContext context, B04GoalSettingsState state) {
+    final active = state.activeGoal;
+    final availability = state.availability;
+    final enabled = availability?.preferences.adaptiveCoachingEnabled ?? false;
+    return ListView(
+      padding: const EdgeInsets.all(20),
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          val,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
+        _buildCurrentTargetCard(active),
+        const SizedBox(height: 16),
+        _buildGoalForm(),
+        const SizedBox(height: 16),
+        _buildEligibilityCard(),
+        const SizedBox(height: 16),
+        _buildConsentCard(state, enabled),
+        const SizedBox(height: 16),
+        _buildAvailabilityCard(availability),
+        const SizedBox(height: 16),
+        _buildHistoryCard(state),
+        const SizedBox(height: 16),
+        const _B04WordingBoundaryCard(),
       ],
     );
   }
+
+  Widget _buildCurrentTargetCard(NutritionGoalVersionReadModel? active) {
+    if (active == null) {
+      return const B04ReadStatusCard(
+        title: 'No daily target yet',
+        message:
+            'Enter your target below to start personalising your guidance.',
+      );
+    }
+    final target = active.calorieTargetKcal == null
+        ? 'No calorie target'
+        : '${active.calorieTargetKcal} kcal/day';
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Semantics(
+          container: true,
+          label: 'Your current daily target: $target',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your current daily target',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                target,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                active.isUserSet
+                    ? 'Set by you'
+                    : 'Personalised from your goals and activity',
+              ),
+              Text(
+                'In effect from ${ConsumerDateLabel.day(active.effectiveFromLocalDate)}',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoalForm() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Set a user target',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Your entries take effect from today. IndiFit keeps the numbers you enter and does not adjust them silently.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<NutritionGoalType>(
+            initialValue: _goalType,
+            decoration: const InputDecoration(labelText: 'Goal type'),
+            items: const [
+              DropdownMenuItem(
+                value: NutritionGoalType.loss,
+                child: Text('Loss'),
+              ),
+              DropdownMenuItem(
+                value: NutritionGoalType.maintenance,
+                child: Text('Maintenance'),
+              ),
+              DropdownMenuItem(
+                value: NutritionGoalType.gain,
+                child: Text('Gain'),
+              ),
+              DropdownMenuItem(
+                value: NutritionGoalType.custom,
+                child: Text('Custom'),
+              ),
+            ],
+            onChanged: (value) {
+              if (value != null) setState(() => _goalType = value);
+            },
+          ),
+          const SizedBox(height: 12),
+          _numberField(
+            _caloriesController,
+            'Daily calorie target',
+            'kcal',
+            allowDecimal: false,
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              SizedBox(
+                width: 150,
+                child: _numberField(_proteinController, 'Protein', 'g'),
+              ),
+              SizedBox(
+                width: 150,
+                child: _numberField(_carbsController, 'Carbohydrates', 'g'),
+              ),
+              SizedBox(
+                width: 150,
+                child: _numberField(_fatController, 'Fat', 'g'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: const Icon(Icons.save_outlined),
+              label: Text(_saving ? 'Saving…' : 'Save user-set target'),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _numberField(
+    TextEditingController controller,
+    String label,
+    String suffix, {
+    bool allowDecimal = true,
+  }) => TextField(
+    controller: controller,
+    keyboardType: allowDecimal
+        ? const TextInputType.numberWithOptions(decimal: true)
+        : TextInputType.number,
+    decoration: InputDecoration(labelText: label, suffixText: suffix),
+  );
+
+  Widget _buildConsentCard(B04GoalSettingsState state, bool enabled) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Adaptive coaching consent',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Off by default. You choose whether to use coaching suggestions, and you can turn them off at any time.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Adaptive coaching'),
+            subtitle: Text(enabled ? 'Enabled' : 'Disabled'),
+            value: enabled,
+            onChanged: enabled
+                ? (_) => _setConsent(CoachingConsentAction.disable)
+                : (_) => _enableConsent(),
+          ),
+          if (enabled)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: () => _setConsent(CoachingConsentAction.withdraw),
+                child: const Text('Withdraw adaptive coaching consent'),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _buildEligibilityCard() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Age details', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          const Text(
+            'Some coaching suggestions use your age. IndiFit never guesses it from activity or food logs. Enter your date of birth to make those suggestions available.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _dateOfBirthController,
+            keyboardType: TextInputType.datetime,
+            decoration: const InputDecoration(
+              labelText: 'Date of birth',
+              hintText: 'YYYY-MM-DD',
+              helperText: 'Used only to tailor coaching suggestions.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _savingEligibility ? null : _saveEligibility,
+              icon: const Icon(Icons.verified_outlined),
+              label: Text(_savingEligibility ? 'Saving…' : 'Save age details'),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _buildAvailabilityCard(CoachingAvailabilityReadModel? availability) {
+    final reason = availability?.reasonCode ?? 'coaching_unavailable_age';
+    return B04ReadStatusCard(
+      title: 'Adaptive availability',
+      message: b04ProductionStateCopy(reason),
+      detail: availability?.eligibility == null
+          ? 'Add your date of birth to personalise coaching.'
+          : 'Age details are available for coaching.',
+    );
+  }
+
+  Widget _buildHistoryCard(B04GoalSettingsState state) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('History', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (state.goalHistory.isEmpty && state.consentHistory.isEmpty)
+            const Text('No goal or consent history is available yet.'),
+          for (final goal in state.goalHistory)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.flag_outlined),
+              title: Text(
+                'Daily target: ${goal.calorieTargetKcal ?? 'Not available'} kcal/day',
+              ),
+              subtitle: Text(
+                ConsumerDateLabel.day(goal.effectiveFromLocalDate),
+              ),
+            ),
+          for (final event in state.consentHistory)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.verified_user_outlined),
+              title: Text('Coaching ${_consentActionLabel(event.action)}'),
+              subtitle: Text(ConsumerDateLabel.dateTime(event.timestampUtc)),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+String _consentActionLabel(CoachingConsentAction action) => switch (action) {
+  CoachingConsentAction.enable => 'enabled',
+  CoachingConsentAction.disable => 'disabled',
+  CoachingConsentAction.withdraw => 'withdrawn',
+};
+
+class _B04WordingBoundaryCard extends StatelessWidget {
+  const _B04WordingBoundaryCard();
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Semantics(
+        container: true,
+        label: 'Wellness wording boundary',
+        child: const Text(
+          'IndiFit provides general wellness guidance only. It does not diagnose, prescribe treatment, guarantee outcomes or replace qualified professional care. Safety-sensitive guidance may be unavailable when information is uncertain.',
+        ),
+      ),
+    ),
+  );
 }

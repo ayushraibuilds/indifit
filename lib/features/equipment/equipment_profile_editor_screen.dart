@@ -74,11 +74,13 @@ class _EquipmentProfileEditorScreenState
               item.weightIncrementKg?.toString() ?? '';
         }
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading profile: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Equipment profile could not be loaded. Try again.'),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -123,9 +125,9 @@ class _EquipmentProfileEditorScreenState
             ),
           )
           .toList(growable: false);
-    } on ArgumentError catch (error) {
+    } on ArgumentError {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message?.toString() ?? '$error')),
+        const SnackBar(content: Text('Enter valid positive numbers.')),
       );
       return;
     }
@@ -155,11 +157,13 @@ class _EquipmentProfileEditorScreenState
           const SnackBar(content: Text('Equipment profile saved.')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving profile: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Equipment profile could not be saved. Try again.'),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

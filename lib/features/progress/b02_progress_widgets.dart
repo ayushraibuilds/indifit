@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/presentation/consumer_date_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/models/b02_muscle_volume_models.dart';
 import '../../data/models/b02_progress_read_models.dart';
 import 'b02_progress_controller.dart';
+import 'b02_progress_presentation.dart';
 
 /// B02 progress read models rendered on the existing Progress surface. The
 /// widget only formats values and chooses explicit empty/unknown states; it
@@ -19,16 +22,23 @@ class B02ProgressOverview extends ConsumerWidget {
     if (state.status == B02ProgressStatus.failure && data == null) {
       return _B02ProgressFailureCard(
         message: state.issues.isEmpty
-            ? 'Progress data is unavailable.'
-            : state.issues.first,
+            ? ProductFailurePresentation.fromCode(
+                'progress_unavailable',
+              ).message
+            : 'Some progress details could not be loaded. Try again.',
         onRetry: () => ref.read(b02ProgressControllerProvider.notifier).retry(),
       );
     }
     if (data == null) {
-      return const Card(
+      return Card(
         child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Center(child: CircularProgressIndicator()),
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: Semantics(
+              label: 'Loading progress',
+              child: const CircularProgressIndicator(),
+            ),
+          ),
         ),
       );
     }
@@ -47,7 +57,7 @@ class B02ProgressOverview extends ConsumerWidget {
                 ref.read(b02ProgressControllerProvider.notifier).retry(),
           ),
         Text(
-          'Read range: ${data.query.startLocalDate} – ${data.query.endLocalDate} · ${data.query.timezoneId}',
+          'Showing ${B02ProgressPresentation.range(data.query)}',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 8),
@@ -72,12 +82,14 @@ class B02ProgressActivityHistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _B02ReadCard(
       title: 'Activity history',
-      subtitle:
-          'Date range and modality are taken from persisted activity rows.',
+      subtitle: 'Your completed workouts and activities.',
       child: records == null
           ? const _B02Unavailable(label: 'Activity history')
           : records!.isEmpty
-          ? const _B02Empty(label: 'No activity in this date range.')
+          ? const _B02Empty(
+              label:
+                  'Complete a workout to start building your activity history.',
+            )
           : Column(
               children: [
                 for (final record in records!.take(8))
@@ -97,7 +109,7 @@ class _ActivityRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final detail = record.isLegacy
-        ? 'Legacy B01 projection · ${record.legacySetCount} sets'
+        ? 'Earlier workout · ${record.legacySetCount} sets'
         : switch (record.activityType) {
             B02ActivityType.strength =>
               '${record.performedExerciseCount} exercises · ${record.performedGroupCount} groups',
@@ -106,20 +118,17 @@ class _ActivityRow extends StatelessWidget {
             B02ActivityType.walking =>
               record.hasCardioDetail
                   ? '${record.cardioIntervalCount} intervals · cardio detail'
-                  : 'Cardio detail unavailable',
+                  : 'Cardio details not available yet',
             B02ActivityType.yoga || B02ActivityType.mobility =>
               record.hasMobilityDetail
                   ? 'Mobility detail'
-                  : 'Mobility detail unavailable',
-            B02ActivityType.legacy => 'Legacy B01 projection',
+                  : 'Mobility details not available yet',
+            B02ActivityType.legacy => 'Earlier workout',
           };
-    final source = record.isLegacy
-        ? 'Legacy'
-        : switch (record.source) {
-            B02ActivitySource.manual => 'Manual',
-            B02ActivitySource.healthImport => 'Health import',
-            null => 'Source unknown',
-          };
+    final source = B02ProgressPresentation.sourceLabel(
+      record.source,
+      legacy: record.isLegacy,
+    );
     return Semantics(
       label:
           '${record.name}, ${_activityLabel(record.activityType)}, $source, $detail',
@@ -128,7 +137,7 @@ class _ActivityRow extends StatelessWidget {
         dense: true,
         title: Text(record.name),
         subtitle: Text(
-          '${_activityLabel(record.activityType)} · ${_dateLabel(record.completedAtUtc)}\n$detail',
+          '${_activityLabel(record.activityType)} · ${B02ProgressPresentation.date(record.completedAtUtc)}\n$detail',
         ),
         trailing: Chip(
           label: Text(source),
@@ -149,12 +158,12 @@ class B02ProgressGroupHistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _B02ReadCard(
       title: 'Group history',
-      subtitle: 'Supersets, circuits, and giant sets retain member status.',
+      subtitle: 'Strength groups and rounds from your workouts.',
       child: records == null
           ? const _B02Unavailable(label: 'Group history')
           : records!.isEmpty
           ? const _B02Empty(
-              label: 'No grouped strength activity in this range.',
+              label: 'Complete a grouped strength workout to see it here.',
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -174,7 +183,7 @@ class _GroupRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final members = group.members.isEmpty
-        ? 'Members unavailable'
+        ? 'Exercise details not available yet'
         : group.members
               .map(
                 (member) => member.wasSubstituted
@@ -191,7 +200,7 @@ class _GroupRow extends StatelessWidget {
         dense: true,
         title: Text(group.label ?? _groupLabel(group.groupType)),
         subtitle: Text(
-          '${_groupLabel(group.groupType)} · ${_dateLabel(group.completedAtUtc)}\n$members',
+          '${_groupLabel(group.groupType)} · ${B02ProgressPresentation.date(group.completedAtUtc)}\n$members',
         ),
         trailing: Text(rounds),
       ),
@@ -207,14 +216,13 @@ class B02ProgressTargetEvidenceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _B02ReadCard(
-      title: 'Target evidence',
-      subtitle:
-          'Frozen rule version, confidence, and explanation are shown as recorded.',
+      title: 'Suggested targets',
+      subtitle: 'Suggested targets based on your completed strength work.',
       child: records == null
-          ? const _B02Unavailable(label: 'Target evidence')
+          ? const _B02Unavailable(label: 'Suggested targets')
           : records!.isEmpty
           ? const _B02Empty(
-              label: 'No canonical strength target evidence in this range.',
+              label: 'Complete a strength workout to start seeing progress.',
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -236,9 +244,8 @@ class _TargetRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final recommendation = record.recommendation;
     final explanation = recommendation == null
-        ? 'No target evidence recorded'
-        : '${recommendation.confidence.dbValue} confidence · ${recommendation.ruleVersion} · ${recommendation.comparatorCount} comparators';
-    final rationale = recommendation?.rationaleCodes.join(', ');
+        ? 'A target will appear after a strength workout.'
+        : '${B02ProgressPresentation.confidence(recommendation.confidence.dbValue)} · Based on your recent training';
     final target = recommendation == null
         ? 'Target unavailable'
         : _targetLabel(recommendation);
@@ -249,8 +256,7 @@ class _TargetRow extends StatelessWidget {
         dense: true,
         title: Text(record.actualExerciseName),
         subtitle: Text(
-          '${_dateLabel(record.completedAtUtc)} · $explanation'
-          '${rationale == null ? '' : '\nWhy: $rationale'}',
+          '${B02ProgressPresentation.date(record.completedAtUtc)} · $explanation',
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -277,14 +283,14 @@ class B02ProgressMuscleHeatMapCard extends StatelessWidget {
     return _B02ReadCard(
       title: 'Weekly muscle sets',
       subtitle: model == null
-          ? 'Metric: working-set units; effective evidence unavailable.'
-          : 'Metric: working-set units; effective evidence when target-backed · '
-                '${model.startLocalDate} – ${model.endLocalDate} · ${model.timezoneId}',
+          ? 'Training volume by muscle group.'
+          : 'Training volume · ${ConsumerDateLabel.range(model.startLocalDate, model.endLocalDate)}',
       child: model == null
           ? const _B02Unavailable(label: 'Muscle volume')
           : model.isEmpty
           ? const _B02Empty(
-              label: 'No canonical working sets in this date range.',
+              label:
+                  'Complete a workout to see which muscle groups you’re training.',
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -306,7 +312,7 @@ class B02ProgressMuscleHeatMapCard extends StatelessWidget {
                 if (model.hasLegacyCoverage) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'Legacy history: ${model.legacySetCount} sets are count-only and excluded from mapped muscle allocation.',
+                    'Some earlier sets could not be assigned to a muscle group.',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -324,8 +330,8 @@ class _CoverageSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'Working sets: ${model.totalWorkingSetCount} · mapped: ${model.mappedWorkingSetCount} '
-      '(${_coverageLabel(model.mappingCoverage)}) · effective evidence: ${_coverageLabel(model.effectiveEvidenceCoverage)}',
+      '${model.mappedWorkingSetCount} of ${model.totalWorkingSetCount} working sets mapped to a muscle group '
+      '(${_coverageLabel(model.mappingCoverage)})',
       style: Theme.of(context).textTheme.bodySmall,
     );
   }
@@ -339,11 +345,11 @@ class _MuscleCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effective = cell.effectiveSetUnits == null
-        ? 'Unknown'
+        ? 'Not available'
         : _number(cell.effectiveSetUnits!);
     return Semantics(
       label:
-          '${cell.displayName}: ${_number(cell.workingSetUnits)} working set units; effective evidence $effective',
+          '${cell.displayName}: ${_number(cell.workingSetUnits)} working sets',
       child: Container(
         width: 132,
         padding: const EdgeInsets.all(10),
@@ -361,8 +367,8 @@ class _MuscleCell extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
-            Text('${_number(cell.workingSetUnits)} working'),
-            Text('$effective effective'),
+            Text('${_number(cell.workingSetUnits)} working sets'),
+            Text('$effective training sets'),
           ],
         ),
       ),
@@ -377,14 +383,10 @@ class _UnknownSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effective = unknown.effectiveSetUnits == null
-        ? 'Unknown'
-        : _number(unknown.effectiveSetUnits!);
     return Semantics(
-      label:
-          'Unknown muscle mapping: ${_number(unknown.workingSetUnits)} working set units; effective evidence $effective',
+      label: 'Some sets could not be assigned to a muscle group yet',
       child: Text(
-        'Unknown mapping: ${unknown.workingSetCount} working sets · ${_number(unknown.workingSetUnits)} working units · effective $effective',
+        '${unknown.workingSetCount} sets need a little more information before they can be assigned.',
         style: Theme.of(context).textTheme.bodySmall,
       ),
     );
@@ -443,7 +445,7 @@ class _B02Unavailable extends StatelessWidget {
     return Semantics(
       label: '$label unavailable',
       child: Text(
-        '$label unavailable · retry to load this metric.',
+        '$label unavailable · try again to see more.',
         style: Theme.of(context).textTheme.bodyMedium,
       ),
     );
@@ -503,12 +505,7 @@ class _B02ProgressIssueBanner extends StatelessWidget {
           children: [
             const Icon(Icons.info_outline),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                '$title ${issues.join(' ')}',
-                semanticsLabel: '$title ${issues.join(' ')}',
-              ),
-            ),
+            Expanded(child: Text(title, semanticsLabel: title)),
             TextButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
@@ -524,7 +521,7 @@ String _activityLabel(B02ActivityType type) => switch (type) {
   B02ActivityType.walking => 'Walking',
   B02ActivityType.yoga => 'Yoga',
   B02ActivityType.mobility => 'Mobility',
-  B02ActivityType.legacy => 'Legacy workout',
+  B02ActivityType.legacy => 'Earlier workout',
 };
 
 String _groupLabel(B02GroupType type) => switch (type) {
@@ -533,24 +530,17 @@ String _groupLabel(B02GroupType type) => switch (type) {
   B02GroupType.giantSet => 'Giant set',
 };
 
-String _dateLabel(DateTime value) {
-  final utc = value.toUtc();
-  return '${utc.year.toString().padLeft(4, '0')}-'
-      '${utc.month.toString().padLeft(2, '0')}-'
-      '${utc.day.toString().padLeft(2, '0')}';
-}
-
 String _number(double value) => value.toStringAsFixed(1);
 
 String _coverageLabel(double? coverage) =>
-    coverage == null ? 'Unknown' : '${(coverage * 100).round()}%';
+    coverage == null ? 'Not available' : '${(coverage * 100).round()}%';
 
 String _targetLabel(B02TargetRecommendation recommendation) {
   final load = recommendation.recommendedLoadKg == null
-      ? 'load unknown'
+      ? 'Load not set'
       : '${_number(recommendation.recommendedLoadKg!)} kg';
   final reps = recommendation.targetRepsMin == null
-      ? 'reps unknown'
+      ? 'Reps not set'
       : recommendation.targetRepsMax == null
       ? '${recommendation.targetRepsMin} reps'
       : '${recommendation.targetRepsMin}–${recommendation.targetRepsMax} reps';

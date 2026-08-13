@@ -88,8 +88,12 @@ class DashboardState {
 class DashboardController extends StateNotifier<DashboardState> {
   final Ref _ref;
 
-  DashboardController(this._ref) : super(DashboardState()) {
-    loadStateData();
+  DashboardController(
+    this._ref, {
+    DashboardState? initialState,
+    bool loadOnInit = true,
+  }) : super(initialState ?? DashboardState()) {
+    if (loadOnInit) loadStateData();
   }
 
   void setSelectedDate(DateTime date) {
@@ -98,16 +102,22 @@ class DashboardController extends StateNotifier<DashboardState> {
 
   Future<void> loadStateData() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     final weight = prefs.getDouble('current_weight') ?? 74.5;
     final calGoal = prefs.getInt('calorie_goal') ?? 2000;
 
     state = state.copyWith(currentWeight: weight, calorieGoal: calGoal);
 
     await loadTodayWorkout();
+    if (!mounted) return;
     await calculateWeeklyAdherence();
+    if (!mounted) return;
     await loadWeightHistory();
+    if (!mounted) return;
     await computeStreak();
+    if (!mounted) return;
     await loadWeeklyActionProgress();
+    if (!mounted) return;
     await _evaluateAchievements();
   }
 
@@ -157,6 +167,7 @@ class DashboardController extends StateNotifier<DashboardState> {
   Future<void> loadWeightHistory() async {
     final repo = _ref.read(workoutRepositoryProvider);
     final measurements = await repo.getBodyMeasurements();
+    if (!mounted) return;
     final recent = measurements.take(6).toList().reversed.toList();
     final weights = recent
         .where((m) => m.weight != null)
@@ -180,7 +191,9 @@ class DashboardController extends StateNotifier<DashboardState> {
     final freezes = prefs.getInt('streak_freezes_count') ?? 1;
 
     final foodDates = await foodRepo.getAllLogDates();
+    if (!mounted) return;
     final workoutDates = await workoutRepo.getAllSessionDates();
+    if (!mounted) return;
 
     final Set<String> activeDays = {};
     for (final d in foodDates) {

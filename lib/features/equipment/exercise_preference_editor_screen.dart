@@ -79,10 +79,14 @@ class _ExercisePreferenceEditorScreenState
           _cueControllers.add(TextEditingController(text: c.cueText));
         }
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading preferences: $e')),
+          const SnackBar(
+            content: Text(
+              'Exercise preferences could not be loaded. Try again.',
+            ),
+          ),
         );
       }
     } finally {
@@ -138,11 +142,15 @@ class _ExercisePreferenceEditorScreenState
           const SnackBar(content: Text('Exercise setup & cues saved.')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving preferences: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Exercise preferences could not be saved. Try again.',
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

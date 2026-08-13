@@ -25,13 +25,16 @@ class LogWeightBottomSheet extends ConsumerStatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: LogWeightBottomSheet(
-          currentWeight: currentWeight,
-          onSave: onSave,
+      builder: (context) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: LogWeightBottomSheet(
+            currentWeight: currentWeight,
+            onSave: onSave,
+          ),
         ),
       ),
     );
@@ -130,10 +133,7 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
       if (mounted) {
         setState(() {
           _isSaving = false;
-          _errorMessage = e.toString().replaceFirst(
-            RegExp(r'^(Exception|StateError):\s*'),
-            '',
-          );
+          _errorMessage = 'Weight could not be saved. Try again.';
         });
       }
     }
@@ -150,52 +150,60 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Log Body Weight',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 2),
-                  if (_loadingStatus)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     const Text(
-                      'Checking lock status...',
+                      'Log Body Weight',
                       style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textMuted,
-                      ),
-                    )
-                  else if (isLocked)
-                    Text(
-                      'Locked for ${_status!.daysUntilUnlock} days',
-                      style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.warning,
-                      ),
-                    )
-                  else if (_status?.isEditingToday == true)
-                    Text(
-                      'Editing Today\'s Entry (${_selectedWeight.toStringAsFixed(1)} kg)',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    )
-                  else
-                    const Text(
-                      'New Weekly Entry',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.success,
                       ),
                     ),
-                ],
+                    const SizedBox(height: 2),
+                    if (_loadingStatus)
+                      const Text(
+                        'Checking lock status...',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                        ),
+                      )
+                    else if (isLocked)
+                      Text(
+                        'Locked for ${_status!.daysUntilUnlock} days',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.warning,
+                        ),
+                      )
+                    else if (_status?.isEditingToday == true)
+                      Text(
+                        'Editing Today\'s Entry (${_selectedWeight.toStringAsFixed(1)} kg)',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      )
+                    else
+                      const Text(
+                        'New Weekly Entry',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.success,
+                        ),
+                      ),
+                  ],
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.close, color: AppColors.textSecondary),
@@ -314,8 +322,10 @@ class _LogWeightBottomSheetState extends ConsumerState<LogWeightBottomSheet> {
           ),
           const SizedBox(height: 16),
           // Quick increment / decrement chips
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Wrap(
+            alignment: WrapAlignment.spaceEvenly,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _buildStepChip(
                 '-0.5 kg',

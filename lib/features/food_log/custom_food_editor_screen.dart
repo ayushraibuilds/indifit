@@ -2,7 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
 
@@ -78,6 +78,7 @@ class _CustomFoodEditorScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
+            behavior: SnackBarBehavior.floating,
             content: Text('"${_nameController.text}" saved to custom foods.'),
           ),
         );
@@ -100,151 +101,157 @@ class _CustomFoodEditorScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Custom Food'),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Food Name (English) *',
-                  hintText: 'e.g., Homemade Paneer Bhurji',
-                ),
-                validator: (val) =>
-                    val == null || val.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _nameHindiController,
-                decoration: const InputDecoration(
-                  labelText: 'Food Name (Hindi/Optional)',
-                  hintText: 'e.g., पनीर भुर्जी',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _brandController,
-                decoration: const InputDecoration(
-                  labelText: 'Brand (Optional)',
-                  hintText: 'e.g., Amul, Mother Dairy, Haldirams',
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
+      appBar: AppBar(title: const Text('Create Custom Food')),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.all(20.0),
+          child: TapRegion(
+            onTapOutside: (_) => FocusScope.of(context).unfocus(),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _servingSizeController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: 'Serving Size *',
-                      ),
-                      validator: (val) =>
-                          val == null || double.tryParse(val) == null
-                          ? 'Invalid'
-                          : null,
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Food Name (English) *',
+                      hintText: 'e.g., Homemade Paneer Bhurji',
+                    ),
+                    validator: (val) =>
+                        val == null || val.trim().isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _nameHindiController,
+                    decoration: const InputDecoration(
+                      labelText: 'Food Name (Hindi/Optional)',
+                      hintText: 'e.g., पनीर भुर्जी',
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _servingUnitController,
-                      decoration: const InputDecoration(
-                        labelText: 'Serving Unit (e.g. g, ml, pc) *',
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _brandController,
+                    decoration: const InputDecoration(
+                      labelText: 'Brand (Optional)',
+                      hintText: 'e.g., Amul, Mother Dairy, Haldirams',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _servingSizeController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Serving Size *',
+                          ),
+                          validator: (val) =>
+                              val == null || double.tryParse(val) == null
+                              ? 'Invalid'
+                              : null,
+                        ),
                       ),
-                      validator: (val) =>
-                          val == null || val.trim().isEmpty ? 'Required' : null,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _servingUnitController,
+                          decoration: const InputDecoration(
+                            labelText: 'Serving Unit (e.g. g, ml, pc) *',
+                          ),
+                          validator: (val) => val == null || val.trim().isEmpty
+                              ? 'Required'
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _caloriesController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Calories (kcal) *',
+                    ),
+                    validator: (val) => val == null || int.tryParse(val) == null
+                        ? 'Invalid'
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _proteinController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Protein (g) *',
+                          ),
+                          validator: (val) =>
+                              val == null || double.tryParse(val) == null
+                              ? 'Invalid'
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _carbsController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Carbs (g) *',
+                          ),
+                          validator: (val) =>
+                              val == null || double.tryParse(val) == null
+                              ? 'Invalid'
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _fatController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Fat (g) *',
+                          ),
+                          validator: (val) =>
+                              val == null || double.tryParse(val) == null
+                              ? 'Invalid'
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: _saveCustomFood,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.b05Colors.action,
+                      foregroundColor: context.b05Colors.onAction,
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Save Custom Food',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _caloriesController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Calories (kcal) *',
-                ),
-                validator: (val) =>
-                    val == null || int.tryParse(val) == null ? 'Invalid' : null,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _proteinController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: 'Protein (g) *',
-                      ),
-                      validator: (val) =>
-                          val == null || double.tryParse(val) == null
-                          ? 'Invalid'
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _carbsController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: 'Carbs (g) *',
-                      ),
-                      validator: (val) =>
-                          val == null || double.tryParse(val) == null
-                          ? 'Invalid'
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _fatController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(labelText: 'Fat (g) *'),
-                      validator: (val) =>
-                          val == null || double.tryParse(val) == null
-                          ? 'Invalid'
-                          : null,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: _saveCustomFood,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Save Custom Food',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

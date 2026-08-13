@@ -83,7 +83,7 @@ class NutritionConstraintEvaluationReviewController
     state = state.copyWith(
       status: NutritionConstraintEvaluationReviewStatus.failure,
       errorCode: 'missing_review_subject',
-      message: 'A resolved food or recipe version is required to review it.',
+      message: 'Choose a food or recipe before reviewing this check.',
     );
   }
 
@@ -108,7 +108,7 @@ class NutritionConstraintEvaluationReviewController
       state = state.copyWith(
         status: NutritionConstraintEvaluationReviewStatus.failure,
         errorCode: typed?.code ?? 'constraint_review_failed',
-        message: typed?.message ?? 'Could not review dietary evidence.',
+        message: 'We couldn’t complete this dietary check. Try again.',
       );
     }
   }

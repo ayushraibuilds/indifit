@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/theme/colors.dart';
-import '../../data/models/b02_execution_models.dart';
+import '../../core/presentation/consumer_date_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
-import '../workout_player/b02_strength_execution_controller.dart';
 import 'calendar_controller.dart';
+import 'workout_contextual_launcher.dart';
 
 /// Modal action sheet for calendar occurrences exposing B01 domain actions.
 class OccurrenceActionsSheet extends ConsumerStatefulWidget {
@@ -28,17 +29,18 @@ class _OccurrenceActionsSheetState
 
   Future<void> _startWorkout() async {
     final occurrence = widget.occurrenceItem.occurrence;
-    final dates = ref.read(localScheduleDateServiceProvider);
-    final startsOutsideEffectiveDate =
-        dates.todayIn(occurrence.effectiveTimezoneId) !=
-        occurrence.effectiveLocalDate;
-    if (startsOutsideEffectiveDate) {
+    final needsConfirmation =
+        WorkoutContextualLauncher.requiresDateConfirmation(
+          ref,
+          widget.occurrenceItem,
+        );
+    if (needsConfirmation) {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Start outside scheduled date?'),
           content: Text(
-            'This workout is scheduled for ${occurrence.effectiveLocalDate} in ${occurrence.effectiveTimezoneId}. Starting it will not move or skip any other workout.',
+            'This workout is scheduled for ${ConsumerDateLabel.day(occurrence.effectiveLocalDate)}. Starting it will not move or skip any other workout.',
           ),
           actions: [
             TextButton(
@@ -56,71 +58,29 @@ class _OccurrenceActionsSheetState
     }
     setState(() => _isLoading = true);
     try {
-      final activityType = B02ActivityType.parse(
-        widget.occurrenceItem.template.activityType,
+      final target = await WorkoutContextualLauncher.prepare(
+        ref: ref,
+        item: widget.occurrenceItem,
+        confirmedOutsideEffectiveDate: needsConfirmation,
       );
-      final isStrength = activityType == B02ActivityType.strength;
-      if (isStrength) {
-        final coverage = await ref
-            .read(strengthExecutionCompatibilityAdapterProvider)
-            .checkScheduledCoverage(occurrence.id);
-        if (coverage.supported) {
-          final b02 = ref.read(b02StrengthExecutionControllerProvider.notifier);
-          if (occurrence.status == 'inProgress') {
-            await b02.resumeScheduled(occurrence.id);
-          } else {
-            await b02.startScheduled(
-              occurrenceId: occurrence.id,
-              commandId: 'b02-start-${DateTime.now().millisecondsSinceEpoch}',
-              confirmedOutsideEffectiveDate: startsOutsideEffectiveDate,
-            );
-          }
-          final b02State = ref.read(b02StrengthExecutionControllerProvider);
-          if (b02State.status == B02StrengthExecutionStatus.ready &&
-              b02State.launch != null &&
-              mounted) {
-            Navigator.pop(context);
-            await context.push(
-              '/b02-strength-player',
-              extra: {'launch': b02State.launch},
-            );
-            return;
-          }
-          // In-progress v1 drafts intentionally remain on the retained B01
-          // route; the successor reports this as recovery rather than guessing.
-          if (b02State.status != B02StrengthExecutionStatus.recovery) {
-            throw StateError(
-              b02State.errorMessage ??
-                  'B02 strength draft could not be started.',
-            );
-          }
-        }
-      } else if (activityType != B02ActivityType.legacy) {
-        throw StateError(
-          'Scheduled ${activityType.dbValue} activity uses the typed activity flow; it must not open the legacy strength player.',
-        );
-      }
-      final adapter = ref.read(workoutExecutionCompatibilityAdapterProvider);
-      final launchData = occurrence.status == 'inProgress'
-          ? await adapter.resumeScheduledOccurrence(occurrence.id)
-          : await adapter.startScheduledOccurrence(
-              occurrenceId: occurrence.id,
-              commandId: 'cmd-start-${DateTime.now().millisecondsSinceEpoch}',
-              confirmedOutsideEffectiveDate: startsOutsideEffectiveDate,
-            );
 
       if (mounted) {
-        Navigator.pop(context); // Close sheet
-        await context.push(
-          '/workout-player',
-          extra: {'scheduledLaunch': launchData},
-        );
+        Navigator.pop(context);
+        await WorkoutContextualLauncher.push(context, target);
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to start workout: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ProductFailurePresentation.fromError(
+                error,
+                title: 'Workout could not be started',
+                code: 'workout_unavailable',
+              ).message,
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -148,8 +108,8 @@ class _OccurrenceActionsSheetState
         content: TextField(
           controller: timezoneController,
           decoration: const InputDecoration(
-            labelText: 'IANA timezone',
-            helperText: 'For example: Asia/Kolkata or Europe/London',
+            labelText: 'Time zone',
+            helperText: 'Use the time zone where you will train.',
           ),
         ),
         actions: [
@@ -184,15 +144,27 @@ class _OccurrenceActionsSheetState
       );
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Rescheduled to $newDateStr.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Rescheduled to ${ConsumerDateLabel.day(newDateStr)}.',
+            ),
+          ),
+        );
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Reschedule failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ProductFailurePresentation.fromError(
+                error,
+                title: 'Workout could not be rescheduled',
+                code: 'calendar_unavailable',
+              ).message,
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -204,21 +176,18 @@ class _OccurrenceActionsSheetState
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(
-            'Skip Workout',
-            style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
-          ),
+          title: const Text('Skip workout'),
           content: const Text(
-            'How would you like to handle progression for this skipped workout?',
+            'Would you like to make it up later, or skip it and continue your plan?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, 'keepPending'),
-              child: const Text('1. Keep Pending (Make up later)'),
+              child: const Text('Make it up later'),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () => Navigator.pop(context, 'skipAndAdvance'),
-              child: const Text('2. Skip & Advance Progression'),
+              child: const Text('Skip Workout'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, null),
@@ -251,17 +220,25 @@ class _OccurrenceActionsSheetState
           SnackBar(
             content: Text(
               isBypass
-                  ? 'Skipped and advanced progression.'
-                  : 'Skipped (Kept pending for make-up).',
+                  ? 'Workout skipped. Your plan will continue.'
+                  : 'Workout kept on your plan for later.',
             ),
           ),
         );
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Skip failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ProductFailurePresentation.fromError(
+                error,
+                title: 'Workout could not be skipped',
+                code: 'calendar_unavailable',
+              ).message,
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -302,11 +279,19 @@ class _OccurrenceActionsSheetState
           context,
         ).showSnackBar(const SnackBar(content: Text('Occurrence cancelled.')));
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Cancel failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ProductFailurePresentation.fromError(
+                error,
+                title: 'Workout could not be cancelled',
+                code: 'calendar_unavailable',
+              ).message,
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -318,15 +303,15 @@ class _OccurrenceActionsSheetState
       context: context,
       builder: (context) {
         return SimpleDialog(
-          title: const Text('Repeat Workout Purpose'),
+          title: const Text('Repeat workout'),
           children: [
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, 'makeUp'),
-              child: const Text('Make-up Repeat (Fulfills pending ordinal)'),
+              child: const Text('Make up a missed workout'),
             ),
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, 'extra'),
-              child: const Text('Extra Repeat (Additional volume)'),
+              child: const Text('Add an extra workout'),
             ),
           ],
         );
@@ -359,9 +344,11 @@ class _OccurrenceActionsSheetState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Repeat failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Repeat could not be created. Try again.'),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -382,9 +369,11 @@ class _OccurrenceActionsSheetState
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Restore failed: $error')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Workout could not be restored. Try again.'),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -396,35 +385,32 @@ class _OccurrenceActionsSheetState
         .read(calendarRepositoryProvider)
         .getOccurrenceHistory(widget.occurrenceItem.occurrence.id);
     if (!mounted) return;
-    await showModalBottomSheet<void>(
+    await showIndiFitBottomSheet<void>(
       context: context,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.all(16),
-          children: [
-            const Text(
-              'Occurrence history',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            if (events.isEmpty) const Text('No recorded events.'),
-            ...events.map(
-              (event) => ListTile(
-                title: Text(event.eventType),
-                subtitle: Text(
-                  '${event.fromStatus ?? '—'} → ${event.toStatus ?? '—'}\n${event.occurredAtUtc.toLocal()}',
-                ),
+      semanticLabel: 'Workout history',
+      builder: (context) => ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.all(B05Layout.space16),
+        children: [
+          Text('Occurrence history', style: B05Typography.title(context)),
+          const SizedBox(height: 8),
+          if (events.isEmpty) const Text('No recorded events.'),
+          ...events.map(
+            (event) => ListTile(
+              title: Text(_eventLabel(event.eventType)),
+              subtitle: Text(
+                '${_statusLabel(event.fromStatus)} → ${_statusLabel(event.toStatus)}\n${ConsumerDateLabel.dateTime(event.occurredAtUtc)}',
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.b05Colors;
     final item = widget.occurrenceItem;
     final occ = item.occurrence;
     final isStartable = occ.status == 'planned' || occ.status == 'rescheduled';
@@ -436,129 +422,150 @@ class _OccurrenceActionsSheetState
       'cancelled',
     }.contains(occ.status);
     final isRestorable = occ.status == 'skipped' || occ.status == 'cancelled';
+    final scheduledDateLabel = ConsumerDateLabel.day(occ.originalLocalDate);
+    final dateLabel = occ.originalLocalDate == occ.effectiveLocalDate
+        ? 'Scheduled for $scheduledDateLabel'
+        : 'Moved to ${ConsumerDateLabel.day(occ.effectiveLocalDate)}';
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    item.template.name,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
-                    ),
-                  ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(B05Layout.space16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  item.template.name,
+                  style: B05Typography.title(context),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    occ.status.toUpperCase(),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Scheduled: ${occ.originalLocalDate} • ${occ.originalTimezoneId}\nEffective: ${occ.effectiveLocalDate} • ${occ.effectiveTimezoneId}${item.isOverdue ? " • OVERDUE" : ""}',
-              style: TextStyle(
-                color: item.isOverdue ? Colors.orange : Colors.grey,
-                fontWeight: item.isOverdue
-                    ? FontWeight.bold
-                    : FontWeight.normal,
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '${item.block.name} • Week ${item.week.programWeekOrdinal + 1}${item.isDeload ? ' • Deload' : ''}',
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            if (item.prescriptions.isNotEmpty)
-              Text(
-                item.prescriptions
-                    .map(
-                      (prescription) =>
-                          '${prescription.exerciseNameSnapshot} (${prescription.plannedSets} × ${prescription.repsRange})',
-                    )
-                    .join('\n'),
-                style: const TextStyle(fontSize: 13),
-              ),
-            const SizedBox(height: 8),
-            if (_isLoading)
-              const Center(child: CircularProgressIndicator())
-            else ...[
-              if (isStartable || isInProgress)
-                ListTile(
-                  leading: const Icon(
-                    Icons.play_arrow_rounded,
-                    color: AppColors.primary,
-                  ),
-                  title: Text(
-                    isInProgress ? 'Resume Workout' : 'Start Workout',
-                  ),
-                  onTap: _startWorkout,
+              B05Surface(
+                tone: B05SurfaceTone.selected,
+                radius: B05SurfaceRadius.small,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: B05Layout.space8,
+                  vertical: B05Layout.space4,
                 ),
-              if (isStartable) ...[
-                ListTile(
-                  leading: const Icon(Icons.edit_calendar_rounded),
-                  title: const Text('Reschedule'),
-                  onTap: _rescheduleOccurrence,
+                child: Text(
+                  _statusLabel(occ.status),
+                  style: B05Typography.caption(
+                    context,
+                  ).copyWith(color: colors.action, fontWeight: FontWeight.bold),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.skip_next_rounded),
-                  title: const Text('Skip Workout'),
-                  onTap: _showSkipDialog,
-                ),
-                ListTile(
-                  leading: const Icon(Icons.cancel_outlined, color: Colors.red),
-                  title: const Text(
-                    'Cancel Workout',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  onTap: _cancelOccurrence,
-                ),
-              ],
-              if (isRestorable)
-                ListTile(
-                  leading: const Icon(Icons.undo_rounded),
-                  title: const Text('Restore to Plan'),
-                  onTap: _restoreOccurrence,
-                ),
-              if (isTerminal)
-                ListTile(
-                  leading: const Icon(Icons.repeat_rounded),
-                  title: const Text('Repeat Workout'),
-                  onTap: _showRepeatDialog,
-                ),
-              ListTile(
-                leading: const Icon(Icons.history_rounded),
-                title: const Text('View History'),
-                onTap: _showHistory,
               ),
             ],
+          ),
+          const SizedBox(height: B05Layout.space4),
+          Text(
+            '$dateLabel${item.isOverdue ? ' • Overdue' : ''}',
+            style: B05Typography.caption(context).copyWith(
+              color: item.isOverdue
+                  ? colors.warning.indicator
+                  : colors.textSecondary,
+              fontWeight: item.isOverdue ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          const SizedBox(height: B05Layout.space16),
+          Text(
+            '${item.block.name} • Week ${item.week.programWeekOrdinal + 1}${item.isDeload ? ' • Deload' : ''}',
+            style: B05Typography.caption(context),
+          ),
+          const SizedBox(height: B05Layout.space8),
+          if (item.prescriptions.isNotEmpty)
+            Text(
+              item.prescriptions
+                  .map(
+                    (prescription) =>
+                        '${prescription.exerciseNameSnapshot} (${prescription.plannedSets} × ${prescription.repsRange})',
+                  )
+                  .join('\n'),
+              style: B05Typography.caption(context),
+            ),
+          const SizedBox(height: B05Layout.space8),
+          if (_isLoading)
+            Center(
+              child: Semantics(
+                liveRegion: true,
+                label: 'Updating workout',
+                child: CircularProgressIndicator(color: colors.action),
+              ),
+            )
+          else ...[
+            if (isStartable || isInProgress)
+              ListTile(
+                leading: Icon(Icons.play_arrow_rounded, color: colors.action),
+                title: Text(isInProgress ? 'Resume Workout' : 'Start Workout'),
+                onTap: _startWorkout,
+              ),
+            if (isStartable) ...[
+              ListTile(
+                leading: const Icon(Icons.edit_calendar_rounded),
+                title: const Text('Reschedule'),
+                onTap: _rescheduleOccurrence,
+              ),
+              ListTile(
+                leading: const Icon(Icons.skip_next_rounded),
+                title: const Text('Skip Workout'),
+                onTap: _showSkipDialog,
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.cancel_outlined,
+                  color: colors.danger.indicator,
+                ),
+                title: Text(
+                  'Cancel Workout',
+                  style: B05Typography.body(
+                    context,
+                  ).copyWith(color: colors.danger.indicator),
+                ),
+                onTap: _cancelOccurrence,
+              ),
+            ],
+            if (isRestorable)
+              ListTile(
+                leading: const Icon(Icons.undo_rounded),
+                title: const Text('Restore to Plan'),
+                onTap: _restoreOccurrence,
+              ),
+            if (isTerminal)
+              ListTile(
+                leading: const Icon(Icons.repeat_rounded),
+                title: const Text('Repeat Workout'),
+                onTap: _showRepeatDialog,
+              ),
+            ListTile(
+              leading: const Icon(Icons.history_rounded),
+              title: const Text('View History'),
+              onTap: _showHistory,
+            ),
           ],
-        ),
+        ],
       ),
     );
+  }
+
+  static String _eventLabel(String value) => value
+      .replaceAll('_', ' ')
+      .split(' ')
+      .where((part) => part.isNotEmpty)
+      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
+
+  static String _statusLabel(String? value) {
+    final key = value?.trim() ?? '';
+    return switch (key) {
+      'planned' => 'Planned',
+      'rescheduled' => 'Rescheduled',
+      'completed' => 'Completed',
+      'partiallyCompleted' => 'Partially completed',
+      'inProgress' => 'In progress',
+      'skipped' => 'Skipped',
+      'cancelled' => 'Cancelled',
+      _ => key.isEmpty ? '—' : 'Status not available',
+    };
   }
 }

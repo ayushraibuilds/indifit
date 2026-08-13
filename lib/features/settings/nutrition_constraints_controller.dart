@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/nutrition_constraints.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/repositories/nutrition_constraint_repository.dart';
 
 enum NutritionConstraintManagementStatus {
@@ -118,7 +119,7 @@ class NutritionConstraintManagementController
       state = state.copyWith(
         status: NutritionConstraintManagementStatus.success,
         constraints: next,
-        message: 'Constraint saved.',
+        message: 'Dietary need saved.',
         clearError: true,
       );
     } catch (error) {
@@ -148,7 +149,7 @@ class NutritionConstraintManagementController
             ? NutritionConstraintManagementStatus.empty
             : NutritionConstraintManagementStatus.success,
         constraints: next,
-        message: 'Constraint archived.',
+        message: 'Dietary need archived.',
         clearError: true,
       );
     } catch (error) {
@@ -161,7 +162,7 @@ class NutritionConstraintManagementController
       _failure(
         const NutritionConstraintValidationError(
           'constraint_ownership',
-          'A dietary constraint can only be edited by its owner.',
+          'A dietary need can only be edited by its owner.',
         ),
       );
       return;
@@ -180,7 +181,7 @@ class NutritionConstraintManagementController
       state = state.copyWith(
         status: NutritionConstraintManagementStatus.success,
         constraints: next,
-        message: 'Constraint updated.',
+        message: 'Dietary need updated.',
         clearError: true,
       );
     } catch (error) {
@@ -190,12 +191,23 @@ class NutritionConstraintManagementController
 
   Future<void> retry() => load();
 
+  Future<List<NutritionConstraintTargetOption>> searchTargetOptions({
+    required NutritionConstraintTargetType type,
+    String query = '',
+  }) => _repository.searchTargetOptions(type: type, query: query);
+
+  Future<String?> targetDisplayLabel(NutritionConstraintTarget target) =>
+      _repository.targetDisplayLabel(target);
+
   void _failure(Object error) {
     final typed = error is NutritionConstraintError ? error : null;
     state = state.copyWith(
       status: NutritionConstraintManagementStatus.failure,
       errorCode: typed?.code ?? 'constraint_operation_failed',
-      message: typed?.message ?? 'Could not update dietary constraints.',
+      message: ProductFailurePresentation.fromCode(
+        typed?.code ?? 'constraint_operation_failed',
+        title: 'Dietary needs unavailable',
+      ).message,
     );
   }
 }

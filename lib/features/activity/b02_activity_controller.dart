@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_activity_session_repository.dart';
 
@@ -84,7 +85,10 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
       if (!mounted) return;
       state = B02ActivityControllerState(
         status: B02ActivityControllerStatus.failure,
-        errorMessage: error.toString(),
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Activity could not be started',
+        ).message,
       );
     }
   }
@@ -115,7 +119,10 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
       state = B02ActivityControllerState(
         status: B02ActivityControllerStatus.failure,
         draft: currentDraft,
-        errorMessage: error.toString(),
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Activity could not be saved',
+        ).message,
       );
     }
   }
@@ -145,7 +152,10 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
       state = B02ActivityControllerState(
         status: B02ActivityControllerStatus.failure,
         draft: currentDraft,
-        errorMessage: error.toString(),
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Activity could not be completed',
+        ).message,
       );
     }
   }
@@ -173,7 +183,10 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
       if (!mounted) return;
       state = B02ActivityControllerState(
         status: B02ActivityControllerStatus.recovery,
-        errorMessage: error.toString(),
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Activity draft could not be recovered',
+        ).message,
       );
     }
   }
@@ -200,7 +213,10 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
       state = B02ActivityControllerState(
         status: B02ActivityControllerStatus.failure,
         draft: currentDraft,
-        errorMessage: error.toString(),
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Activity draft could not be discarded',
+        ).message,
       );
     }
   }

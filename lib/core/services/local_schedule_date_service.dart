@@ -123,6 +123,27 @@ class LocalScheduleDateService {
     return _format(local.year, local.month, local.day);
   }
 
+  /// Returns an instant inside an explicitly selected civil date in the
+  /// supplied timezone. Feature flows use this for historical logging so a
+  /// device timezone change cannot move a selected date across midnight.
+  DateTime instantForLocalDate(
+    String localDate,
+    String timezoneId, {
+    int hour = 12,
+  }) {
+    final date = _parse(normalizeLocalDate(localDate));
+    if (hour < 0 || hour > 23) {
+      throw ArgumentError.value(hour, 'hour', 'Must be between 0 and 23.');
+    }
+    return tz.TZDateTime(
+      locationFor(timezoneId),
+      date.$1,
+      date.$2,
+      date.$3,
+      hour,
+    ).toUtc();
+  }
+
   int compare(String first, String second) {
     return normalizeLocalDate(first).compareTo(normalizeLocalDate(second));
   }

@@ -272,7 +272,7 @@ void main() {
         expect(find.text('TRAVEL ACTIVE'), findsOneWidget);
 
         // Travel details.
-        expect(find.text('01/08/2026 — 07/08/2026'), findsOneWidget);
+        expect(find.text('Aug 1 – Aug 7, 2026'), findsOneWidget);
         expect(find.textContaining('Europe/London'), findsOneWidget);
         expect(find.text('Business trip'), findsOneWidget);
 
@@ -359,8 +359,8 @@ void main() {
         expect(find.text('Travel Preview'), findsOneWidget);
 
         // Summary chips.
-        expect(find.textContaining('01/08/2026'), findsAtLeastNWidgets(1));
-        expect(find.textContaining('Europe/London'), findsOneWidget);
+        expect(find.textContaining('Aug 1'), findsAtLeastNWidgets(1));
+        expect(find.textContaining('Europe/London'), findsNothing);
         expect(find.text('Hotel Gym'), findsOneWidget);
 
         // Stats.
@@ -368,8 +368,8 @@ void main() {
         expect(find.text('1'), findsOneWidget); // 1 with incompatible
 
         // Occurrence items.
-        expect(find.text('02/08/2026'), findsOneWidget);
-        expect(find.text('05/08/2026'), findsOneWidget);
+        expect(find.textContaining('Aug 2'), findsOneWidget);
+        expect(find.textContaining('Aug 5'), findsOneWidget);
 
         // Incompatible exercises.
         expect(find.textContaining('Barbell Squat'), findsOneWidget);
@@ -477,7 +477,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Travel Preview'), findsOneWidget);
-        expect(find.textContaining('Preview is stale'), findsOneWidget);
+        expect(
+          find.text('Travel mode could not be applied. Try again.'),
+          findsOneWidget,
+        );
       },
     );
 

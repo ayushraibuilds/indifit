@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
+import '../../../core/widgets/b05_accessibility_primitives.dart';
+import '../../../core/widgets/responsive_form_primitives.dart';
 
 class PlateCalculatorSheet extends StatefulWidget {
   final double targetWeight;
@@ -74,82 +76,79 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
+    final colors = context.b05Colors;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(B05Layout.space20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Plate Calculator',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  'Plate Calculator',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: B05Typography.title(context),
+                ),
               ),
               IconButton(
+                tooltip: 'Close plate calculator',
                 icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.of(context).maybePop(),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Row(
+          IndiFitResponsiveFieldGroup(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Target Weight (kg)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${_targetWeight.toStringAsFixed(1)} kg',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Target Weight (kg)',
+                    style: B05Typography.caption(context),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_targetWeight.toStringAsFixed(1)} kg',
+                    style: B05Typography.metric(
+                      context,
+                    ).copyWith(color: colors.action),
+                  ),
+                ],
               ),
               Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Barbell',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                  Text('Barbell', style: B05Typography.caption(context)),
                   const SizedBox(height: 4),
                   DropdownButton<double>(
                     value: _barbellWeight,
+                    isExpanded: true,
                     underline: const SizedBox.shrink(),
                     items: const [
                       DropdownMenuItem(
                         value: 20.0,
-                        child: Text('20 kg (Olympic)'),
+                        child: Text(
+                          '20 kg (Olympic)',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       DropdownMenuItem(
                         value: 15.0,
-                        child: Text('15 kg (Women)'),
+                        child: Text(
+                          '15 kg (Women)',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       DropdownMenuItem(
                         value: 10.0,
-                        child: Text('10 kg (EZ Bar)'),
+                        child: Text(
+                          '10 kg (EZ Bar)',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                     onChanged: (val) {
@@ -166,38 +165,29 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
             ],
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'LOADING PER SIDE',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
-              letterSpacing: 0.5,
-            ),
+            style: B05Typography.caption(
+              context,
+            ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .6),
           ),
           const SizedBox(height: 12),
           if (_calculatedPlates.isEmpty && _unmatchedWeight == 0.0)
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Center(
-                  child: Text(
-                    'Barbell alone covers target weight.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
+            B05Surface(
+              child: Center(
+                child: Text(
+                  'Barbell alone covers target weight.',
+                  style: B05Typography.body(context),
                 ),
               ),
             )
           else
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Row(
+            B05Surface(
+              child: Column(
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(width: 20, height: 6, color: Colors.grey),
@@ -216,16 +206,19 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
                                 decoration: BoxDecoration(
                                   color: _getPlateColor(weight),
                                   borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: colors.border),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
                                   weight % 1 == 0
                                       ? '${weight.toInt()}'
                                       : '$weight',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 8,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: weight == 5.0
+                                        ? colors.textPrimary
+                                        : Colors.white,
                                   ),
                                 ),
                               ),
@@ -234,18 +227,29 @@ class _PlateCalculatorSheetState extends State<PlateCalculatorSheet> {
                         }),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _calculatedPlates.entries
+                        .map((e) => '${e.value}x ${e.key}kg')
+                        .join('  +  '),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  if (_unmatchedWeight > 0) ...[
+                    const SizedBox(height: 8),
                     Text(
-                      _calculatedPlates.entries
-                          .map((e) => '${e.value}x ${e.key}kg')
-                          .join('  +  '),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                      'Still to load: ${_unmatchedWeight.toStringAsFixed(2)} kg per side',
+                      style: TextStyle(
+                        color: colors.warning.foreground,
+                        fontWeight: FontWeight.w600,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
-                ),
+                ],
               ),
             ),
           const SizedBox(height: 12),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 
 import '../../core/services/local_schedule_date_service.dart';
@@ -70,13 +72,46 @@ class CalendarReadRepository {
       throw ArgumentError('Start local date must not be after end local date.');
     }
 
-    final watch = _db.select(_db.scheduledSessionOccurrences)
+    final occurrenceWatch = _db.select(_db.scheduledSessionOccurrences)
       ..where(
         (table) =>
             table.effectiveLocalDate.isBiggerOrEqualValue(start) &
             table.effectiveLocalDate.isSmallerOrEqualValue(end),
       );
-    return watch.watch().map<void>((_) {});
+
+    // The active plan pointer is a separate canonical row from occurrences.
+    // Watching only the date-bounded occurrence query leaves an already
+    // mounted Training tab showing "No training plan yet" after activation.
+    // Merge the small identity/settings watches so all consumers reconcile from
+    // the same read repository without inferring a plan from Calendar rows.
+    late final StreamController<void> controller;
+    final subscriptions = <StreamSubscription<void>>[];
+    controller = StreamController<void>(
+      onListen: () {
+        final streams = <Stream<void>>[
+          occurrenceWatch.watch().map<void>((_) {}),
+          _db.select(_db.trainingPlanSettings).watch().map<void>((_) {}),
+          _db.select(_db.programVersions).watch().map<void>((_) {}),
+          _db.select(_db.programs).watch().map<void>((_) {}),
+        ];
+        for (final stream in streams) {
+          subscriptions.add(
+            // Drift watches emit their current snapshot immediately. That
+            // first value establishes the watch and must not invalidate the
+            // provider that just created it, otherwise the subscription can
+            // continuously recreate itself without a database change.
+            stream.skip(1).listen(controller.add, onError: controller.addError),
+          );
+        }
+      },
+      onCancel: () async {
+        await Future.wait(
+          subscriptions.map((subscription) => subscription.cancel()),
+        );
+        subscriptions.clear();
+      },
+    );
+    return controller.stream;
   }
 
   Future<CalendarReadSnapshot> readSnapshot({

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
@@ -54,14 +56,18 @@ class B02StrengthExecutionController
   final StrengthExecutionCompatibilityAdapter _adapter;
   final B02StrengthExecutionDraftService _draftService;
   final B02RestDraftCoordinator _restCoordinator;
+  final DateTime Function() _nowUtc;
+  DateTime? _activeStartedAtUtc;
 
   B02StrengthExecutionController(
     this._adapter, {
     B02StrengthExecutionLaunch? initialLaunch,
     B02StrengthExecutionDraftService? draftService,
     B02RestDraftCoordinator? restCoordinator,
+    DateTime Function()? nowUtc,
   }) : _draftService = draftService ?? const B02StrengthExecutionDraftService(),
        _restCoordinator = restCoordinator ?? const B02RestDraftCoordinator(),
+       _nowUtc = nowUtc ?? _systemNowUtc,
        super(
          initialLaunch == null
              ? const B02StrengthExecutionUiState.initial()
@@ -69,7 +75,11 @@ class B02StrengthExecutionController
                  status: B02StrengthExecutionStatus.ready,
                  launch: initialLaunch,
                ),
-       );
+       ) {
+    _activeStartedAtUtc = _nowUtc().toUtc();
+  }
+
+  static DateTime _systemNowUtc() => DateTime.now().toUtc();
 
   Future<void> startScheduled({
     required String occurrenceId,
@@ -119,11 +129,12 @@ class B02StrengthExecutionController
       clearError: true,
     );
     try {
-      await _adapter.saveDraft(draftId: current.draftId, state: draft);
+      final durableDraft = _stampElapsed(draft);
+      await _adapter.saveDraft(draftId: current.draftId, state: durableDraft);
       if (!mounted) return;
       state = state.copyWith(
         status: B02StrengthExecutionStatus.partial,
-        launch: current.copyWith(state: draft),
+        launch: current.copyWith(state: durableDraft),
         clearError: true,
       );
     } catch (error) {
@@ -148,9 +159,13 @@ class B02StrengthExecutionController
       clearError: true,
     );
     try {
-      final slots = await _adapter.readExecutionSlots(current);
+      final prepared = await _adapter.prepareExecution(current);
       if (!mounted) return;
-      state = state.copyWith(status: previousStatus, slots: slots);
+      state = state.copyWith(
+        status: previousStatus,
+        launch: current.copyWith(state: prepared.state),
+        slots: prepared.slots,
+      );
     } catch (error) {
       _setFailure(error, current);
     }
@@ -160,6 +175,7 @@ class B02StrengthExecutionController
     required B02StrengthExecutionSlot slot,
     required int reps,
     double? loadKg,
+    B02LoadBasis? actualLoadBasis,
     int? rpe,
     B02SetRole role = B02SetRole.working,
     B02TechniqueFields? technique,
@@ -181,12 +197,17 @@ class B02StrengthExecutionController
         slot: slot,
         reps: reps,
         loadKg: loadKg,
+        actualLoadBasis: actualLoadBasis,
         rpe: rpe,
         role: role,
         technique: technique,
         actualExerciseId: actualExerciseId,
         actualExerciseNameSnapshot: actualExerciseNameSnapshot,
         substitutionReason: substitutionReason,
+        sourceExercisePrescriptionId: current.occurrenceId == null
+            ? null
+            : slot.prescriptionId,
+        useSlotPrescription: current.occurrenceId != null,
       );
       await saveDraft(next);
     } catch (error) {
@@ -215,40 +236,203 @@ class B02StrengthExecutionController
     }
   }
 
+  Future<void> addUnscheduledExercise({
+    required String exerciseId,
+    required String exerciseName,
+  }) async {
+    final current = state.launch;
+    if (current == null || current.occurrenceId != null) return;
+    state = state.copyWith(status: B02StrengthExecutionStatus.loading);
+    try {
+      final updated = await _adapter.addUnscheduledExercise(
+        launch: current,
+        exerciseId: exerciseId,
+        exerciseName: exerciseName,
+      );
+      final prepared = await _adapter.prepareExecution(updated);
+      if (!mounted) return;
+      state = B02StrengthExecutionUiState(
+        status: B02StrengthExecutionStatus.ready,
+        launch: updated.copyWith(state: prepared.state),
+        slots: prepared.slots,
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  Future<void> removeUnscheduledExercise(B02StrengthExecutionSlot slot) async {
+    final current = state.launch;
+    if (current == null || current.occurrenceId != null) return;
+    state = state.copyWith(status: B02StrengthExecutionStatus.loading);
+    try {
+      final updated = await _adapter.removeUnscheduledExercise(
+        launch: current,
+        prescriptionId: slot.prescriptionId,
+      );
+      final prepared = await _adapter.prepareExecution(updated);
+      if (!mounted) return;
+      state = B02StrengthExecutionUiState(
+        status: B02StrengthExecutionStatus.ready,
+        launch: updated.copyWith(state: prepared.state),
+        slots: prepared.slots,
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
   Future<void> beginRest(
     B02StrengthExecutionSlot slot, {
-    int selectedSeconds = RestRecommendationService.defaultSeconds,
+    int? selectedSeconds,
   }) async {
     final current = state.launch;
     if (current == null) return;
     try {
       final performed = current.state.performedExercises.where(
         (exercise) =>
-            exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
-            exercise.groupRoundOrdinal == slot.roundOrdinal &&
-            exercise.groupMemberOrdinal == slot.memberOrdinal,
+            exercise.id == 'performed:${slot.id}' ||
+            (exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+                exercise.groupRoundOrdinal == slot.roundOrdinal &&
+                exercise.groupMemberOrdinal == slot.memberOrdinal),
       );
       final sets = performed.expand((exercise) => exercise.sets).toList();
-      final setId = sets.isEmpty ? null : sets.last.id;
-      if (setId == null && slot.groupId == null) {
-        throw const B02ValidationException(
-          'Log a set before starting exercise rest.',
-        );
+      final lastSet = sets.isEmpty ? null : sets.last;
+      final setId = lastSet?.id;
+      if (setId == null) {
+        throw const B02ValidationException('Log a set before starting rest.');
+      }
+      final group = slot.groupId == null
+          ? null
+          : current.state.groups.firstWhere(
+              (candidate) => candidate.id == slot.groupId,
+              orElse: () => throw const B02ValidationException(
+                'The current group is missing from the frozen draft.',
+              ),
+            );
+      final isLastGroupMember =
+          group != null && slot.memberOrdinal == group.members.length - 1;
+      final restPauseSeconds = lastSet?.technique.isRestPause == true
+          ? lastSet!.technique.segments
+                .skip(1)
+                .map((segment) => segment.restBeforeSeconds)
+                .whereType<int>()
+                .firstOrNull
+          : null;
+      final scope = restPauseSeconds != null
+          ? B02RestScope.restPause
+          : group == null
+          ? B02RestScope.exerciseSet
+          : isLastGroupMember
+          ? B02RestScope.groupRound
+          : B02RestScope.groupTransition;
+      final recommendation = const RestRecommendationService().recommend(
+        B02RestSelectionRequest(
+          scope: scope,
+          userSelectedSeconds: selectedSeconds,
+          prescribedSeconds: restPauseSeconds ?? slot.prescribedRestSeconds,
+          memberTransitionRestSeconds: slot.memberTransitionRestSeconds,
+          groupRestAfterRoundSeconds: slot.groupRestAfterRoundSeconds,
+          exercisePreferenceSeconds: slot.exercisePreferenceRestSeconds,
+          templateDefaultRestSeconds: slot.templateDefaultRestSeconds,
+          rpe: lastSet?.actualRpe,
+          effortMode: lastSet?.technique.effortMode ?? slot.effortMode,
+          endedAtFailure:
+              lastSet?.technique.endedAtFailure ?? slot.endedAtFailure,
+        ),
+      );
+      if (!recommendation.isAvailable) {
+        throw B02ValidationException(recommendation.explanation);
       }
       final period = B02RestPeriod(
         id: 'rest:${slot.id}:${current.state.restPeriods.length}',
-        performedSetId: setId,
-        performedExerciseGroupId: setId == null ? slot.groupId : null,
-        scope: slot.groupId == null
-            ? B02RestScope.exerciseSet
-            : B02RestScope.groupTransition,
-        recommendedSeconds: selectedSeconds,
-        selectedSeconds: selectedSeconds,
+        performedSetId:
+            scope == B02RestScope.exerciseSet || scope == B02RestScope.restPause
+            ? setId
+            : null,
+        performedExerciseGroupId:
+            scope == B02RestScope.exerciseSet || scope == B02RestScope.restPause
+            ? null
+            : slot.groupId,
+        scope: scope,
+        recommendedSeconds: recommendation.recommendedSeconds,
+        selectedSeconds: recommendation.selectedSeconds,
         actualSeconds: null,
-        source: B02RestSource.user,
-        startedAtUtc: DateTime.now().toUtc(),
+        source: recommendation.source,
+        startedAtUtc: _nowUtc().toUtc(),
       );
       await saveDraft(_restCoordinator.begin(current.state, period));
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  Future<void> overrideTarget(
+    B02StrengthExecutionSlot slot, {
+    double? loadKg,
+    B02LoadBasis? loadBasis,
+    int? targetRepsMin,
+    int? targetRepsMax,
+    int? targetRpe,
+  }) async {
+    final current = state.launch;
+    if (current == null) return;
+    try {
+      final next = _draftService.applyTargetOverride(
+        state: current.state,
+        slot: slot,
+        override: B02TargetOverride(
+          loadKg: loadKg,
+          loadBasis: loadBasis ?? slot.targetLoadBasis,
+          targetRepsMin: targetRepsMin ?? slot.targetRepsMin,
+          targetRepsMax: targetRepsMax ?? slot.targetRepsMax,
+          targetRpe: targetRpe ?? slot.targetRpe,
+        ),
+      );
+      await saveDraft(next);
+      if (!mounted) return;
+      final selected = next.targetOverrides[slot.id];
+      if (selected == null) return;
+      state = state.copyWith(
+        slots: [
+          for (final value in state.slots)
+            value.id == slot.id
+                ? value.copyWith(
+                    targetLoadKg: selected.loadKg,
+                    targetLoadBasis: selected.loadBasis,
+                    targetRepsMin: selected.targetRepsMin,
+                    targetRepsMax: selected.targetRepsMax,
+                    targetRpe: selected.targetRpe,
+                  )
+                : value,
+        ],
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  Future<void> chooseWarmup(B02WarmupDecision decision) async {
+    final current = state.launch;
+    if (current == null) return;
+    try {
+      await saveDraft(_draftService.chooseWarmup(current.state, decision));
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  Future<void> editWarmup(List<B02WarmupSetProposal> proposals) async {
+    final current = state.launch;
+    if (current == null) return;
+    try {
+      await saveDraft(
+        _draftService.chooseWarmup(
+          current.state,
+          B02WarmupDecision.edited,
+          selectedProposals: proposals,
+        ),
+      );
     } catch (error) {
       _setFailure(error, current);
     }
@@ -266,6 +450,36 @@ class B02StrengthExecutionController
     }
   }
 
+  Future<void> adjustRest(String periodId, {required int seconds}) async {
+    final current = state.launch;
+    if (current == null) return;
+    try {
+      final period = current.state.restPeriods.firstWhere(
+        (candidate) => candidate.id == periodId,
+      );
+      final selected =
+          (period.selectedSeconds ?? period.recommendedSeconds ?? 0) + seconds;
+      final adjusted = selected.clamp(0, 3600);
+      final now = _nowUtc().toUtc();
+      final elapsed = now
+          .difference(period.startedAtUtc)
+          .inSeconds
+          .clamp(0, 86400);
+      await saveDraft(
+        adjusted <= elapsed
+            ? _restCoordinator.finish(
+                current.state,
+                periodId,
+                endedAtUtc: now,
+                endReason: B02RestEndReason.elapsed,
+              )
+            : _restCoordinator.select(current.state, periodId, adjusted),
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
   Future<void> skipRest(String periodId) async {
     final current = state.launch;
     if (current == null) return;
@@ -274,7 +488,27 @@ class B02StrengthExecutionController
         _restCoordinator.skip(
           current.state,
           periodId,
-          endedAtUtc: DateTime.now().toUtc(),
+          endedAtUtc: _nowUtc().toUtc(),
+        ),
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  /// Completes an elapsed countdown through the same durable B02 rest path as
+  /// an explicit skip. The timer is presentation-only; it never mutates a
+  /// rest period directly.
+  Future<void> completeRest(String periodId, {DateTime? endedAtUtc}) async {
+    final current = state.launch;
+    if (current == null) return;
+    try {
+      await saveDraft(
+        _restCoordinator.finish(
+          current.state,
+          periodId,
+          endedAtUtc: (endedAtUtc ?? _nowUtc()).toUtc(),
+          endReason: B02RestEndReason.elapsed,
         ),
       );
     } catch (error) {
@@ -301,10 +535,12 @@ class B02StrengthExecutionController
       clearError: true,
     );
     try {
+      final finalState = _stampElapsed(current.state);
+      await _adapter.saveDraft(draftId: current.draftId, state: finalState);
       await _adapter.finalizeDraft(
         draftId: current.draftId,
         commandId: commandId,
-        state: current.state,
+        state: finalState,
         completionKind: completionKind,
         reason: reason,
         completedAtUtc: completedAtUtc,
@@ -313,11 +549,44 @@ class B02StrengthExecutionController
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
       );
-    } on B02StrengthExecutionRecoveryException catch (error) {
+      _activeStartedAtUtc = null;
+    } on B02StrengthExecutionRecoveryException catch (error, stackTrace) {
+      _logFinalizationFailure(
+        error,
+        stackTrace,
+        current: current,
+        commandId: commandId,
+        completionKind: completionKind,
+      );
       _setFailure(error, current, recovery: true);
-    } catch (error) {
+    } catch (error, stackTrace) {
+      _logFinalizationFailure(
+        error,
+        stackTrace,
+        current: current,
+        commandId: commandId,
+        completionKind: completionKind,
+      );
       _setFailure(error, current);
     }
+  }
+
+  void _logFinalizationFailure(
+    Object error,
+    StackTrace stackTrace, {
+    required B02StrengthExecutionLaunch current,
+    required String commandId,
+    required CompletionKind completionKind,
+  }) {
+    AppLogger.error(
+      'Workout finalization failed '
+          '[draftId=${current.draftId}, occurrenceId=${current.occurrenceId ?? 'quick'}, '
+          'commandId=$commandId, completionKind=${completionKind.name}, '
+          'errorType=${error.runtimeType}]',
+      error,
+      stackTrace,
+      'B02Finalization',
+    );
   }
 
   Future<void> discard() async {
@@ -333,6 +602,7 @@ class B02StrengthExecutionController
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
       );
+      _activeStartedAtUtc = null;
     } catch (error) {
       _setFailure(error, current);
     }
@@ -342,13 +612,14 @@ class B02StrengthExecutionController
     state = const B02StrengthExecutionUiState.initial();
     try {
       final launch = await _adapter.readDraft(draftId);
-      final slots = await _adapter.readExecutionSlots(launch);
+      final prepared = await _adapter.prepareExecution(launch);
       if (!mounted) return;
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
-        launch: launch,
-        slots: slots,
+        launch: launch.copyWith(state: prepared.state),
+        slots: prepared.slots,
       );
+      _activeStartedAtUtc = _nowUtc().toUtc();
     } catch (error) {
       _setFailure(error, null, recovery: true);
     }
@@ -364,18 +635,44 @@ class B02StrengthExecutionController
     );
     try {
       final launch = await operation();
-      final slots = await _adapter.readExecutionSlots(launch);
+      final prepared = await _adapter.prepareExecution(launch);
       if (!mounted) return;
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
-        launch: launch,
-        slots: slots,
+        launch: launch.copyWith(state: prepared.state),
+        slots: prepared.slots,
       );
+      _activeStartedAtUtc = _nowUtc().toUtc();
     } on B02StrengthExecutionRecoveryException catch (error) {
       _setFailure(error, prior, recovery: true);
     } catch (error) {
       _setFailure(error, prior);
     }
+  }
+
+  /// Persists active wall-clock time before the player leaves the foreground.
+  Future<void> pauseElapsed() async {
+    final current = state.launch;
+    if (current == null || _activeStartedAtUtc == null) return;
+    await saveDraft(current.state);
+    _activeStartedAtUtc = null;
+  }
+
+  /// Starts a fresh foreground interval without counting background time.
+  void resumeElapsed() {
+    if (state.launch != null && _activeStartedAtUtc == null) {
+      _activeStartedAtUtc = _nowUtc().toUtc();
+    }
+  }
+
+  B02ExecutionDraftState _stampElapsed(B02ExecutionDraftState draft) {
+    final started = _activeStartedAtUtc;
+    if (started == null) return draft;
+    final now = _nowUtc().toUtc();
+    final added = now.difference(started).inSeconds;
+    _activeStartedAtUtc = now;
+    if (added <= 0) return draft;
+    return draft.copyWith(elapsedSeconds: draft.elapsedSeconds + added);
   }
 
   void _setFailure(
@@ -389,7 +686,9 @@ class B02StrengthExecutionController
           ? B02StrengthExecutionStatus.recovery
           : B02StrengthExecutionStatus.failure,
       launch: launch,
-      errorMessage: error.toString(),
+      errorMessage: ProductFailurePresentation.fromCode(
+        recovery ? 'workout_recovery_needed' : 'workout_save_failed',
+      ).message,
     );
   }
 }
@@ -416,3 +715,7 @@ final b02StrengthExecutionScreenControllerProvider = StateNotifierProvider
         initialLaunch: launch,
       ),
     );
+
+extension _B02FirstOrNull<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
+}

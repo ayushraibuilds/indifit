@@ -8,6 +8,7 @@ import '../../../core/theme/colors.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/food_repository.dart';
 import '../../food_log/ai_meal_logger_screen.dart';
+import '../../food_log/canonical_food_delete.dart';
 import '../../food_log/food_search_screen.dart';
 import '../../food_log/meal_templates_screen.dart';
 import '../../food_log/thali_builder_screen.dart';
@@ -335,11 +336,11 @@ class _MealCard extends ConsumerWidget {
           backgroundColor: AppColors.success,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not save template: $e'),
+        const SnackBar(
+          content: Text('Meal template could not be saved. Try again.'),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -522,14 +523,37 @@ class _MealCard extends ConsumerWidget {
     final canonicalRecords = unifiedDay?.records
         .where((record) => !record.isLegacy && record.mealCategory == type)
         .toList(growable: false);
-    final canonicalCalories = canonicalRecords?.fold<double>(
-      0,
-      (sum, record) =>
-          sum + (record.totals.facts['energy']?.point?.value.asDouble ?? 0),
-    );
+    var canonicalCalories = 0.0;
+    var canonicalEnergyLower = 0.0;
+    var canonicalEnergyUpper = 0.0;
+    var canonicalEnergyUnknown = false;
+    var canonicalEnergyRange = false;
+    for (final record in canonicalRecords ?? const []) {
+      final fact = record.totals.facts['energy'];
+      if (fact == null || !fact.isAvailable) {
+        canonicalEnergyUnknown = true;
+        continue;
+      }
+      final lower = fact.lower?.value.asDouble ?? fact.point?.value.asDouble;
+      final upper = fact.upper?.value.asDouble ?? fact.point?.value.asDouble;
+      if (lower == null || upper == null) {
+        canonicalEnergyUnknown = true;
+        continue;
+      }
+      canonicalEnergyLower += lower;
+      canonicalEnergyUpper += upper;
+      canonicalCalories += fact.point?.value.asDouble ?? 0;
+      canonicalEnergyRange = canonicalEnergyRange || lower != upper;
+    }
     final totalCals =
         mealLogs.fold(0, (sum, item) => sum + item.calories) +
-        (canonicalCalories?.round() ?? 0);
+        canonicalCalories.round();
+    final legacyCalories = mealLogs.fold(0, (sum, item) => sum + item.calories);
+    final energyLabel = canonicalEnergyUnknown
+        ? 'Calories not available'
+        : canonicalEnergyRange
+        ? '${(legacyCalories + canonicalEnergyLower).round()}–${(legacyCalories + canonicalEnergyUpper).round()} kcal'
+        : '$totalCals kcal';
 
     Color accentColor = AppColors.primary;
     IconData mealIcon = Icons.restaurant_rounded;
@@ -565,7 +589,7 @@ class _MealCard extends ConsumerWidget {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             Text(
-              '$totalCals kcal',
+              energyLabel,
               style: TextStyle(
                 color: accentColor,
                 fontWeight: FontWeight.bold,
@@ -683,7 +707,21 @@ class _MealCard extends ConsumerWidget {
           else ...[
             ...mealLogs.map((log) => _LoggedItemRow(log: log)),
             ...?canonicalRecords?.map(
-              (record) => _CanonicalItemRow(record: record),
+              (record) => _CanonicalItemRow(
+                record: record,
+                onDelete:
+                    record.items.any(
+                      (item) =>
+                          item.originSourceType == 'direct_food' &&
+                          item.foodId != null,
+                    )
+                    ? () => showCanonicalFoodDelete(
+                        context: context,
+                        ref: ref,
+                        record: record,
+                      )
+                    : null,
+              ),
             ),
             const Divider(color: AppColors.border, height: 20),
             Row(
@@ -731,21 +769,21 @@ class _MealCard extends ConsumerWidget {
 
 class _CanonicalItemRow extends StatelessWidget {
   final NutritionHistoricalReadRecord record;
+  final Future<bool> Function()? onDelete;
 
-  const _CanonicalItemRow({required this.record});
+  const _CanonicalItemRow({required this.record, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     final item = record.items.isEmpty ? null : record.items.first;
     final energy = record.totals.facts['energy'];
-    final version = item?.recipeVersionId;
     final isRecipe = record.items.any((item) => item.recipeVersionId != null);
     final quantity = item?.quantity.quantity;
     final amount = quantity == null
         ? null
-        : '${quantity.amount} ${quantity.definition.stableId}';
+        : '${quantity.amount} ${quantity.definition.displayLabel}';
     final energyText = energy?.point == null
-        ? 'Energy unknown'
+        ? 'Calories not available'
         : '${energy!.point!.value.format(decimalPlaces: 0)} kcal';
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -773,8 +811,7 @@ class _CanonicalItemRow extends StatelessWidget {
                 ),
                 Text(
                   [
-                    isRecipe ? 'Saved recipe' : 'Canonical food',
-                    if (version != null) 'version ${_shortId(version)}',
+                    isRecipe ? 'Saved recipe' : 'Food item',
                     ?amount,
                     energyText,
                   ].join(' • '),
@@ -786,7 +823,7 @@ class _CanonicalItemRow extends StatelessWidget {
                 if (record.completeness.state !=
                     NutrientCompletenessState.complete)
                   Text(
-                    record.completeness.state.name,
+                    _completenessLabel(record.completeness.state),
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.warning,
@@ -796,18 +833,31 @@ class _CanonicalItemRow extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(
-            Icons.lock_outline_rounded,
-            size: 16,
-            color: AppColors.textMuted,
-          ),
+          if (onDelete == null)
+            const Icon(
+              Icons.lock_outline_rounded,
+              size: 16,
+              color: AppColors.textMuted,
+            )
+          else
+            IconButton(
+              tooltip: 'Delete ${record.displayLabel}',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => onDelete!(),
+              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+            ),
         ],
       ),
     );
   }
 
-  String _shortId(String value) =>
-      value.length <= 12 ? value : '${value.substring(0, 8)}…';
+  String _completenessLabel(NutrientCompletenessState state) => switch (state) {
+    NutrientCompletenessState.partial => 'Some nutrition details unavailable',
+    NutrientCompletenessState.unknown => 'Nutrition details unavailable',
+    NutrientCompletenessState.notApplicable => 'Nutrition details not needed',
+    NutrientCompletenessState.invalid => 'Nutrition details need review',
+    NutrientCompletenessState.complete => 'Nutrition details complete',
+  };
 }
 
 class _LoggedItemRow extends ConsumerWidget {

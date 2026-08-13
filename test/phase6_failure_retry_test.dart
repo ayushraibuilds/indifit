@@ -190,7 +190,7 @@ void main() {
     );
 
     testWidgets(
-      '5. FailureStateWidget renders failure details and responds to retry action',
+      '5. FailureStateWidget renders safe copy and responds to retry action',
       (WidgetTester tester) async {
         bool retried = false;
         final failure = AppFailure.network(
@@ -211,8 +211,12 @@ void main() {
         );
 
         expect(
-          find.text('Unable to connect to IndiFit AI server.'),
+          find.text('Check your connection and try again.'),
           findsOneWidget,
+        );
+        expect(
+          find.text('Unable to connect to IndiFit AI server.'),
+          findsNothing,
         );
         expect(find.text('Retry'), findsOneWidget);
 

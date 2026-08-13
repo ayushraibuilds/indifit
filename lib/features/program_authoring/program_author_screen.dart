@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_count_label.dart';
 import '../../core/theme/colors.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/program_repository.dart';
@@ -105,12 +106,14 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
         ];
       }
       authoring.markReady();
-    } catch (e) {
-      authoring.markFailure(e);
+    } catch (error) {
+      authoring.markFailure(error);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading draft: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('The draft could not be loaded. Try again.'),
+          ),
+        );
       }
     }
   }
@@ -523,9 +526,8 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                   TextField(
                     controller: customName,
                     decoration: const InputDecoration(
-                      labelText: 'Custom/unresolved exercise name',
-                      helperText:
-                          'Shown as compatibility unknown until linked.',
+                      labelText: 'Custom exercise name',
+                      helperText: 'You can link a library exercise later.',
                     ),
                   ),
                 const SizedBox(height: 12),
@@ -919,11 +921,13 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
         );
       }
       return true;
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving draft: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('The draft could not be saved. Try again.'),
+          ),
+        );
       }
       return false;
     }
@@ -946,11 +950,13 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
           const SnackBar(content: Text('Copied to new draft version.')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error copying draft: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('The draft could not be copied. Try again.'),
+          ),
+        );
       }
     }
   }
@@ -995,6 +1001,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1071,7 +1078,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Program Structure (${_blocks.length} Blocks)',
+                        'Program Structure (${ConsumerCountLabel.format(_blocks.length, 'block')})',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -1156,7 +1163,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                                         children: [
                                           Expanded(
                                             child: Text(
-                                              'Week ${w.programWeekOrdinal + 1}: ${w.templates.length} sessions',
+                                              'Week ${w.programWeekOrdinal + 1}: ${ConsumerCountLabel.format(w.templates.length, 'session')}',
                                               style: TextStyle(
                                                 color: w.isDeload
                                                     ? Colors.purple

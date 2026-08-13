@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/nutrition_household_measures.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_household_measure_repository.dart';
 
@@ -166,9 +167,19 @@ class HouseholdMeasuresController
       error is NutritionHouseholdMeasureException || error is QuantityError;
 
   static String _messageFor(Object error) {
-    if (error is NutritionHouseholdMeasureException) return error.message;
-    if (error is QuantityError) return error.message;
-    return 'The household-measure operation could not be completed.';
+    if (error is NutritionHouseholdMeasureException) {
+      return ProductFailurePresentation.fromCode(
+        error.code,
+        title: 'Household measure unavailable',
+      ).message;
+    }
+    if (error is QuantityError) {
+      return ProductFailurePresentation.fromCode('invalid_amount').message;
+    }
+    return ProductFailurePresentation.fromCode(
+      'household_measure_operation_failed',
+      title: 'Household measure unavailable',
+    ).message;
   }
 }
 

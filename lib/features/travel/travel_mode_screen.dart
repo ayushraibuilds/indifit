@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_date_label.dart';
 import '../../core/theme/colors.dart';
 import '../../data/database/app_database.dart';
 import 'travel_controller.dart';
@@ -104,11 +105,13 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
         }
         _loadingProfiles = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() => _loadingProfiles = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load equipment profiles: $e')),
+          const SnackBar(
+            content: Text('Equipment profiles could not be loaded. Try again.'),
+          ),
         );
       }
     }
@@ -216,7 +219,9 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
         } catch (error) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Unable to end travel mode: $error')),
+              const SnackBar(
+                content: Text('Unable to end travel mode. Try again.'),
+              ),
             );
           }
         }
@@ -256,7 +261,9 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
       } catch (error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Unable to cancel travel mode: $error')),
+            const SnackBar(
+              content: Text('Unable to cancel travel mode. Try again.'),
+            ),
           );
         }
       }
@@ -267,12 +274,6 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
       '${value.year.toString().padLeft(4, '0')}-'
       '${value.month.toString().padLeft(2, '0')}-'
       '${value.day.toString().padLeft(2, '0')}';
-
-  static String _displayDate(String isoDate) {
-    final parts = isoDate.split('-');
-    if (parts.length != 3) return isoDate;
-    return '${parts[2]}/${parts[1]}/${parts[0]}';
-  }
 
   // ─── Build methods ──────────────────────────────────────────────────
 
@@ -361,8 +362,10 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
                   Expanded(
                     child: Text(
                       _selectedRange != null
-                          ? '${_displayDate(_formatDate(_selectedRange!.start))} — '
-                                '${_displayDate(_formatDate(_selectedRange!.end))}'
+                          ? ConsumerDateLabel.range(
+                              _formatDate(_selectedRange!.start),
+                              _formatDate(_selectedRange!.end),
+                            )
                           : 'Select date range',
                       style: TextStyle(
                         color: _selectedRange != null
@@ -612,7 +615,10 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
                 _buildDetailRow(
                   Icons.date_range_rounded,
                   'Dates',
-                  '${_displayDate(travel.startLocalDate)} — ${_displayDate(travel.endLocalDate)}',
+                  ConsumerDateLabel.range(
+                    travel.startLocalDate,
+                    travel.endLocalDate,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 _buildDetailRow(

@@ -44,6 +44,45 @@ class HealthDataSummary {
   });
 }
 
+enum HealthRecoveryMetricStatus { known, missing, unknown, invalid }
+
+enum HealthRecoveryMetricPermission { granted, denied, unavailable, unknown }
+
+enum HealthRecoveryMetricFreshness { fresh, stale, unknown }
+
+/// Privacy-minimized recovery evidence read from the platform health source.
+/// This is a B02/provider read boundary; B04 maps it into its own immutable
+/// observation envelope without storing the raw platform payload.
+class HealthRecoveryMetricRead {
+  final String kind;
+  final HealthRecoveryMetricStatus status;
+  final HealthRecoveryMetricPermission permission;
+  final HealthRecoveryMetricFreshness freshness;
+  final double? value;
+  final String unit;
+  final DateTime? observedAtUtc;
+  final String source;
+  final String provenance;
+  final String? providerExternalId;
+  final String? sourceVersion;
+  final DateTime? evidenceTimestampUtc;
+
+  const HealthRecoveryMetricRead({
+    required this.kind,
+    required this.status,
+    required this.permission,
+    required this.freshness,
+    required this.value,
+    required this.unit,
+    required this.observedAtUtc,
+    required this.source,
+    required this.provenance,
+    required this.providerExternalId,
+    required this.sourceVersion,
+    required this.evidenceTimestampUtc,
+  });
+}
+
 class HealthService {
   final Health _health;
 
@@ -243,6 +282,188 @@ class HealthService {
       );
     }
   }
+
+  /// Reads only the reviewed recovery metrics needed by B04. The method
+  /// returns typed unavailable states instead of treating permission failures
+  /// or empty provider data as numeric zero.
+  Future<List<HealthRecoveryMetricRead>> readRecoveryMetrics({
+    required DateTime startUtc,
+    required DateTime endUtc,
+  }) async {
+    if (!startUtc.isUtc || !endUtc.isUtc || !endUtc.isAfter(startUtc)) {
+      throw ArgumentError(
+        'Recovery health windows must be ordered UTC instants.',
+      );
+    }
+    return [
+      await _readRecoveryMetric(
+        kind: 'sleep_duration',
+        type: HealthDataType.SLEEP_SESSION,
+        unit: 'hours',
+        startUtc: startUtc,
+        endUtc: endUtc,
+        category: HealthCategory.sleep,
+        aggregate: (points) => points.fold<double>(
+          0,
+          (total, point) =>
+              total + point.dateTo.difference(point.dateFrom).inMinutes / 60,
+        ),
+      ),
+      await _readRecoveryMetric(
+        kind: 'resting_heart_rate',
+        type: HealthDataType.RESTING_HEART_RATE,
+        unit: 'bpm',
+        startUtc: startUtc,
+        endUtc: endUtc,
+        aggregate: (points) {
+          final ordered = [...points]
+            ..sort((left, right) => left.dateTo.compareTo(right.dateTo));
+          final latest = ordered.isEmpty ? null : ordered.last;
+          final value = latest?.value;
+          return value is NumericHealthValue
+              ? value.numericValue.toDouble()
+              : null;
+        },
+      ),
+    ];
+  }
+
+  Future<HealthRecoveryMetricRead> _readRecoveryMetric({
+    required String kind,
+    required HealthDataType type,
+    required String unit,
+    required DateTime startUtc,
+    required DateTime endUtc,
+    HealthCategory? category,
+    required double? Function(List<HealthDataPoint>) aggregate,
+  }) async {
+    final source = 'health:${type.name.toLowerCase()}';
+    final disabled = category != null && !(await getCategoryState(category));
+    if (disabled) {
+      return HealthRecoveryMetricRead(
+        kind: kind,
+        status: HealthRecoveryMetricStatus.missing,
+        permission: HealthRecoveryMetricPermission.unavailable,
+        freshness: HealthRecoveryMetricFreshness.unknown,
+        value: null,
+        unit: unit,
+        observedAtUtc: null,
+        source: source,
+        provenance: '$source:disabled',
+        providerExternalId: null,
+        sourceVersion: 'health-read-v1',
+        evidenceTimestampUtc: null,
+      );
+    }
+    try {
+      await _health.configure();
+      final authorized = await _ensurePermissions(
+        [type],
+        [HealthDataAccess.READ],
+      );
+      if (!authorized) {
+        return HealthRecoveryMetricRead(
+          kind: kind,
+          status: HealthRecoveryMetricStatus.missing,
+          permission: HealthRecoveryMetricPermission.denied,
+          freshness: HealthRecoveryMetricFreshness.unknown,
+          value: null,
+          unit: unit,
+          observedAtUtc: null,
+          source: source,
+          provenance: '$source:permission',
+          providerExternalId: null,
+          sourceVersion: 'health-read-v1',
+          evidenceTimestampUtc: null,
+        );
+      }
+      final points = await _health.getHealthDataFromTypes(
+        startTime: startUtc,
+        endTime: endUtc,
+        types: [type],
+      );
+      if (points.isEmpty) {
+        return HealthRecoveryMetricRead(
+          kind: kind,
+          status: HealthRecoveryMetricStatus.missing,
+          permission: HealthRecoveryMetricPermission.granted,
+          freshness: HealthRecoveryMetricFreshness.unknown,
+          value: null,
+          unit: unit,
+          observedAtUtc: null,
+          source: source,
+          provenance: '$source:no-data',
+          providerExternalId: null,
+          sourceVersion: 'health-read-v1',
+          evidenceTimestampUtc: null,
+        );
+      }
+      final ordered = [...points]
+        ..sort((left, right) => left.dateTo.compareTo(right.dateTo));
+      final latest = ordered.last;
+      final observedAt = latest.dateTo.toUtc();
+      final value = aggregate(ordered);
+      if (value == null || !value.isFinite || value < 0) {
+        return HealthRecoveryMetricRead(
+          kind: kind,
+          status: HealthRecoveryMetricStatus.invalid,
+          permission: HealthRecoveryMetricPermission.granted,
+          freshness: HealthRecoveryMetricFreshness.unknown,
+          value: null,
+          unit: unit,
+          observedAtUtc: observedAt,
+          source: source,
+          provenance: '$source:${latest.sourceName}',
+          providerExternalId: _optional(latest.uuid),
+          sourceVersion: 'health-read-v1',
+          evidenceTimestampUtc: observedAt,
+        );
+      }
+      final freshness =
+          endUtc.difference(observedAt) > const Duration(hours: 36)
+          ? HealthRecoveryMetricFreshness.stale
+          : HealthRecoveryMetricFreshness.fresh;
+      return HealthRecoveryMetricRead(
+        kind: kind,
+        status: HealthRecoveryMetricStatus.known,
+        permission: HealthRecoveryMetricPermission.granted,
+        freshness: freshness,
+        value: value,
+        unit: unit,
+        observedAtUtc: observedAt,
+        source: source,
+        provenance:
+            '$source:${latest.sourcePlatform.name}:${latest.sourceName}',
+        providerExternalId: _optional(latest.uuid),
+        sourceVersion: 'health-read-v1',
+        evidenceTimestampUtc: observedAt,
+      );
+    } catch (error, stackTrace) {
+      AppLogger.warning('Recovery health read failed for $kind: $error');
+      CrashReportingService.recordCrash(
+        error,
+        stackTrace,
+        reason: 'recovery health read error',
+      );
+      return HealthRecoveryMetricRead(
+        kind: kind,
+        status: HealthRecoveryMetricStatus.unknown,
+        permission: HealthRecoveryMetricPermission.unavailable,
+        freshness: HealthRecoveryMetricFreshness.unknown,
+        value: null,
+        unit: unit,
+        observedAtUtc: null,
+        source: source,
+        provenance: '$source:error',
+        providerExternalId: null,
+        sourceVersion: 'health-read-v1',
+        evidenceTimestampUtc: null,
+      );
+    }
+  }
+
+  static String? _optional(String value) =>
+      value.trim().isEmpty ? null : value.trim();
 
   /// Import outdoor activities with provenance tracking and duplicate prevention
   Future<List<Map<String, dynamic>>> importOutdoorActivities([

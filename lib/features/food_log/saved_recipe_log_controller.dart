@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/nutrition_calculation_service.dart';
 import '../../core/nutrition_consumption_snapshots.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
@@ -24,6 +25,7 @@ enum SavedRecipeLogStatus {
 class SavedRecipeLogState {
   final SavedRecipeLogStatus status;
   final List<NutritionRecipeModel> recipes;
+  final List<NutritionRecipeDraftModel> drafts;
   final List<NutritionRecipeVersionModel> versions;
   final String query;
   final NutritionRecipeModel? selectedRecipe;
@@ -39,6 +41,7 @@ class SavedRecipeLogState {
   const SavedRecipeLogState({
     this.status = SavedRecipeLogStatus.idle,
     this.recipes = const [],
+    this.drafts = const [],
     this.versions = const [],
     this.query = '',
     this.selectedRecipe,
@@ -55,6 +58,7 @@ class SavedRecipeLogState {
   SavedRecipeLogState copyWith({
     SavedRecipeLogStatus? status,
     List<NutritionRecipeModel>? recipes,
+    List<NutritionRecipeDraftModel>? drafts,
     List<NutritionRecipeVersionModel>? versions,
     String? query,
     Object? selectedRecipe = _unset,
@@ -69,6 +73,7 @@ class SavedRecipeLogState {
   }) => SavedRecipeLogState(
     status: status ?? this.status,
     recipes: recipes ?? this.recipes,
+    drafts: drafts ?? this.drafts,
     versions: versions ?? this.versions,
     query: query ?? this.query,
     selectedRecipe: selectedRecipe == _unset
@@ -125,9 +130,14 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
         userId: userId,
         query: nextQuery,
       );
+      final drafts = await (await _coordinatorFuture).listDrafts(
+        userId: userId,
+        query: nextQuery,
+      );
       state = state.copyWith(
         status: SavedRecipeLogStatus.ready,
         recipes: recipes,
+        drafts: drafts,
         query: nextQuery,
         errorCode: null,
         errorMessage: null,
@@ -380,7 +390,7 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
     } on QuantityError catch (error) {
       throw NutritionRecipeLogError(
         'invalid_amount',
-        error.toString(),
+        ProductFailurePresentation.fromCode('invalid_amount').message,
         cause: error,
       );
     }
@@ -392,11 +402,7 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
         : error is NutritionCalculationError
         ? error.code
         : fallbackCode;
-    final message = error is NutritionRecipeLogError
-        ? error.message
-        : error is NutritionCalculationError
-        ? error.message
-        : error.toString();
+    final message = ProductFailurePresentation.fromCode(code).message;
     state = state.copyWith(
       status: SavedRecipeLogStatus.failure,
       errorCode: code,

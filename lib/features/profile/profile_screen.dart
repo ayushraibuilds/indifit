@@ -1,13 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/user_profile_provider.dart';
-import '../../core/theme/colors.dart';
+import '../../core/presentation/diet_preference_presentation.dart';
+import '../../core/presentation/secondary_presentation.dart';
+import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/tdee_calculator.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
+import '../../core/widgets/responsive_form_primitives.dart';
 import '../dashboard/dashboard_controller.dart';
+import '../onboarding/onboarding_screen.dart';
+import '../settings/unit_preference.dart';
+
+enum ProfileEditorFocus { all, personal, goal, training }
 
 class ProfileScreen extends ConsumerStatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.focus = ProfileEditorFocus.all});
+
+  final ProfileEditorFocus focus;
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -23,8 +36,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String _selectedSex = 'male';
   String _selectedGoal = 'maintain';
   String _selectedActivity = 'moderate';
-  String _selectedDiet = 'veg';
+  String? _selectedDiet;
+  String? _dietPreferenceSourceValue;
+  var _dietPreferenceChanged = false;
   String _selectedEquipment = 'full_gym';
+  String _displayUnits = UnitPreferenceNotifier.metric;
+  var _heightChanged = false;
+  var _weightChanged = false;
+
+  String? _sourceSex;
+  String? _sourceGoal;
+  String? _sourceActivity;
+  String? _sourceEquipment;
+  var _sexChanged = false;
+  var _goalChanged = false;
+  var _activityChanged = false;
+  var _equipmentChanged = false;
 
   bool _initialized = false;
 
@@ -38,28 +65,55 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _injuriesController = TextEditingController();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void _initializeFromProfile(UserProfileState p, String units) {
     if (!_initialized) {
-      final p = ref.watch(userProfileProvider);
+      _displayUnits = units;
       _nameController.text = p.userName ?? '';
       _ageController.text = p.userAge > 0 ? p.userAge.toString() : '25';
-      _heightController.text = (p.userHeight != null && p.userHeight! > 0)
-          ? p.userHeight!.round().toString()
-          : '170';
-      _weightController.text = p.currentWeight > 0
-          ? p.currentWeight.toStringAsFixed(1)
-          : '70.0';
+      _setMeasurementDisplay(p, units);
       _injuriesController.text = p.injuriesLimitations;
 
-      _selectedSex = p.userSex;
-      _selectedGoal = p.userGoal;
-      _selectedActivity = p.userActivityLevel;
-      _selectedDiet = p.dietPreference;
-      _selectedEquipment = p.equipmentAccess;
+      _sourceSex = p.userSex;
+      _sourceGoal = p.userGoal;
+      _sourceActivity = p.userActivityLevel;
+      _sourceEquipment = p.equipmentAccess;
+      _selectedSex = _knownOr(p.userSex, const {'male', 'female'}, 'male');
+      _selectedGoal = _knownOr(p.userGoal, const {
+        'lose',
+        'maintain',
+        'gain',
+      }, 'maintain');
+      _selectedActivity = _knownOr(p.userActivityLevel, const {
+        'sedentary',
+        'light',
+        'moderate',
+        'active',
+      }, 'moderate');
+      _dietPreferenceSourceValue = p.dietPreference;
+      _dietPreferenceChanged = false;
+      _selectedDiet = DietPreferencePresentation.uiValueFor(p.dietPreference);
+      _selectedEquipment = _knownOr(p.equipmentAccess, const {
+        'full_gym',
+        'dumbbells',
+        'bodyweight',
+      }, 'full_gym');
 
       _initialized = true;
+    }
+  }
+
+  void _setMeasurementDisplay(UserProfileState profile, String units) {
+    if (!_heightChanged && profile.userHeight != null) {
+      _heightController.text = UnitPreferencePresentation.heightForDisplay(
+        profile.userHeight!,
+        units,
+      ).toStringAsFixed(UnitPreferencePresentation.isImperial(units) ? 1 : 0);
+    }
+    if (!_weightChanged) {
+      _weightController.text = UnitPreferencePresentation.weightForDisplay(
+        profile.currentWeight,
+        units,
+      ).toStringAsFixed(1);
     }
   }
 
@@ -74,34 +128,88 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _handleSave() async {
+    final p = ref.read(userProfileProvider);
+    final editsPersonal =
+        widget.focus == ProfileEditorFocus.all ||
+        widget.focus == ProfileEditorFocus.personal;
+    final editsGoal =
+        widget.focus == ProfileEditorFocus.all ||
+        widget.focus == ProfileEditorFocus.goal;
+    final editsTraining =
+        widget.focus == ProfileEditorFocus.all ||
+        widget.focus == ProfileEditorFocus.training;
     final age = int.tryParse(_ageController.text.trim());
-    final height = double.tryParse(_heightController.text.trim());
-    final weight = double.tryParse(_weightController.text.trim());
+    final displayedHeight = double.tryParse(_heightController.text.trim());
+    final displayedWeight = double.tryParse(_weightController.text.trim());
+    final height = !_heightChanged
+        ? p.userHeight
+        : displayedHeight == null
+        ? null
+        : UnitPreferencePresentation.heightForStorage(
+            displayedHeight,
+            _displayUnits,
+          );
+    final weight = !_weightChanged
+        ? p.currentWeight
+        : displayedWeight == null
+        ? null
+        : UnitPreferencePresentation.weightForStorage(
+            displayedWeight,
+            _displayUnits,
+          );
     final name = _nameController.text.trim();
     final injuries = _injuriesController.text.trim();
+    final sex = ProfilePresentation.valueForSave(
+      source: _sourceSex,
+      selected: _selectedSex,
+      changed: _sexChanged,
+    );
+    final goal = ProfilePresentation.valueForSave(
+      source: _sourceGoal,
+      selected: _selectedGoal,
+      changed: _goalChanged,
+    );
+    final activity = ProfilePresentation.valueForSave(
+      source: _sourceActivity,
+      selected: _selectedActivity,
+      changed: _activityChanged,
+    );
+    final equipment = ProfilePresentation.valueForSave(
+      source: _sourceEquipment,
+      selected: _selectedEquipment,
+      changed: _equipmentChanged,
+    );
 
     // Validation
-    if (age == null || age < 13 || age > 120) {
+    if (editsPersonal && (age == null || age < 13 || age > 120)) {
       _showError('Please enter a valid age between 13 and 120 years.');
       return;
     }
-    if (height == null || height < 100 || height > 250) {
-      _showError('Please enter a valid height between 100 and 250 cm.');
+    if (editsPersonal && (height == null || height < 100 || height > 250)) {
+      _showError(
+        UnitPreferencePresentation.isImperial(_displayUnits)
+            ? 'Please enter a valid height between 39.4 and 98.4 in.'
+            : 'Please enter a valid height between 100 and 250 cm.',
+      );
       return;
     }
-    if (weight == null || weight < 30 || weight > 300) {
-      _showError('Please enter a valid weight between 30 and 300 kg.');
+    if (editsPersonal && (weight == null || weight < 30 || weight > 300)) {
+      _showError(
+        UnitPreferencePresentation.isImperial(_displayUnits)
+            ? 'Please enter a valid weight between 66.1 and 661.4 lb.'
+            : 'Please enter a valid weight between 30 and 300 kg.',
+      );
       return;
     }
 
-    final p = ref.read(userProfileProvider);
     final bodyOrGoalChanged =
-        p.userAge != age ||
-        (p.userHeight ?? 0) != height ||
-        p.currentWeight != weight ||
-        p.userSex != _selectedSex ||
-        p.userGoal != _selectedGoal ||
-        p.userActivityLevel != _selectedActivity;
+        (editsPersonal &&
+            (p.userAge != age ||
+                (p.userHeight ?? 0) != height ||
+                p.currentWeight != weight ||
+                p.userSex != sex)) ||
+        (editsGoal && p.userGoal != goal) ||
+        (editsTraining && p.userActivityLevel != activity);
 
     bool recalculateGoals = false;
 
@@ -109,33 +217,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final choice = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: const Row(
+          backgroundColor: context.b05Colors.section,
+          title: Row(
             children: [
               Icon(
                 Icons.auto_awesome_rounded,
-                color: AppColors.primary,
+                color: context.b05Colors.action,
                 size: 22,
               ),
-              SizedBox(width: 8),
-              Text('Recalculate Goals?'),
+              const SizedBox(width: B05Layout.space8),
+              const Text('Refresh your targets?'),
             ],
           ),
           content: const Text(
-            'Your body measurements or fitness goals have changed. Would you like to recalculate daily calorie & macronutrient targets using Mifflin-St Jeor equation?',
-            style: TextStyle(fontSize: 13, height: 1.4),
+            'Your measurements or goal have changed. Would you like to refresh your daily nutrition targets?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Keep Current Goals'),
+              child: const Text('Keep current targets'),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: const Text('Recalculate Goals'),
+              child: const Text('Refresh targets'),
             ),
           ],
         ),
@@ -166,9 +270,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
       final bmr = TdeeCalculator.calculateBmr(
         gender: gender,
-        weightKg: weight,
-        heightCm: height,
-        ageYears: age,
+        weightKg: weight ?? p.currentWeight,
+        heightCm: height ?? p.userHeight ?? 170,
+        ageYears: age ?? p.userAge,
       );
       final tdee = TdeeCalculator.calculateTdee(
         bmr: bmr,
@@ -177,7 +281,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final macros = TdeeCalculator.calculateMacros(
         tdee: tdee,
         goal: fitnessGoal,
-        weightKg: weight,
+        weightKg: weight ?? p.currentWeight,
       );
 
       newCals = macros.calories;
@@ -186,20 +290,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       newFat = macros.fatG;
     }
 
-    await HapticFeedback.mediumImpact();
+    // Haptics are optional feedback and must never delay or prevent the
+    // persisted profile patch.
+    unawaited(HapticFeedback.mediumImpact().catchError((_) {}));
     await ref
         .read(userProfileProvider.notifier)
         .updateProfile(
-          name: name,
-          age: age,
-          height: height,
-          weight: weight,
-          sex: _selectedSex,
-          activityLevel: _selectedActivity,
-          goal: _selectedGoal,
-          dietPreference: _selectedDiet,
-          equipmentAccess: _selectedEquipment,
-          injuriesLimitations: injuries,
+          name: editsPersonal ? name : null,
+          age: editsPersonal ? age : null,
+          height: editsPersonal ? height : null,
+          weight: editsPersonal ? weight : null,
+          sex: editsPersonal ? sex : null,
+          activityLevel: editsTraining ? activity : null,
+          goal: editsGoal && _goalChanged ? _selectedGoal : null,
+          dietPreference:
+              widget.focus == ProfileEditorFocus.all && _dietPreferenceChanged
+              ? DietPreferencePresentation.persistedValueFor(
+                  originalValue: _dietPreferenceSourceValue,
+                  uiValue: _selectedDiet,
+                  userChanged: true,
+                )
+              : null,
+          equipmentAccess: editsTraining ? equipment : null,
+          injuriesLimitations: editsTraining ? injuries : null,
           calorieGoal: newCals,
           proteinGoal: newProtein,
           carbsGoal: newCarbs,
@@ -213,10 +326,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         SnackBar(
           content: Text(
             recalculateGoals
-                ? 'Profile updated & nutrition targets recalculated ($newCals kcal)!'
-                : 'Profile updated successfully!',
+                ? 'Profile updated and nutrition targets refreshed.'
+                : 'Profile updated.',
           ),
-          backgroundColor: AppColors.success,
+          backgroundColor: context.b05Colors.success.indicator,
         ),
       );
       Navigator.pop(context);
@@ -225,101 +338,150 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: AppColors.danger),
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: context.b05Colors.danger.indicator,
+      ),
     );
+  }
+
+  static String _knownOr(String value, Set<String> allowed, String fallback) {
+    final normalized = value.trim().toLowerCase();
+    return allowed.contains(normalized) ? normalized : fallback;
   }
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(userProfileProvider);
+    final units = ref.watch(unitPreferenceProvider);
+    if (!profile.isLoaded) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Profile')),
+        body: const Padding(
+          padding: EdgeInsets.all(B05Layout.space16),
+          child: ConsumerStatusRow(
+            label: 'Loading profile',
+            detail: 'Getting your details ready.',
+            loading: true,
+          ),
+        ),
+      );
+    }
+    if (!profile.hasProfile) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Profile')),
+        body: ProductEmptyState(
+          icon: Icons.person_add_alt_1_outlined,
+          title: 'Complete your profile when you’re ready',
+          message:
+              'Add your details to personalize goals and recommendations. Basic logging remains available without them.',
+          actionLabel: 'Complete profile',
+          actionIcon: Icons.arrow_forward_rounded,
+          action: () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+          ),
+        ),
+      );
+    }
+    _initializeFromProfile(profile, units);
+    if (_displayUnits != units) {
+      _displayUnits = units;
+      _setMeasurementDisplay(profile, units);
+    }
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile'),
-        backgroundColor: AppColors.background,
+        title: Text(switch (widget.focus) {
+          ProfileEditorFocus.personal => 'Personal details',
+          ProfileEditorFocus.goal => 'Goal',
+          ProfileEditorFocus.training => 'Training preferences',
+          ProfileEditorFocus.all => 'Profile',
+        }),
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: const EdgeInsets.all(B05Layout.space20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Identity & Body Data Section
-            _buildSectionHeader('IDENTITY & BODY MEASUREMENTS'),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
+            if (widget.focus == ProfileEditorFocus.all ||
+                widget.focus == ProfileEditorFocus.personal) ...[
+              _buildSectionHeader(context, 'Personal details'),
+              const SizedBox(height: B05Layout.space8),
+              B05Surface(
+                padding: const EdgeInsets.all(B05Layout.space16),
                 child: Column(
                   children: [
                     TextField(
                       controller: _nameController,
                       decoration: const InputDecoration(
-                        labelText: 'Display Name',
+                        labelText: 'Name (optional)',
                         prefixIcon: Icon(Icons.person_outline_rounded),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Row(
+                    IndiFitResponsiveFieldGroup(
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _ageController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Age (years)',
-                              suffixText: 'yrs',
-                            ),
+                        TextField(
+                          controller: _ageController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Age (years)',
+                            suffixText: 'yrs',
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            // ignore: deprecated_member_use
-                            value: _selectedSex,
-                            decoration: const InputDecoration(labelText: 'Sex'),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'male',
-                                child: Text('Male'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'female',
-                                child: Text('Female'),
-                              ),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() => _selectedSex = val);
-                              }
-                            },
-                          ),
+                        DropdownButtonFormField<String>(
+                          // ignore: deprecated_member_use
+                          value: _selectedSex,
+                          isExpanded: true,
+                          decoration: const InputDecoration(labelText: 'Sex'),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'male',
+                              child: Text('Male'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'female',
+                              child: Text('Female'),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _selectedSex = val;
+                                _sexChanged = true;
+                              });
+                            }
+                          },
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Row(
+                    IndiFitResponsiveFieldGroup(
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _heightController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: const InputDecoration(
-                              labelText: 'Height',
-                              suffixText: 'cm',
+                        TextField(
+                          controller: _heightController,
+                          onChanged: (_) => _heightChanged = true,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'Height',
+                            suffixText: UnitPreferencePresentation.heightSymbol(
+                              units,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: _weightController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: const InputDecoration(
-                              labelText: 'Weight',
-                              suffixText: 'kg',
+                        TextField(
+                          controller: _weightController,
+                          onChanged: (_) => _weightChanged = true,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'Weight',
+                            suffixText: UnitPreferencePresentation.weightSymbol(
+                              units,
                             ),
                           ),
                         ),
@@ -328,151 +490,153 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: B05Layout.space24),
+            ],
 
-            // 2. Goal & Activity Section
-            _buildSectionHeader('FITNESS GOAL & ACTIVITY LEVEL'),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
+            if (widget.focus == ProfileEditorFocus.all ||
+                widget.focus == ProfileEditorFocus.goal) ...[
+              _buildSectionHeader(context, 'Goals'),
+              const SizedBox(height: B05Layout.space8),
+              B05Surface(
+                padding: const EdgeInsets.all(B05Layout.space16),
                 child: Column(
                   children: [
                     DropdownButtonFormField<String>(
                       // ignore: deprecated_member_use
                       value: _selectedGoal,
+                      isExpanded: true,
                       decoration: const InputDecoration(
-                        labelText: 'Primary Fitness Goal',
+                        labelText: 'What are you working toward?',
                         prefixIcon: Icon(Icons.flag_rounded),
                       ),
                       items: const [
                         DropdownMenuItem(
                           value: 'lose',
-                          child: Text('Weight Loss / Cut'),
+                          child: Text('Lose weight'),
                         ),
                         DropdownMenuItem(
                           value: 'maintain',
-                          child: Text('Maintain Weight & Recomp'),
+                          child: Text('Maintain and feel strong'),
                         ),
                         DropdownMenuItem(
                           value: 'gain',
-                          child: Text('Muscle Gain / Bulk'),
+                          child: Text('Build muscle'),
                         ),
                       ],
                       onChanged: (val) {
                         if (val != null) {
-                          setState(() => _selectedGoal = val);
+                          setState(() {
+                            _selectedGoal = val;
+                            _goalChanged = true;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: B05Layout.space24),
+            ],
+
+            if (widget.focus == ProfileEditorFocus.all) ...[
+              _buildSectionHeader(context, 'Nutrition preferences'),
+              const SizedBox(height: B05Layout.space8),
+              B05Surface(
+                padding: const EdgeInsets.all(B05Layout.space16),
+                child: DietPreferenceDropdown(
+                  selectedUiValue: _selectedDiet,
+                  decoration: InputDecoration(
+                    labelText: 'How do you like to eat?',
+                    helperText: _selectedDiet == null
+                        ? 'Choose your dietary pattern.'
+                        : null,
+                    prefixIcon: const Icon(Icons.restaurant_rounded),
+                  ),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedDiet = value;
+                        _dietPreferenceChanged = true;
+                      });
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: B05Layout.space24),
+            ],
+
+            if (widget.focus == ProfileEditorFocus.all ||
+                widget.focus == ProfileEditorFocus.training) ...[
+              _buildSectionHeader(context, 'Training preferences'),
+              const SizedBox(height: B05Layout.space8),
+              B05Surface(
+                padding: const EdgeInsets.all(B05Layout.space16),
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<String>(
+                      // ignore: deprecated_member_use
+                      value: _selectedActivity,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'How active are most days?',
+                        prefixIcon: Icon(Icons.directions_run_rounded),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'sedentary',
+                          child: Text('Mostly seated'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'light',
+                          child: Text('Lightly active'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'moderate',
+                          child: Text('Moderately active'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'active',
+                          child: Text('Very active'),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedActivity = val;
+                            _activityChanged = true;
+                          });
                         }
                       },
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       // ignore: deprecated_member_use
-                      value: _selectedActivity,
-                      decoration: const InputDecoration(
-                        labelText: 'Daily Activity Level',
-                        prefixIcon: Icon(Icons.directions_run_rounded),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'sedentary',
-                          child: Text('Sedentary (Desk Job)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'light',
-                          child: Text('Light Activity (1-3 workouts/wk)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'moderate',
-                          child: Text('Moderate Activity (3-5 workouts/wk)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'active',
-                          child: Text('Very Active (6-7 intense workouts/wk)'),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() => _selectedActivity = val);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // 3. Diet Preference
-            _buildSectionHeader('DIETARY PREFERENCE'),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: DropdownButtonFormField<String>(
-                  // ignore: deprecated_member_use
-                  value: _selectedDiet,
-                  decoration: const InputDecoration(
-                    labelText: 'Diet Choice',
-                    prefixIcon: Icon(Icons.restaurant_rounded),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'veg',
-                      child: Text('Vegetarian (Paneer, Curd, Dals)'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'vegan',
-                      child: Text('Vegan (Plant-based, Tofu, Soya)'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'non_veg',
-                      child: Text('Non-Vegetarian (Chicken, Eggs, Fish)'),
-                    ),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _selectedDiet = val);
-                    }
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // 4. Equipment & Injuries
-            _buildSectionHeader('EQUIPMENT & INJURIES / LIMITATIONS'),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    DropdownButtonFormField<String>(
-                      // ignore: deprecated_member_use
                       value: _selectedEquipment,
+                      isExpanded: true,
                       decoration: const InputDecoration(
-                        labelText: 'Available Equipment',
+                        labelText: 'What equipment do you have?',
                         prefixIcon: Icon(Icons.fitness_center_rounded),
                       ),
                       items: const [
                         DropdownMenuItem(
                           value: 'full_gym',
-                          child: Text('Full Gym (Barbells, Cables, Machines)'),
+                          child: Text('Full gym'),
                         ),
                         DropdownMenuItem(
                           value: 'dumbbells',
-                          child: Text('Dumbbells Only'),
+                          child: Text('Dumbbells'),
                         ),
                         DropdownMenuItem(
                           value: 'bodyweight',
-                          child: Text('Bodyweight / Calisthenics'),
+                          child: Text('Bodyweight'),
                         ),
                       ],
                       onChanged: (val) {
                         if (val != null) {
-                          setState(() => _selectedEquipment = val);
+                          setState(() {
+                            _selectedEquipment = val;
+                            _equipmentChanged = true;
+                          });
                         }
                       },
                     ),
@@ -481,35 +645,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       controller: _injuriesController,
                       maxLines: 2,
                       decoration: const InputDecoration(
-                        labelText: 'Injuries or Limitations',
-                        hintText: 'e.g. Lower back pain, shoulder impingement',
+                        labelText: 'Anything we should work around?',
+                        hintText: 'e.g. lower back pain or a shoulder issue',
                         prefixIcon: Icon(Icons.medical_services_outlined),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 28),
+              const SizedBox(height: B05Layout.space24),
+            ],
 
-            // Save Button
             SizedBox(
               width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
+              child: B05ActionButton(
                 onPressed: _handleSave,
-                icon: const Icon(Icons.save_rounded),
-                label: const Text(
-                  'Save Profile Changes',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
+                icon: Icons.save_rounded,
+                label: 'Save profile',
               ),
             ),
           ],
@@ -518,15 +670,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textMuted,
-        letterSpacing: 1.0,
-      ),
+      style: B05Typography.caption(
+        context,
+      ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .6),
     );
   }
 }

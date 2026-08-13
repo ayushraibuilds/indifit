@@ -16,7 +16,7 @@ void main() {
 
       controller.markFailure(StateError('disk unavailable'));
       expect(controller.state.status, ProgramAuthoringStatus.failure);
-      expect(controller.state.errorMessage, contains('disk unavailable'));
+      expect(controller.state.errorMessage, contains('load this right now'));
       controller.recover();
       expect(controller.state.status, ProgramAuthoringStatus.recovery);
       expect(controller.state.isBusy, isTrue);
@@ -37,7 +37,7 @@ void main() {
         throwsA(isA<StateError>()),
       );
       expect(controller.state.status, ProgramAuthoringStatus.failure);
-      expect(controller.state.errorMessage, contains('write failed'));
+      expect(controller.state.errorMessage, contains('load this right now'));
     },
   );
 }

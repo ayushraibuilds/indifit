@@ -1,25 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/di/providers.dart';
-import '../../core/theme/colors.dart';
+import '../../core/presentation/consumer_count_label.dart';
+import '../../core/presentation/consumer_date_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../travel/travel_controller.dart';
 import 'calendar_controller.dart';
 import 'calendar_read_model.dart';
 import 'occurrence_actions_sheet.dart';
+import 'workout_contextual_actions.dart';
 
 /// Calendar MVP for dated B01 occurrences. The selected date and view are
 /// Riverpod-memory state; occurrence data remains repository-owned.
 class ProgramCalendarScreen extends ConsumerWidget {
-  const ProgramCalendarScreen({super.key});
+  const ProgramCalendarScreen({super.key, this.initialLocalDate});
+
+  final String? initialLocalDate;
 
   void _showActions(BuildContext context, CalendarOccurrenceReadItem item) {
-    showModalBottomSheet<void>(
+    showIndiFitBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
+      semanticLabel: 'Workout actions',
       builder: (context) => OccurrenceActionsSheet(occurrenceItem: item),
     );
   }
@@ -81,87 +90,76 @@ class ProgramCalendarScreen extends ConsumerWidget {
       '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 
   static String _viewLabel(CalendarView view) => switch (view) {
-    CalendarView.day => 'Today',
+    CalendarView.day => 'Day',
     CalendarView.week => 'Week',
     CalendarView.month => 'Month',
   };
 
-  Color _statusColor(String status, bool isDeload) {
-    if (isDeload) return Colors.purple;
-    return switch (status) {
-      'completed' => Colors.green,
-      'partiallyCompleted' => Colors.teal,
-      'inProgress' => Colors.cyan,
-      'rescheduled' => Colors.amber,
-      'skipped' => Colors.grey,
-      'cancelled' => Colors.red,
-      _ => AppColors.primary,
+  static String _selectedDateLabel(CalendarView view, String localDate) {
+    return switch (view) {
+      CalendarView.day => _humanDate(localDate),
+      CalendarView.week => _humanRange(
+        _weekStart(localDate),
+        _weekEnd(localDate),
+      ),
+      CalendarView.month => DateFormat(
+        'MMMM y',
+      ).format(DateTime.parse('${localDate}T12:00:00')),
     };
+  }
+
+  static String _humanDate(String localDate) =>
+      DateFormat('d MMM y').format(DateTime.parse('${localDate}T12:00:00'));
+
+  static String _humanRange(String start, String end) {
+    final first = DateTime.parse('${start}T12:00:00');
+    final last = DateTime.parse('${end}T12:00:00');
+    final sameYear = first.year == last.year;
+    final sameMonth = sameYear && first.month == last.month;
+    if (sameMonth) {
+      return '${first.day}–${last.day} ${DateFormat('MMM').format(last)}';
+    }
+    final firstLabel = DateFormat(sameYear ? 'd MMM' : 'd MMM y').format(first);
+    final lastLabel = DateFormat('d MMM y').format(last);
+    return '$firstLabel–$lastLabel';
+  }
+
+  static String _weekStart(String localDate) {
+    final date = DateTime.parse('${localDate}T12:00:00');
+    return _formatDate(date.subtract(Duration(days: date.weekday - 1)));
+  }
+
+  static String _weekEnd(String localDate) {
+    final date = DateTime.parse('${localDate}T12:00:00');
+    return _formatDate(date.add(Duration(days: 7 - date.weekday)));
   }
 
   Widget _buildOccurrenceCard(
     BuildContext context,
     CalendarOccurrenceReadItem item, {
     required bool hasTravelOverride,
-  }) {
-    final occurrence = item.occurrence;
-    final color = _statusColor(occurrence.status, item.isDeload);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      color: AppColors.cardBackground,
-      child: ListTile(
-        onTap: () => _showActions(context, item),
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.2),
-          child: Icon(
-            occurrence.status == 'completed'
-                ? Icons.check_circle_rounded
-                : occurrence.status == 'inProgress'
-                ? Icons.play_circle_fill_rounded
-                : Icons.fitness_center_rounded,
-            color: color,
-          ),
-        ),
-        title: Text(
-          item.template.name,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontFamily: GoogleFonts.outfit().fontFamily,
-          ),
-        ),
-        subtitle: Text(
-          '${occurrence.effectiveLocalDate} • ${item.block.name} • Week ${item.week.programWeekOrdinal + 1}${item.isDeload ? ' • Deload' : ''}${hasTravelOverride ? ' • Travel equipment' : ''}${item.isOverdue ? ' • Overdue' : ''}',
-          style: TextStyle(
-            color: item.isOverdue ? Colors.orange : Colors.grey,
-            fontWeight: item.isOverdue ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        trailing: Semantics(
-          label: 'Status ${occurrence.status}',
-          child: Text(
-            occurrence.status,
-            style: TextStyle(color: color, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
-    );
-  }
+  }) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: WorkoutContextualActions(
+      item: item,
+      hasTravelOverride: hasTravelOverride,
+      onOpenDetails: () => _showActions(context, item),
+    ),
+  );
 
   Widget _buildOccurrences(
     BuildContext context,
     List<CalendarOccurrenceReadItem> items,
     Set<String> activeTravelOccurrenceIds,
+    CalendarView view,
+    bool hasActiveProgram,
   ) {
     if (items.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.event_note_rounded, size: 48, color: Colors.grey),
-            SizedBox(height: 12),
-            Text('No workouts scheduled in this range.'),
-          ],
-        ),
+      return CalendarEmptyState(
+        view: view,
+        hasActiveProgram: hasActiveProgram,
+        onAction: () =>
+            context.push(hasActiveProgram ? '/workout' : '/routine-wizard'),
       );
     }
     return ListView.builder(
@@ -181,6 +179,18 @@ class ProgramCalendarScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(calendarControllerProvider);
     final controller = ref.read(calendarControllerProvider.notifier);
+    final requestedDate = initialLocalDate;
+    if (requestedDate != null &&
+        _isLocalDate(requestedDate) &&
+        requestedDate != state.selectedLocalDate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          ref
+              .read(calendarControllerProvider.notifier)
+              .selectDate(requestedDate);
+        }
+      });
+    }
     final travelState = ref.watch(travelControllerProvider);
     final visibleItems = switch (state.view) {
       CalendarView.day => state.selectedDateOccurrences,
@@ -189,32 +199,37 @@ class ProgramCalendarScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          state.activeProgramName == null
-              ? 'Training Calendar'
-              : 'Training Calendar • ${state.activeProgramName}',
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
-        ),
+        title: const Text('Calendar'),
         actions: [
-          Consumer(
-            builder: (context, ref, child) {
-              final travelState = ref.watch(travelControllerProvider);
-              final isActive = travelState.activeTravelContext != null;
-              return IconButton(
-                icon: Icon(
-                  Icons.flight_rounded,
-                  color: isActive ? AppColors.success : null,
-                ),
-                tooltip: isActive ? 'Travel mode active' : 'Travel mode',
-                onPressed: () => context.push('/travel-mode'),
-              );
+          PopupMenuButton<String>(
+            tooltip: 'More training options',
+            onSelected: (value) {
+              switch (value) {
+                case 'plan':
+                  context.push('/program-author');
+                case 'travel':
+                  context.push('/travel-mode');
+              }
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.add_box_rounded),
-            tooltip: 'Author / activate program',
-            onPressed: () => context.push('/program-author'),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'plan',
+                child: Text(
+                  state.activeProgramVersionId == null
+                      ? 'Choose a training plan'
+                      : 'Manage training plan',
+                ),
+              ),
+              if (state.activeProgramVersionId != null)
+                PopupMenuItem(
+                  value: 'travel',
+                  child: Text(
+                    travelState.activeTravelContext != null
+                        ? 'Travel mode active'
+                        : 'Travel mode',
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -236,68 +251,339 @@ class ProgramCalendarScreen extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: [
-                IconButton(
-                  tooltip: 'Previous ${_viewLabel(state.view).toLowerCase()}',
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () => _moveDate(ref, -1),
-                ),
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => _pickDate(context, ref),
-                    child: Text(
-                      '${state.selectedLocalDate} • ${state.timezoneId}',
-                      semanticsLabel:
-                          'Selected calendar date ${state.selectedLocalDate} in ${state.timezoneId}',
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => _goToToday(ref),
-                  child: const Text('Today'),
-                ),
-                IconButton(
-                  tooltip: 'Next ${_viewLabel(state.view).toLowerCase()}',
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () => _moveDate(ref, 1),
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: B05Layout.space8),
+            child: _CalendarDateControls(
+              view: state.view,
+              localDate: state.selectedLocalDate,
+              onPrevious: () => _moveDate(ref, -1),
+              onPickDate: () => _pickDate(context, ref),
+              onToday: () => _goToToday(ref),
+              onNext: () => _moveDate(ref, 1),
             ),
           ),
+          if (state.view == CalendarView.week)
+            _CalendarWeekStrip(
+              localDate: state.selectedLocalDate,
+              onDateSelected: (date) => controller.selectDate(date),
+            ),
           if (state.errorMessage != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                state.errorMessage!,
-                style: const TextStyle(color: Colors.red),
+              child: ConsumerStatusRow(
+                label: 'Calendar unavailable',
+                detail: ProductFailurePresentation.fromCode(
+                  'calendar_unavailable',
+                ).message,
+                error: true,
+                onRetry: controller.refresh,
               ),
             ),
           if (travelState.activeTravelContext case final travel?)
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                B05Layout.space16,
+                B05Layout.space4,
+                B05Layout.space16,
+                0,
               ),
-              child: Text(
-                'Travel mode: ${travel.startLocalDate} – ${travel.endLocalDate} • ${travelState.activeTravelOccurrenceIds.length} previewed workout${travelState.activeTravelOccurrenceIds.length == 1 ? '' : 's'} use travel equipment.',
-                style: const TextStyle(color: AppColors.textPrimary),
+              child: B05Surface(
+                tone: B05SurfaceTone.selected,
+                showBorder: false,
+                padding: const EdgeInsets.all(B05Layout.space12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    'Travel mode is on for ${ConsumerCountLabel.format(travelState.activeTravelOccurrenceIds.length, 'workout')} (${ConsumerDateLabel.range(travel.startLocalDate, travel.endLocalDate)}).',
+                    style: B05Typography.body(context),
+                  ),
+                ),
               ),
             ),
-          Expanded(
-            child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildOccurrences(
-                    context,
-                    visibleItems,
-                    travelState.activeTravelOccurrenceIds,
-                  ),
-          ),
+          if (state.isLoading)
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(B05Layout.space16),
+                child: const ConsumerStatusRow(
+                  label: 'Loading your calendar',
+                  detail: 'Finding planned workouts for this period.',
+                  loading: true,
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: _buildOccurrences(
+                context,
+                visibleItems,
+                travelState.activeTravelOccurrenceIds,
+                state.view,
+                state.activeProgramVersionId != null,
+              ),
+            ),
         ],
+      ),
+    );
+  }
+
+  static bool _isLocalDate(String value) {
+    if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) return false;
+    final parsed = DateTime.tryParse('${value}T12:00:00');
+    return parsed != null && _formatDate(parsed) == value;
+  }
+}
+
+class _CalendarDateControls extends StatelessWidget {
+  const _CalendarDateControls({
+    required this.view,
+    required this.localDate,
+    required this.onPrevious,
+    required this.onPickDate,
+    required this.onToday,
+    required this.onNext,
+  });
+
+  final CalendarView view;
+  final String localDate;
+  final VoidCallback onPrevious;
+  final VoidCallback onPickDate;
+  final VoidCallback onToday;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final compact = MediaQuery.sizeOf(context).width < 360 || scale >= 1.6;
+    final period = ProgramCalendarScreen._viewLabel(view).toLowerCase();
+    final selectedLabel = ProgramCalendarScreen._selectedDateLabel(
+      view,
+      localDate,
+    );
+    final dateButton = Semantics(
+      label: 'Selected $selectedLabel',
+      button: true,
+      child: B05ActionButton(
+        label: selectedLabel,
+        icon: Icons.calendar_today_outlined,
+        emphasis: B05ActionEmphasis.tertiary,
+        hint: 'Choose a date to view.',
+        onPressed: onPickDate,
+      ),
+    );
+    final previous = B05IconAction(
+      icon: Icons.chevron_left_rounded,
+      label: 'Previous $period',
+      onPressed: onPrevious,
+    );
+    final next = B05IconAction(
+      icon: Icons.chevron_right_rounded,
+      label: 'Next $period',
+      onPressed: onNext,
+    );
+    final today = B05ActionButton(
+      label: 'Today',
+      emphasis: B05ActionEmphasis.tertiary,
+      onPressed: onToday,
+    );
+
+    if (compact) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              previous,
+              Expanded(child: dateButton),
+              next,
+            ],
+          ),
+          Align(alignment: Alignment.centerRight, child: today),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        previous,
+        Expanded(child: dateButton),
+        today,
+        next,
+      ],
+    );
+  }
+}
+
+class _CalendarWeekStrip extends StatelessWidget {
+  const _CalendarWeekStrip({
+    required this.localDate,
+    required this.onDateSelected,
+  });
+
+  final String localDate;
+  final ValueChanged<String> onDateSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = DateTime.parse('${localDate}T12:00:00');
+    final monday = selected.subtract(Duration(days: selected.weekday - 1));
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        B05Layout.space16,
+        B05Layout.space4,
+        B05Layout.space16,
+        B05Layout.space8,
+      ),
+      child: Row(
+        children: [
+          for (var index = 0; index < weekdays.length; index++)
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: index == weekdays.length - 1 ? 0 : B05Layout.space4,
+                ),
+                child: _CalendarDayButton(
+                  label: weekdays[index],
+                  date: monday.add(Duration(days: index)),
+                  selected:
+                      _formatDate(monday.add(Duration(days: index))) ==
+                      localDate,
+                  onPressed: onDateSelected,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatDate(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
+}
+
+class _CalendarDayButton extends StatelessWidget {
+  const _CalendarDayButton({
+    required this.label,
+    required this.date,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final String label;
+  final DateTime date;
+  final bool selected;
+  final ValueChanged<String> onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    final dateKey =
+        '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '$label ${date.day}',
+      onTap: () => onPressed(dateKey),
+      child: InkWell(
+        onTap: () => onPressed(dateKey),
+        borderRadius: B05Radii.smallRadius,
+        child: Container(
+          constraints: const BoxConstraints(
+            minHeight: B05Layout.minTouchTarget,
+          ),
+          decoration: BoxDecoration(
+            color: selected ? colors.selected : colors.inset,
+            borderRadius: B05Radii.smallRadius,
+            border: Border.all(color: selected ? colors.action : colors.border),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: B05Layout.space4),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: B05Typography.caption(context).copyWith(
+                  color: selected ? colors.action : colors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                '${date.day}',
+                style: B05Typography.label(context).copyWith(
+                  color: selected ? colors.action : colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class CalendarEmptyState extends StatelessWidget {
+  const CalendarEmptyState({
+    this.view,
+    this.isDay,
+    required this.hasActiveProgram,
+    required this.onAction,
+    super.key,
+  });
+
+  final CalendarView? view;
+  final bool? isDay;
+  final bool hasActiveProgram;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final actionLabel = hasActiveProgram
+        ? 'Open training plan'
+        : 'Set up a training plan';
+    final resolvedView =
+        view ?? (isDay == true ? CalendarView.day : CalendarView.week);
+    final legacyCopy = view == null && isDay != null;
+    final title = legacyCopy && isDay == false
+        ? 'Nothing planned here'
+        : switch (resolvedView) {
+            CalendarView.day => 'Nothing planned today',
+            CalendarView.week => 'Nothing planned this week',
+            CalendarView.month => 'Nothing planned this month',
+          };
+    final message = legacyCopy
+        ? isDay == true
+              ? hasActiveProgram
+                    ? 'No workout is scheduled for this day. Open your training plan to choose another day.'
+                    : 'Choose a workout or enjoy a recovery day.'
+              : hasActiveProgram
+              ? 'No workouts are scheduled in this range. Open your training plan to choose another day.'
+              : 'Try another date or set up a training plan.'
+        : switch (resolvedView) {
+            CalendarView.day =>
+              hasActiveProgram
+                  ? 'No workout is scheduled today. Open your training plan to choose another day.'
+                  : 'Choose a workout whenever you’re ready.',
+            CalendarView.week =>
+              hasActiveProgram
+                  ? 'No workouts are scheduled this week. Open your training plan to choose another day.'
+                  : 'Choose a plan when you’re ready to schedule workouts.',
+            CalendarView.month =>
+              hasActiveProgram
+                  ? 'No workouts are scheduled this month. Open your training plan to choose another day.'
+                  : 'Choose a plan when you’re ready to schedule workouts.',
+          };
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ProductEmptyState(
+          icon: Icons.event_note_rounded,
+          title: title,
+          message: message,
+          action: onAction,
+          actionLabel: actionLabel,
+          actionIcon: Icons.fitness_center_rounded,
+        ),
       ),
     );
   }

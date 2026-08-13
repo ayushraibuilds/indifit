@@ -5,10 +5,14 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/fixtures/b02_execution_draft_codec.dart';
+import '../../core/fixtures/equipment_fixtures.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
 import '../database/app_database.dart';
 import '../models/b02_execution_models.dart';
+import '../services/b02_workout_preparation_orchestrator.dart';
+import 'b02_target_recommendation_repository.dart';
 import 'calendar_repository.dart';
+import 'equipment_preference_repository.dart';
 
 class B02StrengthExecutionException implements Exception {
   final String message;
@@ -44,11 +48,15 @@ class B02StrengthExecutionLaunch {
     required this.state,
   });
 
-  B02StrengthExecutionLaunch copyWith({B02ExecutionDraftState? state}) {
+  B02StrengthExecutionLaunch copyWith({
+    B02ExecutionDraftState? state,
+    String? executionSnapshotJson,
+  }) {
     return B02StrengthExecutionLaunch(
       draftId: draftId,
       occurrenceId: occurrenceId,
-      executionSnapshotJson: executionSnapshotJson,
+      executionSnapshotJson:
+          executionSnapshotJson ?? this.executionSnapshotJson,
       state: state ?? this.state,
     );
   }
@@ -71,16 +79,30 @@ class StrengthExecutionRepository {
   final CalendarRepository _calendarRepo;
   final Uuid _uuid;
   final DateTime Function() _nowUtc;
+  final EquipmentProfileRepository _equipmentRepo;
+  final ExercisePreferenceRepository _preferenceRepo;
+  final B02WorkoutPreparationOrchestrator _preparation;
 
   StrengthExecutionRepository({
     required AppDatabase db,
     required CalendarRepository calendarRepo,
     Uuid? uuid,
     DateTime Function()? nowUtc,
+    EquipmentProfileRepository? equipmentRepo,
+    ExercisePreferenceRepository? preferenceRepo,
+    B02WorkoutPreparationOrchestrator? preparation,
   }) : _db = db,
        _calendarRepo = calendarRepo,
        _uuid = uuid ?? const Uuid(),
-       _nowUtc = nowUtc ?? (() => DateTime.now().toUtc());
+       _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
+       _equipmentRepo = equipmentRepo ?? EquipmentProfileRepository(db),
+       _preferenceRepo = preferenceRepo ?? ExercisePreferenceRepository(db),
+       _preparation =
+           preparation ??
+           B02WorkoutPreparationOrchestrator(
+             evidenceRepository: B02TargetEvidenceRepository(db),
+             nowUtc: nowUtc,
+           );
 
   Future<B02StrengthExecutionCoverage> checkScheduledCoverage(
     String occurrenceId,
@@ -280,6 +302,121 @@ class StrengthExecutionRepository {
     });
   }
 
+  /// Appends a canonical exercise to an unscheduled Quick Workout snapshot.
+  ///
+  /// Quick Workout is intentionally not represented as a B01 occurrence. Its
+  /// mutable exercise list still lives beside the B02 draft and its performed
+  /// sets are finalized by the same canonical session writer.
+  Future<B02StrengthExecutionLaunch> addUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String exerciseId,
+    required String exerciseName,
+    int plannedSets = 1,
+    String repsRange = '1-20',
+  }) async {
+    if (launch.occurrenceId != null) {
+      throw const B02StrengthExecutionException(
+        'Scheduled workout exercises must use the planned substitution path.',
+      );
+    }
+    final stableId = _requiredText(exerciseId, 'Exercise ID');
+    final name = _requiredText(exerciseName, 'Exercise name');
+    if (plannedSets < 1) {
+      throw const B02StrengthExecutionException(
+        'Quick Workout exercises need at least one planned set.',
+      );
+    }
+    final snapshot = _decodeSnapshot(launch.executionSnapshotJson);
+    final rawPrescriptions = snapshot['prescriptions'] is List
+        ? (snapshot['prescriptions'] as List)
+              .whereType<Map>()
+              .map((raw) => Map<String, dynamic>.from(raw))
+              .toList()
+        : <Map<String, dynamic>>[];
+    final prescriptionId = 'quick:${_uuid.v4()}';
+    rawPrescriptions.add({
+      'id': prescriptionId,
+      'exerciseId': stableId,
+      'exerciseNameSnapshot': name,
+      'plannedSets': plannedSets,
+      'repsRange': repsRange,
+    });
+    final encoded = jsonEncode({
+      ...snapshot,
+      'prescriptions': rawPrescriptions,
+    });
+    final changed =
+        await (_db.update(
+          _db.workoutDrafts,
+        )..where((table) => table.id.equals(launch.draftId))).write(
+          WorkoutDraftsCompanion(
+            executionSnapshotJson: Value(encoded),
+            updatedAt: Value(_nowUtc().toUtc()),
+          ),
+        );
+    if (changed != 1) {
+      throw const B02StrengthExecutionRecoveryException(
+        'The Quick Workout draft changed before the exercise could be added.',
+      );
+    }
+    return launch.copyWith(executionSnapshotJson: encoded);
+  }
+
+  /// Removes a Quick Workout exercise from the active picker while retaining
+  /// any performed data already attached to the session. This means an
+  /// exercise with history is never silently destroyed; it simply stops being
+  /// an active, selectable slot for the remainder of the draft.
+  Future<B02StrengthExecutionLaunch> removeUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String prescriptionId,
+  }) async {
+    if (launch.occurrenceId != null) {
+      throw const B02StrengthExecutionException(
+        'Scheduled workout exercises cannot be removed from the Quick Workout path.',
+      );
+    }
+    final id = _requiredText(prescriptionId, 'Exercise prescription ID');
+    final snapshot = _decodeSnapshot(launch.executionSnapshotJson);
+    final rawPrescriptions = snapshot['prescriptions'] is List
+        ? (snapshot['prescriptions'] as List)
+              .whereType<Map>()
+              .map((raw) => Map<String, dynamic>.from(raw))
+              .where((raw) => raw['id'] != id)
+              .toList()
+        : <Map<String, dynamic>>[];
+    final encoded = jsonEncode({
+      ...snapshot,
+      'prescriptions': rawPrescriptions,
+    });
+    final slotId = 'standalone:$id';
+    final nextState = launch.state.copyWith(
+      targetRecommendations: {
+        for (final entry in launch.state.targetRecommendations.entries)
+          if (entry.key != slotId) entry.key: entry.value,
+      },
+      targetOverrides: {
+        for (final entry in launch.state.targetOverrides.entries)
+          if (entry.key != slotId) entry.key: entry.value,
+      },
+    );
+    final changed =
+        await (_db.update(
+          _db.workoutDrafts,
+        )..where((table) => table.id.equals(launch.draftId))).write(
+          WorkoutDraftsCompanion(
+            executionSnapshotJson: Value(encoded),
+            executionStateJson: Value(B02ExecutionDraftCodec.encode(nextState)),
+            updatedAt: Value(_nowUtc().toUtc()),
+          ),
+        );
+    if (changed != 1) {
+      throw const B02StrengthExecutionRecoveryException(
+        'The Quick Workout draft changed before the exercise could be removed.',
+      );
+    }
+    return launch.copyWith(executionSnapshotJson: encoded, state: nextState);
+  }
+
   Future<B02StrengthExecutionLaunch> readDraft(int draftId) async {
     final draft = await (_db.select(
       _db.workoutDrafts,
@@ -302,7 +439,10 @@ class StrengthExecutionRepository {
     }
     return _readCanonicalDraft(
       draft: draft,
-      expectedSnapshotJson: occurrence?.executionSnapshotJson,
+      // Unscheduled drafts have no calendar occurrence; their own immutable
+      // snapshot is still the recovery authority.
+      expectedSnapshotJson:
+          occurrence?.executionSnapshotJson ?? draft.executionSnapshotJson,
       occurrenceId: draft.scheduledOccurrenceId,
     );
   }
@@ -338,11 +478,16 @@ class StrengthExecutionRepository {
     final prescriptionById = {
       for (final prescription in prescriptions) prescription.id: prescription,
     };
-    final stableIds = prescriptions
-        .map((prescription) => prescription.exerciseId)
-        .whereType<String>()
-        .where((id) => id.trim().isNotEmpty)
-        .toSet();
+    final stableIds = {
+      ...prescriptions
+          .map((prescription) => prescription.exerciseId)
+          .whereType<String>()
+          .where((id) => id.trim().isNotEmpty),
+      ...snapshotPrescriptions.values
+          .map((raw) => raw['exerciseId'])
+          .whereType<String>()
+          .where((id) => id.trim().isNotEmpty),
+    };
     final exercises = stableIds.isEmpty
         ? const <Exercise>[]
         : await (_db.select(
@@ -352,6 +497,32 @@ class StrengthExecutionRepository {
         .map((exercise) => exercise.stableId)
         .whereType<String>()
         .toSet();
+
+    final strengthRows = allPrescriptionIds.isEmpty
+        ? const <StrengthSetPrescription>[]
+        : await (_db.select(_db.strengthSetPrescriptions)
+                ..where(
+                  (table) =>
+                      table.exercisePrescriptionId.isIn(allPrescriptionIds),
+                )
+                ..orderBy([(table) => OrderingTerm(expression: table.ordinal)]))
+              .get();
+    final strengthByPrescription = <String, List<StrengthSetPrescription>>{};
+    for (final row in strengthRows) {
+      (strengthByPrescription[row.exercisePrescriptionId] ??= []).add(row);
+    }
+    final templateId = _snapshotObject(snapshot['template'])['id'];
+    final template = templateId is String
+        ? await (_db.select(
+            _db.sessionTemplates,
+          )..where((table) => table.id.equals(templateId))).getSingleOrNull()
+        : null;
+    final week = _snapshotObject(snapshot['week']);
+    final equipmentContext = _snapshotObject(snapshot['equipmentProfile']);
+    final profileId = equipmentContext['equipmentProfileId'];
+    final profile = profileId is String
+        ? await _equipmentRepo.getProfile(profileId)
+        : null;
 
     final slots = <B02StrengthExecutionSlot>[];
     for (final group in launch.state.groups) {
@@ -372,29 +543,34 @@ class StrengthExecutionRepository {
             continue;
           }
           final reps = _parseRepsRange(repsRange);
-          slots.add(
-            B02StrengthExecutionSlot(
-              id: '${group.id}:$round:${member.ordinal}',
-              groupId: group.id,
-              groupType: group.groupType,
-              groupLabel: group.label,
-              groupOrdinal: group.ordinal,
-              roundOrdinal: round,
-              memberOrdinal: member.ordinal,
-              prescriptionId: member.exercisePrescriptionId,
-              exerciseId:
-                  exerciseId != null && resolvedStableIds.contains(exerciseId)
-                  ? exerciseId
-                  : null,
-              exerciseNameSnapshot: name,
-              plannedSets: plannedSets,
-              targetRepsMin: reps.$1,
-              targetRepsMax: reps.$2,
-              targetRpe: null,
-              targetLoadKg: null,
-              targetLoadBasis: null,
+          final slot = await _buildSlot(
+            id: '${group.id}:$round:${member.ordinal}',
+            group: group,
+            member: member,
+            roundOrdinal: round,
+            prescription: prescription,
+            raw: raw,
+            name: name,
+            reps: reps,
+            plannedSets: plannedSets,
+            exerciseId:
+                exerciseId != null && resolvedStableIds.contains(exerciseId)
+                ? exerciseId
+                : null,
+            exercise: exercises.cast<Exercise?>().firstWhere(
+              (value) => value?.stableId == exerciseId,
+              orElse: () => null,
             ),
+            strengthRows:
+                strengthByPrescription[member.exercisePrescriptionId] ??
+                const [],
+            templateDefaultRestSeconds:
+                template?.defaultRestSeconds ??
+                _rawInt(snapshot['templateDefaultRestSeconds']),
+            isDeloadWeek: week['isDeload'] == true,
+            profile: profile,
           );
+          if (slot != null) slots.add(slot);
         }
       }
     }
@@ -416,31 +592,164 @@ class StrengthExecutionRepository {
           prescription?.exerciseId ?? raw['exerciseId'] as String?;
       if (name == null || repsRange == null || plannedSets == null) continue;
       final reps = _parseRepsRange(repsRange);
-      slots.add(
-        B02StrengthExecutionSlot(
-          id: 'standalone:${entry.key}',
-          groupId: null,
-          groupType: null,
-          groupLabel: null,
-          groupOrdinal: null,
-          roundOrdinal: null,
-          memberOrdinal: null,
-          prescriptionId: entry.key,
-          exerciseId:
-              exerciseId != null && resolvedStableIds.contains(exerciseId)
-              ? exerciseId
-              : null,
-          exerciseNameSnapshot: name,
-          plannedSets: plannedSets,
-          targetRepsMin: reps.$1,
-          targetRepsMax: reps.$2,
-          targetRpe: null,
-          targetLoadKg: null,
-          targetLoadBasis: null,
+      final slot = await _buildSlot(
+        id: 'standalone:${entry.key}',
+        group: null,
+        member: null,
+        roundOrdinal: null,
+        prescription: prescription,
+        raw: raw,
+        name: name,
+        reps: reps,
+        plannedSets: plannedSets,
+        exerciseId: exerciseId != null && resolvedStableIds.contains(exerciseId)
+            ? exerciseId
+            : null,
+        exercise: exercises.cast<Exercise?>().firstWhere(
+          (value) => value?.stableId == exerciseId,
+          orElse: () => null,
         ),
+        strengthRows: strengthByPrescription[entry.key] ?? const [],
+        templateDefaultRestSeconds:
+            template?.defaultRestSeconds ??
+            _rawInt(snapshot['templateDefaultRestSeconds']),
+        isDeloadWeek: week['isDeload'] == true,
+        profile: profile,
       );
+      if (slot != null) slots.add(slot);
     }
     return slots;
+  }
+
+  /// Prepares the frozen draft once and returns the player-ready slot read
+  /// model. Offers are keyed by slot identity, so retries/resume reuse the
+  /// exact same evidence and recommendation instead of issuing a second one.
+  Future<B02WorkoutPreparationResult> prepareExecution(
+    B02StrengthExecutionLaunch launch,
+  ) async {
+    final slots = await readExecutionSlots(launch);
+    final occurrence = launch.occurrenceId == null
+        ? null
+        : await _calendarRepo.getOccurrence(launch.occurrenceId!);
+    final result = await _preparation.prepare(
+      state: launch.state,
+      slots: slots,
+      executionTimezoneId: occurrence?.effectiveTimezoneId,
+    );
+    if (result.changed) {
+      await saveDraft(draftId: launch.draftId, state: result.state);
+    }
+    return result;
+  }
+
+  Future<B02StrengthExecutionSlot?> _buildSlot({
+    required String id,
+    required B02ExerciseGroup? group,
+    required B02ExerciseGroupMember? member,
+    required int? roundOrdinal,
+    required ExercisePrescription? prescription,
+    required Map<String, dynamic>? raw,
+    required String name,
+    required (int?, int?) reps,
+    required int plannedSets,
+    required String? exerciseId,
+    required Exercise? exercise,
+    required List<StrengthSetPrescription> strengthRows,
+    required int? templateDefaultRestSeconds,
+    required bool isDeloadWeek,
+    required EquipmentProfileAggregate? profile,
+  }) async {
+    final strength = strengthRows.isEmpty ? null : strengthRows.first;
+    final preference = exerciseId == null
+        ? null
+        : await _preferenceRepo.getExecutionPreference(stableId: exerciseId);
+    final equipmentCodes = exercise == null
+        ? const <String>[]
+        : EquipmentNormalizer.parseEquipmentString(
+            exercise.equipment,
+          ).canonicalItems.map((item) => item.id).toList(growable: false);
+    final item = profile?.items.firstWhere(
+      (candidate) =>
+          candidate.isAvailable &&
+          equipmentCodes.contains(candidate.equipmentCode),
+      orElse: () => const EquipmentProfileItem(
+        id: '',
+        equipmentProfileId: '',
+        equipmentCode: '',
+        isAvailable: false,
+        weightIncrementKg: null,
+      ),
+    );
+    final effectiveItemIncrement = item?.id.isEmpty == true
+        ? null
+        : item?.weightIncrementKg;
+    final targetLoad =
+        strength?.targetLoadKg ?? _rawDouble(raw?['targetLoadKg']);
+    final targetBasis =
+        _rawLoadBasis(strength?.loadBasis) ?? _rawLoadBasis(raw?['loadBasis']);
+    final targetMin =
+        strength?.targetRepsMin ?? _rawInt(raw?['targetRepsMin']) ?? reps.$1;
+    final targetMax =
+        strength?.targetRepsMax ?? _rawInt(raw?['targetRepsMax']) ?? reps.$2;
+    final targetRpe = strength?.targetRpe ?? _rawInt(raw?['targetRpe']);
+    final effortMode = strength?.effortMode == null
+        ? _rawEffortMode(raw?['effortMode'])
+        : B02EffortMode.parse(strength!.effortMode);
+    return B02StrengthExecutionSlot(
+      id: id,
+      groupId: group?.id,
+      groupType: group?.groupType,
+      groupLabel: group?.label,
+      groupOrdinal: group?.ordinal,
+      roundOrdinal: roundOrdinal,
+      memberOrdinal: member?.ordinal,
+      prescriptionId: prescription?.id ?? raw?['id'] as String? ?? id,
+      exerciseId: exerciseId,
+      exerciseNameSnapshot: name,
+      plannedSets: plannedSets,
+      targetRepsMin: targetMin,
+      targetRepsMax: targetMax,
+      targetRpe: targetRpe,
+      targetLoadKg: targetLoad,
+      targetLoadBasis: targetBasis,
+      prescribedRestSeconds:
+          strength?.restSeconds ?? _rawInt(raw?['restSeconds']),
+      memberTransitionRestSeconds: member?.transitionRestSeconds,
+      groupRestAfterRoundSeconds: group?.restAfterRoundSeconds,
+      templateDefaultRestSeconds: templateDefaultRestSeconds,
+      exercisePreferenceRestSeconds: preference?.customRestSeconds,
+      effortMode: effortMode,
+      endedAtFailure: raw?['endedAtFailure'] == true,
+      executionPreference: preference,
+      effectiveItemIncrementKg: effectiveItemIncrement,
+      profileDefaultIncrementKg: profile?.profile.defaultWeightIncrementKg,
+      isDeloadWeek: isDeloadWeek,
+    );
+  }
+
+  static Map<String, dynamic> _snapshotObject(Object? raw) {
+    return raw is Map ? Map<String, dynamic>.from(raw) : const {};
+  }
+
+  static int? _rawInt(Object? raw) => raw is int ? raw : null;
+
+  static double? _rawDouble(Object? raw) => raw is num ? raw.toDouble() : null;
+
+  static B02LoadBasis? _rawLoadBasis(Object? raw) {
+    if (raw is! String) return null;
+    for (final basis in B02LoadBasis.values) {
+      if (basis.dbValue == raw) return basis;
+    }
+    return null;
+  }
+
+  static B02EffortMode _rawEffortMode(Object? raw) {
+    if (raw is String) {
+      for (final mode in B02EffortMode.values) {
+        if (mode.dbValue == raw) return mode;
+      }
+    }
+    return B02EffortMode.standard;
   }
 
   (int?, int?) _parseRepsRange(String raw) {
@@ -593,6 +902,7 @@ class StrengthExecutionRepository {
       await _validateBeforeMutation(
         state: state,
         completionKind: completionKind,
+        requirePrescriptionAncestry: occurrence != null,
       );
 
       final sessionId = await _db
@@ -887,6 +1197,7 @@ class StrengthExecutionRepository {
   Future<void> _validateBeforeMutation({
     required B02ExecutionDraftState state,
     required CompletionKind completionKind,
+    required bool requirePrescriptionAncestry,
   }) async {
     if (state.elapsedSeconds < 1) {
       throw const B02StrengthExecutionFinalizationException(
@@ -972,7 +1283,7 @@ class StrengthExecutionRepository {
         );
       }
     }
-    if (prescriptionIds.isNotEmpty) {
+    if (requirePrescriptionAncestry && prescriptionIds.isNotEmpty) {
       final prescriptionRows = await (_db.select(
         _db.exercisePrescriptions,
       )..where((table) => table.id.isIn(prescriptionIds))).get();
@@ -1411,6 +1722,10 @@ class StrengthExecutionCompatibilityAdapter {
     B02StrengthExecutionLaunch launch,
   ) => _repository.readExecutionSlots(launch);
 
+  Future<B02WorkoutPreparationResult> prepareExecution(
+    B02StrengthExecutionLaunch launch,
+  ) => _repository.prepareExecution(launch);
+
   Future<B02StrengthExecutionLaunch> startUnscheduledDraft({
     required String routineName,
     required String executionSnapshotJson,
@@ -1421,6 +1736,28 @@ class StrengthExecutionCompatibilityAdapter {
     executionSnapshotJson: executionSnapshotJson,
     groups: groups,
     snapshotId: snapshotId,
+  );
+
+  Future<B02StrengthExecutionLaunch> addUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String exerciseId,
+    required String exerciseName,
+    int plannedSets = 1,
+    String repsRange = '1-20',
+  }) => _repository.addUnscheduledExercise(
+    launch: launch,
+    exerciseId: exerciseId,
+    exerciseName: exerciseName,
+    plannedSets: plannedSets,
+    repsRange: repsRange,
+  );
+
+  Future<B02StrengthExecutionLaunch> removeUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String prescriptionId,
+  }) => _repository.removeUnscheduledExercise(
+    launch: launch,
+    prescriptionId: prescriptionId,
   );
 
   Future<void> saveDraft({

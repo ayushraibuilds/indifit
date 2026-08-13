@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../../core/privacy/privacy_policy.dart';
-import '../../core/theme/colors.dart';
+import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
+import '../education/b05_education_content.dart';
+import '../workout_player/widgets/plate_calculator_sheet.dart';
 import 'exercise_history_screen.dart';
 
 class ExerciseDetailsSheet extends ConsumerWidget {
@@ -11,267 +13,224 @@ class ExerciseDetailsSheet extends ConsumerWidget {
 
   const ExerciseDetailsSheet({super.key, required this.exercise});
 
-  Future<void> _launchYouTube() async {
-    if (exercise.youtubeId == null) return;
-
-    final url = Uri.parse(
-      'https://www.youtube.com/watch?v=${exercise.youtubeId}',
-    );
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isOffline = ref.watch(privacyPolicyProvider).isOfflineOnly;
-    final List<String> muscles = exercise.muscleGroups.split(',');
-    final List<String> cues = exercise.formCues.split('\n');
-    final List<String> mistakes = exercise.commonMistakes.split('\n');
+    final colors = context.b05Colors;
+    final muscles = exercise.muscleGroups
+        .split(',')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+    final cues = exercise.formCues
+        .split('\n')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+    final mistakes = exercise.commonMistakes
+        .split('\n')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
 
-    return Container(
-      padding: const EdgeInsets.all(20.0),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(
+        B05Layout.space20,
+        B05Layout.space8,
+        B05Layout.space20,
+        B05Layout.space24,
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Drag handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  exercise.name,
+                  style: B05Typography.pageTitle(context),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-
-            // Exercise Name & Difficulty
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    exercise.name,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGlow,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Text(
-                    exercise.difficulty,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Muscle Groups & Equipment Badges
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ...muscles.map(
-                  (m) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBackground,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Text(
-                      m,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBackground,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Text(
-                    '🔧 ${exercise.equipment}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Divider(color: AppColors.border, height: 32),
-
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context); // Close sheet first
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        ExerciseHistoryScreen(exerciseName: exercise.name),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.analytics_rounded),
-              label: const Text('View 1RM Trend & Plate Calc'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(44),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+              B05IconAction(
+                icon: Icons.close_rounded,
+                label: 'Close exercise details',
+                onPressed: () => Navigator.of(context).maybePop(),
               ),
-            ),
-            const SizedBox(height: 20),
-
-            // YouTube Video Link
-            if (exercise.youtubeId != null) ...[
-              const Text(
-                'INSTRUCTION VIDEO',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: isOffline ? null : _launchYouTube,
-                child: Container(
-                  height: 160,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(16),
-                    image: isOffline
-                        ? null
-                        : DecorationImage(
-                            image: NetworkImage(
-                              'https://img.youtube.com/vi/${exercise.youtubeId}/0.jpg',
-                            ),
-                            fit: BoxFit.cover,
-                            opacity: 0.65,
-                          ),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.play_circle_fill_rounded,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
             ],
-
-            // Form Cues List
-            const Text(
-              'FORM CUES',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
-                letterSpacing: 1.0,
-              ),
+          ),
+          const SizedBox(height: B05Layout.space8),
+          B05Surface(
+            tone: B05SurfaceTone.selected,
+            radius: B05SurfaceRadius.small,
+            padding: const EdgeInsets.symmetric(
+              horizontal: B05Layout.space8,
+              vertical: B05Layout.space4,
             ),
-            const SizedBox(height: 10),
-            ...cues.asMap().entries.map(
-              (entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${entry.key + 1}. ',
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        entry.value,
-                        style: const TextStyle(fontSize: 13, height: 1.3),
-                      ),
-                    ),
-                  ],
+            child: Text(
+              exercise.difficulty,
+              style: B05Typography.caption(
+                context,
+              ).copyWith(color: colors.action, fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(height: B05Layout.space12),
+          Wrap(
+            spacing: B05Layout.space8,
+            runSpacing: B05Layout.space8,
+            children: [
+              for (var index = 0; index < muscles.length; index++)
+                Chip(
+                  avatar: Icon(
+                    index == 0
+                        ? Icons.star_outline_rounded
+                        : Icons.circle_outlined,
+                    size: 16,
+                  ),
+                  label: Text(
+                    '${muscles[index]} · ${index == 0 ? 'Primary' : 'Secondary'}',
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Common Mistakes List
-            const Text(
-              'COMMON MISTAKES',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: AppColors.danger,
-                letterSpacing: 1.0,
-              ),
-            ),
-            const SizedBox(height: 10),
-            ...mistakes.map(
-              (m) => Padding(
-                padding: const EdgeInsets.only(bottom: 6.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.cancel_outlined,
-                      color: AppColors.danger,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        m,
-                        style: const TextStyle(fontSize: 13, height: 1.3),
+              if (exercise.equipment.trim().isNotEmpty)
+                Chip(
+                  avatar: const Icon(Icons.fitness_center_outlined, size: 16),
+                  label: Text(exercise.equipment),
+                ),
+            ],
+          ),
+          const SizedBox(height: B05Layout.space16),
+          Text(
+            'PERFORMANCE',
+            style: B05Typography.caption(
+              context,
+            ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .6),
+          ),
+          const SizedBox(height: B05Layout.space8),
+          Wrap(
+            spacing: B05Layout.space8,
+            runSpacing: B05Layout.space8,
+            children: [
+              B05ActionButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ExerciseHistoryScreen(
+                        exerciseName: exercise.name,
+                        stableExerciseId: exercise.stableId,
                       ),
                     ),
-                  ],
+                  );
+                },
+                icon: Icons.history_rounded,
+                label: 'History',
+                emphasis: B05ActionEmphasis.secondary,
+              ),
+              B05ActionButton(
+                onPressed: () => showIndiFitBottomSheet<void>(
+                  context: context,
+                  semanticLabel: 'Plate calculator',
+                  builder: (_) => const PlateCalculatorSheet(targetWeight: 80),
                 ),
+                icon: Icons.calculate_outlined,
+                label: 'Plate calculator',
+                emphasis: B05ActionEmphasis.secondary,
+              ),
+            ],
+          ),
+          const SizedBox(height: B05Layout.space20),
+
+          Text(
+            'GUIDE',
+            style: B05Typography.caption(
+              context,
+            ).copyWith(fontWeight: FontWeight.w700, letterSpacing: .6),
+          ),
+          const SizedBox(height: B05Layout.space8),
+          if (cues.isNotEmpty)
+            ...cues
+                .take(3)
+                .toList()
+                .asMap()
+                .entries
+                .map(
+                  (entry) => Padding(
+                    padding: const EdgeInsets.only(bottom: B05Layout.space8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.check_rounded,
+                          size: B05Layout.iconSmall,
+                          color: colors.action,
+                        ),
+                        const SizedBox(width: B05Layout.space8),
+                        Expanded(
+                          child: Text(
+                            entry.value,
+                            style: B05Typography.body(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          const SizedBox(height: B05Layout.space4),
+          B05ActionButton(
+            onPressed: () => showIndiFitBottomSheet<void>(
+              context: context,
+              semanticLabel: 'Exercise guide',
+              builder: (_) => _ExerciseGuideContent(
+                exercise: exercise,
+                cues: cues,
+                mistakes: mistakes,
               ),
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
+            icon: Icons.menu_book_outlined,
+            label: 'View full guide',
+            emphasis: B05ActionEmphasis.tertiary,
+          ),
+          const SizedBox(height: B05Layout.space20),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExerciseGuideContent extends StatelessWidget {
+  const _ExerciseGuideContent({
+    required this.exercise,
+    required this.cues,
+    required this.mistakes,
+  });
+
+  final Exercise exercise;
+  final List<String> cues;
+  final List<String> mistakes;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        B05Layout.space20,
+        B05Layout.space8,
+        B05Layout.space20,
+        B05Layout.space24,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Exercise guide', style: B05Typography.pageTitle(context)),
+          const SizedBox(height: B05Layout.space4),
+          Text(exercise.name, style: B05Typography.body(context)),
+          const SizedBox(height: B05Layout.space16),
+          B05ExerciseEducationPanel(
+            exerciseName: exercise.name,
+            stableExerciseId: exercise.stableId,
+            catalogueCues: cues,
+            catalogueMistakes: mistakes,
+          ),
+        ],
       ),
     );
   }

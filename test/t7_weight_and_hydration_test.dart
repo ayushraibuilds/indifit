@@ -331,6 +331,50 @@ void main() {
       );
     });
 
+    // 6a. A Progress body measurement must not erase today's weight entry.
+    test(
+      '6a. Body measurement preserves an existing same-day weight',
+      () async {
+        final workoutRepo = WorkoutRepository(db);
+        await db
+            .into(db.bodyMeasurements)
+            .insert(
+              BodyMeasurementsCompanion.insert(
+                weight: const Value(82.0),
+                recordedAt: Value(DateTime.now()),
+              ),
+            );
+
+        await workoutRepo.logBodyMeasurement(waist: 82.5);
+
+        final measurements = await db.select(db.bodyMeasurements).get();
+        expect(measurements, hasLength(1));
+        expect(measurements.single.weight, 82.0);
+        expect(measurements.single.waist, 82.5);
+      },
+    );
+
+    test('6b. Weight preserves existing same-day body measurements', () async {
+      final workoutRepo = WorkoutRepository(db);
+      await db
+          .into(db.bodyMeasurements)
+          .insert(
+            BodyMeasurementsCompanion.insert(
+              waist: const Value(82.5),
+              chest: const Value(101.0),
+              recordedAt: Value(DateTime.now()),
+            ),
+          );
+
+      await workoutRepo.logWeightAndSyncProfile(weight: 82.0);
+
+      final measurements = await db.select(db.bodyMeasurements).get();
+      expect(measurements, hasLength(1));
+      expect(measurements.single.weight, 82.0);
+      expect(measurements.single.waist, 82.5);
+      expect(measurements.single.chest, 101.0);
+    });
+
     // 7. Bottom sheet closes only after successful persistence
     testWidgets('7. Bottom sheet closes only after successful persistence', (
       tester,
@@ -425,7 +469,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(LogWeightBottomSheet), findsOneWidget);
-      expect(find.text('Database Write Exception'), findsOneWidget);
+      expect(
+        find.text('Weight could not be saved. Try again.'),
+        findsOneWidget,
+      );
 
       final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(

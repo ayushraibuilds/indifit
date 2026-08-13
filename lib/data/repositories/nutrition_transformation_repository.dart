@@ -51,6 +51,24 @@ class NutritionTransformationRepository {
     return result;
   }
 
+  /// Returns every reviewed/user-authoritative transformation for a food.
+  /// Feature surfaces use this when the catalogue option has no selected
+  /// preparation yet; the explicit transformation row then supplies the raw
+  /// or cooked source state instead of guessing from a display name.
+  Future<List<NutritionTransformation>> findForFood({
+    required String sourceFoodId,
+  }) async {
+    final rows =
+        await (_db.select(_db.nutritionQuantityConversions)
+              ..where((table) => table.foodId.equals(sourceFoodId))
+              ..orderBy([(table) => OrderingTerm(expression: table.id)]))
+            .get();
+    return List.unmodifiable([
+      for (final row in rows)
+        if (!_isArchived(row)) _fromRow(row),
+    ]);
+  }
+
   Future<NutritionTransformation?> findExplicit({
     required String sourceFoodId,
     String? sourcePreparationId,

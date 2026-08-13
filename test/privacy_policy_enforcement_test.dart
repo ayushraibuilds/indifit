@@ -196,6 +196,17 @@ void main() {
     );
 
     test(
+      'Open Food Facts provider client never carries the IndiFit backend key',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final providerDio = container.read(openFoodFactsDioProvider);
+        expect(providerDio.options.headers, isNot(contains('x-indifit-key')));
+      },
+    );
+
+    test(
       'PrivacyNetworkInterceptor rejects raw Dio requests when offline_only mode is active',
       () async {
         final container = ProviderContainer(

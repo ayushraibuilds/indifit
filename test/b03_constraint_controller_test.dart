@@ -125,8 +125,9 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('No dietary constraints recorded.'), findsOneWidget);
-      expect(find.text('Add a constraint'), findsWidgets);
+      expect(find.text('What should we avoid?'), findsOneWidget);
+      expect(find.text('No dietary constraints recorded.'), findsNothing);
+      expect(find.text('Add dietary need'), findsWidgets);
       expect(tester.takeException(), isNull);
     },
   );

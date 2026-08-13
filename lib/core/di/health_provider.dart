@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/health_service.dart';
+import '../presentation/product_failure_presentation.dart';
 
 enum HealthStatus {
   initial,
@@ -73,11 +74,15 @@ class HealthStateNotifier extends StateNotifier<HealthState> {
       } else {
         state = HealthState(status: HealthStatus.available, summary: summary);
       }
-    } catch (e) {
+    } catch (error) {
       if (!mounted) return;
       state = HealthState(
         status: HealthStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Health data unavailable',
+          code: 'health_unavailable',
+        ).message,
       );
     } finally {
       _isLoading = false;
@@ -89,11 +94,15 @@ class HealthStateNotifier extends StateNotifier<HealthState> {
     bool granted;
     try {
       granted = await _healthService.requestPermissions();
-    } catch (e) {
+    } catch (error) {
       if (!mounted) return;
       state = HealthState(
         status: HealthStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: ProductFailurePresentation.fromError(
+          error,
+          title: 'Health data unavailable',
+          code: 'health_unavailable',
+        ).message,
       );
       return;
     }
