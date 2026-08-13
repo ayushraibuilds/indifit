@@ -393,11 +393,11 @@ void main() {
       expect(find.text('Weight (kg)'), findsOneWidget);
       expect(find.text('RPE'), findsWidgets);
       await tester.scrollUntilVisible(
-        find.text('Complete set'),
+        find.text('Log set'),
         180,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('Complete set'), findsOneWidget);
+      expect(find.text('Log set'), findsOneWidget);
       expect(tester.takeException(), isNull);
     }
     await tester.pumpWidget(const SizedBox.shrink());

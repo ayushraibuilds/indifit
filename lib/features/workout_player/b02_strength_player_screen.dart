@@ -14,6 +14,7 @@ import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import 'b02_strength_execution_controller.dart';
 import 'quick_workout_screen.dart';
+import 'widgets/r07c_workout_presentation.dart';
 
 /// B02's compact, offline-first player. All mutations go through the
 /// successor controller; the widget only collects input and presents state.
@@ -174,6 +175,7 @@ class _B02StrengthPlayerScreenState
     final exerciseComplete =
         !isQuick && workingSetCount >= selected.plannedSets;
     final currentSet = workingSetCount + 1;
+    final performedSets = _performedSets(launch.state, selected);
     _loads.putIfAbsent(
       selected.id,
       () => selected.targetLoadKg?.toString() ?? '',
@@ -186,185 +188,197 @@ class _B02StrengthPlayerScreenState
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isQuick
-                        ? 'Quick workout'
-                        : 'Exercise ${slots.indexOf(selected) + 1} of ${slots.length}',
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Semantics(
-                    header: true,
-                    child: Text(
-                      _actualExerciseName(launch.state, selected),
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    selected.groupType == null
-                        ? (exerciseComplete
-                              ? 'Exercise complete'
-                              : 'Set $currentSet${isQuick ? '' : ' of ${selected.plannedSets}'}')
-                        : _groupContext(selected),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              tooltip: 'Exercise actions',
-              onPressed: ui.isBusy
-                  ? null
-                  : () => _showExerciseActions(provider, selected),
-              icon: const Icon(Icons.more_horiz_rounded),
-            ),
-          ],
+        _R07CExecutionHeader(
+          isQuick: isQuick,
+          exerciseIndex: slots.indexOf(selected),
+          exerciseCount: slots.length,
+          currentSet: currentSet,
+          plannedSets: selected.plannedSets,
+          exerciseComplete: exerciseComplete,
+          groupContext: selected.groupType == null
+              ? null
+              : _groupContext(selected),
+          exerciseName: _actualExerciseName(launch.state, selected),
+          elapsedSeconds: launch.state.elapsedSeconds,
+          onActions: ui.isBusy
+              ? null
+              : () => _showExerciseActions(provider, selected),
         ),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          isExpanded: true,
-          initialValue: selected.id,
-          decoration: const InputDecoration(labelText: 'Exercise'),
-          items: [
-            for (final slot in slots)
-              DropdownMenuItem(
-                value: slot.id,
-                child: Text(
-                  slot.exerciseNameSnapshot,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-          ],
-          onChanged: ui.isBusy
+        _R07CExerciseStrip(
+          slots: slots,
+          state: launch.state,
+          selectedId: selected.id,
+          onSelected: ui.isBusy
               ? null
               : (value) => setState(() => _selectedSlotId = value),
         ),
         const SizedBox(height: 12),
-        _CompactTargetSummary(
+        _R07CTargetContext(
           slot: selected,
           state: launch.state,
-          onOverride: ui.isBusy
+          onApply: ui.isBusy
+              ? null
+              : () => _applySuggestedTarget(launch.state, selected),
+          onChange: ui.isBusy
               ? null
               : () => _overrideTarget(provider, selected),
         ),
-        const SizedBox(height: 12),
+        if (_hasUsefulTargetContext(launch.state, selected))
+          const SizedBox(height: 12),
         if (hasOpenRest) ...[
           _buildRestCard(provider, ui, launch, selected),
           const SizedBox(height: 12),
           Text(
-            'Rest is active. Skip it when you are ready for the next set.',
+            'The next set is ready when you are.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
-          const SizedBox(height: 12),
         ] else ...[
-          IndiFitResponsiveFieldGroup(
-            spacing: 10,
-            children: [
-              TextFormField(
-                key: ValueKey('load-${selected.id}'),
-                initialValue: _loads[selected.id],
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
+          B05Surface(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Log set $currentSet',
+                  style: B05Typography.title(context),
                 ),
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  labelText: _loadLabel(selected.targetLoadBasis),
-                ),
-                onChanged: (value) => _loads[selected.id] = value,
-              ),
-              TextFormField(
-                key: ValueKey('reps-${selected.id}'),
-                initialValue: _reps[selected.id],
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(labelText: 'Reps'),
-                onChanged: (value) => _reps[selected.id] = value,
-                onEditingComplete: () =>
-                    FocusManager.instance.primaryFocus?.unfocus(),
-              ),
-              _RpeSelector(
-                value: int.tryParse(_rpes[selected.id] ?? ''),
-                onChanged: (value) => setState(
-                  () => _rpes[selected.id] = value?.toString() ?? '',
-                ),
-              ),
-            ],
-          ),
-          DropdownButtonFormField<String>(
-            isExpanded: true,
-            initialValue: _warmup ? 'warmup' : 'working',
-            decoration: const InputDecoration(labelText: 'Set type'),
-            items: const [
-              DropdownMenuItem(value: 'working', child: Text('Working')),
-              DropdownMenuItem(value: 'warmup', child: Text('Warm-up')),
-            ],
-            onChanged: ui.isBusy
-                ? null
-                : (value) => setState(() => _warmup = value == 'warmup'),
-          ),
-          if (launch.state.warmupRecommendation != null)
-            _WarmupCard(
-              recommendation: launch.state.warmupRecommendation!,
-              onAccept: ui.isBusy
-                  ? null
-                  : () => ref
-                        .read(provider.notifier)
-                        .chooseWarmup(B02WarmupDecision.accepted),
-              onSkip: ui.isBusy
-                  ? null
-                  : () => ref
-                        .read(provider.notifier)
-                        .chooseWarmup(B02WarmupDecision.skipped),
-              onEdit: ui.isBusy
-                  ? null
-                  : () => _editWarmup(
-                      provider,
-                      launch.state.warmupRecommendation!,
+                const SizedBox(height: 10),
+                IndiFitResponsiveFieldGroup(
+                  spacing: 10,
+                  children: [
+                    TextFormField(
+                      key: ValueKey('load-${selected.id}'),
+                      initialValue: _loads[selected.id],
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: _loadLabel(selected.targetLoadBasis),
+                      ),
+                      onChanged: (value) => _loads[selected.id] = value,
                     ),
-            ),
-          const SizedBox(height: 12),
-          Semantics(
-            button: true,
-            label: _warmup
-                ? 'Log warm-up set'
-                : exerciseComplete
-                ? 'Exercise complete'
-                : 'Complete set $currentSet',
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed:
-                    ui.isBusy ||
-                        _isSubmittingSet ||
-                        !selected.hasCanonicalExercise ||
-                        (!_warmup && exerciseComplete)
-                    ? null
-                    : () => _record(provider, selected),
-                child: Text(
-                  _warmup
-                      ? 'Log warm-up set'
-                      : exerciseComplete
-                      ? 'Exercise complete'
-                      : 'Complete set',
+                    TextFormField(
+                      key: ValueKey('reps-${selected.id}'),
+                      initialValue: _reps[selected.id],
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      decoration: const InputDecoration(labelText: 'Reps'),
+                      onChanged: (value) => _reps[selected.id] = value,
+                      onEditingComplete: () =>
+                          FocusManager.instance.primaryFocus?.unfocus(),
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 8),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  title: Row(
+                    children: [
+                      const Expanded(child: Text('More for this set')),
+                      Text(
+                        'RPE',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ],
+                  ),
+                  subtitle: Text(
+                    _rpes[selected.id]?.isNotEmpty == true
+                        ? 'RPE ${_rpes[selected.id]}'
+                        : _warmup
+                        ? 'Warm-up set'
+                        : 'RPE and set type',
+                  ),
+                  children: [
+                    _RpeSelector(
+                      value: int.tryParse(_rpes[selected.id] ?? ''),
+                      onChanged: (value) => setState(
+                        () => _rpes[selected.id] = value?.toString() ?? '',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      initialValue: _warmup ? 'warmup' : 'working',
+                      decoration: const InputDecoration(labelText: 'Set type'),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'working',
+                          child: Text('Working'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'warmup',
+                          child: Text('Warm-up'),
+                        ),
+                      ],
+                      onChanged: ui.isBusy
+                          ? null
+                          : (value) => setState(
+                                () => _warmup = value == 'warmup',
+                              ),
+                    ),
+                    if (launch.state.warmupRecommendation != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: _WarmupCard(
+                          recommendation: launch.state.warmupRecommendation!,
+                          onAccept: ui.isBusy
+                              ? null
+                              : () => ref
+                                    .read(provider.notifier)
+                                    .chooseWarmup(B02WarmupDecision.accepted),
+                          onSkip: ui.isBusy
+                              ? null
+                              : () => ref
+                                    .read(provider.notifier)
+                                    .chooseWarmup(B02WarmupDecision.skipped),
+                          onEdit: ui.isBusy
+                              ? null
+                              : () => _editWarmup(
+                                  provider,
+                                  launch.state.warmupRecommendation!,
+                                ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
-          if (isQuick) ...[
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: ui.isBusy ? null : () => _prepareExtraSet(selected),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add set'),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: B05ActionButton(
+              label: _warmup
+                  ? 'Log warm-up set'
+                  : exerciseComplete
+                  ? 'Exercise complete'
+                  : 'Log set',
+              hint: _warmup ? 'Save this warm-up set' : 'Save this set',
+              onPressed:
+                  ui.isBusy ||
+                      _isSubmittingSet ||
+                      !selected.hasCanonicalExercise ||
+                      (!_warmup && exerciseComplete)
+                  ? null
+                  : () => _record(provider, selected),
             ),
-            const SizedBox(height: 8),
+          ),
+          if (performedSets.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            R07CPerformedSetList(title: 'Logged sets', sets: performedSets),
+          ],
+          if (isQuick) ...[
+            const SizedBox(height: 10),
+            B05ActionButton(
+              label: 'Add set',
+              icon: Icons.add_rounded,
+              emphasis: B05ActionEmphasis.secondary,
+              onPressed: ui.isBusy ? null : () => _prepareExtraSet(selected),
+            ),
+            const SizedBox(height: 4),
             B05ActionButton(
               label: 'Add exercise',
               icon: Icons.playlist_add_rounded,
@@ -392,7 +406,7 @@ class _B02StrengthPlayerScreenState
               child: Padding(
                 padding: EdgeInsets.only(bottom: 12),
                 child: Text(
-                  'Technique guidance stays here so the repeated set action remains clear.',
+                  'Open exercise details for setup and technique guidance.',
                 ),
               ),
             ),
@@ -401,9 +415,13 @@ class _B02StrengthPlayerScreenState
         const SizedBox(height: 12),
         _GroupProgressCard(launch: launch, slots: slots),
         const SizedBox(height: 12),
-        FilledButton.tonal(
-          onPressed: ui.isBusy ? null : () => _openSummary(provider),
-          child: Text(isQuick ? 'Finish workout' : 'Review and finish'),
+        SizedBox(
+          width: double.infinity,
+          child: B05ActionButton(
+            label: isQuick ? 'Finish workout' : 'Review and finish',
+            emphasis: B05ActionEmphasis.secondary,
+            onPressed: ui.isBusy ? null : () => _openSummary(provider),
+          ),
         ),
       ],
     );
@@ -457,6 +475,68 @@ class _B02StrengthPlayerScreenState
           exercise.sets.isNotEmpty,
     );
   }
+
+  List<B02PerformedSet> _performedSets(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    return state.performedExercises
+        .where(
+          (exercise) =>
+              exercise.id == 'performed:${slot.id}' ||
+              (exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+                  exercise.groupRoundOrdinal == slot.roundOrdinal &&
+                  exercise.groupMemberOrdinal == slot.memberOrdinal),
+        )
+        .expand((exercise) => exercise.sets)
+        .toList(growable: false);
+  }
+
+  bool _hasUsefulTargetContext(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    final recommendation = state.targetRecommendations[slot.id];
+    final override = state.targetOverrides[slot.id];
+    final usefulTarget = r07cHasUsefulTarget(
+      loadKg: override?.loadKg ?? recommendation?.recommendedLoadKg ?? slot.targetLoadKg,
+      loadBasis: override?.loadBasis ?? recommendation?.loadBasis ?? slot.targetLoadBasis,
+      minReps: override?.targetRepsMin ?? recommendation?.targetRepsMin ?? slot.targetRepsMin,
+      maxReps: override?.targetRepsMax ?? recommendation?.targetRepsMax ?? slot.targetRepsMax,
+      rpe: override?.targetRpe ?? recommendation?.targetRpe ?? slot.targetRpe,
+    );
+    final last = r07cFormatLastPerformance(
+      loadKg: _asDouble(recommendation?.completeness['previousLoadKg']),
+      loadBasis: recommendation?.loadBasis,
+      reps: _asInt(recommendation?.completeness['previousReps']),
+      rpe: _asInt(recommendation?.completeness['previousRpe']),
+    );
+    return usefulTarget || last != null;
+  }
+
+  void _applySuggestedTarget(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    final recommendation = state.targetRecommendations[slot.id];
+    if (recommendation == null) return;
+    setState(() {
+      _loads[slot.id] = recommendation.recommendedLoadKg?.toString() ?? '';
+      _reps[slot.id] = recommendation.targetRepsMin?.toString() ?? '';
+    });
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  static double? _asDouble(Object? value) => switch (value) {
+    num number => number.toDouble(),
+    _ => null,
+  };
+
+  static int? _asInt(Object? value) => switch (value) {
+    int number => number,
+    num number => number.toInt(),
+    _ => null,
+  };
 
   bool _hasOpenRest(
     B02ExecutionDraftState state,
@@ -527,6 +607,7 @@ class _B02StrengthPlayerScreenState
         slot: slot,
         reps: reps,
         loadKg: double.tryParse(_loads[slot.id] ?? ''),
+        actualLoadBasis: slot.targetLoadBasis,
         rpe: int.tryParse(_rpes[slot.id] ?? ''),
         role: _warmup ? B02SetRole.warmup : B02SetRole.working,
         actualExerciseId: _substitutionIds[slot.id],
@@ -887,84 +968,261 @@ class _GroupProgressCard extends StatelessWidget {
   }
 }
 
-class _CompactTargetSummary extends StatelessWidget {
+class _R07CExecutionHeader extends StatelessWidget {
+  const _R07CExecutionHeader({
+    required this.isQuick,
+    required this.exerciseIndex,
+    required this.exerciseCount,
+    required this.currentSet,
+    required this.plannedSets,
+    required this.exerciseComplete,
+    required this.groupContext,
+    required this.exerciseName,
+    required this.elapsedSeconds,
+    required this.onActions,
+  });
+
+  final bool isQuick;
+  final int exerciseIndex;
+  final int exerciseCount;
+  final int currentSet;
+  final int plannedSets;
+  final bool exerciseComplete;
+  final String? groupContext;
+  final String exerciseName;
+  final int elapsedSeconds;
+  final VoidCallback? onActions;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    final position = isQuick
+        ? 'Quick workout'
+        : 'Exercise ${exerciseIndex + 1} of $exerciseCount';
+    final status = groupContext ??
+        (exerciseComplete
+            ? 'Exercise complete'
+            : 'Set $currentSet${isQuick ? '' : ' of $plannedSets'}');
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      position.toUpperCase(),
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colors.action,
+                        letterSpacing: 0.6,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _formatElapsed(elapsedSeconds),
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Semantics(
+                header: true,
+                child: Text(
+                  exerciseName,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(status),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: 'Exercise actions',
+          onPressed: onActions,
+          icon: const Icon(Icons.more_horiz_rounded),
+        ),
+      ],
+    );
+  }
+
+  static String _formatElapsed(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainder = seconds % 60;
+    return '$minutes:${remainder.toString().padLeft(2, '0')}';
+  }
+}
+
+class _R07CExerciseStrip extends StatelessWidget {
+  const _R07CExerciseStrip({
+    required this.slots,
+    required this.state,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<B02StrengthExecutionSlot> slots;
+  final B02ExecutionDraftState state;
+  final String selectedId;
+  final ValueChanged<String>? onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var index = 0; index < slots.length; index++) ...[
+            if (index > 0) const SizedBox(width: 8),
+            _exerciseChip(context, slots[index]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _exerciseChip(
+    BuildContext context,
+    B02StrengthExecutionSlot slot,
+  ) {
+    final selected = slot.id == selectedId;
+    final complete = state.performedExercises.any(
+      (exercise) =>
+          (exercise.id == 'performed:${slot.id}' ||
+              exercise.sourceExercisePrescriptionId == slot.prescriptionId) &&
+          exercise.status == 'completed',
+    );
+    final label = slot.exerciseNameSnapshot.trim().isEmpty
+        ? 'Exercise'
+        : slot.exerciseNameSnapshot;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${complete ? 'Completed ' : ''}$label',
+      onTap: onSelected == null ? null : () => onSelected!(slot.id),
+      child: ChoiceChip(
+        selected: selected,
+        onSelected: onSelected == null
+            ? null
+            : (_) => onSelected!(slot.id),
+        avatar: complete ? const Icon(Icons.check_rounded, size: 16) : null,
+        label: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 180),
+          child: Text(label, overflow: TextOverflow.ellipsis),
+        ),
+      ),
+    );
+  }
+}
+
+class _R07CTargetContext extends StatelessWidget {
   final B02StrengthExecutionSlot slot;
   final B02ExecutionDraftState state;
-  final VoidCallback? onOverride;
+  final VoidCallback? onApply;
+  final VoidCallback? onChange;
 
-  const _CompactTargetSummary({
+  const _R07CTargetContext({
     required this.slot,
     required this.state,
-    required this.onOverride,
+    required this.onApply,
+    required this.onChange,
   });
 
   @override
   Widget build(BuildContext context) {
     final recommendation = state.targetRecommendations[slot.id];
     final override = state.targetOverrides[slot.id];
-    final load =
-        override?.loadKg ??
-        recommendation?.recommendedLoadKg ??
-        slot.targetLoadKg;
+    final load = override?.loadKg ?? recommendation?.recommendedLoadKg ?? slot.targetLoadKg;
+    final loadBasis =
+        override?.loadBasis ?? recommendation?.loadBasis ?? slot.targetLoadBasis;
     final minReps =
-        override?.targetRepsMin ??
-        recommendation?.targetRepsMin ??
-        slot.targetRepsMin;
+        override?.targetRepsMin ?? recommendation?.targetRepsMin ?? slot.targetRepsMin;
     final maxReps =
-        override?.targetRepsMax ??
-        recommendation?.targetRepsMax ??
-        slot.targetRepsMax;
-    final reps = minReps == null
-        ? 'as many as prescribed'
-        : minReps == maxReps
-        ? '$minReps reps'
-        : '$minReps–${maxReps ?? minReps} reps';
-    final target = load == null ? reps : '${_number(load)} kg × $reps';
-    final title = recommendation == null ? 'Target' : 'Suggested target';
+        override?.targetRepsMax ?? recommendation?.targetRepsMax ?? slot.targetRepsMax;
+    final rpe = override?.targetRpe ?? recommendation?.targetRpe ?? slot.targetRpe;
+    final hasTarget = r07cHasUsefulTarget(
+      loadKg: load,
+      loadBasis: loadBasis,
+      minReps: minReps,
+      maxReps: maxReps,
+      rpe: rpe,
+    );
+    final target = hasTarget
+        ? r07cFormatTarget(
+            loadKg: load,
+            loadBasis: loadBasis,
+            minReps: minReps,
+            maxReps: maxReps,
+            rpe: rpe,
+          )
+        : null;
     final previousLoad = _asDouble(
       recommendation?.completeness['previousLoadKg'],
     );
     final previousReps = _asInt(recommendation?.completeness['previousReps']);
     final previousRpe = _asInt(recommendation?.completeness['previousRpe']);
-    final last = previousLoad == null && previousReps == null
-        ? null
-        : [
-            if (previousLoad != null) '${_number(previousLoad)} kg',
-            if (previousReps != null)
-              '$previousReps ${previousReps == 1 ? 'rep' : 'reps'}',
-            if (previousRpe != null) 'RPE $previousRpe',
-          ].join(' × ');
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          children: [
-            Icon(Icons.flag_outlined, color: context.b05Colors.action),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    final last = r07cFormatLastPerformance(
+      loadKg: previousLoad,
+      loadBasis: recommendation?.loadBasis,
+      reps: previousReps,
+      rpe: previousRpe,
+    );
+    if (last == null && target == null) return const SizedBox.shrink();
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.insights_outlined, color: context.b05Colors.action),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (last != null) ...[
+                      Text('Last time', style: B05Typography.label(context)),
+                      const SizedBox(height: 2),
+                      Text(last),
+                    ],
+                    if (target != null) ...[
+                      if (last != null) const SizedBox(height: 8),
+                      Text(
+                        recommendation == null ? 'Today’s target' : 'Suggested',
+                        style: B05Typography.label(context),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(target),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (recommendation != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                spacing: 2,
                 children: [
-                  Text(
-                    last == null ? title : 'Last  ·  $title',
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(last == null ? target : '$last  ·  $target'),
+                  if (target != null)
+                    TextButton(onPressed: onApply, child: const Text('Apply')),
+                  TextButton(onPressed: onChange, child: const Text('Change')),
                 ],
               ),
             ),
-            if (recommendation != null)
-              TextButton(onPressed: onOverride, child: const Text('Change')),
-          ],
-        ),
+        ],
       ),
     );
   }
-
-  static String _number(double value) =>
-      value == value.roundToDouble() ? value.toStringAsFixed(0) : '$value';
 
   static double? _asDouble(Object? value) => switch (value) {
     num number => number.toDouble(),
@@ -1013,6 +1271,10 @@ class _WarmupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (recommendation.proposals.isEmpty &&
+        recommendation.selectedProposals.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final offered = recommendation.decision == B02WarmupDecision.offered;
     final skipped = recommendation.decision == B02WarmupDecision.skipped;
     final proposals = offered
@@ -1024,55 +1286,50 @@ class _WarmupCard extends StatelessWidget {
       B02WarmupDecision.edited => 'Warm-up adjusted',
       B02WarmupDecision.skipped => 'Warm-up skipped',
     };
-    final subtitle = recommendation.proposals.isEmpty
-        ? 'No working target is available yet.'
-        : skipped
+    final subtitle = skipped
         ? 'You can use the suggested ramp sets at any time.'
         : offered
         ? 'Prepare with a few lighter sets before you begin.'
         : 'Your selected ramp sets are saved with this workout.';
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.whatshot_outlined),
-              title: Text(title),
-              subtitle: Text(subtitle),
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.whatshot_outlined),
+            title: Text(title),
+            subtitle: Text(subtitle),
+          ),
+          if (proposals.isNotEmpty)
+            Text(
+              proposals
+                  .map(r07cFormatWarmupProposal)
+                  .whereType<String>()
+                  .join('  ·  '),
             ),
-            if (proposals.isNotEmpty)
-              Text(
-                proposals
-                    .map(
-                      (proposal) =>
-                          '${proposal.loadKg == null ? 'Bodyweight' : '${proposal.loadKg} kg'} × ${proposal.reps}',
-                    )
-                    .join('  ·  '),
-              ),
-            if (recommendation.proposals.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  if (offered || skipped)
-                    OutlinedButton(
-                      onPressed: onAccept,
-                      child: Text(offered ? 'Accept' : 'Use suggestion'),
-                    ),
+          if (recommendation.proposals.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                if (offered || skipped)
                   OutlinedButton(
-                    onPressed: onEdit,
-                    child: Text(offered ? 'Edit' : 'Change'),
+                    onPressed: onAccept,
+                    child: Text(offered ? 'Accept' : 'Use suggestion'),
                   ),
-                  if (offered || !skipped)
-                    TextButton(onPressed: onSkip, child: const Text('Skip')),
-                ],
-              ),
-            ],
+                OutlinedButton(
+                  onPressed: onEdit,
+                  child: Text(offered ? 'Edit' : 'Change'),
+                ),
+                if (offered || !skipped)
+                  TextButton(onPressed: onSkip, child: const Text('Skip')),
+              ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

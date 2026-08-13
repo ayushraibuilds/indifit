@@ -9,6 +9,42 @@ import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/workout_repository.dart';
 
+class R07CPerformanceEmptyState extends StatelessWidget {
+  const R07CPerformanceEmptyState({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.fitness_center_rounded,
+              size: 64,
+              color: colors.textDisabled.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No performance logged yet',
+              style: B05Typography.title(context),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your logged sets and progress trend will appear here after you train this exercise.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colors.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ExerciseHistoryScreen extends ConsumerStatefulWidget {
   final String exerciseName;
 
@@ -124,7 +160,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
           labelColor: colors.action,
           unselectedLabelColor: colors.textSecondary,
           tabs: const [
-            Tab(icon: Icon(Icons.history_rounded), text: 'History & 1RM'),
+            Tab(icon: Icon(Icons.insights_rounded), text: 'Performance'),
             Tab(icon: Icon(Icons.calculate_rounded), text: 'Plate Calc'),
           ],
         ),
@@ -161,35 +197,11 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   }
 
   Widget _buildHistoryAndChartTab(List<Map<String, dynamic>> history) {
-    final colors = context.b05Colors;
     if (history.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.fitness_center_rounded,
-                size: 64,
-                color: colors.textDisabled.withValues(alpha: 0.3),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No sets logged yet',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'History logs and 1RM trend charts will appear here after you log sets in the workout player.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: colors.textSecondary, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-      );
+      return const R07CPerformanceEmptyState();
     }
+
+    final colors = context.b05Colors;
 
     // Prepare 1RM points
     final List<FlSpot> spots = [];
@@ -255,10 +267,8 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
           if (spots.length >= 2) ...[
             Text(
               'ESTIMATED 1RM TREND',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: colors.textSecondary,
+              style: B05Typography.caption(context).copyWith(
+                fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
               ),
             ),
@@ -335,10 +345,8 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
 
           Text(
             'TRAINING SESSIONS',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: colors.textSecondary,
+            style: B05Typography.caption(context).copyWith(
+              fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
             ),
           ),

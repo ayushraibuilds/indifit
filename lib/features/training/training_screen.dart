@@ -543,15 +543,45 @@ class _TrainingLandingBody extends StatelessWidget {
         if (data.activeStrengthDraft != null) ...[
           B05Surface(
             tone: B05SurfaceTone.selected,
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.play_circle_outline_rounded),
-              title: Text('Resume ${data.activeStrengthDraft!.routineName}'),
-              subtitle: const Text(
-                'Your exercises, sets, and active time are saved.',
-              ),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: onResumeDraft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.play_circle_outline_rounded,
+                      color: context.b05Colors.action,
+                    ),
+                    const SizedBox(width: B05Layout.space8),
+                    Expanded(
+                      child: Text(
+                        'WORKOUT IN PROGRESS',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: B05Typography.label(context),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: B05Layout.space8),
+                Text(
+                  data.activeStrengthDraft!.routineName,
+                  style: B05Typography.title(context),
+                ),
+                const SizedBox(height: B05Layout.space4),
+                Text(
+                  'Your exercises, sets, and active time are saved.',
+                  style: B05Typography.body(context),
+                ),
+                const SizedBox(height: B05Layout.space12),
+                SizedBox(
+                  width: double.infinity,
+                  child: B05ActionButton(
+                    label: 'Resume ${data.activeStrengthDraft!.routineName}',
+                    onPressed: onResumeDraft,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: B05Layout.space16),
@@ -728,6 +758,15 @@ class _TodayTrainingSurface extends StatelessWidget {
               style: B05Typography.body(context),
             ),
             const SizedBox(height: B05Layout.space12),
+            SizedBox(
+              width: double.infinity,
+              child: B05ActionButton(
+                label: 'Quick Workout',
+                icon: Icons.bolt_rounded,
+                onPressed: isLaunching ? null : onStartQuickWorkout,
+              ),
+            ),
+            const SizedBox(height: B05Layout.space8),
             Wrap(
               spacing: B05Layout.space8,
               runSpacing: B05Layout.space8,

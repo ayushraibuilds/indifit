@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import 'b02_strength_execution_controller.dart';
+import 'widgets/r07c_workout_presentation.dart';
 
 /// Final review for B02 strength execution. Full and partial completion are
 /// explicit actions; a failed finalization keeps the linked draft visible.
@@ -155,12 +157,30 @@ class B02WorkoutCompletionSuccess extends StatelessWidget {
       0,
       (count, exercise) => count + exercise.sets.length,
     );
-    final details = <String>[
-      if (launch.state.elapsedSeconds > 0)
-        formatB02WorkoutDuration(launch.state.elapsedSeconds),
-      '${exercises.length} ${exercises.length == 1 ? 'exercise' : 'exercises'}',
-      '$setCount ${setCount == 1 ? 'set' : 'sets'}',
-    ];
+    final knownReps = exercises
+        .expand((exercise) => exercise.sets)
+        .where((set) => set.actualReps != null)
+        .fold<int>(0, (sum, set) => sum + set.actualReps!);
+    final volume = exercises
+        .expand((exercise) => exercise.sets)
+        .where(
+          (set) =>
+              set.actualLoadKg != null &&
+              set.actualReps != null &&
+              set.actualLoadBasis != B02LoadBasis.bodyweight,
+        )
+        .fold<double>(
+          0,
+          (sum, set) => sum + set.actualLoadKg! * set.actualReps!,
+        );
+    final hasVolume = exercises
+        .expand((exercise) => exercise.sets)
+        .any(
+          (set) =>
+              set.actualLoadKg != null &&
+              set.actualReps != null &&
+              set.actualLoadBasis != B02LoadBasis.bodyweight,
+        );
     return SafeArea(
       child: LayoutBuilder(
         builder: (context, constraints) => SingleChildScrollView(
@@ -187,7 +207,51 @@ class B02WorkoutCompletionSuccess extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  Text(details.join(' · '), textAlign: TextAlign.center),
+                  Text(
+                    'Your workout is saved to history.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final metrics = <Widget>[
+                        if (launch.state.elapsedSeconds > 0)
+                          R07CMetricTile(
+                            label: 'Duration',
+                            value: formatB02WorkoutDuration(
+                              launch.state.elapsedSeconds,
+                            ),
+                          ),
+                        R07CMetricTile(
+                          label: 'Exercises',
+                          value: '${exercises.length}',
+                        ),
+                        R07CMetricTile(
+                          label: 'Sets',
+                          value: '$setCount',
+                        ),
+                        if (knownReps > 0)
+                          R07CMetricTile(
+                            label: 'Reps',
+                            value: '$knownReps',
+                          ),
+                        if (hasVolume)
+                          R07CMetricTile(
+                            label: 'External volume',
+                            value: '${r07cFormatNumber(volume)} kg',
+                          ),
+                      ];
+                      final width = (constraints.maxWidth - 8) / 2;
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final metric in metrics)
+                            SizedBox(width: width, child: metric),
+                        ],
+                      );
+                    },
+                  ),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
@@ -267,17 +331,32 @@ class _Body extends StatelessWidget {
     final performed = launch.state.performedExercises;
     final totalActual = performed
         .expand((exercise) => exercise.sets)
-        .fold<int>(0, (sum, set) => sum + (set.actualReps ?? 0));
+        .where((set) => set.actualReps != null)
+        .fold<int>(0, (sum, set) => sum + set.actualReps!);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
       children: [
-        Text(
-          launch.state.routineName,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '${launch.state.elapsedSeconds > 0 ? formatB02WorkoutDuration(launch.state.elapsedSeconds) : 'Duration unavailable'} · $totalActual reps completed',
+        B05Surface(
+          tone: B05SurfaceTone.selected,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                launch.state.routineName,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                launch.state.elapsedSeconds > 0
+                    ? formatB02WorkoutDuration(launch.state.elapsedSeconds)
+                    : 'Duration unavailable',
+              ),
+              if (totalActual > 0) ...[
+                const SizedBox(height: 4),
+                Text('$totalActual reps completed'),
+              ],
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         for (final group in launch.state.groups)
@@ -330,24 +409,50 @@ class _PerformedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final actual = exercise.sets
-        .map(
-          (set) => '${set.actualLoadKg ?? '—'} kg × ${set.actualReps ?? '—'}',
-        )
-        .join(', ');
-    final target = exercise.sets
-        .map(
-          (set) => set.targetRepsMin == null
-              ? 'target unknown'
-              : '${set.targetRepsMin}-${set.targetRepsMax} target reps',
-        )
-        .join(', ');
-    return Card(
-      child: ListTile(
-        title: Text(exercise.actualExerciseNameSnapshot),
-        subtitle: Text('$actual\n$target\nStatus: ${exercise.status}'),
-        isThreeLine: true,
+    return B05Surface(
+      tone: B05SurfaceTone.section,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  exercise.actualExerciseNameSnapshot,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              Text(exercise.status),
+            ],
+          ),
+          const SizedBox(height: 8),
+          R07CPerformedSetList(sets: exercise.sets),
+          const SizedBox(height: 6),
+          Text(
+            _targetSummary(exercise.sets),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
       ),
     );
+  }
+
+  String _targetSummary(List<B02PerformedSet> sets) {
+    final targets = sets
+        .map(
+          (set) => r07cFormatTarget(
+            loadKg: set.targetLoadKg,
+            loadBasis: set.targetLoadBasis,
+            minReps: set.targetRepsMin,
+            maxReps: set.targetRepsMax,
+            rpe: set.targetRpe,
+          ),
+        )
+        .whereType<String>()
+        .toList(growable: false);
+    return targets.isEmpty
+        ? 'Target not recorded'
+        : 'target reps: ${targets.join(' · ')}';
   }
 }
