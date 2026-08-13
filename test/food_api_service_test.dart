@@ -22,6 +22,9 @@ void main() {
       expect(results, hasLength(1));
       expect(results.single.name, 'Fixture shake');
       expect(results.single.protein, 20);
+      expect(results.single.providerId, '123');
+      expect(results.single.barcode, '123');
+      expect(results.single.brand, 'Fixture Brand');
       expect(adapter.options!.uri.host, 'search.openfoodfacts.org');
       expect(adapter.options!.uri.path, '/search');
       expect(adapter.options!.method, 'POST');
@@ -31,6 +34,7 @@ void main() {
       expect(body['q'], 'protein shake');
       expect(body['fields'], [
         'code',
+        'brands',
         'product_name',
         'nutriments',
         'serving_quantity',
@@ -102,7 +106,7 @@ class _SuccessAdapter implements HttpClientAdapter {
   ) async {
     this.options = options;
     return ResponseBody.fromString(
-      '''{"hits":[{"code":"123","product_name":"Fixture shake","serving_quantity":330,"serving_quantity_unit":"g","nutriments":{"energy-kcal_100g":120,"proteins_100g":20,"carbohydrates_100g":6,"fat_100g":2}}]}''',
+      '''{"hits":[{"code":"123","brands":"Fixture Brand","product_name":"Fixture shake","serving_quantity":330,"serving_quantity_unit":"g","nutriments":{"energy-kcal_100g":120,"proteins_100g":20,"carbohydrates_100g":6,"fat_100g":2}}]}''',
       200,
       headers: {
         Headers.contentTypeHeader: ['application/json'],

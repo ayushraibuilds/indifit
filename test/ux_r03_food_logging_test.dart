@@ -800,6 +800,22 @@ void main() {
     );
   });
 
+  testWidgets('merged local and provider search results light golden', (
+    tester,
+  ) async {
+    await _pumpSearchGolden(
+      tester,
+      theme: AppTheme.lightTheme,
+      apiService: _MergedFoodApiService(),
+    );
+    expect(find.text('Best matches'), findsOneWidget);
+    expect(find.text('Fit Brand'), findsOneWidget);
+    await expectLater(
+      find.byType(FoodSearchScreen),
+      matchesGoldenFile('goldens/ux_r07d_food_search_merged_light.png'),
+    );
+  });
+
   testWidgets('AI description state golden', (tester) async {
     await _pumpAiGolden(tester, theme: AppTheme.darkTheme);
     expect(find.text('Describe your meal'), findsOneWidget);
@@ -1090,6 +1106,7 @@ void _setViewport(WidgetTester tester, Size size) {
 Future<void> _pumpSearchGolden(
   WidgetTester tester, {
   required ThemeData theme,
+  FoodApiService? apiService,
 }) async {
   _setViewport(tester, const Size(390, 844));
   final database = AppDatabase.memory();
@@ -1135,7 +1152,7 @@ Future<void> _pumpSearchGolden(
     _foodApp(
       database: database,
       repository: repository,
-      apiService: _TestFoodApiService(),
+      apiService: apiService ?? _TestFoodApiService(),
       theme: theme,
       mealType: 'breakfast',
       selectedDate: DateTime(2026, 8, 9),
@@ -1217,6 +1234,27 @@ class _TestFoodApiService extends FoodApiService {
     String query, {
     CancelToken? cancelToken,
   }) async => const [];
+}
+
+class _MergedFoodApiService extends FoodApiService {
+  @override
+  Future<List<FoodApiResult>> searchOnline(
+    String query, {
+    CancelToken? cancelToken,
+  }) async => [
+    FoodApiResult(
+      name: 'Paneer protein bar',
+      calories: 160,
+      protein: 12,
+      carbs: 14,
+      fat: 6,
+      servingSize: 50,
+      servingUnit: 'g',
+      providerId: 'fit-paneer-bar',
+      barcode: 'fit-paneer-bar',
+      brand: 'Fit Brand',
+    ),
+  ];
 }
 
 class _SuccessfulFoodApiService extends FoodApiService {

@@ -45,6 +45,8 @@ class FoodApiResult {
   final double servingSize;
   final String servingUnit;
   final String? barcode;
+  final String? providerId;
+  final String? brand;
 
   FoodApiResult({
     required this.name,
@@ -55,6 +57,8 @@ class FoodApiResult {
     required this.servingSize,
     required this.servingUnit,
     this.barcode,
+    this.providerId,
+    this.brand,
   });
 }
 
@@ -117,6 +121,8 @@ class FoodApiService {
             servingSize: servingSize,
             servingUnit: servingUnit,
             barcode: barcode,
+            providerId: barcode,
+            brand: _readReference(p['brands']),
           );
         }
       }
@@ -161,6 +167,7 @@ class FoodApiService {
           'langs': const ['en'],
           'fields': const [
             'code',
+            'brands',
             'product_name',
             'nutriments',
             'serving_quantity',
@@ -186,6 +193,7 @@ class FoodApiService {
               final p = Map<String, dynamic>.from(raw);
               final nutriments = p['nutriments'] ?? {};
               final name = p['product_name']?.toString().trim() ?? '';
+              final providerId = _readReference(p['code'] ?? p['id']);
 
               final double? kcal = _readNumber(nutriments['energy-kcal_100g']);
               final double? protein = _readNumber(nutriments['proteins_100g']);
@@ -206,7 +214,9 @@ class FoodApiService {
                 fat: fat,
                 servingSize: servingSize,
                 servingUnit: servingUnit,
-                barcode: _readReference(p['code'] ?? p['id']),
+                barcode: providerId,
+                providerId: providerId,
+                brand: _readReference(p['brands']),
               );
             })
             .where((result) => result.name.isNotEmpty)
