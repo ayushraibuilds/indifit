@@ -1,10 +1,8 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../data/database/app_database.dart';
-import '../../data/repositories/food_repository.dart';
 
 class CustomFoodEditorScreen extends ConsumerStatefulWidget {
   final String? initialBarcode;
@@ -19,62 +17,47 @@ class _CustomFoodEditorScreenState
     extends ConsumerState<CustomFoodEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _nameHindiController = TextEditingController();
-  final _brandController = TextEditingController();
   final _caloriesController = TextEditingController();
   final _proteinController = TextEditingController();
   final _carbsController = TextEditingController();
   final _fatController = TextEditingController();
-  final _servingSizeController = TextEditingController(text: '100');
-  final _servingUnitController = TextEditingController(text: 'g');
-  final _categoryController = TextEditingController(text: 'custom');
+  final _fibreController = TextEditingController();
+  final _servingSizeController = TextEditingController(text: '1');
+  final _servingUnitController = TextEditingController(text: 'serving');
+  bool _saving = false;
 
   @override
   void dispose() {
     _nameController.dispose();
-    _nameHindiController.dispose();
-    _brandController.dispose();
     _caloriesController.dispose();
     _proteinController.dispose();
     _carbsController.dispose();
     _fatController.dispose();
+    _fibreController.dispose();
     _servingSizeController.dispose();
     _servingUnitController.dispose();
-    _categoryController.dispose();
     super.dispose();
   }
 
   Future<void> _saveCustomFood() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final repo = ref.read(foodRepositoryProvider);
-
-    final calories = int.tryParse(_caloriesController.text) ?? 0;
-    final protein = double.tryParse(_proteinController.text) ?? 0.0;
-    final carbs = double.tryParse(_carbsController.text) ?? 0.0;
-    final fat = double.tryParse(_fatController.text) ?? 0.0;
-    final servingSize = double.tryParse(_servingSizeController.text) ?? 100.0;
-
-    final companion = FoodItemsCompanion.insert(
-      name: _nameController.text.trim(),
-      nameHindi: _nameHindiController.text.trim().isNotEmpty
-          ? Value(_nameHindiController.text.trim())
-          : const Value.absent(),
-      brand: _brandController.text.trim().isNotEmpty
-          ? Value(_brandController.text.trim())
-          : const Value.absent(),
-      calories: calories,
-      proteinG: protein,
-      carbsG: carbs,
-      fatG: fat,
-      servingSize: servingSize,
-      servingUnit: _servingUnitController.text.trim(),
-      category: _categoryController.text.trim(),
-      isCustom: const Value(true),
-    );
+    if (_saving || !_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
 
     try {
-      await repo.insertCustomFood(companion);
+      final servingSize = double.parse(_servingSizeController.text.trim());
+      final catalog = await ref.read(
+        nutritionFoodCatalogRepositoryProvider.future,
+      );
+      await catalog.createUserFood(
+        displayName: _nameController.text,
+        servingSize: servingSize,
+        servingUnit: _servingUnitController.text,
+        energyKcal: _optionalDouble(_caloriesController),
+        proteinG: _optionalDouble(_proteinController),
+        carbohydrateG: _optionalDouble(_carbsController),
+        fatG: _optionalDouble(_fatController),
+        fibreG: _optionalDouble(_fibreController),
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -95,7 +78,14 @@ class _CustomFoodEditorScreenState
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
+  }
+
+  double? _optionalDouble(TextEditingController controller) {
+    final value = controller.text.trim();
+    return value.isEmpty ? null : double.parse(value);
   }
 
   @override
@@ -105,7 +95,7 @@ class _CustomFoodEditorScreenState
       body: SafeArea(
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           child: TapRegion(
             onTapOutside: (_) => FocusScope.of(context).unfocus(),
             child: Form(
@@ -113,140 +103,165 @@ class _CustomFoodEditorScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'Save a food you make or buy often.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 24),
+                  _sectionTitle(context, 'Basic information'),
+                  const SizedBox(height: 8),
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(
-                      labelText: 'Food Name (English) *',
-                      hintText: 'e.g., Homemade Paneer Bhurji',
+                      labelText: 'Food name *',
+                      hintText: 'e.g. Homemade paneer bhurji',
                     ),
                     validator: (val) =>
                         val == null || val.trim().isEmpty ? 'Required' : null,
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _nameHindiController,
-                    decoration: const InputDecoration(
-                      labelText: 'Food Name (Hindi/Optional)',
-                      hintText: 'e.g., पनीर भुर्जी',
-                    ),
+                  const SizedBox(height: 24),
+                  _sectionTitle(context, 'Serving'),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Describe the amount your nutrition values refer to.',
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _brandController,
-                    decoration: const InputDecoration(
-                      labelText: 'Brand (Optional)',
-                      hintText: 'e.g., Amul, Mother Dairy, Haldirams',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _servingSizeController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'Serving Size *',
-                          ),
-                          validator: (val) =>
-                              val == null || double.tryParse(val) == null
-                              ? 'Invalid'
-                              : null,
+                  const SizedBox(height: 12),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final textScale =
+                          MediaQuery.textScalerOf(context).scale(14) / 14;
+                      final stack =
+                          constraints.maxWidth < 360 || textScale > 1.3;
+                      final amount = TextFormField(
+                        controller: _servingSizeController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _servingUnitController,
-                          decoration: const InputDecoration(
-                            labelText: 'Serving Unit (e.g. g, ml, pc) *',
-                          ),
-                          validator: (val) => val == null || val.trim().isEmpty
-                              ? 'Required'
-                              : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Serving amount *',
+                          hintText: 'e.g. 1',
                         ),
-                      ),
-                    ],
+                        validator: (value) {
+                          final parsed = double.tryParse(value ?? '');
+                          return parsed == null ||
+                                  !parsed.isFinite ||
+                                  parsed <= 0
+                              ? 'Enter a positive amount'
+                              : null;
+                        },
+                      );
+                      final unit = TextFormField(
+                        controller: _servingUnitController,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: 'Serving unit *',
+                          hintText: 'e.g. katori, piece, g',
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      );
+                      if (stack) {
+                        return Column(
+                          children: [amount, const SizedBox(height: 12), unit],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: amount),
+                          const SizedBox(width: 12),
+                          Expanded(child: unit),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
+                  const SizedBox(height: 24),
+                  _sectionTitle(context, 'Nutrition'),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Add only values you know. Blank values stay unavailable.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  _macroField(
                     controller: _caloriesController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Calories (kcal) *',
-                    ),
-                    validator: (val) => val == null || int.tryParse(val) == null
-                        ? 'Invalid'
-                        : null,
+                    label: 'Calories (kcal) (optional)',
+                  ),
+                  const SizedBox(height: 12),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final textScale =
+                          MediaQuery.textScalerOf(context).scale(14) / 14;
+                      final columns =
+                          constraints.maxWidth < 360 || textScale > 1.3 ? 1 : 2;
+                      final width =
+                          (constraints.maxWidth - (columns - 1) * 12) / columns;
+                      return Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          SizedBox(
+                            width: width,
+                            child: _macroField(
+                              controller: _proteinController,
+                              label: 'Protein (g)',
+                            ),
+                          ),
+                          SizedBox(
+                            width: width,
+                            child: _macroField(
+                              controller: _carbsController,
+                              label: 'Carbs (g)',
+                            ),
+                          ),
+                          SizedBox(
+                            width: width,
+                            child: _macroField(
+                              controller: _fatController,
+                              label: 'Fat (g)',
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
-                  Row(
+                  ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    title: Text(
+                      'More nutrients (optional)',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    subtitle: const Text('Add fibre when you know it.'),
                     children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _proteinController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'Protein (g) *',
-                          ),
-                          validator: (val) =>
-                              val == null || double.tryParse(val) == null
-                              ? 'Invalid'
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _carbsController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'Carbs (g) *',
-                          ),
-                          validator: (val) =>
-                              val == null || double.tryParse(val) == null
-                              ? 'Invalid'
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _fatController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'Fat (g) *',
-                          ),
-                          validator: (val) =>
-                              val == null || double.tryParse(val) == null
-                              ? 'Invalid'
-                              : null,
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _macroField(
+                          controller: _fibreController,
+                          label: 'Fibre (g)',
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: _saveCustomFood,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.b05Colors.action,
-                      foregroundColor: context.b05Colors.onAction,
-                      minimumSize: const Size.fromHeight(50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _saving ? null : _saveCustomFood,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.b05Colors.action,
+                        foregroundColor: context.b05Colors.onAction,
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Save Custom Food',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        _saving ? 'Saving…' : 'Save custom food',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
@@ -257,4 +272,23 @@ class _CustomFoodEditorScreenState
       ),
     );
   }
+
+  Widget _macroField({
+    required TextEditingController controller,
+    required String label,
+  }) => TextFormField(
+    controller: controller,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    decoration: InputDecoration(labelText: label),
+    validator: (value) {
+      if (value == null || value.trim().isEmpty) return null;
+      final parsed = double.tryParse(value);
+      return parsed == null || !parsed.isFinite || parsed < 0
+          ? 'Enter a zero or positive number'
+          : null;
+    },
+  );
+
+  Widget _sectionTitle(BuildContext context, String label) =>
+      Text(label, style: Theme.of(context).textTheme.titleMedium);
 }

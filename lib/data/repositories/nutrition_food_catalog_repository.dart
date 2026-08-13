@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/nutrients.dart';
 import '../../core/typed_quantities.dart';
@@ -165,6 +166,118 @@ class NutritionFoodCatalogRepository {
       sourceReference: normalizedReference,
       preparationId: null,
       servingUnitLabel: null,
+    );
+  }
+
+  /// Creates a user-owned food with per-serving facts.
+  ///
+  /// Optional nutrient inputs remain missing in the canonical fact graph;
+  /// they are never converted to zero just to satisfy the legacy table shape.
+  Future<NutritionFoodOption> createUserFood({
+    required String displayName,
+    required double servingSize,
+    required String servingUnit,
+    required double? energyKcal,
+    required double? proteinG,
+    required double? carbohydrateG,
+    required double? fatG,
+    double? fibreG,
+  }) async {
+    final name = displayName.trim();
+    final unit = servingUnit.trim();
+    if (name.isEmpty) {
+      throw const NutritionFoodCatalogError(
+        'missing_food_name',
+        'A custom food needs a name.',
+      );
+    }
+    if (!servingSize.isFinite || servingSize <= 0 || unit.isEmpty) {
+      throw const NutritionFoodCatalogError(
+        'invalid_serving',
+        'A custom food needs a positive serving size and unit.',
+      );
+    }
+    final id = 'user-food::${const Uuid().v4()}';
+    final sourceReference =
+        'user-custom-food::$id|serving=${_numberLabel(servingSize)} $unit';
+    final servingDefinition = ServingDefinitionReference(
+      id: 'food-serving::$id',
+      revision: 'b03-food-entry-v1',
+      source: 'catalogue',
+    );
+    final basis = NutrientBasis(
+      NutrientBasisKind.perServing,
+      servingDefinition: servingDefinition,
+    );
+    final values = <String, double?>{
+      'energy': energyKcal,
+      'protein': proteinG,
+      'carbohydrate': carbohydrateG,
+      'fat': fatG,
+      'fibre': fibreG,
+    };
+    final facts = <String, NutrientFact>{};
+    for (final definition in _registry.definitions) {
+      final value = values[definition.id];
+      if (value == null) {
+        facts[definition.id] = NutrientFact.missing(
+          nutrientId: definition.id,
+          unit: definition.unit,
+          basis: basis,
+          source: NutrientSourceType.userEntered,
+          sourceReference: sourceReference,
+          factVersion: 'custom-food-v1',
+        );
+      } else if (value == 0) {
+        facts[definition.id] = NutrientFact.knownZero(
+          nutrientId: definition.id,
+          unit: definition.unit,
+          basis: basis,
+          source: NutrientSourceType.userEntered,
+          sourceReference: sourceReference,
+          factVersion: 'custom-food-v1',
+        );
+      } else {
+        facts[definition.id] = NutrientFact.known(
+          nutrientId: definition.id,
+          point: NutrientAmount(
+            value: QuantityAmount.fromNum(value),
+            unit: definition.unit,
+          ),
+          basis: basis,
+          source: NutrientSourceType.userEntered,
+          sourceReference: sourceReference,
+          factVersion: 'custom-food-v1',
+        );
+      }
+    }
+    await _ensureIdentity(
+      id: id,
+      displayName: name,
+      kind: 'userCreated',
+      sourceType: 'user',
+      sourceReference: sourceReference,
+      sourceVersion: 'custom-food-v1',
+    );
+    await _ensureFacts(
+      foodId: id,
+      facts: facts,
+      sourceReference: sourceReference,
+    );
+    final currentFacts = await _readCurrentFacts(id, fallback: facts);
+    return NutritionFoodOption(
+      id: id,
+      displayName: name,
+      baseQuantity: Quantity.serving(
+        amount: '1',
+        definition: servingDefinition,
+        source: 'user',
+      ),
+      facts: currentFacts,
+      sourceType: 'user',
+      sourceReference: sourceReference,
+      preparationId: null,
+      servingUnitLabel: '${_numberLabel(servingSize)} $unit',
     );
   }
 
@@ -587,6 +700,11 @@ class NutritionFoodCatalogRepository {
   }
 
   Future<String?> _servingUnitLabelFor(String? sourceReference) async {
+    if (sourceReference?.startsWith('user-custom-food::') == true) {
+      const marker = '|serving=';
+      final index = sourceReference!.indexOf(marker);
+      if (index >= 0) return sourceReference.substring(index + marker.length);
+    }
     const prefix = 'food-items:';
     if (sourceReference == null || !sourceReference.startsWith(prefix)) {
       return null;
@@ -600,6 +718,10 @@ class NutritionFoodCatalogRepository {
     final label = item.servingUnit.trim();
     return label.isEmpty || label.toLowerCase() == 'serving' ? null : label;
   }
+
+  String _numberLabel(num value) => value.toDouble() == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(2);
 
   double? _confidenceValue(NutrientConfidence confidence) =>
       switch (confidence) {

@@ -223,7 +223,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.add_circle_outline));
       await tester.pump();
-      await tester.tap(find.text('Add Meal'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add to Breakfast'));
       await _pumpLiveSurface(tester, cycles: 20);
 
       expect(find.byType(FoodSearchScreen), findsNothing);

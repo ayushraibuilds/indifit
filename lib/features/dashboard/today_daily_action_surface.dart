@@ -5,14 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/nutrition_legacy_read_models.dart';
-import '../../core/presentation/consumer_count_label.dart';
 import '../../core/presentation/consumer_number_label.dart';
 import '../../core/presentation/daypart_greeting.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/models/b02_progress_read_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
-import '../food_log/food_log_surface.dart';
 import '../food_log/food_search_screen.dart';
 import 'dashboard_module_registry.dart';
 import 'dashboard_personalization_controller.dart';
@@ -1252,12 +1250,15 @@ class _TodayMealRow extends StatelessWidget {
     };
     final compact = MediaQuery.textScalerOf(context).scale(1) > 1.35;
     void showDetails() {
-      if (!meal.logged) return;
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (context) =>
-            _MealDetailsSheet(meal: meal, selectedDate: selectedDate),
+      unawaited(
+        Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (_) => FoodMealDetailScreen(
+              mealType: meal.mealType,
+              selectedDate: selectedDate,
+            ),
+          ),
+        ),
       );
     }
 
@@ -1282,14 +1283,14 @@ class _TodayMealRow extends StatelessWidget {
     );
     return Semantics(
       container: true,
-      button: meal.logged,
+      button: true,
       label: '${meal.label}. ${meal.detail}. ${meal.calorieLabel}',
-      hint: meal.logged ? 'Double tap to inspect this meal.' : null,
+      hint: 'Double tap to inspect this meal.',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: B05Radii.smallRadius,
-          onTap: meal.logged ? showDetails : null,
+          onTap: showDetails,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: B05Layout.space4),
             child: compact
@@ -1353,93 +1354,6 @@ class _MealIcon extends StatelessWidget {
     child: Padding(
       padding: const EdgeInsets.all(B05Layout.space8),
       child: Icon(icon, size: B05Layout.iconSmall, color: color.indicator),
-    ),
-  );
-}
-
-class _MealDetailsSheet extends StatelessWidget {
-  const _MealDetailsSheet({required this.meal, required this.selectedDate});
-
-  final TodayMealPresentation meal;
-  final DateTime selectedDate;
-
-  @override
-  Widget build(BuildContext context) => SafeArea(
-    child: Padding(
-      padding: const EdgeInsets.all(B05Layout.space12),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * .86,
-        ),
-        child: B05Surface(
-          radius: B05SurfaceRadius.large,
-          child: SingleChildScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        meal.label,
-                        style: B05Typography.title(context),
-                      ),
-                    ),
-                    B05IconAction(
-                      icon: Icons.close_rounded,
-                      label: 'Close meal details',
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                Text(
-                  '${ConsumerCountLabel.format(meal.itemLabels.length, 'item')} · ${meal.calorieLabel}',
-                  style: B05Typography.body(context),
-                ),
-                const SizedBox(height: B05Layout.space12),
-                if (meal.itemLabels.isEmpty)
-                  Text(
-                    'Meal details are not available yet.',
-                    style: B05Typography.body(context),
-                  )
-                else
-                  for (final item in meal.itemLabels)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: B05Layout.space4),
-                      child: Text(
-                        '• $item',
-                        style: B05Typography.body(context),
-                      ),
-                    ),
-                const SizedBox(height: B05Layout.space12),
-                FoodLogEntriesPanel(
-                  date: selectedDate,
-                  mealType: meal.mealType,
-                ),
-                const SizedBox(height: B05Layout.space8),
-                B05ActionButton(
-                  label: 'Open food log',
-                  hint:
-                      'Open this meal in Food to edit or copy logged entries.',
-                  icon: Icons.restaurant_outlined,
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => FoodSearchScreen(
-                          mealType: meal.mealType,
-                          selectedDate: selectedDate,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     ),
   );
 }
