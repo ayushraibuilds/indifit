@@ -150,7 +150,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
       expect(find.text('Log to LUNCH'), findsOneWidget);
       expect(find.text('servings'), findsOneWidget);
-      expect(find.text('Add Meal'), findsOneWidget);
+      expect(
+        find.widgetWithText(ElevatedButton, 'Add to Lunch'),
+        findsOneWidget,
+      );
       final amountField = find.widgetWithText(TextField, 'Amount');
       await tester.enterText(amountField, '');
       await tester.pump();
@@ -161,7 +164,7 @@ void main() {
       expect(
         tester
             .widget<ElevatedButton>(
-              find.widgetWithText(ElevatedButton, 'Add Meal'),
+              find.widgetWithText(ElevatedButton, 'Add to Lunch'),
             )
             .onPressed,
         isNotNull,
@@ -922,6 +925,7 @@ void main() {
       () => Future<void>.delayed(const Duration(milliseconds: 100)),
     );
     await tester.pump(const Duration(milliseconds: 250));
+    await tester.pumpAndSettle();
     expect(find.text('Log to BREAKFAST'), findsOneWidget);
     await expectLater(
       find.byKey(const ValueKey('food_quantity_review_surface')),

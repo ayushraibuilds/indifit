@@ -81,7 +81,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Create Custom Food'), findsOneWidget);
-    expect(find.text('Save Custom Food'), findsOneWidget);
+    expect(find.text('Basic information'), findsOneWidget);
+    expect(find.text('Serving'), findsOneWidget);
+    expect(find.text('Nutrition'), findsOneWidget);
+    expect(find.text('Save custom food'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await expectLater(
       find.byType(CustomFoodEditorScreen),

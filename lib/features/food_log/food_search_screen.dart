@@ -24,6 +24,7 @@ import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_food_logging_coordinator.dart';
 import '../dashboard/today_consumer_presentation.dart';
 import '../dashboard/today_surface_controller.dart';
+import '../dashboard/widgets/dashboard_date_bar.dart';
 import 'ai_meal_logger_screen.dart';
 import 'barcode_scanner_screen.dart';
 import 'canonical_food_delete.dart';
@@ -193,6 +194,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   final Map<String, NutritionFoodOption> _selectedOptions = {};
   final Map<String, Quantity> _selectedQuantities = {};
   final Set<String> _selectionLoading = {};
+  final Set<String> _fastAddInFlight = {};
   bool _committingSelection = false;
   bool _openedInitialRecord = false;
 
@@ -287,7 +289,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   String _selectionKeyForOption(NutritionFoodOption option) => option.id;
 
   bool _hasSafeDefaultServing(NutritionFoodOption option) {
-    return !option.baseQuantity.isZero;
+    // A mass/volume base is the basis of the nutrition facts (commonly 100 g
+    // or 100 mL), not a user-confirmed serving. Only an explicit serving can
+    // truthfully take the one-tap path.
+    return option.baseQuantity.unit == QuantityUnit.serving &&
+        option.baseQuantity.context.servingDefinition != null &&
+        !option.baseQuantity.isZero;
   }
 
   Future<void> _openMealLogger(String mealType) async {
@@ -602,13 +609,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Future<void> _addOptionFast(NutritionFoodOption option) async {
-    final selectedMealType = await _ensureMealContext();
-    if (selectedMealType == null || !mounted) return;
-    if (!_hasSafeDefaultServing(option)) {
-      await _showLogDialog(option, mealType: selectedMealType);
-      return;
-    }
+    // UI taps generate distinct command IDs. Guard before the first await so
+    // a physical double tap cannot turn into two valid canonical commands.
+    if (!_fastAddInFlight.add(option.id)) return;
+    if (mounted) setState(() {});
     try {
+      final selectedMealType = await _ensureMealContext();
+      if (selectedMealType == null || !mounted) return;
+      if (!_hasSafeDefaultServing(option)) {
+        await _showLogDialog(option, mealType: selectedMealType);
+        return;
+      }
       final coordinator = await ref.read(
         nutritionFoodLoggingCoordinatorProvider.future,
       );
@@ -657,6 +668,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           ),
         );
       }
+    } finally {
+      if (_fastAddInFlight.remove(option.id) && mounted) setState(() {});
     }
   }
 
@@ -807,6 +820,84 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           builder: (context, setModalState) {
             final stepQuantity =
                 option.baseQuantity.convertTo(selectedQuantity.unit) / 4;
+            final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+            Widget decreaseButton() => IconButton(
+              tooltip: 'Decrease amount',
+              icon: const Icon(Icons.remove_circle_outline),
+              onPressed: selectedQuantity.compareTo(stepQuantity) > 0
+                  ? () => setQuantity(
+                      selectedQuantity - stepQuantity,
+                      setModalState,
+                    )
+                  : null,
+            );
+            Widget amountInput() => TextField(
+              controller: amountController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                TextInputFormatter.withFunction((oldValue, value) {
+                  final text = value.text;
+                  return RegExp(r'^\d*(?:\.\d{0,4})?$').hasMatch(text)
+                      ? value
+                      : oldValue;
+                }),
+              ],
+              decoration: InputDecoration(
+                labelText: 'Amount',
+                errorText: amountError,
+                suffixText: compatibleUnits.length == 1
+                    ? _quantityUnitLabel(selectedQuantity, option: option)
+                    : null,
+              ),
+              onTapOutside: (_) => FocusScope.of(context).unfocus(),
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
+              onChanged: (value) => updateAmount(value, setModalState),
+            );
+            Widget unitPicker() => Semantics(
+              label: 'Unit',
+              value: _quantityUnitLabel(selectedQuantity, option: option),
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Unit',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<QuantityUnit>(
+                    isDense: true,
+                    value: selectedQuantity.unit,
+                    items: compatibleUnits
+                        .map(
+                          (unit) => DropdownMenuItem(
+                            value: unit,
+                            child: Text(
+                              QuantityUnitRegistry.definitionFor(unit).symbol,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (unit) {
+                      if (unit == null) return;
+                      setQuantity(
+                        selectedQuantity.convertTo(unit),
+                        setModalState,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+            Widget increaseButton() => IconButton(
+              tooltip: 'Increase amount',
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: () =>
+                  setQuantity(selectedQuantity + stepQuantity, setModalState),
+            );
             return ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.sizeOf(context).height * .86,
@@ -841,114 +932,44 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        IconButton(
-                          tooltip: 'Decrease amount',
-                          icon: const Icon(Icons.remove_circle_outline),
-                          onPressed:
-                              selectedQuantity.compareTo(stepQuantity) > 0
-                              ? () => setQuantity(
-                                  selectedQuantity - stepQuantity,
-                                  setModalState,
-                                )
-                              : null,
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: amountController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            inputFormatters: [
-                              TextInputFormatter.withFunction((
-                                oldValue,
-                                value,
-                              ) {
-                                final text = value.text;
-                                return RegExp(
-                                      r'^\d*(?:\.\d{0,4})?$',
-                                    ).hasMatch(text)
-                                    ? value
-                                    : oldValue;
-                              }),
-                            ],
-                            decoration: InputDecoration(
-                              labelText: 'Amount',
-                              errorText: amountError,
-                              suffixText: compatibleUnits.length == 1
-                                  ? _quantityUnitLabel(
-                                      selectedQuantity,
-                                      option: option,
-                                    )
-                                  : null,
-                            ),
-                            onTapOutside: (_) =>
-                                FocusScope.of(context).unfocus(),
-                            onSubmitted: (_) =>
-                                FocusScope.of(context).unfocus(),
-                            onChanged: (value) =>
-                                updateAmount(value, setModalState),
-                          ),
-                        ),
-                        if (compatibleUnits.length > 1) ...[
-                          const SizedBox(width: 8),
-                          Semantics(
-                            label: 'Unit',
-                            value: _quantityUnitLabel(
-                              selectedQuantity,
-                              option: option,
-                            ),
-                            child: SizedBox(
-                              width: 104,
-                              child: InputDecorator(
-                                decoration: const InputDecoration(
-                                  labelText: 'Unit',
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                ),
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<QuantityUnit>(
-                                    isDense: true,
-                                    value: selectedQuantity.unit,
-                                    items: compatibleUnits
-                                        .map(
-                                          (unit) => DropdownMenuItem(
-                                            value: unit,
-                                            child: Text(
-                                              QuantityUnitRegistry.definitionFor(
-                                                unit,
-                                              ).symbol,
-                                            ),
-                                          ),
-                                        )
-                                        .toList(),
-                                    onChanged: (unit) {
-                                      if (unit == null) return;
-                                      setQuantity(
-                                        selectedQuantity.convertTo(unit),
-                                        setModalState,
-                                      );
-                                    },
-                                  ),
-                                ),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final stackUnit =
+                            compatibleUnits.length > 1 &&
+                            (constraints.maxWidth < 340 || textScale > 1.3);
+                        final controls = Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            decreaseButton(),
+                            Expanded(child: amountInput()),
+                            increaseButton(),
+                          ],
+                        );
+                        if (stackUnit) {
+                          return Column(
+                            children: [
+                              controls,
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                width: double.infinity,
+                                child: unitPicker(),
                               ),
-                            ),
-                          ),
-                        ],
-                        IconButton(
-                          tooltip: 'Increase amount',
-                          icon: const Icon(Icons.add_circle_outline),
-                          onPressed: () => setQuantity(
-                            selectedQuantity + stepQuantity,
-                            setModalState,
-                          ),
-                        ),
-                      ],
+                            ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            decreaseButton(),
+                            Expanded(child: amountInput()),
+                            if (compatibleUnits.length > 1) ...[
+                              const SizedBox(width: 8),
+                              SizedBox(width: 104, child: unitPicker()),
+                            ],
+                            increaseButton(),
+                          ],
+                        );
+                      },
                     ),
                     Divider(color: context.b05Colors.border, height: 24),
 
@@ -1020,226 +1041,278 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                           return '—';
                         }
 
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildMacroPreview(
-                              'Calories',
-                              value('energy', ' kcal'),
-                              context.b05Colors.action,
-                            ),
-                            _buildMacroPreview(
-                              'Protein',
-                              value('protein', 'g'),
-                              context.b05Colors
-                                  .meal(B05MealAccent.breakfast)
-                                  .indicator,
-                            ),
-                            _buildMacroPreview(
-                              'Carbs',
-                              value('carbohydrate', 'g'),
-                              context.b05Colors
-                                  .meal(B05MealAccent.lunch)
-                                  .indicator,
-                            ),
-                            _buildMacroPreview(
-                              'Fat',
-                              value('fat', 'g'),
-                              context.b05Colors
-                                  .meal(B05MealAccent.dinner)
-                                  .indicator,
-                            ),
-                          ],
+                        final metrics = [
+                          (
+                            'Calories',
+                            value('energy', ' kcal'),
+                            context.b05Colors.action,
+                          ),
+                          (
+                            'Protein',
+                            value('protein', 'g'),
+                            context.b05Colors
+                                .meal(B05MealAccent.breakfast)
+                                .indicator,
+                          ),
+                          (
+                            'Carbs',
+                            value('carbohydrate', 'g'),
+                            context.b05Colors
+                                .meal(B05MealAccent.lunch)
+                                .indicator,
+                          ),
+                          (
+                            'Fat',
+                            value('fat', 'g'),
+                            context.b05Colors
+                                .meal(B05MealAccent.dinner)
+                                .indicator,
+                          ),
+                        ];
+                        return LayoutBuilder(
+                          builder: (context, constraints) {
+                            final columns =
+                                constraints.maxWidth < 340 || textScale > 1.3
+                                ? 2
+                                : 4;
+                            final width =
+                                (constraints.maxWidth - (columns - 1) * 8) /
+                                columns;
+                            return Wrap(
+                              spacing: 8,
+                              runSpacing: 12,
+                              children: [
+                                for (final metric in metrics)
+                                  SizedBox(
+                                    width: width,
+                                    child: _buildMacroPreview(
+                                      metric.$1,
+                                      metric.$2,
+                                      metric.$3,
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
                         );
                       },
                     ),
                     const SizedBox(height: 24),
 
                     // Action buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () =>
-                                Navigator.of(sheetContext).pop(false),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: context.b05Colors.border),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final stackActions =
+                            constraints.maxWidth < 340 || textScale > 1.3;
+                        final actionWidth = stackActions
+                            ? constraints.maxWidth
+                            : (constraints.maxWidth - 12) / 2;
+                        return Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            SizedBox(
+                              width: actionWidth,
+                              child: OutlinedButton(
+                                onPressed: () =>
+                                    Navigator.of(sheetContext).pop(false),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color: context.b05Colors.border,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    color: context.b05Colors.textSecondary,
+                                  ),
+                                ),
                               ),
                             ),
-                            child: Text(
-                              'Cancel',
-                              style: TextStyle(
-                                color: context.b05Colors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: isFinalizing
-                                ? null
-                                : () async {
-                                    final rawAmount = amountController.text
-                                        .trim();
-                                    final parsedAmount = double.tryParse(
-                                      rawAmount,
-                                    );
-                                    if (parsedAmount == null ||
-                                        !parsedAmount.isFinite ||
-                                        parsedAmount <= 0) {
-                                      setModalState(
-                                        () => amountError =
-                                            'Enter an amount greater than zero.',
-                                      );
-                                      return;
-                                    }
-                                    late final Quantity finalQuantity;
-                                    try {
-                                      finalQuantity = Quantity.fromDecimal(
-                                        amount: rawAmount,
-                                        unit: selectedQuantity.unit,
-                                        context: selectedQuantity.context,
-                                      );
-                                      NutritionQuantityService.validatePositiveUserEnteredPortion(
-                                        finalQuantity,
-                                      );
-                                      selectedQuantity = finalQuantity;
-                                      previewFuture ??= buildPreview();
-                                    } on QuantityError {
-                                      setModalState(
-                                        () => amountError =
-                                            'Enter an amount greater than zero.',
-                                      );
-                                      return;
-                                    }
-                                    if (onQuantityPicked != null) {
-                                      setModalState(() => isFinalizing = true);
-                                      try {
-                                        await onQuantityPicked(finalQuantity);
-                                        finalized = true;
-                                        if (sheetContext.mounted) {
-                                          Navigator.of(sheetContext).pop(true);
-                                        }
-                                      } catch (_) {
-                                        if (sheetContext.mounted) {
+                            SizedBox(
+                              width: actionWidth,
+                              child: ElevatedButton(
+                                onPressed: isFinalizing
+                                    ? null
+                                    : () async {
+                                        final rawAmount = amountController.text
+                                            .trim();
+                                        final parsedAmount = double.tryParse(
+                                          rawAmount,
+                                        );
+                                        if (parsedAmount == null ||
+                                            !parsedAmount.isFinite ||
+                                            parsedAmount <= 0) {
                                           setModalState(
-                                            () => isFinalizing = false,
+                                            () => amountError =
+                                                'Enter an amount greater than zero.',
                                           );
-                                          ScaffoldMessenger.of(
-                                            sheetContext,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Amount could not be updated. Try again.',
-                                              ),
-                                            ),
-                                          );
+                                          return;
                                         }
-                                      }
-                                      return;
-                                    }
-                                    setModalState(() {
-                                      isFinalizing = true;
-                                      commandId ??=
-                                          'direct-food-command::${const Uuid().v4()}';
-                                      consumptionId ??=
-                                          'direct-food-consumption::${const Uuid().v4()}';
-                                    });
-                                    try {
-                                      final preview = await previewFuture!;
-                                      final timezoneId = await ref
-                                          .read(localTimezoneServiceProvider)
-                                          .currentTimezoneId();
-                                      final dates = ref.read(
-                                        localScheduleDateServiceProvider,
-                                      );
-                                      final selectedLocalDate =
-                                          widget.selectedDate == null
-                                          ? null
-                                          : DateFormat(
-                                              'yyyy-MM-dd',
-                                            ).format(widget.selectedDate!);
-                                      final loggedAt = selectedLocalDate == null
-                                          ? DateTime.now().toUtc()
-                                          : dates.instantForLocalDate(
-                                              selectedLocalDate,
-                                              timezoneId,
-                                            );
-                                      final localDate =
-                                          selectedLocalDate ??
-                                          dates.localDateFor(
-                                            loggedAt,
-                                            timezoneId,
+                                        late final Quantity finalQuantity;
+                                        try {
+                                          finalQuantity = Quantity.fromDecimal(
+                                            amount: rawAmount,
+                                            unit: selectedQuantity.unit,
+                                            context: selectedQuantity.context,
                                           );
-                                      await coordinator.finalize(
-                                        userId: kLocalNutritionUserScopeId,
-                                        preview: preview,
-                                        mealCategory: selectedMealType,
-                                        loggedAt: loggedAt,
-                                        localDate: localDate,
-                                        timezoneId: timezoneId,
-                                        commandId: commandId,
-                                        consumptionId: consumptionId,
-                                        supersedesSnapshotId:
-                                            supersedesSnapshotId,
-                                        correctionId:
-                                            supersedesSnapshotId == null
-                                            ? null
-                                            : 'food-correction::${const Uuid().v4()}',
-                                        correctionReason:
-                                            supersedesSnapshotId == null
-                                            ? null
-                                            : 'User edited logged quantity.',
-                                      );
-                                      // Keep the route result as a secondary
-                                      // signal. A platform haptic/plugin call
-                                      // must not prevent the completed canonical
-                                      // save from closing the food flow.
-                                      finalized = true;
-                                      _invalidateNutritionReads();
-                                      try {
-                                        await HapticFeedback.selectionClick();
-                                      } catch (_) {
-                                        // Haptics are optional feedback; a
-                                        // missing plugin cannot make a saved
-                                        // meal look unsaved.
-                                      }
-                                      if (sheetContext.mounted) {
-                                        Navigator.of(sheetContext).pop(true);
-                                      }
-                                    } catch (error) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: const Text(
-                                              'Meal could not be logged. Try again.',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      if (context.mounted) {
-                                        setModalState(
-                                          () => isFinalizing = false,
-                                        );
-                                      }
-                                    }
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: context.b05Colors.action,
-                              foregroundColor: context.b05Colors.onAction,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                          NutritionQuantityService.validatePositiveUserEnteredPortion(
+                                            finalQuantity,
+                                          );
+                                          selectedQuantity = finalQuantity;
+                                          previewFuture ??= buildPreview();
+                                        } on QuantityError {
+                                          setModalState(
+                                            () => amountError =
+                                                'Enter an amount greater than zero.',
+                                          );
+                                          return;
+                                        }
+                                        if (onQuantityPicked != null) {
+                                          setModalState(
+                                            () => isFinalizing = true,
+                                          );
+                                          try {
+                                            await onQuantityPicked(
+                                              finalQuantity,
+                                            );
+                                            finalized = true;
+                                            if (sheetContext.mounted) {
+                                              Navigator.of(
+                                                sheetContext,
+                                              ).pop(true);
+                                            }
+                                          } catch (_) {
+                                            if (sheetContext.mounted) {
+                                              setModalState(
+                                                () => isFinalizing = false,
+                                              );
+                                              ScaffoldMessenger.of(
+                                                sheetContext,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Amount could not be updated. Try again.',
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                          return;
+                                        }
+                                        setModalState(() {
+                                          isFinalizing = true;
+                                          commandId ??=
+                                              'direct-food-command::${const Uuid().v4()}';
+                                          consumptionId ??=
+                                              'direct-food-consumption::${const Uuid().v4()}';
+                                        });
+                                        try {
+                                          final preview = await previewFuture!;
+                                          final timezoneId = await ref
+                                              .read(
+                                                localTimezoneServiceProvider,
+                                              )
+                                              .currentTimezoneId();
+                                          final dates = ref.read(
+                                            localScheduleDateServiceProvider,
+                                          );
+                                          final selectedLocalDate =
+                                              widget.selectedDate == null
+                                              ? null
+                                              : DateFormat(
+                                                  'yyyy-MM-dd',
+                                                ).format(widget.selectedDate!);
+                                          final loggedAt =
+                                              selectedLocalDate == null
+                                              ? DateTime.now().toUtc()
+                                              : dates.instantForLocalDate(
+                                                  selectedLocalDate,
+                                                  timezoneId,
+                                                );
+                                          final localDate =
+                                              selectedLocalDate ??
+                                              dates.localDateFor(
+                                                loggedAt,
+                                                timezoneId,
+                                              );
+                                          await coordinator.finalize(
+                                            userId: kLocalNutritionUserScopeId,
+                                            preview: preview,
+                                            mealCategory: selectedMealType,
+                                            loggedAt: loggedAt,
+                                            localDate: localDate,
+                                            timezoneId: timezoneId,
+                                            commandId: commandId,
+                                            consumptionId: consumptionId,
+                                            supersedesSnapshotId:
+                                                supersedesSnapshotId,
+                                            correctionId:
+                                                supersedesSnapshotId == null
+                                                ? null
+                                                : 'food-correction::${const Uuid().v4()}',
+                                            correctionReason:
+                                                supersedesSnapshotId == null
+                                                ? null
+                                                : 'User edited logged quantity.',
+                                          );
+                                          // Keep the route result as a secondary
+                                          // signal. A platform haptic/plugin call
+                                          // must not prevent the completed canonical
+                                          // save from closing the food flow.
+                                          finalized = true;
+                                          _invalidateNutritionReads();
+                                          try {
+                                            await HapticFeedback.selectionClick();
+                                          } catch (_) {
+                                            // Haptics are optional feedback; a
+                                            // missing plugin cannot make a saved
+                                            // meal look unsaved.
+                                          }
+                                          if (sheetContext.mounted) {
+                                            Navigator.of(
+                                              sheetContext,
+                                            ).pop(true);
+                                          }
+                                        } catch (error) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: const Text(
+                                                  'Meal could not be logged. Try again.',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          if (context.mounted) {
+                                            setModalState(
+                                              () => isFinalizing = false,
+                                            );
+                                          }
+                                        }
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: context.b05Colors.action,
+                                  foregroundColor: context.b05Colors.onAction,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  isFinalizing
+                                      ? 'Saving…'
+                                      : 'Add to ${_mealTitle(selectedMealType)}',
+                                ),
                               ),
                             ),
-                            child: Text(isFinalizing ? 'Saving…' : 'Add Meal'),
-                          ),
-                        ),
-                      ],
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -1402,10 +1475,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Future<void> _commitSelection() async {
     if (_committingSelection || _selectedOptions.isEmpty) return;
-    final mealType = await _ensureMealContext();
-    if (mealType == null || !mounted) return;
     setState(() => _committingSelection = true);
     try {
+      // This must happen before choosing a meal: two taps while that sheet is
+      // opening would otherwise create two separate atomic batches.
+      final mealType = await _ensureMealContext();
+      if (mealType == null || !mounted) return;
       final coordinator = await ref.read(
         nutritionFoodLoggingCoordinatorProvider.future,
       );
@@ -1475,10 +1550,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     var total = 0.0;
     for (final option in _selectedOptions.values) {
       final quantity = _selectedQuantities[option.id] ?? option.baseQuantity;
-      if (quantity != option.baseQuantity) return '—';
       final fact = option.facts['energy'];
       if (fact == null || !fact.isAvailable || fact.point == null) return '—';
-      total += fact.point!.value.asDouble;
+      try {
+        final scaled = fact.scaleBy(quantity);
+        if (scaled.point == null) return '—';
+        total += scaled.point!.value.asDouble;
+      } on NutrientError {
+        return '—';
+      } on QuantityError {
+        return '—';
+      }
     }
     return '${total.round()} kcal';
   }
@@ -1493,28 +1575,45 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${_selectedOptions.length} selected · ${_selectionEnergyLabel()}',
-                    style: B05Typography.label(context),
-                  ),
-                ),
-                TextButton(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final textScale =
+                    MediaQuery.textScalerOf(context).scale(14) / 14;
+                final selectionLabel =
+                    '${_selectedOptions.length} food${_selectedOptions.length == 1 ? '' : 's'} selected · ${_selectionEnergyLabel()}';
+                final clear = TextButton(
                   onPressed: () => setState(() {
                     _selectedKeys.clear();
                     _selectedOptions.clear();
                     _selectedQuantities.clear();
                   }),
                   child: const Text('Clear'),
-                ),
-              ],
+                );
+                if (constraints.maxWidth < 360 || textScale > 1.3) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(selectionLabel, style: B05Typography.label(context)),
+                      Align(alignment: Alignment.centerRight, child: clear),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        selectionLabel,
+                        style: B05Typography.label(context),
+                      ),
+                    ),
+                    clear,
+                  ],
+                );
+              },
             ),
-            SizedBox(
-              height: 38,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
                 children: [
                   for (final option in _selectedOptions.values)
                     Padding(
@@ -1937,28 +2036,35 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final protein = _optionFactLabel(option, 'protein', 'g protein', 1);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        minVerticalPadding: 8,
-        leading: Checkbox(
-          value: _selectedOptions.containsKey(option.id),
-          onChanged: (_) => _toggleCanonicalSelection(option),
+      child: Semantics(
+        container: true,
+        explicitChildNodes: true,
+        button: true,
+        label: '${option.displayName}, $energy, $protein',
+        hint:
+            'Tap Add to log the listed serving, or open to adjust the amount.',
+        child: ListTile(
+          minVerticalPadding: 8,
+          leading: Semantics(
+            label: 'Select ${option.displayName} for a multi-food add',
+            child: Checkbox(
+              value: _selectedOptions.containsKey(option.id),
+              onChanged: (_) => _toggleCanonicalSelection(option),
+            ),
+          ),
+          title: Text(
+            option.displayName,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            '${_quantityUnitLabel(option.baseQuantity, option: option)} · $energy · $protein',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: _buildCanonicalFastAddAction(option),
+          onTap: () => unawaited(_showLogDialog(option)),
         ),
-        title: Text(
-          option.displayName,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          '${_quantityUnitLabel(option.baseQuantity, option: option)} · $energy · $protein',
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: TextButton.icon(
-          onPressed: () => unawaited(_addOptionFast(option)),
-          icon: const Icon(Icons.add_rounded, size: 18),
-          label: const Text('Add'),
-        ),
-        onTap: () => unawaited(_showLogDialog(option)),
       ),
     );
   }
@@ -1974,7 +2080,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         explicitChildNodes: true,
         button: true,
         label: '${option.displayName}, $energy, $protein',
-        hint: 'Choose a meal and amount before adding this food.',
+        hint:
+            'Tap Add to log the listed serving, or open to adjust the amount.',
         child: ListTile(
           minVerticalPadding: 10,
           leading: Semantics(
@@ -1995,12 +2102,47 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          trailing: TextButton.icon(
-            onPressed: () => unawaited(_addOptionFast(option)),
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Add'),
-          ),
+          trailing: _buildCanonicalFastAddAction(option),
           onTap: () => unawaited(_showLogDialog(option)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCanonicalFastAddAction(NutritionFoodOption option) {
+    final isAdding = _fastAddInFlight.contains(option.id);
+    return _buildFastAddAction(
+      foodName: option.displayName,
+      isAdding: isAdding,
+      onPressed: isAdding ? null : () => unawaited(_addOptionFast(option)),
+    );
+  }
+
+  Widget _buildFastAddAction({
+    required String foodName,
+    required VoidCallback? onPressed,
+    bool isAdding = false,
+  }) {
+    final label = isAdding ? 'Adding $foodName' : 'Add $foodName';
+    // A disabled nested button must still consume its own hit area. Otherwise
+    // a second physical tap falls through to the result-row tap target and
+    // unexpectedly opens the quantity sheet.
+    return AbsorbPointer(
+      absorbing: onPressed == null,
+      child: Semantics(
+        button: true,
+        enabled: onPressed != null,
+        label: label,
+        onTap: onPressed,
+        child: ExcludeSemantics(
+          child: TextButton.icon(
+            onPressed: onPressed,
+            icon: Icon(
+              isAdding ? Icons.hourglass_top_rounded : Icons.add_rounded,
+              size: 18,
+            ),
+            label: Text(isAdding ? 'Adding…' : 'Add'),
+          ),
         ),
       ),
     );
@@ -2281,7 +2423,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         explicitChildNodes: true,
         button: true,
         label: '${food.name}, ${food.calories} kilocalories, $serving',
-        hint: 'Choose a meal and amount before adding this food.',
+        hint:
+            'Tap Add to use a supported serving or open to adjust the amount.',
         child: ListTile(
           minVerticalPadding: 10,
           leading: Semantics(
@@ -2323,10 +2466,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          trailing: TextButton.icon(
+          trailing: _buildFastAddAction(
+            foodName: food.name,
             onPressed: () => unawaited(_openLegacyFastAdd(food)),
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Add'),
           ),
           onTap: () => unawaited(_openLegacyLogDialog(food)),
         ),
@@ -2351,7 +2493,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         button: true,
         label:
             '${food.name}, ${_formatProviderValue(food.calories, 'kcal')}, $serving',
-        hint: 'Choose a meal and amount before adding this food.',
+        hint:
+            'Tap Add to use a supported serving or open to adjust the amount.',
         child: ListTile(
           minVerticalPadding: 10,
           leading: Semantics(
@@ -2372,10 +2515,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          trailing: TextButton.icon(
+          trailing: _buildFastAddAction(
+            foodName: food.name,
             onPressed: () => unawaited(_openProviderFastAdd(food)),
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Add'),
           ),
           onTap: () => unawaited(_openProviderLogDialog(food)),
         ),
@@ -2483,20 +2625,44 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
 enum _CanonicalFoodAction { edit, copy, delete }
 
-class FoodDiaryScreen extends ConsumerWidget {
-  const FoodDiaryScreen({super.key, required this.selectedDate});
+class FoodDiaryScreen extends ConsumerStatefulWidget {
+  const FoodDiaryScreen({super.key, required this.selectedDate, this.today});
 
   final DateTime selectedDate;
-
-  DateTime get _day =>
-      DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+  final DateTime? today;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final diary = ref.watch(foodDiaryReadModelProvider(_day));
+  ConsumerState<FoodDiaryScreen> createState() => _FoodDiaryScreenState();
+}
+
+class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
+  late DateTime _selectedDay;
+  late DateTime _today;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDay = _civilDay(widget.selectedDate);
+    _today = _civilDay(widget.today ?? DateTime.now());
+  }
+
+  @override
+  void didUpdateWidget(covariant FoodDiaryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isSameDay(oldWidget.selectedDate, widget.selectedDate)) {
+      _selectedDay = _civilDay(widget.selectedDate);
+    }
+    if (oldWidget.today != widget.today) {
+      _today = _civilDay(widget.today ?? DateTime.now());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final diary = ref.watch(foodDiaryReadModelProvider(_selectedDay));
     final daily = diary.valueOrNull?.daily;
     final canonical = daily == null && diary.hasError
-        ? ref.watch(canonicalFoodRecordsForDayProvider(_day))
+        ? ref.watch(canonicalFoodRecordsForDayProvider(_selectedDay))
         : const AsyncData<List<NutritionHistoricalReadRecord>>([]);
     final recent = daily == null
         ? const AsyncLoading<List<CanonicalRecentFood>>()
@@ -2515,17 +2681,7 @@ class FoodDiaryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Food diary', style: B05Typography.title(context)),
-            Text(
-              ConsumerDateLabel.dateTime(selectedDate),
-              style: B05Typography.caption(context),
-            ),
-          ],
-        ),
+        title: Text('Food diary', style: B05Typography.title(context)),
       ),
       body: SafeArea(
         top: false,
@@ -2533,6 +2689,16 @@ class FoodDiaryScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           children: [
+            DashboardDateBar(
+              selectedDate: _selectedDay,
+              today: _today,
+              onDateChanged: (date) {
+                final nextDay = _civilDay(date);
+                if (_isSameDay(nextDay, _selectedDay)) return;
+                setState(() => _selectedDay = nextDay);
+              },
+            ),
+            const SizedBox(height: 12),
             _FoodDiarySummary(presentation: presentation),
             const SizedBox(height: 12),
             FilledButton.icon(
@@ -2608,40 +2774,10 @@ class FoodDiaryScreen extends ConsumerWidget {
             Text('Saved & recipes', style: B05Typography.title(context)),
             const SizedBox(height: 8),
             _FoodDiaryShortcut(
-              icon: Icons.bookmark_outline_rounded,
-              title: 'Saved foods',
-              detail: 'Keep individual foods close to your next meal.',
-              onTap: () => _openMealPicker(context),
-            ),
-            _FoodDiaryShortcut(
               icon: Icons.menu_book_rounded,
-              title: 'Recipes & saved meals',
+              title: 'Saved recipes',
               detail: 'Open a complete meal without rebuilding it.',
-              onTap: () => _openMealPicker(context),
-            ),
-            const SizedBox(height: 16),
-            Text('More ways', style: B05Typography.title(context)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () => _openMealPicker(context),
-                  icon: const Icon(Icons.qr_code_scanner_rounded),
-                  label: const Text('Barcode'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => _openMealPicker(context),
-                  icon: const Icon(Icons.auto_awesome_rounded),
-                  label: const Text('Describe with AI'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => _openCustomFood(context),
-                  icon: const Icon(Icons.add_circle_outline_rounded),
-                  label: const Text('Custom food'),
-                ),
-              ],
+              onTap: () => _openSavedRecipes(context),
             ),
             if (diary.hasError && daily == null) ...[
               const SizedBox(height: 16),
@@ -2662,7 +2798,7 @@ class FoodDiaryScreen extends ConsumerWidget {
       MaterialPageRoute(
         builder: (_) => FoodSearchScreen(
           mealType: mealType,
-          selectedDate: selectedDate,
+          selectedDate: _selectedDay,
           returnToParentOnSave: true,
         ),
       ),
@@ -2674,54 +2810,70 @@ class FoodDiaryScreen extends ConsumerWidget {
       MaterialPageRoute(
         builder: (_) => FoodMealDetailScreen(
           mealType: mealType,
-          selectedDate: selectedDate,
+          selectedDate: _selectedDay,
         ),
       ),
     );
   }
 
-  Future<void> _openMealPicker(BuildContext context) async {
-    final meal = await showModalBottomSheet<String>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Choose a meal',
-                  style: B05Typography.title(sheetContext),
+  Future<String?> _chooseMeal(BuildContext context) =>
+      showModalBottomSheet<String>(
+        context: context,
+        builder: (sheetContext) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Choose a meal',
+                    style: B05Typography.title(sheetContext),
+                  ),
                 ),
               ),
-            ),
-            for (final item in const [
-              ('breakfast', 'Breakfast'),
-              ('lunch', 'Lunch'),
-              ('dinner', 'Dinner'),
-              ('snack', 'Snacks'),
-            ])
-              ListTile(
-                title: Text(item.$2),
-                leading: const Icon(Icons.restaurant_outlined),
-                onTap: () => Navigator.of(sheetContext).pop(item.$1),
-              ),
-            const SizedBox(height: 8),
-          ],
+              for (final item in const [
+                ('breakfast', 'Breakfast'),
+                ('lunch', 'Lunch'),
+                ('dinner', 'Dinner'),
+                ('snack', 'Snacks'),
+              ])
+                ListTile(
+                  title: Text(item.$2),
+                  leading: const Icon(Icons.restaurant_outlined),
+                  onTap: () => Navigator.of(sheetContext).pop(item.$1),
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+
+  Future<void> _openMealPicker(BuildContext context) async {
+    final meal = await _chooseMeal(context);
     if (meal == null || !context.mounted) return;
     await _openMealAdd(context, meal);
   }
 
-  Future<void> _openCustomFood(BuildContext context) async {
+  Future<void> _openSavedRecipes(BuildContext context) async {
+    final meal = await _chooseMeal(context);
+    if (meal == null || !context.mounted) return;
     await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const CustomFoodEditorScreen()),
+      MaterialPageRoute(
+        builder: (_) =>
+            SavedRecipeLogScreen(mealType: meal, selectedDate: _selectedDay),
+      ),
     );
   }
+
+  DateTime _civilDay(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
+  bool _isSameDay(DateTime first, DateTime second) =>
+      first.year == second.year &&
+      first.month == second.month &&
+      first.day == second.day;
 }
 
 class FoodMealDetailScreen extends ConsumerWidget {
