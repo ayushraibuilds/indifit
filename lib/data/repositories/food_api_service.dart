@@ -47,6 +47,7 @@ class FoodApiResult {
   final String? barcode;
   final String? providerId;
   final String? brand;
+  final String? packageQuantity;
 
   FoodApiResult({
     required this.name,
@@ -59,6 +60,7 @@ class FoodApiResult {
     this.barcode,
     this.providerId,
     this.brand,
+    this.packageQuantity,
   });
 }
 
@@ -123,6 +125,7 @@ class FoodApiService {
             barcode: barcode,
             providerId: barcode,
             brand: _readReference(p['brands']),
+            packageQuantity: _readReference(p['quantity']),
           );
         }
       }
@@ -169,6 +172,7 @@ class FoodApiService {
             'code',
             'brands',
             'product_name',
+            'quantity',
             'nutriments',
             'serving_quantity',
             'serving_quantity_unit',
@@ -217,6 +221,7 @@ class FoodApiService {
                 barcode: providerId,
                 providerId: providerId,
                 brand: _readReference(p['brands']),
+                packageQuantity: _readReference(p['quantity']),
               );
             })
             .where((result) => result.name.isNotEmpty)

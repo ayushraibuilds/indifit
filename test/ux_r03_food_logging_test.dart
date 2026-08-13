@@ -530,10 +530,50 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800));
     await tester.pump();
     expect(find.text('Offline roti'), findsOneWidget);
-    expect(find.text('Searching more foods'), findsOneWidget);
+    expect(find.text('Searching for more matches'), findsOneWidget);
     online.completer.complete(const []);
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Offline roti'), findsOneWidget);
+  });
+
+  testWidgets('typo retrieval still asks for a bounded local prefix', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    final database = AppDatabase.memory();
+    late ProviderContainer container;
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      container.dispose();
+      tester.view.reset();
+      await database.close();
+    });
+    await tester.pumpWidget(
+      _foodApp(
+        database: database,
+        repository: _QueryAwareFoodRepository(database),
+        apiService: _TestFoodApiService(),
+        mealType: 'breakfast',
+        selectedDate: DateTime(2026, 8, 12),
+      ),
+    );
+    container = ProviderScope.containerOf(
+      tester.element(find.byType(FoodSearchScreen)),
+    );
+    await _pumpFood(tester);
+    await tester.enterText(find.byType(TextField).first, 'paner');
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final paneer = find.text('Paneer');
+    final weakInteriorMatch = find.text('Spaner snack');
+    expect(paneer, findsOneWidget);
+    expect(weakInteriorMatch, findsOneWidget);
+    expect(
+      tester.getTopLeft(paneer).dy,
+      lessThan(tester.getTopLeft(weakInteriorMatch).dy),
+    );
   });
 
   testWidgets('changed query cancels transport and stale results cannot win', (
@@ -630,9 +670,93 @@ void main() {
     await tester.pump();
 
     expect(find.text('Provider protein shake'), findsOneWidget);
-    expect(find.text('More results'), findsOneWidget);
+    expect(find.text('Search results'), findsOneWidget);
     expect(find.text('Foods on this device'), findsNothing);
   });
+
+  testWidgets(
+    'active search keeps a matching Custom Food distinct from provider results',
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      final database = AppDatabase.memory();
+      final registry = NutrientRegistry.fromAssetFileSync(
+        'assets/data/nutrient_registry.json',
+      );
+      final catalog = NutritionFoodCatalogRepository(
+        db: database,
+        registry: registry,
+      );
+      final customOption =
+          await tester.runAsync(
+            () => catalog.createUserFood(
+              displayName: 'Family Paneer',
+              servingSize: 1,
+              servingUnit: 'serving',
+              energyKcal: 250,
+              proteinG: 18,
+              carbohydrateG: 8,
+              fatG: 17,
+            ),
+          ) ??
+          (throw StateError('Could not create custom-food fixture.'));
+      late ProviderContainer container;
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+        tester.view.reset();
+        await database.close();
+      });
+      await tester.pumpWidget(
+        _foodApp(
+          database: database,
+          catalog: _MatchingCustomFoodCatalogRepository(
+            database: database,
+            registry: registry,
+            option: customOption,
+          ),
+          repository: _TestFoodRepository(
+            database,
+            searchResults: const [
+              FoodItem(
+                id: 51,
+                name: 'Paneer',
+                calories: 265,
+                proteinG: 18,
+                carbsG: 6,
+                fatG: 20,
+                servingSize: 100,
+                servingUnit: 'g',
+                category: 'Indian',
+                isCustom: false,
+              ),
+            ],
+          ),
+          apiService: _MatchingCustomFoodApiService(),
+          mealType: 'lunch',
+          selectedDate: DateTime(2026, 8, 12),
+        ),
+      );
+      container = ProviderScope.containerOf(
+        tester.element(find.byType(FoodSearchScreen)),
+      );
+      await _pumpFood(tester);
+      await tester.enterText(find.byType(TextField).first, 'family paneer');
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Search results'), findsOneWidget);
+      expect(find.text('Family Paneer'), findsNWidgets(2));
+      expect(find.text('Custom'), findsOneWidget);
+      expect(find.textContaining('200 g pack'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Family Paneer, custom food, 250 kcal, 18.0 g protein',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('HTTP failure keeps local food usable with quiet fallback', (
     tester,
@@ -681,7 +805,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Local protein smoothie'), findsOneWidget);
-    expect(find.text('Showing available results'), findsOneWidget);
+    expect(find.text('Showing matching foods'), findsOneWidget);
     expect(find.text('Online search unavailable'), findsNothing);
   });
 
@@ -808,7 +932,7 @@ void main() {
       theme: AppTheme.lightTheme,
       apiService: _MergedFoodApiService(),
     );
-    expect(find.text('Best matches'), findsOneWidget);
+    expect(find.text('Search results'), findsOneWidget);
     expect(find.text('Fit Brand'), findsOneWidget);
     await expectLater(
       find.byType(FoodSearchScreen),
@@ -1027,76 +1151,85 @@ Widget _foodApp({
   required String? mealType,
   required DateTime selectedDate,
   Widget? home,
-}) => ProviderScope(
-  overrides: [
-    databaseProvider.overrideWithValue(database),
-    localTimezoneServiceProvider.overrideWithValue(
-      LocalTimezoneService(read: () async => 'Asia/Kolkata'),
-    ),
-    nutritionRegistryProvider.overrideWith(
-      (ref) async => NutrientRegistry.fromAssetFileSync(
-        'assets/data/nutrient_registry.json',
-      ),
-    ),
-    if (catalog != null)
-      nutritionFoodCatalogRepositoryProvider.overrideWith(
-        (ref) async => catalog,
-      ),
-    if (coordinator != null)
-      nutritionFoodLoggingCoordinatorProvider.overrideWith(
-        (ref) async => coordinator,
-      ),
-    foodRepositoryProvider.overrideWithValue(
-      repository ?? FoodRepository(database),
-    ),
-    if (apiService != null)
-      foodApiServiceProvider.overrideWithValue(apiService),
-    canonicalRecentFoodsProvider.overrideWith((ref) async => canonicalRecent),
-    foodLogsForDayProvider.overrideWith((ref, date) async => []),
-    canonicalFoodRecordsForDayProvider.overrideWith((ref, date) async => []),
-    foodDiaryReadModelProvider.overrideWith((ref, date) async {
-      final registry = await ref.watch(nutritionRegistryProvider.future);
-      final totals = NutrientAggregationService.aggregate(
-        registry: registry,
-        contributions: const <NutrientContribution>[],
-        requestedNutrientIds: registry.definitions
-            .map((definition) => definition.id)
-            .toSet(),
-      );
-      final localDate =
-          '${date.year.toString().padLeft(4, '0')}-'
-          '${date.month.toString().padLeft(2, '0')}-'
-          '${date.day.toString().padLeft(2, '0')}';
-      return FoodDiaryReadModel(
-        daily: NutritionDailyReadModel(
-          userId: kLocalNutritionUserScopeId,
-          localDate: localDate,
-          records: const [],
-          recordIds: const [],
-          totals: totals,
-          sourceCounts: const {},
-          issues: const [],
+}) {
+  final resolvedCatalog =
+      catalog ??
+      _NoCustomSearchCatalogRepository(
+        database: database,
+        registry: NutrientRegistry.fromAssetFileSync(
+          'assets/data/nutrient_registry.json',
         ),
       );
-    }),
-  ],
-  child: MediaQuery(
-    data: MediaQueryData(
-      size: mediaSize ?? Size.zero,
-      textScaler: TextScaler.linear(textScale),
-    ),
-    child: MaterialApp(
-      theme: theme ?? AppTheme.darkTheme,
-      builder: (context, child) => RepaintBoundary(
-        key: const ValueKey('food_golden_root'),
-        child: child ?? const SizedBox.shrink(),
+  return ProviderScope(
+    overrides: [
+      databaseProvider.overrideWithValue(database),
+      localTimezoneServiceProvider.overrideWithValue(
+        LocalTimezoneService(read: () async => 'Asia/Kolkata'),
       ),
-      home:
-          home ??
-          FoodSearchScreen(mealType: mealType, selectedDate: selectedDate),
+      nutritionRegistryProvider.overrideWith(
+        (ref) async => NutrientRegistry.fromAssetFileSync(
+          'assets/data/nutrient_registry.json',
+        ),
+      ),
+      nutritionFoodCatalogRepositoryProvider.overrideWith(
+        (ref) async => resolvedCatalog,
+      ),
+      if (coordinator != null)
+        nutritionFoodLoggingCoordinatorProvider.overrideWith(
+          (ref) async => coordinator,
+        ),
+      foodRepositoryProvider.overrideWithValue(
+        repository ?? FoodRepository(database),
+      ),
+      if (apiService != null)
+        foodApiServiceProvider.overrideWithValue(apiService),
+      canonicalRecentFoodsProvider.overrideWith((ref) async => canonicalRecent),
+      foodLogsForDayProvider.overrideWith((ref, date) async => []),
+      canonicalFoodRecordsForDayProvider.overrideWith((ref, date) async => []),
+      foodDiaryReadModelProvider.overrideWith((ref, date) async {
+        final registry = await ref.watch(nutritionRegistryProvider.future);
+        final totals = NutrientAggregationService.aggregate(
+          registry: registry,
+          contributions: const <NutrientContribution>[],
+          requestedNutrientIds: registry.definitions
+              .map((definition) => definition.id)
+              .toSet(),
+        );
+        final localDate =
+            '${date.year.toString().padLeft(4, '0')}-'
+            '${date.month.toString().padLeft(2, '0')}-'
+            '${date.day.toString().padLeft(2, '0')}';
+        return FoodDiaryReadModel(
+          daily: NutritionDailyReadModel(
+            userId: kLocalNutritionUserScopeId,
+            localDate: localDate,
+            records: const [],
+            recordIds: const [],
+            totals: totals,
+            sourceCounts: const {},
+            issues: const [],
+          ),
+        );
+      }),
+    ],
+    child: MediaQuery(
+      data: MediaQueryData(
+        size: mediaSize ?? Size.zero,
+        textScaler: TextScaler.linear(textScale),
+      ),
+      child: MaterialApp(
+        theme: theme ?? AppTheme.darkTheme,
+        builder: (context, child) => RepaintBoundary(
+          key: const ValueKey('food_golden_root'),
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home:
+            home ??
+            FoodSearchScreen(mealType: mealType, selectedDate: selectedDate),
+      ),
     ),
-  ),
-);
+  );
+}
 
 void _setViewport(WidgetTester tester, Size size) {
   tester.view.physicalSize = size;
@@ -1226,6 +1359,76 @@ class _TestFoodRepository extends FoodRepository {
   Future<List<FoodItem>> searchFoodLocal(String query) async => searchResults;
 }
 
+class _NoCustomSearchCatalogRepository extends NutritionFoodCatalogRepository {
+  // ignore: use_super_parameters
+  _NoCustomSearchCatalogRepository({
+    required AppDatabase database,
+    required NutrientRegistry registry,
+  }) : super(db: database, registry: registry);
+
+  @override
+  Future<List<NutritionFoodOption>> searchCustomFoods({
+    required Iterable<String> queries,
+  }) async => const [];
+}
+
+class _MatchingCustomFoodCatalogRepository
+    extends NutritionFoodCatalogRepository {
+  // ignore: use_super_parameters
+  _MatchingCustomFoodCatalogRepository({
+    required AppDatabase database,
+    required NutrientRegistry registry,
+    required this.option,
+  }) : super(db: database, registry: registry);
+
+  final NutritionFoodOption option;
+
+  @override
+  Future<List<NutritionFoodOption>> searchCustomFoods({
+    required Iterable<String> queries,
+  }) async => [option];
+}
+
+class _QueryAwareFoodRepository extends FoodRepository {
+  _QueryAwareFoodRepository(super.database);
+
+  @override
+  Future<List<FoodItem>> getRecentFoods(int limit) async => const [];
+
+  @override
+  Future<List<FoodItem>> searchFoodLocal(String query) async => switch (query) {
+    'paner' => const [
+      FoodItem(
+        id: 61,
+        name: 'Spaner snack',
+        calories: 130,
+        proteinG: 4,
+        carbsG: 18,
+        fatG: 4,
+        servingSize: 1,
+        servingUnit: 'serving',
+        category: 'Fixture',
+        isCustom: false,
+      ),
+    ],
+    'pan' => const [
+      FoodItem(
+        id: 62,
+        name: 'Paneer',
+        calories: 265,
+        proteinG: 18,
+        carbsG: 6,
+        fatG: 20,
+        servingSize: 100,
+        servingUnit: 'g',
+        category: 'Fixture',
+        isCustom: false,
+      ),
+    ],
+    _ => const [],
+  };
+}
+
 class _TestFoodApiService extends FoodApiService {
   _TestFoodApiService();
 
@@ -1253,6 +1456,28 @@ class _MergedFoodApiService extends FoodApiService {
       providerId: 'fit-paneer-bar',
       barcode: 'fit-paneer-bar',
       brand: 'Fit Brand',
+    ),
+  ];
+}
+
+class _MatchingCustomFoodApiService extends FoodApiService {
+  @override
+  Future<List<FoodApiResult>> searchOnline(
+    String query, {
+    CancelToken? cancelToken,
+  }) async => [
+    FoodApiResult(
+      name: 'Family Paneer',
+      calories: 260,
+      protein: 17,
+      carbs: 7,
+      fat: 19,
+      servingSize: 100,
+      servingUnit: 'g',
+      providerId: 'family-paneer-product',
+      barcode: 'family-paneer-product',
+      brand: 'Kitchen Brand',
+      packageQuantity: '200 g',
     ),
   ];
 }
@@ -1383,6 +1608,11 @@ class _TestFoodCatalog extends NutritionFoodCatalogRepository {
 
   final NutrientRegistry registry;
   final bool massAuthority;
+
+  @override
+  Future<List<NutritionFoodOption>> searchCustomFoods({
+    required Iterable<String> queries,
+  }) async => const [];
 
   @override
   Future<NutritionFoodOption> ensureLegacyFood(FoodItem item) async {

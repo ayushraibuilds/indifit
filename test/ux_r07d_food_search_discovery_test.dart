@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/food_api_service.dart';
@@ -6,12 +7,16 @@ import 'package:indifit/data/repositories/nutrition_food_catalog_repository.dart
 import 'package:indifit/data/services/nutrition_food_search_ranking.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('R07D-2 food search vocabulary and normalization', () {
     test(
       'normalization preserves numeric/package intent and aliases are bounded',
       () {
         expect(
-          NutritionFoodSearchVocabulary.normalize('  Amul 200g,  Paneer  '),
+          NutritionFoodSearchVocabulary.normalize(
+            '  Amul\u2007 200 g,  Paneer  ',
+          ),
           'amul 200g paneer',
         );
         expect(
@@ -28,6 +33,43 @@ void main() {
         );
       },
     );
+  });
+
+  test('custom discovery returns active matching user foods', () async {
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+    final catalog = NutritionFoodCatalogRepository(
+      db: database,
+      registry: NutrientRegistry.fromAssetFileSync(
+        'assets/data/nutrient_registry.json',
+      ),
+    );
+    await catalog.createUserFood(
+      displayName: 'Family Paneer',
+      servingSize: 1,
+      servingUnit: 'serving',
+      energyKcal: 250,
+      proteinG: 18,
+      carbohydrateG: 8,
+      fatG: 17,
+    );
+    await catalog.createUserFood(
+      displayName: 'Family Dahi',
+      servingSize: 1,
+      servingUnit: 'serving',
+      energyKcal: 120,
+      proteinG: 6,
+      carbohydrateG: 8,
+      fatG: 7,
+    );
+
+    final results = await catalog.searchCustomFoods(
+      queries: const ['family paneer'],
+    );
+
+    expect(results.map((option) => option.displayName), ['Family Paneer']);
+    expect(results.single.sourceType, 'user');
+    expect(results.single.hasNumericFacts, isTrue);
   });
 
   group('R07D-2 deterministic relevance matrix', () {
@@ -63,7 +105,7 @@ void main() {
     test('generic milk wins generic intent while brand intent admits Amul', () {
       final generic = _food('Milk', 1);
       final branded = _remote(
-        'Amul Taaza Milk',
+        'Taaza Milk',
         providerId: 'amul-1',
         brand: 'Amul',
       );
@@ -74,6 +116,24 @@ void main() {
       );
       expect(
         _rank('amul milk', candidates: [generic, branded]).first.candidate,
+        same(branded),
+      );
+    });
+
+    test('brand and pack metadata preserve explicit product intent', () {
+      final branded = _remote(
+        'Fresh Paneer',
+        providerId: 'amul-paneer-200',
+        brand: 'Amul',
+        packageQuantity: '200 g',
+      );
+
+      expect(
+        _rank('amul 200g paneer', candidates: [branded]).single.candidate,
+        same(branded),
+      );
+      expect(
+        _rank('amul', candidates: [branded]).single.candidate,
         same(branded),
       );
     });
@@ -110,6 +170,15 @@ void main() {
         expect(banana.single.candidate.displayName, 'Banana');
       },
     );
+
+    test('a useful typo beats a weak interior substring match', () {
+      final results = _rank(
+        'paner',
+        candidates: [_food('Spaner snack', 1), _food('Paneer', 2)],
+      );
+
+      expect(results.first.candidate.displayName, 'Paneer');
+    });
 
     test('appe-style weak provider brand token is suppressed', () {
       final results = _rank(
@@ -160,6 +229,25 @@ void main() {
         ),
       );
       expect(bounded.first.candidate.displayName, 'Milk');
+    });
+
+    test('provider history uses its stable provider identity', () {
+      final branded = _remote(
+        'Taaza Milk',
+        providerId: 'amul-taaza',
+        brand: 'Amul',
+      );
+      final baseline = _rank('milk', candidates: [branded]).single;
+      final boosted = _rank(
+        'milk',
+        candidates: [branded],
+        history: const NutritionFoodSearchHistory(
+          frequencyByIdentity: {'provider::amul-taaza': 99},
+          recentIdentities: {'provider::amul-taaza'},
+        ),
+      ).single;
+
+      expect(boosted.score, baseline.score + 54);
     });
 
     test('custom exact match is strong without merging provider identity', () {
@@ -291,6 +379,7 @@ NutritionFoodSearchCandidate _remote(
   String name, {
   required String providerId,
   String? brand,
+  String? packageQuantity,
 }) => NutritionFoodSearchCandidate.remote(
   FoodApiResult(
     name: name,
@@ -303,6 +392,7 @@ NutritionFoodSearchCandidate _remote(
     providerId: providerId,
     barcode: providerId,
     brand: brand,
+    packageQuantity: packageQuantity,
   ),
 );
 

@@ -23,10 +23,17 @@ class NutritionFoodSearchVocabulary {
     // meaningful package numbers, while making punctuation a token boundary.
     return value
         .toLowerCase()
-        .replaceAll('\u00a0', ' ')
+        .replaceAll(
+          RegExp(r'[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]'),
+          ' ',
+        )
         .replaceAll(RegExp(r'''[!"#\$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~]'''), ' ')
         .replaceAll(RegExp(r'[\u2010-\u2015\u2212\u2022]'), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAllMapped(
+          RegExp(r'\b(\d+(?:\.\d+)?)\s+(kg|g|ml|l)\b'),
+          (match) => '${match.group(1)}${match.group(2)}',
+        )
         .trim();
   }
 
@@ -77,6 +84,7 @@ class NutritionFoodSearchCandidate {
     required this.isCustom,
     required this.hasNumericFacts,
     required this.providerId,
+    required this.packageQuantity,
     required this.food,
     required this.option,
     required this.remote,
@@ -91,6 +99,7 @@ class NutritionFoodSearchCandidate {
       isCustom: food.isCustom,
       hasNumericFacts: true,
       providerId: null,
+      packageQuantity: null,
       food: food,
       option: null,
       remote: null,
@@ -107,6 +116,7 @@ class NutritionFoodSearchCandidate {
           option.sourceType == 'user' || option.sourceType == 'user_entered',
       hasNumericFacts: option.hasNumericFacts,
       providerId: null,
+      packageQuantity: null,
       food: null,
       option: option,
       remote: null,
@@ -126,6 +136,7 @@ class NutritionFoodSearchCandidate {
           remote.carbs != null ||
           remote.fat != null,
       providerId: _clean(remote.providerId ?? remote.barcode),
+      packageQuantity: _clean(remote.packageQuantity),
       food: null,
       option: null,
       remote: remote,
@@ -139,6 +150,7 @@ class NutritionFoodSearchCandidate {
   final bool isCustom;
   final bool hasNumericFacts;
   final String? providerId;
+  final String? packageQuantity;
   final FoodItem? food;
   final NutritionFoodOption? option;
   final FoodApiResult? remote;
@@ -150,6 +162,21 @@ class NutritionFoodSearchCandidate {
       return provider == null ? null : 'provider::$provider';
     }
     return id.isEmpty ? null : 'canonical::$id';
+  }
+
+  /// Brand and declared pack quantity can be searched as product metadata,
+  /// without altering the candidate's B03 identity, facts, or provenance.
+  String get searchableText {
+    final name = NutritionFoodSearchVocabulary.normalize(displayName);
+    final brandText = NutritionFoodSearchVocabulary.normalize(brand ?? '');
+    final packageText = NutritionFoodSearchVocabulary.normalize(
+      packageQuantity ?? '',
+    );
+    return [
+      if (brandText.isNotEmpty && !name.contains(brandText)) brandText,
+      name,
+      if (packageText.isNotEmpty && !name.contains(packageText)) packageText,
+    ].where((part) => part.isNotEmpty).join(' ');
   }
 
   String get deterministicKey {
@@ -165,6 +192,7 @@ class NutritionFoodSearchCandidate {
       id,
       remote?.servingSize.toString() ?? '',
       remote?.servingUnit ?? '',
+      NutritionFoodSearchVocabulary.normalize(packageQuantity ?? ''),
     ].join('|');
   }
 
@@ -223,7 +251,7 @@ class NutritionFoodSearchRanking {
   static const int _aliasExact = 950;
   static const int _prefix = 820;
   static const int _token = 680;
-  static const int _substring = 360;
+  static const int _substring = 220;
   static const int _remoteWeakToken = 175;
   static const int _fuzzy = 300;
   static const int _localityBoost = 35;
@@ -282,7 +310,7 @@ class NutritionFoodSearchRanking {
     String normalizedQuery,
     List<String> queryVariants,
   ) {
-    final name = NutritionFoodSearchVocabulary.normalize(candidate.displayName);
+    final name = candidate.searchableText;
     if (name.isEmpty) return const _Evaluation.none();
     final nameTokens = _tokens(name);
     final originalTokens = _tokens(normalizedQuery);
@@ -352,7 +380,8 @@ class NutritionFoodSearchRanking {
           variantTokens.length == 1 &&
           variant.length <= 4 &&
           _brandContainsQuery(candidate.brand, variant) &&
-          !nameTokens.first.contains(variant)) {
+          !_brandStartsWithQuery(candidate.brand, variant) &&
+          !_displayNameStartsWithQuery(candidate.displayName, variant)) {
         return const _Evaluation(
           match: NutritionFoodSearchMatch.substring,
           lexicalScore: _remoteWeakToken,
@@ -561,6 +590,21 @@ class NutritionFoodSearchRanking {
         : NutritionFoodSearchVocabulary.normalize(brand);
     return cleanBrand.isNotEmpty &&
         _tokens(cleanBrand).any((token) => token == query);
+  }
+
+  static bool _brandStartsWithQuery(String? brand, String query) {
+    final cleanBrand = brand == null
+        ? ''
+        : NutritionFoodSearchVocabulary.normalize(brand);
+    final tokens = _tokens(cleanBrand);
+    return tokens.isNotEmpty && tokens.first == query;
+  }
+
+  static bool _displayNameStartsWithQuery(String displayName, String query) {
+    final tokens = _tokens(
+      NutritionFoodSearchVocabulary.normalize(displayName),
+    );
+    return tokens.isNotEmpty && tokens.first.startsWith(query);
   }
 }
 

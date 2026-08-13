@@ -415,6 +415,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         frequency[legacyKey] = item.frequencyCount;
         recent.add(legacyKey);
       }
+      final providerKey = _providerHistoryKey(sourceReference);
+      if (providerKey != null) {
+        frequency[providerKey] = item.frequencyCount;
+        recent.add(providerKey);
+      }
     }
     for (final item in _recentResults) {
       final key = 'canonical::legacy-food-item::${item.id}';
@@ -425,6 +430,20 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       frequencyByIdentity: frequency,
       recentIdentities: recent,
     );
+  }
+
+  String? _providerHistoryKey(String? sourceReference) {
+    final reference = sourceReference?.trim();
+    if (reference == null || reference.isEmpty) return null;
+    for (final prefix in const [
+      'open-food-facts:barcode:',
+      'open-food-facts:product:',
+    ]) {
+      if (!reference.startsWith(prefix)) continue;
+      final providerId = reference.substring(prefix.length).trim();
+      return providerId.isEmpty ? null : 'provider::$providerId';
+    }
+    return null;
   }
 
   void _rebuildSearchRanking(String query) {
@@ -457,13 +476,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         // A single retrieval-vocabulary expansion must not block the others.
       }
     }
-    if (byId.isEmpty && normalized.length >= 3) {
+    if (normalized.length >= 4) {
       final firstToken = normalized.split(' ').first;
-      final prefix = firstToken.substring(
-        0,
-        firstToken.length < 3 ? firstToken.length : 3,
-      );
-      if (prefix.isNotEmpty) {
+      if (firstToken.length >= 3) {
+        final prefix = firstToken.substring(0, 3);
         try {
           for (final item in await repository.searchFoodLocal(prefix)) {
             byId[item.id] = item;
@@ -505,12 +521,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       _onlineResults = [];
       _rankedSearchResults = [];
     });
+    unawaited(_loadCustomSearchResults(query, generation));
 
     final local = await _loadLocalSearchResults(query);
     if (!mounted || generation != _searchGeneration) return;
     setState(() {
       _localResults = local;
-      _canonicalResults = [];
       _rebuildSearchRanking(query);
       _searching = false;
       _searchingOnline = true;
@@ -549,27 +565,16 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _onlineSearchCancelToken = null;
       }
     }
-    if (local.isEmpty &&
-        mounted &&
-        generation == _searchGeneration &&
-        _onlineResults.isEmpty) {
-      await _loadCanonicalSearchResults(query, generation);
-    }
   }
 
-  Future<void> _loadCanonicalSearchResults(String query, int generation) async {
+  Future<void> _loadCustomSearchResults(String query, int generation) async {
     try {
       final catalog = await ref.read(
         nutritionFoodCatalogRepositoryProvider.future,
       );
-      final canonical = (await catalog.search(query: query))
-          .where(
-            (option) =>
-                option.sourceType == 'user' &&
-                option.sourceReference?.startsWith('user-custom-food::') ==
-                    true,
-          )
-          .toList(growable: false);
+      final canonical = await catalog.searchCustomFoods(
+        queries: NutritionFoodSearchVocabulary.expand(query),
+      );
       if (!mounted || generation != _searchGeneration) return;
       setState(() {
         _canonicalResults = canonical;
@@ -1982,36 +1987,23 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     children: [
       if (_isOnlineSearchOffline)
         ConsumerStatusRow(
-          label: _localResults.isNotEmpty
-              ? 'Showing available results'
+          label: _rankedSearchResults.isNotEmpty
+              ? 'Showing matching foods'
               : 'Online search unavailable',
-          detail: _localResults.isNotEmpty
+          detail: _rankedSearchResults.isNotEmpty
               ? 'Online results are temporarily unavailable.'
               : _onlineFailureMessage ?? 'Try again or choose from Recent.',
-          error: _localResults.isEmpty,
+          error: _rankedSearchResults.isEmpty,
           onRetry: () => _performSearch(_searchController.text),
         ),
       if (_rankedSearchResults.isNotEmpty) ...[
-        if (_rankedSearchResults.any(
-              (result) =>
-                  result.candidate.source != NutritionFoodSearchSource.remote,
-            ) &&
-            _rankedSearchResults.any(
-              (result) =>
-                  result.candidate.source == NutritionFoodSearchSource.remote,
-            ))
-          _sectionHeader(title: 'Best matches')
-        else if (_rankedSearchResults.first.candidate.source ==
-            NutritionFoodSearchSource.remote)
-          _sectionHeader(title: 'More results')
-        else
-          _sectionHeader(title: 'Foods on this device'),
+        _sectionHeader(title: 'Search results'),
         ..._rankedSearchResults.map(_buildRankedSearchRow),
       ],
       if (_searchingOnline)
         const ConsumerStatusRow(
-          label: 'Searching more foods',
-          detail: 'Foods on this device are ready to use.',
+          label: 'Searching for more matches',
+          detail: 'Matching foods are ready to use.',
           loading: true,
         ),
       if (!_searchingOnline &&
@@ -2139,16 +2131,37 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final energy = _optionFactLabel(option, 'energy', 'kcal', 0);
     final protein = _optionFactLabel(option, 'protein', 'g protein', 1);
     final brand = option.brand?.trim();
+    final isCustom =
+        option.sourceType == 'user' || option.sourceType == 'user_entered';
     final identityLabel = brand == null || brand.isEmpty
         ? option.displayName
         : '$brand ${option.displayName}';
+    final title = brand == null || brand.isEmpty
+        ? Text(option.displayName, maxLines: 2, overflow: TextOverflow.ellipsis)
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                option.displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                brand,
+                style: B05Typography.caption(context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          );
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Semantics(
         container: true,
         explicitChildNodes: true,
         button: true,
-        label: '$identityLabel, $energy, $protein',
+        label:
+            '$identityLabel${isCustom ? ', custom food' : ''}, $energy, $protein',
         hint:
             'Tap Add to log the listed serving, or open to adjust the amount.',
         child: ListTile(
@@ -2160,28 +2173,26 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
               onChanged: (_) => _toggleCanonicalSelection(option),
             ),
           ),
-          title: brand == null || brand.isEmpty
-              ? Text(
-                  option.displayName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      option.displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+          title: Row(
+            children: [
+              Expanded(child: title),
+              if (isCustom)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Chip(
+                    label: const Text('Custom'),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    labelStyle: TextStyle(
+                      color: context.b05Colors.success.foreground,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
                     ),
-                    Text(
-                      brand,
-                      style: B05Typography.caption(context),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    backgroundColor: context.b05Colors.success.container,
+                  ),
                 ),
+            ],
+          ),
           subtitle: Text(
             '${_quantityUnitLabel(option.baseQuantity, option: option)} · $energy · $protein',
             maxLines: 2,
@@ -2627,6 +2638,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final serving =
         '${_formatProviderNumber(food.servingSize)} ${food.servingUnit}';
     final brand = food.brand?.trim();
+    final packageQuantity = food.packageQuantity?.trim();
+    final packageDetail = packageQuantity == null || packageQuantity.isEmpty
+        ? ''
+        : ' · $packageQuantity pack';
     final identityLabel = brand == null || brand.isEmpty
         ? food.name
         : '$brand ${food.name}';
@@ -2641,7 +2656,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         explicitChildNodes: true,
         button: true,
         label:
-            '$identityLabel, ${_formatProviderValue(food.calories, 'kcal')}, $serving',
+            '$identityLabel, ${_formatProviderValue(food.calories, 'kcal')}$packageDetail, $serving',
         hint:
             'Tap Add to use a supported serving or open to adjust the amount.',
         child: ListTile(
@@ -2678,7 +2693,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   ],
                 ),
           subtitle: Text(
-            '${_formatProviderValue(food.calories, 'kcal')} · ${_formatProviderValue(food.protein, 'g protein')} · $serving',
+            '${_formatProviderValue(food.calories, 'kcal')} · ${_formatProviderValue(food.protein, 'g protein')} · $serving$packageDetail',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),

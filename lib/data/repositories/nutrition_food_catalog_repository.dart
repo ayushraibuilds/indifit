@@ -355,6 +355,44 @@ class NutritionFoodCatalogRepository {
     return List.unmodifiable(result);
   }
 
+  /// Retrieves user-created canonical foods for active discovery without
+  /// adapting the full legacy catalogue on each keystroke. The caller supplies
+  /// retrieval-only variants; identity and nutrient facts remain unchanged.
+  Future<List<NutritionFoodOption>> searchCustomFoods({
+    required Iterable<String> queries,
+  }) async {
+    final terms = queries
+        .map((query) => query.trim().toLowerCase())
+        .where((query) => query.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (terms.isEmpty) return const [];
+
+    final rows =
+        await (_db.select(_db.nutritionFoods)
+              ..where((table) {
+                Expression<bool> matches = table.displayName.lower().contains(
+                  terms.first,
+                );
+                for (final term in terms.skip(1)) {
+                  matches = matches | table.displayName.lower().contains(term);
+                }
+                return table.lifecycle.equals('active') &
+                    table.sourceType.equals('user') &
+                    matches;
+              })
+              ..orderBy([
+                (table) => OrderingTerm(expression: table.displayName),
+              ]))
+            .get();
+    final options = <NutritionFoodOption>[];
+    for (final row in rows) {
+      final option = await getOption(row.id);
+      if (option != null) options.add(option);
+    }
+    return List.unmodifiable(options);
+  }
+
   Future<String> _legacyIdentity(FoodItem item) async {
     final mapping = await (_db.select(
       _db.nutritionLegacyFoodMappings,
