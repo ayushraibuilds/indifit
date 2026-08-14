@@ -17,6 +17,10 @@ class SavedMealDisplayItem {
   final double? estimatedCalories;
   final double? estimatedProteinG;
   final String summary;
+  final bool hasPartialNutrition;
+  final bool requiresPartialAcknowledgement;
+  final String? unavailableCode;
+  final String? unavailableMessage;
 
   const SavedMealDisplayItem({
     required this.draft,
@@ -24,7 +28,13 @@ class SavedMealDisplayItem {
     this.estimatedCalories,
     this.estimatedProteinG,
     required this.summary,
+    this.hasPartialNutrition = false,
+    this.requiresPartialAcknowledgement = false,
+    this.unavailableCode,
+    this.unavailableMessage,
   });
+
+  bool get isLoggable => unavailableMessage == null;
 }
 
 class SavedMealsState {
@@ -72,15 +82,22 @@ const Object _savedMealsUnset = Object();
 class SavedMealsController extends StateNotifier<SavedMealsState> {
   final Future<NutritionThaliRepository> _thaliRepoFuture;
   final String _userId;
+  final Uuid _uuid;
+  var _loadGeneration = 0;
+  Future<NutritionConsumptionSnapshot?>? _inFlightLog;
+  _SavedMealFinalization? _pendingFinalization;
 
   SavedMealsController({
     required Future<NutritionThaliRepository> thaliRepoFuture,
     required String userId,
+    Uuid? uuid,
   }) : _thaliRepoFuture = thaliRepoFuture,
        _userId = userId,
+       _uuid = uuid ?? const Uuid(),
        super(const SavedMealsState());
 
   Future<void> loadSavedMeals({String query = ''}) async {
+    final generation = ++_loadGeneration;
     state = state.copyWith(
       status: SavedMealsStatus.loading,
       query: query,
@@ -109,16 +126,28 @@ class SavedMealsController extends StateNotifier<SavedMealsState> {
 
         double? calories;
         double? protein;
+        var hasPartialNutrition = false;
+        var requiresPartialAcknowledgement = false;
+        String? unavailableCode;
+        String? unavailableMessage;
         try {
           final preview = await thaliRepo.preview(draft: draft);
+          if (generation != _loadGeneration) return;
           final energy =
               preview.aggregate.facts['energy']?.point?.value.asDouble;
           final prot =
               preview.aggregate.facts['protein']?.point?.value.asDouble;
           calories = energy;
           protein = prot;
-        } catch (_) {
-          // Preview is optional for card summary
+          hasPartialNutrition =
+              preview.isPartial ||
+              preview.isUnknown ||
+              preview.hasUnresolvedInputs;
+          requiresPartialAcknowledgement = _requiresAcknowledgementFor(preview);
+        } catch (error) {
+          unavailableCode = _errorCode(error);
+          unavailableMessage =
+              'This saved meal needs attention before it can be logged.';
         }
 
         displayItems.add(
@@ -128,18 +157,26 @@ class SavedMealsController extends StateNotifier<SavedMealsState> {
             estimatedCalories: calories,
             estimatedProteinG: protein,
             summary: summary.isEmpty ? 'No items' : summary,
+            hasPartialNutrition: hasPartialNutrition,
+            requiresPartialAcknowledgement: requiresPartialAcknowledgement,
+            unavailableCode: unavailableCode,
+            unavailableMessage: unavailableMessage,
           ),
         );
       }
+
+      if (generation != _loadGeneration) return;
 
       state = state.copyWith(
         status: SavedMealsStatus.ready,
         meals: displayItems,
       );
-    } catch (e) {
+    } catch (error) {
+      if (generation != _loadGeneration) return;
       state = state.copyWith(
         status: SavedMealsStatus.failure,
         errorMessage: 'Could not load saved meals.',
+        errorCode: _errorCode(error),
       );
     }
   }
@@ -147,40 +184,87 @@ class SavedMealsController extends StateNotifier<SavedMealsState> {
   Future<NutritionConsumptionSnapshot?> logSavedMeal({
     required NutritionThaliDraft draft,
     required String mealCategory,
-    DateTime? loggedAt,
-  }) async {
+    required DateTime loggedAt,
+    required String localDate,
+    required String timezoneId,
+    bool allowPartial = true,
+  }) {
+    final active = _inFlightLog;
+    if (active != null) return active;
+
+    final requested = _SavedMealFinalization(
+      draft: draft,
+      mealCategory: mealCategory,
+      loggedAt: loggedAt,
+      localDate: localDate,
+      timezoneId: timezoneId,
+      commandId: 'saved-meal-log::${_uuid.v4()}',
+      consumptionId: 'saved-meal-consumption::${_uuid.v4()}',
+    );
+    if (_pendingFinalization == null ||
+        !_pendingFinalization!.matches(requested)) {
+      _pendingFinalization = requested;
+    }
     state = state.copyWith(
       status: SavedMealsStatus.finalizing,
       errorMessage: null,
+      errorCode: null,
     );
+    final log = _finalizeSavedMeal(
+      _pendingFinalization!,
+      allowPartial: allowPartial,
+    );
+    _inFlightLog = log;
+    unawaited(
+      log.whenComplete(() {
+        if (identical(_inFlightLog, log)) _inFlightLog = null;
+      }),
+    );
+    return log;
+  }
 
+  Future<NutritionConsumptionSnapshot?> _finalizeSavedMeal(
+    _SavedMealFinalization finalization, {
+    required bool allowPartial,
+  }) async {
     try {
       final thaliRepo = await _thaliRepoFuture;
-      final preview = await thaliRepo.preview(draft: draft);
-      final when = (loggedAt ?? DateTime.now()).toUtc();
-      final localDate =
-          '${when.year.toString().padLeft(4, '0')}-${when.month.toString().padLeft(2, '0')}-${when.day.toString().padLeft(2, '0')}';
+      final preview = await thaliRepo.preview(draft: finalization.draft);
 
       final snapshot = await thaliRepo.finalize(
         preview: preview,
-        mealCategory: mealCategory,
-        loggedAt: when,
-        localDate: localDate,
-        timezoneId: 'UTC',
-        commandId: 'saved-meal-log::${const Uuid().v4()}',
-        consumptionId: 'saved-meal-consumption::${const Uuid().v4()}',
-        allowPartial: true,
+        mealCategory: finalization.mealCategory,
+        loggedAt: finalization.loggedAt,
+        localDate: finalization.localDate,
+        timezoneId: finalization.timezoneId,
+        commandId: finalization.commandId,
+        consumptionId: finalization.consumptionId,
+        allowPartial: allowPartial,
       );
 
       state = state.copyWith(
         status: SavedMealsStatus.success,
         lastSnapshot: snapshot,
       );
+      // A retry after a failure deliberately reuses the pending command, but a
+      // completed user action must not prevent a later intentional re-log of
+      // the same Saved Meal on the same selected day.
+      if (identical(_pendingFinalization, finalization)) {
+        _pendingFinalization = null;
+      }
       return snapshot;
-    } catch (e) {
+    } catch (error) {
+      final code = _errorCode(error);
       state = state.copyWith(
         status: SavedMealsStatus.failure,
-        errorMessage: 'Could not log saved meal.',
+        errorCode: code,
+        errorMessage: switch (code) {
+          'partial_confirmation_required' =>
+            'Review incomplete nutrition before logging this saved meal.',
+          'stale_thali_version' || 'stale_dependency' || 'stale_calibration' =>
+            'This saved meal changed. Refresh it before logging.',
+          _ => 'Could not log saved meal.',
+        },
       );
       return null;
     }
@@ -191,13 +275,55 @@ class SavedMealsController extends StateNotifier<SavedMealsState> {
       final thaliRepo = await _thaliRepoFuture;
       await thaliRepo.deleteThali(userId: _userId, thaliId: thaliId);
       await loadSavedMeals(query: state.query);
-    } catch (e) {
+    } catch (error) {
       state = state.copyWith(
         status: SavedMealsStatus.failure,
         errorMessage: 'Could not delete saved meal.',
+        errorCode: _errorCode(error),
       );
     }
   }
+
+  bool _requiresAcknowledgementFor(NutritionThaliPreview preview) {
+    const coreNutrients = {'energy', 'protein', 'carbohydrate', 'fat'};
+    return preview.hasUnresolvedInputs ||
+        coreNutrients.any((nutrientId) {
+          final fact = preview.aggregate.facts[nutrientId];
+          return fact == null || !fact.isAvailable;
+        });
+  }
+
+  String _errorCode(Object error) =>
+      error is NutritionThaliError ? error.code : 'saved_meal_action_failed';
+}
+
+class _SavedMealFinalization {
+  final NutritionThaliDraft draft;
+  final String mealCategory;
+  final DateTime loggedAt;
+  final String localDate;
+  final String timezoneId;
+  final String commandId;
+  final String consumptionId;
+
+  const _SavedMealFinalization({
+    required this.draft,
+    required this.mealCategory,
+    required this.loggedAt,
+    required this.localDate,
+    required this.timezoneId,
+    required this.commandId,
+    required this.consumptionId,
+  });
+
+  bool matches(_SavedMealFinalization other) =>
+      draft.id == other.draft.id &&
+      draft.currentVersion == other.draft.currentVersion &&
+      draft.compositionFingerprint == other.draft.compositionFingerprint &&
+      mealCategory == other.mealCategory &&
+      loggedAt.toUtc() == other.loggedAt.toUtc() &&
+      localDate == other.localDate &&
+      timezoneId == other.timezoneId;
 }
 
 final savedMealsControllerProvider =

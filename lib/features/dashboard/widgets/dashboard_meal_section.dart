@@ -269,11 +269,11 @@ class _MealCard extends ConsumerWidget {
                   color: AppColors.success,
                 ),
                 title: const Text(
-                  'Thali Builder (Multi-item)',
+                  'Build a meal',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text(
-                  'Compose a custom plate with running macros',
+                  'Compose a custom meal with running nutrition',
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -318,16 +318,18 @@ class _MealCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _saveAsTemplate(
+  Future<void> _saveAsReusableMeal(
     BuildContext context,
     WidgetRef ref,
-    List<FoodLog> mealLogs,
-  ) async {
+    List<NutritionHistoricalReadItem> snapshotItems, {
+    required int legacyItemCount,
+  }) async {
     await SaveLoggedMealHelper.saveLoggedMealAsReusable(
       context: context,
       ref: ref,
       mealCategory: type,
-      legacyFoodLogs: mealLogs,
+      snapshotItems: snapshotItems,
+      legacyItemCount: legacyItemCount,
     );
   }
 
@@ -507,6 +509,9 @@ class _MealCard extends ConsumerWidget {
     final canonicalRecords = unifiedDay?.records
         .where((record) => !record.isLegacy && record.mealCategory == type)
         .toList(growable: false);
+    final canonicalMealItems = <NutritionHistoricalReadItem>[
+      for (final record in canonicalRecords ?? const []) ...record.items,
+    ];
     var canonicalCalories = 0.0;
     var canonicalEnergyLower = 0.0;
     var canonicalEnergyUpper = 0.0;
@@ -709,22 +714,29 @@ class _MealCard extends ConsumerWidget {
             const Divider(color: AppColors.border, height: 20),
             Row(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _saveAsTemplate(context, ref, mealLogs),
-                    icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-                    label: const Text(
-                      'Save as template',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.border),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                if (canonicalMealItems.isNotEmpty) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _saveAsReusableMeal(
+                        context,
+                        ref,
+                        canonicalMealItems,
+                        legacyItemCount: mealLogs.length,
+                      ),
+                      icon: const Icon(Icons.bookmark_add_outlined, size: 16),
+                      label: const Text(
+                        'Save meal',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.border),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _copyMeal(context, ref, mealLogs),
@@ -742,6 +754,17 @@ class _MealCard extends ConsumerWidget {
                 ),
               ],
             ),
+            if (mealLogs.isNotEmpty && canonicalMealItems.isNotEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Older entries stay unchanged. Choose them again when creating a new saved meal.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
             const SizedBox(height: 8),
           ],
         ],

@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/theme/colors.dart';
+import '../dashboard/today_surface_controller.dart';
+import 'meal_templates_screen.dart';
 import 'saved_meal_editor_screen.dart';
 import 'saved_meals_controller.dart';
 import 'widgets/saved_meal_edit_before_log_sheet.dart';
@@ -44,14 +47,39 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
   }
 
   Future<void> _handleQuickLog(SavedMealDisplayItem item) async {
+    if (!item.isLoggable ||
+        ref.read(savedMealsControllerProvider).status ==
+            SavedMealsStatus.finalizing) {
+      return;
+    }
+    if (item.requiresPartialAcknowledgement) {
+      await _handleEditBeforeLog(item);
+      return;
+    }
+
+    final now = DateTime.now().toUtc();
+    final timezoneId = await ref
+        .read(localTimezoneServiceProvider)
+        .currentTimezoneId();
+    final dates = ref.read(localScheduleDateServiceProvider);
+    final localDate = widget.selectedDate == null
+        ? dates.localDateFor(now, timezoneId)
+        : _localDateKey(widget.selectedDate!);
+    final loggedAt = widget.selectedDate == null
+        ? now
+        : dates.instantForLocalDate(localDate, timezoneId);
+    if (!mounted) return;
     final controller = ref.read(savedMealsControllerProvider.notifier);
     final snapshot = await controller.logSavedMeal(
       draft: item.draft,
       mealCategory: widget.mealType,
-      loggedAt: widget.selectedDate ?? DateTime.now(),
+      loggedAt: loggedAt,
+      localDate: localDate,
+      timezoneId: timezoneId,
     );
 
     if (snapshot != null && mounted) {
+      _refreshTodaySurfaces();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -75,6 +103,8 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
         draft: item.draft,
         mealType: widget.mealType,
         selectedDate: widget.selectedDate ?? DateTime.now(),
+        hasPartialNutrition: item.hasPartialNutrition,
+        requiresPartialAcknowledgement: item.requiresPartialAcknowledgement,
       ),
     );
 
@@ -99,7 +129,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
       builder: (ctx) => AlertDialog(
         title: Text('Delete "${item.draft.name}"?'),
         content: const Text(
-          'This will remove this saved meal template. Past logged meals in your diary will remain untouched.',
+          'This will remove this saved meal. Past logged meals in your diary will remain untouched.',
         ),
         actions: [
           TextButton(
@@ -124,6 +154,34 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
           .deleteSavedMeal(item.draft.id);
     }
   }
+
+  Future<void> _showOlderMealTemplates() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MealTemplatesScreen(
+          mealType: widget.mealType,
+          targetDate: widget.selectedDate,
+          legacyReadOnly: true,
+        ),
+      ),
+    );
+    if (result == true && mounted) {
+      _refreshTodaySurfaces();
+      Navigator.pop(context, true);
+    }
+  }
+
+  void _refreshTodaySurfaces() {
+    ref.read(todayNutritionRevisionProvider.notifier).state++;
+    ref.invalidate(b04ProductionRecommendationContextProvider);
+    ref.invalidate(b04CurrentFoodControllerProvider);
+  }
+
+  static String _localDateKey(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +278,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                 : state.meals.isEmpty
                 ? _buildEmptyState()
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                     itemCount: state.meals.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
@@ -228,6 +286,20 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                       return _buildMealCard(context, meal, targetMealLabel);
                     },
                   ),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _showOlderMealTemplates,
+                  icon: const Icon(Icons.history_rounded, size: 18),
+                  label: const Text('View older saved meals'),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -311,6 +383,10 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
         ? '${meal.estimatedProteinG!.toStringAsFixed(1)}g P'
         : '— P';
 
+    final state = ref.watch(savedMealsControllerProvider);
+    final actionsDisabled =
+        !meal.isLoggable || state.status == SavedMealsStatus.finalizing;
+
     return Container(
       decoration: BoxDecoration(
         color: context.b05Colors.surfaceSubtle,
@@ -386,8 +462,9 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                   }
                 },
                 itemBuilder: (ctx) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'edit_before_log',
+                    enabled: !actionsDisabled,
                     child: Row(
                       children: [
                         Icon(Icons.tune_rounded, size: 18),
@@ -402,7 +479,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                       children: [
                         Icon(Icons.edit_rounded, size: 18),
                         SizedBox(width: 8),
-                        Text('Edit template'),
+                        Text('Edit saved meal'),
                       ],
                     ),
                   ),
@@ -439,53 +516,124 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
             overflow: TextOverflow.ellipsis,
           ),
 
+          if (meal.unavailableMessage != null) ...[
+            const SizedBox(height: 12),
+            _MealCardNotice(
+              icon: Icons.error_outline_rounded,
+              color: AppColors.danger,
+              message:
+                  '${meal.unavailableMessage!} Edit this saved meal to update its ingredients.',
+            ),
+          ] else if (meal.hasPartialNutrition) ...[
+            const SizedBox(height: 12),
+            _MealCardNotice(
+              icon: Icons.info_outline_rounded,
+              color: AppColors.warning,
+              message: meal.requiresPartialAcknowledgement
+                  ? 'Incomplete core nutrition: review before logging.'
+                  : 'Nutrition details are partial; unknown values stay unknown.',
+            ),
+          ],
+
           const SizedBox(height: 16),
 
           // Actions
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _handleEditBeforeLog(meal),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    'REVIEW PORTIONS',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton(
-                  onPressed: () => _handleQuickLog(meal),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    'LOG TO $targetMealLabel',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stackActions =
+                  constraints.maxWidth < 380 ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.25;
+              final review = OutlinedButton(
+                onPressed: actionsDisabled
+                    ? null
+                    : () => _handleEditBeforeLog(meal),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-              ),
-            ],
+                child: const Text(
+                  'REVIEW PORTIONS',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              );
+              final log = ElevatedButton(
+                onPressed: actionsDisabled ? null : () => _handleQuickLog(meal),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  meal.requiresPartialAcknowledgement
+                      ? 'REVIEW & LOG'
+                      : 'LOG TO $targetMealLabel',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              );
+              if (stackActions) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [review, const SizedBox(height: 8), log],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: review),
+                  const SizedBox(width: 10),
+                  Expanded(flex: 2, child: log),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
+}
+
+class _MealCardNotice extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String message;
+
+  const _MealCardNotice({
+    required this.icon,
+    required this.color,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(10),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            message,
+            style: TextStyle(
+              color: context.b05Colors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }

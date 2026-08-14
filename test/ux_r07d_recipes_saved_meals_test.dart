@@ -8,6 +8,7 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_calculation_service.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
+import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/nutrition_thali.dart' as thali;
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
@@ -19,6 +20,7 @@ import 'package:indifit/data/repositories/nutrition_household_measure_repository
 import 'package:indifit/data/repositories/nutrition_recipe_log_coordinator.dart';
 import 'package:indifit/data/repositories/nutrition_recipe_repository.dart';
 import 'package:indifit/data/repositories/nutrition_thali_repository.dart';
+import 'package:indifit/features/food_log/save_logged_meal_as_reusable_meal_helper.dart';
 import 'package:indifit/features/food_log/saved_meals_controller.dart';
 import 'package:indifit/features/food_log/saved_meals_screen.dart';
 import 'package:indifit/features/food_log/widgets/saved_meal_edit_before_log_sheet.dart';
@@ -35,6 +37,32 @@ NutritionRecipeIngredientInput _ingredient(String id, String foodId) =>
       foodId: foodId,
       quantity: _grams('100'),
     );
+
+NutritionHistoricalReadItem _snapshotItem({
+  required String stableId,
+  required int position,
+  required String displayLabel,
+  required String? foodId,
+  required String? recipeVersionId,
+  required Quantity quantity,
+}) => NutritionHistoricalReadItem(
+  stableId: stableId,
+  position: position,
+  sourceType: NutritionHistoricalSourceType.canonicalSnapshot.stableId,
+  sourceReference: null,
+  displayLabel: displayLabel,
+  foodId: foodId,
+  recipeVersionId: recipeVersionId,
+  quantity: NutritionHistoricalQuantity(
+    storedAmount: quantity.amount.asDouble,
+    storedUnit: quantity.unit.name,
+    quantity: quantity,
+    state: NutritionHistoricalQuantityState.typed,
+    issues: const [],
+  ),
+  facts: const <String, NutrientFact>{},
+  issues: const [],
+);
 
 Future<void> _insertFood(
   AppDatabase db,
@@ -323,6 +351,154 @@ void main() {
 
   group('R07D-3 Saved Meal Lifecycle, Fast Re-log, and Edit-Before-Log', () {
     test(
+      'Saving a logged meal preserves typed food and recipe IDs, order, and duplicates',
+      () {
+        final recipeServing = Quantity.serving(
+          amount: '1',
+          definition: const ServingDefinitionReference(
+            id: 'recipe-serving-v1',
+            revision: 'v1',
+            source: 'recipe_version',
+          ),
+        );
+        final components =
+            SaveLoggedMealHelper.reusableComponentsFromSnapshotItems([
+              _snapshotItem(
+                stableId: 'snapshot-food-1',
+                position: 0,
+                displayLabel: 'Paneer',
+                foodId: 'food::paneer',
+                recipeVersionId: null,
+                quantity: _grams('100'),
+              ),
+              _snapshotItem(
+                stableId: 'snapshot-recipe-v1',
+                position: 1,
+                displayLabel: 'Paneer',
+                foodId: null,
+                recipeVersionId: 'recipe::paneer-v1',
+                quantity: recipeServing,
+              ),
+              _snapshotItem(
+                stableId: 'snapshot-food-2',
+                position: 2,
+                displayLabel: 'Paneer',
+                foodId: 'food::paneer',
+                recipeVersionId: null,
+                quantity: _grams('50'),
+              ),
+            ]);
+
+        expect(components, hasLength(3));
+        expect(components.map((item) => item.position), [0, 1, 2]);
+        expect(components[0].foodId, 'food::paneer');
+        expect(components[0].recipeVersionId, isNull);
+        expect(components[1].foodId, isNull);
+        expect(components[1].recipeVersionId, 'recipe::paneer-v1');
+        expect(
+          components[1].quantity.context.servingDefinition?.id,
+          'recipe-serving-v1',
+        );
+        expect(components[2].foodId, 'food::paneer');
+        expect(components[2].quantity.amount.asDouble, 50);
+      },
+    );
+
+    test(
+      'Saved meal remains pinned after a successor and becomes actionable-unavailable after archive',
+      () async {
+        final recipeDraft = await recipeRepo.createRecipe(
+          userId: kLocalNutritionUserScopeId,
+          recipeId: 'recipe::pinned-curry',
+          versionId: 'recipe::pinned-curry-v1',
+          name: 'Pinned Curry',
+          ingredients: [_ingredient('pinned-curry-ingredient', 'food::dal')],
+          yieldQuantity: _grams('200'),
+          servingDefinition: NutritionRecipeServingDefinition(
+            id: 'pinned-curry-serving',
+            revision: 'v1',
+            count: QuantityAmount.fromString('2'),
+          ),
+        );
+        final versionOne = await recipeRepo.publishDraft(
+          recipeId: recipeDraft.recipe.id,
+          draftVersionId: recipeDraft.version.id,
+        );
+        final savedMeal = await thaliRepo.saveDraft(
+          thali.NutritionThaliDraft(
+            id: 'thali::pinned-recipe-meal',
+            userId: kLocalNutritionUserScopeId,
+            name: 'Pinned recipe meal',
+            description: null,
+            lifecycle: 'active',
+            currentVersion: 1,
+            createdAtUtc: DateTime.utc(2026, 8, 14),
+            updatedAtUtc: DateTime.utc(2026, 8, 14),
+            items: [
+              thali.NutritionThaliItem(
+                id: 'pinned-recipe-item',
+                position: 0,
+                source: thali.NutritionThaliItemSource.recipe,
+                foodId: null,
+                recipeVersionId: versionOne.id,
+                quantity: Quantity.serving(
+                  amount: '1',
+                  definition: ServingDefinitionReference(
+                    id: 'pinned-curry-serving',
+                    revision: 'v1',
+                    source: 'recipe_version',
+                  ),
+                ),
+                measureId: null,
+                optional: false,
+                notes: null,
+                displayLabel: 'Pinned Curry',
+              ),
+            ],
+          ),
+        );
+
+        final successor = await recipeRepo.createSuccessorDraft(
+          recipeId: recipeDraft.recipe.id,
+          versionId: 'recipe::pinned-curry-v2',
+        );
+        final versionTwo = await recipeRepo.publishDraft(
+          recipeId: recipeDraft.recipe.id,
+          draftVersionId: successor.version.id,
+        );
+
+        final successorPreview = await thaliRepo.preview(draft: savedMeal);
+        final successorSnapshot = await thaliRepo.finalize(
+          preview: successorPreview,
+          mealCategory: 'lunch',
+          loggedAt: DateTime.utc(2026, 8, 14, 6),
+          localDate: '2026-08-14',
+          timezoneId: 'Asia/Kolkata',
+          commandId: 'pinned-recipe-after-successor',
+          consumptionId: 'pinned-recipe-after-successor',
+          allowPartial: true,
+        );
+        expect(successorSnapshot.items.single.recipeVersionId, versionOne.id);
+        expect(
+          successorSnapshot.items.single.recipeVersionId,
+          isNot(versionTwo.id),
+        );
+
+        await recipeRepo.archiveRecipe(recipeDraft.recipe.id);
+        await expectLater(
+          thaliRepo.preview(draft: savedMeal),
+          throwsA(
+            isA<thali.NutritionThaliError>().having(
+              (error) => error.code,
+              'code',
+              'archived_recipe',
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
       'Create saved meal with multiple foods, 1-tap fast re-log, and verify snapshot',
       () async {
         final draft = thali.NutritionThaliDraft(
@@ -408,9 +584,8 @@ void main() {
     );
 
     test(
-      'Edit-before-log temporary variation does NOT mutate saved meal template',
+      'Edit-before-log writes a transient variation without creating or mutating a saved meal',
       () async {
-        // 1. Save original meal template with 100g Paneer
         final originalDraft = thali.NutritionThaliDraft(
           id: 'thali::post-workout',
           userId: kLocalNutritionUserScopeId,
@@ -438,21 +613,20 @@ void main() {
             ),
           ],
         );
-        await thaliRepo.saveDraft(originalDraft);
+        final savedDraft = await thaliRepo.saveDraft(originalDraft);
 
-        // 2. User modifies portion for today only: 200g (2.0x)
-        final tempModifiedDraft = thali.NutritionThaliDraft(
-          id: 'thali::temp-variation',
+        final variationDraft = thali.NutritionThaliDraft(
+          id: savedDraft.id,
           userId: kLocalNutritionUserScopeId,
-          name: originalDraft.name,
-          description: originalDraft.description,
+          name: savedDraft.name,
+          description: savedDraft.description,
           lifecycle: 'active',
-          currentVersion: 1,
-          createdAtUtc: DateTime.now().toUtc(),
-          updatedAtUtc: DateTime.now().toUtc(),
+          currentVersion: savedDraft.currentVersion,
+          createdAtUtc: savedDraft.createdAtUtc,
+          updatedAtUtc: savedDraft.updatedAtUtc,
           items: [
             thali.NutritionThaliItem(
-              id: 'item-temp-1',
+              id: 'item-pw-1',
               position: 0,
               source: thali.NutritionThaliItemSource.food,
               foodId: 'food::paneer',
@@ -469,29 +643,36 @@ void main() {
           ],
         );
 
-        await thaliRepo.saveDraft(tempModifiedDraft);
-        final tempPreview = await thaliRepo.preview(draft: tempModifiedDraft);
+        final variationPreview = await thaliRepo.preview(draft: variationDraft);
         final loggedSnapshot = await thaliRepo.finalize(
-          preview: tempPreview,
+          preview: variationPreview,
           mealCategory: 'dinner',
           loggedAt: DateTime.now().toUtc(),
           localDate: '2026-08-14',
           timezoneId: 'UTC',
-          commandId: 'cmd-temp-log',
-          consumptionId: 'snap-temp-log',
+          commandId: 'cmd-transient-variation-log',
+          consumptionId: 'snap-transient-variation-log',
           allowPartial: true,
+          allowCompositionVariation: true,
         );
 
-        // Verify today's logged snapshot has the doubled quantity (200g)
         expect(loggedSnapshot.items.first.quantity.amount.asDouble, 200.0);
+        final requestEvidence =
+            loggedSnapshot.lineage.evidence['request_evidence'] as Map;
+        expect(requestEvidence['temporary_variation'], isTrue);
 
-        // 3. Verify the original template remains strictly at 100g
         final template = await thaliRepo.getDraft(
           userId: kLocalNutritionUserScopeId,
           thaliId: 'thali::post-workout',
         );
         expect(template, isNotNull);
         expect(template!.items.first.quantity.amount.asDouble, 100.0);
+        final savedMeals = await thaliRepo.listDrafts(
+          userId: kLocalNutritionUserScopeId,
+          includeArchived: false,
+        );
+        expect(savedMeals, hasLength(1));
+        expect(savedMeals.single.id, originalDraft.id);
       },
     );
 
@@ -608,13 +789,39 @@ void main() {
         expect(controller.state.meals.length, 1);
         expect(controller.state.meals.first.draft.name, 'High Protein Lunch');
 
-        // Log meal
-        final snapshot = await controller.logSavedMeal(
+        final firstLog = controller.logSavedMeal(
           draft: draft,
           mealCategory: 'lunch',
+          loggedAt: DateTime.utc(2026, 8, 14, 6),
+          localDate: '2026-08-14',
+          timezoneId: 'Asia/Kolkata',
         );
+        final secondLog = controller.logSavedMeal(
+          draft: draft,
+          mealCategory: 'lunch',
+          loggedAt: DateTime.utc(2026, 8, 14, 6),
+          localDate: '2026-08-14',
+          timezoneId: 'Asia/Kolkata',
+        );
+        final snapshots = await Future.wait([firstLog, secondLog]);
+        final snapshot = snapshots.first;
         expect(snapshot, isNotNull);
+        expect(snapshots.last?.id, snapshot?.id);
+        expect(snapshot?.localDate, '2026-08-14');
+        expect(snapshot?.timezoneId, 'Asia/Kolkata');
         expect(controller.state.status, SavedMealsStatus.success);
+
+        // A later intentional action is distinct from the concurrent
+        // double-tap. It must receive a fresh idempotency key and log again.
+        await Future<void>.delayed(Duration.zero);
+        final laterSnapshot = await controller.logSavedMeal(
+          draft: draft,
+          mealCategory: 'lunch',
+          loggedAt: DateTime.utc(2026, 8, 14, 6),
+          localDate: '2026-08-14',
+          timezoneId: 'Asia/Kolkata',
+        );
+        expect(laterSnapshot?.id, isNot(snapshot?.id));
 
         // Delete meal
         await controller.deleteSavedMeal(draft.id);
@@ -625,6 +832,9 @@ void main() {
     testWidgets(
       'SavedMealsScreen renders cards, macro chips, and survives large text',
       (tester) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
         final controller = SavedMealsController(
           thaliRepoFuture: Completer<NutritionThaliRepository>().future,
           userId: kLocalNutritionUserScopeId,
@@ -651,24 +861,31 @@ void main() {
               estimatedCalories: 450,
               estimatedProteinG: 35,
               summary: 'Tasty meal',
+              hasPartialNutrition: true,
             ),
           ],
         );
 
-        Widget buildApp({required double textScale}) => ProviderScope(
+        final container = ProviderContainer(
           overrides: [
             savedMealsControllerProvider.overrideWith((ref) => controller),
           ],
-          child: MaterialApp(
-            home: MediaQuery(
-              data: MediaQueryData(
-                size: const Size(320, 568),
-                textScaler: TextScaler.linear(textScale),
-              ),
-              child: const SavedMealsScreen(mealType: 'lunch'),
-            ),
-          ),
         );
+        addTearDown(container.dispose);
+
+        Widget buildApp({required double textScale}) =>
+            UncontrolledProviderScope(
+              container: container,
+              child: MaterialApp(
+                home: MediaQuery(
+                  data: MediaQueryData(
+                    size: const Size(320, 568),
+                    textScaler: TextScaler.linear(textScale),
+                  ),
+                  child: const SavedMealsScreen(mealType: 'lunch'),
+                ),
+              ),
+            );
 
         await tester.pumpWidget(buildApp(textScale: 1.0));
         await tester.pump();
@@ -676,12 +893,22 @@ void main() {
         expect(find.text('Screen Meal'), findsOneWidget);
         expect(find.text('LOG TO LUNCH'), findsOneWidget);
         expect(find.text('REVIEW PORTIONS'), findsOneWidget);
+        expect(
+          find.text(
+            'Nutrition details are partial; unknown values stay unknown.',
+          ),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
 
         await tester.pumpWidget(buildApp(textScale: 2.0));
         await tester.pump();
         expect(find.text('Screen Meal'), findsOneWidget);
         expect(tester.takeException(), isNull);
+        await expectLater(
+          find.byType(SavedMealsScreen),
+          matchesGoldenFile('goldens/ux_r07d_saved_meals_320_2x_light.png'),
+        );
       },
     );
 

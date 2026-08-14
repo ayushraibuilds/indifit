@@ -9,17 +9,22 @@ import '../../../core/nutrition_thali.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/typed_quantities.dart';
+import '../../dashboard/today_surface_controller.dart';
 
 class SavedMealEditBeforeLogSheet extends ConsumerStatefulWidget {
   final NutritionThaliDraft draft;
   final String mealType;
   final DateTime selectedDate;
+  final bool hasPartialNutrition;
+  final bool requiresPartialAcknowledgement;
 
   const SavedMealEditBeforeLogSheet({
     super.key,
     required this.draft,
     required this.mealType,
     required this.selectedDate,
+    this.hasPartialNutrition = false,
+    this.requiresPartialAcknowledgement = false,
   });
 
   @override
@@ -33,12 +38,20 @@ class _SavedMealEditBeforeLogSheetState
   final Set<String> _enabledItemIds = {};
   final Map<String, double> _quantityMultipliers = {};
   bool _isCommitting = false;
+  late bool _partialAcknowledged;
+  late bool _hasPartialNutrition;
+  late bool _requiresPartialAcknowledgement;
+  String? _commandId;
+  String? _consumptionId;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _items = List.of(widget.draft.items);
+    _hasPartialNutrition = widget.hasPartialNutrition;
+    _requiresPartialAcknowledgement = widget.requiresPartialAcknowledgement;
+    _partialAcknowledged = false;
     for (final item in _items) {
       _enabledItemIds.add(item.id);
       _quantityMultipliers[item.id] = 1.0;
@@ -47,6 +60,7 @@ class _SavedMealEditBeforeLogSheetState
 
   void _adjustMultiplier(String itemId, double delta) {
     setState(() {
+      _resetPendingLog();
       final current = _quantityMultipliers[itemId] ?? 1.0;
       final next = (current + delta).clamp(0.25, 10.0);
       _quantityMultipliers[itemId] = (next * 100).roundToDouble() / 100;
@@ -55,6 +69,7 @@ class _SavedMealEditBeforeLogSheetState
 
   void _toggleItem(String itemId) {
     setState(() {
+      _resetPendingLog();
       if (_enabledItemIds.contains(itemId)) {
         if (_enabledItemIds.length > 1) {
           _enabledItemIds.remove(itemId);
@@ -75,7 +90,9 @@ class _SavedMealEditBeforeLogSheetState
     try {
       final thaliRepo = await ref.read(nutritionThaliRepositoryProvider.future);
 
-      // Build modified temporary draft without touching the original saved template
+      // Build a transient variation over the saved meal. It keeps the saved
+      // meal identity/version for snapshot lineage but is never persisted as a
+      // second reusable meal.
       final modifiedItems = <NutritionThaliItem>[];
       var position = 0;
       for (final item in _items) {
@@ -106,35 +123,64 @@ class _SavedMealEditBeforeLogSheetState
         );
       }
 
-      final tempDraft = NutritionThaliDraft(
-        id: 'temp-thali::${const Uuid().v4()}',
+      final variationDraft = NutritionThaliDraft(
+        id: widget.draft.id,
         userId: widget.draft.userId,
         name: widget.draft.name,
         description: widget.draft.description,
         lifecycle: 'active',
-        currentVersion: 1,
-        createdAtUtc: DateTime.now().toUtc(),
-        updatedAtUtc: DateTime.now().toUtc(),
+        currentVersion: widget.draft.currentVersion,
+        createdAtUtc: widget.draft.createdAtUtc,
+        updatedAtUtc: widget.draft.updatedAtUtc,
         items: modifiedItems,
       );
 
-      await thaliRepo.saveDraft(tempDraft);
-      final preview = await thaliRepo.preview(draft: tempDraft);
-      final when = widget.selectedDate.toUtc();
-      final localDate =
-          '${when.year.toString().padLeft(4, '0')}-${when.month.toString().padLeft(2, '0')}-${when.day.toString().padLeft(2, '0')}';
+      final preview = await thaliRepo.preview(draft: variationDraft);
+      final hasPartialNutrition =
+          preview.isPartial || preview.isUnknown || preview.hasUnresolvedInputs;
+      final requiresAcknowledgement = _requiresAcknowledgementFor(preview);
+      if (hasPartialNutrition != _hasPartialNutrition ||
+          requiresAcknowledgement != _requiresPartialAcknowledgement) {
+        if (!mounted) return;
+        setState(() {
+          _hasPartialNutrition = hasPartialNutrition;
+          _requiresPartialAcknowledgement = requiresAcknowledgement;
+        });
+      }
+      if (requiresAcknowledgement && !_partialAcknowledged) {
+        if (mounted) {
+          setState(() {
+            _isCommitting = false;
+            _errorMessage =
+                'Review the incomplete nutrition before logging this meal.';
+          });
+        }
+        return;
+      }
+
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      final dates = ref.read(localScheduleDateServiceProvider);
+      final localDate = _localDateKey(widget.selectedDate);
+      final loggedAt = dates.instantForLocalDate(localDate, timezoneId);
 
       final snapshot = await thaliRepo.finalize(
         preview: preview,
         mealCategory: widget.mealType,
-        loggedAt: when,
+        loggedAt: loggedAt,
         localDate: localDate,
-        timezoneId: 'UTC',
-        commandId: 'saved-meal-edit-log::${const Uuid().v4()}',
-        consumptionId: 'saved-meal-edit-consumption::${const Uuid().v4()}',
+        timezoneId: timezoneId,
+        commandId: _commandId ??= 'saved-meal-edit-log::${const Uuid().v4()}',
+        consumptionId: _consumptionId ??=
+            'saved-meal-edit-consumption::${const Uuid().v4()}',
         allowPartial: true,
+        allowCompositionVariation: true,
       );
 
+      ref.read(todayNutritionRevisionProvider.notifier).state++;
+      ref.invalidate(b04ProductionRecommendationContextProvider);
+      ref.invalidate(b04CurrentFoodControllerProvider);
       if (mounted && Navigator.canPop(context)) {
         Navigator.pop(context, snapshot);
       }
@@ -147,6 +193,26 @@ class _SavedMealEditBeforeLogSheetState
       }
     }
   }
+
+  bool _requiresAcknowledgementFor(NutritionThaliPreview preview) {
+    const coreNutrients = {'energy', 'protein', 'carbohydrate', 'fat'};
+    return preview.hasUnresolvedInputs ||
+        coreNutrients.any((nutrientId) {
+          final fact = preview.aggregate.facts[nutrientId];
+          return fact == null || !fact.isAvailable;
+        });
+  }
+
+  void _resetPendingLog() {
+    _commandId = null;
+    _consumptionId = null;
+    _partialAcknowledged = false;
+  }
+
+  static String _localDateKey(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +252,7 @@ class _SavedMealEditBeforeLogSheetState
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Review portions for today · Template remains unchanged',
+                            'Adjust for this log · Saved meal stays unchanged',
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: context.b05Colors.textSecondary,
@@ -229,6 +295,34 @@ class _SavedMealEditBeforeLogSheetState
                   ),
                 ),
 
+              if (_hasPartialNutrition)
+                Container(
+                  color: AppColors.warning.withValues(alpha: 0.1),
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                  child: Text(
+                    'Some nutrition details are incomplete and will stay marked as incomplete in this log.',
+                    style: TextStyle(
+                      color: context.b05Colors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              if (_requiresPartialAcknowledgement)
+                CheckboxListTile(
+                  value: _partialAcknowledged,
+                  onChanged: _isCommitting
+                      ? null
+                      : (value) => setState(
+                          () => _partialAcknowledged = value ?? false,
+                        ),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  title: const Text('Log with incomplete core nutrition'),
+                  subtitle: const Text(
+                    'Unknown values will remain unknown, not zero.',
+                  ),
+                ),
+
               // Items List
               Flexible(
                 child: ListView.separated(
@@ -250,67 +344,100 @@ class _SavedMealEditBeforeLogSheetState
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        children: [
-                          Checkbox(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final stackControls =
+                              constraints.maxWidth < 360 ||
+                              MediaQuery.textScalerOf(context).scale(1) > 1.25;
+                          final toggle = Checkbox(
                             value: isEnabled,
                             onChanged: (_) => _toggleItem(item.id),
                             activeColor: AppColors.primary,
-                          ),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          );
+                          final details = Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.displayLabel ?? 'Item',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: isEnabled
+                                      ? context.b05Colors.textPrimary
+                                      : context.b05Colors.textSecondary,
+                                  decoration: isEnabled
+                                      ? null
+                                      : TextDecoration.lineThrough,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                displayQty,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: context.b05Colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          );
+                          final controls = isEnabled
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      tooltip: 'Reduce portion',
+                                      icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        size: 22,
+                                      ),
+                                      color: AppColors.primary,
+                                      onPressed: () =>
+                                          _adjustMultiplier(item.id, -0.25),
+                                    ),
+                                    Text(
+                                      '${multiplier}x',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'Increase portion',
+                                      icon: const Icon(
+                                        Icons.add_circle_outline,
+                                        size: 22,
+                                      ),
+                                      color: AppColors.primary,
+                                      onPressed: () =>
+                                          _adjustMultiplier(item.id, 0.25),
+                                    ),
+                                  ],
+                                )
+                              : const SizedBox.shrink();
+                          if (stackControls) {
+                            return Column(
                               children: [
-                                Text(
-                                  item.displayLabel ?? 'Item',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: isEnabled
-                                        ? context.b05Colors.textPrimary
-                                        : context.b05Colors.textSecondary,
-                                    decoration: isEnabled
-                                        ? null
-                                        : TextDecoration.lineThrough,
-                                  ),
+                                Row(
+                                  children: [
+                                    toggle,
+                                    Expanded(child: details),
+                                  ],
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  displayQty,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: context.b05Colors.textSecondary,
+                                if (isEnabled)
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: controls,
                                   ),
-                                ),
                               ],
-                            ),
-                          ),
-                          if (isEnabled) ...[
-                            IconButton(
-                              icon: const Icon(
-                                Icons.remove_circle_outline,
-                                size: 22,
-                              ),
-                              color: AppColors.primary,
-                              onPressed: () =>
-                                  _adjustMultiplier(item.id, -0.25),
-                            ),
-                            Text(
-                              '${multiplier}x',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.add_circle_outline,
-                                size: 22,
-                              ),
-                              color: AppColors.primary,
-                              onPressed: () => _adjustMultiplier(item.id, 0.25),
-                            ),
-                          ],
-                        ],
+                            );
+                          }
+                          return Row(
+                            children: [
+                              toggle,
+                              Expanded(child: details),
+                              if (isEnabled) controls,
+                            ],
+                          );
+                        },
                       ),
                     );
                   },
