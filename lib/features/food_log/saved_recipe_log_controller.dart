@@ -358,6 +358,16 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
     }
   }
 
+  Future<void> deleteRecipe(String recipeId) async {
+    try {
+      final coordinator = await _coordinatorFuture;
+      await coordinator.archiveRecipe(recipeId);
+      await loadRecipes(query: state.query);
+    } catch (error) {
+      _fail(error, fallbackCode: 'recipe_delete_failed');
+    }
+  }
+
   Future<void> retryFinalize({
     required String mealCategory,
     required DateTime loggedAt,

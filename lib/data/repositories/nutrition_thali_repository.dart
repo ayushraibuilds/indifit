@@ -205,6 +205,70 @@ class NutritionThaliRepository {
     return _readDraft(row, owner);
   }
 
+  Future<void> deleteThali({
+    required String userId,
+    required String thaliId,
+  }) async {
+    final owner = userId.trim();
+    final id = thaliId.trim();
+    if (owner.isEmpty || id.isEmpty) {
+      throw const NutritionThaliValidationError(
+        'missing_identifiers',
+        'User ID and thali ID are required to delete a saved meal.',
+      );
+    }
+    final existing =
+        await (_db.select(_db.nutritionThalis)
+              ..where((row) => row.id.equals(id) & row.userId.equals(owner)))
+            .getSingleOrNull();
+    if (existing == null) {
+      throw const NutritionThaliNotFoundError(
+        'thali_not_found',
+        'The requested saved meal does not exist.',
+      );
+    }
+    await (_db.update(
+      _db.nutritionThalis,
+    )..where((row) => row.id.equals(id))).write(
+      database.NutritionThalisCompanion(
+        lifecycle: const Value('deleted'),
+        updatedAt: Value(_nowUtc()),
+      ),
+    );
+  }
+
+  Future<void> archiveThali({
+    required String userId,
+    required String thaliId,
+  }) async {
+    final owner = userId.trim();
+    final id = thaliId.trim();
+    if (owner.isEmpty || id.isEmpty) {
+      throw const NutritionThaliValidationError(
+        'missing_identifiers',
+        'User ID and thali ID are required to archive a saved meal.',
+      );
+    }
+    final existing =
+        await (_db.select(_db.nutritionThalis)
+              ..where((row) => row.id.equals(id) & row.userId.equals(owner)))
+            .getSingleOrNull();
+    if (existing == null) {
+      throw const NutritionThaliNotFoundError(
+        'thali_not_found',
+        'The requested saved meal does not exist.',
+      );
+    }
+    await (_db.update(
+      _db.nutritionThalis,
+    )..where((row) => row.id.equals(id))).write(
+      database.NutritionThalisCompanion(
+        lifecycle: const Value('archived'),
+        updatedAt: Value(_nowUtc()),
+      ),
+    );
+  }
+
   Future<NutritionThaliDraft> saveDraft(NutritionThaliDraft draft) async {
     _validateDraftOwner(draft);
     if (draft.lifecycle != 'active') {

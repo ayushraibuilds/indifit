@@ -170,6 +170,11 @@ class NutritionRecipeLogCoordinator {
        _consumption = consumption,
        _registry = registry;
 
+  NutritionRecipeRepository get recipes => _recipes;
+
+  Future<void> archiveRecipe(String recipeId) =>
+      _recipes.archiveRecipe(recipeId);
+
   Future<List<NutritionRecipeModel>> listSavedRecipes({
     required String userId,
     String query = '',

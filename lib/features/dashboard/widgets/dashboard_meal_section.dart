@@ -10,7 +10,9 @@ import '../../../data/repositories/food_repository.dart';
 import '../../food_log/ai_meal_logger_screen.dart';
 import '../../food_log/canonical_food_delete.dart';
 import '../../food_log/food_search_screen.dart';
-import '../../food_log/meal_templates_screen.dart';
+import '../../food_log/save_logged_meal_as_reusable_meal_helper.dart';
+import '../../food_log/saved_meals_screen.dart';
+import '../../food_log/saved_recipe_log_screen.dart';
 import '../../food_log/thali_builder_screen.dart';
 import '../../food_log/widgets/edit_food_log_sheet.dart';
 import '../dashboard_controller.dart';
@@ -217,7 +219,7 @@ class _MealCard extends ConsumerWidget {
                   color: AppColors.warning,
                 ),
                 title: const Text(
-                  'Meal Templates',
+                  'Saved Meals',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text('One-tap log your usual multi-item meals'),
@@ -226,7 +228,36 @@ class _MealCard extends ConsumerWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => MealTemplatesScreen(mealType: type),
+                      builder: (context) => SavedMealsScreen(
+                        mealType: type,
+                        selectedDate: selectedDate,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const Divider(color: AppColors.border),
+              ListTile(
+                leading: const Icon(
+                  Icons.menu_book_rounded,
+                  color: AppColors.primary,
+                ),
+                title: const Text(
+                  'Recipes',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Add or create a prepared recipe with yield & servings',
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SavedRecipeLogScreen(
+                        mealType: type,
+                        selectedDate: selectedDate,
+                      ),
                     ),
                   );
                 },
@@ -292,59 +323,12 @@ class _MealCard extends ConsumerWidget {
     WidgetRef ref,
     List<FoodLog> mealLogs,
   ) async {
-    final controller = TextEditingController(text: 'My $title');
-    final name = await showDialog<String>(
+    await SaveLoggedMealHelper.saveLoggedMealAsReusable(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('Save as meal template'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: 'Template name',
-            hintText: 'e.g. Office $title',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      ref: ref,
+      mealCategory: type,
+      legacyFoodLogs: mealLogs,
     );
-
-    if (name == null || name.isEmpty) return;
-
-    try {
-      await ref
-          .read(foodRepositoryProvider)
-          .saveMealTemplate(name: name, defaultMealType: type, items: mealLogs);
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved template “$name”'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    } catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Meal template could not be saved. Try again.'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
-    }
   }
 
   Future<void> _copyMeal(
@@ -633,8 +617,7 @@ class _MealCard extends ConsumerWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  MealTemplatesScreen(mealType: type),
+                              builder: (_) => SavedMealsScreen(mealType: type),
                             ),
                           );
                         },
@@ -643,7 +626,7 @@ class _MealCard extends ConsumerWidget {
                           size: 14,
                         ),
                         label: const Text(
-                          'Templates',
+                          'Saved meals',
                           style: TextStyle(fontSize: 12),
                         ),
                         style: TextButton.styleFrom(

@@ -237,6 +237,38 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                 if (context.mounted) unawaited(controller.loadRecipes());
               },
             ),
+            IconButton(
+              tooltip: 'Delete recipe',
+              icon: const Icon(Icons.delete_outline_rounded),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text('Delete "${recipe.name}"?'),
+                    content: const Text(
+                      'This recipe will be archived from future logging. Previously logged meals in your diary will remain untouched.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await controller.deleteRecipe(recipe.id);
+                }
+              },
+            ),
             const Icon(Icons.chevron_right_rounded),
           ],
         ),
