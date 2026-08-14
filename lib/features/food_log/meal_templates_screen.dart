@@ -13,12 +13,14 @@ class MealTemplatesScreen extends ConsumerStatefulWidget {
   final String? initialMealType;
   final String? mealType;
   final DateTime? targetDate;
+  final bool legacyReadOnly;
 
   const MealTemplatesScreen({
     super.key,
     this.initialMealType,
     this.mealType,
     this.targetDate,
+    this.legacyReadOnly = false,
   });
 
   String? get resolvedMealType => initialMealType ?? mealType;
@@ -60,7 +62,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
         setState(() => _isLogging = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Meal template could not be logged. Try again.'),
+            content: Text('Saved meal could not be logged. Try again.'),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -90,7 +92,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
       builder: (dlgCtx) => StatefulBuilder(
         builder: (context, setDlgState) => AlertDialog(
           title: const Text(
-            'Create Meal Template',
+            'Create Saved Meal',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           content: SingleChildScrollView(
@@ -100,7 +102,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                 TextField(
                   controller: nameController,
                   decoration: const InputDecoration(
-                    labelText: 'Template Name (e.g. Daily Lunch)',
+                    labelText: 'Saved Meal Name (e.g. Daily Lunch)',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -197,7 +199,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                 ref.invalidate(mealTemplatesProvider);
                 if (context.mounted) Navigator.pop(dlgCtx);
               },
-              child: const Text('Save Template'),
+              child: const Text('Save Saved Meal'),
             ),
           ],
         ),
@@ -211,15 +213,19 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Meal Templates'),
+        title: Text(
+          widget.legacyReadOnly ? 'Older Saved Meals' : 'My Saved Meals',
+        ),
         backgroundColor: AppColors.surface,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            onPressed: _showCreateTemplateDialog,
-          ),
-        ],
+        actions: widget.legacyReadOnly
+            ? null
+            : [
+                IconButton(
+                  icon: const Icon(Icons.add_rounded),
+                  onPressed: _showCreateTemplateDialog,
+                ),
+              ],
       ),
       body: templatesAsync.when(
         data: (templates) {
@@ -236,35 +242,41 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
                       color: AppColors.textMuted,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'No Saved Meal Templates',
+                    Text(
+                      widget.legacyReadOnly
+                          ? 'No older saved meals'
+                          : 'No Saved Meals',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Save your usual breakfast, lunch, or thali combinations for 1-tap logging.',
+                    Text(
+                      widget.legacyReadOnly
+                          ? 'Older saved meals are kept here for compatibility. New saved meals use the Saved Meals screen.'
+                          : 'Save your usual breakfast, lunch, or meal combinations for 1-tap logging.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _showCreateTemplateDialog,
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('Create Meal Template'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    if (!widget.legacyReadOnly) ...[
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _showCreateTemplateDialog,
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text('Create Saved Meal'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -365,7 +377,7 @@ class _MealTemplatesScreenState extends ConsumerState<MealTemplatesScreen> {
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
         error: (_, _) => const Center(
-          child: Text('Meal templates are unavailable. Try again later.'),
+          child: Text('Saved meals are unavailable. Try again later.'),
         ),
       ),
     );

@@ -29,7 +29,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    _nameController = TextEditingController(text: 'My Thali');
+    _nameController = TextEditingController(text: 'My Meal');
   }
 
   @override
@@ -56,7 +56,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Thali builder · ${widget.mealType.toUpperCase()}'),
+        title: Text('Build meal · ${widget.mealType.toUpperCase()}'),
         backgroundColor: AppColors.background,
         elevation: 0,
       ),
@@ -71,14 +71,14 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
     }
     if (state.status == NutritionThaliStatus.failure && state.draft == null) {
       return _FailurePanel(
-        message: state.errorMessage ?? 'The thali could not be loaded.',
+        message: state.errorMessage ?? 'The meal could not be loaded.',
         onRetry: () => _controller.retry(),
       );
     }
 
     final draft = state.draft;
     if (draft == null) {
-      return const Center(child: Text('No thali draft is available.'));
+      return const Center(child: Text('No meal draft is available.'));
     }
     final isBusy =
         state.status == NutritionThaliStatus.saving ||
@@ -98,7 +98,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
               _buildSearch(context, state, enabled: !isBusy),
               if (state.status == NutritionThaliStatus.failure)
                 _FailurePanel(
-                  message: state.errorMessage ?? 'The thali operation failed.',
+                  message: state.errorMessage ?? 'The meal operation failed.',
                   compact: true,
                   onRetry: () => _controller.retry(loggedAt: DateTime.now()),
                 ),
@@ -118,7 +118,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             _buildSearch(context, state, enabled: !isBusy),
             if (state.status == NutritionThaliStatus.failure)
               _FailurePanel(
-                message: state.errorMessage ?? 'The thali operation failed.',
+                message: state.errorMessage ?? 'The meal operation failed.',
                 compact: true,
                 onRetry: () => _controller.retry(loggedAt: DateTime.now()),
               ),
@@ -156,9 +156,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         final item = draft.items[index];
         final label =
             item.displayLabel ??
-            (item.source == NutritionThaliItemSource.food
-                ? 'Direct food'
-                : 'Saved recipe');
+            (item.source == NutritionThaliItemSource.food ? 'Food' : 'Recipe');
         return Card(
           key: ValueKey(item.id),
           margin: const EdgeInsets.only(bottom: 8),
@@ -173,7 +171,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             ),
             title: Text(label),
             subtitle: Text(
-              '${item.source == NutritionThaliItemSource.food ? 'Direct food' : 'Saved recipe version'} · ${_quantityLabel(item.quantity)}${_measureLabel(item, state)}',
+              '${item.source == NutritionThaliItemSource.food ? 'Food' : 'Recipe'} · ${_quantityLabel(item.quantity)}${_measureLabel(item, state)}',
             ),
             isThreeLine: true,
             trailing: Wrap(
@@ -262,7 +260,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             dense: true,
             leading: const Icon(Icons.restaurant_outlined),
             title: Text(option.displayName),
-            subtitle: const Text('Direct food · identity retained'),
+            subtitle: const Text('Food · identity retained'),
             trailing: const Icon(Icons.add_circle_outline),
             onTap: () => _controller.addFood(option),
           ),
@@ -271,9 +269,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
             dense: true,
             leading: const Icon(Icons.menu_book_outlined),
             title: Text(option.recipeName),
-            subtitle: Text(
-              'Saved recipe · version ${option.versionNumber} · ${_shortDate(option.versionUpdatedAtUtc)}',
-            ),
+            subtitle: const Text('Recipe'),
             trailing: const Icon(Icons.add_circle_outline),
             onTap: () => _controller.addRecipe(option),
           ),
@@ -317,7 +313,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                     NutritionThaliStatus.saving => 'Saving draft…',
                     NutritionThaliStatus.previewLoading =>
                       'Calculating preview…',
-                    NutritionThaliStatus.finalizing => 'Logging thali…',
+                    NutritionThaliStatus.finalizing => 'Logging meal…',
                     _ => 'Working…',
                   }),
                 ],
@@ -355,7 +351,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                 child: ElevatedButton.icon(
                   onPressed: enabled ? _finalize : null,
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Log complete thali'),
+                  label: const Text('Log complete meal'),
                 ),
               ),
             ),
@@ -393,7 +389,7 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('The thali could not be logged. Try again.'),
+            content: Text('The meal could not be logged. Try again.'),
           ),
         );
       }
@@ -723,9 +719,6 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
         NutritionConstraintOutcome.noKnownConflict => 'No detected conflict',
       };
 
-  String _shortDate(DateTime value) =>
-      '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
-
   void _showMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(
@@ -803,12 +796,12 @@ class _EmptyStateContent extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Text(
-              'Your thali is empty',
+              'Your meal is empty',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             SizedBox(height: 8),
             Text(
-              'Search for a direct food or add a saved recipe version. This is a free-form meal, not a recommendation.',
+              'Search for a food or add a saved recipe. This is a free-form meal, not a recommendation.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary),
             ),

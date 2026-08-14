@@ -32,6 +32,7 @@ import 'canonical_food_delete.dart';
 import 'custom_food_editor_screen.dart';
 import 'food_log_surface.dart';
 import 'meal_presentation_registry.dart';
+import 'saved_meals_screen.dart';
 import 'saved_recipe_log_screen.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
@@ -1929,24 +1930,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         ],
         const SizedBox(height: 16),
         _sectionHeader(
-          title: 'Saved',
-          subtitle: 'Keep recipes for meals you make often.',
+          title: 'Saved & recipes',
+          subtitle: 'Reusable meals and recipes you make often.',
         ),
         _buildNavigationCard(
           icon: Icons.bookmark_outline_rounded,
-          title: 'Saved recipes',
-          detail: 'Open, scale and add a published recipe.',
-          onTap: _openSavedRecipes,
-        ),
-        const SizedBox(height: 16),
-        _sectionHeader(
-          title: 'Recipes',
-          subtitle: 'Choose a complete meal and add it in a few taps.',
+          title: 'Saved meals',
+          detail: 'One-tap log your reusable meal combinations.',
+          onTap: _openSavedMeals,
         ),
         _buildNavigationCard(
           icon: Icons.menu_book_rounded,
-          title: 'Browse recipes',
-          detail: 'Find a recipe or create one from Food.',
+          title: 'Saved recipes',
+          detail: 'Find, scale or create a published recipe.',
           onTap: _openSavedRecipes,
         ),
         const SizedBox(height: 16),
@@ -2328,6 +2324,26 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         : days == 1
         ? 'last logged yesterday'
         : 'last logged $days days ago';
+  }
+
+  Future<void> _openSavedMeals() async {
+    final mealType = await _ensureMealContext();
+    if (mealType == null || !mounted) return;
+    final result = await Navigator.push<bool?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SavedMealsScreen(
+          mealType: mealType,
+          selectedDate: widget.selectedDate,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (result == true && widget.returnToParentOnSave) {
+      Navigator.pop(context, true);
+    } else if (result == true) {
+      await _retryRecentFoods();
+    }
   }
 
   Future<void> _openSavedRecipes() async {
