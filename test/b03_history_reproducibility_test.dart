@@ -169,6 +169,42 @@ void main() {
   );
 
   test(
+    'range daily totals preserve active history across requested dates',
+    () async {
+      await _insertFood(db, 'food-1', 'Range food');
+      final consumption = NutritionConsumptionRepository(
+        db: db,
+        registry: registry,
+      );
+      await consumption.finalizeConsumption(
+        _request(
+          registry: registry,
+          id: 'range-event',
+          commandId: 'range-command',
+          itemId: 'range-item',
+          protein: '20',
+        ),
+      );
+      final history = NutritionReadModelRepository(
+        db: db,
+        registry: registry,
+        canonicalRepository: consumption,
+        legacyUserId: 'user-1',
+      );
+
+      final totals = await history.dailyTotalsForLocalDates(
+        userId: 'user-1',
+        localDates: const ['2026-08-04', '2026-08-05'],
+      );
+
+      expect(totals.keys, containsAll(['2026-08-04', '2026-08-05']));
+      expect(totals['2026-08-04']!.recordIds, contains('range-event'));
+      expect(totals['2026-08-05']!.recordIds, isEmpty);
+      expect(totals['2026-08-04']!.totals.facts['protein']!.point, isNotNull);
+    },
+  );
+
+  test(
     'canonical history invalidations stay behind the read-model boundary',
     () async {
       await _insertFood(db, 'food-1', 'Watch food');

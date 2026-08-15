@@ -194,7 +194,186 @@ void main() {
     expect(snapshot.strengthSets!.single.loadKg, 90);
     expect(snapshot.strengthSets!.single.reps, 5);
     expect(snapshot.strengthSets!.single.loadBasis, 'totalExternal');
-    expect(snapshot.workouts!.single.totalVolumeKg, 4500);
+    expect(snapshot.workouts!.single.totalVolumeKg, 450);
+    expect(snapshot.workouts!.single.volumeIsTrustworthy, isTrue);
+    expect(snapshot.strengthExercises, hasLength(1));
+    final exerciseSummary = snapshot.strengthExercises!.single;
+    expect(exerciseSummary.exerciseName, 'Bench Press');
+    expect(exerciseSummary.latestSet.loadKg, 90);
+    expect(exerciseSummary.bestSet.loadKg, 90);
+  });
+
+  test(
+    'builds weekly trained dates and strength exercise comparisons',
+    () async {
+      await database
+          .into(database.exercises)
+          .insert(
+            ExercisesCompanion.insert(
+              stableId: const Value('squat'),
+              name: 'Back Squat',
+              muscleGroups: 'Legs',
+              equipment: 'Barbell',
+              difficulty: 'Advanced',
+              formCues: 'Depth',
+              commonMistakes: 'Knee cave',
+            ),
+          );
+
+      // Session 1: Aug 4 (Tuesday)
+      final session1 = await _insertSession(
+        database,
+        name: 'Leg Day 1',
+        completedAt: DateTime.utc(2026, 8, 4, 10),
+        activityType: 'strength',
+        volume: 5000,
+      );
+      await database
+          .into(database.performedExercises)
+          .insert(
+            PerformedExercisesCompanion.insert(
+              id: 'squat-p1',
+              sessionId: session1,
+              ordinal: 0,
+              actualExerciseId: 'squat',
+              actualExerciseNameSnapshot: 'Back Squat',
+              status: const Value('completed'),
+            ),
+          );
+      await database
+          .into(database.performedSets)
+          .insert(
+            PerformedSetsCompanion.insert(
+              id: 'set-s1',
+              performedExerciseId: 'squat-p1',
+              ordinal: 0,
+              role: 'working',
+              actualLoadKg: const Value(100),
+              actualLoadBasis: const Value('totalExternal'),
+              actualReps: const Value(5),
+            ),
+          );
+
+      // Session 2: Aug 7 (Friday)
+      final session2 = await _insertSession(
+        database,
+        name: 'Leg Day 2',
+        completedAt: DateTime.utc(2026, 8, 7, 10),
+        activityType: 'strength',
+        volume: 5250,
+      );
+      await database
+          .into(database.performedExercises)
+          .insert(
+            PerformedExercisesCompanion.insert(
+              id: 'squat-p2',
+              sessionId: session2,
+              ordinal: 0,
+              actualExerciseId: 'squat',
+              actualExerciseNameSnapshot: 'Back Squat',
+              status: const Value('completed'),
+            ),
+          );
+      await database
+          .into(database.performedSets)
+          .insert(
+            PerformedSetsCompanion.insert(
+              id: 'set-s2',
+              performedExerciseId: 'squat-p2',
+              ordinal: 0,
+              role: 'working',
+              actualLoadKg: const Value(105),
+              actualLoadBasis: const Value('totalExternal'),
+              actualReps: const Value(5),
+            ),
+          );
+
+      final snapshot = await repository.read(
+        nowUtc: DateTime.utc(2026, 8, 9, 12),
+        timezoneId: 'UTC',
+      );
+
+      expect(
+        snapshot.weeklyTrainedDates,
+        containsAll(['2026-08-04', '2026-08-07']),
+      );
+      expect(snapshot.strengthExercises, hasLength(1));
+      final squat = snapshot.strengthExercises!.single;
+      expect(squat.sessionCount, 2);
+      expect(squat.latestSet.loadKg, 105);
+      expect(squat.bestSet.loadKg, 105);
+      expect(squat.comparisonText, '+5 kg at 5 reps');
+    },
+  );
+
+  test('hides canonical volume when load basis is not comparable', () async {
+    await database
+        .into(database.exercises)
+        .insert(
+          ExercisesCompanion.insert(
+            stableId: const Value('mixed'),
+            name: 'Mixed Press',
+            muscleGroups: 'Chest',
+            equipment: 'Barbell',
+            difficulty: 'Intermediate',
+            formCues: 'Brace',
+            commonMistakes: 'Bounce',
+          ),
+        );
+    final sessionId = await _insertSession(
+      database,
+      name: 'Mixed basis day',
+      completedAt: DateTime.utc(2026, 8, 8, 10),
+      activityType: 'strength',
+      volume: 9999,
+    );
+    await database
+        .into(database.performedExercises)
+        .insert(
+          PerformedExercisesCompanion.insert(
+            id: 'mixed-exercise',
+            sessionId: sessionId,
+            ordinal: 0,
+            actualExerciseId: 'mixed',
+            actualExerciseNameSnapshot: 'Mixed Press',
+            status: const Value('completed'),
+          ),
+        );
+    await database
+        .into(database.performedSets)
+        .insert(
+          PerformedSetsCompanion.insert(
+            id: 'mixed-total',
+            performedExerciseId: 'mixed-exercise',
+            ordinal: 0,
+            role: 'working',
+            actualLoadKg: const Value(80),
+            actualLoadBasis: const Value('totalExternal'),
+            actualReps: const Value(5),
+          ),
+        );
+    await database
+        .into(database.performedSets)
+        .insert(
+          PerformedSetsCompanion.insert(
+            id: 'mixed-side',
+            performedExerciseId: 'mixed-exercise',
+            ordinal: 1,
+            role: 'working',
+            actualLoadKg: const Value(20),
+            actualLoadBasis: const Value('perSide'),
+            actualReps: const Value(5),
+          ),
+        );
+
+    final snapshot = await repository.read(
+      nowUtc: DateTime.utc(2026, 8, 9, 12),
+      timezoneId: 'UTC',
+    );
+
+    expect(snapshot.workouts!.single.totalVolumeKg, 0);
+    expect(snapshot.workouts!.single.volumeIsTrustworthy, isFalse);
+    expect(snapshot.strengthSets, hasLength(2));
   });
 }
 

@@ -75,42 +75,91 @@ class NutritionReadModelRepository {
     required String localDate,
   }) async {
     final normalizedDate = localDate.trim();
-    if (!_isIsoDate(normalizedDate)) {
-      throw const NutritionReadModelError(
-        'invalid_local_date',
-        'A local date must use the YYYY-MM-DD compatibility format.',
-      );
-    }
-    final records = await listHistory(userId: userId);
-    final superseded = _supersededCanonicalIds(records);
-    return records
-        .where(
-          (record) =>
-              record.localDate == normalizedDate &&
-              (record is! NutritionCanonicalSnapshotReadModel ||
-                  (!superseded.contains(record.stableId) &&
-                      !record.snapshot.isRetraction)),
-        )
-        .toList(growable: false);
+    _validateLocalDate(normalizedDate);
+    final records = await _activeRecordsForDates(
+      userId: userId,
+      localDates: {normalizedDate},
+    );
+    return records[normalizedDate] ?? const [];
   }
 
   Future<NutritionDailyReadModel> dailyTotals({
     required String userId,
     required String localDate,
   }) async {
+    final normalizedDate = localDate.trim();
+    _validateLocalDate(normalizedDate);
+    final records = await _activeRecordsForDates(
+      userId: userId,
+      localDates: {normalizedDate},
+    );
+    return _buildDailyReadModel(
+      userId: userId,
+      localDate: normalizedDate,
+      records: records[normalizedDate] ?? const [],
+    );
+  }
+
+  /// Reads several dashboard days through one unified history pass.
+  ///
+  /// Calling [dailyTotals] repeatedly would make each day scan the complete
+  /// immutable history and re-resolve correction lineage. Consumers that need
+  /// a range should use this method so the read boundary remains both
+  /// authoritative and bounded to one history read.
+  Future<Map<String, NutritionDailyReadModel>> dailyTotalsForLocalDates({
+    required String userId,
+    required Iterable<String> localDates,
+  }) async {
+    final normalizedDates = <String>{};
+    for (final localDate in localDates) {
+      final normalized = localDate.trim();
+      _validateLocalDate(normalized);
+      normalizedDates.add(normalized);
+    }
+    if (normalizedDates.isEmpty) return const {};
+
+    final records = await _activeRecordsForDates(
+      userId: userId,
+      localDates: normalizedDates,
+    );
+    return {
+      for (final localDate in normalizedDates)
+        localDate: _buildDailyReadModel(
+          userId: userId,
+          localDate: localDate,
+          records: records[localDate] ?? const [],
+        ),
+    };
+  }
+
+  Future<Map<String, List<NutritionHistoricalReadRecord>>>
+  _activeRecordsForDates({
+    required String userId,
+    required Set<String> localDates,
+  }) async {
     final allRecords = await listHistory(userId: userId);
     final superseded = _supersededCanonicalIds(allRecords);
-    final records = allRecords
-        .where(
-          (record) =>
-              record.localDate == localDate &&
-              // Canonical correction lineage must not hide a legacy row with
-              // the same text ID; history identity includes source type.
-              (record is! NutritionCanonicalSnapshotReadModel ||
-                  (!superseded.contains(record.stableId) &&
-                      !record.snapshot.isRetraction)),
-        )
-        .toList(growable: false);
+    final grouped = <String, List<NutritionHistoricalReadRecord>>{};
+    for (final record in allRecords) {
+      if (!localDates.contains(record.localDate)) continue;
+      if (record is NutritionCanonicalSnapshotReadModel &&
+          (superseded.contains(record.stableId) ||
+              record.snapshot.isRetraction)) {
+        continue;
+      }
+      grouped.putIfAbsent(record.localDate, () => []).add(record);
+    }
+    return {
+      for (final localDate in localDates)
+        localDate: List.unmodifiable(grouped[localDate] ?? const []),
+    };
+  }
+
+  NutritionDailyReadModel _buildDailyReadModel({
+    required String userId,
+    required String localDate,
+    required List<NutritionHistoricalReadRecord> records,
+  }) {
     final contributions = records.expand(
       (record) => record.items.expand((item) => item.facts.values),
     );
@@ -193,6 +242,15 @@ class NutritionReadModelRepository {
           record.snapshot.lineage.supersedesSnapshotId != null)
         record.snapshot.lineage.supersedesSnapshotId!,
   };
+
+  static void _validateLocalDate(String value) {
+    if (!_isIsoDate(value)) {
+      throw const NutritionReadModelError(
+        'invalid_local_date',
+        'A local date must use the YYYY-MM-DD compatibility format.',
+      );
+    }
+  }
 
   static bool _isIsoDate(String value) =>
       RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value) &&

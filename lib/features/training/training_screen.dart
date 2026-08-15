@@ -19,6 +19,7 @@ import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/routine_display_screen.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
+import 'workout_history_screen.dart';
 
 /// Read-only, presentation-ready data for the Training landing page.
 ///
@@ -394,6 +395,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           onOpenExercises: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ExerciseLibraryScreen()),
           ),
+          onOpenHistory: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen()),
+          ),
           onLogWorkout: () => _logWorkout(context, data),
         ),
       ),
@@ -489,6 +493,7 @@ class _TrainingLandingBody extends StatelessWidget {
     required this.onOpenPlan,
     required this.onOpenCalendar,
     required this.onOpenExercises,
+    required this.onOpenHistory,
     required this.onLogWorkout,
   });
 
@@ -501,6 +506,7 @@ class _TrainingLandingBody extends StatelessWidget {
   final VoidCallback onOpenPlan;
   final VoidCallback onOpenCalendar;
   final VoidCallback onOpenExercises;
+  final VoidCallback onOpenHistory;
   final VoidCallback onLogWorkout;
 
   @override
@@ -664,6 +670,18 @@ class _TrainingLandingBody extends StatelessWidget {
               ],
             ),
           ),
+        if (data.recentSessions.isNotEmpty) ...[
+          const SizedBox(height: B05Layout.space8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: B05ActionButton(
+              label: 'View all history',
+              icon: Icons.history_rounded,
+              emphasis: B05ActionEmphasis.tertiary,
+              onPressed: onOpenHistory,
+            ),
+          ),
+        ],
         const SizedBox(height: B05Layout.space20),
         _SectionLabel(label: 'RECENT'),
         const SizedBox(height: B05Layout.space8),
