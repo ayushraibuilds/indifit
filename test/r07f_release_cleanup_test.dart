@@ -73,6 +73,12 @@ void main() {
       'The current group is missing from the frozen draft',
       'Active burn',
       'approx 6.5 kcal',
+      // R07F-0 review additions: activity-creation jargon that leaked past
+      // the first sweep.
+      'Start typed draft',
+      'Offline-first typed activity',
+      'Required for every typed modality',
+      'Activity saved to typed history',
     ];
 
     test('no forbidden consumer strings remain in production sources', () {

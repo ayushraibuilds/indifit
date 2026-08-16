@@ -172,7 +172,8 @@ class DataManagementSection extends ConsumerWidget {
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: dialogCtx.b05Colors.danger.indicator,
+                backgroundColor: dialogCtx.b05Colors.danger.container,
+                foregroundColor: dialogCtx.b05Colors.danger.foreground,
               ),
               onPressed: () async {
                 final rawContent =

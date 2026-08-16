@@ -215,6 +215,10 @@ class WorkoutRepository {
     required String name,
     required double volume,
     required int durationSeconds,
+
+    /// Compatibility value only. IndiFit has no calorie-estimation authority,
+    /// so callers must pass 0, the documented "not estimated" sentinel for
+    /// `workout_sessions.estimated_calories` (see the column's contract).
     required int calories,
     required List<WorkoutSetsCompanion> sets,
     DateTime? completedAt,

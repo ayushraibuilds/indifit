@@ -25,6 +25,17 @@ class WorkoutSessions extends Table {
   TextColumn get name => text()(); // e.g., "Chest & Shoulders"
   RealColumn get totalVolume => real()(); // total weight lifted (kg)
   IntColumn get durationSeconds => integer()();
+
+  /// NON-AUTHORITATIVE compatibility column. IndiFit has no accepted
+  /// canonical estimation authority for workout energy expenditure, so
+  /// locally completed workouts always persist `0`, which means "not
+  /// estimated" — never a genuine zero-kcal measurement. Only rows imported
+  /// from Apple Health / Health Connect (they carry a `HealthProvenances`
+  /// row) may hold a provider-supplied value. Historical rows written before
+  /// this contract may contain legacy estimates and must never be presented
+  /// as factual evidence. Code that needs a trusted value must use the
+  /// provenance-aware accessor on `B02TypedActivityHistoryRecord`
+  /// (`providerEstimatedCaloriesKcal`) instead of reading this column.
   IntColumn get estimatedCalories => integer()();
   DateTimeColumn get completedAt =>
       dateTime().withDefault(currentDateAndTime)();
