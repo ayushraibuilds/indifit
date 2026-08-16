@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
 import 'package:indifit/data/models/b02_muscle_volume_models.dart';
@@ -15,7 +14,7 @@ import 'package:indifit/features/training/workout_history_screen.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   testWidgets('zero-data Progress is one useful starting state dark golden', (
     tester,

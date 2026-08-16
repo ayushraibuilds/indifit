@@ -76,10 +76,12 @@ class _WorkoutHistoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final detail = _detailLabel(item);
-    final source = item.isLegacy ? 'Earlier workout' : 'Canonical workout';
+    // Legacy rows keep a short provenance note; current rows need no label.
+    final source = item.isLegacy ? 'Earlier workout' : null;
     final date = ConsumerDateLabel.dateTime(item.completedAt);
     return Semantics(
-      label: '${item.name}, $date, $source, $detail.',
+      label:
+          '${item.name}, $date${source == null ? '' : ', $source'}, $detail.',
       child: B05Surface(
         tone: B05SurfaceTone.interactive,
         child: Row(
@@ -99,13 +101,15 @@ class _WorkoutHistoryRow extends StatelessWidget {
                   ),
                   const SizedBox(height: B05Layout.space4),
                   Text(detail, style: B05Typography.caption(context)),
-                  const SizedBox(height: B05Layout.space4),
-                  Text(
-                    source,
-                    style: B05Typography.caption(
-                      context,
-                    ).copyWith(color: context.b05Colors.textSecondary),
-                  ),
+                  if (source != null) ...[
+                    const SizedBox(height: B05Layout.space4),
+                    Text(
+                      source,
+                      style: B05Typography.caption(
+                        context,
+                      ).copyWith(color: context.b05Colors.textSecondary),
+                    ),
+                  ],
                 ],
               ),
             ),

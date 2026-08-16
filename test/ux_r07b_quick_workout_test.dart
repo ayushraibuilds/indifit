@@ -5,7 +5,6 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
@@ -23,7 +22,7 @@ import 'package:indifit/features/workout_player/quick_workout_screen.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   late AppDatabase db;
   late StrengthExecutionRepository executions;

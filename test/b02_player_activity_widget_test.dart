@@ -211,7 +211,11 @@ void main() {
     );
     expect(find.textContaining('yoga'), findsAtLeastNWidgets(1));
     expect(find.textContaining('Flow'), findsOneWidget);
-    expect(find.textContaining('manual'), findsOneWidget);
+    // R07F-0 review: the history card renders consumer labels, not raw
+    // storage values ('manual' / 'healthImport').
+    expect(find.textContaining('Logged in IndiFit'), findsOneWidget);
+    expect(find.textContaining('healthImport'), findsNothing);
+    expect(find.textContaining('running'), findsNothing);
   });
 }
 

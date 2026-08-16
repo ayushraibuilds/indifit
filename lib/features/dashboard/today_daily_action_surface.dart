@@ -904,7 +904,7 @@ class _MacroRow extends StatelessWidget {
     final icon = switch (metric.nutrientId) {
       'protein' => Icons.egg_alt_outlined,
       'carbohydrate' => Icons.grain_outlined,
-      'fat' => Icons.water_drop_outlined,
+      'fat' => Icons.oil_barrel_outlined,
       'fibre' => Icons.eco_outlined,
       _ => Icons.circle_outlined,
     };

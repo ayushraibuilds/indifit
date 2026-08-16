@@ -597,9 +597,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       DioExceptionType.transformTimeout =>
         'Online food search timed out. Local results are still available.',
       DioExceptionType.connectionError || DioExceptionType.unknown =>
-        'Online food search could not reach the provider. Check your connection.',
+        'Online food search is unavailable. Check your connection.',
       DioExceptionType.badResponse =>
-        'The online food provider is unavailable right now.',
+        'Online food search is unavailable right now.',
       DioExceptionType.badCertificate =>
         'A secure connection to online food search could not be established.',
       DioExceptionType.cancel => 'Online food search was cancelled.',
@@ -3130,7 +3130,7 @@ class FoodMealDetailScreen extends ConsumerWidget {
                       ),
                     ),
                     icon: const Icon(Icons.add_rounded),
-                    label: const Text('Add Food'),
+                    label: const Text('Add food'),
                   ),
                 ],
               ),

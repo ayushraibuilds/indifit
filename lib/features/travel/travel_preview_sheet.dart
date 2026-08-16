@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/theme/colors.dart';
@@ -110,7 +109,7 @@ class _TravelPreviewSheetState extends ConsumerState<TravelPreviewSheet> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        fontFamily: GoogleFonts.outfit().fontFamily,
+                        fontFamily: 'Outfit',
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -307,7 +306,7 @@ class _TravelPreviewSheetState extends ConsumerState<TravelPreviewSheet> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
+                      fontFamily: 'Outfit',
                     ),
                   ),
                 ),

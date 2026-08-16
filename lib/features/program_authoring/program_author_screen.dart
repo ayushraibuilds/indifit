@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
@@ -987,7 +986,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
       appBar: AppBar(
         title: Text(
           'Program Authoring',
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
+          style: TextStyle(fontFamily: 'Outfit'),
         ),
         actions: [
           if (_currentVersionId != null)
@@ -1035,7 +1034,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                       border: OutlineInputBorder(),
                     ),
                     style: TextStyle(
-                      fontFamily: GoogleFonts.outfit().fontFamily,
+                      fontFamily: 'Outfit',
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1082,7 +1081,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          fontFamily: GoogleFonts.outfit().fontFamily,
+                          fontFamily: 'Outfit',
                         ),
                       ),
                       TextButton.icon(

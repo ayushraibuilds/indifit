@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
@@ -20,7 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   test(
     'a canonical weight save refreshes the production Progress snapshot',

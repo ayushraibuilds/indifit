@@ -26,6 +26,15 @@ class B02TypedActivityHistoryRecord {
   final B02ActivitySource source;
   final DateTime completedAtUtc;
   final int durationSeconds;
+
+  /// Raw `workout_sessions.estimated_calories` compatibility value. For
+  /// locally completed activities this is always the sentinel `0` ("not
+  /// estimated") — IndiFit fabricates no workout-energy numbers — and
+  /// historical legacy rows may hold values that predate that contract.
+  /// Presentation code must NOT treat this field as factual evidence; use
+  /// [providerEstimatedCaloriesKcal], which is only non-null for activities
+  /// imported from Apple Health / Health Connect with a provider-supplied
+  /// estimate.
   final int estimatedCalories;
   final B02CardioSessionDetail? cardioDetail;
   final List<B02CardioInterval> cardioIntervals;
@@ -49,6 +58,13 @@ class B02TypedActivityHistoryRecord {
   bool get isImported => source == B02ActivitySource.healthImport;
 
   bool get isImmutable => true;
+
+  /// The only trusted workout-energy read: a provider-supplied estimate from
+  /// Apple Health / Health Connect, or null. Locally completed activities
+  /// never estimate energy, and a persisted `0` can never masquerade as a
+  /// known-zero measurement.
+  int? get providerEstimatedCaloriesKcal =>
+      isImported && estimatedCalories > 0 ? estimatedCalories : null;
 }
 
 class CardioSessionRepository {
@@ -403,6 +419,8 @@ class ActivitySessionRepository {
       draftId: draftId,
       state: state,
       durationSeconds: durationSeconds,
+      // No calorie authority exists for locally completed activities: 0 is
+      // the documented "not estimated" sentinel, never a real measurement.
       estimatedCalories: 0,
       completedAtUtc: completed,
       provenance: null,

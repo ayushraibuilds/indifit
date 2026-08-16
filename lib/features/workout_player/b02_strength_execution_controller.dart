@@ -120,7 +120,8 @@ class B02StrengthExecutionController
     if (current == null) {
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.recovery,
-        errorMessage: 'No B02 strength draft is loaded.',
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
       );
       return;
     }
@@ -147,7 +148,8 @@ class B02StrengthExecutionController
     if (current == null) {
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.recovery,
-        errorMessage: 'No B02 strength draft is loaded.',
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
       );
       return;
     }
@@ -187,7 +189,8 @@ class B02StrengthExecutionController
     if (current == null) {
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.recovery,
-        errorMessage: 'No B02 strength draft is loaded.',
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
       );
       return;
     }
@@ -220,7 +223,8 @@ class B02StrengthExecutionController
     if (current == null) {
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.recovery,
-        errorMessage: 'No B02 strength draft is loaded.',
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
       );
       return;
     }
@@ -307,7 +311,7 @@ class B02StrengthExecutionController
           : current.state.groups.firstWhere(
               (candidate) => candidate.id == slot.groupId,
               orElse: () => throw const B02ValidationException(
-                'The current group is missing from the frozen draft.',
+                'This workout is missing a required detail. Recover the draft and try again.',
               ),
             );
       final isLastGroupMember =
@@ -526,7 +530,8 @@ class B02StrengthExecutionController
     if (current == null) {
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.recovery,
-        errorMessage: 'No B02 strength draft is loaded.',
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
       );
       return;
     }

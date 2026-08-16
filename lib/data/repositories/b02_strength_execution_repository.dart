@@ -912,6 +912,8 @@ class StrengthExecutionRepository {
               name: state.routineName,
               totalVolume: _calculateVolume(state),
               durationSeconds: state.elapsedSeconds,
+              // No calorie authority: 0 is the documented "not estimated"
+              // sentinel, never a real measurement (column contract).
               estimatedCalories: 0,
               uuid: Value(completionMarker),
               completedAt: Value((completedAtUtc ?? _nowUtc()).toUtc()),

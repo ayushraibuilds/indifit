@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
@@ -28,7 +27,7 @@ final _refreshSnapshotProvider = StateProvider<TodaySurfaceSnapshot>(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   late AppDatabase database;
   late DashboardPersonalizationController personalization;

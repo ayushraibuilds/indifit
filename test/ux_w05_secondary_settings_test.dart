@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/fixtures/b05_foundation_registry.dart';
 import 'package:indifit/core/nutrition_constraints.dart';
@@ -21,9 +20,7 @@ import 'package:indifit/features/workout_player/widgets/plate_calculator_sheet.d
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
+  setUpAll(() {});
 
   const forbidden = [
     'stable target id',

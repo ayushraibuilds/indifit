@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_date_label.dart';
@@ -190,10 +189,7 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text(
-          'End Travel Mode?',
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
-        ),
+        title: Text('End Travel Mode?', style: TextStyle(fontFamily: 'Outfit')),
         content: const Text(
           'Your normal equipment profile will become active again. '
           'Original program structure is unchanged.',
@@ -236,7 +232,7 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
         backgroundColor: AppColors.surface,
         title: Text(
           'Cancel Travel Mode?',
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
+          style: TextStyle(fontFamily: 'Outfit'),
         ),
         content: const Text(
           'This will cancel the active travel context and restore your '
@@ -317,7 +313,7 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          fontFamily: GoogleFonts.outfit().fontFamily,
+                          fontFamily: 'Outfit',
                           color: AppColors.textPrimary,
                         ),
                       ),
@@ -530,7 +526,7 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  fontFamily: GoogleFonts.outfit().fontFamily,
+                  fontFamily: 'Outfit',
                 ),
               ),
             ),
@@ -597,7 +593,7 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
                               fontWeight: FontWeight.w700,
                               color: AppColors.success,
                               letterSpacing: 1.2,
-                              fontFamily: GoogleFonts.outfit().fontFamily,
+                              fontFamily: 'Outfit',
                             ),
                           ),
                         ],
@@ -699,7 +695,7 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  fontFamily: GoogleFonts.outfit().fontFamily,
+                  fontFamily: 'Outfit',
                 ),
               ),
             ),
@@ -727,7 +723,7 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  fontFamily: GoogleFonts.outfit().fontFamily,
+                  fontFamily: 'Outfit',
                 ),
               ),
             ),
@@ -772,7 +768,7 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
         fontWeight: FontWeight.w600,
         color: AppColors.textSecondary,
         letterSpacing: 0.5,
-        fontFamily: GoogleFonts.outfit().fontFamily,
+        fontFamily: 'Outfit',
       ),
     );
   }
@@ -788,7 +784,7 @@ class _TravelModeScreenState extends ConsumerState<TravelModeScreen> {
         backgroundColor: AppColors.background,
         title: Text(
           hasActiveTravel ? 'Travel Mode' : 'Plan Travel',
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
+          style: TextStyle(fontFamily: 'Outfit'),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),

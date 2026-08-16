@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/theme_provider.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,7 +8,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
     SharedPreferences.setMockInitialValues({});
   });
 

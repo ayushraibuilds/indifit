@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/theme/b05_semantic_colors.dart';
-import '../../core/theme/colors.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
+import '../../core/widgets/skeleton_loader.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'meal_templates_screen.dart';
 import 'saved_meal_editor_screen.dart';
@@ -81,11 +82,8 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     if (snapshot != null && mounted) {
       _refreshTodaySurfaces();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
-          ),
-          backgroundColor: AppColors.success,
+        indiFitSuccessSnackBar(
+          'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
         ),
       );
       if (mounted && Navigator.canPop(context)) {
@@ -110,11 +108,8 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
 
     if (result != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
-          ),
-          backgroundColor: AppColors.success,
+        indiFitSuccessSnackBar(
+          'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
         ),
       );
       if (mounted && Navigator.canPop(context)) {
@@ -139,8 +134,8 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
+              backgroundColor: ctx.b05Colors.danger.container,
+              foregroundColor: ctx.b05Colors.danger.foreground,
             ),
             child: const Text('Delete'),
           ),
@@ -246,22 +241,22 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.danger.withValues(alpha: 0.1),
+                color: context.b05Colors.danger.container,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.error_outline,
-                    color: AppColors.danger,
+                    color: context.b05Colors.danger.indicator,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       state.errorMessage!,
-                      style: const TextStyle(
-                        color: AppColors.danger,
+                      style: TextStyle(
+                        color: context.b05Colors.danger.foreground,
                         fontSize: 13,
                       ),
                     ),
@@ -274,7 +269,16 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
             child:
                 state.status == SavedMealsStatus.loading ||
                     state.status == SavedMealsStatus.idle
-                ? const Center(child: CircularProgressIndicator())
+                ? ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    children: const [
+                      SkeletonCard(height: 96),
+                      SkeletonCard(height: 96),
+                      SkeletonCard(height: 96),
+                      SkeletonCard(height: 96),
+                      SkeletonCard(height: 96),
+                    ],
+                  )
                 : state.meals.isEmpty
                 ? _buildEmptyState()
                 : ListView.separated(
@@ -358,8 +362,8 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
               icon: const Icon(Icons.add_rounded),
               label: const Text('Create saved meal'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: context.b05Colors.action,
+                foregroundColor: context.b05Colors.onAction,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -403,12 +407,12 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: context.b05Colors.selected,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.restaurant_rounded,
-                  color: AppColors.primary,
+                  color: context.b05Colors.success.indicator,
                   size: 20,
                 ),
               ),
@@ -487,16 +491,9 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                     value: 'delete',
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.delete_outline_rounded,
-                          size: 18,
-                          color: AppColors.danger,
-                        ),
+                        Icon(Icons.delete_outline_rounded, size: 18),
                         SizedBox(width: 8),
-                        Text(
-                          'Delete',
-                          style: TextStyle(color: AppColors.danger),
-                        ),
+                        Text('Delete'),
                       ],
                     ),
                   ),
@@ -520,7 +517,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
             const SizedBox(height: 12),
             _MealCardNotice(
               icon: Icons.error_outline_rounded,
-              color: AppColors.danger,
+              color: context.b05Colors.danger.indicator,
               message:
                   '${meal.unavailableMessage!} Edit this saved meal to update its ingredients.',
             ),
@@ -528,7 +525,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
             const SizedBox(height: 12),
             _MealCardNotice(
               icon: Icons.info_outline_rounded,
-              color: AppColors.warning,
+              color: context.b05Colors.warning.indicator,
               message: meal.requiresPartialAcknowledgement
                   ? 'Incomplete core nutrition: review before logging.'
                   : 'Nutrition details are partial; unknown values stay unknown.',
@@ -562,8 +559,8 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
               final log = ElevatedButton(
                 onPressed: actionsDisabled ? null : () => _handleQuickLog(meal),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.b05Colors.action,
+                  foregroundColor: context.b05Colors.onAction,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

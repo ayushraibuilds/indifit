@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
@@ -163,10 +162,7 @@ class _ExercisePreferenceEditorScreenState
       appBar: AppBar(
         title: Text(
           'Setup & Cues: ${widget.rawName}',
-          style: TextStyle(
-            fontFamily: GoogleFonts.outfit().fontFamily,
-            fontSize: 18,
-          ),
+          style: TextStyle(fontFamily: 'Outfit', fontSize: 18),
         ),
       ),
       body: _isLoading
@@ -193,7 +189,7 @@ class _ExercisePreferenceEditorScreenState
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          fontFamily: GoogleFonts.outfit().fontFamily,
+                          fontFamily: 'Outfit',
                         ),
                       ),
                       IconButton(
@@ -256,7 +252,7 @@ class _ExercisePreferenceEditorScreenState
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          fontFamily: GoogleFonts.outfit().fontFamily,
+                          fontFamily: 'Outfit',
                         ),
                       ),
                       IconButton(
