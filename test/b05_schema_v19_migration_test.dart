@@ -8,11 +8,11 @@ import 'package:indifit/data/database/app_database.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('fresh schema-v19 exposes the four B05 tables and indexes', () async {
+  test('fresh schema-v20 exposes the four B05 tables and indexes', () async {
     final db = AppDatabase.memory();
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 19);
+    expect(db.schemaVersion, 20);
     final tableRows = await db
         .customSelect(
           "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name",
@@ -48,7 +48,7 @@ void main() {
   });
 
   test(
-    'v18 to v19 migration preserves prior rows and starts B05 empty',
+    'v18 to v20 migrations preserve prior rows and start B05 empty',
     () async {
       final directory = await Directory.systemTemp.createTemp(
         'indifit-b05-v19-',
@@ -68,7 +68,7 @@ void main() {
       final migrated = AppDatabase.executor(NativeDatabase(file));
       try {
         await migrated.customSelect('PRAGMA user_version').get();
-        expect(migrated.schemaVersion, 19);
+        expect(migrated.schemaVersion, 20);
         expect(
           (await migrated.select(migrated.nutritionCoachingPreferences).get())
               .single
@@ -90,7 +90,7 @@ void main() {
     },
   );
 
-  test('v18 to v19 migration boundaries roll back and can retry', () async {
+  test('v18 to v20 migration boundaries roll back and can retry', () async {
     for (final stage in V19MigrationFailureStage.values) {
       final directory = await Directory.systemTemp.createTemp(
         'indifit-b05-v19-failure-',
@@ -122,7 +122,7 @@ void main() {
       try {
         await retry.customSelect('PRAGMA user_version').get();
         expect(await retry.select(retry.mediaPackPreferences).get(), isEmpty);
-        expect(retry.schemaVersion, 19);
+        expect(retry.schemaVersion, 20);
       } finally {
         await retry.close();
         await directory.delete(recursive: true);

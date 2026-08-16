@@ -546,6 +546,7 @@ class CalendarRepository {
         );
       }
       final occurrence = await _requireCommandSource(command);
+      await _requireActivePlan(occurrence);
       await _rejectStartedDependents(occurrence);
       final restoredStatus =
           occurrence.originalLocalDate == occurrence.effectiveLocalDate &&
@@ -625,6 +626,7 @@ class CalendarRepository {
         );
       }
       final source = await _requireCommandSource(command);
+      await _requireActivePlan(source);
       if (!_isRepeatableTerminal(source.status)) {
         throw const InvalidOccurrenceTransitionException(
           'Only terminal occurrences can be repeated.',
@@ -717,6 +719,7 @@ class CalendarRepository {
         );
       }
       final occurrence = await _requireCommandSource(command);
+      await _requireActivePlan(occurrence);
       _requireUnstarted(occurrence, 'start');
       final today = _dates.todayIn(occurrence.effectiveTimezoneId);
       if (today != occurrence.effectiveLocalDate &&
@@ -1036,6 +1039,17 @@ class CalendarRepository {
       _throwStale();
     }
     return occurrence;
+  }
+
+  Future<void> _requireActivePlan(ScheduledSessionOccurrence occurrence) async {
+    final settings = await (_db.select(
+      _db.trainingPlanSettings,
+    )..where((table) => table.id.equals(1))).getSingleOrNull();
+    if (settings?.activeProgramVersionId != occurrence.programVersionId) {
+      throw const InvalidOccurrenceTransitionException(
+        'This workout is no longer part of the current training plan.',
+      );
+    }
   }
 
   Future<void> _rejectStartedDependents(

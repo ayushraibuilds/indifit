@@ -1117,6 +1117,14 @@ class B03LogicalSnapshot {
   ) {
     final normalized = <String, dynamic>{};
     for (final entry in row.entries) {
+      // R07F-1 adds nullable plan-end metadata to the existing singleton.
+      // The v16 logical regression compares the pre-lifecycle B01 graph, so
+      // these intentionally empty additive fields are outside that fixture's
+      // historical contract.
+      if (table == 'training_plan_settings' &&
+          entry.key.startsWith('last_ended_')) {
+        continue;
+      }
       if (entry.key == 'id' && _localIntegerIdTables.contains(table)) {
         continue;
       }

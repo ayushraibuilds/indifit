@@ -351,8 +351,8 @@ void main() {
       final db = AppDatabase.executor(NativeDatabase(file));
       try {
         await db.customSelect('SELECT 1').get();
-        expect(B03V16Fixture.readUserVersion(file), 19);
-        expect(db.schemaVersion, 19);
+        expect(B03V16Fixture.readUserVersion(file), 20);
+        expect(db.schemaVersion, 20);
         final after = await B03LogicalSnapshot.capture(db);
         before.assertLogicallyEquals(after);
         expect(await db.select(db.nutritionFoods).get(), hasLength(598));
@@ -394,7 +394,7 @@ void main() {
     test('fresh v17 creation exposes the complete approved graph', () async {
       final db = AppDatabase.memory();
       try {
-        expect(db.schemaVersion, 19);
+        expect(db.schemaVersion, 20);
         final tables = await db
             .customSelect(
               "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'nutrition_%' ORDER BY name",
@@ -545,7 +545,7 @@ void main() {
         final retry = harness.openNutritionMigrating(file);
         try {
           await retry.customSelect('SELECT 1').get();
-          expect(B03V16Fixture.readUserVersion(file), 19);
+          expect(B03V16Fixture.readUserVersion(file), 20);
           expect(
             await retry.customSelect('PRAGMA foreign_key_check').get(),
             isEmpty,

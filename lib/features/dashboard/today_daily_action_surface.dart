@@ -55,7 +55,9 @@ TodayNextActionChoice chooseTodayNextAction({
       hint: 'Shows actions that are available today.',
     );
   }
-  final scheduled = snapshot?.calendar.value?.rangeOccurrences.isNotEmpty;
+  final scheduled = snapshot?.calendar.value == null
+      ? false
+      : todayVisibleWorkoutOccurrences(snapshot!.calendar.value!).isNotEmpty;
   if (scheduled == true) {
     return const TodayNextActionChoice(
       action: TodayNextAction.openWorkoutPlan,

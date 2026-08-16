@@ -15,6 +15,20 @@ import 'today_surface_controller.dart';
 /// models remain authoritative; this file only decides how to show them well.
 enum TodayPresentationState { loading, ready, empty, unavailable }
 
+/// Skipped and cancelled dates are retained as history, but they are not a
+/// current Today workout. Completed/partial evidence remains readable.
+List<CalendarOccurrenceReadItem> todayVisibleWorkoutOccurrences(
+  CalendarReadSnapshot snapshot,
+) {
+  return snapshot.rangeOccurrences
+      .where(
+        (item) =>
+            item.occurrence.status != 'skipped' &&
+            item.occurrence.status != 'cancelled',
+      )
+      .toList(growable: false);
+}
+
 class TodayWorkoutPresentation {
   final TodayPresentationState state;
   final String title;
@@ -54,7 +68,7 @@ class TodayWorkoutPresentation {
         detail: 'Try again to load your plan.',
       );
     }
-    final occurrences = read.value!.rangeOccurrences;
+    final occurrences = todayVisibleWorkoutOccurrences(read.value!);
     if (occurrences.isEmpty) {
       return const TodayWorkoutPresentation(
         state: TodayPresentationState.empty,

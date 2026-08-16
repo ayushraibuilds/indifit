@@ -209,6 +209,10 @@ class ProgramActivationCoordinator {
           activeProgramVersionId: Value(version.id),
           activeSinceLocalDate: Value(activationDate),
           activeSinceTimezoneId: Value(command.timezoneId),
+          lastEndedProgramVersionId: const Value(null),
+          lastEndedOutcome: const Value(null),
+          lastEndedAtUtc: const Value(null),
+          lastEndedCommandId: const Value(null),
           updatedAtUtc: Value(now),
         ),
       );
