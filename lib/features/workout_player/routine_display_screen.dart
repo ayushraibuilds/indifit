@@ -111,6 +111,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   }
 
   Future<void> _endActivePlan(PlanEndOutcome outcome) async {
+    if (_loading) return;
     final planName = _activeProgramName ?? 'this plan';
     final isFinish = outcome == PlanEndOutcome.finished;
     final confirmed = await showDialog<bool>(
@@ -142,11 +143,15 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
           ? await controller.finishPlan()
           : await controller.leavePlan();
       if (!mounted) return;
+      final count = result.cancelledOccurrenceIds.length;
+      final stoppedLabel = count == 0
+          ? 'Future workouts are no longer scheduled.'
+          : '$count future ${count == 1 ? 'workout' : 'workouts'} stopped.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             isFinish
-                ? 'Plan finished. ${result.cancelledOccurrenceIds.length} future workouts stopped.'
+                ? 'Plan finished. $stoppedLabel'
                 : 'Plan left. Your workout history is still here.',
           ),
         ),

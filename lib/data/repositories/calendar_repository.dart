@@ -371,6 +371,7 @@ class CalendarRepository {
         );
       }
       final occurrence = await _requireCommandSource(command);
+      await _requireActivePlan(occurrence);
       _requireUnstarted(occurrence, 'reschedule');
       final targetStatus =
           occurrence.originalLocalDate == newDate &&
@@ -432,6 +433,7 @@ class CalendarRepository {
         );
       }
       final occurrence = await _requireCommandSource(command);
+      await _requireActivePlan(occurrence);
       _requireUnstarted(occurrence, 'skip');
       final changed =
           await (_db.update(_db.scheduledSessionOccurrences)..where(
@@ -488,6 +490,7 @@ class CalendarRepository {
         );
       }
       final occurrence = await _requireCommandSource(command);
+      await _requireActivePlan(occurrence);
       _requireUnstarted(occurrence, 'cancel');
       final changed =
           await (_db.update(_db.scheduledSessionOccurrences)..where(

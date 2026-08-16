@@ -14,7 +14,15 @@ import 'package:indifit/data/repositories/legacy_program_compatibility_adapter.d
 import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_lifecycle_repository.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
-import 'package:indifit/features/training/training_screen.dart';
+import 'package:indifit/features/calendar/occurrence_actions_sheet.dart'
+    show occurrenceEventLabel;
+import 'package:indifit/features/training/training_screen.dart'
+    show
+        TrainingScreen,
+        TrainingLandingSnapshot,
+        trainingLandingSnapshotProvider,
+        trainingWeekDaySemanticLabel,
+        trainingWeekEmptyDayLabel;
 import 'package:indifit/features/workout_player/routine_display_screen.dart';
 
 void main() {
@@ -351,6 +359,111 @@ void main() {
       expect(
         (await calendar.getOccurrence(oldOccurrences.first.id))!.status,
         'planned',
+      );
+    },
+  );
+
+  test(
+    'review R07F-1: skip, cancel, and reschedule also reject inactive-plan occurrences',
+    () async {
+      final firstVersion = await createDraftProgram(name: 'First Plan');
+      final oldOccurrences = await activate(firstVersion);
+      final secondVersion = await createDraftProgram(name: 'Second Plan');
+      await activate(secondVersion);
+
+      final calendar = CalendarRepository(db, dates: dates, nowUtc: () => now);
+      final stale = oldOccurrences.first;
+      await expectLater(
+        calendar.skip(
+          SkipOccurrenceCommand(
+            occurrenceId: stale.id,
+            commandId: 'skip::stale',
+            expectedStatus: OccurrenceStatus.planned,
+            disposition: SkipDisposition.keepPending,
+          ),
+        ),
+        throwsA(isA<InvalidOccurrenceTransitionException>()),
+      );
+      await expectLater(
+        calendar.cancel(
+          CancelOccurrenceCommand(
+            occurrenceId: stale.id,
+            commandId: 'cancel::stale',
+            expectedStatus: OccurrenceStatus.planned,
+          ),
+        ),
+        throwsA(isA<InvalidOccurrenceTransitionException>()),
+      );
+      await expectLater(
+        calendar.reschedule(
+          RescheduleOccurrenceCommand(
+            occurrenceId: stale.id,
+            commandId: 'reschedule::stale',
+            expectedStatus: OccurrenceStatus.planned,
+            effectiveLocalDate: '2026-03-09',
+            effectiveTimezoneId: 'Asia/Kolkata',
+            confirmed: true,
+          ),
+        ),
+        throwsA(isA<InvalidOccurrenceTransitionException>()),
+      );
+      // The stale row is left completely untouched.
+      final after = (await calendar.getOccurrence(stale.id))!;
+      expect(after.status, 'planned');
+      expect(after.effectiveLocalDate, stale.effectiveLocalDate);
+      final events = await (db.select(
+        db.occurrenceEvents,
+      )..where((table) => table.occurrenceId.equals(stale.id))).get();
+      expect(
+        events.where((event) => event.commandId.contains('stale')),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'review R07F-1: occurrence history labels split camelCase event types',
+    () {
+      expect(occurrenceEventLabel('planFinished'), 'Plan Finished');
+      expect(occurrenceEventLabel('planLeft'), 'Plan Left');
+      expect(occurrenceEventLabel('startDiscarded'), 'Start Discarded');
+      expect(occurrenceEventLabel('repeatCreated'), 'Repeat Created');
+      expect(occurrenceEventLabel('skipped'), 'Skipped');
+      expect(
+        occurrenceEventLabel('activationCancelled'),
+        'Activation Cancelled',
+      );
+    },
+  );
+
+  test(
+    'review R07F-1: week strip stays neutral on days without a scheduled workout',
+    () {
+      // B01 records no explicit rest evidence, so an empty day must not
+      // infer recovery intent (spec §38: neutral wording only).
+      expect(trainingWeekEmptyDayLabel, 'no workout scheduled');
+      expect(trainingWeekEmptyDayLabel.contains('recovery'), isFalse);
+      expect(
+        trainingWeekDaySemanticLabel(
+          'Tuesday',
+          3,
+          trainingWeekEmptyDayLabel,
+          null,
+        ),
+        'Tuesday, 3: no workout scheduled',
+      );
+      expect(
+        trainingWeekDaySemanticLabel('Monday', 2, 'scheduled', 'Workout 1'),
+        'Monday, 2: scheduled, Workout 1',
+      );
+      // Terminal and in-progress days keep their truthful states.
+      expect(
+        trainingWeekDaySemanticLabel('Wednesday', 4, 'in progress', null),
+        'Wednesday, 4: in progress',
+      );
+      expect(
+        trainingWeekDaySemanticLabel('Friday', 6, 'partially completed', null),
+        'Friday, 6: partially completed',
       );
     },
   );

@@ -381,11 +381,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           : await controller.leavePlan();
       if (!context.mounted) return;
       final count = result.cancelledOccurrenceIds.length;
+      final stoppedLabel = count == 0
+          ? 'Future workouts are no longer scheduled.'
+          : '$count future ${count == 1 ? 'workout' : 'workouts'} stopped.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             isFinish
-                ? 'Plan finished. $count future ${count == 1 ? 'workout' : 'workouts'} stopped.'
+                ? 'Plan finished. $stoppedLabel'
                 : 'Plan left. Your workout history is still here.',
           ),
         ),
@@ -1014,6 +1017,20 @@ class _TrainingWeekStrip extends StatelessWidget {
       '${value.day.toString().padLeft(2, '0')}';
 }
 
+/// Neutral label for a week-strip day with no occurrence. B01 records no
+/// explicit rest evidence, so absence must not infer recovery intent.
+const String trainingWeekEmptyDayLabel = 'no workout scheduled';
+
+/// Semantic label for one week-strip day. Public for focused tests.
+String trainingWeekDaySemanticLabel(
+  String weekdayName,
+  int day,
+  String statusLabel,
+  String? workoutName,
+) =>
+    '$weekdayName, $day: $statusLabel'
+    '${workoutName == null ? '' : ', $workoutName'}';
+
 class _TrainingWeekDay extends StatelessWidget {
   const _TrainingWeekDay({
     required this.label,
@@ -1035,9 +1052,12 @@ class _TrainingWeekDay extends StatelessWidget {
         ? null
         : occurrences.first.template.name;
     return Semantics(
-      label:
-          '${_weekdayName(date.weekday)}, ${date.day}: ${status.accessibleLabel}'
-          '${workoutName == null ? '' : ', $workoutName'}',
+      label: trainingWeekDaySemanticLabel(
+        _weekdayName(date.weekday),
+        date.day,
+        status.accessibleLabel,
+        workoutName,
+      ),
       child: Container(
         constraints: const BoxConstraints(minHeight: 72),
         decoration: BoxDecoration(
@@ -1095,7 +1115,7 @@ enum _TrainingWeekStatus {
   cancelled;
 
   IconData get icon => switch (this) {
-    rest => Icons.self_improvement_outlined,
+    rest => Icons.circle_outlined,
     scheduled => Icons.event_outlined,
     inProgress => Icons.play_circle_outline_rounded,
     complete => Icons.check_circle_outline_rounded,
@@ -1105,7 +1125,9 @@ enum _TrainingWeekStatus {
   };
 
   String get accessibleLabel => switch (this) {
-    rest => 'recovery day',
+    // An empty day has no occurrence row: B01 does not record explicit
+    // rest evidence, so the label stays neutral instead of inferring rest.
+    rest => 'no workout scheduled',
     scheduled => 'scheduled',
     inProgress => 'in progress',
     complete => 'completed',

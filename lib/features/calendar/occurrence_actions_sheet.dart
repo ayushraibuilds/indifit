@@ -12,6 +12,16 @@ import '../../data/repositories/calendar_repository.dart';
 import 'calendar_controller.dart';
 import 'workout_contextual_launcher.dart';
 
+/// Consumer label for an occurrence history event. Public for focused tests.
+/// Splits both snake_case and camelCase event types into readable words.
+String occurrenceEventLabel(String value) => value
+    .replaceAll('_', ' ')
+    .replaceAll(RegExp(r'(?<=[a-z])(?=[A-Z])'), ' ')
+    .split(' ')
+    .where((part) => part.isNotEmpty)
+    .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+    .join(' ');
+
 /// Modal action sheet for calendar occurrences exposing B01 domain actions.
 class OccurrenceActionsSheet extends ConsumerStatefulWidget {
   final CalendarOccurrenceReadItem occurrenceItem;
@@ -548,12 +558,7 @@ class _OccurrenceActionsSheetState
     );
   }
 
-  static String _eventLabel(String value) => value
-      .replaceAll('_', ' ')
-      .split(' ')
-      .where((part) => part.isNotEmpty)
-      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
-      .join(' ');
+  static String _eventLabel(String value) => occurrenceEventLabel(value);
 
   static String _statusLabel(String? value) {
     final key = value?.trim() ?? '';
