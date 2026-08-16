@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/features/settings/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   // Disable runtime fetching of fonts in tests to prevent network exceptions
-  GoogleFonts.config.allowRuntimeFetching = false;
 
   testWidgets('IndiFit Settings Screen render test', (
     WidgetTester tester,

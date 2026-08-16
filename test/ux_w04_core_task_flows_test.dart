@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/presentation/consumer_date_label.dart';
 import 'package:indifit/core/theme/app_theme.dart';
@@ -23,9 +22,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
+  setUpAll(() {});
 
   Future<void> setCompactViewport(WidgetTester tester) async {
     tester.view.physicalSize = const Size(320, 568);

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -170,7 +169,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
       appBar: AppBar(
         title: Text(
           'Review & Activate',
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
+          style: TextStyle(fontFamily: 'Outfit'),
         ),
       ),
       body: _isLoading
@@ -197,7 +196,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              fontFamily: GoogleFonts.outfit().fontFamily,
+                              fontFamily: 'Outfit',
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -215,7 +214,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
+                      fontFamily: 'Outfit',
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -270,7 +269,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
+                      fontFamily: 'Outfit',
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -349,7 +348,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.black,
                         textStyle: TextStyle(
-                          fontFamily: GoogleFonts.outfit().fontFamily,
+                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),

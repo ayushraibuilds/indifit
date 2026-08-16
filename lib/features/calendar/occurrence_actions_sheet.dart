@@ -277,7 +277,7 @@ class _OccurrenceActionsSheetState
         Navigator.pop(context);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Occurrence cancelled.')));
+        ).showSnackBar(const SnackBar(content: Text('Workout cancelled.')));
       }
     } catch (error) {
       if (mounted) {
@@ -392,7 +392,7 @@ class _OccurrenceActionsSheetState
         shrinkWrap: true,
         padding: const EdgeInsets.all(B05Layout.space16),
         children: [
-          Text('Occurrence history', style: B05Typography.title(context)),
+          Text('Session history', style: B05Typography.title(context)),
           const SizedBox(height: 8),
           if (events.isEmpty) const Text('No recorded events.'),
           ...events.map(

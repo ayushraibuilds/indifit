@@ -53,11 +53,11 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
     return total;
   }
 
-  int _calculateCaloriesBurned() {
-    // Basic estimation: approx 6.5 kcal burned per minute of active workout
-    final minutes = widget.elapsedSeconds / 60.0;
-    return (minutes * 6.5).round();
-  }
+  // R07F-0: calorie burn is intentionally NOT calculated or shown. There is
+  // no accepted canonical estimation authority for workout energy expenditure,
+  // so presenting a number here would fabricate data. `estimatedCalories` is
+  // persisted as 0 ("not estimated") for new records only; historical rows
+  // are never rewritten.
 
   Future<void> _handleSave() async {
     if (_isSaving) return;
@@ -79,7 +79,8 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
               name: widget.routineName,
               volume: _calculateTotalVolume(),
               durationSeconds: widget.elapsedSeconds,
-              calories: _calculateCaloriesBurned(),
+              // No canonical calorie authority: record "not estimated" (0).
+              calories: 0,
               sets: widget.loggedSets,
               completionKind: widget.completionKind,
             );
@@ -89,7 +90,8 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
           name: widget.routineName,
           volume: _calculateTotalVolume(),
           durationSeconds: widget.elapsedSeconds,
-          calories: _calculateCaloriesBurned(),
+          // No canonical calorie authority: record "not estimated" (0).
+          calories: 0,
           sets: widget.loggedSets,
         );
 
@@ -122,7 +124,6 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
   @override
   Widget build(BuildContext context) {
     final double totalVolume = _calculateTotalVolume();
-    final int calories = _calculateCaloriesBurned();
     final String durationText = _formatDuration(widget.elapsedSeconds);
 
     // Group sets by exercise name for summary listing
@@ -185,12 +186,6 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                             'Duration',
                             durationText,
                             Icons.timer_outlined,
-                          ),
-                          _buildMetricCard(
-                            context,
-                            'Active burn',
-                            '$calories kcal',
-                            Icons.local_fire_department_rounded,
                           ),
                         ];
                         if (compact) {
@@ -294,7 +289,6 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                             'Routine: ${widget.routineName}\n'
                             'Volume Lifted: ${totalVolume.round()} kg\n'
                             'Duration: $durationText\n'
-                            'Burned: $calories kcal\n'
                             'Logged with IndiFit App ⚡';
                         Share.share(text);
                       },

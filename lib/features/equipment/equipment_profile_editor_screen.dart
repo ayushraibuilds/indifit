@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/fixtures/equipment_fixtures.dart';
@@ -176,7 +175,7 @@ class _EquipmentProfileEditorScreenState
       appBar: AppBar(
         title: Text(
           widget.profileId == null ? 'New Profile' : 'Edit Profile',
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
+          style: TextStyle(fontFamily: 'Outfit'),
         ),
       ),
       body: _isLoading
@@ -193,7 +192,7 @@ class _EquipmentProfileEditorScreenState
                       border: OutlineInputBorder(),
                     ),
                     style: TextStyle(
-                      fontFamily: GoogleFonts.outfit().fontFamily,
+                      fontFamily: 'Outfit',
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -217,7 +216,7 @@ class _EquipmentProfileEditorScreenState
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
+                      fontFamily: 'Outfit',
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -280,7 +279,7 @@ class _EquipmentProfileEditorScreenState
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.black,
                         textStyle: TextStyle(
-                          fontFamily: GoogleFonts.outfit().fontFamily,
+                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),

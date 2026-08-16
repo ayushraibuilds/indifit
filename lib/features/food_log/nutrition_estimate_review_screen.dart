@@ -260,7 +260,7 @@ class _ReviewBody extends StatelessWidget {
             'Saved. Previously logged meals keep their original estimate.',
           ),
         const Text(
-          'Temporary photos are deleted after processing, cancellation, or failure. Photos and provider secrets are not backed up.',
+          'Temporary photos are deleted after processing, cancellation, or failure. Photos are not included in backups.',
         ),
         const SizedBox(height: 16),
         Wrap(

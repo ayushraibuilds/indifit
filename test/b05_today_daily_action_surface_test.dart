@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/dashboard_personalization_repository.dart';
@@ -14,7 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   late AppDatabase database;
   late DashboardPersonalizationController personalization;

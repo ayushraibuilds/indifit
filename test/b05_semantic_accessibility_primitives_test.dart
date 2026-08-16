@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/theme/b05_semantic_colors.dart';
 import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
@@ -11,9 +10,7 @@ import 'package:indifit/core/widgets/b05_accessibility_primitives.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
+  setUpAll(() {});
 
   group('B05 semantic colors', () {
     test('light and dark themes register all semantic state tokens', () {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
@@ -43,6 +42,27 @@ import '../../features/workout_player/workout_summary_screen.dart';
 /// Tracks whether the user has completed onboarding. Initialized from
 /// SharedPreferences in main.dart and updated when onboarding finishes.
 final onboardingCompletedProvider = StateProvider<bool>((ref) => false);
+
+/// Pure onboarding routing gate used by [appRouterProvider]'s redirect.
+///
+/// Kept as a top-level function so the routing contract (first launch,
+/// completed onboarding, wizard exemption) is unit-testable without
+/// mounting any screen.
+String? onboardingGateRedirect({
+  required bool onboardingCompleted,
+  required String location,
+}) {
+  final goingToOnboarding = location == '/onboarding';
+  final goingToWizard = location == '/routine-wizard';
+
+  if (!onboardingCompleted && !goingToOnboarding && !goingToWizard) {
+    return '/onboarding';
+  }
+  if (onboardingCompleted && goingToOnboarding) {
+    return '/';
+  }
+  return null;
+}
 
 /// Parses the food route's local civil date without applying a timezone or
 /// silently substituting the current day. The dashboard emits this exact
@@ -88,22 +108,14 @@ MainNavigationScaffold foodRouteDestination({String? mealType, String? date}) =>
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
-    redirect: (context, state) async {
-      final prefs = await SharedPreferences.getInstance();
-      final onboardingCompleted =
-          prefs.getBool('onboarding_completed') ?? false;
-      final location = state.matchedLocation;
-      final goingToOnboarding = location == '/onboarding';
-      final goingToWizard = location == '/routine-wizard';
-
-      if (!onboardingCompleted && !goingToOnboarding && !goingToWizard) {
-        return '/onboarding';
-      }
-      if (onboardingCompleted && goingToOnboarding) {
-        return '/';
-      }
-      return null;
-    },
+    // R07F-0: synchronous redirect. The gate is seeded once from
+    // SharedPreferences in main() and kept current by onboarding completion,
+    // reset, and restore/erase flows, so navigation performs no async
+    // preference I/O.
+    redirect: (context, state) => onboardingGateRedirect(
+      onboardingCompleted: ref.read(onboardingCompletedProvider),
+      location: state.matchedLocation,
+    ),
     routes: [
       GoRoute(
         path: '/',
@@ -281,7 +293,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final launch = extra['launch'];
           if (launch is! B02StrengthExecutionLaunch) {
             return const Scaffold(
-              body: Center(child: Text('B02 strength draft is unavailable.')),
+              body: Center(child: Text('This workout draft is unavailable.')),
             );
           }
           return B02StrengthPlayerScreen(launch: launch);
@@ -294,7 +306,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final launch = extra['launch'];
           if (launch is! B02StrengthExecutionLaunch) {
             return const Scaffold(
-              body: Center(child: Text('B02 strength draft is unavailable.')),
+              body: Center(child: Text('This workout draft is unavailable.')),
             );
           }
           return B02StrengthSummaryScreen(launch: launch);

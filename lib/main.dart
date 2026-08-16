@@ -14,7 +14,6 @@ import 'core/services/crash_reporting_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_logger.dart';
-import 'data/database/app_database.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,21 +55,28 @@ void main() async {
     overrides: [
       privacyPolicyProvider.overrideWith((ref) => PrivacyPolicyNotifier(prefs)),
       themeModeProvider.overrideWith((ref) => ThemeModeNotifier(prefs)),
+      // Seed the synchronous router gate once; onboarding/restore/erase
+      // flows keep it updated so navigation never re-awaits SharedPreferences.
+      onboardingCompletedProvider.overrideWith(
+        (ref) => prefs.getBool('onboarding_completed') ?? false,
+      ),
     ],
   );
-  final AppDatabase db = container.read(databaseProvider);
+  // Construct the shared database eagerly so schema migrations run before
+  // the first widget reads it. The post-frame bootstrap and the lifecycle
+  // observer reuse this same instance through the container.
+  container.read(databaseProvider);
 
-  // Initialize local notification service & schedule reminders
+  // Initialize the local notification plugin (timezone data + tap handling)
+  // before first frame; it is cheap and required before any scheduling.
   await NotificationService.initialize();
-  await NotificationService.scheduleAllReminders(db);
 
-  // Trigger auto-backup check in background
-  unawaited(
-    AutoBackupService.performBackup(db).catchError((e) {
-      AppLogger.warning('Auto-backup startup check failed: $e');
-    }),
-  );
-
+  // R07F-0: reminder rescheduling and the auto-backup check previously ran
+  // (awaited) before runApp, delaying the first frame. They are deliberately
+  // moved to a post-frame bootstrap in _IndiFitAppState — they only need to
+  // complete within the first seconds after launch, not before UI exists.
+  // Sentry keeps wrapping runApp because that is the documented correct
+  // integration for capturing startup crashes.
   await CrashReportingService.initialize(() {
     runApp(
       UncontrolledProviderScope(
@@ -94,6 +100,29 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _runPostFrameBootstrap();
+    });
+  }
+
+  /// Non-critical startup work that must not delay the first frame.
+  ///
+  /// Reminder rescheduling (cancel + re-plan from preferences and the DB) and
+  /// the auto-backup check run here, after the first frame has rendered.
+  /// Failures are logged; the resume lifecycle check re-runs the timezone
+  /// reschedule as before.
+  void _runPostFrameBootstrap() {
+    final db = ref.read(databaseProvider);
+    unawaited(
+      NotificationService.scheduleAllReminders(db).catchError((e) {
+        AppLogger.warning('Startup reminder scheduling failed: $e');
+      }),
+    );
+    unawaited(
+      AutoBackupService.performBackup(db).catchError((e) {
+        AppLogger.warning('Auto-backup startup check failed: $e');
+      }),
+    );
   }
 
   @override
