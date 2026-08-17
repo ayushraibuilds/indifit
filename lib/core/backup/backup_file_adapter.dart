@@ -352,8 +352,8 @@ class BackupFileAdapter {
     return jsonEncode(envelope.toJson());
   }
 
-  /// Exports the schema-v19 Backup-v10 payload, including only portable B05
-  /// preferences and content progress in the envelope table counts.
+  /// Exports the schema-v19-or-newer Backup-v10 payload, including only
+  /// portable B05 preferences and content progress in the envelope counts.
   static String exportV10ToEnvelopeJson({
     required BackupV10Data data,
     String? password,

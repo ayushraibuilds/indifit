@@ -24,7 +24,7 @@ void main() {
       final firstJson = jsonEncode(backup.toJson());
       expect(firstJson, jsonEncode(backup.toJson()));
       expect(backup.version, 10);
-      expect(backup.schemaVersion, 19);
+      expect(backup.schemaVersion, 20);
       expect(backup.b05.tables.keys, containsAll(_b05Tables));
       expect(firstJson, isNot(contains('file_path')));
       expect(firstJson, isNot(contains('availability')));

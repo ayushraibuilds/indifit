@@ -10,6 +10,7 @@ import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../calendar/program_calendar_screen.dart';
 import '../calendar/workout_contextual_launcher.dart';
@@ -19,6 +20,7 @@ import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/routine_display_screen.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
+import 'training_plan_lifecycle_controller.dart';
 import 'workout_history_screen.dart';
 
 /// Read-only, presentation-ready data for the Training landing page.
@@ -33,6 +35,10 @@ class TrainingLandingSnapshot {
     required this.upcoming,
     required this.recentSessions,
     required this.activeProgramName,
+    this.currentWeekStartLocalDate,
+    this.currentWeekOccurrences = const [],
+    this.lastEndedProgramName,
+    this.lastEndedOutcome,
     this.activeStrengthDraft,
   });
 
@@ -42,6 +48,10 @@ class TrainingLandingSnapshot {
   final List<CalendarOccurrenceReadItem> upcoming;
   final List<WorkoutSession> recentSessions;
   final String? activeProgramName;
+  final String? currentWeekStartLocalDate;
+  final List<CalendarOccurrenceReadItem> currentWeekOccurrences;
+  final String? lastEndedProgramName;
+  final String? lastEndedOutcome;
   final WorkoutDraft? activeStrengthDraft;
 
   CalendarOccurrenceReadItem? get currentPlanContext =>
@@ -95,10 +105,19 @@ final trainingLandingSnapshotProvider =
           .currentTimezoneId();
       final localDate = dates.todayIn(timezoneId);
       final endDate = dates.addCalendarDays(localDate, timezoneId, 14);
+      final weekStart = dates.addCalendarDays(
+        localDate,
+        timezoneId,
+        -(dates.weekday(localDate, timezoneId) - 1),
+      );
+      final weekEnd = dates.addCalendarDays(weekStart, timezoneId, 6);
+      final snapshotEnd = dates.compare(endDate, weekEnd) >= 0
+          ? endDate
+          : weekEnd;
       final calendarRepository = ref.watch(calendarReadRepositoryProvider);
       final invalidation = calendarRepository.watchInvalidation(
-        startLocalDate: localDate,
-        endLocalDate: endDate,
+        startLocalDate: weekStart,
+        endLocalDate: snapshotEnd,
         timezoneId: timezoneId,
       );
       final invalidationSubscription = invalidation.listen(
@@ -111,8 +130,8 @@ final trainingLandingSnapshotProvider =
           .listen((_) => ref.invalidateSelf());
       ref.onDispose(draftSubscription.cancel);
       final calendar = await calendarRepository.readSnapshot(
-        startLocalDate: localDate,
-        endLocalDate: endDate,
+        startLocalDate: weekStart,
+        endLocalDate: snapshotEnd,
         timezoneId: timezoneId,
       );
       final sessions = await workoutRepository.getSessions();
@@ -121,7 +140,16 @@ final trainingLandingSnapshotProvider =
         calendar.rangeOccurrences,
         localDate,
       );
-      final upcoming = calendar.rangeOccurrences
+      final activeOccurrences = calendar.activeProgramVersionId == null
+          ? const <CalendarOccurrenceReadItem>[]
+          : calendar.rangeOccurrences
+                .where(
+                  (item) =>
+                      item.occurrence.programVersionId ==
+                      calendar.activeProgramVersionId,
+                )
+                .toList(growable: false);
+      final upcoming = activeOccurrences
           .where(
             (item) =>
                 item.occurrence.effectiveLocalDate.compareTo(localDate) > 0 &&
@@ -136,6 +164,21 @@ final trainingLandingSnapshotProvider =
         upcoming: upcoming,
         recentSessions: sessions.take(3).toList(growable: false),
         activeProgramName: calendar.activeProgramName,
+        currentWeekStartLocalDate: weekStart,
+        currentWeekOccurrences: activeOccurrences
+            .where(
+              (item) =>
+                  dates.compare(
+                        item.occurrence.effectiveLocalDate,
+                        weekStart,
+                      ) >=
+                      0 &&
+                  dates.compare(item.occurrence.effectiveLocalDate, weekEnd) <=
+                      0,
+            )
+            .toList(growable: false),
+        lastEndedProgramName: calendar.lastEndedProgramName,
+        lastEndedOutcome: calendar.lastEndedOutcome,
         activeStrengthDraft:
             activeDraft?.activityType == 'strength' &&
                 activeDraft?.executionStateJson != null
@@ -153,6 +196,7 @@ class TrainingScreen extends ConsumerStatefulWidget {
 
 class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   var _isLaunching = false;
+  var _isEndingPlan = false;
 
   Future<void> _openStartWorkout(
     BuildContext context,
@@ -229,6 +273,140 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         ).push(MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()));
     }
     if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
+  }
+
+  Future<void> _showPlanActions(
+    BuildContext context,
+    WidgetRef ref,
+    TrainingLandingSnapshot data,
+  ) async {
+    if (_isEndingPlan || data.activeProgramName == null) return;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(
+            B05Layout.space8,
+            B05Layout.space8,
+            B05Layout.space8,
+            B05Layout.space16,
+          ),
+          children: [
+            ListTile(
+              title: Text(data.activeProgramName!),
+              subtitle: const Text('Manage your current training plan.'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.route_outlined),
+              title: const Text('View plan'),
+              onTap: () => Navigator.pop(sheetContext, 'plan'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month_outlined),
+              title: const Text('View calendar'),
+              onTap: () => Navigator.pop(sheetContext, 'calendar'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Finish plan'),
+              subtitle: const Text(
+                'Stop future workouts and keep your history.',
+              ),
+              onTap: () => Navigator.pop(sheetContext, 'finish'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.exit_to_app_rounded),
+              title: const Text('Leave plan'),
+              subtitle: const Text('Stop using this plan for now.'),
+              onTap: () => Navigator.pop(sheetContext, 'leave'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted || action == null) return;
+    switch (action) {
+      case 'plan':
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()));
+      case 'calendar':
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ProgramCalendarScreen()),
+        );
+      case 'finish':
+        await _confirmEndPlan(context, ref, data, PlanEndOutcome.finished);
+      case 'leave':
+        await _confirmEndPlan(context, ref, data, PlanEndOutcome.left);
+    }
+    if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
+  }
+
+  Future<void> _confirmEndPlan(
+    BuildContext context,
+    WidgetRef ref,
+    TrainingLandingSnapshot data,
+    PlanEndOutcome outcome,
+  ) async {
+    final isFinish = outcome == PlanEndOutcome.finished;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(isFinish ? 'Finish plan?' : 'Leave plan?'),
+        content: Text(
+          isFinish
+              ? 'Future workouts in ${data.activeProgramName} will stop. Completed and partially completed workouts stay in your history.'
+              : 'Future workouts in ${data.activeProgramName} will stop. Your completed workout history stays saved, and you can choose another plan later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(isFinish ? 'Finish plan' : 'Leave plan'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted || _isEndingPlan) return;
+    setState(() => _isEndingPlan = true);
+    try {
+      final controller = ref.read(trainingPlanLifecycleControllerProvider);
+      final result = isFinish
+          ? await controller.finishPlan()
+          : await controller.leavePlan();
+      if (!context.mounted) return;
+      final count = result.cancelledOccurrenceIds.length;
+      final stoppedLabel = count == 0
+          ? 'Future workouts are no longer scheduled.'
+          : '$count future ${count == 1 ? 'workout' : 'workouts'} stopped.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isFinish
+                ? 'Plan finished. $stoppedLabel'
+                : 'Plan left. Your workout history is still here.',
+          ),
+        ),
+      );
+      ref.invalidate(trainingLandingSnapshotProvider);
+    } on ProgramLifecycleException catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_planLifecycleFailureMessage(error))),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Plan action unavailable. Try again.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isEndingPlan = false);
+    }
   }
 
   Future<void> _resumeDraft(
@@ -389,6 +567,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           onOpenPlan: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()),
           ),
+          onOpenPlanActions: () => _showPlanActions(context, ref, data),
           onOpenCalendar: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ProgramCalendarScreen()),
           ),
@@ -482,6 +661,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   }
 }
 
+String _planLifecycleFailureMessage(ProgramLifecycleException error) {
+  if (error.code == 'blocked') return error.message;
+  if (error.code == 'no_active_plan') {
+    return 'This plan is no longer active. Refresh Training to see the next step.';
+  }
+  return 'Plan action unavailable. Try again.';
+}
+
 class _TrainingLandingBody extends StatelessWidget {
   const _TrainingLandingBody({
     required this.data,
@@ -491,6 +678,7 @@ class _TrainingLandingBody extends StatelessWidget {
     required this.onStartQuickWorkout,
     required this.onResumeDraft,
     required this.onOpenPlan,
+    required this.onOpenPlanActions,
     required this.onOpenCalendar,
     required this.onOpenExercises,
     required this.onOpenHistory,
@@ -504,6 +692,7 @@ class _TrainingLandingBody extends StatelessWidget {
   final VoidCallback onStartQuickWorkout;
   final VoidCallback? onResumeDraft;
   final VoidCallback onOpenPlan;
+  final VoidCallback onOpenPlanActions;
   final VoidCallback onOpenCalendar;
   final VoidCallback onOpenExercises;
   final VoidCallback onOpenHistory;
@@ -518,6 +707,7 @@ class _TrainingLandingBody extends StatelessWidget {
         data.upcoming.isEmpty &&
         data.recentSessions.isEmpty &&
         data.activeProgramName?.trim().isNotEmpty != true &&
+        data.lastEndedOutcome == null &&
         data.activeStrengthDraft == null;
     if (isEmpty) {
       return ListView(
@@ -620,27 +810,50 @@ class _TrainingLandingBody extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      data.activeProgramName ?? 'No training plan yet',
+                      data.activeProgramName ??
+                          _endedPlanTitle(data.lastEndedOutcome),
                       style: B05Typography.title(context),
                     ),
                     const SizedBox(height: B05Layout.space4),
                     Text(
                       data.activeProgramName == null
-                          ? 'Choose a plan or build one when you’re ready.'
+                          ? data.lastEndedOutcome == null
+                                ? 'Choose a plan or build one when you’re ready.'
+                                : '${data.lastEndedProgramName ?? 'Your previous plan'} is saved in history. Choose another plan whenever you are ready.'
                           : _planContextLabel(planContext),
                       style: B05Typography.body(context),
                     ),
                   ],
                 ),
               ),
-              B05IconAction(
-                icon: Icons.chevron_right_rounded,
-                label: 'View training plan',
-                onPressed: onOpenPlan,
-              ),
+              if (data.activeProgramName != null)
+                B05IconAction(
+                  icon: Icons.more_horiz_rounded,
+                  label: 'Plan actions',
+                  hint: 'View, switch, finish, or leave this plan.',
+                  onPressed: onOpenPlanActions,
+                )
+              else
+                B05IconAction(
+                  icon: Icons.chevron_right_rounded,
+                  label: 'Choose a training plan',
+                  onPressed: onOpenPlan,
+                ),
             ],
           ),
         ),
+        if (data.activeProgramName != null) ...[
+          const SizedBox(height: B05Layout.space20),
+          _SectionLabel(label: 'THIS WEEK'),
+          const SizedBox(height: B05Layout.space8),
+          _TrainingWeekStrip(
+            weekStartLocalDate:
+                data.currentWeekStartLocalDate ??
+                _mondayForLocalDate(data.localDate),
+            occurrences: data.currentWeekOccurrences,
+            localDate: data.localDate,
+          ),
+        ],
         const SizedBox(height: B05Layout.space20),
         _SectionLabel(label: 'UPCOMING'),
         const SizedBox(height: B05Layout.space8),
@@ -737,6 +950,213 @@ class _TrainingLandingBody extends StatelessWidget {
     final week = item.week.programWeekOrdinal + 1;
     final deload = item.isDeload ? ' · Deload week' : '';
     return 'Week $week$deload · ${item.template.name}';
+  }
+
+  static String _endedPlanTitle(String? outcome) => switch (outcome) {
+    'finished' => 'Plan finished',
+    'left' => 'Plan left',
+    _ => 'No training plan yet',
+  };
+
+  static String _mondayForLocalDate(String localDate) {
+    final date = DateTime.parse('${localDate}T12:00:00Z');
+    final monday = date.subtract(Duration(days: date.weekday - 1));
+    return '${monday.year.toString().padLeft(4, '0')}-'
+        '${monday.month.toString().padLeft(2, '0')}-'
+        '${monday.day.toString().padLeft(2, '0')}';
+  }
+}
+
+class _TrainingWeekStrip extends StatelessWidget {
+  const _TrainingWeekStrip({
+    required this.weekStartLocalDate,
+    required this.occurrences,
+    required this.localDate,
+  });
+
+  final String weekStartLocalDate;
+  final List<CalendarOccurrenceReadItem> occurrences;
+  final String localDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final start = DateTime.parse('${weekStartLocalDate}T12:00:00Z');
+    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    return B05Surface(
+      tone: B05SurfaceTone.inset,
+      padding: const EdgeInsets.symmetric(
+        horizontal: B05Layout.space8,
+        vertical: B05Layout.space12,
+      ),
+      child: Row(
+        children: [
+          for (var index = 0; index < labels.length; index++)
+            Expanded(
+              child: _TrainingWeekDay(
+                label: labels[index],
+                date: start.add(Duration(days: index)),
+                isToday:
+                    _formatDate(start.add(Duration(days: index))) == localDate,
+                occurrences: occurrences
+                    .where(
+                      (item) =>
+                          item.occurrence.effectiveLocalDate ==
+                          _formatDate(start.add(Duration(days: index))),
+                    )
+                    .toList(growable: false),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatDate(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
+}
+
+/// Neutral label for a week-strip day with no occurrence. B01 records no
+/// explicit rest evidence, so absence must not infer recovery intent.
+const String trainingWeekEmptyDayLabel = 'no workout scheduled';
+
+/// Semantic label for one week-strip day. Public for focused tests.
+String trainingWeekDaySemanticLabel(
+  String weekdayName,
+  int day,
+  String statusLabel,
+  String? workoutName,
+) =>
+    '$weekdayName, $day: $statusLabel'
+    '${workoutName == null ? '' : ', $workoutName'}';
+
+class _TrainingWeekDay extends StatelessWidget {
+  const _TrainingWeekDay({
+    required this.label,
+    required this.date,
+    required this.isToday,
+    required this.occurrences,
+  });
+
+  final String label;
+  final DateTime date;
+  final bool isToday;
+  final List<CalendarOccurrenceReadItem> occurrences;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = _TrainingWeekStatus.from(occurrences);
+    final colors = context.b05Colors;
+    final workoutName = occurrences.isEmpty
+        ? null
+        : occurrences.first.template.name;
+    return Semantics(
+      label: trainingWeekDaySemanticLabel(
+        _weekdayName(date.weekday),
+        date.day,
+        status.accessibleLabel,
+        workoutName,
+      ),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 72),
+        decoration: BoxDecoration(
+          color: isToday ? colors.selected : Colors.transparent,
+          borderRadius: B05Radii.smallRadius,
+          border: Border.all(
+            color: isToday ? colors.action : Colors.transparent,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: B05Layout.space4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: B05Typography.caption(context).copyWith(
+                color: isToday ? colors.action : colors.textSecondary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: B05Layout.space4),
+            Icon(status.icon, size: 18, color: status.color(context)),
+            const SizedBox(height: B05Layout.space4),
+            Text(
+              '${date.day}',
+              style: B05Typography.caption(context).copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _weekdayName(int weekday) => const [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ][weekday - 1];
+}
+
+enum _TrainingWeekStatus {
+  rest,
+  scheduled,
+  inProgress,
+  complete,
+  partial,
+  skipped,
+  cancelled;
+
+  IconData get icon => switch (this) {
+    rest => Icons.circle_outlined,
+    scheduled => Icons.event_outlined,
+    inProgress => Icons.play_circle_outline_rounded,
+    complete => Icons.check_circle_outline_rounded,
+    partial => Icons.timelapse_rounded,
+    skipped => Icons.skip_next_rounded,
+    cancelled => Icons.remove_circle_outline_rounded,
+  };
+
+  String get accessibleLabel => switch (this) {
+    // An empty day has no occurrence row: B01 does not record explicit
+    // rest evidence, so the label stays neutral instead of inferring rest.
+    rest => 'no workout scheduled',
+    scheduled => 'scheduled',
+    inProgress => 'in progress',
+    complete => 'completed',
+    partial => 'partially completed',
+    skipped => 'skipped',
+    cancelled => 'cancelled',
+  };
+
+  Color color(BuildContext context) => switch (this) {
+    rest => context.b05Colors.textSecondary,
+    scheduled => context.b05Colors.action,
+    inProgress => context.b05Colors.action,
+    complete => context.b05Colors.success.foreground,
+    partial => context.b05Colors.warning.foreground,
+    skipped => context.b05Colors.textSecondary,
+    cancelled => context.b05Colors.textSecondary,
+  };
+
+  static _TrainingWeekStatus from(List<CalendarOccurrenceReadItem> items) {
+    if (items.isEmpty) return rest;
+    final statuses = items.map((item) => item.occurrence.status).toSet();
+    if (statuses.contains('inProgress')) return inProgress;
+    if (statuses.contains('planned') || statuses.contains('rescheduled')) {
+      return scheduled;
+    }
+    if (statuses.contains('partiallyCompleted')) return partial;
+    if (statuses.contains('completed')) return complete;
+    if (statuses.contains('skipped')) return skipped;
+    return cancelled;
   }
 }
 

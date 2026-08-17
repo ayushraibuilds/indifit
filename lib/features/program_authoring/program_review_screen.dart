@@ -79,6 +79,9 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
     final detail = _versionDetail;
     if (detail == null) return;
 
+    final canSwitch = await _confirmPlanSwitchIfNeeded(detail);
+    if (!canSwitch || !mounted) return;
+
     setState(() {
       _isLoading = true;
       _activationError = null;
@@ -141,6 +144,55 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
     context.go(
       Uri(path: '/calendar', queryParameters: {'date': firstDate}).toString(),
     );
+  }
+
+  Future<bool> _confirmPlanSwitchIfNeeded(ProgramDetailAggregate detail) async {
+    try {
+      final dates = ref.read(localScheduleDateServiceProvider);
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      final localDate = dates.todayIn(timezoneId);
+      final current = await ref
+          .read(calendarReadRepositoryProvider)
+          .readSnapshot(
+            startLocalDate: localDate,
+            endLocalDate: localDate,
+            timezoneId: timezoneId,
+          );
+      final activeId = current.activeProgramVersionId;
+      if (activeId == null || activeId == detail.version.id) return true;
+      final activeName = current.activeProgramName ?? 'your current plan';
+      if (!mounted) return false;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Switch training plan?'),
+          content: Text(
+            'You are using $activeName. Switch to ${detail.program.name}? Completed history stays saved; the new plan becomes the one shown for upcoming workouts.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Keep current plan'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Switch plan'),
+            ),
+          ],
+        ),
+      );
+      return confirmed == true;
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _activationError =
+              'The current plan could not be checked. Try again before switching.';
+        });
+      }
+      return false;
+    }
   }
 
   Future<void> _selectDate() async {

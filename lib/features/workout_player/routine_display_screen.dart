@@ -9,7 +9,9 @@ import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../training/training_plan_lifecycle_controller.dart';
 import 'widgets/manual_log_sheet.dart';
 
 class RoutineDisplayScreen extends ConsumerStatefulWidget {
@@ -108,6 +110,68 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
     }
   }
 
+  Future<void> _endActivePlan(PlanEndOutcome outcome) async {
+    if (_loading) return;
+    final planName = _activeProgramName ?? 'this plan';
+    final isFinish = outcome == PlanEndOutcome.finished;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(isFinish ? 'Finish plan?' : 'Leave plan?'),
+        content: Text(
+          isFinish
+              ? 'Future workouts in $planName will stop. Completed and partially completed workouts stay in your history.'
+              : 'Future workouts in $planName will stop. Your completed workout history stays saved.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(isFinish ? 'Finish plan' : 'Leave plan'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _loading = true);
+    try {
+      final controller = ref.read(trainingPlanLifecycleControllerProvider);
+      final result = isFinish
+          ? await controller.finishPlan()
+          : await controller.leavePlan();
+      if (!mounted) return;
+      final count = result.cancelledOccurrenceIds.length;
+      final stoppedLabel = count == 0
+          ? 'Future workouts are no longer scheduled.'
+          : '$count future ${count == 1 ? 'workout' : 'workouts'} stopped.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isFinish
+                ? 'Plan finished. $stoppedLabel'
+                : 'Plan left. Your workout history is still here.',
+          ),
+        ),
+      );
+      await _loadActiveRoutine();
+    } on ProgramLifecycleException catch (error) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_routinePlanLifecycleMessage(error))),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Plan action unavailable. Try again.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -175,6 +239,8 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
       planName: _activeProgramName,
       onOpenCalendar: () => context.push('/calendar'),
       onChangePlan: () => context.push('/program-author'),
+      onFinishPlan: () => _endActivePlan(PlanEndOutcome.finished),
+      onLeavePlan: () => _endActivePlan(PlanEndOutcome.left),
     );
   }
 
@@ -555,12 +621,16 @@ class ActiveProgramManagementSurface extends StatelessWidget {
     required this.planName,
     required this.onOpenCalendar,
     required this.onChangePlan,
+    this.onFinishPlan,
+    this.onLeavePlan,
     super.key,
   });
 
   final String? planName;
   final VoidCallback onOpenCalendar;
   final VoidCallback onChangePlan;
+  final VoidCallback? onFinishPlan;
+  final VoidCallback? onLeavePlan;
 
   @override
   Widget build(BuildContext context) {
@@ -598,6 +668,30 @@ class ActiveProgramManagementSurface extends StatelessWidget {
                   emphasis: B05ActionEmphasis.secondary,
                   onPressed: onChangePlan,
                 ),
+                if (onFinishPlan != null || onLeavePlan != null)
+                  PopupMenuButton<String>(
+                    tooltip: 'Plan actions',
+                    onSelected: (value) {
+                      if (value == 'finish') onFinishPlan?.call();
+                      if (value == 'leave') onLeavePlan?.call();
+                    },
+                    itemBuilder: (context) => [
+                      if (onFinishPlan != null)
+                        const PopupMenuItem(
+                          value: 'finish',
+                          child: Text('Finish plan'),
+                        ),
+                      if (onLeavePlan != null)
+                        const PopupMenuItem(
+                          value: 'leave',
+                          child: Text('Leave plan'),
+                        ),
+                    ],
+                    child: const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Icon(Icons.more_horiz_rounded),
+                    ),
+                  ),
               ],
             ),
           ],
@@ -605,4 +699,12 @@ class ActiveProgramManagementSurface extends StatelessWidget {
       ),
     );
   }
+}
+
+String _routinePlanLifecycleMessage(ProgramLifecycleException error) {
+  if (error.code == 'blocked') return error.message;
+  if (error.code == 'no_active_plan') {
+    return 'This plan is no longer active. Return to Training to choose what is next.';
+  }
+  return 'Plan action unavailable. Try again.';
 }

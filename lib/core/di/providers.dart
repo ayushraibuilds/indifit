@@ -34,6 +34,7 @@ import '../../data/repositories/nutrition_recipe_repository.dart';
 import '../../data/repositories/nutrition_thali_repository.dart';
 import '../../data/repositories/nutrition_transformation_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
+import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/program_repository.dart';
 import '../../data/repositories/readiness_snapshot_repository.dart';
 import '../../data/repositories/recovery_observation_repository.dart';
@@ -791,6 +792,10 @@ final programActivationCoordinatorProvider =
         dates: ref.watch(localScheduleDateServiceProvider),
       );
     });
+
+final programLifecycleRepositoryProvider = Provider<ProgramLifecycleRepository>(
+  (ref) => ProgramLifecycleRepository(ref.watch(databaseProvider)),
+);
 
 final calendarRepositoryProvider = Provider<CalendarRepository>((ref) {
   return CalendarRepository(

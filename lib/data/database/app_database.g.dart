@@ -2611,6 +2611,17 @@ class WorkoutSession extends DataClass implements Insertable<WorkoutSession> {
   final String name;
   final double totalVolume;
   final int durationSeconds;
+
+  /// NON-AUTHORITATIVE compatibility column. IndiFit has no accepted
+  /// canonical estimation authority for workout energy expenditure, so
+  /// locally completed workouts always persist `0`, which means "not
+  /// estimated" — never a genuine zero-kcal measurement. Only rows imported
+  /// from Apple Health / Health Connect (they carry a `HealthProvenances`
+  /// row) may hold a provider-supplied value. Historical rows written before
+  /// this contract may contain legacy estimates and must never be presented
+  /// as factual evidence. Code that needs a trusted value must use the
+  /// provenance-aware accessor on `B02TypedActivityHistoryRecord`
+  /// (`providerEstimatedCaloriesKcal`) instead of reading this column.
   final int estimatedCalories;
   final DateTime completedAt;
   final bool isSynced;
@@ -15046,6 +15057,54 @@ class $TrainingPlanSettingsTable extends TrainingPlanSettings
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _lastEndedProgramVersionIdMeta =
+      const VerificationMeta('lastEndedProgramVersionId');
+  @override
+  late final GeneratedColumn<String> lastEndedProgramVersionId =
+      GeneratedColumn<String>(
+        'last_ended_program_version_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES program_versions (id)',
+        ),
+      );
+  static const VerificationMeta _lastEndedOutcomeMeta = const VerificationMeta(
+    'lastEndedOutcome',
+  );
+  @override
+  late final GeneratedColumn<String> lastEndedOutcome = GeneratedColumn<String>(
+    'last_ended_outcome',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastEndedAtUtcMeta = const VerificationMeta(
+    'lastEndedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastEndedAtUtc =
+      GeneratedColumn<DateTime>(
+        'last_ended_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastEndedCommandIdMeta =
+      const VerificationMeta('lastEndedCommandId');
+  @override
+  late final GeneratedColumn<String> lastEndedCommandId =
+      GeneratedColumn<String>(
+        'last_ended_command_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _defaultEquipmentProfileIdMeta =
       const VerificationMeta('defaultEquipmentProfileId');
   @override
@@ -15077,6 +15136,10 @@ class $TrainingPlanSettingsTable extends TrainingPlanSettings
     activeProgramVersionId,
     activeSinceLocalDate,
     activeSinceTimezoneId,
+    lastEndedProgramVersionId,
+    lastEndedOutcome,
+    lastEndedAtUtc,
+    lastEndedCommandId,
     defaultEquipmentProfileId,
     updatedAtUtc,
   ];
@@ -15119,6 +15182,42 @@ class $TrainingPlanSettingsTable extends TrainingPlanSettings
         activeSinceTimezoneId.isAcceptableOrUnknown(
           data['active_since_timezone_id']!,
           _activeSinceTimezoneIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_ended_program_version_id')) {
+      context.handle(
+        _lastEndedProgramVersionIdMeta,
+        lastEndedProgramVersionId.isAcceptableOrUnknown(
+          data['last_ended_program_version_id']!,
+          _lastEndedProgramVersionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_ended_outcome')) {
+      context.handle(
+        _lastEndedOutcomeMeta,
+        lastEndedOutcome.isAcceptableOrUnknown(
+          data['last_ended_outcome']!,
+          _lastEndedOutcomeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_ended_at_utc')) {
+      context.handle(
+        _lastEndedAtUtcMeta,
+        lastEndedAtUtc.isAcceptableOrUnknown(
+          data['last_ended_at_utc']!,
+          _lastEndedAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_ended_command_id')) {
+      context.handle(
+        _lastEndedCommandIdMeta,
+        lastEndedCommandId.isAcceptableOrUnknown(
+          data['last_ended_command_id']!,
+          _lastEndedCommandIdMeta,
         ),
       );
     }
@@ -15167,6 +15266,22 @@ class $TrainingPlanSettingsTable extends TrainingPlanSettings
         DriftSqlType.string,
         data['${effectivePrefix}active_since_timezone_id'],
       ),
+      lastEndedProgramVersionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_ended_program_version_id'],
+      ),
+      lastEndedOutcome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_ended_outcome'],
+      ),
+      lastEndedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_ended_at_utc'],
+      ),
+      lastEndedCommandId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_ended_command_id'],
+      ),
       defaultEquipmentProfileId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}default_equipment_profile_id'],
@@ -15190,6 +15305,10 @@ class TrainingPlanSetting extends DataClass
   final String? activeProgramVersionId;
   final String? activeSinceLocalDate;
   final String? activeSinceTimezoneId;
+  final String? lastEndedProgramVersionId;
+  final String? lastEndedOutcome;
+  final DateTime? lastEndedAtUtc;
+  final String? lastEndedCommandId;
   final String? defaultEquipmentProfileId;
   final DateTime updatedAtUtc;
   const TrainingPlanSetting({
@@ -15197,6 +15316,10 @@ class TrainingPlanSetting extends DataClass
     this.activeProgramVersionId,
     this.activeSinceLocalDate,
     this.activeSinceTimezoneId,
+    this.lastEndedProgramVersionId,
+    this.lastEndedOutcome,
+    this.lastEndedAtUtc,
+    this.lastEndedCommandId,
     this.defaultEquipmentProfileId,
     required this.updatedAtUtc,
   });
@@ -15214,6 +15337,20 @@ class TrainingPlanSetting extends DataClass
     }
     if (!nullToAbsent || activeSinceTimezoneId != null) {
       map['active_since_timezone_id'] = Variable<String>(activeSinceTimezoneId);
+    }
+    if (!nullToAbsent || lastEndedProgramVersionId != null) {
+      map['last_ended_program_version_id'] = Variable<String>(
+        lastEndedProgramVersionId,
+      );
+    }
+    if (!nullToAbsent || lastEndedOutcome != null) {
+      map['last_ended_outcome'] = Variable<String>(lastEndedOutcome);
+    }
+    if (!nullToAbsent || lastEndedAtUtc != null) {
+      map['last_ended_at_utc'] = Variable<DateTime>(lastEndedAtUtc);
+    }
+    if (!nullToAbsent || lastEndedCommandId != null) {
+      map['last_ended_command_id'] = Variable<String>(lastEndedCommandId);
     }
     if (!nullToAbsent || defaultEquipmentProfileId != null) {
       map['default_equipment_profile_id'] = Variable<String>(
@@ -15236,6 +15373,19 @@ class TrainingPlanSetting extends DataClass
       activeSinceTimezoneId: activeSinceTimezoneId == null && nullToAbsent
           ? const Value.absent()
           : Value(activeSinceTimezoneId),
+      lastEndedProgramVersionId:
+          lastEndedProgramVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEndedProgramVersionId),
+      lastEndedOutcome: lastEndedOutcome == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEndedOutcome),
+      lastEndedAtUtc: lastEndedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEndedAtUtc),
+      lastEndedCommandId: lastEndedCommandId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEndedCommandId),
       defaultEquipmentProfileId:
           defaultEquipmentProfileId == null && nullToAbsent
           ? const Value.absent()
@@ -15260,6 +15410,14 @@ class TrainingPlanSetting extends DataClass
       activeSinceTimezoneId: serializer.fromJson<String?>(
         json['activeSinceTimezoneId'],
       ),
+      lastEndedProgramVersionId: serializer.fromJson<String?>(
+        json['lastEndedProgramVersionId'],
+      ),
+      lastEndedOutcome: serializer.fromJson<String?>(json['lastEndedOutcome']),
+      lastEndedAtUtc: serializer.fromJson<DateTime?>(json['lastEndedAtUtc']),
+      lastEndedCommandId: serializer.fromJson<String?>(
+        json['lastEndedCommandId'],
+      ),
       defaultEquipmentProfileId: serializer.fromJson<String?>(
         json['defaultEquipmentProfileId'],
       ),
@@ -15278,6 +15436,12 @@ class TrainingPlanSetting extends DataClass
       'activeSinceTimezoneId': serializer.toJson<String?>(
         activeSinceTimezoneId,
       ),
+      'lastEndedProgramVersionId': serializer.toJson<String?>(
+        lastEndedProgramVersionId,
+      ),
+      'lastEndedOutcome': serializer.toJson<String?>(lastEndedOutcome),
+      'lastEndedAtUtc': serializer.toJson<DateTime?>(lastEndedAtUtc),
+      'lastEndedCommandId': serializer.toJson<String?>(lastEndedCommandId),
       'defaultEquipmentProfileId': serializer.toJson<String?>(
         defaultEquipmentProfileId,
       ),
@@ -15290,6 +15454,10 @@ class TrainingPlanSetting extends DataClass
     Value<String?> activeProgramVersionId = const Value.absent(),
     Value<String?> activeSinceLocalDate = const Value.absent(),
     Value<String?> activeSinceTimezoneId = const Value.absent(),
+    Value<String?> lastEndedProgramVersionId = const Value.absent(),
+    Value<String?> lastEndedOutcome = const Value.absent(),
+    Value<DateTime?> lastEndedAtUtc = const Value.absent(),
+    Value<String?> lastEndedCommandId = const Value.absent(),
     Value<String?> defaultEquipmentProfileId = const Value.absent(),
     DateTime? updatedAtUtc,
   }) => TrainingPlanSetting(
@@ -15303,6 +15471,18 @@ class TrainingPlanSetting extends DataClass
     activeSinceTimezoneId: activeSinceTimezoneId.present
         ? activeSinceTimezoneId.value
         : this.activeSinceTimezoneId,
+    lastEndedProgramVersionId: lastEndedProgramVersionId.present
+        ? lastEndedProgramVersionId.value
+        : this.lastEndedProgramVersionId,
+    lastEndedOutcome: lastEndedOutcome.present
+        ? lastEndedOutcome.value
+        : this.lastEndedOutcome,
+    lastEndedAtUtc: lastEndedAtUtc.present
+        ? lastEndedAtUtc.value
+        : this.lastEndedAtUtc,
+    lastEndedCommandId: lastEndedCommandId.present
+        ? lastEndedCommandId.value
+        : this.lastEndedCommandId,
     defaultEquipmentProfileId: defaultEquipmentProfileId.present
         ? defaultEquipmentProfileId.value
         : this.defaultEquipmentProfileId,
@@ -15320,6 +15500,18 @@ class TrainingPlanSetting extends DataClass
       activeSinceTimezoneId: data.activeSinceTimezoneId.present
           ? data.activeSinceTimezoneId.value
           : this.activeSinceTimezoneId,
+      lastEndedProgramVersionId: data.lastEndedProgramVersionId.present
+          ? data.lastEndedProgramVersionId.value
+          : this.lastEndedProgramVersionId,
+      lastEndedOutcome: data.lastEndedOutcome.present
+          ? data.lastEndedOutcome.value
+          : this.lastEndedOutcome,
+      lastEndedAtUtc: data.lastEndedAtUtc.present
+          ? data.lastEndedAtUtc.value
+          : this.lastEndedAtUtc,
+      lastEndedCommandId: data.lastEndedCommandId.present
+          ? data.lastEndedCommandId.value
+          : this.lastEndedCommandId,
       defaultEquipmentProfileId: data.defaultEquipmentProfileId.present
           ? data.defaultEquipmentProfileId.value
           : this.defaultEquipmentProfileId,
@@ -15336,6 +15528,10 @@ class TrainingPlanSetting extends DataClass
           ..write('activeProgramVersionId: $activeProgramVersionId, ')
           ..write('activeSinceLocalDate: $activeSinceLocalDate, ')
           ..write('activeSinceTimezoneId: $activeSinceTimezoneId, ')
+          ..write('lastEndedProgramVersionId: $lastEndedProgramVersionId, ')
+          ..write('lastEndedOutcome: $lastEndedOutcome, ')
+          ..write('lastEndedAtUtc: $lastEndedAtUtc, ')
+          ..write('lastEndedCommandId: $lastEndedCommandId, ')
           ..write('defaultEquipmentProfileId: $defaultEquipmentProfileId, ')
           ..write('updatedAtUtc: $updatedAtUtc')
           ..write(')'))
@@ -15348,6 +15544,10 @@ class TrainingPlanSetting extends DataClass
     activeProgramVersionId,
     activeSinceLocalDate,
     activeSinceTimezoneId,
+    lastEndedProgramVersionId,
+    lastEndedOutcome,
+    lastEndedAtUtc,
+    lastEndedCommandId,
     defaultEquipmentProfileId,
     updatedAtUtc,
   );
@@ -15359,6 +15559,10 @@ class TrainingPlanSetting extends DataClass
           other.activeProgramVersionId == this.activeProgramVersionId &&
           other.activeSinceLocalDate == this.activeSinceLocalDate &&
           other.activeSinceTimezoneId == this.activeSinceTimezoneId &&
+          other.lastEndedProgramVersionId == this.lastEndedProgramVersionId &&
+          other.lastEndedOutcome == this.lastEndedOutcome &&
+          other.lastEndedAtUtc == this.lastEndedAtUtc &&
+          other.lastEndedCommandId == this.lastEndedCommandId &&
           other.defaultEquipmentProfileId == this.defaultEquipmentProfileId &&
           other.updatedAtUtc == this.updatedAtUtc);
 }
@@ -15369,6 +15573,10 @@ class TrainingPlanSettingsCompanion
   final Value<String?> activeProgramVersionId;
   final Value<String?> activeSinceLocalDate;
   final Value<String?> activeSinceTimezoneId;
+  final Value<String?> lastEndedProgramVersionId;
+  final Value<String?> lastEndedOutcome;
+  final Value<DateTime?> lastEndedAtUtc;
+  final Value<String?> lastEndedCommandId;
   final Value<String?> defaultEquipmentProfileId;
   final Value<DateTime> updatedAtUtc;
   const TrainingPlanSettingsCompanion({
@@ -15376,6 +15584,10 @@ class TrainingPlanSettingsCompanion
     this.activeProgramVersionId = const Value.absent(),
     this.activeSinceLocalDate = const Value.absent(),
     this.activeSinceTimezoneId = const Value.absent(),
+    this.lastEndedProgramVersionId = const Value.absent(),
+    this.lastEndedOutcome = const Value.absent(),
+    this.lastEndedAtUtc = const Value.absent(),
+    this.lastEndedCommandId = const Value.absent(),
     this.defaultEquipmentProfileId = const Value.absent(),
     this.updatedAtUtc = const Value.absent(),
   });
@@ -15384,6 +15596,10 @@ class TrainingPlanSettingsCompanion
     this.activeProgramVersionId = const Value.absent(),
     this.activeSinceLocalDate = const Value.absent(),
     this.activeSinceTimezoneId = const Value.absent(),
+    this.lastEndedProgramVersionId = const Value.absent(),
+    this.lastEndedOutcome = const Value.absent(),
+    this.lastEndedAtUtc = const Value.absent(),
+    this.lastEndedCommandId = const Value.absent(),
     this.defaultEquipmentProfileId = const Value.absent(),
     required DateTime updatedAtUtc,
   }) : updatedAtUtc = Value(updatedAtUtc);
@@ -15392,6 +15608,10 @@ class TrainingPlanSettingsCompanion
     Expression<String>? activeProgramVersionId,
     Expression<String>? activeSinceLocalDate,
     Expression<String>? activeSinceTimezoneId,
+    Expression<String>? lastEndedProgramVersionId,
+    Expression<String>? lastEndedOutcome,
+    Expression<DateTime>? lastEndedAtUtc,
+    Expression<String>? lastEndedCommandId,
     Expression<String>? defaultEquipmentProfileId,
     Expression<DateTime>? updatedAtUtc,
   }) {
@@ -15403,6 +15623,12 @@ class TrainingPlanSettingsCompanion
         'active_since_local_date': activeSinceLocalDate,
       if (activeSinceTimezoneId != null)
         'active_since_timezone_id': activeSinceTimezoneId,
+      if (lastEndedProgramVersionId != null)
+        'last_ended_program_version_id': lastEndedProgramVersionId,
+      if (lastEndedOutcome != null) 'last_ended_outcome': lastEndedOutcome,
+      if (lastEndedAtUtc != null) 'last_ended_at_utc': lastEndedAtUtc,
+      if (lastEndedCommandId != null)
+        'last_ended_command_id': lastEndedCommandId,
       if (defaultEquipmentProfileId != null)
         'default_equipment_profile_id': defaultEquipmentProfileId,
       if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
@@ -15414,6 +15640,10 @@ class TrainingPlanSettingsCompanion
     Value<String?>? activeProgramVersionId,
     Value<String?>? activeSinceLocalDate,
     Value<String?>? activeSinceTimezoneId,
+    Value<String?>? lastEndedProgramVersionId,
+    Value<String?>? lastEndedOutcome,
+    Value<DateTime?>? lastEndedAtUtc,
+    Value<String?>? lastEndedCommandId,
     Value<String?>? defaultEquipmentProfileId,
     Value<DateTime>? updatedAtUtc,
   }) {
@@ -15424,6 +15654,11 @@ class TrainingPlanSettingsCompanion
       activeSinceLocalDate: activeSinceLocalDate ?? this.activeSinceLocalDate,
       activeSinceTimezoneId:
           activeSinceTimezoneId ?? this.activeSinceTimezoneId,
+      lastEndedProgramVersionId:
+          lastEndedProgramVersionId ?? this.lastEndedProgramVersionId,
+      lastEndedOutcome: lastEndedOutcome ?? this.lastEndedOutcome,
+      lastEndedAtUtc: lastEndedAtUtc ?? this.lastEndedAtUtc,
+      lastEndedCommandId: lastEndedCommandId ?? this.lastEndedCommandId,
       defaultEquipmentProfileId:
           defaultEquipmentProfileId ?? this.defaultEquipmentProfileId,
       updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
@@ -15451,6 +15686,20 @@ class TrainingPlanSettingsCompanion
         activeSinceTimezoneId.value,
       );
     }
+    if (lastEndedProgramVersionId.present) {
+      map['last_ended_program_version_id'] = Variable<String>(
+        lastEndedProgramVersionId.value,
+      );
+    }
+    if (lastEndedOutcome.present) {
+      map['last_ended_outcome'] = Variable<String>(lastEndedOutcome.value);
+    }
+    if (lastEndedAtUtc.present) {
+      map['last_ended_at_utc'] = Variable<DateTime>(lastEndedAtUtc.value);
+    }
+    if (lastEndedCommandId.present) {
+      map['last_ended_command_id'] = Variable<String>(lastEndedCommandId.value);
+    }
     if (defaultEquipmentProfileId.present) {
       map['default_equipment_profile_id'] = Variable<String>(
         defaultEquipmentProfileId.value,
@@ -15469,6 +15718,10 @@ class TrainingPlanSettingsCompanion
           ..write('activeProgramVersionId: $activeProgramVersionId, ')
           ..write('activeSinceLocalDate: $activeSinceLocalDate, ')
           ..write('activeSinceTimezoneId: $activeSinceTimezoneId, ')
+          ..write('lastEndedProgramVersionId: $lastEndedProgramVersionId, ')
+          ..write('lastEndedOutcome: $lastEndedOutcome, ')
+          ..write('lastEndedAtUtc: $lastEndedAtUtc, ')
+          ..write('lastEndedCommandId: $lastEndedCommandId, ')
           ..write('defaultEquipmentProfileId: $defaultEquipmentProfileId, ')
           ..write('updatedAtUtc: $updatedAtUtc')
           ..write(')'))
@@ -63861,28 +64114,6 @@ class $$ProgramVersionsTableFilterComposer
     return f(composer);
   }
 
-  ComposableFilter trainingPlanSettingsRefs(
-    ComposableFilter Function($$TrainingPlanSettingsTableFilterComposer f) f,
-  ) {
-    final $$TrainingPlanSettingsTableFilterComposer composer = $state
-        .composerBuilder(
-          composer: this,
-          getCurrentColumn: (t) => t.id,
-          referencedTable: $state.db.trainingPlanSettings,
-          getReferencedColumn: (t) => t.activeProgramVersionId,
-          builder: (joinBuilder, parentComposers) =>
-              $$TrainingPlanSettingsTableFilterComposer(
-                ComposerState(
-                  $state.db,
-                  $state.db.trainingPlanSettings,
-                  joinBuilder,
-                  parentComposers,
-                ),
-              ),
-        );
-    return f(composer);
-  }
-
   ComposableFilter legacyRoutineProgramMappingsRefs(
     ComposableFilter Function(
       $$LegacyRoutineProgramMappingsTableFilterComposer f,
@@ -66204,6 +66435,10 @@ typedef $$TrainingPlanSettingsTableCreateCompanionBuilder =
       Value<String?> activeProgramVersionId,
       Value<String?> activeSinceLocalDate,
       Value<String?> activeSinceTimezoneId,
+      Value<String?> lastEndedProgramVersionId,
+      Value<String?> lastEndedOutcome,
+      Value<DateTime?> lastEndedAtUtc,
+      Value<String?> lastEndedCommandId,
       Value<String?> defaultEquipmentProfileId,
       required DateTime updatedAtUtc,
     });
@@ -66213,6 +66448,10 @@ typedef $$TrainingPlanSettingsTableUpdateCompanionBuilder =
       Value<String?> activeProgramVersionId,
       Value<String?> activeSinceLocalDate,
       Value<String?> activeSinceTimezoneId,
+      Value<String?> lastEndedProgramVersionId,
+      Value<String?> lastEndedOutcome,
+      Value<DateTime?> lastEndedAtUtc,
+      Value<String?> lastEndedCommandId,
       Value<String?> defaultEquipmentProfileId,
       Value<DateTime> updatedAtUtc,
     });
@@ -66247,6 +66486,10 @@ class $$TrainingPlanSettingsTableTableManager
                 Value<String?> activeProgramVersionId = const Value.absent(),
                 Value<String?> activeSinceLocalDate = const Value.absent(),
                 Value<String?> activeSinceTimezoneId = const Value.absent(),
+                Value<String?> lastEndedProgramVersionId = const Value.absent(),
+                Value<String?> lastEndedOutcome = const Value.absent(),
+                Value<DateTime?> lastEndedAtUtc = const Value.absent(),
+                Value<String?> lastEndedCommandId = const Value.absent(),
                 Value<String?> defaultEquipmentProfileId = const Value.absent(),
                 Value<DateTime> updatedAtUtc = const Value.absent(),
               }) => TrainingPlanSettingsCompanion(
@@ -66254,6 +66497,10 @@ class $$TrainingPlanSettingsTableTableManager
                 activeProgramVersionId: activeProgramVersionId,
                 activeSinceLocalDate: activeSinceLocalDate,
                 activeSinceTimezoneId: activeSinceTimezoneId,
+                lastEndedProgramVersionId: lastEndedProgramVersionId,
+                lastEndedOutcome: lastEndedOutcome,
+                lastEndedAtUtc: lastEndedAtUtc,
+                lastEndedCommandId: lastEndedCommandId,
                 defaultEquipmentProfileId: defaultEquipmentProfileId,
                 updatedAtUtc: updatedAtUtc,
               ),
@@ -66263,6 +66510,10 @@ class $$TrainingPlanSettingsTableTableManager
                 Value<String?> activeProgramVersionId = const Value.absent(),
                 Value<String?> activeSinceLocalDate = const Value.absent(),
                 Value<String?> activeSinceTimezoneId = const Value.absent(),
+                Value<String?> lastEndedProgramVersionId = const Value.absent(),
+                Value<String?> lastEndedOutcome = const Value.absent(),
+                Value<DateTime?> lastEndedAtUtc = const Value.absent(),
+                Value<String?> lastEndedCommandId = const Value.absent(),
                 Value<String?> defaultEquipmentProfileId = const Value.absent(),
                 required DateTime updatedAtUtc,
               }) => TrainingPlanSettingsCompanion.insert(
@@ -66270,6 +66521,10 @@ class $$TrainingPlanSettingsTableTableManager
                 activeProgramVersionId: activeProgramVersionId,
                 activeSinceLocalDate: activeSinceLocalDate,
                 activeSinceTimezoneId: activeSinceTimezoneId,
+                lastEndedProgramVersionId: lastEndedProgramVersionId,
+                lastEndedOutcome: lastEndedOutcome,
+                lastEndedAtUtc: lastEndedAtUtc,
+                lastEndedCommandId: lastEndedCommandId,
                 defaultEquipmentProfileId: defaultEquipmentProfileId,
                 updatedAtUtc: updatedAtUtc,
               ),
@@ -66298,6 +66553,24 @@ class $$TrainingPlanSettingsTableFilterComposer
         ColumnFilters(column, joinBuilders: joinBuilders),
   );
 
+  ColumnFilters<String> get lastEndedOutcome => $state.composableBuilder(
+    column: $state.table.lastEndedOutcome,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<DateTime> get lastEndedAtUtc => $state.composableBuilder(
+    column: $state.table.lastEndedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnFilters<String> get lastEndedCommandId => $state.composableBuilder(
+    column: $state.table.lastEndedCommandId,
+    builder: (column, joinBuilders) =>
+        ColumnFilters(column, joinBuilders: joinBuilders),
+  );
+
   ColumnFilters<DateTime> get updatedAtUtc => $state.composableBuilder(
     column: $state.table.updatedAtUtc,
     builder: (column, joinBuilders) =>
@@ -66309,6 +66582,26 @@ class $$TrainingPlanSettingsTableFilterComposer
         .composerBuilder(
           composer: this,
           getCurrentColumn: (t) => t.activeProgramVersionId,
+          referencedTable: $state.db.programVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$ProgramVersionsTableFilterComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.programVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$ProgramVersionsTableFilterComposer get lastEndedProgramVersionId {
+    final $$ProgramVersionsTableFilterComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.lastEndedProgramVersionId,
           referencedTable: $state.db.programVersions,
           getReferencedColumn: (t) => t.id,
           builder: (joinBuilder, parentComposers) =>
@@ -66366,6 +66659,24 @@ class $$TrainingPlanSettingsTableOrderingComposer
         ColumnOrderings(column, joinBuilders: joinBuilders),
   );
 
+  ColumnOrderings<String> get lastEndedOutcome => $state.composableBuilder(
+    column: $state.table.lastEndedOutcome,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<DateTime> get lastEndedAtUtc => $state.composableBuilder(
+    column: $state.table.lastEndedAtUtc,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
+  ColumnOrderings<String> get lastEndedCommandId => $state.composableBuilder(
+    column: $state.table.lastEndedCommandId,
+    builder: (column, joinBuilders) =>
+        ColumnOrderings(column, joinBuilders: joinBuilders),
+  );
+
   ColumnOrderings<DateTime> get updatedAtUtc => $state.composableBuilder(
     column: $state.table.updatedAtUtc,
     builder: (column, joinBuilders) =>
@@ -66377,6 +66688,26 @@ class $$TrainingPlanSettingsTableOrderingComposer
         .composerBuilder(
           composer: this,
           getCurrentColumn: (t) => t.activeProgramVersionId,
+          referencedTable: $state.db.programVersions,
+          getReferencedColumn: (t) => t.id,
+          builder: (joinBuilder, parentComposers) =>
+              $$ProgramVersionsTableOrderingComposer(
+                ComposerState(
+                  $state.db,
+                  $state.db.programVersions,
+                  joinBuilder,
+                  parentComposers,
+                ),
+              ),
+        );
+    return composer;
+  }
+
+  $$ProgramVersionsTableOrderingComposer get lastEndedProgramVersionId {
+    final $$ProgramVersionsTableOrderingComposer composer = $state
+        .composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.lastEndedProgramVersionId,
           referencedTable: $state.db.programVersions,
           getReferencedColumn: (t) => t.id,
           builder: (joinBuilder, parentComposers) =>

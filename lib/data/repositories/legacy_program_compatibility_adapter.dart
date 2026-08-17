@@ -64,6 +64,13 @@ class LegacyProgramCompatibilityAdapter {
       return ActivePlanSelection.b01Program(activeVersion.id);
     }
 
+    // A cleared B01 pointer after Finish/Leave is an intentional no-plan
+    // state. Do not revive an unrelated legacy fallback until a new B01
+    // activation establishes the current authority again.
+    if (settings?.lastEndedProgramVersionId != null) {
+      return ActivePlanSelection.none();
+    }
+
     final legacyFallback = await getActiveLegacyRoutineFallback();
     if (legacyFallback != null) {
       return ActivePlanSelection.legacyRoutine(legacyFallback.id);
