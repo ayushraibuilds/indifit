@@ -40,66 +40,69 @@ class CalorieRingCard extends ConsumerWidget {
       label: calorieGoal > 0
           ? '$eatenCalories of $calorieGoal calories logged'
           : '$eatenCalories calories logged',
-      child: TweenAnimationBuilder<double>(
-        tween: Tween<double>(end: calPercent),
-        duration: B05MotionPolicy.transitionDuration(
-          context,
-          standard: B05MotionPolicy.standardDuration,
-        ),
-        curve: B05MotionPolicy.standardCurve,
-        builder: (context, animatedValue, _) {
-          return CircularPercentIndicator(
-            radius: 64,
-            lineWidth: 10,
-            percent: animatedValue,
-            center: eatenCalories == 0
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.restaurant_menu_rounded,
-                        size: B05Layout.iconLarge,
-                        color: colors.action,
-                      ),
-                      const SizedBox(height: B05Layout.space4),
-                      Text(
-                        'Log your\nfirst meal',
-                        textAlign: TextAlign.center,
-                        style: B05Typography.caption(
-                          context,
-                        ).copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '$eatenCalories',
-                        style: B05Typography.metric(
-                          context,
-                        ).copyWith(fontSize: 32, letterSpacing: -1),
-                      ),
-                      Text(
-                        calorieGoal > 0
-                            ? (calorieGoal - eatenCalories) >= 0
-                                  ? '${calorieGoal - eatenCalories} left'
-                                  : '${eatenCalories - calorieGoal} over'
-                            : 'calories logged',
-                        style: B05Typography.caption(context).copyWith(
-                          color: calorieGoal > 0 && eatenCalories > calorieGoal
-                              ? colors.danger.indicator
-                              : colors.textSecondary,
-                          fontWeight: FontWeight.bold,
+      child: ExcludeSemantics(
+        child: TweenAnimationBuilder<double>(
+          tween: Tween<double>(end: calPercent),
+          duration: B05MotionPolicy.transitionDuration(
+            context,
+            standard: B05MotionPolicy.standardDuration,
+          ),
+          curve: B05MotionPolicy.standardCurve,
+          builder: (context, animatedValue, _) {
+            return CircularPercentIndicator(
+              radius: 64,
+              lineWidth: 10,
+              percent: animatedValue,
+              center: eatenCalories == 0
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.restaurant_menu_rounded,
+                          size: B05Layout.iconLarge,
+                          color: colors.action,
                         ),
-                      ),
-                    ],
-                  ),
-            circularStrokeCap: CircularStrokeCap.round,
-            backgroundColor: colors.border,
-            progressColor: colors.action,
-          );
-        },
+                        const SizedBox(height: B05Layout.space4),
+                        Text(
+                          'Log your\nfirst meal',
+                          textAlign: TextAlign.center,
+                          style: B05Typography.caption(
+                            context,
+                          ).copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$eatenCalories',
+                          style: B05Typography.metric(
+                            context,
+                          ).copyWith(fontSize: 32, letterSpacing: -1),
+                        ),
+                        Text(
+                          calorieGoal > 0
+                              ? (calorieGoal - eatenCalories) >= 0
+                                    ? '${calorieGoal - eatenCalories} left'
+                                    : '${eatenCalories - calorieGoal} over'
+                              : 'calories logged',
+                          style: B05Typography.caption(context).copyWith(
+                            color:
+                                calorieGoal > 0 && eatenCalories > calorieGoal
+                                ? colors.danger.indicator
+                                : colors.textSecondary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+              circularStrokeCap: CircularStrokeCap.round,
+              backgroundColor: colors.border,
+              progressColor: colors.action,
+            );
+          },
+        ),
       ),
     );
 
@@ -186,63 +189,65 @@ class CalorieRingCard extends ConsumerWidget {
 
     return Semantics(
       label: '$label: ${eaten.round()} of ${goal.round()} grams',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: B05Layout.iconSmall, color: color),
-                    const SizedBox(width: B05Layout.space4),
-                    Flexible(
-                      child: Text(
-                        label,
-                        overflow: TextOverflow.ellipsis,
-                        style: B05Typography.caption(
-                          context,
-                        ).copyWith(fontWeight: FontWeight.w600),
+      child: ExcludeSemantics(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: B05Layout.iconSmall, color: color),
+                      const SizedBox(width: B05Layout.space4),
+                      Flexible(
+                        child: Text(
+                          label,
+                          overflow: TextOverflow.ellipsis,
+                          style: B05Typography.caption(
+                            context,
+                          ).copyWith(fontWeight: FontWeight.w600),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: B05Layout.space8),
-              Text(
-                '${eaten.round()}/${goal.round()}g',
-                style: B05Typography.caption(context).copyWith(
-                  color: remaining < 0
-                      ? colors.danger.indicator
-                      : colors.textPrimary,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(width: B05Layout.space8),
+                Text(
+                  '${eaten.round()}/${goal.round()}g',
+                  style: B05Typography.caption(context).copyWith(
+                    color: remaining < 0
+                        ? colors.danger.indicator
+                        : colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: B05Layout.space4),
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(end: targetPercent),
-            duration: B05MotionPolicy.transitionDuration(
-              context,
-              standard: B05MotionPolicy.standardDuration,
+              ],
             ),
-            curve: B05MotionPolicy.standardCurve,
-            builder: (context, value, _) {
-              return ClipRRect(
-                borderRadius: B05Radii.smallRadius,
-                child: LinearProgressIndicator(
-                  value: value,
-                  backgroundColor: colors.border,
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
-                  minHeight: 6,
-                ),
-              );
-            },
-          ),
-        ],
+            const SizedBox(height: B05Layout.space4),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: targetPercent),
+              duration: B05MotionPolicy.transitionDuration(
+                context,
+                standard: B05MotionPolicy.standardDuration,
+              ),
+              curve: B05MotionPolicy.standardCurve,
+              builder: (context, value, _) {
+                return ClipRRect(
+                  borderRadius: B05Radii.smallRadius,
+                  child: LinearProgressIndicator(
+                    value: value,
+                    backgroundColor: colors.border,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                    minHeight: 6,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

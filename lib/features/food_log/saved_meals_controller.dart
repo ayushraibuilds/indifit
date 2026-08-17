@@ -86,6 +86,7 @@ class SavedMealsController extends StateNotifier<SavedMealsState> {
   var _loadGeneration = 0;
   Future<NutritionConsumptionSnapshot?>? _inFlightLog;
   _SavedMealFinalization? _pendingFinalization;
+  final Set<String> _deletingSavedMealIds = <String>{};
 
   SavedMealsController({
     required Future<NutritionThaliRepository> thaliRepoFuture,
@@ -270,17 +271,28 @@ class SavedMealsController extends StateNotifier<SavedMealsState> {
     }
   }
 
-  Future<void> deleteSavedMeal(String thaliId) async {
+  /// Returns true only when the canonical saved-meal deletion succeeds.
+  ///
+  /// The screen owns any tactile feedback, so the result lets it wait for
+  /// durable success and suppresses feedback for a rejected duplicate tap.
+  /// [reload] is false for feedback-sensitive screens, which refresh only
+  /// after presenting the verified deletion to the person who initiated it.
+  Future<bool> deleteSavedMeal(String thaliId, {bool reload = true}) async {
+    if (!_deletingSavedMealIds.add(thaliId)) return false;
     try {
       final thaliRepo = await _thaliRepoFuture;
       await thaliRepo.deleteThali(userId: _userId, thaliId: thaliId);
-      await loadSavedMeals(query: state.query);
+      if (reload) await loadSavedMeals(query: state.query);
+      return true;
     } catch (error) {
       state = state.copyWith(
         status: SavedMealsStatus.failure,
         errorMessage: 'Could not delete saved meal.',
         errorCode: _errorCode(error),
       );
+      return false;
+    } finally {
+      _deletingSavedMealIds.remove(thaliId);
     }
   }
 

@@ -299,7 +299,7 @@ void main() {
         85,
       );
 
-      await controller.finalize(commandId: 'finish-prepared');
+      expect(await controller.finalize(commandId: 'finish-prepared'), isTrue);
       final persistedSet = await (db.select(
         db.performedSets,
       )..where((table) => table.actualLoadKg.equals(85))).getSingle();
@@ -355,7 +355,10 @@ void main() {
 
     final period = controller.state.launch!.state.restPeriods.single;
     final endedAt = period.startedAtUtc.add(const Duration(seconds: 91));
-    await controller.completeRest(period.id, endedAtUtc: endedAt);
+    expect(
+      await controller.completeRest(period.id, endedAtUtc: endedAt),
+      isTrue,
+    );
 
     final completed = controller.state.launch!.state.restPeriods.single;
     expect(completed.endedAtUtc, endedAt);

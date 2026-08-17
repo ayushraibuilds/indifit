@@ -1366,7 +1366,7 @@ class _RestCard extends StatefulWidget {
   final ValueChanged<String>? onExtend;
   final ValueChanged<String>? onDecrease;
   final ValueChanged<String>? onSkip;
-  final ValueChanged<String> onElapsed;
+  final Future<bool> Function(String) onElapsed;
 
   const _RestCard({
     required this.slot,
@@ -1442,19 +1442,13 @@ class _RestCardState extends State<_RestCard> {
                 spacing: 8,
                 children: [
                   FilledButton(
-                    onPressed: widget.onBegin == null
-                        ? null
-                        : () {
-                            unawaited(IndiFitHaptics.selection());
-                            widget.onBegin?.call();
-                          },
+                    onPressed: widget.onBegin,
                     child: const Text('Start rest'),
                   ),
                   OutlinedButton(
                     onPressed: widget.onCustom == null
                         ? null
                         : () async {
-                            unawaited(IndiFitHaptics.selection());
                             final controller = TextEditingController();
                             final value = await showDialog<int>(
                               context: context,
@@ -1580,8 +1574,7 @@ class _RestCardState extends State<_RestCard> {
           _ticker = null;
           if (!_finishingElapsedRest) {
             _finishingElapsedRest = true;
-            unawaited(IndiFitHaptics.confirmation());
-            widget.onElapsed(open.id);
+            unawaited(_completeElapsedRest(open.id));
           }
           return;
         }
@@ -1591,6 +1584,17 @@ class _RestCardState extends State<_RestCard> {
       _ticker?.cancel();
       _ticker = null;
       _finishingElapsedRest = false;
+    }
+  }
+
+  Future<void> _completeElapsedRest(String periodId) async {
+    try {
+      final completed = await widget.onElapsed(periodId);
+      if (completed && mounted) {
+        unawaited(IndiFitHaptics.confirmation());
+      }
+    } catch (_) {
+      // A failed durable completion must not create tactile success feedback.
     }
   }
 }

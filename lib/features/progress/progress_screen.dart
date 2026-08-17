@@ -1264,9 +1264,10 @@ class _WeightRangeSelector extends StatelessWidget {
               child: ChoiceChip(
                 label: Text(range.label),
                 selected: range == selected,
-                onSelected: (_) {
-                  unawaited(IndiFitHaptics.selection());
+                onSelected: (isSelected) {
+                  if (!isSelected || range == selected) return;
                   onSelected(range);
+                  unawaited(IndiFitHaptics.selection());
                 },
               ),
             ),

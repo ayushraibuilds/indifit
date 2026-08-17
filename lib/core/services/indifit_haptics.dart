@@ -32,12 +32,12 @@ abstract final class IndiFitHaptics {
     IndiFitHapticType type,
     Future<void> Function() action,
   ) async {
-    debugHandler?.call(type);
     try {
+      debugHandler?.call(type);
       await action();
     } catch (_) {
       // Haptics are optional tactile feedback; platform unavailability or
-      // plugin errors must be silently ignored.
+      // plugin/test-hook errors must be silently ignored.
     }
   }
 }

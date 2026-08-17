@@ -41,7 +41,7 @@ void main() {
     expect(controller.state.status, B02StrengthExecutionStatus.partial);
     expect(controller.state.launch!.draftId, launch.draftId);
 
-    await controller.finalize(commandId: 'finish-invalid');
+    expect(await controller.finalize(commandId: 'finish-invalid'), isFalse);
     expect(controller.state.status, B02StrengthExecutionStatus.failure);
     expect(controller.state.launch, isNotNull);
     expect(controller.state.errorMessage, contains('could not be saved'));

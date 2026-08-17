@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/services/indifit_haptics.dart';
-import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
@@ -130,12 +129,14 @@ class _B02StrengthSummaryScreenState
       await controller.pauseElapsed();
       if (!mounted) return;
       _completionLaunch = ref.read(provider).launch ?? widget.launch;
-      await controller.finalize(
+      final finalized = await controller.finalize(
         commandId: _completionCommandId,
         completionKind: kind,
         reason: _pendingCompletionReason,
       );
-      unawaited(IndiFitHaptics.confirmation());
+      if (finalized && mounted) {
+        unawaited(IndiFitHaptics.confirmation());
+      }
     } finally {
       if (mounted) setState(() => _isFinalizing = false);
     }

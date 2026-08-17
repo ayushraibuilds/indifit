@@ -1452,7 +1452,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   void _toggleCanonicalSelection(NutritionFoodOption option) {
-    unawaited(IndiFitHaptics.selection());
     final key = _selectionKeyForOption(option);
     setState(() {
       if (_selectedKeys.remove(key)) {
@@ -1464,6 +1463,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         _selectedQuantities[key] = option.baseQuantity;
       }
     });
+    unawaited(IndiFitHaptics.selection());
   }
 
   Future<void> _toggleLegacySelection(FoodItem food) async {

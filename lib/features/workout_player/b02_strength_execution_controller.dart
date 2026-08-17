@@ -503,9 +503,9 @@ class B02StrengthExecutionController
   /// Completes an elapsed countdown through the same durable B02 rest path as
   /// an explicit skip. The timer is presentation-only; it never mutates a
   /// rest period directly.
-  Future<void> completeRest(String periodId, {DateTime? endedAtUtc}) async {
+  Future<bool> completeRest(String periodId, {DateTime? endedAtUtc}) async {
     final current = state.launch;
-    if (current == null) return;
+    if (current == null) return false;
     try {
       await saveDraft(
         _restCoordinator.finish(
@@ -515,12 +515,19 @@ class B02StrengthExecutionController
           endReason: B02RestEndReason.elapsed,
         ),
       );
+      return mounted &&
+          state.status == B02StrengthExecutionStatus.partial &&
+          state.launch?.state.restPeriods.any(
+                (period) => period.id == periodId && period.endedAtUtc != null,
+              ) ==
+              true;
     } catch (error) {
       _setFailure(error, current);
+      return false;
     }
   }
 
-  Future<void> finalize({
+  Future<bool> finalize({
     required String commandId,
     CompletionKind completionKind = CompletionKind.full,
     String? reason,
@@ -533,7 +540,7 @@ class B02StrengthExecutionController
         errorMessage:
             'This workout draft is unavailable. Recover it or start over.',
       );
-      return;
+      return false;
     }
     state = state.copyWith(
       status: B02StrengthExecutionStatus.loading,
@@ -550,11 +557,12 @@ class B02StrengthExecutionController
         reason: reason,
         completedAtUtc: completedAtUtc,
       );
-      if (!mounted) return;
+      if (!mounted) return false;
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
       );
       _activeStartedAtUtc = null;
+      return true;
     } on B02StrengthExecutionRecoveryException catch (error, stackTrace) {
       _logFinalizationFailure(
         error,
@@ -564,6 +572,7 @@ class B02StrengthExecutionController
         completionKind: completionKind,
       );
       _setFailure(error, current, recovery: true);
+      return false;
     } catch (error, stackTrace) {
       _logFinalizationFailure(
         error,
@@ -573,6 +582,7 @@ class B02StrengthExecutionController
         completionKind: completionKind,
       );
       _setFailure(error, current);
+      return false;
     }
   }
 
