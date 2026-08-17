@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -324,6 +327,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       await ref
           .read(workoutRepositoryProvider)
           .logWeightAndSyncProfile(weight: weight);
+      unawaited(IndiFitHaptics.confirmation());
       await _refresh();
     });
   }
@@ -1260,7 +1264,10 @@ class _WeightRangeSelector extends StatelessWidget {
               child: ChoiceChip(
                 label: Text(range.label),
                 selected: range == selected,
-                onSelected: (_) => onSelected(range),
+                onSelected: (_) {
+                  unawaited(IndiFitHaptics.selection());
+                  onSelected(range);
+                },
               ),
             ),
         ],

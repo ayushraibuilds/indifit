@@ -699,7 +699,6 @@ class _CalorieRing extends StatelessWidget {
         ? metric.upperProgress ?? metric.progress ?? 0.0
         : 0.0;
     final low = hasTarget ? metric.lowerProgress ?? high : 0;
-    final reduceMotion = B05MotionPolicy.reduceMotion(context);
     final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.35;
     final diameter = largeText ? 176.0 : 152.0;
     final inset = largeText ? B05Layout.space16 : B05Layout.space20;
@@ -736,11 +735,12 @@ class _CalorieRing extends StatelessWidget {
       label: semantics,
       child: ExcludeSemantics(
         child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: high),
-          duration: reduceMotion
-              ? Duration.zero
-              : const Duration(milliseconds: 520),
-          curve: Curves.easeOutCubic,
+          tween: Tween<double>(end: high),
+          duration: B05MotionPolicy.transitionDuration(
+            context,
+            standard: B05MotionPolicy.standardDuration,
+          ),
+          curve: B05MotionPolicy.standardCurve,
           builder: (context, value, _) {
             final lowValue = high == 0 ? 0.0 : low * (value / high);
             return SizedBox(
@@ -988,13 +988,13 @@ class _MacroProgress extends StatelessWidget {
     if (!metric.hasTarget || metric.progress == null) {
       return Text('No target set', style: B05Typography.caption(context));
     }
-    final reduceMotion = B05MotionPolicy.reduceMotion(context);
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: metric.upperProgress ?? metric.progress!),
-      duration: reduceMotion
-          ? Duration.zero
-          : const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
+      tween: Tween<double>(end: metric.upperProgress ?? metric.progress!),
+      duration: B05MotionPolicy.transitionDuration(
+        context,
+        standard: B05MotionPolicy.standardDuration,
+      ),
+      curve: B05MotionPolicy.standardCurve,
       builder: (context, value, _) {
         final high = metric.upperProgress ?? value;
         final low = metric.lowerProgress ?? high;

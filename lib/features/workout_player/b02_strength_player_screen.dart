@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
@@ -632,12 +632,7 @@ class _B02StrengthPlayerScreenState
       final saved = ref.read(provider);
       if (saved.status != B02StrengthExecutionStatus.failure &&
           saved.status != B02StrengthExecutionStatus.recovery) {
-        try {
-          await HapticFeedback.lightImpact();
-        } on MissingPluginException {
-          // Haptics are optional presentation feedback; durable logging and
-          // the rest transition must still complete when unavailable.
-        }
+        unawaited(IndiFitHaptics.confirmation());
         if (!_warmup) {
           await controller.beginRest(slot);
         }
@@ -1447,13 +1442,19 @@ class _RestCardState extends State<_RestCard> {
                 spacing: 8,
                 children: [
                   FilledButton(
-                    onPressed: widget.onBegin,
+                    onPressed: widget.onBegin == null
+                        ? null
+                        : () {
+                            unawaited(IndiFitHaptics.selection());
+                            widget.onBegin?.call();
+                          },
                     child: const Text('Start rest'),
                   ),
                   OutlinedButton(
                     onPressed: widget.onCustom == null
                         ? null
                         : () async {
+                            unawaited(IndiFitHaptics.selection());
                             final controller = TextEditingController();
                             final value = await showDialog<int>(
                               context: context,
@@ -1512,19 +1513,28 @@ class _RestCardState extends State<_RestCard> {
                   OutlinedButton(
                     onPressed: widget.onDecrease == null
                         ? null
-                        : () => widget.onDecrease?.call(period.id),
+                        : () {
+                            unawaited(IndiFitHaptics.selection());
+                            widget.onDecrease?.call(period.id);
+                          },
                     child: const Text('−15 sec'),
                   ),
                   OutlinedButton(
                     onPressed: widget.onExtend == null
                         ? null
-                        : () => widget.onExtend?.call(period.id),
+                        : () {
+                            unawaited(IndiFitHaptics.selection());
+                            widget.onExtend?.call(period.id);
+                          },
                     child: const Text('+15 sec'),
                   ),
                   TextButton(
                     onPressed: widget.onSkip == null
                         ? null
-                        : () => widget.onSkip?.call(period.id),
+                        : () {
+                            unawaited(IndiFitHaptics.selection());
+                            widget.onSkip?.call(period.id);
+                          },
                     child: const Text('Skip'),
                   ),
                 ],
@@ -1570,11 +1580,7 @@ class _RestCardState extends State<_RestCard> {
           _ticker = null;
           if (!_finishingElapsedRest) {
             _finishingElapsedRest = true;
-            unawaited(
-              HapticFeedback.mediumImpact().catchError((_) {
-                // Optional feedback must never block durable rest completion.
-              }),
-            );
+            unawaited(IndiFitHaptics.confirmation());
             widget.onElapsed(open.id);
           }
           return;

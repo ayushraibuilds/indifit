@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
@@ -143,6 +146,11 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
           ? await controller.finishPlan()
           : await controller.leavePlan();
       if (!mounted) return;
+      if (isFinish) {
+        unawaited(IndiFitHaptics.confirmation());
+      } else {
+        unawaited(IndiFitHaptics.warning());
+      }
       final count = result.cancelledOccurrenceIds.length;
       final stoppedLabel = count == 0
           ? 'Future workouts are no longer scheduled.'

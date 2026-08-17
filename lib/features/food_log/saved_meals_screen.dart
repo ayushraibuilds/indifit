@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/skeleton_loader.dart';
@@ -80,6 +81,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     );
 
     if (snapshot != null && mounted) {
+      unawaited(IndiFitHaptics.confirmation());
       _refreshTodaySurfaces();
       ScaffoldMessenger.of(context).showSnackBar(
         indiFitSuccessSnackBar(
@@ -107,6 +109,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     );
 
     if (result != null && mounted) {
+      unawaited(IndiFitHaptics.confirmation());
       ScaffoldMessenger.of(context).showSnackBar(
         indiFitSuccessSnackBar(
           'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
@@ -144,6 +147,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
     );
 
     if (confirm == true) {
+      unawaited(IndiFitHaptics.warning());
       await ref
           .read(savedMealsControllerProvider.notifier)
           .deleteSavedMeal(item.draft.id);

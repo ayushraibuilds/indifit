@@ -35,18 +35,18 @@ class CalorieRingCard extends ConsumerWidget {
     final fatGoal = userProfile.fatGoal;
     final calPercent = (calorieGoal > 0 ? eatenCalories / calorieGoal : 0.0)
         .clamp(0.0, 1.0);
-    final reduceMotion = B05MotionPolicy.reduceMotion(context);
 
     final ring = Semantics(
       label: calorieGoal > 0
           ? '$eatenCalories of $calorieGoal calories logged'
           : '$eatenCalories calories logged',
       child: TweenAnimationBuilder<double>(
-        tween: Tween<double>(begin: 0.0, end: calPercent),
-        duration: reduceMotion
-            ? Duration.zero
-            : const Duration(milliseconds: 420),
-        curve: Curves.easeOutCubic,
+        tween: Tween<double>(end: calPercent),
+        duration: B05MotionPolicy.transitionDuration(
+          context,
+          standard: B05MotionPolicy.standardDuration,
+        ),
+        curve: B05MotionPolicy.standardCurve,
         builder: (context, animatedValue, _) {
           return CircularPercentIndicator(
             radius: 64,
@@ -183,7 +183,6 @@ class CalorieRingCard extends ConsumerWidget {
     final colors = context.b05Colors;
     final targetPercent = goal > 0 ? (eaten / goal).clamp(0.0, 1.0) : 0.0;
     final remaining = (goal - eaten).round();
-    final reduceMotion = B05MotionPolicy.reduceMotion(context);
 
     return Semantics(
       label: '$label: ${eaten.round()} of ${goal.round()} grams',
@@ -225,11 +224,12 @@ class CalorieRingCard extends ConsumerWidget {
           ),
           const SizedBox(height: B05Layout.space4),
           TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0.0, end: targetPercent),
-            duration: reduceMotion
-                ? Duration.zero
-                : const Duration(milliseconds: 420),
-            curve: Curves.easeOutCubic,
+            tween: Tween<double>(end: targetPercent),
+            duration: B05MotionPolicy.transitionDuration(
+              context,
+              standard: B05MotionPolicy.standardDuration,
+            ),
+            curve: B05MotionPolicy.standardCurve,
             builder: (context, value, _) {
               return ClipRRect(
                 borderRadius: B05Radii.smallRadius,

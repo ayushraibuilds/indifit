@@ -11,6 +11,7 @@ import '../../core/nutrients.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/consumer_date_label.dart';
+import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -736,6 +737,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         consumptionId: 'direct-food-consumption::${const Uuid().v4()}',
       );
       if (!mounted) return;
+      unawaited(IndiFitHaptics.confirmation());
       _invalidateNutritionReads();
       final undo = _FoodAddUndoToken(
         snapshotId: snapshot.id,
@@ -1450,6 +1452,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   void _toggleCanonicalSelection(NutritionFoodOption option) {
+    unawaited(IndiFitHaptics.selection());
     final key = _selectionKeyForOption(option);
     setState(() {
       if (_selectedKeys.remove(key)) {
@@ -1601,6 +1604,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         consumptionId: 'direct-food-batch-consumption::${const Uuid().v4()}',
       );
       if (!mounted) return;
+      unawaited(IndiFitHaptics.confirmation());
       setState(() {
         _selectedKeys.clear();
         _selectedOptions.clear();
