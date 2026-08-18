@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/theme/colors.dart';
@@ -128,7 +127,7 @@ class _EquipmentProfilesScreenState
       appBar: AppBar(
         title: Text(
           'Equipment Profiles',
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
+          style: TextStyle(fontFamily: 'Outfit'),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -147,10 +146,7 @@ class _EquipmentProfilesScreenState
           ? Center(
               child: Text(
                 'No equipment profiles found.',
-                style: TextStyle(
-                  fontFamily: GoogleFonts.outfit().fontFamily,
-                  color: Colors.grey,
-                ),
+                style: TextStyle(fontFamily: 'Outfit', color: Colors.grey),
               ),
             )
           : ListView.builder(
@@ -175,7 +171,7 @@ class _EquipmentProfilesScreenState
                           profile.name,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontFamily: GoogleFonts.outfit().fontFamily,
+                            fontFamily: 'Outfit',
                           ),
                         ),
                         if (isDefault) ...[

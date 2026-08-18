@@ -232,11 +232,11 @@ class AppDatabase extends _$AppDatabase {
   /// migration; production instances always use the current version.
   final int? schemaVersionOverride;
 
-  /// Schema v19 retains the complete B04 graph and adds the B05 durable
-  /// personalization, education, media-preference, and playlist boundary.
-  /// B01 program, occurrence, routine, set, and draft compatibility fields.
+  /// Schema v20 retains the complete B05 graph and adds the bounded B01 plan
+  /// end marker used to keep Finish/Leave idempotent without creating a
+  /// second active-plan authority.
   @override
-  int get schemaVersion => schemaVersionOverride ?? 19;
+  int get schemaVersion => schemaVersionOverride ?? 20;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -318,6 +318,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 19 && to >= 19) {
         await _migrateV18ToV19(m);
+      }
+      if (from < 20 && to >= 20) {
+        await _migrateV19ToV20(m);
       }
     },
 
@@ -2112,6 +2115,53 @@ class AppDatabase extends _$AppDatabase {
         updatedAtUtc: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       ),
     );
+  }
+
+  /// Adds only nullable lifecycle metadata. Existing active pointers,
+  /// occurrences, sessions, and drafts are intentionally untouched.
+  Future<void> _migrateV19ToV20(Migrator m) async {
+    await transaction(() async {
+      // schemaVersionOverride fixtures are created with the current table
+      // declarations and then labelled as an older user_version. Treat an
+      // already-present column as a valid fixture boundary while still
+      // adding all four columns to a real v19 file.
+      if (!await _tableHasColumn(
+        'training_plan_settings',
+        'last_ended_program_version_id',
+      )) {
+        await m.addColumn(
+          trainingPlanSettings,
+          trainingPlanSettings.lastEndedProgramVersionId,
+        );
+      }
+      if (!await _tableHasColumn(
+        'training_plan_settings',
+        'last_ended_outcome',
+      )) {
+        await m.addColumn(
+          trainingPlanSettings,
+          trainingPlanSettings.lastEndedOutcome,
+        );
+      }
+      if (!await _tableHasColumn(
+        'training_plan_settings',
+        'last_ended_at_utc',
+      )) {
+        await m.addColumn(
+          trainingPlanSettings,
+          trainingPlanSettings.lastEndedAtUtc,
+        );
+      }
+      if (!await _tableHasColumn(
+        'training_plan_settings',
+        'last_ended_command_id',
+      )) {
+        await m.addColumn(
+          trainingPlanSettings,
+          trainingPlanSettings.lastEndedCommandId,
+        );
+      }
+    });
   }
 
   Future<void> _createStableExerciseIdIndex() async {

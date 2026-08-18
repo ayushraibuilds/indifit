@@ -69,7 +69,10 @@ class SettingsScreen extends ConsumerWidget {
                       summary: profile.userName?.trim().isNotEmpty == true
                           ? profile.userName!.trim()
                           : 'Add your name and measurements',
-                      onTap: () => _push(context, const ProfileScreen()),
+                      onTap: () => _push(
+                        context,
+                        const ProfileScreen(focus: ProfileEditorFocus.personal),
+                      ),
                     ),
                     _SettingsRow(
                       icon: Icons.flag_outlined,
@@ -77,7 +80,10 @@ class SettingsScreen extends ConsumerWidget {
                       summary: profile.hasProfile
                           ? SecondaryConsumerCopy.goal(profile.userGoal)
                           : 'Complete your profile',
-                      onTap: () => _push(context, const ProfileScreen()),
+                      onTap: () => _push(
+                        context,
+                        const ProfileScreen(focus: ProfileEditorFocus.goal),
+                      ),
                     ),
                     _SettingsRow(
                       icon: Icons.restaurant_outlined,
@@ -96,7 +102,10 @@ class SettingsScreen extends ConsumerWidget {
                               profile.userActivityLevel,
                             )
                           : 'Complete your profile',
-                      onTap: () => _push(context, const ProfileScreen()),
+                      onTap: () => _push(
+                        context,
+                        const ProfileScreen(focus: ProfileEditorFocus.training),
+                      ),
                     ),
                   ],
                 ),

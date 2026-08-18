@@ -210,6 +210,9 @@ class NutritionFoodLoggingCoordinator {
     String? mealGroupId,
     String? consumptionId,
     String? commandId,
+    String? supersedesSnapshotId,
+    String? correctionId,
+    String? correctionReason,
   }) async {
     final normalizedCommand = commandId?.trim().isNotEmpty == true
         ? commandId!.trim()
@@ -246,6 +249,9 @@ class NutritionFoodLoggingCoordinator {
       loggedAtUtc: loggedAt,
       mealCategory: mealCategory,
       mealGroupId: mealGroupId,
+      supersedesSnapshotId: supersedesSnapshotId,
+      correctionId: correctionId,
+      correctionReason: correctionReason,
       sourceType: 'direct_food',
       localDate: localDate,
       timezoneId: timezoneId,
@@ -271,6 +277,114 @@ class NutritionFoodLoggingCoordinator {
     } on NutritionConsumptionError catch (error) {
       throw NutritionFoodLoggingError(error.code, error.message, cause: error);
     }
+  }
+
+  /// Finalizes several direct foods as one immutable meal snapshot.
+  ///
+  /// The snapshot item graph is already the B03 unit of atomicity. Keeping a
+  /// multi-select commit in one request means a retry cannot leave half of a
+  /// selected meal in history, while each line still retains its own food
+  /// identity, typed quantity, source reference, and frozen facts.
+  Future<NutritionConsumptionSnapshot> finalizeBatch({
+    required String userId,
+    required Iterable<NutritionFoodLogPreview> previews,
+    required String mealCategory,
+    required DateTime loggedAt,
+    required String localDate,
+    required String timezoneId,
+    String? mealGroupId,
+    String? consumptionId,
+    String? commandId,
+  }) async {
+    final entries = previews.toList(growable: false);
+    if (entries.isEmpty) {
+      throw const NutritionFoodLoggingError(
+        'empty_batch',
+        'Select at least one food before adding the meal.',
+      );
+    }
+    final normalizedCommand = commandId?.trim().isNotEmpty == true
+        ? commandId!.trim()
+        : 'direct-food-batch-command::${_uuid.v4()}';
+    final normalizedConsumption = consumptionId?.trim().isNotEmpty == true
+        ? consumptionId!.trim()
+        : 'direct-food-batch-consumption::${_uuid.v4()}';
+    final evidenceItems = <Map<String, dynamic>>[];
+    final items = <NutritionConsumptionItemInput>[];
+    for (var index = 0; index < entries.length; index++) {
+      final preview = entries[index];
+      final evidence = _previewEvidence(preview);
+      evidenceItems.add(evidence);
+      items.add(
+        NutritionConsumptionItemInput(
+          id: '$normalizedConsumption::food::$index',
+          position: index,
+          sourceType: 'direct_food',
+          foodId: preview.effectiveFood.id,
+          preparationId: preview.preparationId,
+          sourceReference: preview.effectiveFood.sourceReference,
+          displayLabel: preview.effectiveFood.displayName,
+          quantity: preview.quantity,
+          calculation: preview.calculationSnapshot,
+          evidence: evidence,
+        ),
+      );
+    }
+    final calculatorVersions = entries
+        .map((preview) => preview.calculation.calculationRuleVersion)
+        .toSet();
+    try {
+      return await _consumption.finalizeConsumption(
+        NutritionConsumptionFinalizeRequest(
+          userId: userId,
+          consumptionId: normalizedConsumption,
+          commandId: normalizedCommand,
+          loggedAtUtc: loggedAt,
+          mealCategory: mealCategory,
+          mealGroupId: mealGroupId,
+          sourceType: 'direct_food',
+          localDate: localDate,
+          timezoneId: timezoneId,
+          calculatorVersion: calculatorVersions.join('|'),
+          evidence: {
+            'batch': true,
+            'item_count': items.length,
+            'items': evidenceItems,
+          },
+          items: items,
+        ),
+      );
+    } on NutritionConsumptionError catch (error) {
+      throw NutritionFoodLoggingError(error.code, error.message, cause: error);
+    }
+  }
+
+  Map<String, dynamic> _previewEvidence(NutritionFoodLogPreview preview) {
+    final transformation = preview.transformation;
+    return {
+      'food_id': preview.effectiveFood.id,
+      'source_food_id': preview.source.id,
+      'source_type': preview.effectiveFood.sourceType,
+      'source_reference': preview.effectiveFood.sourceReference,
+      'calculation_rule_version': preview.calculation.calculationRuleVersion,
+      if (transformation != null)
+        'transformation': {
+          'id': transformation.lineage.transformationId,
+          'source_food_id': preview.source.id,
+          'source_preparation_id': preview.sourcePreparationId,
+          'target_food_id': preview.effectiveFood.id,
+          'target_preparation_id': preview.preparationId,
+          'rule_version': transformation.lineage.ruleVersion,
+          'direction': transformation.lineage.direction.name,
+          'source': transformation.lineage.source.stableId,
+          'review_state': transformation.lineage.reviewState.stableId,
+          'yield': transformation.point?.toJson(),
+          if (transformation.lower != null)
+            'lower': transformation.lower!.toJson(),
+          if (transformation.upper != null)
+            'upper': transformation.upper!.toJson(),
+        },
+    };
   }
 
   NutritionCalculationResult _calculate({

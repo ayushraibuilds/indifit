@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/presentation/consumer_date_label.dart';
 import 'package:indifit/core/router/app_router.dart';
@@ -18,7 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   testWidgets(
     'live Today food route preserves past/today/future dates and mutates B03 logs',
@@ -96,6 +95,9 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(database),
           userProfileProvider.overrideWith((ref) => _LoadedProfileNotifier()),
+          // R07F-0: the router gate is synchronous; it is seeded from
+          // SharedPreferences in main() and must be seeded here too.
+          onboardingCompletedProvider.overrideWith((ref) => true),
           foodRepositoryProvider.overrideWithValue(repository),
           foodLogsForDayProvider.overrideWith((ref, date) {
             final isPast =

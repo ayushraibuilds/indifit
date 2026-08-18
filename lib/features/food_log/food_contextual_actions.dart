@@ -61,6 +61,7 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
                   ),
                 );
                 widget.onChanged?.call();
+                if (mounted) _showSuccess('Food entry updated.');
               },
         ),
       ),
@@ -73,6 +74,7 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
     final state = ref.read(foodContextualActionControllerProvider(_log));
     if (state.status == FoodContextualActionStatus.success) {
       widget.onChanged?.call();
+      _showSuccess('Food entry copied.');
     }
   }
 
@@ -156,6 +158,7 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
     final duration = offer.expiresAtUtc.difference(DateTime.now().toUtc());
     final snackBar = messenger.showSnackBar(
       SnackBar(
+        behavior: SnackBarBehavior.floating,
         content: const Text('Food entry deleted.'),
         duration: duration.isNegative ? const Duration(seconds: 1) : duration,
         action: SnackBarAction(
@@ -172,6 +175,12 @@ class _FoodContextualActionsState extends ConsumerState<FoodContextualActions> {
               .expireUndo();
         }
       }),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(behavior: SnackBarBehavior.floating, content: Text(message)),
     );
   }
 

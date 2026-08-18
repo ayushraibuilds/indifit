@@ -1,18 +1,62 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/database/app_database.dart';
+import '../../data/models/b02_execution_models.dart';
+import '../../data/repositories/b02_exercise_performance_read_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../workout_player/widgets/r07c_workout_presentation.dart';
+
+class R07CPerformanceEmptyState extends StatelessWidget {
+  const R07CPerformanceEmptyState({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.fitness_center_rounded,
+              size: 64,
+              color: colors.textDisabled.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No performance logged yet',
+              style: B05Typography.title(context),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your logged sets will appear here after you train this exercise.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colors.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class ExerciseHistoryScreen extends ConsumerStatefulWidget {
   final String exerciseName;
+  final String? stableExerciseId;
 
-  const ExerciseHistoryScreen({super.key, required this.exerciseName});
+  const ExerciseHistoryScreen({
+    super.key,
+    required this.exerciseName,
+    this.stableExerciseId,
+  });
 
   @override
   ConsumerState<ExerciseHistoryScreen> createState() =>
@@ -28,7 +72,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   double _barWeight = 20.0;
   Map<double, int> _calculatedPlates = {};
   double _unmatchedWeight = 0.0;
-  late Future<List<Map<String, dynamic>>> _historyFuture;
+  late Future<_ExerciseHistory> _historyFuture;
   var _historyInitialized = false;
 
   @override
@@ -50,15 +94,26 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
   @override
   void didUpdateWidget(covariant ExerciseHistoryScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.exerciseName != widget.exerciseName) {
+    if (oldWidget.exerciseName != widget.exerciseName ||
+        oldWidget.stableExerciseId != widget.stableExerciseId) {
       _historyFuture = _loadHistory();
     }
   }
 
-  Future<List<Map<String, dynamic>>> _loadHistory() {
-    return ref
+  Future<_ExerciseHistory> _loadHistory() async {
+    final stableExerciseId = widget.stableExerciseId?.trim();
+    if (stableExerciseId != null && stableExerciseId.isNotEmpty) {
+      final canonical = await ref
+          .read(b02ExercisePerformanceReadRepositoryProvider)
+          .read(stableExerciseId: stableExerciseId);
+      if (canonical.isNotEmpty) {
+        return _ExerciseHistory.canonical(canonical);
+      }
+    }
+    final legacy = await ref
         .read(workoutRepositoryProvider)
         .getExerciseHistory(widget.exerciseName);
+    return _ExerciseHistory.legacy(legacy);
   }
 
   void _retryHistory() {
@@ -124,12 +179,12 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
           labelColor: colors.action,
           unselectedLabelColor: colors.textSecondary,
           tabs: const [
-            Tab(icon: Icon(Icons.history_rounded), text: 'History & 1RM'),
+            Tab(icon: Icon(Icons.insights_rounded), text: 'Performance'),
             Tab(icon: Icon(Icons.calculate_rounded), text: 'Plate Calc'),
           ],
         ),
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
+      body: FutureBuilder<_ExerciseHistory>(
         future: _historyFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -147,9 +202,14 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
             );
           }
 
+          final history = snapshot.data;
           final historyTab = snapshot.hasError
               ? _HistoryErrorState(onRetry: _retryHistory)
-              : _buildHistoryAndChartTab(snapshot.data ?? []);
+              : history == null
+              ? const R07CPerformanceEmptyState()
+              : history.isCanonical
+              ? _buildCanonicalHistoryTab(history.canonical)
+              : _buildHistoryAndChartTab(history.legacy);
 
           return TabBarView(
             controller: _tabController,
@@ -160,294 +220,135 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
     );
   }
 
+  Widget _buildCanonicalHistoryTab(List<B02ExercisePerformanceRecord> history) {
+    if (history.isEmpty) return const R07CPerformanceEmptyState();
+    return _buildActualHistory(
+      heading: 'Actual performance',
+      detail:
+          '${history.length} ${history.length == 1 ? 'session' : 'sessions'} saved for this exercise.',
+      records: [
+        for (final record in history)
+          _PerformanceHistoryItem(
+            date: record.completedAt,
+            sessionName: record.sessionName,
+            status: _statusLabel(record.exerciseStatus),
+            sets: record.sets,
+          ),
+      ],
+    );
+  }
+
   Widget _buildHistoryAndChartTab(List<Map<String, dynamic>> history) {
-    final colors = context.b05Colors;
-    if (history.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    if (history.isEmpty) return const R07CPerformanceEmptyState();
+    return _buildActualHistory(
+      heading: 'Earlier workout records',
+      detail: 'Saved sets from earlier workouts are shown below.',
+      records: [
+        for (final entry in history)
+          _legacyHistoryItem(
+            entry['session'] as WorkoutSession,
+            entry['sets'] as List<WorkoutSet>,
+          ),
+      ],
+    );
+  }
+
+  _PerformanceHistoryItem _legacyHistoryItem(
+    WorkoutSession session,
+    List<WorkoutSet> sets,
+  ) => _PerformanceHistoryItem(
+    date: session.completedAt,
+    sessionName: session.name,
+    sets: [
+      for (final set in sets)
+        B02PerformedSet(
+          id: 'legacy-${session.id}-${set.id}',
+          performedExerciseId: 'legacy-${session.id}',
+          ordinal: set.setNumber > 0 ? set.setNumber - 1 : 0,
+          role: set.isWarmUp ? B02SetRole.warmup : B02SetRole.working,
+          actualLoadKg: set.weight > 0 ? set.weight : null,
+          actualReps: set.reps > 0 ? set.reps : null,
+          actualRpe: set.rpe,
+        ),
+    ],
+  );
+
+  Widget _buildActualHistory({
+    required String heading,
+    required String detail,
+    required List<_PerformanceHistoryItem> records,
+  }) => SingleChildScrollView(
+    padding: const EdgeInsets.all(B05Layout.space16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        B05Surface(
+          tone: B05SurfaceTone.selected,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.fitness_center_rounded,
-                size: 64,
-                color: colors.textDisabled.withValues(alpha: 0.3),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No sets logged yet',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'History logs and 1RM trend charts will appear here after you log sets in the workout player.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: colors.textSecondary, fontSize: 13),
+              Icon(Icons.history_rounded, color: context.b05Colors.action),
+              const SizedBox(width: B05Layout.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(heading, style: B05Typography.title(context)),
+                    const SizedBox(height: B05Layout.space4),
+                    Text(detail, style: B05Typography.body(context)),
+                  ],
+                ),
               ),
             ],
           ),
         ),
-      );
-    }
-
-    // Prepare 1RM points
-    final List<FlSpot> spots = [];
-    final List<Map<String, dynamic>> sortedHistory = List.from(
-      history.reversed,
-    );
-
-    for (int i = 0; i < sortedHistory.length; i++) {
-      final sets = sortedHistory[i]['sets'] as List<WorkoutSet>;
-
-      double best1Rm = 0.0;
-      for (final s in sets) {
-        final oneRm = s.weight * (1 + s.reps / 30.0);
-        if (oneRm > best1Rm) best1Rm = oneRm;
-      }
-      spots.add(FlSpot(i.toDouble(), best1Rm));
-    }
-
-    final bestEstimate = spots.isEmpty
-        ? 0.0
-        : spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        const SizedBox(height: B05Layout.space16),
+        Text('RECENT SESSIONS', style: B05Typography.label(context)),
+        const SizedBox(height: B05Layout.space8),
+        for (final record in records) ...[
           B05Surface(
-            showBorder: false,
-            subtle: true,
-            child: Row(
+            tone: B05SurfaceTone.section,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.trending_up_rounded, color: colors.action, size: 28),
-                const SizedBox(width: B05Layout.space12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                Wrap(
+                  spacing: B05Layout.space8,
+                  runSpacing: B05Layout.space4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      DateFormat('MMM d, y').format(record.date.toLocal()),
+                      style: B05Typography.label(context),
+                    ),
+                    if (record.status != null)
                       Text(
-                        'Your best estimate',
-                        style: B05Typography.body(context),
+                        record.status!,
+                        style: B05Typography.caption(
+                          context,
+                        ).copyWith(color: context.b05Colors.textSecondary),
                       ),
-                      Text(
-                        '${bestEstimate.toStringAsFixed(1)} kg',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              color: colors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      Text(
-                        '${history.length} training ${history.length == 1 ? 'session' : 'sessions'} recorded',
-                        style: B05Typography.body(context),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
+                const SizedBox(height: B05Layout.space4),
+                Text(record.sessionName, style: B05Typography.body(context)),
+                const SizedBox(height: B05Layout.space12),
+                R07CPerformedSetList(sets: record.sets),
               ],
             ),
           ),
-          const SizedBox(height: B05Layout.space16),
-          // 1. 1RM Trend Chart
-          if (spots.length >= 2) ...[
-            Text(
-              'ESTIMATED 1RM TREND',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: colors.textSecondary,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  top: 24,
-                  bottom: 12,
-                  right: 24,
-                  left: 12,
-                ),
-                child: SizedBox(
-                  height: 180,
-                  child: LineChart(
-                    LineChartData(
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        getDrawingHorizontalLine: (value) =>
-                            FlLine(color: colors.border, strokeWidth: 1),
-                      ),
-                      titlesData: FlTitlesData(
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 22,
-                            getTitlesWidget: (value, meta) {
-                              final index = value.toInt();
-                              if (index >= 0 && index < sortedHistory.length) {
-                                final date =
-                                    sortedHistory[index]['session'].completedAt
-                                        as DateTime;
-                                return Text(
-                                  DateFormat('dd/MM').format(date),
-                                  style: TextStyle(
-                                    color: colors.textSecondary,
-                                    fontSize: 9,
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: spots,
-                          isCurved: true,
-                          color: colors.action,
-                          barWidth: 3,
-                          dotData: const FlDotData(show: true),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: colors.action.withValues(alpha: 0.1),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-
-          Text(
-            'TRAINING SESSIONS',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: colors.textSecondary,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // 2. History List
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: history.length,
-            itemBuilder: (context, index) {
-              final session = history[index]['session'] as WorkoutSession;
-              final sets = history[index]['sets'] as List<WorkoutSet>;
-
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12.0),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        spacing: B05Layout.space8,
-                        runSpacing: B05Layout.space4,
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            DateFormat(
-                              'MMMM dd, yyyy',
-                            ).format(session.completedAt),
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            'Volume: ${session.totalVolume.round()}kg',
-                            style: TextStyle(
-                              color: colors.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        session.name,
-                        style: TextStyle(
-                          color: colors.action,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Divider(color: colors.border, height: 24),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        children: sets
-                            .map(
-                              (s) => Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: colors.surfaceSubtle,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Text(
-                                      '${s.setNumber}',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: colors.action,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '${s.weight}kg x ${s.reps}',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  if (s.isPr) ...[
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.emoji_events_rounded,
-                                      color: colors.warning.foreground,
-                                      size: 14,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+          const SizedBox(height: B05Layout.space12),
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+
+  static String _statusLabel(String status) => switch (status) {
+    'completed' => 'Completed',
+    'partial' => 'Partially complete',
+    'skipped' => 'Skipped',
+    'inProgress' => 'In progress',
+    _ => 'Logged',
+  };
 
   Widget _buildPlateCalculatorTab() {
     final colors = context.b05Colors;
@@ -724,6 +625,47 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen>
       ),
     );
   }
+}
+
+class _ExerciseHistory {
+  const _ExerciseHistory._({
+    required this.canonical,
+    required this.legacy,
+    required this.isCanonical,
+  });
+
+  factory _ExerciseHistory.canonical(
+    List<B02ExercisePerformanceRecord> records,
+  ) => _ExerciseHistory._(
+    canonical: List.unmodifiable(records),
+    legacy: const [],
+    isCanonical: true,
+  );
+
+  factory _ExerciseHistory.legacy(List<Map<String, dynamic>> records) =>
+      _ExerciseHistory._(
+        canonical: const [],
+        legacy: List.unmodifiable(records),
+        isCanonical: false,
+      );
+
+  final List<B02ExercisePerformanceRecord> canonical;
+  final List<Map<String, dynamic>> legacy;
+  final bool isCanonical;
+}
+
+class _PerformanceHistoryItem {
+  const _PerformanceHistoryItem({
+    required this.date,
+    required this.sessionName,
+    required this.sets,
+    this.status,
+  });
+
+  final DateTime date;
+  final String sessionName;
+  final String? status;
+  final List<B02PerformedSet> sets;
 }
 
 class _HistoryErrorState extends StatelessWidget {

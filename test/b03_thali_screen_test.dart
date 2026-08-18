@@ -59,12 +59,12 @@ void main() {
           );
 
       await tester.pumpWidget(app(1, makeController()));
-      expect(find.text('Your thali is empty'), findsOneWidget);
+      expect(find.text('Your meal is empty'), findsOneWidget);
       expect(find.text('Add food or saved recipe'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await tester.pumpWidget(app(2, makeController()));
-      expect(find.text('Your thali is empty'), findsOneWidget);
+      expect(find.text('Your meal is empty'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

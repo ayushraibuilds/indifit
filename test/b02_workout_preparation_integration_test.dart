@@ -269,6 +269,16 @@ void main() {
       expect(openRest.source, B02RestSource.automatic);
       expect(openRest.recommendedSeconds, 90);
       expect(openRest.selectedSeconds, 90);
+      await controller.adjustRest(openRest.id, seconds: -15);
+      expect(
+        controller.state.launch!.state.restPeriods.single.selectedSeconds,
+        75,
+      );
+      await controller.adjustRest(openRest.id, seconds: 15);
+      expect(
+        controller.state.launch!.state.restPeriods.single.selectedSeconds,
+        90,
+      );
       await controller.extendRest(openRest.id);
       expect(
         controller.state.launch!.state.restPeriods.single.selectedSeconds,
@@ -289,7 +299,7 @@ void main() {
         85,
       );
 
-      await controller.finalize(commandId: 'finish-prepared');
+      expect(await controller.finalize(commandId: 'finish-prepared'), isTrue);
       final persistedSet = await (db.select(
         db.performedSets,
       )..where((table) => table.actualLoadKg.equals(85))).getSingle();
@@ -345,7 +355,10 @@ void main() {
 
     final period = controller.state.launch!.state.restPeriods.single;
     final endedAt = period.startedAtUtc.add(const Duration(seconds: 91));
-    await controller.completeRest(period.id, endedAtUtc: endedAt);
+    expect(
+      await controller.completeRest(period.id, endedAtUtc: endedAt),
+      isTrue,
+    );
 
     final completed = controller.state.launch!.state.restPeriods.single;
     expect(completed.endedAtUtc, endedAt);

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/backup/backup_schema.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrition_constraints.dart';
@@ -21,9 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
+  setUpAll(() {});
 
   Future<AppDatabase> pumpDatabase(WidgetTester tester) async {
     final database = AppDatabase.memory();
@@ -444,8 +441,8 @@ void main() {
     expect(destination.initialIndex, 2);
     expect(destination.foodMealType, 'dinner');
     expect(destination.foodSelectedDate, DateTime(2026, 8, 9));
-    expect(parseFoodRouteMealType('snack'), 'snacks');
-    expect(parseFoodRouteMealType('unsupported'), 'breakfast');
+    expect(parseFoodRouteMealType('snack'), 'snack');
+    expect(parseFoodRouteMealType('unsupported'), isNull);
   });
 
   testWidgets('all onboarding stages remain reachable at 320pt and 2x text', (

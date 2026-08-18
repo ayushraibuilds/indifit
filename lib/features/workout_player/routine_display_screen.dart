@@ -1,14 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/di/providers.dart';
+import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../core/widgets/skeleton_loader.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/workout_repository.dart';
+import '../training/training_plan_lifecycle_controller.dart';
 import 'widgets/manual_log_sheet.dart';
 
 class RoutineDisplayScreen extends ConsumerStatefulWidget {
@@ -26,6 +32,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   bool _loading = false;
   Set<int> _completedDayOfWeeks = {};
   String? _activeProgramVersionId;
+  String? _activeProgramName;
 
   @override
   void initState() {
@@ -74,14 +81,19 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         setState(() {
           _activeRoutine = active;
           _activeProgramVersionId = null;
+          _activeProgramName = null;
           _routineDays = details;
           _completedDayOfWeeks = completed;
           _loading = false;
         });
       } else if (selection.type == ActivePlanType.b01Program) {
+        final detail = await ref
+            .read(programRepositoryProvider)
+            .getProgramVersionDetail(selection.programVersionId!);
         setState(() {
           _activeRoutine = null;
           _activeProgramVersionId = selection.programVersionId;
+          _activeProgramName = detail?.program.name;
           _routineDays = [];
           _completedDayOfWeeks = completed;
           _loading = false;
@@ -90,6 +102,7 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
         setState(() {
           _activeRoutine = null;
           _activeProgramVersionId = null;
+          _activeProgramName = null;
           _routineDays = [];
           _completedDayOfWeeks = completed;
           _loading = false;
@@ -100,11 +113,80 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
     }
   }
 
+  Future<void> _endActivePlan(PlanEndOutcome outcome) async {
+    if (_loading) return;
+    final planName = _activeProgramName ?? 'this plan';
+    final isFinish = outcome == PlanEndOutcome.finished;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(isFinish ? 'Finish plan?' : 'Leave plan?'),
+        content: Text(
+          isFinish
+              ? 'Future workouts in $planName will stop. Completed and partially completed workouts stay in your history.'
+              : 'Future workouts in $planName will stop. Your completed workout history stays saved.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(isFinish ? 'Finish plan' : 'Leave plan'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _loading = true);
+    try {
+      final controller = ref.read(trainingPlanLifecycleControllerProvider);
+      final result = isFinish
+          ? await controller.finishPlan()
+          : await controller.leavePlan();
+      if (!mounted) return;
+      if (isFinish) {
+        unawaited(IndiFitHaptics.confirmation());
+      } else {
+        unawaited(IndiFitHaptics.warning());
+      }
+      final count = result.cancelledOccurrenceIds.length;
+      final stoppedLabel = count == 0
+          ? 'Future workouts are no longer scheduled.'
+          : '$count future ${count == 1 ? 'workout' : 'workouts'} stopped.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isFinish
+                ? 'Plan finished. $stoppedLabel'
+                : 'Plan left. Your workout history is still here.',
+          ),
+        ),
+      );
+      await _loadActiveRoutine();
+    } on ProgramLifecycleException catch (error) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_routinePlanLifecycleMessage(error))),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Plan action unavailable. Try again.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Training Split'),
+        title: Text(
+          _activeProgramVersionId == null ? 'Training Split' : 'Training plan',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.directions_run_rounded),
@@ -161,35 +243,12 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
   }
 
   Widget _buildActiveProgramState() {
-    final colors = context.b05Colors;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.calendar_month_rounded, size: 56, color: colors.action),
-            const SizedBox(height: 20),
-            Text(
-              'A scheduled training program is active',
-              textAlign: TextAlign.center,
-              style: B05Typography.title(context),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Legacy split editing is unavailable while this program is active. Your scheduled workouts remain separate from older routines.',
-              textAlign: TextAlign.center,
-              style: B05Typography.body(context),
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: () => context.push('/calendar'),
-              icon: const Icon(Icons.calendar_today_rounded),
-              label: const Text('Open training calendar'),
-            ),
-          ],
-        ),
-      ),
+    return ActiveProgramManagementSurface(
+      planName: _activeProgramName,
+      onOpenCalendar: () => context.push('/calendar'),
+      onChangePlan: () => context.push('/program-author'),
+      onFinishPlan: () => _endActivePlan(PlanEndOutcome.finished),
+      onLeavePlan: () => _endActivePlan(PlanEndOutcome.left),
     );
   }
 
@@ -563,4 +622,97 @@ class _RoutineDisplayScreenState extends ConsumerState<RoutineDisplayScreen> {
       },
     );
   }
+}
+
+class ActiveProgramManagementSurface extends StatelessWidget {
+  const ActiveProgramManagementSurface({
+    required this.planName,
+    required this.onOpenCalendar,
+    required this.onChangePlan,
+    this.onFinishPlan,
+    this.onLeavePlan,
+    super.key,
+  });
+
+  final String? planName;
+  final VoidCallback onOpenCalendar;
+  final VoidCallback onChangePlan;
+  final VoidCallback? onFinishPlan;
+  final VoidCallback? onLeavePlan;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.calendar_month_rounded, size: 56, color: colors.action),
+            const SizedBox(height: 20),
+            Text(
+              planName ?? 'Current training plan',
+              textAlign: TextAlign.center,
+              style: B05Typography.title(context),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Your workouts are scheduled and ready. Open the calendar to train, or choose a different plan when you are ready for a change.',
+              textAlign: TextAlign.center,
+              style: B05Typography.body(context),
+            ),
+            const SizedBox(height: 20),
+            B05ActionGroup(
+              children: [
+                B05ActionButton(
+                  label: 'Open calendar',
+                  icon: Icons.calendar_today_rounded,
+                  onPressed: onOpenCalendar,
+                ),
+                B05ActionButton(
+                  label: 'Change plan',
+                  icon: Icons.swap_horiz_rounded,
+                  emphasis: B05ActionEmphasis.secondary,
+                  onPressed: onChangePlan,
+                ),
+                if (onFinishPlan != null || onLeavePlan != null)
+                  PopupMenuButton<String>(
+                    tooltip: 'Plan actions',
+                    onSelected: (value) {
+                      if (value == 'finish') onFinishPlan?.call();
+                      if (value == 'leave') onLeavePlan?.call();
+                    },
+                    itemBuilder: (context) => [
+                      if (onFinishPlan != null)
+                        const PopupMenuItem(
+                          value: 'finish',
+                          child: Text('Finish plan'),
+                        ),
+                      if (onLeavePlan != null)
+                        const PopupMenuItem(
+                          value: 'leave',
+                          child: Text('Leave plan'),
+                        ),
+                    ],
+                    child: const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Icon(Icons.more_horiz_rounded),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _routinePlanLifecycleMessage(ProgramLifecycleException error) {
+  if (error.code == 'blocked') return error.message;
+  if (error.code == 'no_active_plan') {
+    return 'This plan is no longer active. Return to Training to choose what is next.';
+  }
+  return 'Plan action unavailable. Try again.';
 }

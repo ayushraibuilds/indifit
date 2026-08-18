@@ -8,8 +8,11 @@ import '../../../core/theme/colors.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/food_repository.dart';
 import '../../food_log/ai_meal_logger_screen.dart';
+import '../../food_log/canonical_food_delete.dart';
 import '../../food_log/food_search_screen.dart';
-import '../../food_log/meal_templates_screen.dart';
+import '../../food_log/save_logged_meal_as_reusable_meal_helper.dart';
+import '../../food_log/saved_meals_screen.dart';
+import '../../food_log/saved_recipe_log_screen.dart';
 import '../../food_log/thali_builder_screen.dart';
 import '../../food_log/widgets/edit_food_log_sheet.dart';
 import '../dashboard_controller.dart';
@@ -216,7 +219,7 @@ class _MealCard extends ConsumerWidget {
                   color: AppColors.warning,
                 ),
                 title: const Text(
-                  'Meal Templates',
+                  'Saved Meals',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text('One-tap log your usual multi-item meals'),
@@ -225,7 +228,36 @@ class _MealCard extends ConsumerWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => MealTemplatesScreen(mealType: type),
+                      builder: (context) => SavedMealsScreen(
+                        mealType: type,
+                        selectedDate: selectedDate,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const Divider(color: AppColors.border),
+              ListTile(
+                leading: const Icon(
+                  Icons.menu_book_rounded,
+                  color: AppColors.primary,
+                ),
+                title: const Text(
+                  'Recipes',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Add or create a prepared recipe with yield & servings',
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SavedRecipeLogScreen(
+                        mealType: type,
+                        selectedDate: selectedDate,
+                      ),
                     ),
                   );
                 },
@@ -237,11 +269,11 @@ class _MealCard extends ConsumerWidget {
                   color: AppColors.success,
                 ),
                 title: const Text(
-                  'Thali Builder (Multi-item)',
+                  'Build a meal',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text(
-                  'Compose a custom plate with running macros',
+                  'Compose a custom meal with running nutrition',
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -286,64 +318,19 @@ class _MealCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _saveAsTemplate(
+  Future<void> _saveAsReusableMeal(
     BuildContext context,
     WidgetRef ref,
-    List<FoodLog> mealLogs,
-  ) async {
-    final controller = TextEditingController(text: 'My $title');
-    final name = await showDialog<String>(
+    List<NutritionHistoricalReadItem> snapshotItems, {
+    required int legacyItemCount,
+  }) async {
+    await SaveLoggedMealHelper.saveLoggedMealAsReusable(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('Save as meal template'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: 'Template name',
-            hintText: 'e.g. Office $title',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      ref: ref,
+      mealCategory: type,
+      snapshotItems: snapshotItems,
+      legacyItemCount: legacyItemCount,
     );
-
-    if (name == null || name.isEmpty) return;
-
-    try {
-      await ref
-          .read(foodRepositoryProvider)
-          .saveMealTemplate(name: name, defaultMealType: type, items: mealLogs);
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved template “$name”'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    } catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Meal template could not be saved. Try again.'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
-    }
   }
 
   Future<void> _copyMeal(
@@ -522,6 +509,9 @@ class _MealCard extends ConsumerWidget {
     final canonicalRecords = unifiedDay?.records
         .where((record) => !record.isLegacy && record.mealCategory == type)
         .toList(growable: false);
+    final canonicalMealItems = <NutritionHistoricalReadItem>[
+      for (final record in canonicalRecords ?? const []) ...record.items,
+    ];
     var canonicalCalories = 0.0;
     var canonicalEnergyLower = 0.0;
     var canonicalEnergyUpper = 0.0;
@@ -632,8 +622,7 @@ class _MealCard extends ConsumerWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  MealTemplatesScreen(mealType: type),
+                              builder: (_) => SavedMealsScreen(mealType: type),
                             ),
                           );
                         },
@@ -642,7 +631,7 @@ class _MealCard extends ConsumerWidget {
                           size: 14,
                         ),
                         label: const Text(
-                          'Templates',
+                          'Saved meals',
                           style: TextStyle(fontSize: 12),
                         ),
                         style: TextButton.styleFrom(
@@ -706,27 +695,48 @@ class _MealCard extends ConsumerWidget {
           else ...[
             ...mealLogs.map((log) => _LoggedItemRow(log: log)),
             ...?canonicalRecords?.map(
-              (record) => _CanonicalItemRow(record: record),
+              (record) => _CanonicalItemRow(
+                record: record,
+                onDelete:
+                    record.items.any(
+                      (item) =>
+                          item.originSourceType == 'direct_food' &&
+                          item.foodId != null,
+                    )
+                    ? () => showCanonicalFoodDelete(
+                        context: context,
+                        ref: ref,
+                        record: record,
+                      )
+                    : null,
+              ),
             ),
             const Divider(color: AppColors.border, height: 20),
             Row(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _saveAsTemplate(context, ref, mealLogs),
-                    icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-                    label: const Text(
-                      'Save as template',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.border),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                if (canonicalMealItems.isNotEmpty) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _saveAsReusableMeal(
+                        context,
+                        ref,
+                        canonicalMealItems,
+                        legacyItemCount: mealLogs.length,
+                      ),
+                      icon: const Icon(Icons.bookmark_add_outlined, size: 16),
+                      label: const Text(
+                        'Save meal',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.border),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _copyMeal(context, ref, mealLogs),
@@ -744,6 +754,17 @@ class _MealCard extends ConsumerWidget {
                 ),
               ],
             ),
+            if (mealLogs.isNotEmpty && canonicalMealItems.isNotEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Older entries stay unchanged. Choose them again when creating a new saved meal.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
             const SizedBox(height: 8),
           ],
         ],
@@ -754,8 +775,9 @@ class _MealCard extends ConsumerWidget {
 
 class _CanonicalItemRow extends StatelessWidget {
   final NutritionHistoricalReadRecord record;
+  final Future<bool> Function()? onDelete;
 
-  const _CanonicalItemRow({required this.record});
+  const _CanonicalItemRow({required this.record, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -817,11 +839,19 @@ class _CanonicalItemRow extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(
-            Icons.lock_outline_rounded,
-            size: 16,
-            color: AppColors.textMuted,
-          ),
+          if (onDelete == null)
+            const Icon(
+              Icons.lock_outline_rounded,
+              size: 16,
+              color: AppColors.textMuted,
+            )
+          else
+            IconButton(
+              tooltip: 'Delete ${record.displayLabel}',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => onDelete!(),
+              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+            ),
         ],
       ),
     );

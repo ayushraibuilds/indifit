@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_count_label.dart';
 import '../../core/theme/colors.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
 
@@ -35,6 +38,8 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
   bool _isLoading = true;
   ProgramDetailAggregate? _versionDetail;
   String? _errorMessage;
+  String? _activationError;
+  String? _activationCommandId;
 
   @override
   void initState() {
@@ -74,40 +79,119 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
     final detail = _versionDetail;
     if (detail == null) return;
 
-    setState(() => _isLoading = true);
+    final canSwitch = await _confirmPlanSwitchIfNeeded(detail);
+    if (!canSwitch || !mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _activationError = null;
+    });
+    late final ActivationResult result;
     try {
       final coordinator = ref.read(programActivationCoordinatorProvider);
-      final commandId = 'cmd-act-${DateTime.now().millisecondsSinceEpoch}';
+      _activationCommandId ??= 'program-activation::${const Uuid().v4()}';
 
-      final result = await coordinator.activate(
+      result = await coordinator.activate(
         ActivateProgramVersionCommand(
           programVersionId: detail.version.id,
-          commandId: commandId,
+          commandId: _activationCommandId!,
           activationLocalDate: _selectedDate,
           timezoneId: _selectedTimezone,
         ),
       );
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Program activation failed '
+            '[programVersionId=${detail.version.id}, commandId=$_activationCommandId, '
+            'errorType=${error.runtimeType}]',
+        error,
+        stackTrace,
+        'ProgramActivation',
+      );
+      if (mounted) {
+        setState(() {
+          _activationError = _activationFailureMessage(error);
+          _isLoading = false;
+        });
+      }
+      return;
+    }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Program activated successfully! (${result.occurrences.length} scheduled workouts created)',
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    if (result.occurrences.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text(
+            'Program activated, but no workouts were scheduled. Review the plan before leaving this screen.',
+          ),
+        ),
+      );
+      return;
+    }
+    final firstDate = result.occurrences
+        .map((occurrence) => occurrence.effectiveLocalDate)
+        .reduce((first, date) => date.compareTo(first) < 0 ? date : first);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          '✓ Program activated · ${ConsumerCountLabel.format(result.occurrences.length, 'workout')} scheduled',
+        ),
+      ),
+    );
+    context.go(
+      Uri(path: '/calendar', queryParameters: {'date': firstDate}).toString(),
+    );
+  }
+
+  Future<bool> _confirmPlanSwitchIfNeeded(ProgramDetailAggregate detail) async {
+    try {
+      final dates = ref.read(localScheduleDateServiceProvider);
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      final localDate = dates.todayIn(timezoneId);
+      final current = await ref
+          .read(calendarReadRepositoryProvider)
+          .readSnapshot(
+            startLocalDate: localDate,
+            endLocalDate: localDate,
+            timezoneId: timezoneId,
+          );
+      final activeId = current.activeProgramVersionId;
+      if (activeId == null || activeId == detail.version.id) return true;
+      final activeName = current.activeProgramName ?? 'your current plan';
+      if (!mounted) return false;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Switch training plan?'),
+          content: Text(
+            'You are using $activeName. Switch to ${detail.program.name}? Completed history stays saved; the new plan becomes the one shown for upcoming workouts.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Keep current plan'),
             ),
-          ),
-        );
-        context.go('/calendar');
-      }
-    } catch (e) {
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Switch plan'),
+            ),
+          ],
+        ),
+      );
+      return confirmed == true;
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('The program could not be activated. Try again.'),
-          ),
-        );
+        setState(() {
+          _activationError =
+              'The current plan could not be checked. Try again before switching.';
+        });
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      return false;
     }
   }
 
@@ -123,6 +207,8 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
       setState(() {
         _selectedDate =
             '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+        _activationCommandId = null;
+        _activationError = null;
       });
     }
   }
@@ -135,7 +221,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
       appBar: AppBar(
         title: Text(
           'Review & Activate',
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
+          style: TextStyle(fontFamily: 'Outfit'),
         ),
       ),
       body: _isLoading
@@ -145,6 +231,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
           : detail == null
           ? const SizedBox()
           : SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,12 +248,12 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              fontFamily: GoogleFonts.outfit().fontFamily,
+                              fontFamily: 'Outfit',
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${detail.blocks.length} blocks • ${detail.weeks.length} weeks',
+                            '${ConsumerCountLabel.format(detail.blocks.length, 'block')} • ${ConsumerCountLabel.format(detail.weeks.length, 'week')}',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],
@@ -179,7 +266,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
+                      fontFamily: 'Outfit',
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -189,7 +276,11 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     title: const Text('Start Local Date'),
-                    subtitle: Text(_selectedDate),
+                    subtitle: Text(
+                      DateFormat(
+                        'd MMM y',
+                      ).format(DateTime.parse('${_selectedDate}T12:00:00')),
+                    ),
                     trailing: const Icon(Icons.calendar_today_rounded),
                     onTap: _selectDate,
                   ),
@@ -211,7 +302,11 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                         .toList(growable: false),
                     onChanged: (timezone) {
                       if (timezone != null) {
-                        setState(() => _selectedTimezone = timezone);
+                        setState(() {
+                          _selectedTimezone = timezone;
+                          _activationCommandId = null;
+                          _activationError = null;
+                        });
                       }
                     },
                   ),
@@ -226,7 +321,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      fontFamily: GoogleFonts.outfit().fontFamily,
+                      fontFamily: 'Outfit',
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -260,7 +355,7 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${weekTemplates.length} Workouts Scheduled',
+                                '${ConsumerCountLabel.format(weekTemplates.length, 'workout')} scheduled',
                               ),
                               ...weekGroups.map((group) {
                                 final memberCount = detail.groupMembers
@@ -280,18 +375,32 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
                     );
                   }),
                   const SizedBox(height: 32),
+                  if (_activationError != null) ...[
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.error_outline),
+                        title: const Text('Program not activated'),
+                        subtitle: Text(_activationError!),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton.icon(
                       onPressed: _activateProgram,
                       icon: const Icon(Icons.rocket_launch_rounded),
-                      label: const Text('Publish & Activate Program'),
+                      label: Text(
+                        _activationError == null
+                            ? 'Publish & Activate Program'
+                            : 'Retry activation',
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.black,
                         textStyle: TextStyle(
-                          fontFamily: GoogleFonts.outfit().fontFamily,
+                          fontFamily: 'Outfit',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -303,4 +412,12 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
             ),
     );
   }
+}
+
+String _activationFailureMessage(Object error) {
+  if (error is ActivationRejectedException &&
+      error.message.contains('existing workout draft')) {
+    return 'Finish or discard your current workout before activating this program.';
+  }
+  return 'The program could not be activated. Your plan is still available to review and retry.';
 }

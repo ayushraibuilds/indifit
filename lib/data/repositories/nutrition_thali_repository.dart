@@ -205,6 +205,70 @@ class NutritionThaliRepository {
     return _readDraft(row, owner);
   }
 
+  Future<void> deleteThali({
+    required String userId,
+    required String thaliId,
+  }) async {
+    final owner = userId.trim();
+    final id = thaliId.trim();
+    if (owner.isEmpty || id.isEmpty) {
+      throw const NutritionThaliValidationError(
+        'missing_identifiers',
+        'User ID and thali ID are required to delete a saved meal.',
+      );
+    }
+    final existing =
+        await (_db.select(_db.nutritionThalis)
+              ..where((row) => row.id.equals(id) & row.userId.equals(owner)))
+            .getSingleOrNull();
+    if (existing == null) {
+      throw const NutritionThaliNotFoundError(
+        'thali_not_found',
+        'The requested saved meal does not exist.',
+      );
+    }
+    await (_db.update(
+      _db.nutritionThalis,
+    )..where((row) => row.id.equals(id))).write(
+      database.NutritionThalisCompanion(
+        lifecycle: const Value('deleted'),
+        updatedAt: Value(_nowUtc()),
+      ),
+    );
+  }
+
+  Future<void> archiveThali({
+    required String userId,
+    required String thaliId,
+  }) async {
+    final owner = userId.trim();
+    final id = thaliId.trim();
+    if (owner.isEmpty || id.isEmpty) {
+      throw const NutritionThaliValidationError(
+        'missing_identifiers',
+        'User ID and thali ID are required to archive a saved meal.',
+      );
+    }
+    final existing =
+        await (_db.select(_db.nutritionThalis)
+              ..where((row) => row.id.equals(id) & row.userId.equals(owner)))
+            .getSingleOrNull();
+    if (existing == null) {
+      throw const NutritionThaliNotFoundError(
+        'thali_not_found',
+        'The requested saved meal does not exist.',
+      );
+    }
+    await (_db.update(
+      _db.nutritionThalis,
+    )..where((row) => row.id.equals(id))).write(
+      database.NutritionThalisCompanion(
+        lifecycle: const Value('archived'),
+        updatedAt: Value(_nowUtc()),
+      ),
+    );
+  }
+
   Future<NutritionThaliDraft> saveDraft(NutritionThaliDraft draft) async {
     _validateDraftOwner(draft);
     if (draft.lifecycle != 'active') {
@@ -410,6 +474,7 @@ class NutritionThaliRepository {
     String? supersedesSnapshotId,
     String? correctionId,
     String? correctionReason,
+    bool allowCompositionVariation = false,
   }) async {
     if (commandId.trim().isEmpty) {
       throw const NutritionThaliValidationError(
@@ -430,7 +495,10 @@ class NutritionThaliRepository {
         );
       }
     }
-    await _validatePreviewDependencies(preview);
+    await _validatePreviewDependencies(
+      preview,
+      allowCompositionVariation: allowCompositionVariation,
+    );
     final items = [
       for (final item in preview.items) _finalizationItem(preview, item),
     ];
@@ -459,7 +527,10 @@ class NutritionThaliRepository {
           correctionReason: correctionReason,
           calculatorVersion: preview.calculationVersion,
           items: items,
-          evidence: preview.evidence,
+          evidence: {
+            ...preview.evidence,
+            if (allowCompositionVariation) 'temporary_variation': true,
+          },
           constraintEvaluation: evaluation,
           constraintAcknowledgement: acknowledgement,
         ),
@@ -735,16 +806,18 @@ class NutritionThaliRepository {
   }
 
   Future<void> _validatePreviewDependencies(
-    NutritionThaliPreview preview,
-  ) async {
+    NutritionThaliPreview preview, {
+    required bool allowCompositionVariation,
+  }) async {
     final current = await getDraft(
       userId: preview.draft.userId,
       thaliId: preview.draft.id,
     );
     if (current == null ||
         current.currentVersion != preview.draft.currentVersion ||
-        current.compositionFingerprint !=
-            preview.draft.compositionFingerprint) {
+        (!allowCompositionVariation &&
+            current.compositionFingerprint !=
+                preview.draft.compositionFingerprint)) {
       throw const NutritionThaliConflictError(
         'stale_thali_version',
         'The thali changed after preview. Reload the composition before saving.',
@@ -764,20 +837,6 @@ class NutritionThaliRepository {
               : 'stale_calibration',
           'An item dependency changed after preview. Recalculate the thali.',
         );
-      }
-      if (item.item.source == NutritionThaliItemSource.recipe) {
-        final evidence = item.evidence;
-        final recipeId = evidence['recipe_id'];
-        final head = evidence['recipe_head_version_id'];
-        final recipe = recipeId is String
-            ? await _recipes.getRecipe(recipeId)
-            : null;
-        if (recipe == null || recipe.currentVersionId != head) {
-          throw const NutritionThaliConflictError(
-            'stale_recipe_version',
-            'A saved recipe changed after preview. Review its immutable version.',
-          );
-        }
       }
     }
   }

@@ -235,6 +235,77 @@ void main() {
         expect(yogaOnly, hasLength(1));
       },
     );
+
+    // R07F-0 review: pins the `estimated_calories` compatibility contract.
+    // 0 is the "not estimated" sentinel for locally completed activities —
+    // never a genuine zero measurement — and only health imports with a
+    // provider-supplied estimate expose a trusted value through the
+    // provenance-aware accessor. No fabricated or compatibility value may
+    // masquerade as known-zero/known-positive evidence.
+    group('estimated calories compatibility contract', () {
+      test('manual completion persists the not-estimated 0 sentinel', () async {
+        final draft = await activities.createManualDraft(
+          routineName: 'Intervals',
+          activityType: B02ActivityType.running,
+          cardioDetail: manualRunningDetail(),
+        );
+        final sessionId = await activities.completeDraft(draft.id);
+
+        final session = await (db.select(
+          db.workoutSessions,
+        )..where((table) => table.id.equals(sessionId))).getSingle();
+        expect(session.estimatedCalories, 0);
+
+        final record = (await activities.readTypedHistory()).single;
+        expect(record.source, B02ActivitySource.manual);
+        expect(record.estimatedCalories, 0);
+        expect(
+          record.providerEstimatedCaloriesKcal,
+          isNull,
+          reason: 'a manual 0 sentinel must never read as a real estimate',
+        );
+      });
+
+      test(
+        'health import exposes its provider estimate only via the accessor',
+        () async {
+          final imports = HealthActivityImportRepository(db, activities);
+          final result = await imports.importActivity(importedRunning());
+          expect(result.status, B02HealthImportStatus.imported);
+
+          final record = (await activities.readTypedHistory()).single;
+          expect(record.isImported, isTrue);
+          expect(record.estimatedCalories, 350);
+          expect(record.providerEstimatedCaloriesKcal, 350);
+        },
+      );
+
+      test(
+        'an imported 0 cannot masquerade as a known-zero measurement',
+        () async {
+          final imports = HealthActivityImportRepository(db, activities);
+          final result = await imports.importActivity(
+            B02HealthActivityInput(
+              provider: 'health_connect',
+              providerType: 'EXERCISE_SESSION_TYPE_RUNNING',
+              sourceName: 'Health Connect',
+              externalId: 'provider-run-0',
+              fingerprint: 'fingerprint-run-0',
+              startedAtUtc: DateTime.utc(2026, 1, 1, 6),
+              endedAtUtc: DateTime.utc(2026, 1, 1, 6, 25),
+              distanceMetres: 5000,
+              estimatedCalories: 0,
+            ),
+          );
+          expect(result.status, B02HealthImportStatus.imported);
+
+          final record = (await activities.readTypedHistory()).single;
+          expect(record.isImported, isTrue);
+          expect(record.estimatedCalories, 0);
+          expect(record.providerEstimatedCaloriesKcal, isNull);
+        },
+      );
+    });
   });
 
   group('B02 Health mapping repositories', () {

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
@@ -20,7 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   test(
     'a canonical weight save refreshes the production Progress snapshot',
@@ -413,22 +412,20 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('strength state is based on performed values and opens history', (
-    tester,
-  ) async {
+  testWidgets('strength state is based on performed values', (tester) async {
     _setViewport(tester, const Size(390, 844));
     await _pump(tester, _strengthOnly(), AppTheme.darkTheme);
 
     expect(find.text('Bench Press'), findsOneWidget);
     expect(find.text('90 kg × 5'), findsWidgets);
-    expect(find.textContaining('higher at 5 reps'), findsWidgets);
+    expect(
+      find.textContaining('+7.5 kg at 5 reps vs previous session'),
+      findsWidgets,
+    );
     await expectLater(
       find.byType(ProgressScreen),
       matchesGoldenFile('goldens/ux_r05_progress_strength_dark.png'),
     );
-    await tester.tap(find.text('View history'));
-    await tester.pumpAndSettle();
-    expect(find.text('Aug 8'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

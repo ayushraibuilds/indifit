@@ -41,7 +41,7 @@ void main() {
     expect(controller.state.status, B02StrengthExecutionStatus.partial);
     expect(controller.state.launch!.draftId, launch.draftId);
 
-    await controller.finalize(commandId: 'finish-invalid');
+    expect(await controller.finalize(commandId: 'finish-invalid'), isFalse);
     expect(controller.state.status, B02StrengthExecutionStatus.failure);
     expect(controller.state.launch, isNotNull);
     expect(controller.state.errorMessage, contains('could not be saved'));
@@ -53,4 +53,36 @@ void main() {
     expect(controller.state.status, B02StrengthExecutionStatus.recovery);
     expect(controller.state.errorMessage, contains('reopened'));
   });
+
+  test(
+    'persists foreground wall-clock duration and excludes background',
+    () async {
+      var now = DateTime.utc(2026, 8, 11, 10);
+      controller.dispose();
+      controller = B02StrengthExecutionController(
+        StrengthExecutionCompatibilityAdapter(
+          StrengthExecutionRepository(
+            db: db,
+            calendarRepo: CalendarRepository(db),
+          ),
+        ),
+        nowUtc: () => now,
+      );
+      await controller.startUnscheduled(
+        routineName: 'Timed quick workout',
+        executionSnapshotJson:
+            '{"version":1,"routineName":"Timed quick workout"}',
+      );
+
+      now = now.add(const Duration(seconds: 65));
+      await controller.pauseElapsed();
+      expect(controller.state.launch!.state.elapsedSeconds, 65);
+
+      now = now.add(const Duration(minutes: 20));
+      controller.resumeElapsed();
+      now = now.add(const Duration(seconds: 10));
+      await controller.saveDraft(controller.state.launch!.state);
+      expect(controller.state.launch!.state.elapsedSeconds, 75);
+    },
+  );
 }

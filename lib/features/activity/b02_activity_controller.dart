@@ -171,7 +171,7 @@ class B02ActivityController extends StateNotifier<B02ActivityControllerState> {
         state = const B02ActivityControllerState(
           status: B02ActivityControllerStatus.recovery,
           errorMessage:
-              'The typed activity draft is unavailable or legacy-shaped.',
+              'This activity draft is unavailable. Try recovering it.',
         );
         return;
       }

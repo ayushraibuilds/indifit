@@ -205,12 +205,19 @@ class OccurrenceEvents extends Table {
 }
 
 /// Singleton typed owner of the current version and normal equipment profile.
+/// End metadata is bounded retry/history context, not a second active-plan
+/// authority. The active pointer remains the only current-plan source.
 class TrainingPlanSettings extends Table {
   IntColumn get id => integer().withDefault(const Constant(1))();
   TextColumn get activeProgramVersionId =>
       text().nullable().references(ProgramVersions, #id)();
   TextColumn get activeSinceLocalDate => text().nullable()();
   TextColumn get activeSinceTimezoneId => text().nullable()();
+  TextColumn get lastEndedProgramVersionId =>
+      text().nullable().references(ProgramVersions, #id)();
+  TextColumn get lastEndedOutcome => text().nullable()();
+  DateTimeColumn get lastEndedAtUtc => dateTime().nullable()();
+  TextColumn get lastEndedCommandId => text().nullable()();
   TextColumn get defaultEquipmentProfileId =>
       text().nullable().references(EquipmentProfiles, #id)();
   DateTimeColumn get updatedAtUtc => dateTime()();
@@ -219,7 +226,10 @@ class TrainingPlanSettings extends Table {
   Set<Column> get primaryKey => {id};
 
   @override
-  List<String> get customConstraints => ['CHECK (id = 1)'];
+  List<String> get customConstraints => [
+    'CHECK (id = 1)',
+    "CHECK (last_ended_outcome IS NULL OR last_ended_outcome IN ('finished', 'left'))",
+  ];
 }
 
 class EquipmentProfiles extends Table {

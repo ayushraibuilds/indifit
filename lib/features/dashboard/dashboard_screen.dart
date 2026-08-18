@@ -186,10 +186,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         '${date.year.toString().padLeft(4, '0')}-'
         '${date.month.toString().padLeft(2, '0')}-'
         '${date.day.toString().padLeft(2, '0')}';
-    final route = Uri(
-      path: '/food',
-      queryParameters: {'mealType': mealType, 'date': dateValue},
-    );
+    final queryParameters = <String, String>{'date': dateValue};
+    final normalizedMealType = mealType.trim().toLowerCase();
+    if (normalizedMealType.isNotEmpty) {
+      queryParameters['mealType'] = normalizedMealType;
+    }
+    final route = Uri(path: '/food', queryParameters: queryParameters);
     await context.push(route.toString());
     if (mounted) await _refreshToday();
   }
@@ -380,7 +382,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         },
         onCustomize: _openCustomization,
         onOpenWorkoutPlan: () => context.push('/calendar'),
-        onLogMeal: () => unawaited(_openFoodForMeal('breakfast')),
+        onLogMeal: () => unawaited(_openFoodForMeal('')),
         onLogMealForMeal: _openFoodForMeal,
         onStartWorkout: _startTodayWorkout,
         onOpenFoodGuidance: _openFoodGuidance,

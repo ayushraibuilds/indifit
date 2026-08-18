@@ -74,7 +74,7 @@ void main() {
         ),
       );
       expect(find.textContaining('Target vs actual'), findsNothing);
-      expect(find.textContaining('target reps'), findsOneWidget);
+      expect(find.textContaining('Target · 8–10 reps'), findsOneWidget);
       expect(find.text('Finish partially…'), findsOneWidget);
       expect(find.text('Complete workout'), findsOneWidget);
     },
@@ -166,6 +166,26 @@ void main() {
     expect(b02RestPeriodBelongsToSlot(groupRest, secondGroupMember), isTrue);
   });
 
+  test('rest countdown uses wall clock and clamps after its deadline', () {
+    final period = B02RestPeriod(
+      id: 'rest:slot-one:0',
+      performedSetId: 'set-one',
+      scope: B02RestScope.exerciseSet,
+      source: B02RestSource.prescription,
+      recommendedSeconds: 120,
+      selectedSeconds: 120,
+      startedAtUtc: DateTime.utc(2026, 8, 11, 12),
+    );
+    expect(
+      b02RestRemainingSeconds(period, DateTime.utc(2026, 8, 11, 12, 1, 45)),
+      15,
+    );
+    expect(
+      b02RestRemainingSeconds(period, DateTime.utc(2026, 8, 11, 12, 5)),
+      0,
+    );
+  });
+
   testWidgets('history card preserves modality and source labels', (
     tester,
   ) async {
@@ -191,7 +211,11 @@ void main() {
     );
     expect(find.textContaining('yoga'), findsAtLeastNWidgets(1));
     expect(find.textContaining('Flow'), findsOneWidget);
-    expect(find.textContaining('manual'), findsOneWidget);
+    // R07F-0 review: the history card renders consumer labels, not raw
+    // storage values ('manual' / 'healthImport').
+    expect(find.textContaining('Logged in IndiFit'), findsOneWidget);
+    expect(find.textContaining('healthImport'), findsNothing);
+    expect(find.textContaining('running'), findsNothing);
   });
 }
 

@@ -1,5 +1,4 @@
 import '../../core/nutrients.dart';
-import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/nutrition_protein_distribution.dart';
 import 'nutrition_read_model_repository.dart';
 
@@ -42,22 +41,9 @@ class NutritionProteinDistributionRepository {
       );
     }
 
-    final history = await _history.listHistory(userId: normalizedUserId);
-    final superseded = <String>{};
-    for (final record in history) {
-      if (record is NutritionCanonicalSnapshotReadModel) {
-        final predecessor = record.snapshot.lineage.supersedesSnapshotId;
-        if (predecessor != null) superseded.add(predecessor);
-      }
-    }
-    final activeForDate = history.where(
-      (record) =>
-          record.localDate == normalizedDate &&
-          // Correction lineage points to canonical snapshots only. Legacy
-          // records have a separate source namespace even if their text ID
-          // happens to collide with a canonical ID.
-          (record is! NutritionCanonicalSnapshotReadModel ||
-              !superseded.contains(record.stableId)),
+    final activeForDate = await _history.listForLocalDate(
+      userId: normalizedUserId,
+      localDate: normalizedDate,
     );
     return _service.build(
       registry: _registry,

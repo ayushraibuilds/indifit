@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
@@ -55,14 +56,18 @@ class B02StrengthExecutionController
   final StrengthExecutionCompatibilityAdapter _adapter;
   final B02StrengthExecutionDraftService _draftService;
   final B02RestDraftCoordinator _restCoordinator;
+  final DateTime Function() _nowUtc;
+  DateTime? _activeStartedAtUtc;
 
   B02StrengthExecutionController(
     this._adapter, {
     B02StrengthExecutionLaunch? initialLaunch,
     B02StrengthExecutionDraftService? draftService,
     B02RestDraftCoordinator? restCoordinator,
+    DateTime Function()? nowUtc,
   }) : _draftService = draftService ?? const B02StrengthExecutionDraftService(),
        _restCoordinator = restCoordinator ?? const B02RestDraftCoordinator(),
+       _nowUtc = nowUtc ?? _systemNowUtc,
        super(
          initialLaunch == null
              ? const B02StrengthExecutionUiState.initial()
@@ -70,7 +75,11 @@ class B02StrengthExecutionController
                  status: B02StrengthExecutionStatus.ready,
                  launch: initialLaunch,
                ),
-       );
+       ) {
+    _activeStartedAtUtc = _nowUtc().toUtc();
+  }
+
+  static DateTime _systemNowUtc() => DateTime.now().toUtc();
 
   Future<void> startScheduled({
     required String occurrenceId,
@@ -111,7 +120,8 @@ class B02StrengthExecutionController
     if (current == null) {
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.recovery,
-        errorMessage: 'No B02 strength draft is loaded.',
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
       );
       return;
     }
@@ -120,11 +130,12 @@ class B02StrengthExecutionController
       clearError: true,
     );
     try {
-      await _adapter.saveDraft(draftId: current.draftId, state: draft);
+      final durableDraft = _stampElapsed(draft);
+      await _adapter.saveDraft(draftId: current.draftId, state: durableDraft);
       if (!mounted) return;
       state = state.copyWith(
         status: B02StrengthExecutionStatus.partial,
-        launch: current.copyWith(state: draft),
+        launch: current.copyWith(state: durableDraft),
         clearError: true,
       );
     } catch (error) {
@@ -137,7 +148,8 @@ class B02StrengthExecutionController
     if (current == null) {
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.recovery,
-        errorMessage: 'No B02 strength draft is loaded.',
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
       );
       return;
     }
@@ -165,6 +177,7 @@ class B02StrengthExecutionController
     required B02StrengthExecutionSlot slot,
     required int reps,
     double? loadKg,
+    B02LoadBasis? actualLoadBasis,
     int? rpe,
     B02SetRole role = B02SetRole.working,
     B02TechniqueFields? technique,
@@ -176,7 +189,8 @@ class B02StrengthExecutionController
     if (current == null) {
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.recovery,
-        errorMessage: 'No B02 strength draft is loaded.',
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
       );
       return;
     }
@@ -186,12 +200,17 @@ class B02StrengthExecutionController
         slot: slot,
         reps: reps,
         loadKg: loadKg,
+        actualLoadBasis: actualLoadBasis,
         rpe: rpe,
         role: role,
         technique: technique,
         actualExerciseId: actualExerciseId,
         actualExerciseNameSnapshot: actualExerciseNameSnapshot,
         substitutionReason: substitutionReason,
+        sourceExercisePrescriptionId: current.occurrenceId == null
+            ? null
+            : slot.prescriptionId,
+        useSlotPrescription: current.occurrenceId != null,
       );
       await saveDraft(next);
     } catch (error) {
@@ -204,7 +223,8 @@ class B02StrengthExecutionController
     if (current == null) {
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.recovery,
-        errorMessage: 'No B02 strength draft is loaded.',
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
       );
       return;
     }
@@ -220,6 +240,52 @@ class B02StrengthExecutionController
     }
   }
 
+  Future<void> addUnscheduledExercise({
+    required String exerciseId,
+    required String exerciseName,
+  }) async {
+    final current = state.launch;
+    if (current == null || current.occurrenceId != null) return;
+    state = state.copyWith(status: B02StrengthExecutionStatus.loading);
+    try {
+      final updated = await _adapter.addUnscheduledExercise(
+        launch: current,
+        exerciseId: exerciseId,
+        exerciseName: exerciseName,
+      );
+      final prepared = await _adapter.prepareExecution(updated);
+      if (!mounted) return;
+      state = B02StrengthExecutionUiState(
+        status: B02StrengthExecutionStatus.ready,
+        launch: updated.copyWith(state: prepared.state),
+        slots: prepared.slots,
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
+  Future<void> removeUnscheduledExercise(B02StrengthExecutionSlot slot) async {
+    final current = state.launch;
+    if (current == null || current.occurrenceId != null) return;
+    state = state.copyWith(status: B02StrengthExecutionStatus.loading);
+    try {
+      final updated = await _adapter.removeUnscheduledExercise(
+        launch: current,
+        prescriptionId: slot.prescriptionId,
+      );
+      final prepared = await _adapter.prepareExecution(updated);
+      if (!mounted) return;
+      state = B02StrengthExecutionUiState(
+        status: B02StrengthExecutionStatus.ready,
+        launch: updated.copyWith(state: prepared.state),
+        slots: prepared.slots,
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
   Future<void> beginRest(
     B02StrengthExecutionSlot slot, {
     int? selectedSeconds,
@@ -229,9 +295,10 @@ class B02StrengthExecutionController
     try {
       final performed = current.state.performedExercises.where(
         (exercise) =>
-            exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
-            exercise.groupRoundOrdinal == slot.roundOrdinal &&
-            exercise.groupMemberOrdinal == slot.memberOrdinal,
+            exercise.id == 'performed:${slot.id}' ||
+            (exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+                exercise.groupRoundOrdinal == slot.roundOrdinal &&
+                exercise.groupMemberOrdinal == slot.memberOrdinal),
       );
       final sets = performed.expand((exercise) => exercise.sets).toList();
       final lastSet = sets.isEmpty ? null : sets.last;
@@ -244,7 +311,7 @@ class B02StrengthExecutionController
           : current.state.groups.firstWhere(
               (candidate) => candidate.id == slot.groupId,
               orElse: () => throw const B02ValidationException(
-                'The current group is missing from the frozen draft.',
+                'This workout is missing a required detail. Recover the draft and try again.',
               ),
             );
       final isLastGroupMember =
@@ -296,7 +363,7 @@ class B02StrengthExecutionController
         selectedSeconds: recommendation.selectedSeconds,
         actualSeconds: null,
         source: recommendation.source,
-        startedAtUtc: DateTime.now().toUtc(),
+        startedAtUtc: _nowUtc().toUtc(),
       );
       await saveDraft(_restCoordinator.begin(current.state, period));
     } catch (error) {
@@ -387,6 +454,36 @@ class B02StrengthExecutionController
     }
   }
 
+  Future<void> adjustRest(String periodId, {required int seconds}) async {
+    final current = state.launch;
+    if (current == null) return;
+    try {
+      final period = current.state.restPeriods.firstWhere(
+        (candidate) => candidate.id == periodId,
+      );
+      final selected =
+          (period.selectedSeconds ?? period.recommendedSeconds ?? 0) + seconds;
+      final adjusted = selected.clamp(0, 3600);
+      final now = _nowUtc().toUtc();
+      final elapsed = now
+          .difference(period.startedAtUtc)
+          .inSeconds
+          .clamp(0, 86400);
+      await saveDraft(
+        adjusted <= elapsed
+            ? _restCoordinator.finish(
+                current.state,
+                periodId,
+                endedAtUtc: now,
+                endReason: B02RestEndReason.elapsed,
+              )
+            : _restCoordinator.select(current.state, periodId, adjusted),
+      );
+    } catch (error) {
+      _setFailure(error, current);
+    }
+  }
+
   Future<void> skipRest(String periodId) async {
     final current = state.launch;
     if (current == null) return;
@@ -395,7 +492,7 @@ class B02StrengthExecutionController
         _restCoordinator.skip(
           current.state,
           periodId,
-          endedAtUtc: DateTime.now().toUtc(),
+          endedAtUtc: _nowUtc().toUtc(),
         ),
       );
     } catch (error) {
@@ -406,24 +503,31 @@ class B02StrengthExecutionController
   /// Completes an elapsed countdown through the same durable B02 rest path as
   /// an explicit skip. The timer is presentation-only; it never mutates a
   /// rest period directly.
-  Future<void> completeRest(String periodId, {DateTime? endedAtUtc}) async {
+  Future<bool> completeRest(String periodId, {DateTime? endedAtUtc}) async {
     final current = state.launch;
-    if (current == null) return;
+    if (current == null) return false;
     try {
       await saveDraft(
         _restCoordinator.finish(
           current.state,
           periodId,
-          endedAtUtc: (endedAtUtc ?? DateTime.now()).toUtc(),
+          endedAtUtc: (endedAtUtc ?? _nowUtc()).toUtc(),
           endReason: B02RestEndReason.elapsed,
         ),
       );
+      return mounted &&
+          state.status == B02StrengthExecutionStatus.partial &&
+          state.launch?.state.restPeriods.any(
+                (period) => period.id == periodId && period.endedAtUtc != null,
+              ) ==
+              true;
     } catch (error) {
       _setFailure(error, current);
+      return false;
     }
   }
 
-  Future<void> finalize({
+  Future<bool> finalize({
     required String commandId,
     CompletionKind completionKind = CompletionKind.full,
     String? reason,
@@ -433,32 +537,71 @@ class B02StrengthExecutionController
     if (current == null) {
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.recovery,
-        errorMessage: 'No B02 strength draft is loaded.',
+        errorMessage:
+            'This workout draft is unavailable. Recover it or start over.',
       );
-      return;
+      return false;
     }
     state = state.copyWith(
       status: B02StrengthExecutionStatus.loading,
       clearError: true,
     );
     try {
+      final finalState = _stampElapsed(current.state);
+      await _adapter.saveDraft(draftId: current.draftId, state: finalState);
       await _adapter.finalizeDraft(
         draftId: current.draftId,
         commandId: commandId,
-        state: current.state,
+        state: finalState,
         completionKind: completionKind,
         reason: reason,
         completedAtUtc: completedAtUtc,
       );
-      if (!mounted) return;
+      if (!mounted) return false;
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
       );
-    } on B02StrengthExecutionRecoveryException catch (error) {
+      _activeStartedAtUtc = null;
+      return true;
+    } on B02StrengthExecutionRecoveryException catch (error, stackTrace) {
+      _logFinalizationFailure(
+        error,
+        stackTrace,
+        current: current,
+        commandId: commandId,
+        completionKind: completionKind,
+      );
       _setFailure(error, current, recovery: true);
-    } catch (error) {
+      return false;
+    } catch (error, stackTrace) {
+      _logFinalizationFailure(
+        error,
+        stackTrace,
+        current: current,
+        commandId: commandId,
+        completionKind: completionKind,
+      );
       _setFailure(error, current);
+      return false;
     }
+  }
+
+  void _logFinalizationFailure(
+    Object error,
+    StackTrace stackTrace, {
+    required B02StrengthExecutionLaunch current,
+    required String commandId,
+    required CompletionKind completionKind,
+  }) {
+    AppLogger.error(
+      'Workout finalization failed '
+          '[draftId=${current.draftId}, occurrenceId=${current.occurrenceId ?? 'quick'}, '
+          'commandId=$commandId, completionKind=${completionKind.name}, '
+          'errorType=${error.runtimeType}]',
+      error,
+      stackTrace,
+      'B02Finalization',
+    );
   }
 
   Future<void> discard() async {
@@ -474,6 +617,7 @@ class B02StrengthExecutionController
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
       );
+      _activeStartedAtUtc = null;
     } catch (error) {
       _setFailure(error, current);
     }
@@ -490,6 +634,7 @@ class B02StrengthExecutionController
         launch: launch.copyWith(state: prepared.state),
         slots: prepared.slots,
       );
+      _activeStartedAtUtc = _nowUtc().toUtc();
     } catch (error) {
       _setFailure(error, null, recovery: true);
     }
@@ -512,11 +657,37 @@ class B02StrengthExecutionController
         launch: launch.copyWith(state: prepared.state),
         slots: prepared.slots,
       );
+      _activeStartedAtUtc = _nowUtc().toUtc();
     } on B02StrengthExecutionRecoveryException catch (error) {
       _setFailure(error, prior, recovery: true);
     } catch (error) {
       _setFailure(error, prior);
     }
+  }
+
+  /// Persists active wall-clock time before the player leaves the foreground.
+  Future<void> pauseElapsed() async {
+    final current = state.launch;
+    if (current == null || _activeStartedAtUtc == null) return;
+    await saveDraft(current.state);
+    _activeStartedAtUtc = null;
+  }
+
+  /// Starts a fresh foreground interval without counting background time.
+  void resumeElapsed() {
+    if (state.launch != null && _activeStartedAtUtc == null) {
+      _activeStartedAtUtc = _nowUtc().toUtc();
+    }
+  }
+
+  B02ExecutionDraftState _stampElapsed(B02ExecutionDraftState draft) {
+    final started = _activeStartedAtUtc;
+    if (started == null) return draft;
+    final now = _nowUtc().toUtc();
+    final added = now.difference(started).inSeconds;
+    _activeStartedAtUtc = now;
+    if (added <= 0) return draft;
+    return draft.copyWith(elapsedSeconds: draft.elapsedSeconds + added);
   }
 
   void _setFailure(

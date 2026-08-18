@@ -48,7 +48,8 @@ class IndiFitBottomSheet extends StatelessWidget {
               borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: SafeArea(
-              top: false,
+              top: true,
+              bottom: true,
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: maxHeight),
                 child: Column(
@@ -94,8 +95,11 @@ Future<T?> showIndiFitBottomSheet<T>({
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
-    useSafeArea: false,
-    requestFocus: true,
+    // showModalBottomSheet removes top MediaQuery padding when this is false,
+    // so an inner SafeArea can no longer recover the status-bar/Dynamic Island
+    // inset. Preserve the real route inset at the presentation boundary.
+    useSafeArea: true,
+    requestFocus: false,
     builder: (sheetContext) => IndiFitBottomSheet(
       maxHeightFactor: maxHeightFactor,
       semanticLabel: semanticLabel,

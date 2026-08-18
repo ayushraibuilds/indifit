@@ -7,6 +7,7 @@ import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/food_repository.dart';
@@ -44,6 +45,28 @@ final canonicalFoodRecordsForDayProvider = FutureProvider.autoDispose
           .toList(growable: false);
     });
 
+class FoodDiaryReadModel {
+  const FoodDiaryReadModel({required this.daily});
+
+  final NutritionDailyReadModel daily;
+}
+
+/// Food-root read boundary. It asks the canonical B03 read model for both the
+/// day records and its authoritative aggregation without pulling in Today’s
+/// unrelated calendar, activity, or coaching reads.
+final foodDiaryReadModelProvider = FutureProvider.autoDispose
+    .family<FoodDiaryReadModel, DateTime>((ref, date) async {
+      ref.watch(todayNutritionRevisionProvider);
+      final repository = await ref.watch(
+        nutritionReadModelRepositoryProvider.future,
+      );
+      final daily = await repository.dailyTotals(
+        userId: kLocalNutritionUserScopeId,
+        localDate: _localDateKey(date),
+      );
+      return FoodDiaryReadModel(daily: daily);
+    });
+
 /// A compact production food-log surface used by the existing food-search/log
 /// flow. It keeps mutation and undo behavior inside [FoodContextualActions].
 class FoodLogEntriesPanel extends ConsumerWidget {
@@ -51,10 +74,14 @@ class FoodLogEntriesPanel extends ConsumerWidget {
     required this.date,
     super.key,
     this.includeCanonical = true,
+    this.mealType,
+    this.onCanonicalRecordTap,
   });
 
   final DateTime date;
   final bool includeCanonical;
+  final String? mealType;
+  final ValueChanged<NutritionHistoricalReadRecord>? onCanonicalRecordTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -81,9 +108,22 @@ class FoodLogEntriesPanel extends ConsumerWidget {
         label: 'Loading logged food',
       );
     }
-    final legacyItems = logs.valueOrNull ?? const <FoodLog>[];
+    final normalizedMealType = _normalizeMealType(mealType);
+    final legacyItems = (logs.valueOrNull ?? const <FoodLog>[])
+        .where(
+          (item) =>
+              normalizedMealType == null ||
+              _normalizeMealType(item.mealType) == normalizedMealType,
+        )
+        .toList(growable: false);
     final canonicalItems =
-        canonical.valueOrNull ?? const <NutritionHistoricalReadRecord>[];
+        (canonical.valueOrNull ?? const <NutritionHistoricalReadRecord>[])
+            .where(
+              (item) =>
+                  normalizedMealType == null ||
+                  _normalizeMealType(item.mealCategory) == normalizedMealType,
+            )
+            .toList(growable: false);
     if (logs.hasError && (!includeCanonical || canonical.hasError)) {
       return ProductFailureCard(
         failure: ProductFailurePresentation.fromCode(
@@ -119,7 +159,10 @@ class FoodLogEntriesPanel extends ConsumerWidget {
         Text('Logged food', style: B05Typography.title(context)),
         const SizedBox(height: B05Layout.space8),
         if (canonicalItems.isNotEmpty)
-          _CanonicalFoodRows(records: canonicalItems),
+          _CanonicalFoodRows(
+            records: canonicalItems,
+            onRecordTap: onCanonicalRecordTap,
+          ),
         if (legacyItems.isNotEmpty)
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 220),
@@ -144,10 +187,20 @@ class FoodLogEntriesPanel extends ConsumerWidget {
   }
 }
 
+String? _normalizeMealType(String? value) {
+  final normalized = value?.trim().toLowerCase();
+  return switch (normalized) {
+    'snacks' => 'snack',
+    null || '' => null,
+    _ => normalized,
+  };
+}
+
 class _CanonicalFoodRows extends StatelessWidget {
-  const _CanonicalFoodRows({required this.records});
+  const _CanonicalFoodRows({required this.records, this.onRecordTap});
 
   final List<NutritionHistoricalReadRecord> records;
+  final ValueChanged<NutritionHistoricalReadRecord>? onRecordTap;
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +211,8 @@ class _CanonicalFoodRows extends StatelessWidget {
     return Column(
       children: [
         for (final entry in grouped.entries) ...[
-          for (final record in entry.value) _CanonicalFoodRow(record: record),
+          for (final record in entry.value)
+            _CanonicalFoodRow(record: record, onTap: onRecordTap),
           if (entry.key != grouped.keys.last)
             const SizedBox(height: B05Layout.space8),
         ],
@@ -168,9 +222,10 @@ class _CanonicalFoodRows extends StatelessWidget {
 }
 
 class _CanonicalFoodRow extends StatelessWidget {
-  const _CanonicalFoodRow({required this.record});
+  const _CanonicalFoodRow({required this.record, this.onTap});
 
   final NutritionHistoricalReadRecord record;
+  final ValueChanged<NutritionHistoricalReadRecord>? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -184,53 +239,92 @@ class _CanonicalFoodRow extends StatelessWidget {
         .where((value) => value.trim().isNotEmpty)
         .join(', ');
     final displayName = label.isEmpty ? record.displayLabel : label;
+    final serving = record.items
+        .map((item) => _historicalQuantityLabel(item.quantity))
+        .where((value) => value != null)
+        .join(' · ');
+    final actionTap =
+        onTap != null &&
+            record.items.any(
+              (item) =>
+                  item.originSourceType == 'direct_food' && item.foodId != null,
+            )
+        ? onTap
+        : null;
     final energy = _factLabel(record.totals.facts['energy'], 'kcal', 0);
     final protein = _factLabel(record.totals.facts['protein'], 'g protein', 1);
     return Semantics(
       container: true,
       label: '${presentation.label}: $displayName',
       value: '$energy, $protein',
-      child: B05Surface(
-        padding: const EdgeInsets.all(B05Layout.space12),
-        radius: B05SurfaceRadius.small,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: role.container,
-                shape: BoxShape.circle,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(B05Layout.space8),
-                child: Icon(presentation.icon, color: role.indicator),
-              ),
-            ),
-            const SizedBox(width: B05Layout.space12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(displayName, style: B05Typography.title(context)),
-                  const SizedBox(height: B05Layout.space4),
-                  Text(
-                    '${presentation.label} · $energy · $protein',
-                    style: B05Typography.body(context),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: actionTap == null ? null : () => actionTap(record),
+          borderRadius: B05Radii.smallRadius,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: B05Layout.space8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: role.container,
+                    shape: BoxShape.circle,
                   ),
-                  if (record.completeness.state !=
-                      NutrientCompletenessState.complete)
-                    Text(
-                      'Some nutrition information is missing',
-                      style: B05Typography.caption(context),
-                    ),
-                ],
-              ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(B05Layout.space8),
+                    child: Icon(presentation.icon, color: role.indicator),
+                  ),
+                ),
+                const SizedBox(width: B05Layout.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(displayName, style: B05Typography.label(context)),
+                      const SizedBox(height: B05Layout.space4),
+                      Text(
+                        [
+                          presentation.label,
+                          if (serving.isNotEmpty) serving,
+                          energy,
+                          protein,
+                        ].join(' · '),
+                        style: B05Typography.caption(context),
+                      ),
+                      if (record.completeness.state !=
+                          NutrientCompletenessState.complete)
+                        Text(
+                          'Some nutrition information is missing',
+                          style: B05Typography.caption(context),
+                        ),
+                    ],
+                  ),
+                ),
+                if (actionTap != null)
+                  B05IconAction(
+                    icon: Icons.more_horiz_rounded,
+                    label: 'Actions for $displayName',
+                    hint: 'Edit, copy, or delete this entry.',
+                    onPressed: () => actionTap(record),
+                  ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+String? _historicalQuantityLabel(NutritionHistoricalQuantity quantity) {
+  final typed = quantity.quantity;
+  if (typed != null) return QuantityFormatter.format(typed);
+  if (quantity.storedAmount == null || quantity.storedUnit.trim().isEmpty) {
+    return null;
+  }
+  return '${quantity.storedAmount} ${quantity.storedUnit}';
 }
 
 String _factLabel(NutrientFact? fact, String unit, int precision) {

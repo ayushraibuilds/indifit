@@ -1,6 +1,8 @@
 import '../../core/nutrients.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/consumer_copy.dart';
+import '../../core/presentation/consumer_count_label.dart';
+import '../../core/presentation/consumer_number_label.dart';
 import '../../data/models/b02_progress_read_models.dart';
 import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
@@ -12,6 +14,20 @@ import 'today_surface_controller.dart';
 /// no source IDs, policy metadata, or persistence vocabulary. The source read
 /// models remain authoritative; this file only decides how to show them well.
 enum TodayPresentationState { loading, ready, empty, unavailable }
+
+/// Skipped and cancelled dates are retained as history, but they are not a
+/// current Today workout. Completed/partial evidence remains readable.
+List<CalendarOccurrenceReadItem> todayVisibleWorkoutOccurrences(
+  CalendarReadSnapshot snapshot,
+) {
+  return snapshot.rangeOccurrences
+      .where(
+        (item) =>
+            item.occurrence.status != 'skipped' &&
+            item.occurrence.status != 'cancelled',
+      )
+      .toList(growable: false);
+}
 
 class TodayWorkoutPresentation {
   final TodayPresentationState state;
@@ -52,7 +68,7 @@ class TodayWorkoutPresentation {
         detail: 'Try again to load your plan.',
       );
     }
-    final occurrences = read.value!.rangeOccurrences;
+    final occurrences = todayVisibleWorkoutOccurrences(read.value!);
     if (occurrences.isEmpty) {
       return const TodayWorkoutPresentation(
         state: TodayPresentationState.empty,
@@ -73,7 +89,7 @@ class TodayWorkoutPresentation {
       title: ConsumerCopy.label(occurrence.template.name, fallback: 'Workout'),
       detail: count == 0
           ? status
-          : '$count ${count == 1 ? 'exercise' : 'exercises'} · $status',
+          : '${ConsumerCountLabel.format(count, 'exercise')} · $status',
       status: status,
       occurrence: occurrence,
       exerciseCount: count,
@@ -403,8 +419,8 @@ class TodayNutritionPresentation {
       mealType: mealType,
       label: label,
       detail: itemCount == 0
-          ? '${records.length} ${records.length == 1 ? 'meal' : 'meals'} logged'
-          : '$itemCount ${itemCount == 1 ? 'item' : 'items'}',
+          ? '${ConsumerCountLabel.format(records.length, 'meal')} logged'
+          : ConsumerCountLabel.format(itemCount, 'item'),
       calorieLabel: calories.label,
       logged: true,
       nutritionIncomplete: calories.incomplete,
@@ -508,8 +524,7 @@ class TodayActivityPresentation {
     return TodayActivityPresentation(
       state: TodayPresentationState.ready,
       headline: 'Activity this week',
-      detail:
-          '${history.length} ${history.length == 1 ? 'session' : 'sessions'} logged',
+      detail: '${ConsumerCountLabel.format(history.length, 'session')} logged',
       latestActivity: ConsumerCopy.label(latest.name, fallback: 'Workout'),
       sessionCount: history.length,
     );
@@ -632,7 +647,7 @@ TodayFocusPresentation todayFocusPresentation({
       title: ConsumerCopy.label(item.template.name, fallback: 'Workout'),
       detail: item.prescriptions.isEmpty
           ? 'Workout planned for today'
-          : '${item.prescriptions.length} ${item.prescriptions.length == 1 ? 'exercise' : 'exercises'} planned',
+          : '${ConsumerCountLabel.format(item.prescriptions.length, 'exercise')} planned',
       actionLabel: startable
           ? isInProgress
                 ? 'Resume workout'
@@ -675,9 +690,15 @@ String? _mealCategory(String value) {
 }
 
 String? _factValue(NutrientFact fact) {
-  final point = fact.point?.value.toString();
-  final lower = fact.lower?.value.toString();
-  final upper = fact.upper?.value.toString();
+  final point = fact.point == null
+      ? null
+      : ConsumerNumberLabel.rounded(fact.point!.value.asDouble);
+  final lower = fact.lower == null
+      ? null
+      : ConsumerNumberLabel.rounded(fact.lower!.value.asDouble);
+  final upper = fact.upper == null
+      ? null
+      : ConsumerNumberLabel.rounded(fact.upper!.value.asDouble);
   if (lower != null || upper != null) {
     if (lower != null && upper != null) return '$lower–$upper';
     if (lower != null) return '$lower+';
@@ -687,8 +708,7 @@ String? _factValue(NutrientFact fact) {
 }
 
 String _formatNumber(double value) {
-  if (value == value.roundToDouble()) return value.toInt().toString();
-  return value.toString();
+  return ConsumerNumberLabel.rounded(value);
 }
 
 String _workoutStatus(Object? value) {

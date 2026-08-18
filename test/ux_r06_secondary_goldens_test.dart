@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrition_constraints.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
@@ -26,7 +25,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
     _r6GoldenDatabase = AppDatabase.memory();
   });
 

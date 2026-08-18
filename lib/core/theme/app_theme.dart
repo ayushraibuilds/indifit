@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../utils/app_logger.dart';
 import 'app_colors_extension.dart';
 import 'b05_semantic_colors.dart';
 
@@ -143,14 +141,10 @@ class AppTheme {
         ? ThemeData.dark().textTheme
         : ThemeData.light().textTheme;
 
-    TextTheme theme = baseTextTheme;
-    if (GoogleFonts.config.allowRuntimeFetching != false) {
-      try {
-        theme = GoogleFonts.outfitTextTheme(baseTextTheme);
-      } catch (e) {
-        AppLogger.warning('GoogleFonts.outfitTextTheme failed: $e');
-      }
-    }
+    // Outfit is bundled as a variable font (assets/fonts/Outfit-Variable.ttf)
+    // so typography never depends on first-run network access. The explicit
+    // FontWeight overrides below drive the variable wght axis.
+    final theme = baseTextTheme.apply(fontFamily: 'Outfit');
     return theme.copyWith(
       displaySmall: theme.displaySmall?.copyWith(
         fontWeight: FontWeight.w700,

@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b04_recommendation_context_models.dart';
+import '../../data/repositories/b02_exercise_performance_read_repository.dart';
 import '../../data/repositories/b02_progress_read_repository.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/b04_briefing_read_repositories.dart';
@@ -33,6 +34,7 @@ import '../../data/repositories/nutrition_recipe_repository.dart';
 import '../../data/repositories/nutrition_thali_repository.dart';
 import '../../data/repositories/nutrition_transformation_repository.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
+import '../../data/repositories/program_lifecycle_repository.dart';
 import '../../data/repositories/program_repository.dart';
 import '../../data/repositories/readiness_snapshot_repository.dart';
 import '../../data/repositories/recovery_observation_repository.dart';
@@ -791,6 +793,10 @@ final programActivationCoordinatorProvider =
       );
     });
 
+final programLifecycleRepositoryProvider = Provider<ProgramLifecycleRepository>(
+  (ref) => ProgramLifecycleRepository(ref.watch(databaseProvider)),
+);
+
 final calendarRepositoryProvider = Provider<CalendarRepository>((ref) {
   return CalendarRepository(
     ref.watch(databaseProvider),
@@ -868,6 +874,12 @@ final strengthExecutionRepositoryProvider =
         db: ref.watch(databaseProvider),
         calendarRepo: ref.watch(calendarRepositoryProvider),
       ),
+    );
+
+final b02ExercisePerformanceReadRepositoryProvider =
+    Provider<B02ExercisePerformanceReadRepository>(
+      (ref) =>
+          B02ExercisePerformanceReadRepository(ref.watch(databaseProvider)),
     );
 
 final strengthExecutionCompatibilityAdapterProvider =

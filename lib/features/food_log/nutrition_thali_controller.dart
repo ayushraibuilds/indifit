@@ -164,7 +164,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       if (draft == null) {
         throw const NutritionThaliNotFoundError(
           'thali_not_found',
-          'The saved thali draft is no longer available.',
+          'The saved meal is no longer available.',
         );
       }
       final repository = await _repositoryFuture;
@@ -328,7 +328,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       if (items.every((item) => item.id != itemId)) {
         throw const NutritionThaliValidationError(
           'item_not_found',
-          'The thali item is no longer present.',
+          'The meal item is no longer present.',
         );
       }
       _setDraft(draft.copyWith(items: items), dirty: true, clearPreview: true);
@@ -413,7 +413,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       _fail(
         const NutritionThaliValidationError(
           'missing_preview',
-          'Preview the complete thali before logging it.',
+          'Preview the complete meal before logging it.',
         ),
         action: _NutritionThaliRetryAction.preview,
       );
@@ -440,7 +440,7 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
           userId: userId,
           evaluationFingerprint: preview.constraintEvaluation!.fingerprint,
           constraintId: acknowledgedId,
-          reason: 'User acknowledged the thali dietary evaluation.',
+          reason: 'User acknowledged the meal dietary evaluation.',
           acknowledgedAtUtc: loggedAt,
         );
       }

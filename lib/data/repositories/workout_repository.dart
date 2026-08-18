@@ -215,6 +215,10 @@ class WorkoutRepository {
     required String name,
     required double volume,
     required int durationSeconds,
+
+    /// Compatibility value only. IndiFit has no calorie-estimation authority,
+    /// so callers must pass 0, the documented "not estimated" sentinel for
+    /// `workout_sessions.estimated_calories` (see the column's contract).
     required int calories,
     required List<WorkoutSetsCompanion> sets,
     DateTime? completedAt,
@@ -552,6 +556,11 @@ class WorkoutRepository {
             .get();
     return rows.isEmpty ? null : rows.first;
   }
+
+  /// Emits only after the active draft table changes. The initial Drift
+  /// snapshot is skipped so consumers do not invalidate while mounting.
+  Stream<void> watchActiveDraftInvalidation() =>
+      _db.select(_db.workoutDrafts).watch().skip(1).map<void>((_) {});
 
   Future<int> saveWorkoutDraft(WorkoutDraftsCompanion draft) async {
     // Delete any previous drafts first to maintain at most one active draft

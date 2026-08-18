@@ -572,6 +572,18 @@ class ProductFailureCard extends StatelessWidget {
 
 /// Platform accessibility policy used by every B05 nonessential animation.
 abstract final class B05MotionPolicy {
+  /// Standard duration for interactive transitions (e.g. selection, fades).
+  static const Duration fastDuration = Duration(milliseconds: 160);
+
+  /// Default duration for state changes (e.g. nutrition values, sheet transitions).
+  static const Duration standardDuration = Duration(milliseconds: 240);
+
+  /// Deliberate completion duration for milestone moments (e.g. workout completion).
+  static const Duration completionDuration = Duration(milliseconds: 360);
+
+  /// Standard motion curve for smooth deceleration without elastic bounce.
+  static const Curve standardCurve = Curves.easeOutCubic;
+
   static bool reduceMotion(BuildContext context) {
     return MediaQuery.maybeOf(context)?.disableAnimations ?? false;
   }
@@ -580,7 +592,7 @@ abstract final class B05MotionPolicy {
 
   static Duration transitionDuration(
     BuildContext context, {
-    Duration standard = const Duration(milliseconds: 180),
+    Duration standard = standardDuration,
   }) {
     return reduceMotion(context) ? Duration.zero : standard;
   }

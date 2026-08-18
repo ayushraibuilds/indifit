@@ -4,8 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/backup/backup_file_adapter.dart';
 import '../../../core/presentation/product_failure_presentation.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/services/auto_backup_service.dart';
-import '../../../core/theme/colors.dart';
+import '../../../core/theme/b05_semantic_colors.dart';
 import '../../onboarding/onboarding_screen.dart';
 import '../health_sync_hub_screen.dart';
 import '../regional_food_packs_screen.dart';
@@ -17,20 +18,30 @@ import 'settings_reminder_toggle.dart';
 class DataManagementSection extends ConsumerWidget {
   const DataManagementSection({super.key});
 
+  /// Keeps the synchronous router gate in sync with persisted onboarding
+  /// state after restore/erase flows rewrite the preference.
+  Future<void> _syncOnboardingGate(WidgetRef ref) async {
+    final prefs = await SharedPreferences.getInstance();
+    ref.read(onboardingCompletedProvider.notifier).state =
+        prefs.getBool('onboarding_completed') ?? false;
+  }
+
   void _showExportDialog(BuildContext context, WidgetRef ref) {
     final passwordController = TextEditingController();
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Export & Encrypt Backup'),
-        backgroundColor: AppColors.surface,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Set a password to protect your backup file. If you leave this blank, the backup will be exported in plain text.',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(
+                fontSize: 12,
+                color: dialogCtx.b05Colors.textSecondary,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -48,8 +59,7 @@ class DataManagementSection extends ConsumerWidget {
             onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+          FilledButton(
             onPressed: () async {
               final password = passwordController.text;
               Navigator.pop(dialogCtx);
@@ -60,7 +70,7 @@ class DataManagementSection extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(error),
-                    backgroundColor: AppColors.danger,
+                    backgroundColor: context.b05Colors.danger.indicator,
                   ),
                 );
               }
@@ -83,17 +93,16 @@ class DataManagementSection extends ConsumerWidget {
       builder: (dialogCtx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Restore a backup'),
-          backgroundColor: AppColors.surface,
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Choose an IndiFit backup file. Pasting a legacy backup remains available below.',
+                Text(
+                  'Choose an IndiFit backup file. You can also paste an older IndiFit export below.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: dialogCtx.b05Colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -110,11 +119,11 @@ class DataManagementSection extends ConsumerWidget {
                     } catch (_) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
+                          SnackBar(
+                            content: const Text(
                               'The backup file could not be opened. Try again.',
                             ),
-                            backgroundColor: AppColors.danger,
+                            backgroundColor: context.b05Colors.danger.indicator,
                           ),
                         );
                       }
@@ -125,12 +134,14 @@ class DataManagementSection extends ConsumerWidget {
                 ),
                 if (selectedFileName != null) ...[
                   const SizedBox(height: 8),
-                  Text(
-                    'Selected: $selectedFileName',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.success,
-                      fontWeight: FontWeight.w600,
+                  Builder(
+                    builder: (innerCtx) => Text(
+                      'Selected: $selectedFileName',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: innerCtx.b05Colors.success.indicator,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -139,7 +150,7 @@ class DataManagementSection extends ConsumerWidget {
                   controller: backupController,
                   maxLines: 4,
                   decoration: const InputDecoration(
-                    hintText: 'Optional: paste a legacy JSON backup...',
+                    hintText: 'Optional: paste an older IndiFit export…',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -159,9 +170,10 @@ class DataManagementSection extends ConsumerWidget {
               onPressed: () => Navigator.pop(dialogCtx),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.danger,
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: dialogCtx.b05Colors.danger.container,
+                foregroundColor: dialogCtx.b05Colors.danger.foreground,
               ),
               onPressed: () async {
                 final rawContent =
@@ -181,7 +193,6 @@ class DataManagementSection extends ConsumerWidget {
                       context: context,
                       builder: (ctx) => AlertDialog(
                         title: const Text('Backup Inspection Failed'),
-                        backgroundColor: AppColors.surface,
                         content: Text(
                           ProductFailurePresentation.fromCode(
                             'backup_inspection_failed',
@@ -205,15 +216,14 @@ class DataManagementSection extends ConsumerWidget {
                     context: context,
                     builder: (ctx) => AlertDialog(
                       title: const Text('Restore Inspection Preview'),
-                      backgroundColor: AppColors.surface,
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'WARNING: Restoring will replace the data currently on this device.',
                             style: TextStyle(
-                              color: AppColors.danger,
+                              color: ctx.b05Colors.danger.indicator,
                               fontWeight: FontWeight.bold,
                               height: 1.4,
                             ),
@@ -224,17 +234,16 @@ class DataManagementSection extends ConsumerWidget {
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           Text('Export Date: ${result.timestamp}'),
-                          Text('Backup format: v${result.schemaVersion}'),
                           Text(
                             'Encrypted: ${result.isEncrypted ? "Yes (SHA256 Verified)" : "No"}',
                           ),
                           const SizedBox(height: 12),
-                          const Text(
-                            'ITEMS IN BACKUP:',
+                          Text(
+                            'Items in backup:',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
-                              color: AppColors.textSecondary,
+                              color: ctx.b05Colors.textSecondary,
                             ),
                           ),
                           ...result.tableCounts.entries.map(
@@ -250,9 +259,10 @@ class DataManagementSection extends ConsumerWidget {
                           onPressed: () => Navigator.pop(ctx, false),
                           child: const Text('Cancel'),
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.danger,
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: ctx.b05Colors.danger.container,
+                            foregroundColor: ctx.b05Colors.danger.foreground,
                           ),
                           onPressed: () => Navigator.pop(ctx, true),
                           child: const Text('Restore backup'),
@@ -267,6 +277,7 @@ class DataManagementSection extends ConsumerWidget {
                       await ref
                           .read(settingsControllerProvider.notifier)
                           .performRestore(result.payload);
+                      await _syncOnboardingGate(ref);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -277,11 +288,11 @@ class DataManagementSection extends ConsumerWidget {
                     } catch (_) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
+                          SnackBar(
+                            content: const Text(
                               'Restore failed. Your existing data was not changed.',
                             ),
-                            backgroundColor: AppColors.danger,
+                            backgroundColor: context.b05Colors.danger.indicator,
                           ),
                         );
                       }
@@ -302,9 +313,9 @@ class DataManagementSection extends ConsumerWidget {
     if (rawSnapshot == null) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No recent automatic backup snapshot found.'),
-            backgroundColor: AppColors.danger,
+          SnackBar(
+            content: const Text('No recent automatic backup snapshot found.'),
+            backgroundColor: context.b05Colors.danger.indicator,
           ),
         );
       }
@@ -321,7 +332,6 @@ class DataManagementSection extends ConsumerWidget {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Restore Auto-Backup Snapshot'),
-          backgroundColor: AppColors.surface,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,10 +360,7 @@ class DataManagementSection extends ConsumerWidget {
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
+            FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text('Restore Snapshot'),
             ),
@@ -365,6 +372,7 @@ class DataManagementSection extends ConsumerWidget {
         await ref
             .read(settingsControllerProvider.notifier)
             .performRestore(inspection.payload);
+        await _syncOnboardingGate(ref);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Auto-backup restored successfully!')),
@@ -374,9 +382,9 @@ class DataManagementSection extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Automatic restore failed. Try again.'),
-            backgroundColor: AppColors.danger,
+          SnackBar(
+            content: const Text('Automatic restore failed. Try again.'),
+            backgroundColor: context.b05Colors.danger.indicator,
           ),
         );
       }
@@ -388,7 +396,6 @@ class DataManagementSection extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete All Local Data?'),
-        backgroundColor: AppColors.surface,
         content: const Text(
           'This action is irreversible. All your logged meals, workout sessions, custom foods, and body measurements will be permanently wiped from this device.',
           style: TextStyle(height: 1.4),
@@ -398,8 +405,11 @@ class DataManagementSection extends ConsumerWidget {
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.b05Colors.danger.container,
+              foregroundColor: context.b05Colors.danger.foreground,
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Wipe Data'),
           ),
@@ -409,6 +419,7 @@ class DataManagementSection extends ConsumerWidget {
 
     if (confirm == true && context.mounted) {
       await ref.read(settingsControllerProvider.notifier).deleteAllData();
+      await _syncOnboardingGate(ref);
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
@@ -417,12 +428,11 @@ class DataManagementSection extends ConsumerWidget {
     }
   }
 
-  void _resetOnboarding(BuildContext context) async {
+  void _resetOnboarding(BuildContext context, WidgetRef ref) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reset Onboarding Wizard?'),
-        backgroundColor: AppColors.surface,
         content: const Text(
           'This will reset your onboarding completion flag and return you to the setup wizard to re-enter your goals.',
           style: TextStyle(height: 1.4),
@@ -432,8 +442,7 @@ class DataManagementSection extends ConsumerWidget {
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+          FilledButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Reset'),
           ),
@@ -444,6 +453,7 @@ class DataManagementSection extends ConsumerWidget {
     if (confirm == true && context.mounted) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('onboarding_completed', false);
+      ref.read(onboardingCompletedProvider.notifier).state = false;
 
       if (context.mounted) {
         await Navigator.of(context).pushAndRemoveUntil(
@@ -467,29 +477,29 @@ class DataManagementSection extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.teal.withValues(alpha: 0.12),
+                color: context.b05Colors.selected,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.storage_rounded,
-                color: Colors.teal,
+                color: context.b05Colors.success.indicator,
                 size: 20,
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Data & Privacy Management',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
                     'Manage local backups, exports, and offline settings',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: context.b05Colors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -503,7 +513,7 @@ class DataManagementSection extends ConsumerWidget {
         // Offline Mode Toggle
         SettingsReminderToggle(
           icon: Icons.cloud_off_rounded,
-          iconColor: Colors.cyan,
+          iconColor: context.b05Colors.info.indicator,
           title: 'No Backend Mode',
           subtitle: 'Disable all cloud features and backups',
           value: state.offlineOnly,
@@ -514,7 +524,7 @@ class DataManagementSection extends ConsumerWidget {
         // Crash Reporting Toggle
         SettingsReminderToggle(
           icon: Icons.bug_report_rounded,
-          iconColor: Colors.amber,
+          iconColor: context.b05Colors.warning.indicator,
           title: 'Anonymous Crash Reporting',
           subtitle:
               'Send sanitized telemetry to help fix crashes. Zero food/body data is ever included.',
@@ -533,15 +543,22 @@ class DataManagementSection extends ConsumerWidget {
               ),
             );
           },
-          icon: const Icon(Icons.favorite_rounded, color: Colors.redAccent),
+          icon: Icon(
+            Icons.favorite_rounded,
+            color: context.b05Colors.danger.indicator,
+          ),
           label: const Text('Apple Health & Health Connect Sync'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.redAccent.withValues(alpha: 0.12),
-            foregroundColor: Colors.redAccent,
+            backgroundColor: context.b05Colors.danger.container,
+            foregroundColor: context.b05Colors.danger.foreground,
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.2)),
+              side: BorderSide(
+                color: context.b05Colors.danger.indicator.withValues(
+                  alpha: 0.2,
+                ),
+              ),
             ),
             elevation: 0,
           ),
@@ -558,15 +575,22 @@ class DataManagementSection extends ConsumerWidget {
               ),
             );
           },
-          icon: const Icon(Icons.restaurant_menu_rounded, color: Colors.teal),
+          icon: Icon(
+            Icons.restaurant_menu_rounded,
+            color: context.b05Colors.success.indicator,
+          ),
           label: const Text('Regional Food Packs'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.teal.withValues(alpha: 0.12),
-            foregroundColor: Colors.teal,
+            backgroundColor: context.b05Colors.success.container,
+            foregroundColor: context.b05Colors.success.foreground,
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.teal.withValues(alpha: 0.2)),
+              side: BorderSide(
+                color: context.b05Colors.success.indicator.withValues(
+                  alpha: 0.2,
+                ),
+              ),
             ),
             elevation: 0,
           ),
@@ -583,16 +607,19 @@ class DataManagementSection extends ConsumerWidget {
         // Restore Auto-Backup Snapshot button
         ElevatedButton.icon(
           onPressed: () => _restoreFromAutoBackup(context, ref),
-          icon: const Icon(Icons.history_rounded, color: Colors.indigoAccent),
+          icon: Icon(
+            Icons.history_rounded,
+            color: context.b05Colors.info.indicator,
+          ),
           label: const Text('Restore Recent Auto-Backup Snapshot'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.indigoAccent.withValues(alpha: 0.12),
-            foregroundColor: Colors.indigoAccent,
+            backgroundColor: context.b05Colors.info.container,
+            foregroundColor: context.b05Colors.info.foreground,
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
-                color: Colors.indigoAccent.withValues(alpha: 0.2),
+                color: context.b05Colors.info.indicator.withValues(alpha: 0.2),
               ),
             ),
             elevation: 0,
@@ -614,15 +641,20 @@ class DataManagementSection extends ConsumerWidget {
               );
             }
           },
-          icon: const Icon(Icons.table_chart_rounded, color: AppColors.primary),
+          icon: Icon(
+            Icons.table_chart_rounded,
+            color: context.b05Colors.action,
+          ),
           label: const Text('Export Food & Workout Data (CSV)'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            foregroundColor: AppColors.primary,
+            backgroundColor: context.b05Colors.selected,
+            foregroundColor: context.b05Colors.action,
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
+              side: BorderSide(
+                color: context.b05Colors.action.withValues(alpha: 0.2),
+              ),
             ),
             elevation: 0,
           ),
@@ -634,17 +666,22 @@ class DataManagementSection extends ConsumerWidget {
 
         // Reset Onboarding Button
         ElevatedButton.icon(
-          onPressed: () => _resetOnboarding(context),
-          icon: const Icon(Icons.refresh_rounded, color: Colors.orangeAccent),
+          onPressed: () => _resetOnboarding(context, ref),
+          icon: Icon(
+            Icons.refresh_rounded,
+            color: context.b05Colors.warning.indicator,
+          ),
           label: const Text('Reset Onboarding Wizard'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orangeAccent.withValues(alpha: 0.12),
-            foregroundColor: Colors.orangeAccent,
+            backgroundColor: context.b05Colors.warning.container,
+            foregroundColor: context.b05Colors.warning.foreground,
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
-                color: Colors.orangeAccent.withValues(alpha: 0.2),
+                color: context.b05Colors.warning.indicator.withValues(
+                  alpha: 0.2,
+                ),
               ),
             ),
             elevation: 0,
@@ -655,18 +692,22 @@ class DataManagementSection extends ConsumerWidget {
         // Delete All Data Button
         ElevatedButton.icon(
           onPressed: () => _confirmDeleteAllData(context, ref),
-          icon: const Icon(
+          icon: Icon(
             Icons.delete_forever_rounded,
-            color: AppColors.danger,
+            color: context.b05Colors.danger.indicator,
           ),
           label: const Text('Wipe All Local Data'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.danger.withValues(alpha: 0.12),
-            foregroundColor: AppColors.danger,
+            backgroundColor: context.b05Colors.danger.container,
+            foregroundColor: context.b05Colors.danger.foreground,
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: AppColors.danger.withValues(alpha: 0.2)),
+              side: BorderSide(
+                color: context.b05Colors.danger.indicator.withValues(
+                  alpha: 0.2,
+                ),
+              ),
             ),
             elevation: 0,
           ),

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/nutrients.dart';
 import '../../core/typed_quantities.dart';
@@ -21,6 +22,8 @@ class NutritionFoodOption {
   final String sourceType;
   final String? sourceReference;
   final String? preparationId;
+  final String? brand;
+  final String? servingUnitLabel;
 
   const NutritionFoodOption({
     required this.id,
@@ -30,6 +33,8 @@ class NutritionFoodOption {
     required this.sourceType,
     required this.sourceReference,
     required this.preparationId,
+    this.brand,
+    this.servingUnitLabel,
   });
 
   bool get hasNumericFacts => facts.values.any((fact) => fact.hasNumericValue);
@@ -59,20 +64,21 @@ class NutritionFoodCatalogRepository {
   Future<NutritionFoodOption> ensureLegacyFood(FoodItem item) async {
     final identity = await _legacyIdentity(item);
     final serving = _servingFor(identity, source: 'legacy');
+    final authority = _legacyQuantityAuthority(item, serving);
     final facts = <String, NutrientFact>{
       for (final definition in _registry.definitions)
         definition.id: _legacyFact(
           nutrientId: definition.id,
-          value: switch (definition.id) {
+          value: authority.scale(switch (definition.id) {
             'energy' => item.calories.toDouble(),
             'protein' => item.proteinG,
             'carbohydrate' => item.carbsG,
             'fat' => item.fatG,
             'fibre' => item.fiberG,
             _ => null,
-          },
+          }),
           sourceReference: 'legacy-food-item:${item.id}',
-          serving: serving.context.servingDefinition!,
+          basis: authority.basis,
         ),
     };
     await _ensureFacts(
@@ -89,6 +95,8 @@ class NutritionFoodCatalogRepository {
       sourceType: item.isCustom ? 'user' : 'legacy',
       sourceReference: 'legacy-food-item:${item.id}',
       preparationId: null,
+      brand: item.brand,
+      servingUnitLabel: authority.servingUnitLabel,
     );
   }
 
@@ -104,6 +112,7 @@ class NutritionFoodCatalogRepository {
     required double? proteinG,
     required double? carbohydrateG,
     required double? fatG,
+    String? brand,
   }) async {
     if (!servingSize.isFinite || servingSize <= 0) {
       throw const NutritionFoodCatalogError(
@@ -119,24 +128,23 @@ class NutritionFoodCatalogRepository {
       );
     }
     final id = _providerId(normalizedReference);
-    final serving = _servingFor(id, source: 'imported_provider');
-    final servingFactor = _providerServingFactor(
-      servingSize: servingSize,
-      servingUnit: servingUnit,
-    );
+    // FoodApiService deliberately reads Open Food Facts' *_100g fields. Keep
+    // that authoritative mass basis instead of converting the values into an
+    // abstract provider serving and losing g/kg entry on the consumer UI.
+    final providerBasis = NutrientBasis(NutrientBasisKind.per100Grams);
     final facts = <String, NutrientFact>{
       for (final definition in _registry.definitions)
         definition.id: _providerFact(
           nutrientId: definition.id,
-          value: _scaleProviderValue(switch (definition.id) {
+          value: switch (definition.id) {
             'energy' => energyKcal,
             'protein' => proteinG,
             'carbohydrate' => carbohydrateG,
             'fat' => fatG,
             _ => null,
-          }, servingFactor),
+          },
           sourceReference: normalizedReference,
-          serving: serving.context.servingDefinition!,
+          basis: providerBasis,
         ),
     };
     await _ensureIdentity(
@@ -146,6 +154,7 @@ class NutritionFoodCatalogRepository {
       sourceType: 'provider',
       sourceReference: normalizedReference,
       sourceVersion: 'open-food-facts-v2',
+      brand: brand,
     );
     await _ensureFacts(
       foodId: id,
@@ -161,6 +170,121 @@ class NutritionFoodCatalogRepository {
       sourceType: 'imported_provider',
       sourceReference: normalizedReference,
       preparationId: null,
+      brand: brand,
+      servingUnitLabel: null,
+    );
+  }
+
+  /// Creates a user-owned food with per-serving facts.
+  ///
+  /// Optional nutrient inputs remain missing in the canonical fact graph;
+  /// they are never converted to zero just to satisfy the legacy table shape.
+  Future<NutritionFoodOption> createUserFood({
+    required String displayName,
+    required double servingSize,
+    required String servingUnit,
+    required double? energyKcal,
+    required double? proteinG,
+    required double? carbohydrateG,
+    required double? fatG,
+    double? fibreG,
+  }) async {
+    final name = displayName.trim();
+    final unit = servingUnit.trim();
+    if (name.isEmpty) {
+      throw const NutritionFoodCatalogError(
+        'missing_food_name',
+        'A custom food needs a name.',
+      );
+    }
+    if (!servingSize.isFinite || servingSize <= 0 || unit.isEmpty) {
+      throw const NutritionFoodCatalogError(
+        'invalid_serving',
+        'A custom food needs a positive serving size and unit.',
+      );
+    }
+    final id = 'user-food::${const Uuid().v4()}';
+    final sourceReference =
+        'user-custom-food::$id|serving=${_numberLabel(servingSize)} $unit';
+    final servingDefinition = ServingDefinitionReference(
+      id: 'food-serving::$id',
+      revision: 'b03-food-entry-v1',
+      source: 'catalogue',
+    );
+    final basis = NutrientBasis(
+      NutrientBasisKind.perServing,
+      servingDefinition: servingDefinition,
+    );
+    final values = <String, double?>{
+      'energy': energyKcal,
+      'protein': proteinG,
+      'carbohydrate': carbohydrateG,
+      'fat': fatG,
+      'fibre': fibreG,
+    };
+    final facts = <String, NutrientFact>{};
+    for (final definition in _registry.definitions) {
+      final value = values[definition.id];
+      if (value == null) {
+        facts[definition.id] = NutrientFact.missing(
+          nutrientId: definition.id,
+          unit: definition.unit,
+          basis: basis,
+          source: NutrientSourceType.userEntered,
+          sourceReference: sourceReference,
+          factVersion: 'custom-food-v1',
+        );
+      } else if (value == 0) {
+        facts[definition.id] = NutrientFact.knownZero(
+          nutrientId: definition.id,
+          unit: definition.unit,
+          basis: basis,
+          source: NutrientSourceType.userEntered,
+          sourceReference: sourceReference,
+          factVersion: 'custom-food-v1',
+        );
+      } else {
+        facts[definition.id] = NutrientFact.known(
+          nutrientId: definition.id,
+          point: NutrientAmount(
+            value: QuantityAmount.fromNum(value),
+            unit: definition.unit,
+          ),
+          basis: basis,
+          source: NutrientSourceType.userEntered,
+          sourceReference: sourceReference,
+          factVersion: 'custom-food-v1',
+        );
+      }
+    }
+    await _ensureIdentity(
+      id: id,
+      displayName: name,
+      kind: 'userCreated',
+      sourceType: 'user',
+      sourceReference: sourceReference,
+      sourceVersion: 'custom-food-v1',
+    );
+    await _ensureFacts(
+      foodId: id,
+      facts: facts,
+      sourceReference: sourceReference,
+    );
+    final currentFacts = await _readCurrentFacts(id, fallback: facts);
+    return NutritionFoodOption(
+      id: id,
+      displayName: name,
+      baseQuantity: Quantity.serving(
+        amount: '1',
+        definition: servingDefinition,
+        source: 'user',
+      ),
+      facts: currentFacts,
+      sourceType: 'user',
+      sourceReference: sourceReference,
+      preparationId: null,
+      brand: null,
+      servingUnitLabel: '${_numberLabel(servingSize)} $unit',
     );
   }
 
@@ -178,6 +302,8 @@ class NutritionFoodCatalogRepository {
       sourceType: row.sourceType,
       sourceReference: row.sourceRef,
       preparationId: null,
+      brand: row.brand,
+      servingUnitLabel: await _servingUnitLabelFor(row.sourceRef),
     );
   }
 
@@ -229,6 +355,44 @@ class NutritionFoodCatalogRepository {
     return List.unmodifiable(result);
   }
 
+  /// Retrieves user-created canonical foods for active discovery without
+  /// adapting the full legacy catalogue on each keystroke. The caller supplies
+  /// retrieval-only variants; identity and nutrient facts remain unchanged.
+  Future<List<NutritionFoodOption>> searchCustomFoods({
+    required Iterable<String> queries,
+  }) async {
+    final terms = queries
+        .map((query) => query.trim().toLowerCase())
+        .where((query) => query.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (terms.isEmpty) return const [];
+
+    final rows =
+        await (_db.select(_db.nutritionFoods)
+              ..where((table) {
+                Expression<bool> matches = table.displayName.lower().contains(
+                  terms.first,
+                );
+                for (final term in terms.skip(1)) {
+                  matches = matches | table.displayName.lower().contains(term);
+                }
+                return table.lifecycle.equals('active') &
+                    table.sourceType.equals('user') &
+                    matches;
+              })
+              ..orderBy([
+                (table) => OrderingTerm(expression: table.displayName),
+              ]))
+            .get();
+    final options = <NutritionFoodOption>[];
+    for (final row in rows) {
+      final option = await getOption(row.id);
+      if (option != null) options.add(option);
+    }
+    return List.unmodifiable(options);
+  }
+
   Future<String> _legacyIdentity(FoodItem item) async {
     final mapping = await (_db.select(
       _db.nutritionLegacyFoodMappings,
@@ -260,11 +424,27 @@ class NutritionFoodCatalogRepository {
     required String sourceType,
     required String sourceReference,
     required String sourceVersion,
+    String? brand,
   }) async {
     final existing = await (_db.select(
       _db.nutritionFoods,
     )..where((row) => row.id.equals(id))).getSingleOrNull();
-    if (existing != null) return;
+    if (existing != null) {
+      final cleanBrand = brand?.trim();
+      if ((existing.brand == null || existing.brand!.trim().isEmpty) &&
+          cleanBrand != null &&
+          cleanBrand.isNotEmpty) {
+        await (_db.update(
+          _db.nutritionFoods,
+        )..where((row) => row.id.equals(id))).write(
+          NutritionFoodsCompanion(
+            brand: Value(cleanBrand),
+            updatedAt: Value(_nowUtc()),
+          ),
+        );
+      }
+      return;
+    }
     await _db
         .into(_db.nutritionFoods)
         .insert(
@@ -276,6 +456,7 @@ class NutritionFoodCatalogRepository {
             sourceType: sourceType,
             sourceRef: Value(sourceReference),
             sourceVersion: Value(sourceVersion),
+            brand: Value(brand),
             lifecycle: 'active',
             createdAt: Value(_nowUtc()),
             updatedAt: Value(_nowUtc()),
@@ -288,51 +469,71 @@ class NutritionFoodCatalogRepository {
     required Map<String, NutrientFact> facts,
     required String sourceReference,
   }) async {
-    final current =
-        await (_db.select(_db.nutritionFoodNutrientFacts)..where(
+    await _db.transaction(() async {
+      final current =
+          await (_db.select(_db.nutritionFoodNutrientFacts)..where(
+                (row) => row.foodId.equals(foodId) & row.isCurrent.equals(true),
+              ))
+              .get();
+      final basisMatches =
+          current.isNotEmpty &&
+          current.every(
+            (row) => facts[row.nutrientId]?.basis.kind.stableId == row.basis,
+          );
+      if (basisMatches) return;
+
+      final historical = await (_db.select(
+        _db.nutritionFoodNutrientFacts,
+      )..where((row) => row.foodId.equals(foodId))).get();
+      final version =
+          historical.fold<int>(0, (max, row) {
+            return row.factVersion > max ? row.factVersion : max;
+          }) +
+          1;
+      final now = _nowUtc();
+      if (current.isNotEmpty) {
+        await (_db.update(_db.nutritionFoodNutrientFacts)..where(
               (row) => row.foodId.equals(foodId) & row.isCurrent.equals(true),
             ))
-            .get();
-    if (current.isNotEmpty) return;
-    final historical = await (_db.select(
-      _db.nutritionFoodNutrientFacts,
-    )..where((row) => row.foodId.equals(foodId))).get();
-    final version =
-        historical.fold<int>(0, (max, row) {
-          return row.factVersion > max ? row.factVersion : max;
-        }) +
-        1;
-    await _db.batch((batch) {
-      batch.insertAll(_db.nutritionFoodNutrientFacts, [
-        for (final fact in facts.values)
-          NutritionFoodNutrientFactsCompanion.insert(
-            id: '$foodId::${fact.nutrientId}::v$version',
-            foodId: foodId,
-            nutrientId: fact.nutrientId,
-            amount: Value(fact.point?.value.asDouble),
-            lower: Value(fact.lower?.value.asDouble),
-            upper: Value(fact.upper?.value.asDouble),
-            status: fact.status.stableId,
-            source: fact.source.stableId,
-            sourceRef: Value(fact.sourceReference ?? sourceReference),
-            confidence: Value(_confidenceValue(fact.confidence)),
-            factVersion: version,
-            basis: fact.basis.kind.stableId,
-            basisQuantity:
-                fact.basis.kind == NutrientBasisKind.per100Grams ||
-                    fact.basis.kind == NutrientBasisKind.per100Millilitres
-                ? const Value(100)
-                : const Value.absent(),
-            basisUnit: fact.basis.kind == NutrientBasisKind.per100Grams
-                ? const Value('gram')
-                : fact.basis.kind == NutrientBasisKind.per100Millilitres
-                ? const Value('millilitre')
-                : const Value.absent(),
-            isCurrent: const Value(true),
-            createdAt: Value(_nowUtc()),
-            updatedAt: Value(_nowUtc()),
-          ),
-      ]);
+            .write(
+              NutritionFoodNutrientFactsCompanion(
+                isCurrent: const Value(false),
+                updatedAt: Value(now),
+              ),
+            );
+      }
+      await _db.batch((batch) {
+        batch.insertAll(_db.nutritionFoodNutrientFacts, [
+          for (final fact in facts.values)
+            NutritionFoodNutrientFactsCompanion.insert(
+              id: '$foodId::${fact.nutrientId}::v$version',
+              foodId: foodId,
+              nutrientId: fact.nutrientId,
+              amount: Value(fact.point?.value.asDouble),
+              lower: Value(fact.lower?.value.asDouble),
+              upper: Value(fact.upper?.value.asDouble),
+              status: fact.status.stableId,
+              source: fact.source.stableId,
+              sourceRef: Value(fact.sourceReference ?? sourceReference),
+              confidence: Value(_confidenceValue(fact.confidence)),
+              factVersion: version,
+              basisQuantity:
+                  fact.basis.kind == NutrientBasisKind.per100Grams ||
+                      fact.basis.kind == NutrientBasisKind.per100Millilitres
+                  ? const Value(100)
+                  : const Value.absent(),
+              basis: fact.basis.kind.stableId,
+              basisUnit: fact.basis.kind == NutrientBasisKind.per100Grams
+                  ? const Value('gram')
+                  : fact.basis.kind == NutrientBasisKind.per100Millilitres
+                  ? const Value('millilitre')
+                  : const Value.absent(),
+              isCurrent: const Value(true),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+        ]);
+      });
     });
   }
 
@@ -438,13 +639,13 @@ class NutritionFoodCatalogRepository {
     required String nutrientId,
     required double? value,
     required String sourceReference,
-    required ServingDefinitionReference serving,
+    required NutrientBasis basis,
   }) => _factFromValue(
     nutrientId: nutrientId,
     value: value,
     source: NutrientSourceType.legacy,
     sourceReference: sourceReference,
-    serving: serving,
+    basis: basis,
     factVersion: 'legacy-v1',
   );
 
@@ -452,13 +653,13 @@ class NutritionFoodCatalogRepository {
     required String nutrientId,
     required double? value,
     required String sourceReference,
-    required ServingDefinitionReference serving,
+    required NutrientBasis basis,
   }) => _factFromValue(
     nutrientId: nutrientId,
     value: value,
     source: NutrientSourceType.importedProvider,
     sourceReference: sourceReference,
-    serving: serving,
+    basis: basis,
     factVersion: 'open-food-facts-v2',
   );
 
@@ -467,14 +668,10 @@ class NutritionFoodCatalogRepository {
     required double? value,
     required NutrientSourceType source,
     required String sourceReference,
-    required ServingDefinitionReference serving,
+    required NutrientBasis basis,
     required String factVersion,
   }) {
     final definition = _registry.definitionFor(nutrientId);
-    final basis = NutrientBasis(
-      NutrientBasisKind.perServing,
-      servingDefinition: serving,
-    );
     if (value == null) {
       return NutrientFact.missing(
         nutrientId: nutrientId,
@@ -514,31 +711,80 @@ class NutritionFoodCatalogRepository {
     return 'provider-food::${digest.substring(0, 32)}';
   }
 
-  double _providerServingFactor({
-    required double servingSize,
-    required String servingUnit,
-  }) {
-    switch (servingUnit.trim().toLowerCase()) {
-      case 'g':
-      case 'gram':
-      case 'grams':
-      case 'ml':
-      case 'millilitre':
-      case 'milliliter':
-      case 'millilitres':
-      case 'milliliters':
-        // Open Food Facts values used by FoodApiService are per 100 g/mL.
-        return servingSize / 100;
-      default:
-        // A provider that supplies a non-dimensional serving cannot be safely
-        // converted to another portion. Preserve its declared value as one
-        // serving rather than inventing a generic mass factor.
-        return 1;
+  _LegacyQuantityAuthority _legacyQuantityAuthority(
+    FoodItem item,
+    Quantity serving,
+  ) {
+    final unit = item.servingUnit.trim().toLowerCase();
+    final size = item.servingSize;
+    if (size > 0 && size.isFinite) {
+      if (const {'g', 'gram', 'grams'}.contains(unit)) {
+        return _LegacyQuantityAuthority(
+          basis: NutrientBasis(NutrientBasisKind.per100Grams),
+          factScale: 100 / size,
+        );
+      }
+      if (const {'kg', 'kilogram', 'kilograms'}.contains(unit)) {
+        return _LegacyQuantityAuthority(
+          basis: NutrientBasis(NutrientBasisKind.per100Grams),
+          factScale: 100 / (size * 1000),
+        );
+      }
+      if (const {
+        'ml',
+        'millilitre',
+        'millilitres',
+        'milliliter',
+        'milliliters',
+      }.contains(unit)) {
+        return _LegacyQuantityAuthority(
+          basis: NutrientBasis(NutrientBasisKind.per100Millilitres),
+          factScale: 100 / size,
+        );
+      }
+      if (const {'l', 'litre', 'litres', 'liter', 'liters'}.contains(unit)) {
+        return _LegacyQuantityAuthority(
+          basis: NutrientBasis(NutrientBasisKind.per100Millilitres),
+          factScale: 100 / (size * 1000),
+        );
+      }
     }
+    final label = size == 1 && unit.isNotEmpty && unit != 'serving'
+        ? item.servingUnit.trim()
+        : null;
+    return _LegacyQuantityAuthority(
+      basis: NutrientBasis(
+        NutrientBasisKind.perServing,
+        servingDefinition: serving.context.servingDefinition!,
+      ),
+      factScale: 1,
+      servingUnitLabel: label,
+    );
   }
 
-  double? _scaleProviderValue(double? value, double factor) =>
-      value == null ? null : value * factor;
+  Future<String?> _servingUnitLabelFor(String? sourceReference) async {
+    if (sourceReference?.startsWith('user-custom-food::') == true) {
+      const marker = '|serving=';
+      final index = sourceReference!.indexOf(marker);
+      if (index >= 0) return sourceReference.substring(index + marker.length);
+    }
+    const prefix = 'food-items:';
+    if (sourceReference == null || !sourceReference.startsWith(prefix)) {
+      return null;
+    }
+    final id = int.tryParse(sourceReference.substring(prefix.length));
+    if (id == null) return null;
+    final item = await (_db.select(
+      _db.foodItems,
+    )..where((row) => row.id.equals(id))).getSingleOrNull();
+    if (item == null || item.servingSize != 1) return null;
+    final label = item.servingUnit.trim();
+    return label.isEmpty || label.toLowerCase() == 'serving' ? null : label;
+  }
+
+  String _numberLabel(num value) => value.toDouble() == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(2);
 
   double? _confidenceValue(NutrientConfidence confidence) =>
       switch (confidence) {
@@ -554,6 +800,26 @@ class NutritionFoodCatalogRepository {
       : value >= 0.7
       ? NutrientConfidence.medium
       : NutrientConfidence.low;
+}
+
+class _LegacyQuantityAuthority {
+  const _LegacyQuantityAuthority({
+    required this.basis,
+    required this.factScale,
+    this.servingUnitLabel,
+  });
+
+  final NutrientBasis basis;
+  final double factScale;
+  final String? servingUnitLabel;
+
+  double? scale(double? value) {
+    if (value == null) return null;
+    // Legacy source values are doubles. Bound their normalization precision
+    // before they enter the exact decimal quantity contract so binary
+    // floating-point tails cannot become false precision overflows.
+    return double.parse((value * factScale).toStringAsFixed(6));
+  }
 }
 
 class NutritionFoodCatalogError implements Exception {

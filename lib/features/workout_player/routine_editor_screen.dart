@@ -3,12 +3,17 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_count_label.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
+import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/legacy_program_compatibility_adapter.dart';
+import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/workout_repository.dart';
 
 class RoutineEditorScreen extends ConsumerStatefulWidget {
@@ -32,6 +37,10 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
 
   List<dynamic> _templates = [];
   bool _loadingTemplates = true;
+  bool _applyingTemplate = false;
+  String? _templateActivationCommandId;
+  String? _templateActivationKey;
+  int? _templateRoutineId;
 
   @override
   void initState() {
@@ -126,11 +135,19 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
   }
 
   Future<void> _applyTemplate(Map<String, dynamic> tpl) async {
+    if (_applyingTemplate) return;
+    setState(() => _applyingTemplate = true);
     final repo = ref.read(workoutRepositoryProvider);
     final String name = tpl['name'] ?? 'Workout Split';
     final String goal = tpl['goal'] ?? 'general';
     final String description = tpl['description'] ?? '';
     final List<dynamic> rawDays = tpl['days'] ?? [];
+    final templateKey = tpl['id']?.toString() ?? name;
+    if (_templateActivationKey != templateKey) {
+      _templateActivationKey = templateKey;
+      _templateActivationCommandId = null;
+      _templateRoutineId = null;
+    }
 
     final daysData = <RoutineDayWithExercises>[];
     for (final d in rawDays) {
@@ -159,22 +176,81 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
       );
     }
 
-    await repo.saveRoutine(
-      name: name,
-      goal: goal,
-      notes: description,
-      days: daysData,
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved routine: $name!'),
-          backgroundColor: AppColors.success,
-        ),
+    int? scheduledCount;
+    try {
+      final selection = await ref
+          .read(legacyProgramCompatibilityAdapterProvider)
+          .resolveActivePlanSelection();
+      if (selection.type == ActivePlanType.b01Program) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text(
+                'A scheduled program is already active. Manage it before choosing another split.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      final routineId = await repo.saveRoutine(
+        routineId: _templateRoutineId,
+        name: name,
+        goal: goal,
+        notes: description,
+        days: daysData,
       );
-      Navigator.pop(context, true);
+      _templateRoutineId = routineId;
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      _templateActivationCommandId ??=
+          'template-routine-activation::${const Uuid().v4()}';
+      final activation = await ref
+          .read(legacyProgramCompatibilityAdapterProvider)
+          .activateLegacyRoutineAsCanonical(
+            legacyRoutineId: routineId,
+            activationCoordinator: ref.read(
+              programActivationCoordinatorProvider,
+            ),
+            dates: ref.read(localScheduleDateServiceProvider),
+            timezoneId: timezoneId,
+            commandId: _templateActivationCommandId!,
+          );
+      if (activation.occurrences.isEmpty) {
+        throw StateError('Canonical activation created no workouts.');
+      }
+      scheduledCount = activation.occurrences.length;
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Template activation failed '
+            '[templateKey=$templateKey, routineId=$_templateRoutineId, '
+            'commandId=$_templateActivationCommandId, errorType=${error.runtimeType}]',
+        error,
+        stackTrace,
+        'TemplateActivation',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text(_templateActivationFailureMessage(error)),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _applyingTemplate = false);
     }
+
+    if (!mounted || scheduledCount == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      indiFitSuccessSnackBar(
+        '✓ Program activated · '
+        '${ConsumerCountLabel.format(scheduledCount, 'workout')} scheduled',
+      ),
+    );
+    Navigator.pop(context, true);
   }
 
   Future<void> _saveManualRoutine() async {
@@ -320,13 +396,42 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
   Widget build(BuildContext context) {
     if (_activeProgramVersionId != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Training Program')),
-        body: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(28),
-            child: Text(
-              'This route edits legacy splits only. The active program is immutable; create a replacement version from the training-program flow.',
-              textAlign: TextAlign.center,
+        appBar: AppBar(title: const Text('Training plan')),
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.route_rounded,
+                  size: 52,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Your current plan is already scheduled.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Open the calendar to view upcoming workouts, or create a new plan when you want to change your training.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () => context.push('/calendar'),
+                  icon: const Icon(Icons.calendar_today_rounded),
+                  label: const Text('Open calendar'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/program-author'),
+                  icon: const Icon(Icons.swap_horiz_rounded),
+                  label: const Text('Change plan'),
+                ),
+              ],
             ),
           ),
         ),
@@ -483,7 +588,9 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () => _applyTemplate(tpl),
+                    onPressed: _applyingTemplate
+                        ? null
+                        : () => _applyTemplate(tpl),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -496,9 +603,9 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
                       Icons.check_circle_outline_rounded,
                       size: 18,
                     ),
-                    label: const Text(
-                      'Use This Split',
-                      style: TextStyle(
+                    label: Text(
+                      _applyingTemplate ? 'Activating…' : 'Use This Split',
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -731,6 +838,14 @@ class _RoutineEditorScreenState extends ConsumerState<RoutineEditorScreen>
       ],
     );
   }
+}
+
+String _templateActivationFailureMessage(Object error) {
+  if (error is ActivationRejectedException &&
+      error.message.contains('existing workout draft')) {
+    return 'Finish or discard your current workout before activating this program.';
+  }
+  return 'Program could not be activated. Your selected template is still available to retry.';
 }
 
 class _BuilderDayData {

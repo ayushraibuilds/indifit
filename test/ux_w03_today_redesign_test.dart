@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/theme/app_theme.dart';
@@ -22,7 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   late AppDatabase database;
   late DashboardPersonalizationController personalization;
@@ -51,7 +50,7 @@ void main() {
     );
 
     expect(presentation.state, TodayPresentationState.ready);
-    expect(presentation.calories?.value, '1200–1500');
+    expect(presentation.calories?.value, '1,200–1,500');
     expect(presentation.calories?.unit, 'kcal');
     expect(presentation.macros.map((item) => item.label), [
       'Protein',

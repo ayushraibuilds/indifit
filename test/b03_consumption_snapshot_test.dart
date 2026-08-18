@@ -8,6 +8,7 @@ import 'package:indifit/core/nutrition_consumption_snapshots.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/nutrition_consumption_repository.dart';
+import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -630,6 +631,172 @@ void main() {
       expect(daily.totals.facts['protein']!.point!.value.toString(), '12');
     },
   );
+
+  test(
+    'direct-food retraction is append-only, contextual, idempotent, and excluded from effective reads',
+    () async {
+      await _insertFood(db, 'food-1', 'Food');
+      final repository = NutritionConsumptionRepository(
+        db: db,
+        registry: registry,
+      );
+      final original = await repository.finalizeConsumption(
+        _request(
+          calculation: _calculation(
+            registry,
+            facts: {
+              'energy': _known('energy', '240'),
+              'protein': _known('protein', '10'),
+            },
+            requested: const ['energy', 'protein'],
+          ),
+          consumptionId: 'delete-original',
+          commandId: 'delete-original-command',
+        ),
+      );
+
+      await expectLater(
+        repository.retractConsumption(
+          userId: 'user-1',
+          snapshotId: original.id,
+          expectedLocalDate: '2026-08-05',
+          expectedMealCategory: 'lunch',
+          commandId: 'delete-command',
+        ),
+        throwsA(
+          isA<NutritionConsumptionValidationError>().having(
+            (error) => error.code,
+            'code',
+            'retraction_context_mismatch',
+          ),
+        ),
+      );
+
+      final retraction = await repository.retractConsumption(
+        userId: 'user-1',
+        snapshotId: original.id,
+        expectedLocalDate: '2026-08-04',
+        expectedMealCategory: 'lunch',
+        commandId: 'delete-command',
+      );
+      final retry = await repository.retractConsumption(
+        userId: 'user-1',
+        snapshotId: original.id,
+        expectedLocalDate: '2026-08-04',
+        expectedMealCategory: 'lunch',
+        commandId: 'delete-command',
+      );
+
+      expect(retraction.isRetraction, isTrue);
+      expect(retraction.lineage.supersedesSnapshotId, original.id);
+      expect(retry.id, retraction.id);
+      expect(
+        await db.select(db.nutritionConsumptionSnapshots).get(),
+        hasLength(2),
+      );
+      expect(
+        (await repository.getSnapshot(
+          userId: 'user-1',
+          consumptionId: original.id,
+        )),
+        isNotNull,
+      );
+
+      final daily = await repository.dailyTotals(
+        userId: 'user-1',
+        localDate: '2026-08-04',
+      );
+      expect(daily.snapshotIds, isEmpty);
+      final readModels = NutritionReadModelRepository(
+        db: db,
+        registry: registry,
+        canonicalRepository: repository,
+        legacyUserId: 'user-1',
+      );
+      expect(
+        await readModels.listForLocalDate(
+          userId: 'user-1',
+          localDate: '2026-08-04',
+        ),
+        isEmpty,
+      );
+      expect(
+        (await readModels.dailyTotals(
+          userId: 'user-1',
+          localDate: '2026-08-04',
+        )).recordIds,
+        isEmpty,
+      );
+
+      await expectLater(
+        repository.retractConsumption(
+          userId: 'user-1',
+          snapshotId: original.id,
+          expectedLocalDate: '2026-08-04',
+          expectedMealCategory: 'lunch',
+          commandId: 'different-delete-command',
+        ),
+        throwsA(
+          isA<NutritionConsumptionValidationError>().having(
+            (error) => error.code,
+            'code',
+            'correction_predecessor_already_superseded',
+          ),
+        ),
+      );
+    },
+  );
+
+  test('retraction survives Backup-v8 with the same effective state', () async {
+    await _insertFood(db, 'food-1', 'Food');
+    final repository = NutritionConsumptionRepository(
+      db: db,
+      registry: registry,
+    );
+    final original = await repository.finalizeConsumption(
+      _request(
+        calculation: _calculation(
+          registry,
+          facts: {'protein': _known('protein', '10')},
+          requested: const ['protein'],
+        ),
+        consumptionId: 'backup-delete-original',
+        commandId: 'backup-delete-original-command',
+      ),
+    );
+    final retraction = await repository.retractConsumption(
+      userId: 'user-1',
+      snapshotId: original.id,
+      expectedLocalDate: '2026-08-04',
+      expectedMealCategory: 'lunch',
+      commandId: 'backup-delete-command',
+    );
+    final graph = NutritionBackupGraph.fromJson(
+      (await NutritionBackupGraph.capture(db)).toJson(),
+    );
+
+    final restored = AppDatabase.memory();
+    addTearDown(restored.close);
+    await graph.restoreInto(restored);
+    final restoredRepository = NutritionConsumptionRepository(
+      db: restored,
+      registry: registry,
+    );
+    expect(
+      (await restoredRepository.getSnapshot(
+        userId: 'user-1',
+        consumptionId: retraction.id,
+      ))!.isRetraction,
+      isTrue,
+    );
+    expect(
+      (await restoredRepository.dailyTotals(
+        userId: 'user-1',
+        localDate: '2026-08-04',
+      )).snapshotIds,
+      isEmpty,
+    );
+  });
 
   test(
     'corrections remain exclusive when the successor is on another local date',

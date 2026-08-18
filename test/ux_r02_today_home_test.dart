@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
@@ -28,7 +27,7 @@ final _refreshSnapshotProvider = StateProvider<TodaySurfaceSnapshot>(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   late AppDatabase database;
   late DashboardPersonalizationController personalization;
@@ -72,7 +71,7 @@ void main() {
       goal: TodayDomainRead.available(_goal()),
     );
 
-    expect(withRange.calories?.value, '1200–1500');
+    expect(withRange.calories?.value, '1,200–1,500');
     expect(withRange.calories?.isRange, isTrue);
     expect(withRange.calories?.targetValue, 2200);
     expect(withRange.macros.map((metric) => metric.label), [
@@ -310,7 +309,7 @@ void main() {
     container.read(_refreshSnapshotProvider.notifier).state =
         _populatedSnapshot(DateTime(2026, 8, 9));
     await _settleToday(tester);
-    expect(find.bySemanticsLabel(RegExp('Calories.*1840')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'Calories.*1,840')), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('Breakfast.*420')), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('Protein:.*118.*150')), findsOneWidget);
   });

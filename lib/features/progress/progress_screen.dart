@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -12,15 +15,17 @@ import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/models/b02_muscle_volume_models.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../dashboard/widgets/log_weight_bottom_sheet.dart';
+import '../exercise_library/exercise_history_screen.dart';
+import '../training/workout_history_screen.dart';
 import 'achievements_screen.dart';
 import 'progress_dashboard_controller.dart';
 import 'progress_dashboard_models.dart';
 
 /// Outcome-first Progress composition.
 ///
-/// The screen is deliberately allowed to be small: sections appear only when
-/// the underlying completed-session, B02 performed-set, measurement, or B02
-/// muscle-volume facts can support a useful statement.
+/// The screen is deliberately allowed to be modular: sections appear only when
+/// the underlying completed-session, B02 performed-set, measurement, or B03
+/// nutrition facts can support a truthful statement.
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key, this.preview});
 
@@ -73,7 +78,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           padding: EdgeInsets.all(B05Layout.space20),
           child: ConsumerStatusRow(
             label: 'Loading your progress',
-            detail: 'Preparing your recent activity and measurements.',
+            detail:
+                'Preparing your recent activity, strength, and measurements.',
             loading: true,
           ),
         ),
@@ -116,6 +122,20 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     onRetry: _refresh,
                   ),
                 ],
+                if ((snapshot.workouts?.isNotEmpty ?? false)) ...[
+                  const SizedBox(height: B05Layout.space24),
+                  _TrainingConsistencySection(
+                    snapshot: snapshot,
+                    onViewHistory: _openTrainingHistory,
+                  ),
+                ],
+                if ((snapshot.strengthSets?.isNotEmpty ?? false)) ...[
+                  const SizedBox(height: B05Layout.space24),
+                  _StrengthSection(
+                    snapshot: snapshot,
+                    onViewHistory: _openStrengthHistory,
+                  ),
+                ],
                 if (snapshot.weightMeasurements.isNotEmpty) ...[
                   const SizedBox(height: B05Layout.space24),
                   _WeightSection(
@@ -129,21 +149,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     onLogWeight: () => _logWeight(snapshot),
                   ),
                 ],
-                if ((snapshot.workouts?.isNotEmpty ?? false)) ...[
+                if (snapshot.nutritionSummary != null &&
+                    snapshot.nutritionSummary!.hasAnyLoggedDays) ...[
                   const SizedBox(height: B05Layout.space24),
-                  _TrainingConsistencySection(
-                    snapshot: snapshot,
-                    onViewHistory: () => _openTrainingHistory(snapshot),
-                  ),
-                ],
-                if ((snapshot.strengthSets?.isNotEmpty ?? false)) ...[
-                  const SizedBox(height: B05Layout.space24),
-                  _StrengthSection(
-                    records: snapshot.strengthSets!,
-                    onOpenHistory: (highlight) => _openExerciseHistory(
-                      highlight.exerciseName,
-                      highlight.records,
-                    ),
+                  _NutritionAdherenceSection(
+                    summary: snapshot.nutritionSummary!,
+                    onLogFood: () => context.go('/food'),
                   ),
                 ],
                 if (_hasMeaningfulVolume(snapshot)) ...[
@@ -179,7 +190,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           child: Semantics(
             container: true,
             label:
-                'Your progress starts here. Complete a workout or log a weigh-in to start seeing useful trends.',
+                'Your progress starts here. Complete a workout, log a weigh-in, or track your meals to start seeing useful trends.',
             child: B05Surface(
               tone: B05SurfaceTone.inset,
               padding: const EdgeInsets.all(B05Layout.space24),
@@ -316,34 +327,25 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       await ref
           .read(workoutRepositoryProvider)
           .logWeightAndSyncProfile(weight: weight);
+      unawaited(IndiFitHaptics.confirmation());
       await _refresh();
     });
   }
 
-  /// Fresh users may not have a routine yet. Training is the canonical entry
-  /// that offers both a plan and an existing manual-log action, whereas the
-  /// legacy routine route can strand them in setup.
   void _startWorkout() => context.go('/training');
 
-  void _openTrainingHistory(ProgressDashboardSnapshot snapshot) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ProgressTrainingHistoryScreen(
-          workouts: snapshot.workouts ?? const [],
-        ),
-      ),
-    );
+  void _openTrainingHistory() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const WorkoutHistoryScreen()));
   }
 
-  void _openExerciseHistory(
-    String exerciseName,
-    List<ProgressStrengthSetRecord> records,
-  ) {
+  void _openStrengthHistory(String exerciseName, String stableExerciseId) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ProgressExerciseHistoryScreen(
+        builder: (_) => ExerciseHistoryScreen(
           exerciseName: exerciseName,
-          records: records,
+          stableExerciseId: stableExerciseId,
         ),
       ),
     );
@@ -402,19 +404,7 @@ class _ProgressOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     final dailyWeights = _dailyWeightObservations(selectedWeights);
     final metrics = <Widget>[];
-    if (dailyWeights.isNotEmpty) {
-      final latest = dailyWeights.last;
-      metrics.add(
-        _OverviewMetric(
-          value: _formatWeight(latest.weightKg!),
-          label: _weightOverviewDetail(selectedWeights),
-          semanticLabel: _weightSemantics(snapshot, selectedWeights),
-          direction: _weightDirectionIcon(selectedWeights),
-          color: _goalAwareTrendColor(context, snapshot, selectedWeights),
-          statusLabel: _weightGoalTrendLabel(snapshot, selectedWeights),
-        ),
-      );
-    }
+
     final thisWeek = _workoutsThisWeek(snapshot);
     if (thisWeek.isNotEmpty) {
       metrics.add(
@@ -429,6 +419,7 @@ class _ProgressOverview extends StatelessWidget {
         ),
       );
     }
+
     final strength = _selectStrengthHighlight(
       snapshot.strengthSets ?? const [],
     );
@@ -443,6 +434,38 @@ class _ProgressOverview extends StatelessWidget {
         ),
       );
     }
+
+    if (dailyWeights.isNotEmpty) {
+      final latest = dailyWeights.last;
+      metrics.add(
+        _OverviewMetric(
+          value: _formatWeight(latest.weightKg!),
+          label: _weightOverviewDetail(selectedWeights),
+          semanticLabel: _weightSemantics(snapshot, selectedWeights),
+          direction: _weightDirectionIcon(selectedWeights),
+          color: _goalAwareTrendColor(context, snapshot, selectedWeights),
+          statusLabel: _weightGoalTrendLabel(snapshot, selectedWeights),
+        ),
+      );
+    }
+
+    if (snapshot.nutritionSummary != null &&
+        snapshot.nutritionSummary!.hasAnyLoggedDays) {
+      final nut = snapshot.nutritionSummary!;
+      final label = _nutritionAdherenceLabel(nut);
+      metrics.add(
+        _OverviewMetric(
+          value: nut.averageCaloriesKcal != null
+              ? '${_formatVolume(nut.averageCaloriesKcal!)} kcal'
+              : '${nut.loggedDaysCount} days logged',
+          label: label,
+          semanticLabel:
+              'Nutrition: ${nut.averageCaloriesKcal != null ? '${_formatVolume(nut.averageCaloriesKcal!)} average calories across ${nut.calorieEvidenceDaysCount} complete days. ' : ''}$label.',
+          direction: Icons.restaurant_rounded,
+        ),
+      );
+    }
+
     if (metrics.isEmpty && snapshot.bodyMeasurements.isNotEmpty) {
       final measurements = snapshot.bodyMeasurements.toList(growable: true)
         ..sort(_compareMeasurementsNewestFirst);
@@ -469,7 +492,7 @@ class _ProgressOverview extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionHeading(title: 'Overview'),
+          const _SectionHeading(title: 'Overview'),
           const SizedBox(height: B05Layout.space8),
           B05Surface(
             padding: const EdgeInsets.all(B05Layout.space20),
@@ -543,6 +566,250 @@ class _OverviewMetric extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TrainingConsistencySection extends StatelessWidget {
+  const _TrainingConsistencySection({
+    required this.snapshot,
+    required this.onViewHistory,
+  });
+
+  final ProgressDashboardSnapshot snapshot;
+  final VoidCallback onViewHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    final thisWeek = _workoutsThisWeek(snapshot);
+    final lastFourWeeks = _workoutsInRecentFourWeeks(snapshot);
+    final totalWorkingSets = (snapshot.workouts ?? const []).fold<int>(
+      0,
+      (sum, w) => sum + w.workingSetsCount,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeading(title: 'Training consistency'),
+        const SizedBox(height: B05Layout.space8),
+        B05Surface(
+          padding: const EdgeInsets.all(B05Layout.space20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Semantics(
+                label: thisWeek.isEmpty
+                    ? 'No workouts completed this week.'
+                    : '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'} completed this week.',
+                child: ExcludeSemantics(
+                  child: Text(
+                    thisWeek.isEmpty
+                        ? 'No workouts this week'
+                        : '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'}',
+                    style: B05Typography.metric(context),
+                  ),
+                ),
+              ),
+              Text(
+                thisWeek.isEmpty ? 'this week' : 'completed this week',
+                style: B05Typography.body(context),
+              ),
+              const SizedBox(height: B05Layout.space16),
+              _WeekCalendarStrip(
+                todayLocalDate: snapshot.todayLocalDate,
+                trainedDates: snapshot.weeklyTrainedDates,
+              ),
+              if (lastFourWeeks.isNotEmpty) ...[
+                const SizedBox(height: B05Layout.space16),
+                Text(
+                  '${lastFourWeeks.length} ${lastFourWeeks.length == 1 ? 'workout' : 'workouts'} completed in the last 4 weeks'
+                  '${totalWorkingSets > 0 ? ' · $totalWorkingSets working sets' : ''}',
+                  style: B05Typography.caption(context),
+                ),
+              ],
+              const SizedBox(height: B05Layout.space16),
+              B05ActionButton(
+                label: 'View workout history',
+                icon: Icons.history_rounded,
+                emphasis: B05ActionEmphasis.tertiary,
+                onPressed: onViewHistory,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WeekCalendarStrip extends StatelessWidget {
+  const _WeekCalendarStrip({
+    required this.todayLocalDate,
+    required this.trainedDates,
+  });
+
+  final String todayLocalDate;
+  final Set<String> trainedDates;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    final today = _parseCivilDate(todayLocalDate);
+    final currentWeekday = today.weekday; // 1 = Mon, 7 = Sun
+    final monday = today.subtract(Duration(days: currentWeekday - 1));
+
+    return Semantics(
+      container: true,
+      label: 'This week training activity calendar',
+      child: Row(
+        children: [
+          for (var i = 0; i < 7; i++) ...[
+            Expanded(
+              child: Builder(
+                builder: (context) {
+                  final date = monday.add(Duration(days: i));
+                  final dateStr = _formatCivilDate(date);
+                  final isTrained = trainedDates.contains(dateStr);
+                  final isToday = dateStr == todayLocalDate;
+                  final dayLabel = days[i];
+
+                  final semanticText = isTrained
+                      ? '$dayLabel, workout completed.'
+                      : isToday
+                      ? '$dayLabel, today.'
+                      : '$dayLabel, rest day.';
+
+                  return Semantics(
+                    label: semanticText,
+                    child: ExcludeSemantics(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            dayLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: B05Typography.caption(context).copyWith(
+                              fontWeight: isToday
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isToday
+                                  ? colors.action
+                                  : colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isTrained
+                                  ? colors.action
+                                  : colors.surfaceSubtle,
+                              border: Border.all(
+                                color: isToday ? colors.action : colors.border,
+                                width: isToday ? 2 : 1,
+                              ),
+                            ),
+                            child: Icon(
+                              isTrained
+                                  ? Icons.fitness_center_rounded
+                                  : Icons.horizontal_rule_rounded,
+                              size: isTrained ? 14 : 12,
+                              color: isTrained
+                                  ? colors.onAction
+                                  : colors.textDisabled,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StrengthSection extends StatelessWidget {
+  const _StrengthSection({required this.snapshot, required this.onViewHistory});
+
+  final ProgressDashboardSnapshot snapshot;
+  final void Function(String name, String stableExerciseId) onViewHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    final highlight = _selectStrengthHighlight(
+      snapshot.strengthSets ?? const [],
+    );
+    if (highlight == null) return const SizedBox.shrink();
+
+    final setFormatted = _formatSet(highlight.heaviest);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeading(title: 'Strength'),
+        const SizedBox(height: B05Layout.space8),
+        B05Surface(
+          padding: const EdgeInsets.all(B05Layout.space20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Semantics(
+                label:
+                    '${highlight.exerciseName}, $setFormatted performed.'
+                    '${highlight.comparisonText != null ? ' ${highlight.comparisonText}.' : ''}',
+                child: ExcludeSemantics(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: B05Layout.space8,
+                        runSpacing: B05Layout.space4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            setFormatted,
+                            style: B05Typography.metric(context),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        highlight.exerciseName,
+                        style: B05Typography.body(context),
+                      ),
+                      if (highlight.comparisonText != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          highlight.comparisonText!,
+                          style: B05Typography.caption(context),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: B05Layout.space16),
+              B05ActionButton(
+                label: 'View history',
+                icon: Icons.history_rounded,
+                emphasis: B05ActionEmphasis.tertiary,
+                onPressed: () =>
+                    onViewHistory(highlight.exerciseName, highlight.exerciseId),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -714,6 +981,182 @@ class _WeightSectionState extends State<_WeightSection> {
   }
 }
 
+class _NutritionAdherenceSection extends StatelessWidget {
+  const _NutritionAdherenceSection({
+    required this.summary,
+    required this.onLogFood,
+  });
+
+  final ProgressNutritionSummary summary;
+  final VoidCallback onLogFood;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleText = _nutritionAdherenceLabel(summary);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeading(title: 'Nutrition adherence'),
+        const SizedBox(height: B05Layout.space8),
+        B05Surface(
+          padding: const EdgeInsets.all(B05Layout.space20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Semantics(
+                label:
+                    'Nutrition weekly adherence: $titleText.'
+                    '${summary.averageCaloriesKcal != null ? ' Average ${summary.averageCaloriesKcal!.round()} calories across ${summary.calorieEvidenceDaysCount} complete days.' : ''}',
+                child: ExcludeSemantics(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        summary.averageCaloriesKcal != null
+                            ? '${_formatVolume(summary.averageCaloriesKcal!)} kcal'
+                            : '${summary.loggedDaysCount} days logged',
+                        style: B05Typography.metric(context),
+                      ),
+                      if (summary.averageCaloriesKcal != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Average across ${summary.calorieEvidenceDaysCount} complete ${summary.calorieEvidenceDaysCount == 1 ? 'day' : 'days'}',
+                          style: B05Typography.caption(context),
+                        ),
+                      ],
+                      const SizedBox(height: 2),
+                      Text(titleText, style: B05Typography.body(context)),
+                      if (summary.averageProteinG != null &&
+                          summary.targetProteinG != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Avg protein: ${summary.averageProteinG!.round()} / ${summary.targetProteinG!.round()} g across ${summary.proteinEvidenceDaysCount} complete ${summary.proteinEvidenceDaysCount == 1 ? 'day' : 'days'}',
+                          style: B05Typography.caption(context),
+                        ),
+                      ] else if (summary.averageProteinG != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Avg protein: ${summary.averageProteinG!.round()} g across ${summary.proteinEvidenceDaysCount} complete ${summary.proteinEvidenceDaysCount == 1 ? 'day' : 'days'}',
+                          style: B05Typography.caption(context),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: B05Layout.space16),
+              _NutritionWeekStrip(days: summary.days),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NutritionWeekStrip extends StatelessWidget {
+  const _NutritionWeekStrip({required this.days});
+
+  final List<ProgressNutritionDaySummary> days;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.b05Colors;
+
+    return Semantics(
+      container: true,
+      label: 'Weekly nutrition adherence day by day',
+      child: Row(
+        children: [
+          for (final day in days) ...[
+            Expanded(
+              child: Builder(
+                builder: (context) {
+                  final hasLog = day.hasFoodLog;
+                  final metProtein = day.isProteinTargetMet;
+                  final incomplete = day.isNutrientIncomplete;
+
+                  final semanticLabel = !hasLog
+                      ? '${day.dayLabel}, no meals logged.'
+                      : '${day.dayLabel}, logged.'
+                            '${day.caloriesKcal != null ? ' ${day.caloriesKcal!.round()} kcal.' : ''}'
+                            '${metProtein ? ' Protein target met.' : ''}'
+                            '${incomplete ? ' Nutrition data is incomplete.' : ''}';
+
+                  return Semantics(
+                    label: semanticLabel,
+                    child: ExcludeSemantics(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            day.dayLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: B05Typography.caption(context).copyWith(
+                              fontWeight: day.isToday
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: day.isToday
+                                  ? colors.action
+                                  : colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: metProtein
+                                  ? colors.success.indicator
+                                  : incomplete
+                                  ? colors.warning.container
+                                  : hasLog
+                                  ? colors.surfaceSubtle
+                                  : colors.surfaceSubtle,
+                              border: Border.all(
+                                color: day.isToday
+                                    ? colors.action
+                                    : metProtein
+                                    ? colors.success.indicator
+                                    : incomplete
+                                    ? colors.warning.indicator
+                                    : colors.border,
+                                width: day.isToday ? 2 : 1,
+                              ),
+                            ),
+                            child: Icon(
+                              metProtein
+                                  ? Icons.check_rounded
+                                  : incomplete
+                                  ? Icons.help_outline_rounded
+                                  : hasLog
+                                  ? Icons.restaurant_rounded
+                                  : Icons.horizontal_rule_rounded,
+                              size: 14,
+                              color: metProtein
+                                  ? Colors.white
+                                  : hasLog
+                                  ? colors.textPrimary
+                                  : colors.textDisabled,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _WeightGoalSummary extends StatelessWidget {
   const _WeightGoalSummary({required this.goal, required this.currentWeight});
 
@@ -821,126 +1264,15 @@ class _WeightRangeSelector extends StatelessWidget {
               child: ChoiceChip(
                 label: Text(range.label),
                 selected: range == selected,
-                onSelected: (_) => onSelected(range),
+                onSelected: (isSelected) {
+                  if (!isSelected || range == selected) return;
+                  onSelected(range);
+                  unawaited(IndiFitHaptics.selection());
+                },
               ),
             ),
         ],
       ),
-    );
-  }
-}
-
-class _TrainingConsistencySection extends StatelessWidget {
-  const _TrainingConsistencySection({
-    required this.snapshot,
-    required this.onViewHistory,
-  });
-
-  final ProgressDashboardSnapshot snapshot;
-  final VoidCallback onViewHistory;
-
-  @override
-  Widget build(BuildContext context) {
-    final thisWeek = _workoutsThisWeek(snapshot);
-    final lastFourWeeks = _workoutsInRecentFourWeeks(snapshot);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionHeading(title: 'Training consistency'),
-        const SizedBox(height: B05Layout.space8),
-        B05Surface(
-          padding: const EdgeInsets.all(B05Layout.space20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Semantics(
-                label: thisWeek.isEmpty
-                    ? 'No workouts completed this week.'
-                    : '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'} completed this week.',
-                child: ExcludeSemantics(
-                  child: Text(
-                    thisWeek.isEmpty
-                        ? 'No workouts this week'
-                        : '${thisWeek.length} ${thisWeek.length == 1 ? 'workout' : 'workouts'}',
-                    style: B05Typography.metric(context),
-                  ),
-                ),
-              ),
-              Text(
-                thisWeek.isEmpty ? 'this week' : 'completed this week',
-                style: B05Typography.body(context),
-              ),
-              if (lastFourWeeks.isNotEmpty) ...[
-                const SizedBox(height: B05Layout.space12),
-                Text(
-                  '${lastFourWeeks.length} ${lastFourWeeks.length == 1 ? 'workout' : 'workouts'} completed in the last 4 weeks',
-                  style: B05Typography.caption(context),
-                ),
-              ],
-              const SizedBox(height: B05Layout.space12),
-              B05ActionButton(
-                label: 'View workout history',
-                icon: Icons.history_rounded,
-                emphasis: B05ActionEmphasis.tertiary,
-                onPressed: onViewHistory,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StrengthSection extends StatelessWidget {
-  const _StrengthSection({required this.records, required this.onOpenHistory});
-
-  final List<ProgressStrengthSetRecord> records;
-  final ValueChanged<_StrengthHighlight> onOpenHistory;
-
-  @override
-  Widget build(BuildContext context) {
-    final highlight = _selectStrengthHighlight(records)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionHeading(title: 'Strength'),
-        const SizedBox(height: B05Layout.space8),
-        B05Surface(
-          padding: const EdgeInsets.all(B05Layout.space20),
-          child: Semantics(
-            container: true,
-            label:
-                '${highlight.exerciseName}. Heaviest recorded set: ${_formatSet(highlight.heaviest)}.${highlight.comparisonText == null ? '' : ' ${highlight.comparisonText}.'}',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  highlight.exerciseName,
-                  style: B05Typography.title(context),
-                ),
-                const SizedBox(height: B05Layout.space8),
-                Text(
-                  _formatSet(highlight.heaviest),
-                  style: B05Typography.metric(context),
-                ),
-                const SizedBox(height: B05Layout.space4),
-                Text(
-                  highlight.comparisonText ?? 'Heaviest recorded performed set',
-                  style: B05Typography.body(context),
-                ),
-                const SizedBox(height: B05Layout.space12),
-                B05ActionButton(
-                  label: 'View history',
-                  icon: Icons.arrow_forward_rounded,
-                  emphasis: B05ActionEmphasis.tertiary,
-                  onPressed: () => onOpenHistory(highlight),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -954,7 +1286,10 @@ class _TrainingVolumeSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final all = (snapshot.workouts ?? const <ProgressWorkoutRecord>[])
         .where(
-          (workout) => workout.isCanonicalStrength && workout.totalVolumeKg > 0,
+          (workout) =>
+              workout.isCanonicalStrength &&
+              workout.volumeIsTrustworthy &&
+              workout.totalVolumeKg > 0,
         )
         .toList(growable: false);
     final recent = all
@@ -974,7 +1309,7 @@ class _TrainingVolumeSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeading(title: 'Training volume'),
+        const _SectionHeading(title: 'Training volume'),
         const SizedBox(height: B05Layout.space8),
         B05Surface(
           padding: const EdgeInsets.all(B05Layout.space20),
@@ -1021,7 +1356,7 @@ class _MuscleBalanceSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeading(title: 'Recent training emphasis'),
+        const _SectionHeading(title: 'Recent training emphasis'),
         const SizedBox(height: B05Layout.space8),
         B05Surface(
           padding: const EdgeInsets.all(B05Layout.space20),
@@ -1034,13 +1369,13 @@ class _MuscleBalanceSection extends StatelessWidget {
                     label:
                         '${muscle.displayName}, ${_formatNumber(muscle.workingSetUnits)} working set units.',
                     child: ExcludeSemantics(
-                      child: Row(
+                      child: Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Expanded(
-                            child: Text(
-                              muscle.displayName,
-                              style: B05Typography.label(context),
-                            ),
+                          Text(
+                            muscle.displayName,
+                            style: B05Typography.label(context),
                           ),
                           Text(
                             '${_formatNumber(muscle.workingSetUnits)} working sets',
@@ -1081,7 +1416,7 @@ class _MeasurementsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeading(title: 'Measurements'),
+        const _SectionHeading(title: 'Measurements'),
         const SizedBox(height: B05Layout.space8),
         B05Surface(
           padding: const EdgeInsets.all(B05Layout.space20),
@@ -1225,119 +1560,6 @@ class _SectionHeading extends StatelessWidget {
   }
 }
 
-/// Detail history stays behind the root summary so a complete training log
-/// does not turn the Progress tab into an unscannable data dump.
-class ProgressTrainingHistoryScreen extends StatelessWidget {
-  const ProgressTrainingHistoryScreen({super.key, required this.workouts});
-
-  final List<ProgressWorkoutRecord> workouts;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Workout history')),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(B05Layout.space20),
-        itemCount: workouts.length,
-        separatorBuilder: (_, _) => const SizedBox(height: B05Layout.space8),
-        itemBuilder: (context, index) {
-          final workout = workouts[index];
-          return Semantics(
-            label: '${workout.name}, ${_shortCivilDate(workout.localDate)}',
-            child: B05Surface(
-              tone: B05SurfaceTone.interactive,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.fitness_center_rounded,
-                    color: context.b05Colors.action,
-                  ),
-                  const SizedBox(width: B05Layout.space12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(workout.name, style: B05Typography.label(context)),
-                        Text(
-                          _shortCivilDate(workout.localDate),
-                          style: B05Typography.caption(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (workout.isCanonicalStrength && workout.totalVolumeKg > 0)
-                    Text(
-                      '${_formatVolume(workout.totalVolumeKg)} kg',
-                      style: B05Typography.caption(context),
-                    ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class ProgressExerciseHistoryScreen extends StatelessWidget {
-  const ProgressExerciseHistoryScreen({
-    super.key,
-    required this.exerciseName,
-    required this.records,
-  });
-
-  final String exerciseName;
-  final List<ProgressStrengthSetRecord> records;
-
-  @override
-  Widget build(BuildContext context) {
-    final sorted = records.toList(growable: true)
-      ..sort(
-        (first, second) =>
-            second.completedAtUtc.compareTo(first.completedAtUtc),
-      );
-    return Scaffold(
-      appBar: AppBar(title: Text(exerciseName)),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(B05Layout.space20),
-        itemCount: sorted.length,
-        separatorBuilder: (_, _) => const SizedBox(height: B05Layout.space8),
-        itemBuilder: (context, index) {
-          final record = sorted[index];
-          return Semantics(
-            label:
-                '${_shortCivilDate(record.localDate)}, ${_formatSet(record)} performed.',
-            child: B05Surface(
-              tone: B05SurfaceTone.interactive,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _shortCivilDate(record.localDate),
-                      style: B05Typography.label(context),
-                    ),
-                  ),
-                  Text(
-                    _formatSet(record),
-                    style: B05Typography.body(context).copyWith(
-                      color: context.b05Colors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Measurement detail stays behind the root overview so Progress can surface
-/// the latest useful values without turning every historical entry into a
-/// default card.
 class ProgressMeasurementHistoryScreen extends StatelessWidget {
   const ProgressMeasurementHistoryScreen({
     super.key,
@@ -1548,15 +1770,19 @@ class _MeasurementField extends StatelessWidget {
 
 class _StrengthHighlight {
   const _StrengthHighlight({
+    required this.exerciseId,
     required this.exerciseName,
     required this.heaviest,
     required this.records,
+    required this.latestPerformedAtUtc,
     this.comparisonText,
   });
 
+  final String exerciseId;
   final String exerciseName;
   final ProgressStrengthSetRecord heaviest;
   final List<ProgressStrengthSetRecord> records;
+  final DateTime latestPerformedAtUtc;
   final String? comparisonText;
 }
 
@@ -1566,86 +1792,121 @@ _StrengthHighlight? _selectStrengthHighlight(
   if (records.isEmpty) return null;
   final groups = <String, List<ProgressStrengthSetRecord>>{};
   for (final record in records) {
-    groups
-        .putIfAbsent('${record.exerciseId}|${record.loadBasis}', () => [])
-        .add(record);
+    groups.putIfAbsent(record.exerciseId, () => []).add(record);
   }
   final highlights = <_StrengthHighlight>[];
-  for (final values in groups.values) {
+  for (final entry in groups.entries) {
+    final values = entry.value;
     final sorted = values.toList(growable: true)
       ..sort(
         (first, second) =>
-            first.completedAtUtc.compareTo(second.completedAtUtc),
+            _compareStrengthRecordsForPresentation(first, second),
       );
-    final fallback = sorted.reduce((current, record) {
-      if (record.loadKg != current.loadKg) {
-        return record.loadKg > current.loadKg ? record : current;
-      }
-      return record.reps > current.reps ? record : current;
-    });
-    final byReps = <int, List<ProgressStrengthSetRecord>>{};
-    for (final record in sorted) {
-      byReps.putIfAbsent(record.reps, () => []).add(record);
-    }
-    final comparable = <_StrengthHighlight>[];
-    for (final matching in byReps.values) {
-      if (matching.first.loadBasis == 'bodyweight') continue;
-      final dates = matching.map((record) => record.localDate).toSet();
-      if (dates.length < 2) continue;
-      final earliest = matching.first;
-      final bestAtRep = matching.reduce((current, record) {
-        if (record.loadKg != current.loadKg) {
-          return record.loadKg > current.loadKg ? record : current;
-        }
-        return record.completedAtUtc.isAfter(current.completedAtUtc)
-            ? record
-            : current;
-      });
-      if (bestAtRep.localDate == earliest.localDate) continue;
-      final difference = bestAtRep.loadKg - earliest.loadKg;
-      if (difference == 0) continue;
-      comparable.add(
-        _StrengthHighlight(
-          exerciseName: bestAtRep.exerciseName,
-          heaviest: bestAtRep,
-          records: sorted,
-          comparisonText:
-              '${_formatNumber(difference.abs())} ${_strengthLoadUnit(bestAtRep)} higher at ${bestAtRep.reps} reps since ${_shortCivilDate(earliest.localDate)}',
+    final latestPerformedAtUtc = sorted.last.completedAtUtc;
+    final latestSessionKey = _presentationStrengthSessionKey(sorted.last);
+    final latestSession = sorted
+        .where(
+          (record) =>
+              _presentationStrengthSessionKey(record) == latestSessionKey,
+        )
+        .toList(growable: false);
+    final latestExternal = latestSession
+        .where((record) => record.loadBasis == 'totalExternal')
+        .toList(growable: false);
+    final heaviest = latestExternal.isEmpty
+        ? sorted.last
+        : latestExternal.reduce(_heavierStrengthSetForPresentation);
+    highlights.add(
+      _StrengthHighlight(
+        exerciseId: entry.key,
+        exerciseName: heaviest.exerciseName,
+        heaviest: heaviest,
+        records: sorted,
+        latestPerformedAtUtc: latestPerformedAtUtc,
+        comparisonText: _presentationStrengthComparison(
+          sorted,
+          latestSessionKey,
+          heaviest,
         ),
-      );
-    }
-    if (comparable.isNotEmpty) {
-      comparable.sort(
-        (first, second) => second.heaviest.completedAtUtc.compareTo(
-          first.heaviest.completedAtUtc,
-        ),
-      );
-      highlights.add(comparable.first);
-    } else {
-      highlights.add(
-        _StrengthHighlight(
-          exerciseName: fallback.exerciseName,
-          heaviest: fallback,
-          records: sorted,
-        ),
-      );
-    }
+      ),
+    );
   }
   highlights.sort((first, second) {
-    final withComparison =
-        (second.comparisonText != null ? 1 : 0) -
-        (first.comparisonText != null ? 1 : 0);
-    if (withComparison != 0) return withComparison;
-    return second.heaviest.completedAtUtc.compareTo(
-      first.heaviest.completedAtUtc,
+    final byLatest = second.latestPerformedAtUtc.compareTo(
+      first.latestPerformedAtUtc,
     );
+    if (byLatest != 0) return byLatest;
+    return second.records.length.compareTo(first.records.length);
   });
   return highlights.first;
 }
 
+int _compareStrengthRecordsForPresentation(
+  ProgressStrengthSetRecord first,
+  ProgressStrengthSetRecord second,
+) {
+  final byTime = first.completedAtUtc.compareTo(second.completedAtUtc);
+  if (byTime != 0) return byTime;
+  final bySession = (first.sessionId ?? -1).compareTo(second.sessionId ?? -1);
+  if (bySession != 0) return bySession;
+  return first.performedSetId.compareTo(second.performedSetId);
+}
+
+ProgressStrengthSetRecord _heavierStrengthSetForPresentation(
+  ProgressStrengthSetRecord first,
+  ProgressStrengthSetRecord second,
+) {
+  if (first.loadKg != second.loadKg) {
+    return first.loadKg > second.loadKg ? first : second;
+  }
+  if (first.reps != second.reps) {
+    return first.reps > second.reps ? first : second;
+  }
+  return _compareStrengthRecordsForPresentation(first, second) > 0
+      ? first
+      : second;
+}
+
+String _presentationStrengthSessionKey(ProgressStrengthSetRecord record) =>
+    record.sessionId == null
+    ? 'date:${record.localDate}'
+    : 'session:${record.sessionId}';
+
+String? _presentationStrengthComparison(
+  List<ProgressStrengthSetRecord> records,
+  String latestSessionKey,
+  ProgressStrengthSetRecord current,
+) {
+  if (current.loadBasis != 'totalExternal') return null;
+  final previous = records
+      .where(
+        (record) =>
+            _presentationStrengthSessionKey(record) != latestSessionKey &&
+            record.loadBasis == 'totalExternal' &&
+            record.reps == current.reps,
+      )
+      .toList(growable: true);
+  if (previous.isEmpty) return null;
+  previous.sort(_compareStrengthRecordsForPresentation);
+  final previousSessionKey = _presentationStrengthSessionKey(previous.last);
+  final previousBest = previous
+      .where(
+        (record) =>
+            _presentationStrengthSessionKey(record) == previousSessionKey,
+      )
+      .reduce(_heavierStrengthSetForPresentation);
+  final difference = current.loadKg - previousBest.loadKg;
+  if (difference == 0) return null;
+  final sign = difference > 0 ? '+' : '';
+  return '$sign${_formatNumber(difference)} kg at ${current.reps} reps vs previous session';
+}
+
 bool _hasMeaningfulVolume(ProgressDashboardSnapshot snapshot) =>
     (snapshot.workouts ?? const <ProgressWorkoutRecord>[]).any(
-      (workout) => workout.isCanonicalStrength && workout.totalVolumeKg > 0,
+      (workout) =>
+          workout.isCanonicalStrength &&
+          workout.volumeIsTrustworthy &&
+          workout.totalVolumeKg > 0,
     );
 
 bool _hasMeaningfulMuscleBalance(ProgressDashboardSnapshot snapshot) =>
@@ -1655,7 +1916,10 @@ bool _hasMeaningfulMuscleBalance(ProgressDashboardSnapshot snapshot) =>
 List<ProgressWorkoutRecord> _workoutsThisWeek(
   ProgressDashboardSnapshot snapshot,
 ) {
-  final start = _addCivilDays(snapshot.todayLocalDate, -6);
+  final today = _parseCivilDate(snapshot.todayLocalDate);
+  final start = _formatCivilDate(
+    today.subtract(Duration(days: today.weekday - DateTime.monday)),
+  );
   return (snapshot.workouts ?? const <ProgressWorkoutRecord>[])
       .where(
         (workout) =>
@@ -1874,8 +2138,6 @@ LineChartData _weightChartData({
   required ValueChanged<int> onTouch,
 }) {
   final colors = context.b05Colors;
-  // A January→February gap must not look identical to two consecutive days.
-  // The presentation still uses civil date labels supplied by the read model.
   final firstDate = _measurementDate(measurements.first);
   final chartDaySpan = _civilDayDifference(
     firstDate,
@@ -2036,6 +2298,16 @@ String _strengthLoadUnit(ProgressStrengthSetRecord record) =>
 
 String _formatVolume(double value) =>
     NumberFormat.decimalPattern().format(value.round());
+
+String _nutritionAdherenceLabel(ProgressNutritionSummary summary) {
+  if (summary.targetProteinG != null && summary.proteinEvidenceDaysCount > 0) {
+    return '${summary.proteinTargetMetDaysCount} of ${summary.proteinEvidenceDaysCount} complete ${summary.proteinEvidenceDaysCount == 1 ? 'day' : 'days'} met protein';
+  }
+  if (summary.calorieEvidenceDaysCount > 0) {
+    return '${summary.loggedDaysCount} ${summary.loggedDaysCount == 1 ? 'day' : 'days'} with meals logged · ${summary.calorieEvidenceDaysCount} complete calorie ${summary.calorieEvidenceDaysCount == 1 ? 'day' : 'days'}';
+  }
+  return '${summary.loggedDaysCount} ${summary.loggedDaysCount == 1 ? 'day' : 'days'} with meals logged';
+}
 
 String _formatNumber(double value) {
   final whole = value.roundToDouble() == value;

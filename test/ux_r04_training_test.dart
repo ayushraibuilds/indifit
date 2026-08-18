@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
@@ -10,6 +10,7 @@ import 'package:indifit/features/calendar/calendar_read_model.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
 import 'package:indifit/features/exercise_library/exercise_details_sheet.dart';
 import 'package:indifit/features/training/training_screen.dart';
+import 'package:indifit/features/workout_player/routine_display_screen.dart';
 import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
 
 void main() {
@@ -17,7 +18,6 @@ void main() {
   late final AppDatabase database;
 
   setUpAll(() {
-    GoogleFonts.config.allowRuntimeFetching = false;
     database = AppDatabase.memory();
   });
 
@@ -85,6 +85,181 @@ void main() {
     expect(find.text('View plan'), findsOneWidget);
     expect(find.text('Log workout'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'Training exposes a saved Quick Workout as the first resume action',
+    (tester) async {
+      _setViewport(tester, const Size(320, 568));
+      final draft = WorkoutDraft(
+        id: 7,
+        routineName: 'Quick workout',
+        currentExerciseIndex: 0,
+        currentSetIndex: 0,
+        elapsedSeconds: 75,
+        loggedSetsJson: '{}',
+        updatedAt: DateTime.utc(2026, 8, 11),
+        executionSnapshotJson: '{"version":1}',
+        draftSchemaVersion: 2,
+        activityType: 'strength',
+        executionStateJson: '{}',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            trainingLandingSnapshotProvider.overrideWith(
+              (ref) async => TrainingLandingSnapshot(
+                localDate: '2026-08-11',
+                timezoneId: 'Asia/Kolkata',
+                todayWorkout: null,
+                upcoming: const [],
+                recentSessions: const [],
+                activeProgramName: null,
+                activeStrengthDraft: draft,
+              ),
+            ),
+          ],
+          child: _app(AppTheme.lightTheme, const TrainingScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Resume Quick workout'), findsOneWidget);
+      expect(find.textContaining('active time'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Training does not offer a competing planned start while a draft exists',
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      final draft = WorkoutDraft(
+        id: 8,
+        routineName: 'Saved push workout',
+        currentExerciseIndex: 0,
+        currentSetIndex: 1,
+        elapsedSeconds: 120,
+        loggedSetsJson: '{}',
+        updatedAt: DateTime.utc(2026, 8, 12),
+        executionSnapshotJson: '{"version":1}',
+        draftSchemaVersion: 2,
+        activityType: 'strength',
+        executionStateJson: '{}',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            trainingLandingSnapshotProvider.overrideWith(
+              (ref) async => TrainingLandingSnapshot(
+                localDate: '2026-08-12',
+                timezoneId: 'Asia/Kolkata',
+                todayWorkout: _calendarItem(
+                  name: 'Push day',
+                  localDate: '2026-08-12',
+                  status: 'planned',
+                  prescriptionCount: 2,
+                ),
+                upcoming: const [],
+                recentSessions: const [],
+                activeProgramName: 'Upper / Lower Strength',
+                activeStrengthDraft: draft,
+              ),
+            ),
+          ],
+          child: _app(AppTheme.lightTheme, const TrainingScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Resume Saved push workout'), findsOneWidget);
+      expect(find.text('Start workout'), findsNothing);
+      expect(
+        find.text('Resume your saved workout before starting today’s plan.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Exercise 1 · 3 × 8–10'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'scheduled completion keeps Quick Workout immediately reachable',
+    (tester) async {
+      _setViewport(tester, const Size(390, 844));
+      final completedSnapshot = TrainingLandingSnapshot(
+        localDate: '2026-08-12',
+        timezoneId: 'Asia/Kolkata',
+        todayWorkout: _calendarItem(
+          name: 'Day 3: Legs & Lower Body',
+          localDate: '2026-08-12',
+          status: 'completed',
+          prescriptionCount: 5,
+        ),
+        upcoming: const [],
+        recentSessions: const [],
+        activeProgramName: 'Suggested PPL',
+      );
+      final router = GoRouter(
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const TrainingScreen()),
+          GoRoute(
+            path: '/quick-workout',
+            builder: (_, _) => const Scaffold(body: Text('Quick route opened')),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            trainingLandingSnapshotProvider.overrideWith(
+              (ref) async => completedSnapshot,
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: AppTheme.darkTheme,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Workout complete for today.'), findsOneWidget);
+      expect(find.text('Quick Workout'), findsOneWidget);
+      await tester.tap(find.text('Quick Workout'));
+      await tester.pumpAndSettle();
+      expect(find.text('Quick route opened'), findsOneWidget);
+    },
+  );
+
+  testWidgets('active scheduled plan uses consumer plan-management copy', (
+    tester,
+  ) async {
+    _setViewport(tester, const Size(390, 844));
+    await tester.pumpWidget(
+      _app(
+        AppTheme.darkTheme,
+        ActiveProgramManagementSurface(
+          planName: 'Upper / Lower Strength',
+          onOpenCalendar: () {},
+          onChangePlan: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Upper / Lower Strength'), findsOneWidget);
+    expect(find.text('Open calendar'), findsOneWidget);
+    expect(find.text('Change plan'), findsOneWidget);
+    expect(
+      find.textContaining('legacy split', findRichText: true),
+      findsNothing,
+    );
+    expect(
+      find.textContaining('program version', findRichText: true),
+      findsNothing,
+    );
   });
 
   testWidgets('Training keeps Travel inside More and only with a plan', (
@@ -361,7 +536,7 @@ final _populatedTrainingSnapshot = TrainingLandingSnapshot(
   upcoming: [
     _calendarItem(
       name: 'Lower body',
-      localDate: '2026-08-11',
+      localDate: _todayIsoDate(),
       status: 'planned',
       prescriptionCount: 5,
     ),
@@ -381,6 +556,13 @@ final _populatedTrainingSnapshot = TrainingLandingSnapshot(
   ],
   activeProgramName: 'Upper / Lower Strength',
 );
+
+String _todayIsoDate() {
+  final today = DateTime.now();
+  return '${today.year.toString().padLeft(4, '0')}-'
+      '${today.month.toString().padLeft(2, '0')}-'
+      '${today.day.toString().padLeft(2, '0')}';
+}
 
 CalendarOccurrenceReadItem _calendarItem({
   required String name,

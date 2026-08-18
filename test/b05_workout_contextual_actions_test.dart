@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
@@ -14,7 +13,7 @@ import 'package:indifit/features/calendar/workout_contextual_actions.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  // R07F-0: Outfit is bundled; no runtime font fetching configuration.
 
   test(
     'skip suppresses repeated pending input and supports valid undo',
@@ -140,6 +139,64 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pump();
     expect(find.byType(WorkoutContextualActions), findsOneWidget);
+  });
+
+  testWidgets(
+    'completed workout presents view details without an error panel',
+    (tester) async {
+      final gateway = _FakeGateway(_occurrence(status: 'completed'));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            workoutOccurrenceActionGatewayProvider.overrideWithValue(gateway),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(
+              body: WorkoutContextualActions(
+                item: _item(gateway.occurrence!),
+                onOpenDetails: _noop,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Completed'), findsOneWidget);
+      expect(find.text('View workout'), findsOneWidget);
+      expect(find.text('Workout actions unavailable'), findsNothing);
+    },
+  );
+
+  testWidgets('skipped workout stays quiet and consumer-facing', (
+    tester,
+  ) async {
+    final gateway = _FakeGateway(_occurrence(status: 'skipped'));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          workoutOccurrenceActionGatewayProvider.overrideWithValue(gateway),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: WorkoutContextualActions(
+              item: _item(gateway.occurrence!),
+              onOpenDetails: _noop,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Skipped'), findsOneWidget);
+    expect(find.text('Workout actions unavailable'), findsNothing);
+    expect(
+      find.text('Open details to review history and supported actions.'),
+      findsNothing,
+    );
   });
 }
 

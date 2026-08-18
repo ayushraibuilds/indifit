@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/consumer_count_label.dart';
 import '../../core/theme/colors.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/program_repository.dart';
@@ -986,7 +986,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
       appBar: AppBar(
         title: Text(
           'Program Authoring',
-          style: TextStyle(fontFamily: GoogleFonts.outfit().fontFamily),
+          style: TextStyle(fontFamily: 'Outfit'),
         ),
         actions: [
           if (_currentVersionId != null)
@@ -1000,6 +1000,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1033,7 +1034,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                       border: OutlineInputBorder(),
                     ),
                     style: TextStyle(
-                      fontFamily: GoogleFonts.outfit().fontFamily,
+                      fontFamily: 'Outfit',
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1076,11 +1077,11 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Program Structure (${_blocks.length} Blocks)',
+                        'Program Structure (${ConsumerCountLabel.format(_blocks.length, 'block')})',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          fontFamily: GoogleFonts.outfit().fontFamily,
+                          fontFamily: 'Outfit',
                         ),
                       ),
                       TextButton.icon(
@@ -1161,7 +1162,7 @@ class _ProgramAuthorScreenState extends ConsumerState<ProgramAuthorScreen> {
                                         children: [
                                           Expanded(
                                             child: Text(
-                                              'Week ${w.programWeekOrdinal + 1}: ${w.templates.length} sessions',
+                                              'Week ${w.programWeekOrdinal + 1}: ${ConsumerCountLabel.format(w.templates.length, 'session')}',
                                               style: TextStyle(
                                                 color: w.isDeload
                                                     ? Colors.purple

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 
 import '../../core/services/local_schedule_date_service.dart';
@@ -36,12 +38,20 @@ class CalendarReadSnapshot {
   final List<CalendarOccurrenceReadItem> overdueOccurrences;
   final String? activeProgramVersionId;
   final String? activeProgramName;
+  final String? lastEndedProgramVersionId;
+  final String? lastEndedProgramName;
+  final String? lastEndedOutcome;
+  final DateTime? lastEndedAtUtc;
 
   const CalendarReadSnapshot({
     required this.rangeOccurrences,
     required this.overdueOccurrences,
     required this.activeProgramVersionId,
     required this.activeProgramName,
+    this.lastEndedProgramVersionId,
+    this.lastEndedProgramName,
+    this.lastEndedOutcome,
+    this.lastEndedAtUtc,
   });
 }
 
@@ -70,13 +80,46 @@ class CalendarReadRepository {
       throw ArgumentError('Start local date must not be after end local date.');
     }
 
-    final watch = _db.select(_db.scheduledSessionOccurrences)
+    final occurrenceWatch = _db.select(_db.scheduledSessionOccurrences)
       ..where(
         (table) =>
             table.effectiveLocalDate.isBiggerOrEqualValue(start) &
             table.effectiveLocalDate.isSmallerOrEqualValue(end),
       );
-    return watch.watch().map<void>((_) {});
+
+    // The active plan pointer is a separate canonical row from occurrences.
+    // Watching only the date-bounded occurrence query leaves an already
+    // mounted Training tab showing "No training plan yet" after activation.
+    // Merge the small identity/settings watches so all consumers reconcile from
+    // the same read repository without inferring a plan from Calendar rows.
+    late final StreamController<void> controller;
+    final subscriptions = <StreamSubscription<void>>[];
+    controller = StreamController<void>(
+      onListen: () {
+        final streams = <Stream<void>>[
+          occurrenceWatch.watch().map<void>((_) {}),
+          _db.select(_db.trainingPlanSettings).watch().map<void>((_) {}),
+          _db.select(_db.programVersions).watch().map<void>((_) {}),
+          _db.select(_db.programs).watch().map<void>((_) {}),
+        ];
+        for (final stream in streams) {
+          subscriptions.add(
+            // Drift watches emit their current snapshot immediately. That
+            // first value establishes the watch and must not invalidate the
+            // provider that just created it, otherwise the subscription can
+            // continuously recreate itself without a database change.
+            stream.skip(1).listen(controller.add, onError: controller.addError),
+          );
+        }
+      },
+      onCancel: () async {
+        await Future.wait(
+          subscriptions.map((subscription) => subscription.cancel()),
+        );
+        subscriptions.clear();
+      },
+    );
+    return controller.stream;
   }
 
   Future<CalendarReadSnapshot> readSnapshot({
@@ -91,13 +134,28 @@ class CalendarReadRepository {
       throw ArgumentError('Start local date must not be after end local date.');
     }
     final today = _dates.todayIn(timezoneId);
+    final settings = await (_db.select(
+      _db.trainingPlanSettings,
+    )..where((table) => table.id.equals(1))).getSingleOrNull();
+    final activeVersionId = settings?.activeProgramVersionId;
+    final terminalStatuses = const [
+      'completed',
+      'partiallyCompleted',
+      'skipped',
+      'cancelled',
+    ];
     final range =
         await (_db.select(_db.scheduledSessionOccurrences)
-              ..where(
-                (table) =>
+              ..where((table) {
+                final dateRange =
                     table.effectiveLocalDate.isBiggerOrEqualValue(start) &
-                    table.effectiveLocalDate.isSmallerOrEqualValue(end),
-              )
+                    table.effectiveLocalDate.isSmallerOrEqualValue(end);
+                final planFilter = activeVersionId == null
+                    ? table.status.isIn(terminalStatuses)
+                    : (table.programVersionId.equals(activeVersionId) |
+                          table.status.isIn(terminalStatuses));
+                return dateRange & planFilter;
+              })
               ..orderBy([
                 (table) => OrderingTerm(expression: table.effectiveLocalDate),
                 (table) => OrderingTerm(expression: table.programWeekOrdinal),
@@ -105,20 +163,22 @@ class CalendarReadRepository {
                 (table) => OrderingTerm(expression: table.repeatOrdinal),
               ]))
             .get();
-    final overdue =
-        await (_db.select(_db.scheduledSessionOccurrences)
-              ..where(
-                (table) =>
-                    table.effectiveLocalDate.isSmallerThanValue(today) &
-                    table.status.isIn(const ['planned', 'rescheduled']) &
-                    table.progressionDisposition.equals('pending'),
-              )
-              ..orderBy([
-                (table) => OrderingTerm(expression: table.effectiveLocalDate),
-                (table) => OrderingTerm(expression: table.programWeekOrdinal),
-                (table) => OrderingTerm(expression: table.sessionOrdinal),
-              ]))
-            .get();
+    final overdue = activeVersionId == null
+        ? <ScheduledSessionOccurrence>[]
+        : await (_db.select(_db.scheduledSessionOccurrences)
+                ..where(
+                  (table) =>
+                      table.programVersionId.equals(activeVersionId) &
+                      table.effectiveLocalDate.isSmallerThanValue(today) &
+                      table.status.isIn(const ['planned', 'rescheduled']) &
+                      table.progressionDisposition.equals('pending'),
+                )
+                ..orderBy([
+                  (table) => OrderingTerm(expression: table.effectiveLocalDate),
+                  (table) => OrderingTerm(expression: table.programWeekOrdinal),
+                  (table) => OrderingTerm(expression: table.sessionOrdinal),
+                ]))
+              .get();
     final nextRequiredIds = await _nextRequiredIds([
       ...range.map((row) => row.programVersionId),
       ...overdue.map((row) => row.programVersionId),
@@ -129,27 +189,43 @@ class CalendarReadRepository {
       nextRequiredIds: nextRequiredIds,
     );
     final byId = {for (final item in items) item.occurrence.id: item};
-    final settings = await (_db.select(
-      _db.trainingPlanSettings,
-    )..where((table) => table.id.equals(1))).getSingleOrNull();
-    String? activeProgramName;
-    if (settings?.activeProgramVersionId case final activeVersionId?) {
-      final version = await (_db.select(
-        _db.programVersions,
-      )..where((table) => table.id.equals(activeVersionId))).getSingleOrNull();
-      if (version != null) {
-        activeProgramName =
-            (await (_db.select(_db.programs)
-                      ..where((table) => table.id.equals(version.programId)))
-                    .getSingleOrNull())
-                ?.name;
-      }
+    final namedVersionIds = <String>{
+      ?settings?.activeProgramVersionId,
+      ?settings?.lastEndedProgramVersionId,
+    };
+    final namedVersions = namedVersionIds.isEmpty
+        ? const <ProgramVersion>[]
+        : await (_db.select(
+            _db.programVersions,
+          )..where((table) => table.id.isIn(namedVersionIds.toList()))).get();
+    final namedProgramIds = namedVersions
+        .map((version) => version.programId)
+        .toSet();
+    final namedPrograms = namedProgramIds.isEmpty
+        ? const <Program>[]
+        : await (_db.select(
+            _db.programs,
+          )..where((table) => table.id.isIn(namedProgramIds.toList()))).get();
+    final versionsById = {
+      for (final version in namedVersions) version.id: version,
+    };
+    final programsById = {
+      for (final program in namedPrograms) program.id: program,
+    };
+    String? nameForVersion(String? versionId) {
+      final version = versionId == null ? null : versionsById[versionId];
+      return version == null ? null : programsById[version.programId]?.name;
     }
+
     return CalendarReadSnapshot(
       rangeOccurrences: range.map((row) => byId[row.id]!).toList(),
       overdueOccurrences: overdue.map((row) => byId[row.id]!).toList(),
-      activeProgramVersionId: settings?.activeProgramVersionId,
-      activeProgramName: activeProgramName,
+      activeProgramVersionId: activeVersionId,
+      activeProgramName: nameForVersion(activeVersionId),
+      lastEndedProgramVersionId: settings?.lastEndedProgramVersionId,
+      lastEndedProgramName: nameForVersion(settings?.lastEndedProgramVersionId),
+      lastEndedOutcome: settings?.lastEndedOutcome,
+      lastEndedAtUtc: settings?.lastEndedAtUtc,
     );
   }
 
@@ -162,6 +238,7 @@ class CalendarReadRepository {
                 (table) =>
                     table.programVersionId.isIn(ids) &
                     table.repeatOrdinal.equals(0) &
+                    table.status.isIn(const ['planned', 'rescheduled']) &
                     table.progressionDisposition.equals('pending'),
               )
               ..orderBy([

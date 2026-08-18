@@ -10,13 +10,15 @@ class MainNavigationScaffold extends StatefulWidget {
   const MainNavigationScaffold({
     super.key,
     this.initialIndex = 0,
-    this.foodMealType = 'breakfast',
+    this.foodMealType,
     this.foodSelectedDate,
+    this.foodReturnToParentOnSave = false,
   });
 
   final int initialIndex;
-  final String foodMealType;
+  final String? foodMealType;
   final DateTime? foodSelectedDate;
+  final bool foodReturnToParentOnSave;
 
   @override
   State<MainNavigationScaffold> createState() => _MainNavigationScaffoldState();
@@ -44,7 +46,8 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   void didUpdateWidget(covariant MainNavigationScaffold oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.foodMealType != widget.foodMealType ||
-        oldWidget.foodSelectedDate != widget.foodSelectedDate) {
+        oldWidget.foodSelectedDate != widget.foodSelectedDate ||
+        oldWidget.foodReturnToParentOnSave != widget.foodReturnToParentOnSave) {
       if (_visitedIndexes.contains(2)) _screens[2] = _screenFor(2);
     }
     if (oldWidget.initialIndex != widget.initialIndex) {
@@ -60,9 +63,10 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   Widget _screenFor(int index) => switch (index) {
     0 => const DashboardScreen(),
     1 => const TrainingScreen(),
-    2 => FoodSearchScreen(
-      mealType: widget.foodMealType,
+    2 => _FoodTabRoot(
+      initialMealType: widget.foodMealType,
       selectedDate: widget.foodSelectedDate,
+      returnToParentOnSave: widget.foodReturnToParentOnSave,
     ),
     3 => const ProgressScreen(),
     _ => const SizedBox.shrink(),
@@ -75,6 +79,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
+          if (index != 2) FocusManager.instance.primaryFocus?.unfocus();
           setState(() {
             _currentIndex = index;
             _activateScreen(index);
@@ -109,4 +114,57 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       ),
     );
   }
+}
+
+/// Keeps Food Home mounted as the indexed destination while meal logging is
+/// presented as a child task. Explicit meal routes (for example Today quick
+/// add) enter the same child and may return to their external parent on exit.
+class _FoodTabRoot extends StatefulWidget {
+  const _FoodTabRoot({
+    required this.initialMealType,
+    required this.selectedDate,
+    required this.returnToParentOnSave,
+  });
+
+  final String? initialMealType;
+  final DateTime? selectedDate;
+  final bool returnToParentOnSave;
+
+  @override
+  State<_FoodTabRoot> createState() => _FoodTabRootState();
+}
+
+class _FoodTabRootState extends State<_FoodTabRoot> {
+  bool _openedInitialChild = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openInitialChild());
+  }
+
+  Future<void> _openInitialChild() async {
+    final mealType = widget.initialMealType;
+    if (_openedInitialChild || mealType == null || !mounted) return;
+    _openedInitialChild = true;
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => FoodSearchScreen(
+          mealType: mealType,
+          selectedDate: widget.selectedDate,
+          returnToParentOnSave: true,
+        ),
+      ),
+    );
+    if (mounted && widget.returnToParentOnSave) {
+      await Navigator.of(context).maybePop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FoodSearchScreen(
+    mealType: null,
+    selectedDate: widget.selectedDate,
+    returnToParentOnSave: false,
+  );
 }

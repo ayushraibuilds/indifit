@@ -379,6 +379,11 @@ class LoadTargetRecommendationService {
               request.evidence.recentWorkingSetCount != null,
           if (request.evidence.recentWorkingSetCount != null)
             'recentWorkingSetCount': request.evidence.recentWorkingSetCount,
+          if (selected != null) ...{
+            'previousLoadKg': selected.actualLoadKg,
+            'previousReps': selected.actualReps,
+            if (selected.actualRpe != null) 'previousRpe': selected.actualRpe,
+          },
           if (!prescription.hasRepRange && previousReps != null)
             'previousAchievedReps': previousReps,
         },

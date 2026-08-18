@@ -8,6 +8,7 @@ import 'nutrition_constraints.dart';
 import 'typed_quantities.dart';
 
 const int kNutritionConsumptionSnapshotContractVersion = 1;
+const int kNutritionConsumptionRetractionContractVersion = 1;
 
 class NutritionConsumptionError implements Exception {
   final String code;
@@ -119,6 +120,24 @@ class NutritionConsumptionLineage {
   };
 
   String get canonicalJson => jsonEncode(_canonicalizeJson(toJson()));
+
+  /// Whether this correction is the append-only marker that removes its
+  /// predecessor from effective consumer history.
+  ///
+  /// Retractions remain ordinary immutable snapshots underneath so the
+  /// existing backup graph and audit history preserve the command. Only the
+  /// typed repository may create this envelope.
+  bool get isRetraction {
+    final requestEvidence = evidence['request_evidence'];
+    final marker = requestEvidence is Map
+        ? requestEvidence['retraction']
+        : evidence['retraction'];
+    return marker is Map &&
+        marker['contract_version'] ==
+            kNutritionConsumptionRetractionContractVersion &&
+        marker['predecessor_snapshot_id'] == supersedesSnapshotId &&
+        marker['reason'] == correctionReason;
+  }
 
   factory NutritionConsumptionLineage.fromJson(Object? raw) {
     if (raw is! Map ||
@@ -452,6 +471,8 @@ class NutritionConsumptionSnapshot {
   });
 
   bool get isCorrection => lineage.supersedesSnapshotId != null;
+
+  bool get isRetraction => lineage.isRetraction;
 }
 
 class NutritionDailySnapshotTotals {

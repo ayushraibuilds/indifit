@@ -126,7 +126,7 @@ class _B02ActivityCreationScreenState
             children: [
               const Icon(Icons.check_circle_outline, size: 52),
               const SizedBox(height: 12),
-              const Text('Activity saved to typed history.'),
+              const Text('Activity saved to your history.'),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => Navigator.of(context).maybePop(),
@@ -150,7 +150,7 @@ class _B02ActivityCreationScreenState
         const ListTile(
           contentPadding: EdgeInsets.zero,
           leading: Icon(Icons.cloud_off_outlined),
-          title: Text('Offline-first typed activity'),
+          title: Text('Offline-first activity'),
           subtitle: Text(
             'Drafts are saved locally and can be recovered after restart.',
           ),
@@ -190,7 +190,7 @@ class _B02ActivityCreationScreenState
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
             labelText: 'Duration (seconds)',
-            helperText: 'Required for every typed modality',
+            helperText: 'Required',
           ),
         ),
         if (cardio) ...[
@@ -270,7 +270,7 @@ class _B02ActivityCreationScreenState
           child: FilledButton.icon(
             onPressed: _start,
             icon: const Icon(Icons.play_arrow),
-            label: const Text('Start typed draft'),
+            label: const Text('Start activity'),
           ),
         ),
       ],
@@ -287,7 +287,7 @@ class _B02ActivityCreationScreenState
           contentPadding: EdgeInsets.zero,
           leading: Icon(Icons.restore_outlined),
           title: Text('Draft recovered'),
-          subtitle: Text('Your typed fields are still local and editable.'),
+          subtitle: Text('Your entered details are still saved and editable.'),
         ),
         Card(
           child: ListTile(
@@ -390,14 +390,27 @@ class B02ActivityHistoryCard extends StatelessWidget {
         : detail is B02MobilitySessionDetail
         ? '${detail.durationSeconds}s · ${detail.style ?? 'style unknown'}'
         : '${record.durationSeconds}s';
+    // Consumer labels, not raw storage values ('running', 'healthImport').
+    final sourceLabel = record.isImported
+        ? 'Imported from Health'
+        : 'Logged in IndiFit';
     return Card(
       child: ListTile(
         leading: const Icon(Icons.history),
         title: Text(record.name),
         subtitle: Text(
-          '${record.activityType.dbValue} · $modality · ${record.source.dbValue}',
+          '${_activityLabel(record.activityType)} · $modality · $sourceLabel',
         ),
       ),
     );
   }
+
+  static String _activityLabel(B02ActivityType type) => switch (type) {
+    B02ActivityType.running => 'Running',
+    B02ActivityType.cycling => 'Cycling',
+    B02ActivityType.walking => 'Walking',
+    B02ActivityType.yoga => 'Yoga',
+    B02ActivityType.mobility => 'Mobility',
+    _ => type.dbValue,
+  };
 }
