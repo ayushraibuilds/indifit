@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/fixtures/exercise_display_muscles.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
@@ -74,28 +75,31 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     try {
       final repo = ref.read(workoutRepositoryProvider);
 
-      // Fuzzy search based on query
+      // Text search matches name, equipment, or any associated muscle in database
       final list = await repo.searchExercises(_searchController.text);
 
-      // Calculate counts for each muscle filter badge
+      // Calculate counts for each muscle filter badge using canonical PRIMARY display muscle.
+      // Under frozen product audit rules, category browsing is strictly governed by primary muscle.
       final Map<String, int> counts = {'All': list.length};
       for (final m in _muscleFilters) {
         if (m == 'All') continue;
         counts[m] = list
             .where(
-              (ex) => ex.muscleGroups.toLowerCase().contains(m.toLowerCase()),
+              (ex) => ExerciseDisplayMuscles.fromMuscleGroups(
+                ex.muscleGroups,
+              ).matchesPrimary(m),
             )
             .length;
       }
 
-      // Filter by muscle and equipment
+      // Filter by PRIMARY muscle category and equipment
       List<Exercise> filtered = list;
       if (_selectedMuscle != 'All') {
         filtered = filtered
             .where(
-              (ex) => ex.muscleGroups.toLowerCase().contains(
-                _selectedMuscle.toLowerCase(),
-              ),
+              (ex) => ExerciseDisplayMuscles.fromMuscleGroups(
+                ex.muscleGroups,
+              ).matchesPrimary(_selectedMuscle),
             )
             .toList();
       }
@@ -275,7 +279,14 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                       itemCount: _exercises.length,
                       itemBuilder: (context, index) {
                         final ex = _exercises[index];
-                        final muscles = ex.muscleGroups.split(',');
+                        final displayMuscles =
+                            ExerciseDisplayMuscles.fromMuscleGroups(
+                              ex.muscleGroups,
+                            );
+                        final muscleText = displayMuscles.all.join(', ');
+                        final subtitleText = muscleText.isNotEmpty
+                            ? '${ex.equipment} • $muscleText'
+                            : ex.equipment;
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8.0),
                           child: ListTile(
@@ -286,7 +297,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              '${ex.equipment} • ${muscles.join(', ')}',
+                              subtitleText,
                               style: const TextStyle(fontSize: 12),
                             ),
                             trailing: Icon(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/fixtures/exercise_display_muscles.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
@@ -16,11 +17,9 @@ class ExerciseDetailsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.b05Colors;
-    final muscles = exercise.muscleGroups
-        .split(',')
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .toList(growable: false);
+    final displayMuscles = ExerciseDisplayMuscles.fromMuscleGroups(
+      exercise.muscleGroups,
+    );
     final cues = exercise.formCues
         .split('\n')
         .map((value) => value.trim())
@@ -78,17 +77,15 @@ class ExerciseDetailsSheet extends ConsumerWidget {
             spacing: B05Layout.space8,
             runSpacing: B05Layout.space8,
             children: [
-              for (var index = 0; index < muscles.length; index++)
+              if (displayMuscles.hasPrimary)
                 Chip(
-                  avatar: Icon(
-                    index == 0
-                        ? Icons.star_outline_rounded
-                        : Icons.circle_outlined,
-                    size: 16,
-                  ),
-                  label: Text(
-                    '${muscles[index]} · ${index == 0 ? 'Primary' : 'Secondary'}',
-                  ),
+                  avatar: const Icon(Icons.star_outline_rounded, size: 16),
+                  label: Text('${displayMuscles.primary} · Primary'),
+                ),
+              for (final secondary in displayMuscles.secondary)
+                Chip(
+                  avatar: const Icon(Icons.circle_outlined, size: 16),
+                  label: Text('$secondary · Secondary'),
                 ),
               if (exercise.equipment.trim().isNotEmpty)
                 Chip(
