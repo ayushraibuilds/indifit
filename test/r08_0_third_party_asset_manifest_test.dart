@@ -9,7 +9,7 @@ import 'package:indifit/core/fixtures/exercise_identity_fixtures.dart';
 
 const _manifestPath = 'assets/third_party/asset_manifest.json';
 const _knownUuid = '089ec703-a25e-5b12-a39a-78b17ee33742';
-const _assetPath = 'assets/exercises/repdb/barbell-bench-press-start.webp';
+const _assetPath = 'assets/generated/repdb/barbell-bench-press-start.webp';
 late Set<String> _canonicalUuids;
 
 void main() {
@@ -23,42 +23,50 @@ void main() {
         .toSet();
   });
 
-  test(
-    'checked-in provenance manifest validates with no production assets',
-    () {
-      final manifest = B05ThirdPartyAssetManifest.fromJson(baseJson);
+  test('checked-in provenance manifest exposes approved RepDB asset sets', () {
+    final manifest = B05ThirdPartyAssetManifest.fromJson(baseJson);
 
-      expect(manifest.sources, hasLength(8));
-      expect(manifest.assets, isEmpty);
-      expect(
-        manifest.sources
-            .singleWhere((source) => source.sourceKey == 'repdb_free_tier')
-            .immutableCommit,
-        '045845b61e4aefd9e684fa84518b84c665ea3cd3',
-      );
-      expect(
-        manifest.sources
-            .singleWhere((source) => source.sourceKey == 'musclemap')
-            .tag,
-        '1.6.4',
-      );
-      final repdb = manifest.sources.singleWhere(
-        (source) => source.sourceKey == 'repdb_free_tier',
-      );
-      expect(repdb.attribution.required, isTrue);
-      expect(repdb.attribution.text, 'Exercise data by RepDB (repdb.co)');
-      expect(repdb.attribution.url, 'https://repdb.co');
+    expect(manifest.sources, hasLength(8));
+    expect(manifest.assets, hasLength(59));
+    expect(manifest.visualAssetSets, hasLength(30));
+    expect(
+      manifest.visualAssetSets
+          .expand((set) => set.canonicalExerciseUuids)
+          .toSet(),
+      hasLength(120),
+    );
+    expect(
+      manifest.sources
+          .singleWhere((source) => source.sourceKey == 'repdb_free_tier')
+          .immutableCommit,
+      '045845b61e4aefd9e684fa84518b84c665ea3cd3',
+    );
+    expect(
+      manifest.sources
+          .singleWhere((source) => source.sourceKey == 'musclemap')
+          .tag,
+      '1.6.4',
+    );
+    final repdb = manifest.sources.singleWhere(
+      (source) => source.sourceKey == 'repdb_free_tier',
+    );
+    expect(repdb.attribution.required, isTrue);
+    expect(repdb.attribution.text, 'Exercise data by RepDB (repdb.co)');
+    expect(repdb.attribution.url, 'https://repdb.co');
 
-      final openGym = manifest.sources.singleWhere(
-        (source) => source.sourceKey == 'opengym',
-      );
-      expect(openGym.pinStatus, 'unavailable_at_acquisition');
-      expect(openGym.immutableCommit, isNull);
-      expect(openGym.usageClassification, 'prohibited_production_content');
+    final openGym = manifest.sources.singleWhere(
+      (source) => source.sourceKey == 'opengym',
+    );
+    expect(openGym.pinStatus, 'unavailable_at_acquisition');
+    expect(openGym.immutableCommit, isNull);
+    expect(openGym.usageClassification, 'prohibited_production_content');
 
-      expect(() => _validate(manifest), returnsNormally);
-    },
-  );
+    expect(() => manifest.validateStructure(), returnsNormally);
+    expect(
+      () => _validate(manifest),
+      _throwsCode('third_party_missing_asset_file'),
+    );
+  });
 
   test('floating or malformed production source revision fails closed', () {
     final json = _copy(baseJson);
@@ -170,7 +178,7 @@ void main() {
         assetBytes: {_assetPath: bytes},
         managedProductionFiles: {
           _assetPath,
-          'assets/exercises/repdb/unmanifested.webp',
+          'assets/generated/repdb/unmanifested.webp',
         },
       ),
       _throwsCode('third_party_unmanifested_production_file'),
@@ -195,7 +203,9 @@ void main() {
   test('missing or malformed license checksum fails closed', () {
     final missingChecksum = _copy(baseJson);
     final repdbSource = _source(missingChecksum, 'repdb_free_tier');
-    (repdbSource['source_code_license'] as Map<String, dynamic>).remove('license_sha256');
+    (repdbSource['source_code_license'] as Map<String, dynamic>).remove(
+      'license_sha256',
+    );
     expect(
       () => B05ThirdPartyAssetManifest.fromJson(missingChecksum),
       _throwsCode('third_party_license_missing_checksum'),
@@ -203,7 +213,9 @@ void main() {
 
     final malformedChecksum = _copy(baseJson);
     final repdbSource2 = _source(malformedChecksum, 'repdb_free_tier');
-    (repdbSource2['source_code_license'] as Map<String, dynamic>)['license_sha256'] = 'invalid_sha';
+    (repdbSource2['source_code_license']
+            as Map<String, dynamic>)['license_sha256'] =
+        'invalid_sha';
     expect(
       () => B05ThirdPartyAssetManifest.fromJson(malformedChecksum),
       _throwsCode('third_party_license_checksum_format'),
@@ -211,7 +223,8 @@ void main() {
 
     final unneededChecksum = _copy(baseJson);
     final openGymSource = _source(unneededChecksum, 'opengym');
-    (openGymSource['source_code_license'] as Map<String, dynamic>)['license_sha256'] =
+    (openGymSource['source_code_license']
+            as Map<String, dynamic>)['license_sha256'] =
         'sha256:9737baaaa4c2b89767b0f202f09ed032c21b8f404d05e6192bd5ff1b2f95bfe5';
     expect(
       () => B05ThirdPartyAssetManifest.fromJson(unneededChecksum),

@@ -1,8 +1,8 @@
 {
-  "contract_version": 1,
-  "manifest_id": "indifit-r08-third-party-assets-v1",
+  "contract_version": 2,
+  "manifest_id": "indifit-r08-third-party-assets-v2",
   "managed_production_roots": [
-    "assets/exercises/repdb/",
+    "assets/generated/repdb/",
     "assets/third_party/geometry/",
     "assets/third_party/icons/"
   ],
@@ -432,5 +432,1599 @@
       "open_questions": []
     }
   ],
-  "assets": []
+  "assets": [
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:bench-press:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:bench-press",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "bench-press",
+    "pinned_external_exercise_id": "bench-press",
+    "source_relative_path": "images/flat/bench-press-start.webp",
+    "local_destination": "assets/generated/repdb/bench-press-start.webp",
+    "sha256": "sha256:a14c6cf3187236330740d9a6ad3bc2cc5170d447f1ca657ad6ac5545d3cb1571",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-01",
+    "canonical_exercise_uuids": [
+      "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "b70e7a1c-ec87-578f-bfeb-8fbdbceaf2ca",
+      "f5d1ceeb-fe66-51f7-bd58-6c3e9874a969",
+      "f9c0eb18-fc35-515c-bf18-f9bf6e1e1a5f"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:bench-press:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:bench-press",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "bench-press",
+    "pinned_external_exercise_id": "bench-press",
+    "source_relative_path": "images/flat/bench-press-peak.webp",
+    "local_destination": "assets/generated/repdb/bench-press-peak.webp",
+    "sha256": "sha256:8d1a88d3e497c87ee3d27840fa496c3e7a19a4f64c52521673073a5f99b8b77f",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-01",
+    "canonical_exercise_uuids": [
+      "089ec703-a25e-5b12-a39a-78b17ee33742",
+      "b70e7a1c-ec87-578f-bfeb-8fbdbceaf2ca",
+      "f5d1ceeb-fe66-51f7-bd58-6c3e9874a969",
+      "f9c0eb18-fc35-515c-bf18-f9bf6e1e1a5f"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:incline-db-press:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:incline-db-press",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "incline-db-press",
+    "pinned_external_exercise_id": "incline-db-press",
+    "source_relative_path": "images/flat/incline-db-press-start.webp",
+    "local_destination": "assets/generated/repdb/incline-db-press-start.webp",
+    "sha256": "sha256:6d0b56825dc11ab72a74ff8313438f8e05556bc0c6b8d6d1b6da98425e585292",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-02",
+    "canonical_exercise_uuids": [
+      "256fb9bd-77a8-5ea5-ab07-cb10d65bce67",
+      "2d6bbfa9-7c25-5463-b8c2-4a5eec542dd7",
+      "c3c0efc1-7d1a-512c-afbf-aa58832a8435",
+      "6dbfc969-9524-5d55-8dd2-8eb99a9b708d"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:incline-db-press:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:incline-db-press",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "incline-db-press",
+    "pinned_external_exercise_id": "incline-db-press",
+    "source_relative_path": "images/flat/incline-db-press-peak.webp",
+    "local_destination": "assets/generated/repdb/incline-db-press-peak.webp",
+    "sha256": "sha256:a991276652817062d451334f42ddf30efe3bca81d181abf9056287058492283b",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-02",
+    "canonical_exercise_uuids": [
+      "256fb9bd-77a8-5ea5-ab07-cb10d65bce67",
+      "2d6bbfa9-7c25-5463-b8c2-4a5eec542dd7",
+      "c3c0efc1-7d1a-512c-afbf-aa58832a8435",
+      "6dbfc969-9524-5d55-8dd2-8eb99a9b708d"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:dips:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:dips",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "dips",
+    "pinned_external_exercise_id": "dips",
+    "source_relative_path": "images/flat/dips-start.webp",
+    "local_destination": "assets/generated/repdb/dips-start.webp",
+    "sha256": "sha256:3702e16a23affd7eabc7e0cff8404d42bd42b02c5c89619b65816d8fcfc142e3",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-04",
+    "canonical_exercise_uuids": [
+      "74aa39bb-ff5a-5ff7-8cbe-e75878af3cf3",
+      "8fe2c474-0f11-5d9c-be8a-c60318ce992e",
+      "2fa5be19-f538-5182-82dc-df4c0840cb8f",
+      "52495689-5ee4-59e5-b1a7-640a45fd8100"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:dips:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:dips",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "dips",
+    "pinned_external_exercise_id": "dips",
+    "source_relative_path": "images/flat/dips-peak.webp",
+    "local_destination": "assets/generated/repdb/dips-peak.webp",
+    "sha256": "sha256:b09d41d7e694ded942d70d08cb771ee2ce088cf065308ad23caa077ae9c937e7",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-04",
+    "canonical_exercise_uuids": [
+      "74aa39bb-ff5a-5ff7-8cbe-e75878af3cf3",
+      "8fe2c474-0f11-5d9c-be8a-c60318ce992e",
+      "2fa5be19-f538-5182-82dc-df4c0840cb8f",
+      "52495689-5ee4-59e5-b1a7-640a45fd8100"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:push-up:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:push-up",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "push-up",
+    "pinned_external_exercise_id": "push-up",
+    "source_relative_path": "images/flat/push-up-start.webp",
+    "local_destination": "assets/generated/repdb/push-up-start.webp",
+    "sha256": "sha256:55e3ebf775129451c97ccfc191e50cfb2c0a51c016bcac401477f504624554e6",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-05",
+    "canonical_exercise_uuids": [
+      "91fe3e17-b76e-57b1-b4ef-bc615cb38c5d",
+      "b20a3a7f-ae82-5555-89f5-19ae1fa3c749",
+      "bfdfef59-a292-5ee3-a5aa-c3a5e845c43d",
+      "c01c0c9e-561b-53c8-aa5e-26fbd0eb4e5e"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:push-up:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:push-up",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "push-up",
+    "pinned_external_exercise_id": "push-up",
+    "source_relative_path": "images/flat/push-up-peak.webp",
+    "local_destination": "assets/generated/repdb/push-up-peak.webp",
+    "sha256": "sha256:c11e6746ea723d9e5699f149eb8903172118a44c7d435a0d30551a4732a87ef3",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-05",
+    "canonical_exercise_uuids": [
+      "91fe3e17-b76e-57b1-b4ef-bc615cb38c5d",
+      "b20a3a7f-ae82-5555-89f5-19ae1fa3c749",
+      "bfdfef59-a292-5ee3-a5aa-c3a5e845c43d",
+      "c01c0c9e-561b-53c8-aa5e-26fbd0eb4e5e"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:cable-fly:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:cable-fly",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "cable-fly",
+    "pinned_external_exercise_id": "cable-fly",
+    "source_relative_path": "images/flat/cable-fly-start.webp",
+    "local_destination": "assets/generated/repdb/cable-fly-start.webp",
+    "sha256": "sha256:b578214528bbd0e185e1b4cfbbcbd480c919e0df5b08ef1f0b975db3f902ec9d",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-06",
+    "canonical_exercise_uuids": [
+      "d1ea21fb-ca2a-5fe4-b529-1a48c66e2c3e",
+      "dbafb9d3-d2eb-5460-a2ef-98cf1eb19bc5",
+      "8470a7d9-c020-5fe8-ba68-d0bfebe706e2",
+      "61bc7ff5-e8d9-5e92-ba7d-fe3910c22d4f"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:cable-fly:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:cable-fly",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "cable-fly",
+    "pinned_external_exercise_id": "cable-fly",
+    "source_relative_path": "images/flat/cable-fly-peak.webp",
+    "local_destination": "assets/generated/repdb/cable-fly-peak.webp",
+    "sha256": "sha256:38506016c2938c335c749aa7b04f2cbe4a5dd9082db12f9d856f82cb5c677fa8",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-06",
+    "canonical_exercise_uuids": [
+      "d1ea21fb-ca2a-5fe4-b529-1a48c66e2c3e",
+      "dbafb9d3-d2eb-5460-a2ef-98cf1eb19bc5",
+      "8470a7d9-c020-5fe8-ba68-d0bfebe706e2",
+      "61bc7ff5-e8d9-5e92-ba7d-fe3910c22d4f"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:deadlift:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:deadlift",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "deadlift",
+    "pinned_external_exercise_id": "deadlift",
+    "source_relative_path": "images/flat/deadlift-start.webp",
+    "local_destination": "assets/generated/repdb/deadlift-start.webp",
+    "sha256": "sha256:68a68c1acb151c3f58e54c072cb0693ecc980fe66be5eb285aa1a0b1534dfb6d",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-07",
+    "canonical_exercise_uuids": [
+      "b102bfa4-6cc5-5e60-accb-82a1ae39b8bc",
+      "7fd950ce-79e5-5558-86d7-fc197b1026ea",
+      "18b6bdf9-9941-5bb1-9369-1c8d73f41560",
+      "3bc421ec-ab46-5c7c-a9fb-ce137b9bf737"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:deadlift:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:deadlift",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "deadlift",
+    "pinned_external_exercise_id": "deadlift",
+    "source_relative_path": "images/flat/deadlift-peak.webp",
+    "local_destination": "assets/generated/repdb/deadlift-peak.webp",
+    "sha256": "sha256:f0909401d6c8a6c1f681e76c2985f986a675653012e6edb078925547a51a4e73",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-07",
+    "canonical_exercise_uuids": [
+      "b102bfa4-6cc5-5e60-accb-82a1ae39b8bc",
+      "7fd950ce-79e5-5558-86d7-fc197b1026ea",
+      "18b6bdf9-9941-5bb1-9369-1c8d73f41560",
+      "3bc421ec-ab46-5c7c-a9fb-ce137b9bf737"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:lat-pulldown:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:lat-pulldown",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "lat-pulldown",
+    "pinned_external_exercise_id": "lat-pulldown",
+    "source_relative_path": "images/flat/lat-pulldown-start.webp",
+    "local_destination": "assets/generated/repdb/lat-pulldown-start.webp",
+    "sha256": "sha256:4cb61a49bfacf947b81d86c8f6c51735bcf5e7c073297a3cb67e9a71d59292a6",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-08",
+    "canonical_exercise_uuids": [
+      "30dcad52-0a4d-55a4-a33b-e8923f85a51a",
+      "924f6bfe-7c00-5dca-b6a0-9bbd38771b0f",
+      "a9424a05-8453-52ea-aee4-b94ae2a2fbfe",
+      "aa3707c7-fc1b-51cf-987c-7fd002d64e5e"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:lat-pulldown:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:lat-pulldown",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "lat-pulldown",
+    "pinned_external_exercise_id": "lat-pulldown",
+    "source_relative_path": "images/flat/lat-pulldown-peak.webp",
+    "local_destination": "assets/generated/repdb/lat-pulldown-peak.webp",
+    "sha256": "sha256:5045afd713161db9944719f7168c492ca7d9a822bc54c9cd23b085b3c904810c",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-08",
+    "canonical_exercise_uuids": [
+      "30dcad52-0a4d-55a4-a33b-e8923f85a51a",
+      "924f6bfe-7c00-5dca-b6a0-9bbd38771b0f",
+      "a9424a05-8453-52ea-aee4-b94ae2a2fbfe",
+      "aa3707c7-fc1b-51cf-987c-7fd002d64e5e"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:barbell-row:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:barbell-row",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "barbell-row",
+    "pinned_external_exercise_id": "barbell-row",
+    "source_relative_path": "images/flat/barbell-row-start.webp",
+    "local_destination": "assets/generated/repdb/barbell-row-start.webp",
+    "sha256": "sha256:c16991dc8f4ff4cf505237c9236f7fdd13f69911e478ba61ecf02a90ec744d94",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-09",
+    "canonical_exercise_uuids": [
+      "84011c13-4413-5779-8e7c-64f6a7860c68",
+      "325be024-0a2a-5752-81c3-117d833ca80b",
+      "82bc5ef4-2fcc-5752-8c52-3f407263cacd",
+      "0f26c6a6-7e5f-5099-aa2e-b8ee59d2c99e"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:barbell-row:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:barbell-row",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "barbell-row",
+    "pinned_external_exercise_id": "barbell-row",
+    "source_relative_path": "images/flat/barbell-row-peak.webp",
+    "local_destination": "assets/generated/repdb/barbell-row-peak.webp",
+    "sha256": "sha256:20a9acc8e7f5ef5015efafbf9c6bc9c0fc1731e4a69c795ab64775717e0fe054",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-09",
+    "canonical_exercise_uuids": [
+      "84011c13-4413-5779-8e7c-64f6a7860c68",
+      "325be024-0a2a-5752-81c3-117d833ca80b",
+      "82bc5ef4-2fcc-5752-8c52-3f407263cacd",
+      "0f26c6a6-7e5f-5099-aa2e-b8ee59d2c99e"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:single-arm-db-row:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:single-arm-db-row",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "single-arm-db-row",
+    "pinned_external_exercise_id": "single-arm-db-row",
+    "source_relative_path": "images/flat/single-arm-db-row-start.webp",
+    "local_destination": "assets/generated/repdb/single-arm-db-row-start.webp",
+    "sha256": "sha256:e0d787511325cb1e77d14bad496620f8f2bb8a21a9811aa19139b26080cf4434",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-10",
+    "canonical_exercise_uuids": [
+      "b353d5f5-6116-5410-b6b3-50b2d78aea57",
+      "c920003d-fd67-5632-af80-571261d344d6",
+      "ecdbffb9-e1c9-516a-a217-cf42bad1a131",
+      "11191d4f-9d7c-5501-9d1e-6dc1e172273c"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:single-arm-db-row:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:single-arm-db-row",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "single-arm-db-row",
+    "pinned_external_exercise_id": "single-arm-db-row",
+    "source_relative_path": "images/flat/single-arm-db-row-peak.webp",
+    "local_destination": "assets/generated/repdb/single-arm-db-row-peak.webp",
+    "sha256": "sha256:2b02e7108c14fe6b77f298d6bff65fdb905db9bc377cd18488550b0fccf954b0",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-10",
+    "canonical_exercise_uuids": [
+      "b353d5f5-6116-5410-b6b3-50b2d78aea57",
+      "c920003d-fd67-5632-af80-571261d344d6",
+      "ecdbffb9-e1c9-516a-a217-cf42bad1a131",
+      "11191d4f-9d7c-5501-9d1e-6dc1e172273c"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:pull-up:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:pull-up",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "pull-up",
+    "pinned_external_exercise_id": "pull-up",
+    "source_relative_path": "images/flat/pull-up-start.webp",
+    "local_destination": "assets/generated/repdb/pull-up-start.webp",
+    "sha256": "sha256:59f142697771f71a5070e3a357c22b001d6f172e5cb74247f949410513418514",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-11",
+    "canonical_exercise_uuids": [
+      "4e17e360-9f97-5cd4-a68c-c9dc1dcd7724",
+      "15b91f5f-c007-5afa-98c0-8e2154eb84b6",
+      "96fa8741-f9d7-51a8-b9a6-8276c0d48e9a",
+      "f1fd96e9-e59c-54dd-ab83-9ee1ad3747be"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:pull-up:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:pull-up",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "pull-up",
+    "pinned_external_exercise_id": "pull-up",
+    "source_relative_path": "images/flat/pull-up-peak.webp",
+    "local_destination": "assets/generated/repdb/pull-up-peak.webp",
+    "sha256": "sha256:f4c8c624ba27f8f9efd969cf066f24ef388e3ed68dcd287f55927d8b50a9aace",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-11",
+    "canonical_exercise_uuids": [
+      "4e17e360-9f97-5cd4-a68c-c9dc1dcd7724",
+      "15b91f5f-c007-5afa-98c0-8e2154eb84b6",
+      "96fa8741-f9d7-51a8-b9a6-8276c0d48e9a",
+      "f1fd96e9-e59c-54dd-ab83-9ee1ad3747be"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:wide-grip-seated-cable-row:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:wide-grip-seated-cable-row",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "wide-grip-seated-cable-row",
+    "pinned_external_exercise_id": "wide-grip-seated-cable-row",
+    "source_relative_path": "images/flat/wide-grip-seated-cable-row-start.webp",
+    "local_destination": "assets/generated/repdb/wide-grip-seated-cable-row-start.webp",
+    "sha256": "sha256:586ad6dfb351d9d093ec38ab568b5920d342b34b4786f97ab9c24e78aee56dd4",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-12",
+    "canonical_exercise_uuids": [
+      "9fae7317-b8a5-5f5c-ba93-9d1611fb21dc",
+      "a9996115-566e-5d9a-b7b4-2634ffe5e97c",
+      "e78325b4-b36a-5bf3-a6a8-c7e5eecb1066",
+      "916b7eb0-fa0c-5e4c-b7e9-57635901091f"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:wide-grip-seated-cable-row:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:wide-grip-seated-cable-row",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "wide-grip-seated-cable-row",
+    "pinned_external_exercise_id": "wide-grip-seated-cable-row",
+    "source_relative_path": "images/flat/wide-grip-seated-cable-row-peak.webp",
+    "local_destination": "assets/generated/repdb/wide-grip-seated-cable-row-peak.webp",
+    "sha256": "sha256:fc4e5efaf7b3b4080aeff2bf1f5c2abf544f5b5ef011b0ddf0a4b3a9f9810e10",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-12",
+    "canonical_exercise_uuids": [
+      "9fae7317-b8a5-5f5c-ba93-9d1611fb21dc",
+      "a9996115-566e-5d9a-b7b4-2634ffe5e97c",
+      "e78325b4-b36a-5bf3-a6a8-c7e5eecb1066",
+      "916b7eb0-fa0c-5e4c-b7e9-57635901091f"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:squat:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:squat",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "squat",
+    "pinned_external_exercise_id": "squat",
+    "source_relative_path": "images/flat/squat-start.webp",
+    "local_destination": "assets/generated/repdb/squat-start.webp",
+    "sha256": "sha256:e39e3084f50617552f45ccb03753fc618e47c03a2da2b139a34aaf07f9bbe99f",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-13",
+    "canonical_exercise_uuids": [
+      "d3b5ab04-74f6-5155-9621-50238644eeda",
+      "73d7db9e-67f2-5311-a106-31bca1914a95",
+      "3bf3d06e-5e1d-5d47-b05f-0b954ec89de9",
+      "1b4fa856-03b8-5c6b-81ca-8df9b13721d4"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:squat:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:squat",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "squat",
+    "pinned_external_exercise_id": "squat",
+    "source_relative_path": "images/flat/squat-peak.webp",
+    "local_destination": "assets/generated/repdb/squat-peak.webp",
+    "sha256": "sha256:d6913ea6c3df9962f1686e693b6dbe4edc19e26f90fa49c4cb46df400825dba2",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-13",
+    "canonical_exercise_uuids": [
+      "d3b5ab04-74f6-5155-9621-50238644eeda",
+      "73d7db9e-67f2-5311-a106-31bca1914a95",
+      "3bf3d06e-5e1d-5d47-b05f-0b954ec89de9",
+      "1b4fa856-03b8-5c6b-81ca-8df9b13721d4"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-press:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-press",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "leg-press",
+    "pinned_external_exercise_id": "leg-press",
+    "source_relative_path": "images/flat/leg-press-start.webp",
+    "local_destination": "assets/generated/repdb/leg-press-start.webp",
+    "sha256": "sha256:68c7769b023cab2ffd3d5fd1877fc7d2b1d102f9a1b0412ae67f9cf412f38dd2",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-14",
+    "canonical_exercise_uuids": [
+      "081ed879-f46b-592a-8982-345f0f01dd3f",
+      "1b692ec8-40d9-53e5-a7dd-47af7606d42b",
+      "d167dea0-e52d-59dd-9ad9-1c597bbf65ab",
+      "26ce5ae7-2f08-55a2-b015-c60ae6307d3b"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-press:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-press",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "leg-press",
+    "pinned_external_exercise_id": "leg-press",
+    "source_relative_path": "images/flat/leg-press-peak.webp",
+    "local_destination": "assets/generated/repdb/leg-press-peak.webp",
+    "sha256": "sha256:2115ffe5c1363ad8de2b4410ef20ce43aa4b4959dcd2fb77de1579772c9c49ae",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-14",
+    "canonical_exercise_uuids": [
+      "081ed879-f46b-592a-8982-345f0f01dd3f",
+      "1b692ec8-40d9-53e5-a7dd-47af7606d42b",
+      "d167dea0-e52d-59dd-9ad9-1c597bbf65ab",
+      "26ce5ae7-2f08-55a2-b015-c60ae6307d3b"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:romanian-deadlift:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:romanian-deadlift",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "romanian-deadlift",
+    "pinned_external_exercise_id": "romanian-deadlift",
+    "source_relative_path": "images/flat/romanian-deadlift-start.webp",
+    "local_destination": "assets/generated/repdb/romanian-deadlift-start.webp",
+    "sha256": "sha256:5385feab2763a9d09e590f2f81e04fb694ca2bd9eeacfd55fb1b0d05b1cf9677",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-15",
+    "canonical_exercise_uuids": [
+      "7887c839-1b15-5005-a0c9-b942842548e3",
+      "8f4249e1-62c9-50be-a30c-e5f90b0b61ff",
+      "5742f3b8-9595-591c-a042-bc11a162840c",
+      "ccfda1c6-c811-538c-89cf-be67fa8fe932"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:romanian-deadlift:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:romanian-deadlift",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "romanian-deadlift",
+    "pinned_external_exercise_id": "romanian-deadlift",
+    "source_relative_path": "images/flat/romanian-deadlift-peak.webp",
+    "local_destination": "assets/generated/repdb/romanian-deadlift-peak.webp",
+    "sha256": "sha256:88602d0076e4401a13037daf77faa3482731f7e11c876b099704b0d9e0b11553",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-15",
+    "canonical_exercise_uuids": [
+      "7887c839-1b15-5005-a0c9-b942842548e3",
+      "8f4249e1-62c9-50be-a30c-e5f90b0b61ff",
+      "5742f3b8-9595-591c-a042-bc11a162840c",
+      "ccfda1c6-c811-538c-89cf-be67fa8fe932"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-extension:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-extension",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "leg-extension",
+    "pinned_external_exercise_id": "leg-extension",
+    "source_relative_path": "images/flat/leg-extension-start.webp",
+    "local_destination": "assets/generated/repdb/leg-extension-start.webp",
+    "sha256": "sha256:97c34b7bbd7c3278bff9b8fb5e80263f5e9254e567f8068833d611d67318b030",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-16",
+    "canonical_exercise_uuids": [
+      "568fcfd9-bb09-5299-a898-801e93216770",
+      "7c25a9f3-00af-5e09-b667-a6f9d9c024e2",
+      "56feb751-efbb-5302-902d-940d45697261",
+      "e87b0d6a-0a2c-595b-b241-89fc0d6f32fb"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-extension:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:leg-extension",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "leg-extension",
+    "pinned_external_exercise_id": "leg-extension",
+    "source_relative_path": "images/flat/leg-extension-peak.webp",
+    "local_destination": "assets/generated/repdb/leg-extension-peak.webp",
+    "sha256": "sha256:04f79670ee65dd0e3ae710221942c2f3e1b27b696516ce87c8936c32539d4acc",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-16",
+    "canonical_exercise_uuids": [
+      "568fcfd9-bb09-5299-a898-801e93216770",
+      "7c25a9f3-00af-5e09-b667-a6f9d9c024e2",
+      "56feb751-efbb-5302-902d-940d45697261",
+      "e87b0d6a-0a2c-595b-b241-89fc0d6f32fb"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:ohp:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:ohp",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "ohp",
+    "pinned_external_exercise_id": "ohp",
+    "source_relative_path": "images/flat/ohp-start.webp",
+    "local_destination": "assets/generated/repdb/ohp-start.webp",
+    "sha256": "sha256:4d7cd73c2a1cc1f4312b312bb1e08b83cd7393c47b85a47aa2b64d96539e9cdb",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-20",
+    "canonical_exercise_uuids": [
+      "d2674149-5f1c-529b-9e3e-136fef2d8933",
+      "93e0d927-843c-55e1-aa47-39071e715a63",
+      "209a82cb-2a0f-5905-8d1a-a35cf35945fb",
+      "1f05a67e-8cc2-5b02-a6b9-76bee46e3beb"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:ohp:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:ohp",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "ohp",
+    "pinned_external_exercise_id": "ohp",
+    "source_relative_path": "images/flat/ohp-peak.webp",
+    "local_destination": "assets/generated/repdb/ohp-peak.webp",
+    "sha256": "sha256:896371a20c1d8c3ed929a79360adfca2fc76248cdcf7746a610c14115e5bb76e",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-20",
+    "canonical_exercise_uuids": [
+      "d2674149-5f1c-529b-9e3e-136fef2d8933",
+      "93e0d927-843c-55e1-aa47-39071e715a63",
+      "209a82cb-2a0f-5905-8d1a-a35cf35945fb",
+      "1f05a67e-8cc2-5b02-a6b9-76bee46e3beb"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:seated-db-press:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:seated-db-press",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "seated-db-press",
+    "pinned_external_exercise_id": "seated-db-press",
+    "source_relative_path": "images/flat/seated-db-press-start.webp",
+    "local_destination": "assets/generated/repdb/seated-db-press-start.webp",
+    "sha256": "sha256:5e946e697771645023bc24ad9483a99f7d1673e792c3c436a276dc60c44442f4",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-21",
+    "canonical_exercise_uuids": [
+      "37088aa5-6989-5241-8ad9-23f1687a9435",
+      "1976abfd-1c4a-5d9c-8788-2f86ee8f1b61",
+      "e6d19944-fd95-5213-9bcb-89b1cc507ab4",
+      "ea431a7f-19b8-5e5e-9e4c-da6298f4c50e"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:seated-db-press:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:seated-db-press",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "seated-db-press",
+    "pinned_external_exercise_id": "seated-db-press",
+    "source_relative_path": "images/flat/seated-db-press-peak.webp",
+    "local_destination": "assets/generated/repdb/seated-db-press-peak.webp",
+    "sha256": "sha256:7edc80e11acf42ed286bf7d62708ea105b2aea6b3abf90a5eb3ce6551b39b43b",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-21",
+    "canonical_exercise_uuids": [
+      "37088aa5-6989-5241-8ad9-23f1687a9435",
+      "1976abfd-1c4a-5d9c-8788-2f86ee8f1b61",
+      "e6d19944-fd95-5213-9bcb-89b1cc507ab4",
+      "ea431a7f-19b8-5e5e-9e4c-da6298f4c50e"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:lateral-raise:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:lateral-raise",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "lateral-raise",
+    "pinned_external_exercise_id": "lateral-raise",
+    "source_relative_path": "images/flat/lateral-raise-start.webp",
+    "local_destination": "assets/generated/repdb/lateral-raise-start.webp",
+    "sha256": "sha256:6993bfa0e16b060901792e7500b9e5481f15e93a24c3f7fc7c733316de6b6e2e",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-22",
+    "canonical_exercise_uuids": [
+      "c6422f26-c3ca-5a2b-9796-e4a3c17d1563",
+      "5a039bbb-5edf-50a9-bbb5-3f349555689d",
+      "0fa6d488-a6a9-56e0-ad16-401162373b19",
+      "b095c880-f806-5b29-a2e0-300632a48796"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:lateral-raise:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:lateral-raise",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "lateral-raise",
+    "pinned_external_exercise_id": "lateral-raise",
+    "source_relative_path": "images/flat/lateral-raise-peak.webp",
+    "local_destination": "assets/generated/repdb/lateral-raise-peak.webp",
+    "sha256": "sha256:65f3e3180a2ff014664e485266032beb75d336af89998ee526941008bb58306b",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-22",
+    "canonical_exercise_uuids": [
+      "c6422f26-c3ca-5a2b-9796-e4a3c17d1563",
+      "5a039bbb-5edf-50a9-bbb5-3f349555689d",
+      "0fa6d488-a6a9-56e0-ad16-401162373b19",
+      "b095c880-f806-5b29-a2e0-300632a48796"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:dumbbell-front-raise:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:dumbbell-front-raise",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "dumbbell-front-raise",
+    "pinned_external_exercise_id": "dumbbell-front-raise",
+    "source_relative_path": "images/flat/dumbbell-front-raise-start.webp",
+    "local_destination": "assets/generated/repdb/dumbbell-front-raise-start.webp",
+    "sha256": "sha256:bc0ada2f3dde4b113c0e2eab3382120bccf97971cd8db5df808b328abc038b8c",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-23",
+    "canonical_exercise_uuids": [
+      "7acd7ccb-01ec-5c3a-80c8-7797efcd3302",
+      "7834b7ff-ccfb-5d3b-b06a-0d36f1621841",
+      "e3003cca-416b-599f-a691-c2d976688108",
+      "d095fe23-fbe7-5944-a9e9-b244cc6c52ce"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:dumbbell-front-raise:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:dumbbell-front-raise",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "dumbbell-front-raise",
+    "pinned_external_exercise_id": "dumbbell-front-raise",
+    "source_relative_path": "images/flat/dumbbell-front-raise-peak.webp",
+    "local_destination": "assets/generated/repdb/dumbbell-front-raise-peak.webp",
+    "sha256": "sha256:4d70c650923be420a3d2ea896d850c5e9215732a4223e2c7670b21532f7f6775",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-23",
+    "canonical_exercise_uuids": [
+      "7acd7ccb-01ec-5c3a-80c8-7797efcd3302",
+      "7834b7ff-ccfb-5d3b-b06a-0d36f1621841",
+      "e3003cca-416b-599f-a691-c2d976688108",
+      "d095fe23-fbe7-5944-a9e9-b244cc6c52ce"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:face-pull:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:face-pull",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "face-pull",
+    "pinned_external_exercise_id": "face-pull",
+    "source_relative_path": "images/flat/face-pull-start.webp",
+    "local_destination": "assets/generated/repdb/face-pull-start.webp",
+    "sha256": "sha256:49cdf614803a02e4b4f9d288706b0ddaceffbee5a6fba489a1cc49cbc0963dc1",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-24",
+    "canonical_exercise_uuids": [
+      "5e5620d2-4170-5f2a-bd3d-a1c0070480c9",
+      "b8dbb448-b55b-524a-94e8-b485abc563db",
+      "f76c4d8d-6b3f-5ac7-8589-1dedba951634",
+      "84e64439-e26f-5ad4-80ab-587f29ff1a74"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:face-pull:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:face-pull",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "face-pull",
+    "pinned_external_exercise_id": "face-pull",
+    "source_relative_path": "images/flat/face-pull-peak.webp",
+    "local_destination": "assets/generated/repdb/face-pull-peak.webp",
+    "sha256": "sha256:8170fd3885e7fa30ca7371aa5af4707c17ff7db7c0b52e038d6ca2b26e32be32",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-24",
+    "canonical_exercise_uuids": [
+      "5e5620d2-4170-5f2a-bd3d-a1c0070480c9",
+      "b8dbb448-b55b-524a-94e8-b485abc563db",
+      "f76c4d8d-6b3f-5ac7-8589-1dedba951634",
+      "84e64439-e26f-5ad4-80ab-587f29ff1a74"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:barbell-curl:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:barbell-curl",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "barbell-curl",
+    "pinned_external_exercise_id": "barbell-curl",
+    "source_relative_path": "images/flat/barbell-curl-start.webp",
+    "local_destination": "assets/generated/repdb/barbell-curl-start.webp",
+    "sha256": "sha256:46996e2bf0a2269609ac42052af37a211be045ee82dd1fb735c3aeea738ad4dc",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-25",
+    "canonical_exercise_uuids": [
+      "6c8e559c-a8f8-59f0-a761-81d9c4cf4aa7",
+      "5a555f32-2b94-58b7-a627-708df73096f9",
+      "c1b4df37-8a58-5053-8f41-f6aeb8990f8f",
+      "37582935-75f9-5fe3-aa4e-8891f6fdc35a"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:barbell-curl:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:barbell-curl",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "barbell-curl",
+    "pinned_external_exercise_id": "barbell-curl",
+    "source_relative_path": "images/flat/barbell-curl-peak.webp",
+    "local_destination": "assets/generated/repdb/barbell-curl-peak.webp",
+    "sha256": "sha256:1eef7447817995ae697d976df59605a713ccec8048dd842e07f6dc9b4532d531",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-25",
+    "canonical_exercise_uuids": [
+      "6c8e559c-a8f8-59f0-a761-81d9c4cf4aa7",
+      "5a555f32-2b94-58b7-a627-708df73096f9",
+      "c1b4df37-8a58-5053-8f41-f6aeb8990f8f",
+      "37582935-75f9-5fe3-aa4e-8891f6fdc35a"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:hammer-curl:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:hammer-curl",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "hammer-curl",
+    "pinned_external_exercise_id": "hammer-curl",
+    "source_relative_path": "images/flat/hammer-curl-start.webp",
+    "local_destination": "assets/generated/repdb/hammer-curl-start.webp",
+    "sha256": "sha256:15f3b7da1ecd7f01d7db5878914a969d49c720dc0450f327d849d4c3dae15596",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-26",
+    "canonical_exercise_uuids": [
+      "93760f3b-6f76-5856-9e79-0022911863cc",
+      "b9ba7916-de0c-5068-a4e1-39fa395b0a31",
+      "4cab0e37-bdbe-53e9-bf46-50309381ea17",
+      "64074bfd-2840-5974-ba9e-2e3e46748509"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:hammer-curl:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:hammer-curl",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "hammer-curl",
+    "pinned_external_exercise_id": "hammer-curl",
+    "source_relative_path": "images/flat/hammer-curl-peak.webp",
+    "local_destination": "assets/generated/repdb/hammer-curl-peak.webp",
+    "sha256": "sha256:90a5a56b4801abb2fe31b420e0131499fe8688123db5a2c4b01a0741d0a522e4",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-26",
+    "canonical_exercise_uuids": [
+      "93760f3b-6f76-5856-9e79-0022911863cc",
+      "b9ba7916-de0c-5068-a4e1-39fa395b0a31",
+      "4cab0e37-bdbe-53e9-bf46-50309381ea17",
+      "64074bfd-2840-5974-ba9e-2e3e46748509"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:incline-db-curl:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:incline-db-curl",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "incline-db-curl",
+    "pinned_external_exercise_id": "incline-db-curl",
+    "source_relative_path": "images/flat/incline-db-curl-start.webp",
+    "local_destination": "assets/generated/repdb/incline-db-curl-start.webp",
+    "sha256": "sha256:ef619d81c7b9bdf0beae5fb5f1c316d54703314bad1e8e6a05085413fbea267f",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-27",
+    "canonical_exercise_uuids": [
+      "a5650e7a-0cb9-5acb-8d66-889d2289e647",
+      "9b638815-f580-511c-9f06-3d3fa0e12d0a",
+      "aecb66d9-5817-5093-83c6-1e56a236854e",
+      "58200cd2-1ea4-509a-8ef9-77467602f9af"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:incline-db-curl:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:incline-db-curl",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "incline-db-curl",
+    "pinned_external_exercise_id": "incline-db-curl",
+    "source_relative_path": "images/flat/incline-db-curl-peak.webp",
+    "local_destination": "assets/generated/repdb/incline-db-curl-peak.webp",
+    "sha256": "sha256:e941128f3a335f7d0bcf6add409fc63325b5bc300b1858dde13bd5f1881a05df",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-27",
+    "canonical_exercise_uuids": [
+      "a5650e7a-0cb9-5acb-8d66-889d2289e647",
+      "9b638815-f580-511c-9f06-3d3fa0e12d0a",
+      "aecb66d9-5817-5093-83c6-1e56a236854e",
+      "58200cd2-1ea4-509a-8ef9-77467602f9af"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:preacher-curl:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:preacher-curl",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "preacher-curl",
+    "pinned_external_exercise_id": "preacher-curl",
+    "source_relative_path": "images/flat/preacher-curl-start.webp",
+    "local_destination": "assets/generated/repdb/preacher-curl-start.webp",
+    "sha256": "sha256:07bd210521c7961c71d475e843ddda7b3a6f1407fc3cda52c7f1466ba9be9281",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-28",
+    "canonical_exercise_uuids": [
+      "cb6bc77b-5a4b-5b00-9e8a-4d0c790f37a7",
+      "b6e6e3a7-6896-5362-ba5c-68b66c70263b",
+      "5433b78a-3583-56f4-a264-cb1c6495af7b",
+      "4e154d93-302a-5ccb-97a9-fa684cbffbf2"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:preacher-curl:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:preacher-curl",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "preacher-curl",
+    "pinned_external_exercise_id": "preacher-curl",
+    "source_relative_path": "images/flat/preacher-curl-peak.webp",
+    "local_destination": "assets/generated/repdb/preacher-curl-peak.webp",
+    "sha256": "sha256:75c5d9959105d42b641698676e1264be9d0d10b3f679737b34d0ee19f8362d30",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-28",
+    "canonical_exercise_uuids": [
+      "cb6bc77b-5a4b-5b00-9e8a-4d0c790f37a7",
+      "b6e6e3a7-6896-5362-ba5c-68b66c70263b",
+      "5433b78a-3583-56f4-a264-cb1c6495af7b",
+      "4e154d93-302a-5ccb-97a9-fa684cbffbf2"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:tricep-pushdown:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:tricep-pushdown",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "tricep-pushdown",
+    "pinned_external_exercise_id": "tricep-pushdown",
+    "source_relative_path": "images/flat/tricep-pushdown-start.webp",
+    "local_destination": "assets/generated/repdb/tricep-pushdown-start.webp",
+    "sha256": "sha256:6a95910acc7e22141b0fb6c71d866251f6b18eb59f10d380acd72e742f14e648",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-29",
+    "canonical_exercise_uuids": [
+      "9cb62691-e65f-56f4-9a93-c82a4834a448",
+      "680d6269-6d0f-5d37-bc56-c851de59ef76",
+      "8c01c75a-b425-53ac-9892-7b5d3f2d664c",
+      "4119c3bb-cd5a-5027-91e4-5d3edd747a30"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:tricep-pushdown:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:tricep-pushdown",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "tricep-pushdown",
+    "pinned_external_exercise_id": "tricep-pushdown",
+    "source_relative_path": "images/flat/tricep-pushdown-peak.webp",
+    "local_destination": "assets/generated/repdb/tricep-pushdown-peak.webp",
+    "sha256": "sha256:81a2548ce43e8e13a9f50b8cf9f57b5475db6a86efaf2151f7f5e067f03b1f58",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-29",
+    "canonical_exercise_uuids": [
+      "9cb62691-e65f-56f4-9a93-c82a4834a448",
+      "680d6269-6d0f-5d37-bc56-c851de59ef76",
+      "8c01c75a-b425-53ac-9892-7b5d3f2d664c",
+      "4119c3bb-cd5a-5027-91e4-5d3edd747a30"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:skull-crusher:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:skull-crusher",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "skull-crusher",
+    "pinned_external_exercise_id": "skull-crusher",
+    "source_relative_path": "images/flat/skull-crusher-start.webp",
+    "local_destination": "assets/generated/repdb/skull-crusher-start.webp",
+    "sha256": "sha256:94e636b16e8d085ee986dd3eb7f54f577bf0c6542166755e8f7a9301912b35d0",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-30",
+    "canonical_exercise_uuids": [
+      "b8f0b194-2d41-5514-bc2c-a2bdabbe056e",
+      "a570013f-3743-5c80-8f40-5fed726b4925",
+      "1230840b-9006-525b-a392-bfe9faf7cfe5",
+      "1fc82856-abad-5a9f-ae6c-73069ff0c36b"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:skull-crusher:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:skull-crusher",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "skull-crusher",
+    "pinned_external_exercise_id": "skull-crusher",
+    "source_relative_path": "images/flat/skull-crusher-peak.webp",
+    "local_destination": "assets/generated/repdb/skull-crusher-peak.webp",
+    "sha256": "sha256:bf3bf82823c14df3e9452ae70e48a438e41204f4f1991ab3346f77e9e3918a3b",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-30",
+    "canonical_exercise_uuids": [
+      "b8f0b194-2d41-5514-bc2c-a2bdabbe056e",
+      "a570013f-3743-5c80-8f40-5fed726b4925",
+      "1230840b-9006-525b-a392-bfe9faf7cfe5",
+      "1fc82856-abad-5a9f-ae6c-73069ff0c36b"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:overhead-tricep-extension:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:overhead-tricep-extension",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "overhead-tricep-extension",
+    "pinned_external_exercise_id": "overhead-tricep-extension",
+    "source_relative_path": "images/flat/overhead-tricep-extension-start.webp",
+    "local_destination": "assets/generated/repdb/overhead-tricep-extension-start.webp",
+    "sha256": "sha256:b3ed4b231cc35471873a7e27b12476090ad269505c671571ac03d5a99e18d9ce",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-31",
+    "canonical_exercise_uuids": [
+      "4f71798e-7893-51a2-b542-090c03df5cb6",
+      "81d3dde6-4f93-586f-8f76-c96256e82135",
+      "386ded7b-1307-5ebb-b76d-f5dde4cb1ec3",
+      "8dd8f09b-5e0c-56b7-bb45-55d58947db72"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:overhead-tricep-extension:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:overhead-tricep-extension",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "overhead-tricep-extension",
+    "pinned_external_exercise_id": "overhead-tricep-extension",
+    "source_relative_path": "images/flat/overhead-tricep-extension-peak.webp",
+    "local_destination": "assets/generated/repdb/overhead-tricep-extension-peak.webp",
+    "sha256": "sha256:cd8dba7e3e81e8d844e8274be544480187127b7929bff3bb11476e54c45b36b2",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-31",
+    "canonical_exercise_uuids": [
+      "4f71798e-7893-51a2-b542-090c03df5cb6",
+      "81d3dde6-4f93-586f-8f76-c96256e82135",
+      "386ded7b-1307-5ebb-b76d-f5dde4cb1ec3",
+      "8dd8f09b-5e0c-56b7-bb45-55d58947db72"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:ab-wheel-rollout:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:ab-wheel-rollout",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "ab-wheel-rollout",
+    "pinned_external_exercise_id": "ab-wheel-rollout",
+    "source_relative_path": "images/flat/ab-wheel-rollout-start.webp",
+    "local_destination": "assets/generated/repdb/ab-wheel-rollout-start.webp",
+    "sha256": "sha256:cc6976578c8a220bdfefb1d65116227ba4a8ff2eb6fffe82622a1d2ffcb1761b",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-32",
+    "canonical_exercise_uuids": [
+      "bdd4c5a6-ea2b-55e0-a6e0-206ea683b886",
+      "3163de96-3fc3-533d-ab06-70ac27ae214c",
+      "73601fc7-0d6a-5b78-84d4-499399470903",
+      "695681c5-e86f-5bcc-930a-85d2ef73f583"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:ab-wheel-rollout:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:ab-wheel-rollout",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "ab-wheel-rollout",
+    "pinned_external_exercise_id": "ab-wheel-rollout",
+    "source_relative_path": "images/flat/ab-wheel-rollout-peak.webp",
+    "local_destination": "assets/generated/repdb/ab-wheel-rollout-peak.webp",
+    "sha256": "sha256:bfbdc823735bb889a3c14c40a384c2803a2d3759a3369803f3c89ff558566870",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-32",
+    "canonical_exercise_uuids": [
+      "bdd4c5a6-ea2b-55e0-a6e0-206ea683b886",
+      "3163de96-3fc3-533d-ab06-70ac27ae214c",
+      "73601fc7-0d6a-5b78-84d4-499399470903",
+      "695681c5-e86f-5bcc-930a-85d2ef73f583"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:cable-crunch:start",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:cable-crunch",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "cable-crunch",
+    "pinned_external_exercise_id": "cable-crunch",
+    "source_relative_path": "images/flat/cable-crunch-start.webp",
+    "local_destination": "assets/generated/repdb/cable-crunch-start.webp",
+    "sha256": "sha256:af994f7379d9d7115292b102b2f83ffc7e9faf90a4d2667c8450c105d54571d8",
+    "media_role": "start",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-33",
+    "canonical_exercise_uuids": [
+      "0bce1172-7f1c-5d38-9581-0bc2fc6807bb",
+      "8ea9c7c8-75d9-53d1-a1d6-fefe851f1688",
+      "29c7bd7d-342a-54ba-ad69-ebef5f15a7e2",
+      "85c25be6-ccbd-5b87-9e4a-1edac4359256"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:cable-crunch:peak",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:cable-crunch",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "cable-crunch",
+    "pinned_external_exercise_id": "cable-crunch",
+    "source_relative_path": "images/flat/cable-crunch-peak.webp",
+    "local_destination": "assets/generated/repdb/cable-crunch-peak.webp",
+    "sha256": "sha256:36b1aed14723ef8fd67c13c157d63f2484cf0e49d89a19c89670fd729f3e4b88",
+    "media_role": "peak",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-33",
+    "canonical_exercise_uuids": [
+      "0bce1172-7f1c-5d38-9581-0bc2fc6807bb",
+      "8ea9c7c8-75d9-53d1-a1d6-fefe851f1688",
+      "29c7bd7d-342a-54ba-ad69-ebef5f15a7e2",
+      "85c25be6-ccbd-5b87-9e4a-1edac4359256"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  },
+  {
+    "asset_key": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:plank:main",
+    "asset_set_id": "repdb:045845b61e4aefd9e684fa84518b84c665ea3cd3:plank",
+    "source_key": "repdb_free_tier",
+    "source_asset_id": "plank",
+    "pinned_external_exercise_id": "plank",
+    "source_relative_path": "images/flat/plank-main.webp",
+    "local_destination": "assets/generated/repdb/plank-main.webp",
+    "sha256": "sha256:cfa10a00babd09bce62e5953007fc4b322757fda54d7379c3042acc27676263e",
+    "media_role": "main",
+    "modification": {
+      "state": "none",
+      "details": "Exact bytes from the pinned RepDB source; no transformation."
+    },
+    "approval_status": "production",
+    "approval_record_id": "REC-R08-02-FAM-34",
+    "canonical_exercise_uuids": [
+      "3525a526-c7a6-5d33-9758-4428da2760b6",
+      "6edde0de-7492-5b33-ab28-5f27747c0bbc",
+      "c166fed2-3d32-5641-94e5-8ea16ec447eb",
+      "ab2ee7bc-cc73-55a9-b542-31821cac14ca"
+    ],
+    "technique_disclosure": {
+      "status": "underlying_movement_only",
+      "text": "This illustration represents the underlying movement and equipment. It is not an exact demonstration of pause duration, tempo, or other IndiFit technique prescriptions. Follow the IndiFit cues and set prescription for technique details."
+    }
+  }
+  ]
 }

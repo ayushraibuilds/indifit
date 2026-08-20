@@ -829,6 +829,12 @@ class B05MediaPackContract {
 class B05MediaAssetContract {
   final String exerciseId;
   final String assetId;
+  final String? assetSetId;
+  final String? mediaRole;
+  final String? sourceRelativePath;
+  final String? localDestination;
+  final List<String> canonicalExerciseUuids;
+  final String? techniqueDisclosure;
   final String checksum;
   final String sourceLicense;
   final String attribution;
@@ -839,6 +845,12 @@ class B05MediaAssetContract {
   const B05MediaAssetContract({
     required this.exerciseId,
     required this.assetId,
+    this.assetSetId,
+    this.mediaRole,
+    this.sourceRelativePath,
+    this.localDestination,
+    this.canonicalExerciseUuids = const <String>[],
+    this.techniqueDisclosure,
     required this.checksum,
     required this.sourceLicense,
     required this.attribution,
@@ -858,6 +870,12 @@ class B05MediaAssetContract {
     _rejectUnknownKeys(map, {
       'exercise_id',
       'asset_id',
+      'asset_set_id',
+      'media_role',
+      'source_relative_path',
+      'local_destination',
+      'canonical_exercise_uuids',
+      'technique_disclosure',
       'checksum',
       'source_license',
       'attribution',
@@ -868,6 +886,16 @@ class B05MediaAssetContract {
     return B05MediaAssetContract(
       exerciseId: _requiredString(map, 'exercise_id'),
       assetId: _requiredString(map, 'asset_id'),
+      assetSetId: _optionalString(map, 'asset_set_id'),
+      mediaRole: _optionalString(map, 'media_role'),
+      sourceRelativePath: _optionalString(map, 'source_relative_path'),
+      localDestination: _optionalString(map, 'local_destination'),
+      canonicalExerciseUuids: _stringList(
+        map,
+        'canonical_exercise_uuids',
+        allowEmpty: true,
+      ),
+      techniqueDisclosure: _optionalString(map, 'technique_disclosure'),
       checksum: _requiredString(map, 'checksum'),
       sourceLicense: _requiredString(map, 'source_license'),
       attribution: _requiredString(map, 'attribution'),
@@ -883,6 +911,14 @@ class B05MediaAssetContract {
   Map<String, dynamic> toJson() => {
     'exercise_id': exerciseId,
     'asset_id': assetId,
+    if (assetSetId != null) 'asset_set_id': assetSetId,
+    if (mediaRole != null) 'media_role': mediaRole,
+    if (sourceRelativePath != null) 'source_relative_path': sourceRelativePath,
+    if (localDestination != null) 'local_destination': localDestination,
+    if (canonicalExerciseUuids.isNotEmpty)
+      'canonical_exercise_uuids': canonicalExerciseUuids,
+    if (techniqueDisclosure != null)
+      'technique_disclosure': techniqueDisclosure,
     'checksum': checksum,
     'source_license': sourceLicense,
     'attribution': attribution,
@@ -892,11 +928,60 @@ class B05MediaAssetContract {
   };
 }
 
+/// A reusable presentation set derived from B05 media files. The four
+/// canonical exercise UUIDs remain explicit bindings; this set only names the
+/// artwork and its presentation roles.
+class B05MediaVisualAssetSetContract {
+  final String assetSetId;
+  final List<String> canonicalExerciseUuids;
+  final Map<String, B05MediaAssetContract> mediaByRole;
+  final String? techniqueDisclosure;
+
+  const B05MediaVisualAssetSetContract({
+    required this.assetSetId,
+    required this.canonicalExerciseUuids,
+    required this.mediaByRole,
+    required this.techniqueDisclosure,
+  });
+
+  bool get isPosePair =>
+      mediaByRole.length == 2 &&
+      mediaByRole.keys.toSet().containsAll({'start', 'peak'});
+
+  bool get isMainOnly =>
+      mediaByRole.length == 1 && mediaByRole.containsKey('main');
+
+  B05MediaAssetContract? media(String role) => mediaByRole[role];
+}
+
 class B05MediaManifest {
   final B05MediaPackContract pack;
   final List<B05MediaAssetContract> assets;
 
   const B05MediaManifest({required this.pack, required this.assets});
+
+  List<B05MediaVisualAssetSetContract> get visualAssetSets {
+    final grouped = <String, List<B05MediaAssetContract>>{};
+    for (final asset in assets) {
+      final setId = asset.assetSetId;
+      if (setId == null) continue;
+      (grouped[setId] ??= <B05MediaAssetContract>[]).add(asset);
+    }
+    return List.unmodifiable(
+      grouped.entries.map((entry) {
+        final first = entry.value.first;
+        return B05MediaVisualAssetSetContract(
+          assetSetId: entry.key,
+          canonicalExerciseUuids: first.canonicalExerciseUuids,
+          mediaByRole: Map.unmodifiable({
+            for (final asset in entry.value)
+              if (asset.mediaRole != null) asset.mediaRole!: asset,
+          }),
+          techniqueDisclosure: first.techniqueDisclosure,
+        );
+      }),
+    );
+  }
 
   factory B05MediaManifest.fromJson(Object? raw) {
     if (raw is! Map || raw['pack'] == null || raw['assets'] is! List) {
@@ -928,6 +1013,10 @@ class B05MediaManifest {
     pack.validateStructure();
     final exerciseIds = <String>{};
     final assetIds = <String>{};
+    final visualRoles = <String, Set<String>>{};
+    final visualUuidOwners = <String, String>{};
+    final visualUuidSets = <String, List<String>>{};
+    final visualDisclosures = <String, String>{};
     for (final asset in assets) {
       if (asset.exerciseId.trim().isEmpty ||
           asset.assetId.trim().isEmpty ||
@@ -938,11 +1027,78 @@ class B05MediaManifest {
           asset.distributionRights.trim().isEmpty ||
           asset.stillFallbackId.trim().isEmpty ||
           asset.reducedMotionFallbackId.trim().isEmpty ||
-          !exerciseIds.add(asset.exerciseId) ||
           !assetIds.add(asset.assetId)) {
         throw B05RegistryValidationException(
           'media_manifest_asset',
           'Media assets require unique stable IDs, checksums, rights and fallbacks.',
+        );
+      }
+      final setId = asset.assetSetId;
+      if (setId == null) {
+        if (!exerciseIds.add(asset.exerciseId)) {
+          throw B05RegistryValidationException(
+            'media_manifest_asset',
+            'Legacy media assets require unique exercise IDs.',
+          );
+        }
+        continue;
+      }
+      if (asset.mediaRole == null ||
+          !{'start', 'peak', 'main'}.contains(asset.mediaRole) ||
+          asset.canonicalExerciseUuids.isEmpty ||
+          asset.canonicalExerciseUuids.toSet().length !=
+              asset.canonicalExerciseUuids.length ||
+          asset.localDestination == null ||
+          asset.localDestination!.trim().isEmpty ||
+          asset.techniqueDisclosure == null ||
+          asset.techniqueDisclosure!.trim().isEmpty) {
+        throw B05RegistryValidationException(
+          'media_manifest_visual_asset_set',
+          'Visual asset-set files require a role, explicit UUID bindings, local destination, and technique disclosure.',
+        );
+      }
+      final role = asset.mediaRole!;
+      final roles = visualRoles.putIfAbsent(setId, () => <String>{});
+      if (!roles.add(role)) {
+        throw B05RegistryValidationException(
+          'media_manifest_visual_asset_role_duplicate',
+          'Visual asset set $setId contains duplicate media role $role.',
+        );
+      }
+      final previousUuids = visualUuidSets[setId];
+      if (previousUuids != null &&
+          !_sameStringSet(previousUuids, asset.canonicalExerciseUuids)) {
+        throw B05RegistryValidationException(
+          'media_manifest_visual_asset_bindings',
+          'Visual asset set $setId contains inconsistent UUID bindings.',
+        );
+      }
+      visualUuidSets[setId] = asset.canonicalExerciseUuids;
+      final previousDisclosure = visualDisclosures[setId];
+      if (previousDisclosure != null &&
+          previousDisclosure != asset.techniqueDisclosure) {
+        throw B05RegistryValidationException(
+          'media_manifest_visual_asset_disclosure',
+          'Visual asset set $setId contains inconsistent technique disclosure.',
+        );
+      }
+      visualDisclosures[setId] = asset.techniqueDisclosure!;
+      for (final uuid in asset.canonicalExerciseUuids) {
+        final previousOwner = visualUuidOwners[uuid];
+        if (previousOwner != null && previousOwner != setId) {
+          throw B05RegistryValidationException(
+            'media_manifest_visual_uuid_duplicate',
+            'Canonical UUID $uuid is bound to multiple visual asset sets.',
+          );
+        }
+        visualUuidOwners[uuid] = setId;
+      }
+    }
+    for (final set in visualAssetSets) {
+      if (!(set.isPosePair || set.isMainOnly)) {
+        throw B05RegistryValidationException(
+          'media_manifest_visual_asset_roles',
+          'Visual asset sets must contain START/PEAK or MAIN media only.',
         );
       }
     }
@@ -964,9 +1120,18 @@ class B05MediaManifest {
   }
 }
 
+bool _sameStringSet(Iterable<String> left, Iterable<String> right) {
+  final leftSet = left.toSet();
+  final rightSet = right.toSet();
+  return leftSet.length == rightSet.length && leftSet.containsAll(rightSet);
+}
+
 /// The task-level acceptance template is deliberately metadata-only. It is a
 /// gate for B05-08's product-approved packet, not a claim that assets exist.
 class B05MediaAcceptanceTemplate {
+  /// Retained for legacy playlist/media packet tests. R08-0.3 visual
+  /// asset-set validation is no longer fixed to a top-20 count.
+  @Deprecated('Use explicit approved IDs or visual asset-set bindings.')
   static const int requiredExerciseCount = 20;
   static const String checksumAlgorithm = 'sha256';
   static const String checksumFormat = 'sha256:<64 hexadecimal characters>';
@@ -1047,6 +1212,44 @@ String _requiredString(Map<String, dynamic> map, String key) {
     );
   }
   return value.trim();
+}
+
+String? _optionalString(Map<String, dynamic> map, String key) {
+  final value = map[key];
+  if (value == null) return null;
+  if (value is! String || value.trim().isEmpty) {
+    throw B05RegistryValidationException(
+      'optional_registry_string',
+      '$key must be null or a non-empty string.',
+    );
+  }
+  return value.trim();
+}
+
+List<String> _stringList(
+  Map<String, dynamic> map,
+  String key, {
+  required bool allowEmpty,
+}) {
+  final value = map[key];
+  if (value == null && allowEmpty) return const <String>[];
+  if (value is! List || (!allowEmpty && value.isEmpty)) {
+    throw B05RegistryValidationException(
+      'registry_string_list',
+      '$key must be ${allowEmpty ? 'a' : 'a non-empty'} string list.',
+    );
+  }
+  final result = <String>[];
+  for (final entry in value) {
+    if (entry is! String || entry.trim().isEmpty) {
+      throw B05RegistryValidationException(
+        'registry_string_list_entry',
+        '$key contains an empty or non-string value.',
+      );
+    }
+    result.add(entry.trim());
+  }
+  return List.unmodifiable(result);
 }
 
 void _rejectUnknownKeys(

@@ -1,6 +1,6 @@
 # IndiFit Third-Party Assets and Provenance Register
 
-**Status:** R08-0.1 foundation; no third-party exercise artwork or anatomy geometry is approved or vendored  
+**Status:** R08-0.3 provenance and local/private acquisition architecture; no raw third-party RepDB artwork is vendored
 **Acquisition check:** 2026-08-20 UTC  
 **Machine-readable authority:** `assets/third_party/asset_manifest.json`
 
@@ -10,7 +10,7 @@ This register explains the source, license, approval, and clean-room boundaries 
 
 The JSON manifest is the single source-controlled provenance authority. A later B05 runtime media manifest may be generated from or validated against it; it must not become an independently edited source of licensing, approval, or canonical exercise bindings.
 
-The manifest currently contains source records and **zero asset rows**. An upstream repository being open source or pinned does not approve any media. Future asset rows require exact source paths, local destinations, SHA-256 values computed from acquired bytes, media roles, modification state, approval records, and exact canonical UUID bindings where applicable.
+The manifest contains source records plus 59 RepDB file-level provenance rows for 30 human-approved visual mappings. These rows are production-eligible only for the documented local/private acquisition path; they are not permission to commit raw media to this public repository. An upstream repository being open source or pinned does not by itself approve public redistribution. Every row requires exact source paths, local destinations, SHA-256 values, media roles, modification state, approval records, and exact canonical UUID bindings.
 
 Approval states are deliberately separate:
 
@@ -44,7 +44,7 @@ R08G owns final Settings/About placement. R08-0.1 defines the contract only.
 - **Redistribution constraint:** the grant says in-app use and prohibits dataset redistribution. Whether RepDB artwork may be committed to a public IndiFit source repository is **unresolved**. Do not vendor artwork until the licensor or qualified legal review confirms the intended distribution path, or an approved private acquisition/build path is used.
 - **Modification constraint:** allowed in-app resizing/cropping/recoloring does not relax redistribution restrictions; every modification must be recorded deterministically
 - **IndiFit intended use:** manually approved local movement illustrations only; metadata remains enrichment/QA and never overrides canonical exercise identity or taxonomy
-- **Current approval:** pinned candidate; no assets or mappings approved
+- **Current approval:** the R08-0.2 ledger approves 30 visual mappings for local/private pinned acquisition. The source remains a candidate for public-repository redistribution; raw WebPs stay outside Git until that separate licensing question is resolved.
 
 ### MuscleMap
 

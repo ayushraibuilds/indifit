@@ -9,7 +9,7 @@ import 'b05_foundation_registry.dart';
 /// Later B05 runtime media manifests must be generated from, or validated
 /// against, this contract. They must not become a second independently edited
 /// source of licensing, approval, or canonical-exercise bindings.
-const int kB05ThirdPartyAssetManifestVersion = 1;
+const int kB05ThirdPartyAssetManifestVersion = 2;
 
 const Set<String> kB05ThirdPartyUsageClassifications = {
   'production_candidate',
@@ -49,6 +49,10 @@ const Set<String> kB05ThirdPartyAssetApprovalStatuses = {
   'approved',
   'production',
   'rejected',
+};
+
+const Set<String> kB05ThirdPartyTechniqueDisclosureStatuses = {
+  'underlying_movement_only',
 };
 
 final RegExp _immutableCommitPattern = RegExp(r'^[0-9a-f]{40}$');
@@ -340,10 +344,38 @@ class B05ThirdPartyAssetModification {
   }
 }
 
+class B05ThirdPartyTechniqueDisclosure {
+  final String status;
+  final String text;
+
+  const B05ThirdPartyTechniqueDisclosure({
+    required this.status,
+    required this.text,
+  });
+
+  factory B05ThirdPartyTechniqueDisclosure.fromJson(Object? raw) {
+    final map = _object(raw, 'third_party_technique_disclosure');
+    _keys(map, {'status', 'text'}, 'third_party_technique_disclosure');
+    final status = _string(map, 'status');
+    if (!kB05ThirdPartyTechniqueDisclosureStatuses.contains(status)) {
+      throw B05RegistryValidationException(
+        'third_party_technique_disclosure_status',
+        'Unknown technique disclosure status: $status.',
+      );
+    }
+    return B05ThirdPartyTechniqueDisclosure(
+      status: status,
+      text: _string(map, 'text'),
+    );
+  }
+}
+
 class B05ThirdPartyAssetContract {
   final String assetKey;
+  final String? assetSetId;
   final String sourceKey;
   final String sourceAssetId;
+  final String? pinnedExternalExerciseId;
   final String sourceRelativePath;
   final String localDestination;
   final String checksum;
@@ -352,11 +384,14 @@ class B05ThirdPartyAssetContract {
   final String approvalStatus;
   final String? approvalRecordId;
   final List<String> canonicalExerciseUuids;
+  final B05ThirdPartyTechniqueDisclosure? techniqueDisclosure;
 
   const B05ThirdPartyAssetContract({
     required this.assetKey,
+    required this.assetSetId,
     required this.sourceKey,
     required this.sourceAssetId,
+    required this.pinnedExternalExerciseId,
     required this.sourceRelativePath,
     required this.localDestination,
     required this.checksum,
@@ -365,14 +400,17 @@ class B05ThirdPartyAssetContract {
     required this.approvalStatus,
     required this.approvalRecordId,
     required this.canonicalExerciseUuids,
+    required this.techniqueDisclosure,
   });
 
   factory B05ThirdPartyAssetContract.fromJson(Object? raw) {
     final map = _object(raw, 'third_party_asset');
     _keys(map, {
       'asset_key',
+      'asset_set_id',
       'source_key',
       'source_asset_id',
+      'pinned_external_exercise_id',
       'source_relative_path',
       'local_destination',
       'sha256',
@@ -381,6 +419,7 @@ class B05ThirdPartyAssetContract {
       'approval_status',
       'approval_record_id',
       'canonical_exercise_uuids',
+      'technique_disclosure',
     }, 'third_party_asset');
     final role = _string(map, 'media_role');
     if (!kB05ThirdPartyMediaRoles.contains(role)) {
@@ -407,8 +446,13 @@ class B05ThirdPartyAssetContract {
     final localPath = _relativePath(map, 'local_destination');
     return B05ThirdPartyAssetContract(
       assetKey: _string(map, 'asset_key'),
+      assetSetId: _optionalString(map, 'asset_set_id'),
       sourceKey: _string(map, 'source_key'),
       sourceAssetId: _string(map, 'source_asset_id'),
+      pinnedExternalExerciseId: _optionalString(
+        map,
+        'pinned_external_exercise_id',
+      ),
       sourceRelativePath: sourcePath,
       localDestination: localPath,
       checksum: checksum,
@@ -423,8 +467,44 @@ class B05ThirdPartyAssetContract {
         'canonical_exercise_uuids',
         allowEmpty: true,
       ),
+      techniqueDisclosure: map['technique_disclosure'] == null
+          ? null
+          : B05ThirdPartyTechniqueDisclosure.fromJson(
+              map['technique_disclosure'],
+            ),
     );
   }
+}
+
+/// A reusable approved artwork set. It is derived from the file-level entries
+/// in the single provenance manifest; it is not a second editable manifest.
+class B05ThirdPartyVisualAssetSet {
+  final String assetSetId;
+  final String sourceKey;
+  final String pinnedExternalExerciseId;
+  final String? approvalRecordId;
+  final List<String> canonicalExerciseUuids;
+  final Map<String, B05ThirdPartyAssetContract> mediaByRole;
+  final B05ThirdPartyTechniqueDisclosure techniqueDisclosure;
+
+  const B05ThirdPartyVisualAssetSet({
+    required this.assetSetId,
+    required this.sourceKey,
+    required this.pinnedExternalExerciseId,
+    required this.approvalRecordId,
+    required this.canonicalExerciseUuids,
+    required this.mediaByRole,
+    required this.techniqueDisclosure,
+  });
+
+  bool get isPosePair =>
+      mediaByRole.keys.toSet().containsAll({'start', 'peak'}) &&
+      mediaByRole.length == 2;
+
+  bool get isMainOnly =>
+      mediaByRole.length == 1 && mediaByRole.containsKey('main');
+
+  B05ThirdPartyAssetContract? media(String role) => mediaByRole[role];
 }
 
 class B05ThirdPartyAssetManifest {
@@ -439,6 +519,35 @@ class B05ThirdPartyAssetManifest {
     required this.sources,
     required this.assets,
   });
+
+  List<B05ThirdPartyVisualAssetSet> get visualAssetSets {
+    final grouped = <String, List<B05ThirdPartyAssetContract>>{};
+    for (final asset in assets) {
+      final setId = asset.assetSetId;
+      if (setId == null) continue;
+      (grouped[setId] ??= <B05ThirdPartyAssetContract>[]).add(asset);
+    }
+    return List.unmodifiable(
+      grouped.entries.map((entry) {
+        final files = entry.value;
+        final first = files.first;
+        return B05ThirdPartyVisualAssetSet(
+          assetSetId: entry.key,
+          sourceKey: first.sourceKey,
+          pinnedExternalExerciseId:
+              first.pinnedExternalExerciseId ?? first.sourceAssetId,
+          approvalRecordId: first.approvalRecordId,
+          canonicalExerciseUuids: List.unmodifiable(
+            first.canonicalExerciseUuids,
+          ),
+          mediaByRole: Map.unmodifiable({
+            for (final asset in files) asset.mediaRole: asset,
+          }),
+          techniqueDisclosure: first.techniqueDisclosure!,
+        );
+      }),
+    );
+  }
 
   factory B05ThirdPartyAssetManifest.fromJson(Object? raw) {
     final map = _object(raw, 'third_party_asset_manifest');
@@ -503,6 +612,7 @@ class B05ThirdPartyAssetManifest {
     }
     final assetKeys = <String>{};
     final destinations = <String>{};
+    final bindingOwners = <String, String>{};
     for (final asset in assets) {
       if (!assetKeys.add(asset.assetKey)) {
         throw B05RegistryValidationException(
@@ -522,8 +632,79 @@ class B05ThirdPartyAssetManifest {
           'Asset ${asset.assetKey} references unknown source ${asset.sourceKey}.',
         );
       }
+      final setId = asset.assetSetId;
+      if (setId == null) continue;
+      if (setId.trim().isEmpty) {
+        throw B05RegistryValidationException(
+          'third_party_asset_set_id',
+          'Asset-set IDs must be non-empty.',
+        );
+      }
+      if (asset.pinnedExternalExerciseId == null ||
+          asset.pinnedExternalExerciseId != asset.sourceAssetId ||
+          asset.techniqueDisclosure == null ||
+          asset.canonicalExerciseUuids.isEmpty) {
+        throw B05RegistryValidationException(
+          'third_party_asset_set_fields',
+          'Asset-set files require pinned external ID, UUID bindings, and technique disclosure.',
+        );
+      }
+      for (final uuid in asset.canonicalExerciseUuids) {
+        final previousOwner = bindingOwners[uuid];
+        if (previousOwner != null && previousOwner != setId) {
+          throw B05RegistryValidationException(
+            'third_party_duplicate_visual_binding',
+            'Canonical UUID $uuid is bound to multiple visual asset sets.',
+          );
+        }
+        bindingOwners[uuid] = setId;
+      }
+    }
+    for (final set in visualAssetSets) {
+      final roles = set.mediaByRole.keys.toSet();
+      if (!(set.isPosePair || set.isMainOnly)) {
+        throw B05RegistryValidationException(
+          'third_party_asset_set_roles',
+          'Visual asset set ${set.assetSetId} must contain START/PEAK or MAIN media only.',
+        );
+      }
+      if (set.approvalRecordId == null ||
+          set.techniqueDisclosure.status != 'underlying_movement_only' ||
+          set.mediaByRole.values.any(
+            (asset) =>
+                asset.sourceKey != set.sourceKey ||
+                asset.sourceAssetId != set.pinnedExternalExerciseId ||
+                asset.pinnedExternalExerciseId !=
+                    set.pinnedExternalExerciseId ||
+                asset.approvalRecordId != set.approvalRecordId ||
+                !_sameStringSet(
+                  asset.canonicalExerciseUuids,
+                  set.canonicalExerciseUuids,
+                ) ||
+                asset.approvalStatus != 'production' ||
+                asset.techniqueDisclosure?.status !=
+                    set.techniqueDisclosure.status ||
+                asset.techniqueDisclosure?.text != set.techniqueDisclosure.text,
+          )) {
+        throw B05RegistryValidationException(
+          'third_party_asset_set_consistency',
+          'Visual asset set ${set.assetSetId} has inconsistent approval or binding metadata.',
+        );
+      }
+      if (roles.contains('main') && roles.length != 1) {
+        throw B05RegistryValidationException(
+          'third_party_main_role_exclusivity',
+          'MAIN media cannot be combined with START or PEAK media.',
+        );
+      }
     }
   }
+}
+
+bool _sameStringSet(Iterable<String> left, Iterable<String> right) {
+  final leftSet = left.toSet();
+  final rightSet = right.toSet();
+  return leftSet.length == rightSet.length && leftSet.containsAll(rightSet);
 }
 
 class B05ThirdPartyAssetValidationInput {
