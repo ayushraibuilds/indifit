@@ -1,0 +1,436 @@
+{
+  "contract_version": 1,
+  "manifest_id": "indifit-r08-third-party-assets-v1",
+  "managed_production_roots": [
+    "assets/exercises/repdb/",
+    "assets/third_party/geometry/",
+    "assets/third_party/icons/"
+  ],
+  "sources": [
+    {
+      "source_key": "repdb_free_tier",
+      "name": "RepDB exercise dataset free tier",
+      "repository": "https://github.com/RepDB/exercise-dataset",
+      "immutable_commit": "045845b61e4aefd9e684fa84518b84c665ea3cd3",
+      "tag": null,
+      "pin_status": "pinned",
+      "acquisition_date_utc": "2026-08-20T05:54:28Z",
+      "usage_classification": "production_candidate",
+      "approval_status": "pinned_candidate_assets_not_approved",
+      "source_code_license": {
+        "scope": "repository viewer and example code",
+        "name": "MIT License",
+        "version": "MIT",
+        "status": "verified",
+        "license_file": "LICENSES/RepDB-LICENSE-CODE-MIT.txt",
+        "license_sha256": "sha256:9737baaaa4c2b89767b0f202f09ed032c21b8f404d05e6192bd5ff1b2f95bfe5",
+        "notes": "The code license does not govern the exercise JSON or WebP assets."
+      },
+      "content_licenses": [
+        {
+          "scope": "free-tier exercise JSON and associated WebP image assets",
+          "name": "RepDB Free Tier License",
+          "version": "1.0",
+          "status": "verified",
+          "license_file": "LICENSES/RepDB-LICENSE-DATA-v1.0.md",
+          "license_sha256": "sha256:50ea7c8a30214fd542b9cf1337d91fe577c2dd11487bc5491a86022af2062242",
+          "notes": "Commercial in-app use is permitted with attribution and the recorded restrictions."
+        }
+      ],
+      "attribution": {
+        "required": true,
+        "text": "Exercise data by RepDB (repdb.co)",
+        "url": "https://repdb.co"
+      },
+      "permitted_use": [
+        "Personal or commercial use inside applications.",
+        "Resize, crop, or recolor approved free-tier images for in-app use."
+      ],
+      "prohibited_use": [
+        "Redistribute or repackage the dataset or a derivative as a dataset, repository, or API.",
+        "Use images as generative-model input, reference, conditioning material, or training data.",
+        "Use paid-tier preview animations in production."
+      ],
+      "redistribution_constraints": [
+        "In-app use only; public source-repository vendoring remains unresolved and requires explicit legal/licensor confirmation before artwork is committed."
+      ],
+      "modification_constraints": [
+        "Resize, crop, and recolor are permitted for in-app use; derivatives retain the no-dataset-redistribution rule.",
+        "Upscaling and background removal do not relax redistribution constraints."
+      ],
+      "intended_indifit_usage": "Candidate source for manually approved local exercise movement illustrations only; RepDB metadata never becomes canonical IndiFit data.",
+      "open_questions": [
+        "May RepDB artwork be committed to the IndiFit source repository if that repository is or becomes public, or must acquisition occur through a private build path?"
+      ]
+    },
+    {
+      "source_key": "musclemap",
+      "name": "MuscleMap",
+      "repository": "https://github.com/melihcolpan/MuscleMap",
+      "immutable_commit": "7dc03071e03052e8bd4f6351e9176994cd28aa7d",
+      "tag": "1.6.4",
+      "pin_status": "pinned",
+      "acquisition_date_utc": "2026-08-20T05:54:28Z",
+      "usage_classification": "production_candidate",
+      "approval_status": "pinned_candidate_geometry_not_imported",
+      "source_code_license": {
+        "scope": "Swift/SwiftUI source",
+        "name": "MIT License",
+        "version": "MIT",
+        "status": "verified",
+        "license_file": "LICENSES/MuscleMap-MIT.txt",
+        "license_sha256": "sha256:b008022459fbfd5fb6366cc64821c0083b792b15c80d061d51ceda1a45a8d296",
+        "notes": "Copyright 2026 Melih Colpan."
+      },
+      "content_licenses": [
+        {
+          "scope": "body and muscle vector path geometry distributed in the repository",
+          "name": "MIT License",
+          "version": "MIT",
+          "status": "verified",
+          "license_file": "LICENSES/MuscleMap-MIT.txt",
+          "license_sha256": "sha256:b008022459fbfd5fb6366cc64821c0083b792b15c80d061d51ceda1a45a8d296",
+          "notes": "File-level path provenance must still be recorded before a Flutter port is committed."
+        }
+      ],
+      "attribution": {
+        "required": true,
+        "text": "MuscleMap copyright (c) 2026 Melih Colpan; MIT License",
+        "url": "https://github.com/melihcolpan/MuscleMap"
+      },
+      "permitted_use": [
+        "Use, copy, modify, merge, publish, distribute, sublicense, and sell under MIT terms."
+      ],
+      "prohibited_use": [
+        "Import geometry before file-level provenance and taxonomy-adapter review.",
+        "Let the upstream taxonomy override IndiFit B02 or exercise classification."
+      ],
+      "redistribution_constraints": [
+        "Include the MIT copyright and permission notice in copies or substantial portions."
+      ],
+      "modification_constraints": [
+        "Record the exact source files and all port/conversion modifications."
+      ],
+      "intended_indifit_usage": "Candidate primary geometry source for a future local Flutter muscle renderer under the B05 presentation boundary.",
+      "open_questions": []
+    },
+    {
+      "source_key": "opengym",
+      "name": "openGym",
+      "repository": "https://github.com/DuarteSantos8/openGym",
+      "immutable_commit": null,
+      "tag": null,
+      "pin_status": "unavailable_at_acquisition",
+      "acquisition_date_utc": "2026-08-20T05:54:28Z",
+      "usage_classification": "prohibited_production_content",
+      "approval_status": "clean_room_reference_only_repository_unavailable",
+      "source_code_license": {
+        "scope": "openGym application source",
+        "name": "GNU Affero General Public License",
+        "version": "3.0",
+        "status": "verified",
+        "license_file": null,
+        "notes": "The repository was documented as AGPL-3.0 but was no longer retrievable through Git at acquisition time; no source was copied."
+      },
+      "content_licenses": [
+        {
+          "scope": "exercise data and media referenced by openGym",
+          "name": "Separate upstream terms",
+          "version": "unverified for IndiFit reuse",
+          "status": "unverified",
+          "license_file": null,
+          "notes": "openGym documentation attributes exercise content to hasaneyldrm/exercises-dataset; it is not covered by openGym's AGPL license."
+        }
+      ],
+      "attribution": {
+        "required": false,
+        "text": "",
+        "url": null
+      },
+      "permitted_use": [
+        "Study high-level product concepts only."
+      ],
+      "prohibited_use": [
+        "Copy AGPL source, functions, snippets, converted code, assets, or derived implementation structure into IndiFit.",
+        "Use openGym exercise media."
+      ],
+      "redistribution_constraints": [
+        "No openGym content is redistributed by IndiFit."
+      ],
+      "modification_constraints": [
+        "Not applicable because no openGym material may be imported."
+      ],
+      "intended_indifit_usage": "Clean-room reference only; IndiFit implementations must derive from frozen requirements and B01/B02 authority.",
+      "open_questions": [
+        "The upstream repository could not be pinned because it was unavailable through Git on 2026-08-20; this does not relax the prohibition."
+      ]
+    },
+    {
+      "source_key": "anatome",
+      "name": "Anatome",
+      "repository": "https://github.com/Rippy1911/anatome",
+      "immutable_commit": "ea36eedbc0a65d4576d1ef10abd42af3c407f11e",
+      "tag": null,
+      "pin_status": "pinned",
+      "acquisition_date_utc": "2026-08-20T05:54:28Z",
+      "usage_classification": "reference_qa_only",
+      "approval_status": "reference_only_exercise_imagery_prohibited",
+      "source_code_license": {
+        "scope": "Anatome application and API source",
+        "name": "Apache License",
+        "version": "2.0",
+        "status": "verified",
+        "license_file": null,
+        "notes": "Self-hostable source; IndiFit does not need an Anatome runtime dependency."
+      },
+      "content_licenses": [
+        {
+          "scope": "anatomical SVG paths",
+          "name": "MIT License via react-native-body-highlighter",
+          "version": "MIT",
+          "status": "verified",
+          "license_file": null,
+          "notes": "Reference/QA only for R08; MuscleMap remains the primary geometry candidate."
+        },
+        {
+          "scope": "exercise metadata",
+          "name": "Unlicense via free-exercise-db",
+          "version": "Unlicense",
+          "status": "verified",
+          "license_file": null,
+          "notes": "Metadata is QA-only and never canonical."
+        },
+        {
+          "scope": "proxied exercise photography",
+          "name": "Unverified origin",
+          "version": "none verified",
+          "status": "unverified",
+          "license_file": null,
+          "notes": "Upstream NOTICE says the photography is not cleared for redistribution or commercial use."
+        }
+      ],
+      "attribution": {
+        "required": false,
+        "text": "Anatome by NextSolutions",
+        "url": "https://anatome.dev"
+      },
+      "permitted_use": [
+        "Reference anatomy rendering and taxonomy behavior during QA."
+      ],
+      "prohibited_use": [
+        "Runtime API dependency for IndiFit R08.",
+        "Import or redistribute proxied exercise photography."
+      ],
+      "redistribution_constraints": [
+        "Any future code/path reuse requires its Apache/MIT notices; exercise photography remains prohibited."
+      ],
+      "modification_constraints": [
+        "No Anatome content is modified or imported in R08-0.1."
+      ],
+      "intended_indifit_usage": "Reference and QA only.",
+      "open_questions": []
+    },
+    {
+      "source_key": "react_native_body_highlighter",
+      "name": "react-native-body-highlighter",
+      "repository": "https://github.com/HichamELBSI/react-native-body-highlighter",
+      "immutable_commit": "15df9e2dbc621450001960bed5a30e6a75357faa",
+      "tag": null,
+      "pin_status": "pinned",
+      "acquisition_date_utc": "2026-08-20T05:54:28Z",
+      "usage_classification": "reference_qa_only",
+      "approval_status": "reference_only_not_selected_geometry_source",
+      "source_code_license": {
+        "scope": "React Native source",
+        "name": "MIT License",
+        "version": "MIT",
+        "status": "verified",
+        "license_file": null,
+        "notes": "Copyright (c) 2022 ELABBASSI Hicham."
+      },
+      "content_licenses": [
+        {
+          "scope": "anatomical SVG path data",
+          "name": "MIT License",
+          "version": "MIT",
+          "status": "verified",
+          "license_file": null,
+          "notes": "QA cross-check only; no paths imported in R08-0.1."
+        }
+      ],
+      "attribution": {
+        "required": false,
+        "text": "",
+        "url": null
+      },
+      "permitted_use": [
+        "Reference geometry and taxonomy during independent QA."
+      ],
+      "prohibited_use": [
+        "Blend its paths into production without separate file-level provenance and approval."
+      ],
+      "redistribution_constraints": [
+        "MIT notice is required if any substantial portion is later used."
+      ],
+      "modification_constraints": [
+        "No content is modified or imported in R08-0.1."
+      ],
+      "intended_indifit_usage": "Reference and QA only.",
+      "open_questions": []
+    },
+    {
+      "source_key": "hasaneyldrm_exercises_dataset",
+      "name": "hasaneyldrm exercises-dataset",
+      "repository": "https://github.com/hasaneyldrm/exercises-dataset",
+      "immutable_commit": "7455efae41b330c265e7cd4b78dfa848e7ce5ebd",
+      "tag": null,
+      "pin_status": "pinned",
+      "acquisition_date_utc": "2026-08-20T05:54:28Z",
+      "usage_classification": "prohibited_production_content",
+      "approval_status": "metadata_reference_only_media_prohibited",
+      "source_code_license": {
+        "scope": "code, tooling, dataset structure, and instruction text/translations",
+        "name": "MIT License",
+        "version": "MIT with explicit media exception",
+        "status": "verified",
+        "license_file": null,
+        "notes": "The MIT grant explicitly excludes images and videos."
+      },
+      "content_licenses": [
+        {
+          "scope": "exercise images and videos",
+          "name": "Gym visual terms; upstream permission is not a downstream license",
+          "version": "separate commercial terms",
+          "status": "unverified",
+          "license_file": null,
+          "notes": "Upstream states cloning does not grant a license to the media."
+        }
+      ],
+      "attribution": {
+        "required": false,
+        "text": "",
+        "url": null
+      },
+      "permitted_use": [
+        "Reference metadata structure only, without becoming canonical."
+      ],
+      "prohibited_use": [
+        "Import exercise images, thumbnails, GIFs, or videos into IndiFit."
+      ],
+      "redistribution_constraints": [
+        "No exercise media redistribution; obtain an independent Gym visual license before any reconsideration."
+      ],
+      "modification_constraints": [
+        "No prohibited media derivatives."
+      ],
+      "intended_indifit_usage": "Metadata QA only; all exercise media prohibited.",
+      "open_questions": []
+    },
+    {
+      "source_key": "free_exercise_db",
+      "name": "free-exercise-db",
+      "repository": "https://github.com/yuhonas/free-exercise-db",
+      "immutable_commit": "b0eed061e1c832b3ed815fbaa4b45b3cdc14df49",
+      "tag": null,
+      "pin_status": "pinned",
+      "acquisition_date_utc": "2026-08-20T05:54:28Z",
+      "usage_classification": "reference_qa_only",
+      "approval_status": "metadata_reference_only_images_prohibited",
+      "source_code_license": {
+        "scope": "repository code and metadata",
+        "name": "Unlicense",
+        "version": "Unlicense",
+        "status": "verified",
+        "license_file": null,
+        "notes": "Repository README declares an open public-domain JSON exercise dataset."
+      },
+      "content_licenses": [
+        {
+          "scope": "exercise metadata",
+          "name": "Unlicense",
+          "version": "Unlicense",
+          "status": "verified",
+          "license_file": null,
+          "notes": "Reference-only alias/equipment QA."
+        },
+        {
+          "scope": "exercise images",
+          "name": "Unverified provenance for IndiFit commercial redistribution",
+          "version": "none verified",
+          "status": "unverified",
+          "license_file": null,
+          "notes": "Do not infer image rights from the metadata dedication."
+        }
+      ],
+      "attribution": {
+        "required": false,
+        "text": "",
+        "url": null
+      },
+      "permitted_use": [
+        "Reference exercise metadata for alias and equipment QA."
+      ],
+      "prohibited_use": [
+        "Import or redistribute exercise images without independent provenance clearance.",
+        "Override IndiFit canonical exercise data."
+      ],
+      "redistribution_constraints": [
+        "Metadata and image rights are treated separately."
+      ],
+      "modification_constraints": [
+        "No image derivatives."
+      ],
+      "intended_indifit_usage": "Metadata QA only; images prohibited.",
+      "open_questions": []
+    },
+    {
+      "source_key": "phosphor_flutter",
+      "name": "Phosphor Icons for Flutter",
+      "repository": "https://github.com/phosphor-icons/flutter",
+      "immutable_commit": "290a73304d62a5b74af3dbb38121121b92b2dcc5",
+      "tag": null,
+      "pin_status": "pinned",
+      "acquisition_date_utc": "2026-08-20T05:54:28Z",
+      "usage_classification": "reference_qa_only",
+      "approval_status": "not_adopted_future_candidate",
+      "source_code_license": {
+        "scope": "Flutter package source",
+        "name": "MIT License",
+        "version": "MIT",
+        "status": "verified",
+        "license_file": null,
+        "notes": "No package or icon asset is imported in R08-0.1."
+      },
+      "content_licenses": [
+        {
+          "scope": "icon glyphs distributed by the Flutter repository",
+          "name": "MIT License",
+          "version": "MIT",
+          "status": "verified",
+          "license_file": null,
+          "notes": "Future adoption requires a concrete semantic gap and a dependency/license update."
+        }
+      ],
+      "attribution": {
+        "required": false,
+        "text": "",
+        "url": null
+      },
+      "permitted_use": [
+        "Future selective use under MIT if separately approved."
+      ],
+      "prohibited_use": [
+        "Add the dependency or migrate icons as part of R08-0.1."
+      ],
+      "redistribution_constraints": [
+        "Include the MIT notice if adopted."
+      ],
+      "modification_constraints": [
+        "Record any modified glyphs if adopted later."
+      ],
+      "intended_indifit_usage": "Future optional semantic icon source; not currently adopted.",
+      "open_questions": []
+    }
+  ],
+  "assets": []
+}
