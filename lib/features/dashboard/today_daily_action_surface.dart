@@ -158,6 +158,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                 )
               : null),
       loading: loading,
+      targetRead: snapshot?.targets,
       goal: snapshot?.goal,
     );
     final workout = TodayWorkoutPresentation.from(

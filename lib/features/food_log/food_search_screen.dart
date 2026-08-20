@@ -2872,6 +2872,7 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
     final presentation = TodayNutritionPresentation.from(
       daily == null ? null : TodayDomainRead.available(daily),
       loading: diary.isLoading,
+      targetRead: diary.valueOrNull?.targets,
     );
     final records = daily?.records ?? canonical.valueOrNull ?? [];
     final meals = <({String type, String label})>[

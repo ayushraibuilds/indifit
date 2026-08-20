@@ -8,6 +8,7 @@ import 'progress_dashboard_models.dart';
 
 final progressDashboardReadRepositoryProvider =
     FutureProvider<ProgressDashboardReadRepository>((ref) async {
+      ref.watch(nutritionTargetAuthorityChangesProvider);
       NutritionReadModelRepository? nutrition;
       try {
         nutrition = await ref.watch(
@@ -16,12 +17,12 @@ final progressDashboardReadRepositoryProvider =
       } catch (_) {
         // Graceful fallback if nutrition registry/catalog is uninitialized.
       }
-      final goals = ref.watch(nutritionGoalRepositoryProvider);
+      final targets = ref.watch(nutritionTargetAuthorityProvider);
       return ProgressDashboardReadRepository(
         ref.watch(databaseProvider),
         dates: ref.watch(localScheduleDateServiceProvider),
         nutrition: nutrition,
-        nutritionGoals: goals,
+        nutritionTargets: targets,
       );
     });
 

@@ -6,6 +6,7 @@ import '../../core/presentation/consumer_number_label.dart';
 import '../../data/models/b02_progress_read_models.dart';
 import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../../data/repositories/nutrition_target_authority.dart';
 import '../progress/b02_progress_presentation.dart';
 import 'today_presentation_types.dart';
 import 'today_surface_controller.dart';
@@ -266,6 +267,7 @@ class TodayNutritionPresentation {
   factory TodayNutritionPresentation.from(
     TodayDomainRead<NutritionDailyReadModel>? read, {
     required bool loading,
+    TodayDomainRead<NutritionTargetsForDate?>? targetRead,
     TodayDomainRead<NutritionGoalVersionReadModel?>? goal,
   }) {
     if (loading || read == null) {
@@ -284,10 +286,15 @@ class TodayNutritionPresentation {
     }
 
     final daily = read.value!;
-    final acceptedGoal = goal?.isAvailable == true ? goal!.value : null;
+    // A supplied target read is authoritative even when it resolves to no
+    // goal for the requested historical date. The legacy goal parameter is a
+    // compatibility path for older presentation fixtures only.
+    final acceptedGoal = targetRead != null
+        ? (targetRead.isAvailable ? targetRead.value?.goalVersion : null)
+        : (goal?.isAvailable == true ? goal!.value : null);
     final calorieTarget = acceptedGoal?.calorieTargetKcal?.toDouble();
     final noConsumption = daily.records.isEmpty;
-    final targets = <String, double?>{
+    final targetValues = <String, double?>{
       'energy': calorieTarget,
       'protein': acceptedGoal?.proteinTargetG,
       'carbohydrate': acceptedGoal?.carbsTargetG,
@@ -303,14 +310,14 @@ class TodayNutritionPresentation {
             nutrientId: 'energy',
             label: 'Calories',
             unit: 'kcal',
-            targetValue: targets['energy'],
+            targetValue: targetValues['energy'],
           )
         : TodayNutritionMetricPresentation.fromFact(
             nutrientId: 'energy',
             label: 'Calories',
             fallbackUnit: 'kcal',
             fact: facts['energy'],
-            targetValue: targets['energy'],
+            targetValue: targetValues['energy'],
           );
     final macros = <TodayNutritionMetricPresentation>[
       for (final entry in const [
@@ -324,14 +331,14 @@ class TodayNutritionPresentation {
                 nutrientId: entry.$1,
                 label: entry.$2,
                 unit: 'g',
-                targetValue: targets[entry.$1],
+                targetValue: targetValues[entry.$1],
               )
             : TodayNutritionMetricPresentation.fromFact(
                 nutrientId: entry.$1,
                 label: entry.$2,
                 fallbackUnit: 'g',
                 fact: facts[entry.$1],
-                targetValue: targets[entry.$1],
+                targetValue: targetValues[entry.$1],
               ),
     ];
     final primaryMetrics = [calories, ...macros];

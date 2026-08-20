@@ -10,6 +10,7 @@ import '../models/progress_dashboard_models.dart';
 import 'b02_muscle_volume_repository.dart';
 import 'nutrition_goal_repository.dart';
 import 'nutrition_read_model_repository.dart';
+import 'nutrition_target_authority.dart';
 import 'workout_repository.dart';
 
 /// Read-only composition for the consumer Progress tab.
@@ -24,19 +25,28 @@ class ProgressDashboardReadRepository {
     WorkoutRepository? workouts,
     B02MuscleVolumeRepository? muscleVolume,
     NutritionReadModelRepository? nutrition,
+    NutritionTargetAuthority? nutritionTargets,
+    @Deprecated('Use nutritionTargets.')
     NutritionGoalRepository? nutritionGoals,
     LocalScheduleDateService? dates,
   }) : _workouts = workouts ?? WorkoutRepository(_database),
        _muscleVolume = muscleVolume ?? B02MuscleVolumeRepository(_database),
        _nutrition = nutrition,
-       _nutritionGoals = nutritionGoals,
+       _nutritionTargets =
+           nutritionTargets ??
+           (nutritionGoals == null
+               ? null
+               : NutritionTargetAuthority(
+                   goals: nutritionGoals,
+                   dates: dates ?? LocalScheduleDateService(),
+                 )),
        _dates = dates ?? LocalScheduleDateService();
 
   final AppDatabase _database;
   final WorkoutRepository _workouts;
   final B02MuscleVolumeRepository _muscleVolume;
   final NutritionReadModelRepository? _nutrition;
-  final NutritionGoalRepository? _nutritionGoals;
+  final NutritionTargetAuthority? _nutritionTargets;
   final LocalScheduleDateService _dates;
 
   Future<ProgressDashboardSnapshot> read({
@@ -390,14 +400,13 @@ class ProgressDashboardReadRepository {
         continue;
       }
 
-      final activeGoal = _nutritionGoals == null
+      final targets = _nutritionTargets == null
           ? null
-          : await _nutritionGoals.activeGoalForPrimaryProfile(
-              localDate: date,
-              timezoneId: timezoneId,
+          : await _nutritionTargets.resolve(
+              NutritionTargetDateQuery(localDate: date, timezoneId: timezoneId),
             );
-      final targetCalories = activeGoal?.calorieTargetKcal?.toDouble();
-      final targetProtein = activeGoal?.proteinTargetG;
+      final targetCalories = targets?.calorieTargetKcal?.toDouble();
+      final targetProtein = targets?.proteinTargetG;
       if (isToday) {
         todayTargetCalories = targetCalories;
         todayTargetProtein = targetProtein;
