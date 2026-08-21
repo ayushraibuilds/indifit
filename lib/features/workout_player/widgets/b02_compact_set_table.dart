@@ -132,6 +132,8 @@ class B02CompactSetTable extends StatelessWidget {
     required this.moreContent,
     super.key,
     this.onAddSet,
+    this.onLoadChanged,
+    this.onRepsChanged,
   });
 
   final B02StrengthExecutionSlot slot;
@@ -150,6 +152,8 @@ class B02CompactSetTable extends StatelessWidget {
   final ValueChanged<B02PerformedSet>? onDelete;
   final Widget? moreContent;
   final VoidCallback? onAddSet;
+  final ValueChanged<String>? onLoadChanged;
+  final ValueChanged<String>? onRepsChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -200,6 +204,8 @@ class B02CompactSetTable extends StatelessWidget {
             isBusy: isBusy,
             onRpeChanged: onRpeChanged,
             onWarmupChanged: onWarmupChanged,
+            onLoadChanged: onLoadChanged,
+            onRepsChanged: onRepsChanged,
             moreContent: moreContent,
           ),
           if (onAddSet != null) ...[
@@ -457,6 +463,8 @@ class _PendingSetEditor extends StatelessWidget {
     required this.isBusy,
     required this.onRpeChanged,
     required this.onWarmupChanged,
+    required this.onLoadChanged,
+    required this.onRepsChanged,
     required this.moreContent,
   });
 
@@ -470,6 +478,8 @@ class _PendingSetEditor extends StatelessWidget {
   final bool isBusy;
   final ValueChanged<int?> onRpeChanged;
   final ValueChanged<bool> onWarmupChanged;
+  final ValueChanged<String>? onLoadChanged;
+  final ValueChanged<String>? onRepsChanged;
   final Widget? moreContent;
 
   @override
@@ -511,6 +521,7 @@ class _PendingSetEditor extends StatelessWidget {
                 ),
                 textInputAction: TextInputAction.next,
                 decoration: InputDecoration(labelText: loadLabel),
+                onChanged: onLoadChanged,
               ),
               TextFormField(
                 key: ValueKey('compact-reps-${slot.id}'),
@@ -518,6 +529,7 @@ class _PendingSetEditor extends StatelessWidget {
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
                 decoration: const InputDecoration(labelText: 'Reps'),
+                onChanged: onRepsChanged,
                 onEditingComplete: () =>
                     FocusManager.instance.primaryFocus?.unfocus(),
               ),

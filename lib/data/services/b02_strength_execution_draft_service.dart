@@ -199,6 +199,75 @@ class B02StrengthExecutionDraftService {
     return state.copyWith(performedExercises: updatedExercises);
   }
 
+  /// Changes the actual canonical exercise for one still-unlogged slot.
+  ///
+  /// The planned slot, prescription ancestry, and occurrence identity remain
+  /// untouched. Once a set exists, the current B02 draft must retain that
+  /// performed evidence rather than reattributing it to another exercise;
+  /// the canonical replacement authority enforces that boundary before this
+  /// mutation is called.
+  B02ExecutionDraftState replaceExercise({
+    required B02ExecutionDraftState state,
+    required B02StrengthExecutionSlot slot,
+    required String actualExerciseId,
+    required String actualExerciseNameSnapshot,
+    required String substitutionReason,
+  }) {
+    final replacementId = actualExerciseId.trim();
+    final replacementName = actualExerciseNameSnapshot.trim();
+    if (replacementId.isEmpty || replacementName.isEmpty) {
+      throw const B02ValidationException(
+        'A replacement needs a canonical exercise identity and name.',
+      );
+    }
+    final performedId = 'performed:${slot.id}';
+    final existingIndex = state.performedExercises.indexWhere(
+      (exercise) => exercise.id == performedId,
+    );
+    final existing = existingIndex < 0
+        ? null
+        : state.performedExercises[existingIndex];
+    final currentActualId = existing?.actualExerciseId ?? slot.exerciseId;
+    if (replacementId == currentActualId) {
+      throw const B02ValidationException(
+        'The selected exercise is already in this slot.',
+      );
+    }
+    if (existing?.sets.isNotEmpty == true) {
+      throw const B02ValidationException(
+        'Logged sets cannot be reassigned to another exercise.',
+      );
+    }
+    final replaced = B02PerformedExerciseDraft(
+      id: performedId,
+      performedExerciseGroupId:
+          existing?.performedExerciseGroupId ?? slot.groupId,
+      sourceExercisePrescriptionId:
+          existing?.sourceExercisePrescriptionId ?? slot.prescriptionId,
+      groupMemberOrdinal: existing?.groupMemberOrdinal ?? slot.memberOrdinal,
+      groupRoundOrdinal: existing?.groupRoundOrdinal ?? slot.roundOrdinal,
+      ordinal: existing?.ordinal ?? state.performedExercises.length,
+      expectedExerciseId: existing?.expectedExerciseId ?? slot.exerciseId,
+      expectedExerciseNameSnapshot:
+          existing?.expectedExerciseNameSnapshot ?? slot.exerciseNameSnapshot,
+      actualExerciseId: replacementId,
+      actualExerciseNameSnapshot: replacementName,
+      status: 'partial',
+      substitutionReason: substitutionReason.trim(),
+      sets: existing?.sets ?? const [],
+      targetRecommendation:
+          existing?.targetRecommendation ??
+          state.targetRecommendations[slot.id],
+    );
+    final updated = [...state.performedExercises];
+    if (existingIndex < 0) {
+      updated.add(replaced);
+    } else {
+      updated[existingIndex] = replaced;
+    }
+    return state.copyWith(performedExercises: updated);
+  }
+
   B02ExecutionDraftState skipSlot({
     required B02ExecutionDraftState state,
     required B02StrengthExecutionSlot slot,

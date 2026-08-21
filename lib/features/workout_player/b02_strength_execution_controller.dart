@@ -10,6 +10,7 @@ import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
 import '../../data/services/b02_rest_recommendation_service.dart';
 import '../../data/services/b02_strength_execution_draft_service.dart';
+import '../exercise_picker/exercise_picker_models.dart';
 
 /// UI states are deliberately separate from the durable draft. A transient
 /// failure never becomes a fake completed/ready state and a recovered draft is
@@ -61,7 +62,8 @@ class B02StrengthExecutionUiState {
 }
 
 class B02StrengthExecutionController
-    extends StateNotifier<B02StrengthExecutionUiState> {
+    extends StateNotifier<B02StrengthExecutionUiState>
+    implements CanonicalExerciseReplacementAuthority {
   final StrengthExecutionCompatibilityAdapter _adapter;
   final B02StrengthExecutionDraftService _draftService;
   final B02RestDraftCoordinator _restCoordinator;
@@ -407,6 +409,150 @@ class B02StrengthExecutionController
       );
     } catch (error) {
       _setFailure(error, current);
+    }
+  }
+
+  /// Reads replacement compatibility from the live canonical draft and
+  /// catalog identities. No exercise metadata is compared here: the B02
+  /// boundary only knows whether an exact canonical identity can be used and
+  /// whether the current draft can still rebind unlogged work.
+  @override
+  Future<CanonicalReplacementCompatibility> readCompatibility({
+    required ExerciseReplacementTarget target,
+  }) async {
+    final current = state.launch;
+    if (current == null || !_targetMatchesLaunch(current, target)) {
+      return CanonicalReplacementCompatibility.unknown(
+        currentPerformedExerciseId: target.currentPerformedExerciseId,
+      );
+    }
+    final slot = _slotForTarget(target);
+    if (slot == null) {
+      return CanonicalReplacementCompatibility.unknown(
+        currentPerformedExerciseId: target.currentPerformedExerciseId,
+      );
+    }
+    final performed = _performedForSlot(current.state, slot);
+    final actualId = performed?.actualExerciseId ?? slot.exerciseId;
+    if (actualId == null || actualId != target.currentPerformedExerciseId) {
+      return CanonicalReplacementCompatibility.unknown(
+        currentPerformedExerciseId: target.currentPerformedExerciseId,
+      );
+    }
+    try {
+      final canonicalExercises = await _adapter.readCanonicalExercises();
+      if (!canonicalExercises.containsKey(actualId)) {
+        return CanonicalReplacementCompatibility.unknown(
+          currentPerformedExerciseId: actualId,
+        );
+      }
+      final logged = performed?.sets.isNotEmpty == true;
+      return CanonicalReplacementCompatibility(
+        currentPerformedExerciseId: actualId,
+        knowledge: CanonicalReplacementKnowledge.known,
+        candidates: [
+          for (final exerciseId in canonicalExercises.keys)
+            CanonicalReplacementCandidate(
+              exerciseId: exerciseId,
+              state: logged
+                  ? CanonicalReplacementCandidateState.unavailable
+                  : CanonicalReplacementCandidateState.allowed,
+              unavailableReason: logged
+                  ? CanonicalReplacementUnavailableReason.loggedEvidenceLocked
+                  : null,
+              effect: logged
+                  ? CanonicalReplacementEffect.remainingUnloggedWork
+                  : CanonicalReplacementEffect.workoutSlotUsesReplacement,
+              preservesLoggedEvidence: logged,
+            ),
+        ],
+      );
+    } catch (_) {
+      return CanonicalReplacementCompatibility.unknown(
+        currentPerformedExerciseId: actualId,
+      );
+    }
+  }
+
+  /// Commits a selected exact canonical replacement into the same active
+  /// draft. Planned occurrence ancestry and Quick's occurrence-less origin
+  /// are retained; no new session or player route is created.
+  @override
+  Future<void> commit({
+    required ExerciseReplacementTarget target,
+    required ExercisePickerSelection selection,
+  }) async {
+    final current = state.launch;
+    if (current == null || !_targetMatchesLaunch(current, target)) {
+      throw const B02StrengthExecutionRecoveryException(
+        'The workout changed before the replacement could be applied.',
+      );
+    }
+    final slot = _slotForTarget(target);
+    if (slot == null) {
+      throw const B02StrengthExecutionRecoveryException(
+        'The exercise is no longer available in this workout.',
+      );
+    }
+    final performed = _performedForSlot(current.state, slot);
+    final actualId = performed?.actualExerciseId ?? slot.exerciseId;
+    if (actualId == null || actualId != target.currentPerformedExerciseId) {
+      throw const B02StrengthExecutionRecoveryException(
+        'The exercise changed before the replacement could be applied.',
+      );
+    }
+    if (selection.exerciseId == actualId) {
+      throw const B02ValidationException(
+        'The selected exercise is already in this slot.',
+      );
+    }
+    final canonicalExercises = await _adapter.readCanonicalExercises();
+    final canonicalName = canonicalExercises[selection.exerciseId];
+    if (canonicalName == null ||
+        canonicalName != selection.exerciseNameSnapshot.trim()) {
+      throw const B02ValidationException(
+        'The selected exercise is no longer available.',
+      );
+    }
+    final compatibility = await readCompatibility(target: target);
+    final candidate = compatibility.forExerciseId(selection.exerciseId);
+    if (!candidate.isSelectable) {
+      if (candidate.unavailableReason ==
+          CanonicalReplacementUnavailableReason.loggedEvidenceLocked) {
+        throw const B02ValidationException(
+          'Logged sets cannot be reassigned to another exercise.',
+        );
+      }
+      throw const B02ValidationException(
+        'The selected exercise is no longer available.',
+      );
+    }
+    final next = _draftService.replaceExercise(
+      state: current.state,
+      slot: slot,
+      actualExerciseId: selection.exerciseId,
+      actualExerciseNameSnapshot: canonicalName,
+      substitutionReason: 'User-selected replacement',
+    );
+    final saved = await saveDraft(next);
+    if (!saved) {
+      throw const B02StrengthExecutionException(
+        'The replacement could not be saved.',
+      );
+    }
+    await loadSlots();
+    final rebound = state.launch;
+    final reboundSlot = _slotForTarget(target);
+    final reboundPerformed = rebound == null || reboundSlot == null
+        ? null
+        : _performedForSlot(rebound.state, reboundSlot);
+    if (rebound == null ||
+        state.status == B02StrengthExecutionStatus.failure ||
+        state.status == B02StrengthExecutionStatus.recovery ||
+        reboundPerformed?.actualExerciseId != selection.exerciseId) {
+      throw const B02StrengthExecutionRecoveryException(
+        'The workout needs to be reopened before the replacement can be used.',
+      );
     }
   }
 
@@ -1018,6 +1164,49 @@ class B02StrengthExecutionController
         recovery ? 'workout_recovery_needed' : 'workout_save_failed',
       ).message,
     );
+  }
+
+  bool _targetMatchesLaunch(
+    B02StrengthExecutionLaunch launch,
+    ExerciseReplacementTarget target,
+  ) {
+    if (launch.draftId != target.draftId) return false;
+    if (target is PlannedExerciseReplacementTarget) {
+      return launch.occurrenceId == target.scheduledOccurrenceId &&
+          launch.occurrenceId != null &&
+          state.slots.any(
+            (slot) =>
+                slot.id == target.slotId &&
+                slot.exerciseId == target.expectedExerciseId,
+          );
+    }
+    if (target is QuickExerciseReplacementTarget) {
+      return launch.occurrenceId == null &&
+          state.slots.any((slot) => slot.id == target.slotId);
+    }
+    return false;
+  }
+
+  B02StrengthExecutionSlot? _slotForTarget(ExerciseReplacementTarget target) {
+    for (final slot in state.slots) {
+      if (slot.id == target.slotId) return slot;
+    }
+    return null;
+  }
+
+  B02PerformedExerciseDraft? _performedForSlot(
+    B02ExecutionDraftState draft,
+    B02StrengthExecutionSlot slot,
+  ) {
+    for (final exercise in draft.performedExercises) {
+      final direct = exercise.id == 'performed:${slot.id}';
+      final sameFrozenSlot =
+          exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+          exercise.groupRoundOrdinal == slot.roundOrdinal &&
+          exercise.groupMemberOrdinal == slot.memberOrdinal;
+      if (direct || sameFrozenSlot) return exercise;
+    }
+    return null;
   }
 }
 
