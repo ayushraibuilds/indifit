@@ -86,6 +86,15 @@ class TodayWorkoutPresentation {
         detail: 'Try again to check your active workout.',
       );
     }
+    if (resolution?.hasActiveDraft == true &&
+        resolution?.activeDraft == null) {
+      return const TodayWorkoutPresentation(
+        state: TodayPresentationState.ready,
+        title: 'Workout in progress',
+        detail: 'Resolve your active workout before starting another.',
+        canStart: false,
+      );
+    }
     final occurrences = todayVisibleWorkoutOccurrences(
       read.value!,
       localDate: localDate,
@@ -682,6 +691,15 @@ TodayFocusPresentation todayFocusPresentation({
       action: TodayNextAction.resumeWorkout,
       activeDraft: activeDraft,
       workout: resolution?.currentOccurrence,
+    );
+  }
+  if (resolution?.hasActiveDraft == true) {
+    return const TodayFocusPresentation(
+      state: TodayPresentationState.ready,
+      title: 'Workout in progress',
+      detail: 'Resolve your active workout before starting another.',
+      actionLabel: 'Open workout plan',
+      action: TodayNextAction.openWorkoutPlan,
     );
   }
   final overdue = resolution?.overdueOccurrence;

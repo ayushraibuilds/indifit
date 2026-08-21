@@ -83,12 +83,7 @@ class TodaySurfaceSnapshot {
   TrainingNextActionResolution? get nextActionResolution {
     final calendarRead = calendar;
     if (!calendarRead.isAvailable || calendarRead.value == null) return null;
-    final draft =
-        activeDraft.isAvailable &&
-            activeDraft.value != null &&
-            isTrainingResumableDraft(activeDraft.value!)
-        ? activeDraft.value
-        : null;
+    final draft = activeDraft.isAvailable ? activeDraft.value : null;
     return resolveTrainingNextAction(
       snapshot: calendarRead.value!,
       localDate: localDate,

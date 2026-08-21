@@ -308,12 +308,13 @@ class _Body extends StatelessWidget {
               const Icon(Icons.error_outline, size: 44),
               const SizedBox(height: 12),
               Text(
-                ui.errorMessage ?? 'Finalization needs recovery.',
+                ui.errorMessage ??
+                    'Your workout could not be saved. Try again.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               const Text(
-                'Your workout is still saved as a draft. Try finishing again or return to the workout.',
+                'Your saved workout is still available to retry.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
