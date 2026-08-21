@@ -500,6 +500,19 @@ class StrengthExecutionRepository {
     );
   }
 
+  /// Returns only canonical catalog identities for the execution replacement
+  /// boundary. It does not decide equivalence, muscle similarity, equipment
+  /// similarity, or replacement policy.
+  Future<Map<String, String>> readCanonicalExercises() async {
+    final rows = await _db.select(_db.exercises).get();
+    return {
+      for (final row in rows)
+        if (row.stableId?.trim().isNotEmpty == true &&
+            row.name.trim().isNotEmpty)
+          row.stableId!.trim(): row.name.trim(),
+    };
+  }
+
   /// Resolves the frozen group graph to canonical prescription/exercise
   /// metadata for the player. This is deliberately a repository read: the UI
   /// must never infer stable IDs or modality from a display name.
@@ -1846,6 +1859,9 @@ class StrengthExecutionCompatibilityAdapter {
 
   Future<B02StrengthExecutionLaunch> readDraft(int draftId) =>
       _repository.readDraft(draftId);
+
+  Future<Map<String, String>> readCanonicalExercises() =>
+      _repository.readCanonicalExercises();
 
   Future<List<B02StrengthExecutionSlot>> readExecutionSlots(
     B02StrengthExecutionLaunch launch,

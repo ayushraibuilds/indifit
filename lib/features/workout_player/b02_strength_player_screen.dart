@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/di/providers.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -11,7 +12,10 @@ import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
+import '../../data/models/b02_previous_performance_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
+import '../exercise_picker/exercise_picker.dart';
+import 'b02_previous_performance_integration.dart';
 import 'b02_strength_execution_controller.dart';
 import 'b02_workout_elapsed.dart';
 import 'quick_workout_screen.dart';
@@ -47,9 +51,12 @@ class _B02StrengthPlayerScreenState
   final _loadControllers = <String, TextEditingController>{};
   final _rpes = <String, String>{};
   final _mutatingSetIds = <String>{};
+  final _inputIdentities = <String, _B02InputIdentity>{};
+  final _loggedSetCounts = <String, int>{};
+  final _editedInputFields =
+      <({String slotId, B02PreviousPerformanceInputField field})>{};
+  late final B02PreviousPerformanceLookupCoordinator _previousLookup;
   String? _selectedSlotId;
-  final _substitutionIds = <String, String?>{};
-  final _substitutionNames = <String, String?>{};
   bool _warmup = false;
   var _isSubmittingSet = false;
   var _isClosing = false;
@@ -58,6 +65,10 @@ class _B02StrengthPlayerScreenState
   @override
   void initState() {
     super.initState();
+    _previousLookup = B02PreviousPerformanceLookupCoordinator(
+      resolve: (query) =>
+          ref.read(b02PreviousPerformanceRepositoryProvider).resolve(query),
+    );
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -74,6 +85,7 @@ class _B02StrengthPlayerScreenState
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _previousLookup.invalidate();
     for (final controller in _repControllers.values) {
       controller.dispose();
     }
@@ -205,10 +217,22 @@ class _B02StrengthPlayerScreenState
         !isQuick && workingSetCount >= selected.plannedSets;
     final currentSet = workingSetCount + 1;
     final performedSets = _performedSets(launch.state, selected);
-    final currentTarget = _hasUsefulTargetContext(launch.state, selected)
+    _loggedSetCounts[selected.id] = performedSets.length;
+    final actualExerciseId = _actualExerciseId(launch.state, selected);
+    _syncInputIdentity(selected, actualExerciseId);
+    final previousKey = _previousPerformanceKey(launch.state, selected);
+    if (previousKey != null) {
+      _schedulePreviousPerformanceLookup(previousKey);
+    }
+    final previousPerformance = _previousLookup.activeKey == previousKey
+        ? _previousLookup.activeResult
+        : null;
+    final currentTarget =
+        _hasUsefulTargetContext(launch.state, selected, previousPerformance)
         ? _R07CTargetContext(
             slot: selected,
             state: launch.state,
+            previousPerformance: previousPerformance,
             onApply: ui.isBusy
                 ? null
                 : () => _applySuggestedTarget(launch.state, selected),
@@ -337,6 +361,10 @@ class _B02StrengthPlayerScreenState
       onRpeChanged: (value) =>
           setState(() => _rpes[selected.id] = value?.toString() ?? ''),
       onWarmupChanged: (value) => setState(() => _warmup = value),
+      onLoadChanged: (_) =>
+          _markInputEdited(selected.id, B02PreviousPerformanceInputField.load),
+      onRepsChanged: (_) =>
+          _markInputEdited(selected.id, B02PreviousPerformanceInputField.reps),
       onEdit: (set) => unawaited(_editLoggedSet(provider, selected, set)),
       onDelete: (set) => unawaited(_deleteLoggedSet(provider, selected, set)),
       onAddSet: !isPlannedMode ? () => _prepareExtraSet(selected) : null,
@@ -427,12 +455,30 @@ class _B02StrengthPlayerScreenState
     B02ExecutionDraftState state,
     B02StrengthExecutionSlot slot,
   ) {
-    final performed = state.performedExercises.where(
-      (exercise) => exercise.id == 'performed:${slot.id}',
-    );
-    return performed.isEmpty
-        ? (_substitutionNames[slot.id] ?? slot.exerciseNameSnapshot)
-        : performed.first.actualExerciseNameSnapshot;
+    final performed = _performedForSlot(state, slot);
+    return performed?.actualExerciseNameSnapshot ?? slot.exerciseNameSnapshot;
+  }
+
+  String? _actualExerciseId(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    return _performedForSlot(state, slot)?.actualExerciseId ?? slot.exerciseId;
+  }
+
+  B02PerformedExerciseDraft? _performedForSlot(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    for (final exercise in state.performedExercises) {
+      final direct = exercise.id == 'performed:${slot.id}';
+      final sameFrozenSlot =
+          exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+          exercise.groupRoundOrdinal == slot.roundOrdinal &&
+          exercise.groupMemberOrdinal == slot.memberOrdinal;
+      if (direct || sameFrozenSlot) return exercise;
+    }
+    return null;
   }
 
   String _loadLabel(B02LoadBasis? basis) => switch (basis) {
@@ -491,6 +537,7 @@ class _B02StrengthPlayerScreenState
   bool _hasUsefulTargetContext(
     B02ExecutionDraftState state,
     B02StrengthExecutionSlot slot,
+    B02PreviousExercisePerformance? previousPerformance,
   ) {
     final recommendation = state.targetRecommendations[slot.id];
     final override = state.targetOverrides[slot.id];
@@ -513,13 +560,120 @@ class _B02StrengthPlayerScreenState
           slot.targetRepsMax,
       rpe: override?.targetRpe ?? recommendation?.targetRpe ?? slot.targetRpe,
     );
-    final last = r07cFormatLastPerformance(
-      loadKg: _asDouble(recommendation?.completeness['previousLoadKg']),
-      loadBasis: recommendation?.loadBasis,
-      reps: _asInt(recommendation?.completeness['previousReps']),
-      rpe: _asInt(recommendation?.completeness['previousRpe']),
+    return usefulTarget ||
+        B02PreviousPerformancePresentation.lastTime(previousPerformance) !=
+            null;
+  }
+
+  void _syncInputIdentity(
+    B02StrengthExecutionSlot slot,
+    String? actualExerciseId,
+  ) {
+    final next = _B02InputIdentity(
+      slotId: slot.id,
+      actualExerciseId: actualExerciseId,
     );
-    return usefulTarget || last != null;
+    final previous = _inputIdentities[slot.id];
+    if (previous != null && previous != next) {
+      final oldReps = _repControllers.remove(slot.id);
+      final oldLoad = _loadControllers.remove(slot.id);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        oldReps?.dispose();
+        oldLoad?.dispose();
+      });
+      _rpes.remove(slot.id);
+      _editedInputFields.removeWhere((field) => field.slotId == slot.id);
+    }
+    _inputIdentities[slot.id] = next;
+  }
+
+  void _markInputEdited(String slotId, B02PreviousPerformanceInputField field) {
+    _editedInputFields.add((slotId: slotId, field: field));
+  }
+
+  B02PreviousPerformanceRequestKey? _previousPerformanceKey(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+  ) {
+    final actualExerciseId = _actualExerciseId(state, slot)?.trim();
+    if (actualExerciseId == null || actualExerciseId.isEmpty) return null;
+    final recommendation = state.targetRecommendations[slot.id];
+    final override = state.targetOverrides[slot.id];
+    final loadBasis =
+        override?.loadBasis ??
+        recommendation?.loadBasis ??
+        slot.targetLoadBasis;
+    if (loadBasis == null) return null;
+    return B02PreviousPerformanceRequestKey(
+      slotId: slot.id,
+      actualExerciseId: actualExerciseId,
+      role: _warmup ? B02SetRole.warmup : B02SetRole.working,
+      loadBasis: loadBasis,
+      effortMode: slot.effortMode,
+      endedAtFailure: slot.endedAtFailure,
+    );
+  }
+
+  void _schedulePreviousPerformanceLookup(
+    B02PreviousPerformanceRequestKey key,
+  ) {
+    final query = B02PreviousPerformanceQuery(
+      canonicalExerciseId: key.actualExerciseId,
+      setContext: B02PreviousPerformanceSetContext(
+        role: key.role,
+        loadBasis: key.loadBasis,
+        effortMode: key.effortMode,
+        endedAtFailure: key.endedAtFailure,
+      ),
+      asOfUtc: (widget.nowUtc?.call() ?? DateTime.now()).toUtc(),
+    );
+    unawaited(
+      _previousLookup.request(
+        key: key,
+        query: query,
+        onAccepted: (result) {
+          if (!mounted || _previousLookup.activeKey != key) return;
+          _applySafePrefill(key, result);
+          if (mounted) setState(() {});
+        },
+      ),
+    );
+  }
+
+  void _applySafePrefill(
+    B02PreviousPerformanceRequestKey key,
+    B02PreviousExercisePerformance result,
+  ) {
+    if (!_previousLookup.claimPrefill(key)) return;
+    final prefill = result.safePrefill;
+    if (result.status != B02PreviousPerformanceStatus.available ||
+        prefill == null ||
+        prefill.loadBasis != key.loadBasis ||
+        prefill.role != key.role ||
+        (_loggedSetCounts[key.slotId] ?? 0) != 0 ||
+        _inputIdentities[key.slotId]?.actualExerciseId !=
+            key.actualExerciseId) {
+      return;
+    }
+    final loadController = _loadControllers[key.slotId];
+    final repsController = _repControllers[key.slotId];
+    if (loadController != null &&
+        !_editedInputFields.contains((
+          slotId: key.slotId,
+          field: B02PreviousPerformanceInputField.load,
+        )) &&
+        loadController.text.trim().isEmpty &&
+        prefill.loadKg != null) {
+      loadController.text = prefill.loadKg.toString();
+    }
+    if (repsController != null &&
+        !_editedInputFields.contains((
+          slotId: key.slotId,
+          field: B02PreviousPerformanceInputField.reps,
+        )) &&
+        repsController.text.trim().isEmpty) {
+      repsController.text = prefill.reps.toString();
+    }
   }
 
   void _applySuggestedTarget(
@@ -536,17 +690,6 @@ class _B02StrengthPlayerScreenState
     });
     FocusManager.instance.primaryFocus?.unfocus();
   }
-
-  static double? _asDouble(Object? value) => switch (value) {
-    num number => number.toDouble(),
-    _ => null,
-  };
-
-  static int? _asInt(Object? value) => switch (value) {
-    int number => number,
-    num number => number.toInt(),
-    _ => null,
-  };
 
   bool _hasOpenRest(
     B02ExecutionDraftState state,
@@ -622,11 +765,6 @@ class _B02StrengthPlayerScreenState
         actualLoadBasis: slot.targetLoadBasis,
         rpe: int.tryParse(_rpes[slot.id] ?? ''),
         role: _warmup ? B02SetRole.warmup : B02SetRole.working,
-        actualExerciseId: _substitutionIds[slot.id],
-        actualExerciseNameSnapshot: _substitutionNames[slot.id],
-        substitutionReason: _substitutionIds[slot.id] == null
-            ? null
-            : 'User-selected substitution',
       );
       if (!mounted) return;
       final saved = ref.read(provider);
@@ -893,6 +1031,48 @@ class _B02StrengthPlayerScreenState
     }
   }
 
+  Future<void> _openReplacementPicker(
+    dynamic provider,
+    B02StrengthExecutionSlot slot,
+  ) async {
+    final currentLaunch = launchForProvider(provider);
+    if (currentLaunch == null) return;
+    final execution = _executionFor(currentLaunch);
+    final actualExerciseId = _actualExerciseId(currentLaunch.state, slot);
+    if (actualExerciseId == null || !slot.hasCanonicalExercise) return;
+    final actualExerciseName = _actualExerciseName(currentLaunch.state, slot);
+    final target = execution is PlannedWorkoutExecutionContext
+        ? PlannedExerciseReplacementTarget(
+            draftId: currentLaunch.draftId,
+            scheduledOccurrenceId: execution.occurrenceId,
+            slotId: slot.id,
+            expectedExerciseId: slot.exerciseId!,
+            currentPerformedExerciseId: actualExerciseId,
+            currentExerciseNameSnapshot: actualExerciseName,
+          )
+        : QuickExerciseReplacementTarget(
+            draftId: currentLaunch.draftId,
+            slotId: slot.id,
+            currentPerformedExerciseId: actualExerciseId,
+            currentExerciseNameSnapshot: actualExerciseName,
+          );
+    final authority =
+        ref.read(provider.notifier) as CanonicalExerciseReplacementAuthority;
+    final compatibility = await authority.readCompatibility(target: target);
+    if (!mounted) return;
+    final result = await showExerciseReplacementPicker(
+      context: context,
+      selectionContext: ExerciseReplacementPickerContext(
+        target: target,
+        compatibility: compatibility,
+      ),
+      onReplacementCommit: authority.commit,
+    );
+    if (result?.committed == true && mounted) {
+      showIndiFitSuccessFeedback(context, 'Exercise replaced');
+    }
+  }
+
   Future<void> _showExerciseActions(
     dynamic provider,
     B02StrengthExecutionSlot slot,
@@ -913,7 +1093,12 @@ class _B02StrengthPlayerScreenState
         child: Wrap(
           children: [
             ListTile(
-              title: Text(slot.exerciseNameSnapshot),
+              title: Text(
+                _actualExerciseName(
+                  launchForProvider(provider)?.state ?? widget.launch.state,
+                  slot,
+                ),
+              ),
               subtitle: Text(
                 isQuick ? 'Quick Workout exercise' : 'Planned exercise',
               ),
@@ -930,18 +1115,24 @@ class _B02StrengthPlayerScreenState
                 title: const Text('Remove exercise'),
                 onTap: () => Navigator.pop(sheetContext, 'remove'),
               ),
-            if (!isQuick && !hasLoggedSets)
-              ListTile(
-                leading: const Icon(Icons.swap_horiz_rounded),
-                title: const Text('Substitute exercise'),
-                onTap: () => Navigator.pop(sheetContext, 'substitute'),
+            ListTile(
+              leading: const Icon(Icons.swap_horiz_rounded),
+              title: const Text('Replace exercise'),
+              subtitle: Text(
+                hasLoggedSets
+                    ? 'Already logged sets stay with the current exercise.'
+                    : isQuick
+                    ? 'Change this exercise in your Quick workout.'
+                    : 'Change this exercise for the remaining workout.',
               ),
+              onTap: () => Navigator.pop(sheetContext, 'replace'),
+            ),
             if (!isQuick && hasLoggedSets)
               const ListTile(
                 leading: Icon(Icons.lock_outline_rounded),
-                title: Text('Substitution locked'),
+                title: Text('Logged sets are protected'),
                 subtitle: Text(
-                  'A different exercise cannot replace sets already logged.',
+                  'They stay attached to the exercise you logged.',
                 ),
               ),
           ],
@@ -981,21 +1172,8 @@ class _B02StrengthPlayerScreenState
       }
       return;
     }
-    if (action == 'substitute') {
-      final exercise = await showModalBottomSheet<Exercise>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        builder: (_) => const QuickExercisePicker(),
-      );
-      if (exercise?.stableId == null || !mounted) return;
-      setState(() {
-        _substitutionIds[slot.id] = exercise!.stableId;
-        _substitutionNames[slot.id] = exercise.name;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        indiFitSuccessSnackBar('Substitution ready for the next set'),
-      );
+    if (action == 'replace') {
+      await _openReplacementPicker(provider, slot);
     }
   }
 
@@ -1222,6 +1400,27 @@ class _B02LoggedSetEditValues {
   final int? rpe;
 }
 
+@immutable
+class _B02InputIdentity {
+  const _B02InputIdentity({
+    required this.slotId,
+    required this.actualExerciseId,
+  });
+
+  final String slotId;
+  final String? actualExerciseId;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _B02InputIdentity &&
+        other.slotId == slotId &&
+        other.actualExerciseId == actualExerciseId;
+  }
+
+  @override
+  int get hashCode => Object.hash(slotId, actualExerciseId);
+}
+
 class _R07CExecutionHeader extends StatelessWidget {
   const _R07CExecutionHeader({
     required this.executionContext,
@@ -1378,12 +1577,14 @@ class _R07CExerciseStrip extends StatelessWidget {
 class _R07CTargetContext extends StatelessWidget {
   final B02StrengthExecutionSlot slot;
   final B02ExecutionDraftState state;
+  final B02PreviousExercisePerformance? previousPerformance;
   final VoidCallback? onApply;
   final VoidCallback? onChange;
 
   const _R07CTargetContext({
     required this.slot,
     required this.state,
+    required this.previousPerformance,
     required this.onApply,
     required this.onChange,
   });
@@ -1426,16 +1627,8 @@ class _R07CTargetContext extends StatelessWidget {
             rpe: rpe,
           )
         : null;
-    final previousLoad = _asDouble(
-      recommendation?.completeness['previousLoadKg'],
-    );
-    final previousReps = _asInt(recommendation?.completeness['previousReps']);
-    final previousRpe = _asInt(recommendation?.completeness['previousRpe']);
-    final last = r07cFormatLastPerformance(
-      loadKg: previousLoad,
-      loadBasis: recommendation?.loadBasis,
-      reps: previousReps,
-      rpe: previousRpe,
+    final last = B02PreviousPerformancePresentation.lastTime(
+      previousPerformance,
     );
     if (last == null && target == null) return const SizedBox.shrink();
     return B05Surface(
@@ -1488,17 +1681,6 @@ class _R07CTargetContext extends StatelessWidget {
       ),
     );
   }
-
-  static double? _asDouble(Object? value) => switch (value) {
-    num number => number.toDouble(),
-    _ => null,
-  };
-
-  static int? _asInt(Object? value) => switch (value) {
-    int number => number,
-    num number => number.toInt(),
-    _ => null,
-  };
 }
 
 class _WarmupCard extends StatelessWidget {
