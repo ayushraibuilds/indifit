@@ -9,6 +9,7 @@ import '../../core/presentation/consumer_number_label.dart';
 import '../../core/presentation/daypart_greeting.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../data/database/app_database.dart';
 import '../../data/models/b02_progress_read_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../food_log/food_search_screen.dart';
@@ -57,7 +58,21 @@ TodayNextActionChoice chooseTodayNextAction({
   }
   final scheduled = snapshot?.calendar.value == null
       ? false
-      : todayVisibleWorkoutOccurrences(snapshot!.calendar.value!).isNotEmpty;
+      : snapshot!.nextActionResolution?.todayOccurrence != null;
+  if (snapshot?.nextActionResolution?.activeDraftReadAvailable == false) {
+    return const TodayNextActionChoice(
+      action: TodayNextAction.openWorkoutPlan,
+      label: 'Workout state unavailable',
+      hint: 'Check your saved workout before starting another.',
+    );
+  }
+  if (snapshot?.nextActionResolution?.activeDraft != null) {
+    return const TodayNextActionChoice(
+      action: TodayNextAction.resumeWorkout,
+      label: 'Resume workout',
+      hint: 'Continues your saved active workout.',
+    );
+  }
   if (scheduled == true) {
     return const TodayNextActionChoice(
       action: TodayNextAction.openWorkoutPlan,
@@ -113,6 +128,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     this.now,
     this.onLogMealForMeal,
     this.onStartWorkout,
+    this.onResumeWorkout,
     this.onOpenFoodGuidance,
   });
 
@@ -131,6 +147,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
   /// ordinary food-search route. [onLogMeal] remains the compatible default.
   final Future<void> Function(String mealType)? onLogMealForMeal;
   final Future<void> Function(CalendarOccurrenceReadItem item)? onStartWorkout;
+  final Future<void> Function(WorkoutDraft draft)? onResumeWorkout;
   final VoidCallback? onOpenFoodGuidance;
 
   @override
@@ -169,6 +186,8 @@ class TodayDailyActionSurface extends ConsumerWidget {
                 )
               : null),
       loading: loading,
+      resolution: snapshot?.nextActionResolution,
+      localDate: snapshot?.localDate ?? todaySurfaceDateKey(selectedDate),
     );
     final activity = TodayActivityPresentation.from(
       snapshot?.progress ??
@@ -260,7 +279,8 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         progress: progress,
                         hideWorkoutDuplicate:
                             nextUpVisible &&
-                            (nextUp.action == TodayNextAction.startWorkout ||
+                            (nextUp.action == TodayNextAction.resumeWorkout ||
+                                nextUp.action == TodayNextAction.startWorkout ||
                                 nextUp.action ==
                                     TodayNextAction.openWorkoutPlan),
                         onRetry: () => ref.invalidate(
@@ -268,6 +288,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
                         ),
                         onLogMeal: _openMeal,
                         onStartWorkout: _startWorkout,
+                        onResumeWorkout: _resumeWorkout,
                         onOpenFoodGuidance: onOpenFoodGuidance ?? () {},
                         selectedDate: selectedDate,
                         onExpand: () => personalizationController.setCollapsed(
@@ -306,6 +327,15 @@ class TodayDailyActionSurface extends ConsumerWidget {
     unawaited(callback(item));
   }
 
+  void _resumeWorkout(WorkoutDraft draft) {
+    final callback = onResumeWorkout;
+    if (callback == null) {
+      onOpenWorkoutPlan();
+      return;
+    }
+    unawaited(callback(draft));
+  }
+
   Widget _module({
     required BuildContext context,
     required WidgetRef ref,
@@ -320,6 +350,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
     required VoidCallback onRetry,
     required ValueChanged<String> onLogMeal,
     required ValueChanged<CalendarOccurrenceReadItem> onStartWorkout,
+    required ValueChanged<WorkoutDraft> onResumeWorkout,
     required VoidCallback onOpenFoodGuidance,
     required Future<void> Function() onExpand,
     required DateTime selectedDate,
@@ -344,6 +375,7 @@ class TodayDailyActionSurface extends ConsumerWidget {
         onLogMeal: () => onLogMeal(''),
         onReturnToToday: () => onDateChanged(now ?? DateTime.now()),
         onStartWorkout: onStartWorkout,
+        onResumeWorkout: onResumeWorkout,
         onRetry: onRetry,
       ),
       'today.meal_rows' => _TodayMealsModule(
@@ -1084,6 +1116,7 @@ class _TodayNextUpModule extends StatelessWidget {
     required this.onLogMeal,
     required this.onReturnToToday,
     required this.onStartWorkout,
+    required this.onResumeWorkout,
     required this.onRetry,
   });
 
@@ -1092,6 +1125,7 @@ class _TodayNextUpModule extends StatelessWidget {
   final VoidCallback onLogMeal;
   final VoidCallback onReturnToToday;
   final ValueChanged<CalendarOccurrenceReadItem> onStartWorkout;
+  final ValueChanged<WorkoutDraft> onResumeWorkout;
   final VoidCallback onRetry;
 
   @override
@@ -1110,12 +1144,15 @@ class _TodayNextUpModule extends StatelessWidget {
     final callback = switch (action) {
       TodayNextAction.startWorkout when presentation.workout != null =>
         () => onStartWorkout(presentation.workout!),
+      TodayNextAction.resumeWorkout when presentation.activeDraft != null =>
+        () => onResumeWorkout(presentation.activeDraft!),
       TodayNextAction.openWorkoutPlan => onOpenWorkoutPlan,
       TodayNextAction.logMeal => onLogMeal,
       TodayNextAction.returnToToday => onReturnToToday,
       _ => onOpenWorkoutPlan,
     };
     final icon = switch (action) {
+      TodayNextAction.resumeWorkout => Icons.play_circle_outline_rounded,
       TodayNextAction.startWorkout => Icons.play_arrow_rounded,
       TodayNextAction.openWorkoutPlan => Icons.fitness_center_rounded,
       TodayNextAction.logMeal => Icons.restaurant_outlined,

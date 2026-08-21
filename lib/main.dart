@@ -100,6 +100,7 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    ref.read(civilDateRevisionProvider.notifier).start();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _runPostFrameBootstrap();
     });
@@ -134,6 +135,7 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      ref.read(civilDateRevisionProvider.notifier).refresh();
       final db = ref.read(databaseProvider);
       NotificationService.checkAndUpdateTimezoneAndReschedule(db);
     }

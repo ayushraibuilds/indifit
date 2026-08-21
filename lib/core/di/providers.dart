@@ -66,6 +66,7 @@ import '../nutrition_calculation_service.dart';
 import '../nutrition_household_measures.dart';
 import '../privacy/nutrition_estimate_privacy.dart';
 import '../privacy/privacy_policy.dart';
+import '../services/civil_date_revision_notifier.dart';
 import '../services/local_schedule_date_service.dart';
 import '../services/local_timezone_service.dart';
 
@@ -819,6 +820,18 @@ final localTimezoneServiceProvider = Provider<LocalTimezoneService>((ref) {
     dates: ref.watch(localScheduleDateServiceProvider),
   );
 });
+
+/// One shared date-boundary dependency for date-scoped consumer surfaces.
+/// Database mutations still flow through their canonical repository watches;
+/// this revision only handles a civil-date change while the app remains open.
+final civilDateRevisionProvider =
+    StateNotifierProvider<CivilDateRevisionNotifier, int>((ref) {
+      return CivilDateRevisionNotifier(
+        dates: ref.watch(localScheduleDateServiceProvider),
+        timezoneId: () =>
+            ref.read(localTimezoneServiceProvider).currentTimezoneId(),
+      );
+    });
 
 final programActivationCoordinatorProvider =
     Provider<ProgramActivationCoordinator>((ref) {

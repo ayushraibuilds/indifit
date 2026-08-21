@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
@@ -14,6 +15,7 @@ import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/program_lifecycle_repository.dart';
+import '../../data/repositories/training_next_action_resolver.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../calendar/program_calendar_screen.dart';
 import '../calendar/workout_contextual_launcher.dart';
@@ -23,6 +25,7 @@ import '../workout_player/b02_strength_execution_controller.dart';
 import '../workout_player/b02_strength_player_screen.dart';
 import '../workout_player/routine_display_screen.dart';
 import '../workout_player/widgets/manual_log_sheet.dart';
+import '../workout_player/workout_player_screen.dart';
 import 'training_plan_lifecycle_controller.dart';
 import 'workout_history_screen.dart';
 
@@ -70,18 +73,16 @@ bool canLaunchTrainingOccurrence(CalendarOccurrenceReadItem item) {
       status == 'inProgress';
 }
 
-/// Picks the single Today card without hiding an in-progress workout behind a
-/// completed or later planned occurrence on the same local date.
+/// Picks the single actionable Today card without allowing terminal history to
+/// become the current Resume/Start action.
 CalendarOccurrenceReadItem? selectTrainingTodayWorkout(
   Iterable<CalendarOccurrenceReadItem> occurrences,
   String localDate,
 ) {
   CalendarOccurrenceReadItem? selected;
   for (final item in occurrences) {
-    final status = item.occurrence.status;
     if (item.occurrence.effectiveLocalDate != localDate ||
-        status == 'cancelled' ||
-        status == 'skipped') {
+        !canLaunchTrainingOccurrence(item)) {
       continue;
     }
     if (selected == null ||
@@ -102,6 +103,7 @@ int _todayWorkoutPriority(CalendarOccurrenceReadItem item) =>
 
 final trainingLandingSnapshotProvider =
     FutureProvider.autoDispose<TrainingLandingSnapshot>((ref) async {
+      ref.watch(civilDateRevisionProvider);
       final dates = ref.watch(localScheduleDateServiceProvider);
       final timezoneId = await ref
           .watch(localTimezoneServiceProvider)
@@ -129,7 +131,7 @@ final trainingLandingSnapshotProvider =
       ref.onDispose(invalidationSubscription.cancel);
       final workoutRepository = ref.watch(workoutRepositoryProvider);
       final draftSubscription = workoutRepository
-          .watchActiveDraftInvalidation()
+          .watchTrainingInvalidation()
           .listen((_) => ref.invalidateSelf());
       ref.onDispose(draftSubscription.cancel);
       final calendar = await calendarRepository.readSnapshot(
@@ -139,9 +141,14 @@ final trainingLandingSnapshotProvider =
       );
       final sessions = await workoutRepository.getSessions();
       final activeDraft = await workoutRepository.getActiveDraft();
-      final today = selectTrainingTodayWorkout(
-        calendar.rangeOccurrences,
-        localDate,
+      final resumableDraft =
+          activeDraft != null && isTrainingResumableDraft(activeDraft)
+          ? activeDraft
+          : null;
+      final resolution = resolveTrainingNextAction(
+        snapshot: calendar,
+        localDate: localDate,
+        activeDraft: resumableDraft,
       );
       final activeOccurrences = calendar.activeProgramVersionId == null
           ? const <CalendarOccurrenceReadItem>[]
@@ -152,12 +159,12 @@ final trainingLandingSnapshotProvider =
                       calendar.activeProgramVersionId,
                 )
                 .toList(growable: false);
-      final upcoming = activeOccurrences
-          .where(
-            (item) =>
-                item.occurrence.effectiveLocalDate.compareTo(localDate) > 0 &&
-                canLaunchTrainingOccurrence(item),
-          )
+      final today =
+          resolution.currentOccurrence ??
+          resolution.todayOccurrence ??
+          resolution.overdueOccurrence ??
+          resolution.todayCompletedOccurrence;
+      final upcoming = resolution.upcomingOccurrences
           .take(3)
           .toList(growable: false);
       return TrainingLandingSnapshot(
@@ -182,11 +189,7 @@ final trainingLandingSnapshotProvider =
             .toList(growable: false),
         lastEndedProgramName: calendar.lastEndedProgramName,
         lastEndedOutcome: calendar.lastEndedOutcome,
-        activeStrengthDraft:
-            activeDraft?.activityType == 'strength' &&
-                activeDraft?.executionStateJson != null
-            ? activeDraft
-            : null,
+        activeStrengthDraft: resumableDraft,
       );
     });
 
@@ -425,6 +428,39 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     if (_isLaunching) return;
     setState(() => _isLaunching = true);
     try {
+      if (draft.executionStateJson == null) {
+        final repo = ref.read(workoutRepositoryProvider);
+        final loggedCompanions = WorkoutDraftCodec.decodeLoggedSets(
+          draft.loggedSetsJson,
+        );
+        final scheduledLaunch = draft.scheduledOccurrenceId == null
+            ? null
+            : await ref
+                  .read(workoutExecutionCompatibilityAdapterProvider)
+                  .resumeScheduledDraft(draft);
+        final exercises =
+            scheduledLaunch?.exercises ??
+            await repo.getExercisesForRoutineName(draft.routineName);
+        if (!context.mounted) return;
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => WorkoutPlayerScreen(
+              routineName: draft.routineName,
+              exercises: exercises,
+              initialExerciseIndex: draft.currentExerciseIndex,
+              initialSetIndex: draft.currentSetIndex,
+              initialElapsedSeconds: draft.elapsedSeconds,
+              initialLoggedSets: loggedCompanions,
+              scheduledOccurrenceId: scheduledLaunch?.occurrenceId,
+              executionSnapshotJson: scheduledLaunch?.executionSnapshotJson,
+              personalExerciseContextByName:
+                  scheduledLaunch?.personalExerciseContextByName ?? const {},
+            ),
+          ),
+        );
+        if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
+        return;
+      }
       final controller = ref.read(
         b02StrengthExecutionControllerProvider.notifier,
       );
@@ -529,7 +565,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   Widget build(BuildContext context) {
     final snapshot = ref.watch(trainingLandingSnapshotProvider);
     final hasActiveProgram =
-        snapshot.asData?.value.activeProgramName?.trim().isNotEmpty == true;
+        !snapshot.isLoading &&
+        snapshot.valueOrNull?.activeProgramName?.trim().isNotEmpty == true;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Training'),
@@ -544,6 +581,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         ],
       ),
       body: snapshot.when(
+        skipLoadingOnRefresh: false,
         loading: () => const Padding(
           padding: EdgeInsets.all(B05Layout.space16),
           child: ConsumerStatusRow(
