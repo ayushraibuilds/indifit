@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
-import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../../features/activity/b02_activity_creation_screen.dart';
 import '../../features/calendar/program_calendar_screen.dart';
@@ -36,6 +35,7 @@ import '../../features/workout_player/b02_strength_summary_screen.dart';
 import '../../features/workout_player/quick_workout_screen.dart';
 import '../../features/workout_player/routine_display_screen.dart';
 import '../../features/workout_player/routine_editor_screen.dart';
+import '../../features/workout_player/workout_execution_route.dart';
 import '../../features/workout_player/workout_player_screen.dart';
 import '../../features/workout_player/workout_summary_screen.dart';
 
@@ -289,27 +289,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/b02-strength-player',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>? ?? {};
-          final launch = extra['launch'];
-          if (launch is! B02StrengthExecutionLaunch) {
+          final routeData = workoutExecutionRouteDataFromExtra(state.extra);
+          if (routeData == null) {
             return const Scaffold(
               body: Center(child: Text('This workout draft is unavailable.')),
             );
           }
-          return B02StrengthPlayerScreen(launch: launch);
+          return B02StrengthPlayerScreen(
+            launch: routeData.execution.launch,
+            executionContext: routeData.execution,
+          );
         },
       ),
       GoRoute(
         path: '/b02-strength-summary',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>? ?? {};
-          final launch = extra['launch'];
-          if (launch is! B02StrengthExecutionLaunch) {
+          final routeData = workoutExecutionRouteDataFromExtra(state.extra);
+          if (routeData == null) {
             return const Scaffold(
               body: Center(child: Text('This workout draft is unavailable.')),
             );
           }
-          return B02StrengthSummaryScreen(launch: launch);
+          return B02StrengthSummaryScreen(
+            launch: routeData.execution.launch,
+            executionContext: routeData.execution,
+          );
         },
       ),
       GoRoute(

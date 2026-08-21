@@ -10,6 +10,7 @@ import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/workout_execution_compatibility_adapter.dart';
 import '../workout_player/b02_strength_execution_controller.dart';
+import '../workout_player/workout_execution_route.dart';
 
 /// Typed route data produced by the existing B01/B02 execution owners.
 sealed class WorkoutOccurrenceLaunchTarget {
@@ -110,7 +111,7 @@ abstract final class WorkoutContextualLauncher {
     return switch (target) {
       B02WorkoutOccurrenceLaunchTarget() => context.push(
         '/b02-strength-player',
-        extra: {'launch': target.launch},
+        extra: WorkoutExecutionRouteData.fromLaunch(target.launch),
       ),
       B01WorkoutOccurrenceLaunchTarget() => context.push(
         '/workout-player',
