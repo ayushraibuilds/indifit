@@ -70,43 +70,6 @@ class TrainingLandingSnapshot {
       todayWorkout ?? (upcoming.isEmpty ? null : upcoming.first);
 }
 
-/// The landing can only launch an occurrence that remains actionable in B01.
-/// Completed and retired occurrences stay readable elsewhere, never startable.
-bool canLaunchTrainingOccurrence(CalendarOccurrenceReadItem item) {
-  final status = item.occurrence.status;
-  return status == 'planned' ||
-      status == 'rescheduled' ||
-      status == 'inProgress';
-}
-
-/// Picks the single actionable Today card without allowing terminal history to
-/// become the current Resume/Start action.
-CalendarOccurrenceReadItem? selectTrainingTodayWorkout(
-  Iterable<CalendarOccurrenceReadItem> occurrences,
-  String localDate,
-) {
-  CalendarOccurrenceReadItem? selected;
-  for (final item in occurrences) {
-    if (item.occurrence.effectiveLocalDate != localDate ||
-        !canLaunchTrainingOccurrence(item)) {
-      continue;
-    }
-    if (selected == null ||
-        _todayWorkoutPriority(item) > _todayWorkoutPriority(selected)) {
-      selected = item;
-    }
-  }
-  return selected;
-}
-
-int _todayWorkoutPriority(CalendarOccurrenceReadItem item) =>
-    switch (item.occurrence.status) {
-      'inProgress' => 3,
-      'planned' || 'rescheduled' => 2,
-      'completed' || 'partiallyCompleted' => 1,
-      _ => 0,
-    };
-
 final trainingLandingSnapshotProvider =
     FutureProvider.autoDispose<TrainingLandingSnapshot>((ref) async {
       ref.watch(civilDateRevisionProvider);
@@ -272,7 +235,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
                 ),
                 enabled: false,
               ),
-            if (today != null && canLaunchTrainingOccurrence(today))
+            if (today != null && isActionableTrainingOccurrence(today))
               ListTile(
                 leading: const Icon(Icons.calendar_today_outlined),
                 title: Text(
@@ -548,7 +511,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     WidgetRef ref,
     CalendarOccurrenceReadItem item,
   ) async {
-    if (_isLaunching || !canLaunchTrainingOccurrence(item)) return;
+    if (_isLaunching || !isActionableTrainingOccurrence(item)) return;
     final snapshotData = ref
         .read(trainingLandingSnapshotProvider)
         .asData
@@ -922,7 +885,7 @@ class _TrainingLandingBody extends StatelessWidget {
           item: today,
           isLaunching: isLaunching,
           activeDraft: activeDraft,
-          onStart: today == null || !canLaunchTrainingOccurrence(today)
+          onStart: today == null || !isActionableTrainingOccurrence(today)
               ? onStartTraining
               : () => onStartWorkout(today),
           onResumeDraft: onResumeDraft,

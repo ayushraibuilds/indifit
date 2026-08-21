@@ -8,7 +8,10 @@ import 'package:indifit/core/nutrients.dart';
 import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/data/database/app_database.dart';
+import 'package:indifit/data/models/b02_execution_models.dart';
+import 'package:indifit/data/repositories/b02_strength_execution_repository.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
+import 'package:indifit/data/repositories/calendar_repository.dart';
 import 'package:indifit/data/repositories/program_activation_coordinator.dart';
 import 'package:indifit/data/repositories/program_repository.dart';
 import 'package:indifit/data/repositories/training_next_action_resolver.dart';
@@ -479,6 +482,176 @@ void main() {
       expect(resolution.hasResumableDraft, isFalse);
       expect(resolution.currentOccurrence, isNull);
       expect(resolution.todayOccurrence, isNotNull);
+    },
+  );
+
+  test(
+    'scheduled Start, Resume, and exact-once Complete advance both surfaces',
+    () async {
+      final versionId = await createPlan('Integrated lifecycle');
+      await activation.activate(
+        ActivateProgramVersionCommand(
+          programVersionId: versionId,
+          commandId: 'activate::integrated-lifecycle',
+          activationLocalDate: '2026-03-02',
+          timezoneId: 'Asia/Kolkata',
+        ),
+      );
+      final selectedDate = DateTime(2026, 3, 2);
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          localScheduleDateServiceProvider.overrideWithValue(dates),
+          localTimezoneServiceProvider.overrideWithValue(
+            LocalTimezoneService(
+              read: () async => 'Asia/Kolkata',
+              dates: dates,
+            ),
+          ),
+          nutritionRegistryProvider.overrideWith(
+            (_) async => NutrientRegistry.fromAssetFileSync(
+              'assets/data/nutrient_registry.json',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final todayKeepAlive = container.listen<AsyncValue<TodaySurfaceSnapshot>>(
+        todaySurfaceSnapshotProvider(selectedDate),
+        (_, _) {},
+        fireImmediately: true,
+      );
+      final trainingKeepAlive = container
+          .listen<AsyncValue<TrainingLandingSnapshot>>(
+            trainingLandingSnapshotProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+      addTearDown(todayKeepAlive.close);
+      addTearDown(trainingKeepAlive.close);
+
+      final planned = await _waitForTraining(
+        container,
+        (snapshot) => snapshot.todayWorkout?.occurrence.status == 'planned',
+      );
+      final occurrenceId = planned.todayWorkout!.occurrence.id;
+      final executions = StrengthExecutionRepository(
+        db: db,
+        calendarRepo: CalendarRepository(db, dates: dates, nowUtc: () => now),
+        nowUtc: () => now,
+      );
+
+      final resumeTraining = _waitForTraining(
+        container,
+        (snapshot) =>
+            snapshot.activeStrengthDraft != null &&
+            snapshot.todayWorkout?.occurrence.status == 'inProgress',
+      );
+      final resumeToday = _waitForToday(
+        container,
+        selectedDate,
+        (snapshot) =>
+            snapshot.activeDraft.value != null &&
+            snapshot.nextActionResolution?.currentOccurrence?.occurrence.id ==
+                occurrenceId,
+      );
+      final launch = await executions.startScheduledOccurrence(
+        occurrenceId: occurrenceId,
+        commandId: 'start::integrated-lifecycle',
+        nowUtc: now,
+      );
+      final trainingInProgress = await resumeTraining;
+      final todayInProgress = await resumeToday;
+      expect(trainingInProgress.activeStrengthDraft!.id, launch.draftId);
+      expect(todayInProgress.activeDraft.value!.id, launch.draftId);
+      expect(
+        trainingInProgress.todayWorkout!.occurrence.id,
+        todayInProgress.nextActionResolution!.currentOccurrence!.occurrence.id,
+      );
+
+      final performedId = 'performed::integrated-lifecycle';
+      final prescription = (await db.select(db.exercisePrescriptions).get())
+          .singleWhere(
+            (item) =>
+                item.sessionTemplateId ==
+                planned.todayWorkout!.occurrence.sessionTemplateId,
+          );
+      final state = launch.state.copyWith(
+        elapsedSeconds: 60,
+        activeSegmentStartedAtUtc: null,
+        performedExercises: [
+          B02PerformedExerciseDraft(
+            id: performedId,
+            sourceExercisePrescriptionId: prescription.id,
+            ordinal: 0,
+            expectedExerciseId: 'r08a2-squat',
+            expectedExerciseNameSnapshot: 'R08A.2 Squat',
+            actualExerciseId: 'r08a2-squat',
+            actualExerciseNameSnapshot: 'R08A.2 Squat',
+            status: 'completed',
+            sets: [
+              B02PerformedSet(
+                id: 'set::integrated-lifecycle',
+                performedExerciseId: performedId,
+                ordinal: 0,
+                role: B02SetRole.working,
+                actualLoadKg: 60,
+                actualLoadBasis: B02LoadBasis.totalExternal,
+                actualReps: 5,
+              ),
+            ],
+          ),
+        ],
+      );
+      await executions.saveDraft(
+        draftId: launch.draftId,
+        state: state,
+        nowUtc: now,
+      );
+
+      final completedTraining = _waitForTraining(
+        container,
+        (snapshot) =>
+            snapshot.activeStrengthDraft == null &&
+            snapshot.todayWorkout?.occurrence.status == 'completed' &&
+            snapshot.upcoming.isNotEmpty,
+      );
+      final completedToday = _waitForToday(
+        container,
+        selectedDate,
+        (snapshot) =>
+            snapshot.activeDraft.value == null &&
+            snapshot
+                    .nextActionResolution
+                    ?.todayCompletedOccurrence
+                    ?.occurrence
+                    .id ==
+                occurrenceId &&
+            snapshot.nextActionResolution?.nextOccurrence != null,
+      );
+      final sessionId = await executions.finalizeDraft(
+        draftId: launch.draftId,
+        commandId: 'complete::integrated-lifecycle',
+        state: state,
+        completedAtUtc: now,
+      );
+      expect(
+        await executions.finalizeDraft(
+          draftId: launch.draftId,
+          commandId: 'complete::integrated-lifecycle::fresh-retry',
+          state: state,
+          completedAtUtc: now,
+        ),
+        sessionId,
+      );
+
+      final trainingDone = await completedTraining;
+      final todayDone = await completedToday;
+      final nextId = trainingDone.upcoming.single.occurrence.id;
+      expect(todayDone.nextActionResolution!.currentOrNextOccurrenceId, nextId);
+      expect(nextId, isNot(occurrenceId));
+      expect(await db.select(db.workoutSessions).get(), hasLength(1));
+      expect(await db.select(db.workoutDrafts).get(), isEmpty);
     },
   );
 }

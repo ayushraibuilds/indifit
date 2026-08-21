@@ -75,11 +75,11 @@ final foodDiaryReadModelProvider = FutureProvider.autoDispose
         userId: kLocalNutritionUserScopeId,
         localDate: _localDateKey(date),
       );
-      final timezoneId = await ref
-          .watch(localTimezoneServiceProvider)
-          .currentTimezoneId();
       TodayDomainRead<NutritionTargetsForDate?> targets;
       try {
+        final timezoneId = await ref
+            .watch(localTimezoneServiceProvider)
+            .currentTimezoneId();
         targets = TodayDomainRead<NutritionTargetsForDate?>.available(
           await ref
               .watch(nutritionTargetAuthorityProvider)

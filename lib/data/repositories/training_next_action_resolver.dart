@@ -24,6 +24,7 @@ class TrainingNextActionResolution {
 
   final String localDate;
   final String? activeProgramVersionId;
+
   /// True means the durable draft read found a draft, including one this
   /// surface cannot resume itself. It is separate from [activeDraft] so a
   /// competing activity draft can still block Start without becoming a
@@ -106,9 +107,7 @@ TrainingNextActionResolution resolveTrainingNextAction({
   // read is unavailable, do not expose any scheduled Start/Resume action
   // until the caller can establish whether another draft owns the session.
   final actionable = activeDraftReadAvailable
-      ? ordered
-            .where(_isActionableOccurrence)
-            .toList(growable: false)
+      ? ordered.where(isActionableTrainingOccurrence).toList(growable: false)
       : const <CalendarOccurrenceReadItem>[];
 
   CalendarOccurrenceReadItem? linkedToDraft;
@@ -131,12 +130,13 @@ TrainingNextActionResolution resolveTrainingNextAction({
   // canonical recovery path, but never downgrade it to generic Start.
   final current = activeDraftReadAvailable
       ? linkedToDraft ??
-          _firstWhere(
-            ordered,
-            (item) => item.occurrence.status == 'inProgress',
-          )
+            _firstWhere(
+              ordered,
+              (item) => item.occurrence.status == 'inProgress',
+            )
       : null;
-  final resumableDraft = activeDraft != null &&
+  final resumableDraft =
+      activeDraft != null &&
           isTrainingResumableDraft(activeDraft) &&
           (scheduledDraftId == null || linkedToDraft != null)
       ? activeDraft
@@ -189,7 +189,11 @@ TrainingNextActionResolution resolveTrainingNextAction({
   );
 }
 
-bool _isActionableOccurrence(CalendarOccurrenceReadItem item) {
+/// Whether B01 still permits this occurrence to be started or resumed.
+///
+/// Consumer surfaces share this status projection with the current/next
+/// resolver instead of maintaining a second list of actionable states.
+bool isActionableTrainingOccurrence(CalendarOccurrenceReadItem item) {
   final status = item.occurrence.status;
   return status == 'planned' ||
       status == 'rescheduled' ||

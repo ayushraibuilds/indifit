@@ -198,11 +198,11 @@ void main() {
   tearDown(() => db.close());
 
   group('R08A.5 Guard Ordering & State Precedence', () {
-    test('canLaunchTrainingOccurrence allows planned, rescheduled, and inProgress only', () async {
+    test('shared resolver allows planned, rescheduled, and inProgress only', () async {
       final reader = CalendarReadRepository(db, dates: dates);
       final item = todayOccurrenceItem;
 
-      expect(canLaunchTrainingOccurrence(item), isTrue);
+      expect(isActionableTrainingOccurrence(item), isTrue);
 
       // In progress
       await (db.update(db.scheduledSessionOccurrences)..where((t) => t.id.equals(item.occurrence.id))).write(
@@ -213,7 +213,7 @@ void main() {
         endLocalDate: '2026-08-21',
         timezoneId: 'UTC',
       );
-      expect(canLaunchTrainingOccurrence(inProgressSnap.rangeOccurrences.first), isTrue);
+      expect(isActionableTrainingOccurrence(inProgressSnap.rangeOccurrences.first), isTrue);
 
       // Completed
       await (db.update(db.scheduledSessionOccurrences)..where((t) => t.id.equals(item.occurrence.id))).write(
@@ -224,7 +224,7 @@ void main() {
         endLocalDate: '2026-08-21',
         timezoneId: 'UTC',
       );
-      expect(canLaunchTrainingOccurrence(completedSnap.rangeOccurrences.first), isFalse);
+      expect(isActionableTrainingOccurrence(completedSnap.rangeOccurrences.first), isFalse);
 
       // Partially completed
       await (db.update(db.scheduledSessionOccurrences)..where((t) => t.id.equals(item.occurrence.id))).write(
@@ -235,7 +235,7 @@ void main() {
         endLocalDate: '2026-08-21',
         timezoneId: 'UTC',
       );
-      expect(canLaunchTrainingOccurrence(partialSnap.rangeOccurrences.first), isFalse);
+      expect(isActionableTrainingOccurrence(partialSnap.rangeOccurrences.first), isFalse);
 
       // Skipped
       await (db.update(db.scheduledSessionOccurrences)..where((t) => t.id.equals(item.occurrence.id))).write(
@@ -246,11 +246,7 @@ void main() {
         endLocalDate: '2026-08-21',
         timezoneId: 'UTC',
       );
-      expect(canLaunchTrainingOccurrence(skippedSnap.rangeOccurrences.first), isFalse);
-    });
-
-    test('selectTrainingTodayWorkout prioritizes inProgress > planned > completed', () async {
-      expect(selectTrainingTodayWorkout([todayOccurrenceItem], '2026-08-21')?.occurrence.id, todayOccurrenceItem.occurrence.id);
+      expect(isActionableTrainingOccurrence(skippedSnap.rangeOccurrences.first), isFalse);
     });
 
     test('TodayWorkoutPresentation correctly maps completed vs inProgress vs rest', () async {

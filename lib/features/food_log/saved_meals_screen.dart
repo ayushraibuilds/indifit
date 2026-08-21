@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../../core/widgets/skeleton_loader.dart';
@@ -30,6 +31,8 @@ class SavedMealsScreen extends ConsumerStatefulWidget {
 class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
   final _searchController = TextEditingController();
   Timer? _searchTimer;
+  final Set<String> _deletingSavedMealIds = <String>{};
+  var _quickLogInFlight = false;
 
   @override
   void dispose() {
@@ -49,45 +52,52 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
 
   Future<void> _handleQuickLog(SavedMealDisplayItem item) async {
     if (!item.isLoggable ||
+        _quickLogInFlight ||
         ref.read(savedMealsControllerProvider).status ==
             SavedMealsStatus.finalizing) {
       return;
     }
-    if (item.requiresPartialAcknowledgement) {
-      await _handleEditBeforeLog(item);
-      return;
-    }
-
-    final now = DateTime.now().toUtc();
-    final timezoneId = await ref
-        .read(localTimezoneServiceProvider)
-        .currentTimezoneId();
-    final dates = ref.read(localScheduleDateServiceProvider);
-    final localDate = widget.selectedDate == null
-        ? dates.localDateFor(now, timezoneId)
-        : _localDateKey(widget.selectedDate!);
-    final loggedAt = widget.selectedDate == null
-        ? now
-        : dates.instantForLocalDate(localDate, timezoneId);
-    if (!mounted) return;
-    final controller = ref.read(savedMealsControllerProvider.notifier);
-    final snapshot = await controller.logSavedMeal(
-      draft: item.draft,
-      mealCategory: widget.mealType,
-      loggedAt: loggedAt,
-      localDate: localDate,
-      timezoneId: timezoneId,
-    );
-
-    if (snapshot != null && mounted) {
-      _refreshTodaySurfaces();
-      showIndiFitSuccessFeedback(
-        context,
-        'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
-      );
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context, true);
+    setState(() => _quickLogInFlight = true);
+    try {
+      if (item.requiresPartialAcknowledgement) {
+        await _handleEditBeforeLog(item);
+        return;
       }
+
+      final now = DateTime.now().toUtc();
+      final timezoneId = await ref
+          .read(localTimezoneServiceProvider)
+          .currentTimezoneId();
+      final dates = ref.read(localScheduleDateServiceProvider);
+      final localDate = widget.selectedDate == null
+          ? dates.localDateFor(now, timezoneId)
+          : _localDateKey(widget.selectedDate!);
+      final loggedAt = widget.selectedDate == null
+          ? now
+          : dates.instantForLocalDate(localDate, timezoneId);
+      if (!mounted) return;
+      final controller = ref.read(savedMealsControllerProvider.notifier);
+      final snapshot = await controller.logSavedMeal(
+        draft: item.draft,
+        mealCategory: widget.mealType,
+        loggedAt: loggedAt,
+        localDate: localDate,
+        timezoneId: timezoneId,
+      );
+
+      if (snapshot != null && mounted) {
+        _refreshTodaySurfaces();
+        showIndiFitSuccessFeedback(
+          context,
+          'Logged "${item.draft.name}" to ${widget.mealType.toUpperCase()}!',
+        );
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.pop(context, true);
+        }
+      }
+    } finally {
+      _quickLogInFlight = false;
+      if (mounted) setState(() {});
     }
   }
 
@@ -141,10 +151,25 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
       ),
     );
 
-    if (confirm == true) {
-      await ref
-          .read(savedMealsControllerProvider.notifier)
-          .deleteSavedMeal(item.draft.id);
+    if (confirm != true ||
+        !mounted ||
+        !_deletingSavedMealIds.add(item.draft.id)) {
+      return;
+    }
+    setState(() {});
+    try {
+      final controller = ref.read(savedMealsControllerProvider.notifier);
+      final query = ref.read(savedMealsControllerProvider).query;
+      final deleted = await controller.deleteSavedMeal(
+        item.draft.id,
+        reload: false,
+      );
+      if (!deleted || !mounted) return;
+      unawaited(IndiFitHaptics.warning());
+      await controller.loadSavedMeals(query: query);
+    } finally {
+      _deletingSavedMealIds.remove(item.draft.id);
+      if (mounted) setState(() {});
     }
   }
 
@@ -386,8 +411,12 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
         : '— P';
 
     final state = ref.watch(savedMealsControllerProvider);
-    final actionsDisabled =
-        !meal.isLoggable || state.status == SavedMealsStatus.finalizing;
+    final deleting = _deletingSavedMealIds.contains(meal.draft.id);
+    final actionInFlight =
+        _quickLogInFlight ||
+        deleting ||
+        state.status == SavedMealsStatus.finalizing;
+    final actionsDisabled = !meal.isLoggable || actionInFlight;
 
     return Container(
       decoration: BoxDecoration(
@@ -440,6 +469,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
               ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert_rounded),
+                enabled: !actionInFlight,
                 onSelected: (action) {
                   if (action == 'edit_before_log') {
                     _handleEditBeforeLog(meal);
@@ -469,29 +499,46 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
                     enabled: !actionsDisabled,
                     child: Row(
                       children: [
-                        Icon(Icons.tune_rounded, size: 18),
-                        SizedBox(width: 8),
-                        Text('Edit portions before log'),
+                        const Icon(Icons.tune_rounded, size: 18),
+                        const SizedBox(width: 8),
+                        const Flexible(
+                          child: Text(
+                            'Edit portions before log',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'edit_template',
-                    child: Row(
+                    enabled: !actionInFlight,
+                    child: const Row(
                       children: [
                         Icon(Icons.edit_rounded, size: 18),
                         SizedBox(width: 8),
-                        Text('Edit saved meal'),
+                        Flexible(
+                          child: Text(
+                            'Edit saved meal',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'delete',
-                    child: Row(
+                    enabled: !deleting,
+                    child: const Row(
                       children: [
                         Icon(Icons.delete_outline_rounded, size: 18),
                         SizedBox(width: 8),
-                        Text('Delete'),
+                        Flexible(
+                          child: Text(
+                            'Delete',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   ),

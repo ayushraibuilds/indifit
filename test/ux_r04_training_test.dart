@@ -6,6 +6,7 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
+import 'package:indifit/data/repositories/training_next_action_resolver.dart';
 import 'package:indifit/features/calendar/calendar_read_model.dart';
 import 'package:indifit/features/calendar/program_calendar_screen.dart';
 import 'package:indifit/features/exercise_library/exercise_details_sheet.dart';
@@ -309,7 +310,7 @@ void main() {
 
   test('Training only launches actionable B01 occurrence states', () {
     expect(
-      canLaunchTrainingOccurrence(
+      isActionableTrainingOccurrence(
         _calendarItem(
           name: 'Planned',
           localDate: '2026-08-09',
@@ -320,7 +321,7 @@ void main() {
       isTrue,
     );
     expect(
-      canLaunchTrainingOccurrence(
+      isActionableTrainingOccurrence(
         _calendarItem(
           name: 'Resume',
           localDate: '2026-08-09',
@@ -332,7 +333,7 @@ void main() {
     );
     for (final status in const ['completed', 'partiallyCompleted', 'skipped']) {
       expect(
-        canLaunchTrainingOccurrence(
+        isActionableTrainingOccurrence(
           _calendarItem(
             name: status,
             localDate: '2026-08-09',
@@ -343,32 +344,6 @@ void main() {
         isFalse,
       );
     }
-  });
-
-  test('Training prioritizes an in-progress workout on Today', () {
-    final completed = _calendarItem(
-      name: 'Completed first',
-      localDate: '2026-08-09',
-      status: 'completed',
-      prescriptionCount: 1,
-    );
-    final planned = _calendarItem(
-      name: 'Planned later',
-      localDate: '2026-08-09',
-      status: 'planned',
-      prescriptionCount: 1,
-    );
-    final resume = _calendarItem(
-      name: 'Resume now',
-      localDate: '2026-08-09',
-      status: 'inProgress',
-      prescriptionCount: 1,
-    );
-
-    expect(
-      selectTrainingTodayWorkout([completed, planned, resume], '2026-08-09'),
-      same(resume),
-    );
   });
 
   testWidgets(
