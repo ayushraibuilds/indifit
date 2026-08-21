@@ -3,10 +3,12 @@ import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/consumer_count_label.dart';
 import '../../core/presentation/consumer_number_label.dart';
+import '../../data/database/app_database.dart';
 import '../../data/models/b02_progress_read_models.dart';
 import '../../data/models/b04_goal_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/nutrition_target_authority.dart';
+import '../../data/repositories/training_next_action_resolver.dart';
 import '../progress/b02_progress_presentation.dart';
 import 'today_presentation_types.dart';
 import 'today_surface_controller.dart';
@@ -19,11 +21,17 @@ enum TodayPresentationState { loading, ready, empty, unavailable }
 /// Skipped and cancelled dates are retained as history, but they are not a
 /// current Today workout. Completed/partial evidence remains readable.
 List<CalendarOccurrenceReadItem> todayVisibleWorkoutOccurrences(
-  CalendarReadSnapshot snapshot,
-) {
+  CalendarReadSnapshot snapshot, {
+  String? localDate,
+}) {
+  final activeVersionId = snapshot.activeProgramVersionId;
   return snapshot.rangeOccurrences
       .where(
         (item) =>
+            activeVersionId != null &&
+            item.occurrence.programVersionId == activeVersionId &&
+            (localDate == null ||
+                item.occurrence.effectiveLocalDate == localDate) &&
             item.occurrence.status != 'skipped' &&
             item.occurrence.status != 'cancelled',
       )
@@ -54,6 +62,8 @@ class TodayWorkoutPresentation {
   factory TodayWorkoutPresentation.from(
     TodayDomainRead<CalendarReadSnapshot>? read, {
     required bool loading,
+    TrainingNextActionResolution? resolution,
+    String? localDate,
   }) {
     if (loading || read == null) {
       return const TodayWorkoutPresentation(
@@ -69,7 +79,17 @@ class TodayWorkoutPresentation {
         detail: 'Try again to load your plan.',
       );
     }
-    final occurrences = todayVisibleWorkoutOccurrences(read.value!);
+    if (resolution != null && !resolution.activeDraftReadAvailable) {
+      return const TodayWorkoutPresentation(
+        state: TodayPresentationState.unavailable,
+        title: 'Workout unavailable',
+        detail: 'Try again to check your active workout.',
+      );
+    }
+    final occurrences = todayVisibleWorkoutOccurrences(
+      read.value!,
+      localDate: localDate,
+    );
     if (occurrences.isEmpty) {
       return const TodayWorkoutPresentation(
         state: TodayPresentationState.empty,
@@ -77,7 +97,7 @@ class TodayWorkoutPresentation {
         detail: 'Choose a workout whenever you’re ready.',
       );
     }
-    final occurrence = occurrences.first;
+    final occurrence = resolution?.todayOccurrence ?? occurrences.first;
     final status = _workoutStatus(occurrence.occurrence.status);
     final isInProgress = occurrence.occurrence.status == 'inProgress';
     final canStart =
@@ -593,6 +613,7 @@ class TodayFocusPresentation {
   final String? actionLabel;
   final TodayNextAction? action;
   final CalendarOccurrenceReadItem? workout;
+  final WorkoutDraft? activeDraft;
 
   const TodayFocusPresentation({
     required this.state,
@@ -601,6 +622,7 @@ class TodayFocusPresentation {
     this.actionLabel,
     required this.action,
     this.workout,
+    this.activeDraft,
   });
 }
 
@@ -640,9 +662,43 @@ TodayFocusPresentation todayFocusPresentation({
       action: null,
     );
   }
-  final scheduled = snapshot.calendar.value?.rangeOccurrences;
-  if (scheduled != null && scheduled.isNotEmpty) {
-    final item = scheduled.first;
+  final resolution = snapshot.nextActionResolution;
+  if (resolution != null && !resolution.activeDraftReadAvailable) {
+    return const TodayFocusPresentation(
+      state: TodayPresentationState.unavailable,
+      title: 'Workout state unavailable',
+      detail: 'Try again to check your active workout before starting another.',
+      actionLabel: 'Retry',
+      action: null,
+    );
+  }
+  final activeDraft = resolution?.activeDraft;
+  if (activeDraft != null) {
+    return TodayFocusPresentation(
+      state: TodayPresentationState.ready,
+      title: ConsumerCopy.label(activeDraft.routineName, fallback: 'Workout'),
+      detail: 'Your saved workout is ready to resume.',
+      actionLabel: 'Resume workout',
+      action: TodayNextAction.resumeWorkout,
+      activeDraft: activeDraft,
+      workout: resolution?.currentOccurrence,
+    );
+  }
+  final overdue = resolution?.overdueOccurrence;
+  if (overdue != null) {
+    return TodayFocusPresentation(
+      state: TodayPresentationState.ready,
+      title:
+          'Overdue: ${ConsumerCopy.label(overdue.template.name, fallback: 'Workout')}',
+      detail:
+          'This planned workout is still pending. Start or reschedule it explicitly.',
+      actionLabel: 'Start workout',
+      action: TodayNextAction.startWorkout,
+      workout: overdue,
+    );
+  }
+  final item = resolution?.todayOccurrence;
+  if (item != null) {
     final startable =
         dateRelation == TodayDateRelation.today &&
         (item.occurrence.status == 'planned' ||
@@ -664,6 +720,29 @@ TodayFocusPresentation todayFocusPresentation({
           ? TodayNextAction.startWorkout
           : TodayNextAction.openWorkoutPlan,
       workout: item,
+    );
+  }
+  final completed = resolution?.todayCompletedOccurrence;
+  if (completed != null) {
+    return TodayFocusPresentation(
+      state: TodayPresentationState.ready,
+      title: 'Workout complete today',
+      detail: 'Your completed workout is saved. Choose what to do next.',
+      actionLabel: 'View workout',
+      action: TodayNextAction.openWorkoutPlan,
+    );
+  }
+  final next = resolution?.nextOccurrence;
+  if (next != null && dateRelation == TodayDateRelation.today) {
+    return TodayFocusPresentation(
+      state: TodayPresentationState.ready,
+      title:
+          'Next: ${ConsumerCopy.label(next.template.name, fallback: 'Workout')}',
+      detail:
+          'Your next planned workout is ${next.occurrence.effectiveLocalDate}.',
+      actionLabel: 'View workout plan',
+      action: TodayNextAction.openWorkoutPlan,
+      workout: next,
     );
   }
   final hasNoMeals = snapshot.nutrition.value?.records.isEmpty == true;

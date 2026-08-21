@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -561,6 +563,38 @@ class WorkoutRepository {
   /// snapshot is skipped so consumers do not invalidate while mounting.
   Stream<void> watchActiveDraftInvalidation() =>
       _db.select(_db.workoutDrafts).watch().skip(1).map<void>((_) {});
+
+  /// Emits when a training read model can change because the active draft or
+  /// completed session history changed. The initial values from both Drift
+  /// watches are skipped; only durable mutations invalidate consumers.
+  ///
+  /// This is deliberately a read invalidation signal, not a second workout
+  /// state authority. Completion of a scheduled B02 workout also changes the
+  /// occurrence, which is watched by [CalendarReadRepository] consumers.
+  Stream<void> watchTrainingInvalidation() {
+    late final StreamController<void> controller;
+    final subscriptions = <StreamSubscription<void>>[];
+    controller = StreamController<void>(
+      onListen: () {
+        final streams = <Stream<void>>[
+          _db.select(_db.workoutDrafts).watch().map<void>((_) {}),
+          _db.select(_db.workoutSessions).watch().map<void>((_) {}),
+        ];
+        for (final stream in streams) {
+          subscriptions.add(
+            stream.skip(1).listen(controller.add, onError: controller.addError),
+          );
+        }
+      },
+      onCancel: () async {
+        await Future.wait(
+          subscriptions.map((subscription) => subscription.cancel()),
+        );
+        subscriptions.clear();
+      },
+    );
+    return controller.stream;
+  }
 
   Future<int> saveWorkoutDraft(WorkoutDraftsCompanion draft) async {
     // Delete any previous drafts first to maintain at most one active draft

@@ -1,3 +1,9 @@
 enum TodayDateRelation { past, today, future }
 
-enum TodayNextAction { startWorkout, openWorkoutPlan, logMeal, returnToToday }
+enum TodayNextAction {
+  resumeWorkout,
+  startWorkout,
+  openWorkoutPlan,
+  logMeal,
+  returnToToday,
+}

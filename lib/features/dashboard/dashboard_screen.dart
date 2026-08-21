@@ -13,6 +13,7 @@ import '../../core/services/crash_reporting_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../data/database/app_database.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../activity/b02_activity_controller.dart';
@@ -178,6 +179,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (!mounted) return;
     final selectedDate = ref.read(dashboardControllerProvider).selectedDate;
     ref.invalidate(todaySurfaceSnapshotProvider(selectedDate));
+  }
+
+  Future<void> _resumeTodayWorkout(WorkoutDraft draft) async {
+    if (draft.activityType == 'strength' && draft.executionStateJson != null) {
+      try {
+        final controller = ref.read(
+          b02StrengthExecutionControllerProvider.notifier,
+        );
+        await controller.recover(draft.id);
+        final recovered = ref.read(b02StrengthExecutionControllerProvider);
+        if (!mounted ||
+            recovered.status != B02StrengthExecutionStatus.ready ||
+            recovered.launch == null) {
+          throw StateError('The saved workout could not be recovered.');
+        }
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => B02StrengthPlayerScreen(launch: recovered.launch!),
+          ),
+        );
+        if (mounted) await _refreshToday();
+        return;
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Saved workout unavailable. Try again.'),
+          ),
+        );
+        return;
+      }
+    }
+    if (mounted) await context.push('/training');
   }
 
   Future<void> _openFoodForMeal(String mealType) async {
@@ -385,6 +419,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         onLogMeal: () => unawaited(_openFoodForMeal('')),
         onLogMealForMeal: _openFoodForMeal,
         onStartWorkout: _startTodayWorkout,
+        onResumeWorkout: _resumeTodayWorkout,
         onOpenFoodGuidance: _openFoodGuidance,
       ),
     );
