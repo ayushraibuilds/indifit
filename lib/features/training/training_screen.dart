@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/di/providers.dart';
 import '../../core/fixtures/workout_draft_codec.dart';
 import '../../core/presentation/consumer_date_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -45,6 +46,7 @@ class TrainingLandingSnapshot {
     this.currentWeekOccurrences = const [],
     this.lastEndedProgramName,
     this.lastEndedOutcome,
+    this.activeDraft,
     this.activeStrengthDraft,
   });
 
@@ -58,7 +60,11 @@ class TrainingLandingSnapshot {
   final List<CalendarOccurrenceReadItem> currentWeekOccurrences;
   final String? lastEndedProgramName;
   final String? lastEndedOutcome;
+  final WorkoutDraft? activeDraft;
   final WorkoutDraft? activeStrengthDraft;
+
+  bool get hasActiveDraft =>
+      activeDraft != null || activeStrengthDraft != null;
 
   CalendarOccurrenceReadItem? get currentPlanContext =>
       todayWorkout ?? (upcoming.isEmpty ? null : upcoming.first);
@@ -141,15 +147,12 @@ final trainingLandingSnapshotProvider =
       );
       final sessions = await workoutRepository.getSessions();
       final activeDraft = await workoutRepository.getActiveDraft();
-      final resumableDraft =
-          activeDraft != null && isTrainingResumableDraft(activeDraft)
-          ? activeDraft
-          : null;
       final resolution = resolveTrainingNextAction(
         snapshot: calendar,
         localDate: localDate,
-        activeDraft: resumableDraft,
+        activeDraft: activeDraft,
       );
+      final resumableDraft = resolution.activeDraft;
       final activeOccurrences = calendar.activeProgramVersionId == null
           ? const <CalendarOccurrenceReadItem>[]
           : calendar.rangeOccurrences
@@ -189,6 +192,7 @@ final trainingLandingSnapshotProvider =
             .toList(growable: false),
         lastEndedProgramName: calendar.lastEndedProgramName,
         lastEndedOutcome: calendar.lastEndedOutcome,
+        activeDraft: activeDraft,
         activeStrengthDraft: resumableDraft,
       );
     });
@@ -204,13 +208,37 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
   var _isLaunching = false;
   var _isEndingPlan = false;
 
+  static WorkoutDraft? _activeDraftFor(
+    TrainingLandingSnapshot data,
+  ) => data.activeDraft ?? data.activeStrengthDraft;
+
+  static WorkoutDraft? _resumableDraftFor(
+    TrainingLandingSnapshot data,
+  ) {
+    final draft = data.activeStrengthDraft;
+    if (draft != null) return draft;
+    final fallback = data.activeDraft;
+    return fallback != null && isTrainingResumableDraft(fallback)
+        ? fallback
+        : null;
+  }
+
   Future<void> _openStartWorkout(
     BuildContext context,
     WidgetRef ref,
     TrainingLandingSnapshot data,
   ) async {
     final today = data.todayWorkout;
-    final activeDraft = data.activeStrengthDraft;
+    final activeDraft = _activeDraftFor(data);
+    final resumableDraft = _resumableDraftFor(data);
+    final isTodayActive =
+        today != null &&
+        today.occurrence.status == 'inProgress' &&
+        (activeDraft == null ||
+            (resumableDraft != null &&
+                resumableDraft.scheduledOccurrenceId ==
+                    today.occurrence.id));
+    final canDirectlyResumeToday = isTodayActive && resumableDraft != null;
     final choice = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
@@ -228,19 +256,40 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
               title: Text('Start workout'),
               subtitle: Text('Train right now or follow today’s plan.'),
             ),
-            if (activeDraft != null)
+            if (resumableDraft != null)
               ListTile(
                 leading: const Icon(Icons.play_arrow_rounded),
-                title: Text('Resume ${activeDraft.routineName}'),
+                title: Text('Resume ${resumableDraft.routineName}'),
                 subtitle: const Text('Continue your saved workout first.'),
                 onTap: () => Navigator.pop(sheetContext, 'resume'),
+              ),
+            if (activeDraft != null && resumableDraft == null)
+              const ListTile(
+                leading: Icon(Icons.pause_circle_outline_rounded),
+                title: Text('Workout in progress'),
+                subtitle: Text(
+                  'Finish or discard your active workout before starting another.',
+                ),
+                enabled: false,
               ),
             if (today != null && canLaunchTrainingOccurrence(today))
               ListTile(
                 leading: const Icon(Icons.calendar_today_outlined),
-                title: Text('Today’s workout · ${today.template.name}'),
-                subtitle: const Text('Use the scheduled workout and targets.'),
-                onTap: () => Navigator.pop(sheetContext, 'today'),
+                title: Text(
+                  isTodayActive
+                      ? 'Resume today’s workout · ${today.template.name}'
+                      : 'Today’s workout · ${today.template.name}',
+                ),
+                subtitle: Text(
+                  activeDraft != null && !isTodayActive
+                      ? 'Finish your active workout before starting this plan.'
+                      : 'Use the scheduled workout and targets.',
+                ),
+                enabled: activeDraft == null || isTodayActive,
+                onTap: () => Navigator.pop(
+                  sheetContext,
+                  canDirectlyResumeToday ? 'resume' : 'today',
+                ),
               ),
             if (activeDraft == null)
               ListTile(
@@ -266,8 +315,8 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     if (!context.mounted || choice == null) return;
     switch (choice) {
       case 'resume':
-        if (activeDraft != null) {
-          await _resumeDraft(context, ref, activeDraft);
+        if (resumableDraft != null) {
+          await _resumeDraft(context, ref, resumableDraft);
         }
       case 'quick':
         await context.push('/quick-workout');
@@ -478,12 +527,15 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
         ),
       );
       if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
-    } catch (_) {
+    } catch (error) {
       if (context.mounted) {
+        final message = ProductFailurePresentation.fromError(
+          error,
+          title: 'Saved workout unavailable',
+          code: 'workout_recovery_needed',
+        ).message;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Saved workout unavailable. Try again.'),
-          ),
+          SnackBar(content: Text(message)),
         );
       }
     } finally {
@@ -497,6 +549,33 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
     CalendarOccurrenceReadItem item,
   ) async {
     if (_isLaunching || !canLaunchTrainingOccurrence(item)) return;
+    final snapshotData = ref
+        .read(trainingLandingSnapshotProvider)
+        .asData
+        ?.value;
+    final activeDraft = snapshotData == null
+        ? null
+        : _activeDraftFor(snapshotData);
+    final resumableDraft = snapshotData == null
+        ? null
+        : _resumableDraftFor(snapshotData);
+    if (activeDraft != null) {
+      if (item.occurrence.status == 'inProgress' &&
+          resumableDraft != null &&
+          resumableDraft.scheduledOccurrenceId == item.occurrence.id) {
+        await _resumeDraft(context, ref, resumableDraft);
+        return;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Finish or discard your active workout before starting another.',
+            ),
+          ),
+        );
+        return;
+      }
+    }
     setState(() => _isLaunching = true);
     try {
       final needsConfirmation =
@@ -535,10 +614,14 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
       if (!context.mounted) return;
       await WorkoutContextualLauncher.push(context, target);
       if (context.mounted) ref.invalidate(trainingLandingSnapshotProvider);
-    } catch (_) {
+    } catch (error) {
       if (!context.mounted) return;
+      final message = ProductFailurePresentation.fromError(
+        error,
+        title: 'Workout unavailable',
+      ).message;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Workout unavailable. Try again.')),
+        SnackBar(content: Text(message)),
       );
     } finally {
       if (mounted) setState(() => _isLaunching = false);
@@ -607,9 +690,9 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
           onStartWorkout: (item) => _startWorkout(context, ref, item),
           onStartTraining: () => _openStartWorkout(context, ref, data),
           onStartQuickWorkout: () => context.push('/quick-workout'),
-          onResumeDraft: data.activeStrengthDraft == null
+          onResumeDraft: _resumableDraftFor(data) == null
               ? null
-              : () => _resumeDraft(context, ref, data.activeStrengthDraft!),
+              : () => _resumeDraft(context, ref, _resumableDraftFor(data)!),
           onOpenPlan: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const RoutineDisplayScreen()),
           ),
@@ -708,11 +791,7 @@ class _TrainingScreenState extends ConsumerState<TrainingScreen> {
 }
 
 String _planLifecycleFailureMessage(ProgramLifecycleException error) {
-  if (error.code == 'blocked') return error.message;
-  if (error.code == 'no_active_plan') {
-    return 'This plan is no longer active. Refresh Training to see the next step.';
-  }
-  return 'Plan action unavailable. Try again.';
+  return ProductFailurePresentation.fromError(error).message;
 }
 
 class _TrainingLandingBody extends StatelessWidget {
@@ -748,13 +827,18 @@ class _TrainingLandingBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final today = data.todayWorkout;
     final planContext = data.currentPlanContext;
+    final activeDraft = data.activeDraft ?? data.activeStrengthDraft;
+    final resumableDraft = data.activeStrengthDraft ??
+        (activeDraft != null && isTrainingResumableDraft(activeDraft)
+            ? activeDraft
+            : null);
     final isEmpty =
         today == null &&
         data.upcoming.isEmpty &&
         data.recentSessions.isEmpty &&
         data.activeProgramName?.trim().isNotEmpty != true &&
         data.lastEndedOutcome == null &&
-        data.activeStrengthDraft == null;
+        activeDraft == null;
     if (isEmpty) {
       return ListView(
         padding: const EdgeInsets.fromLTRB(
@@ -782,7 +866,7 @@ class _TrainingLandingBody extends StatelessWidget {
         B05Layout.space32,
       ),
       children: [
-        if (data.activeStrengthDraft != null) ...[
+        if (activeDraft != null) ...[
           B05Surface(
             tone: B05SurfaceTone.selected,
             child: Column(
@@ -807,22 +891,26 @@ class _TrainingLandingBody extends StatelessWidget {
                 ),
                 const SizedBox(height: B05Layout.space8),
                 Text(
-                  data.activeStrengthDraft!.routineName,
+                  activeDraft.routineName,
                   style: B05Typography.title(context),
                 ),
                 const SizedBox(height: B05Layout.space4),
                 Text(
-                  'Your exercises, sets, and active time are saved.',
+                  resumableDraft == null
+                      ? 'Finish or discard this workout before starting another.'
+                      : 'Your exercises, sets, and active time are saved.',
                   style: B05Typography.body(context),
                 ),
-                const SizedBox(height: B05Layout.space12),
-                SizedBox(
-                  width: double.infinity,
-                  child: B05ActionButton(
-                    label: 'Resume ${data.activeStrengthDraft!.routineName}',
-                    onPressed: onResumeDraft,
+                if (resumableDraft != null) ...[
+                  const SizedBox(height: B05Layout.space12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: B05ActionButton(
+                      label: 'Resume ${resumableDraft.routineName}',
+                      onPressed: onResumeDraft,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -833,10 +921,11 @@ class _TrainingLandingBody extends StatelessWidget {
         _TodayTrainingSurface(
           item: today,
           isLaunching: isLaunching,
-          hasActiveDraft: data.activeStrengthDraft != null,
+          activeDraft: activeDraft,
           onStart: today == null || !canLaunchTrainingOccurrence(today)
               ? onStartTraining
-              : onStartTraining,
+              : () => onStartWorkout(today),
+          onResumeDraft: onResumeDraft,
           onStartQuickWorkout: onStartQuickWorkout,
           onOpenPlan: onOpenPlan,
           onLogWorkout: onLogWorkout,
@@ -1210,8 +1299,9 @@ class _TodayTrainingSurface extends StatelessWidget {
   const _TodayTrainingSurface({
     required this.item,
     required this.isLaunching,
-    required this.hasActiveDraft,
+    required this.activeDraft,
     required this.onStart,
+    required this.onResumeDraft,
     required this.onStartQuickWorkout,
     required this.onOpenPlan,
     required this.onLogWorkout,
@@ -1219,14 +1309,16 @@ class _TodayTrainingSurface extends StatelessWidget {
 
   final CalendarOccurrenceReadItem? item;
   final bool isLaunching;
-  final bool hasActiveDraft;
+  final WorkoutDraft? activeDraft;
   final VoidCallback? onStart;
+  final VoidCallback? onResumeDraft;
   final VoidCallback onStartQuickWorkout;
   final VoidCallback onOpenPlan;
   final VoidCallback onLogWorkout;
 
   @override
   Widget build(BuildContext context) {
+    final hasActiveDraft = activeDraft != null;
     if (item == null) {
       return B05Surface(
         tone: B05SurfaceTone.inset,
@@ -1242,7 +1334,9 @@ class _TodayTrainingSurface extends StatelessWidget {
             const SizedBox(height: B05Layout.space4),
             Text(
               hasActiveDraft
-                  ? 'Resume your saved workout before starting another.'
+                  ? onResumeDraft != null
+                        ? 'Resume your saved workout before starting another.'
+                        : 'Finish or discard your active workout before starting another.'
                   : 'Choose a workout or enjoy a recovery day.',
               style: B05Typography.body(context),
             ),
@@ -1282,10 +1376,15 @@ class _TodayTrainingSurface extends StatelessWidget {
     }
     final occurrence = item!.occurrence;
     final status = _statusLabel(occurrence.status);
-    final isCompleted =
-        occurrence.status == 'completed' ||
-        occurrence.status == 'partiallyCompleted';
-    final actionLabel = occurrence.status == 'inProgress'
+    final isCompleted = occurrence.status == 'completed';
+    final isPartiallyCompleted = occurrence.status == 'partiallyCompleted';
+    final isTerminal = isCompleted || isPartiallyCompleted;
+    final isOccurrenceActive =
+        occurrence.status == 'inProgress' &&
+        (activeDraft == null ||
+            activeDraft!.scheduledOccurrenceId == occurrence.id);
+    final hasCompetingDraft = hasActiveDraft && !isOccurrenceActive;
+    final actionLabel = isOccurrenceActive
         ? 'Resume workout'
         : 'Start workout';
     final prescriptionPreview = item!.prescriptions
@@ -1323,7 +1422,7 @@ class _TodayTrainingSurface extends StatelessWidget {
                       '${item!.prescriptions.length} ${item!.prescriptions.length == 1 ? 'exercise' : 'exercises'} · $status',
                       style: B05Typography.body(context),
                     ),
-                    if (!isCompleted && prescriptionPreview.isNotEmpty) ...[
+                    if (!isTerminal && prescriptionPreview.isNotEmpty) ...[
                       const SizedBox(height: B05Layout.space4),
                       Text(
                         prescriptionPreview,
@@ -1336,15 +1435,19 @@ class _TodayTrainingSurface extends StatelessWidget {
             ],
           ),
           const SizedBox(height: B05Layout.space12),
-          if (isCompleted) ...[
+          if (isTerminal) ...[
             Text(
-              'Workout complete for today.',
+              isPartiallyCompleted
+                  ? 'Workout partially completed.'
+                  : 'Workout complete for today.',
               style: B05Typography.body(context),
             ),
             const SizedBox(height: B05Layout.space12),
             if (hasActiveDraft)
               Text(
-                'Resume your saved workout before starting another.',
+                onResumeDraft != null
+                    ? 'Resume your saved workout before starting another.'
+                    : 'Finish or discard your active workout before starting another.',
                 style: B05Typography.body(context),
               )
             else
@@ -1354,7 +1457,7 @@ class _TodayTrainingSurface extends StatelessWidget {
                 emphasis: B05ActionEmphasis.secondary,
                 onPressed: isLaunching ? null : onStartQuickWorkout,
               ),
-          ] else if (hasActiveDraft)
+          ] else if (hasCompetingDraft)
             Text(
               'Resume your saved workout before starting today’s plan.',
               style: B05Typography.body(context),
@@ -1363,7 +1466,11 @@ class _TodayTrainingSurface extends StatelessWidget {
             B05ActionButton(
               label: isLaunching ? 'Opening workout…' : actionLabel,
               icon: Icons.play_arrow_rounded,
-              onPressed: isLaunching ? null : onStart,
+              onPressed: isLaunching
+                  ? null
+                  : (isOccurrenceActive && onResumeDraft != null)
+                      ? onResumeDraft
+                      : onStart,
             ),
         ],
       ),

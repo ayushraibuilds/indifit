@@ -73,6 +73,13 @@ TodayNextActionChoice chooseTodayNextAction({
       hint: 'Continues your saved active workout.',
     );
   }
+  if (snapshot?.nextActionResolution?.hasActiveDraft == true) {
+    return const TodayNextActionChoice(
+      action: TodayNextAction.openWorkoutPlan,
+      label: 'Open workout plan',
+      hint: 'Resolve your active workout before starting another.',
+    );
+  }
   if (scheduled == true) {
     return const TodayNextActionChoice(
       action: TodayNextAction.openWorkoutPlan,

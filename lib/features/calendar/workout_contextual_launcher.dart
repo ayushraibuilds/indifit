@@ -73,17 +73,21 @@ abstract final class WorkoutContextualLauncher {
             state.launch != null) {
           return B02WorkoutOccurrenceLaunchTarget(state.launch!);
         }
-        // A retained B01 draft is a recovery state; it is never downgraded to
-        // an invented B02 completion path.
-        if (state.status != B02StrengthExecutionStatus.recovery) {
-          throw StateError(
-            state.errorMessage ?? 'B02 strength workout could not be started.',
+        // A retained B02 draft in recovery is never downgraded to the legacy
+        // adapter. That could start a second path or expose an unsafe Start
+        // action after the canonical state has already claimed the workout.
+        if (state.status == B02StrengthExecutionStatus.recovery) {
+          throw const B02StrengthExecutionRecoveryException(
+            'The saved workout requires recovery.',
           );
         }
+        throw const B02StrengthExecutionException(
+          'The workout could not be started.',
+        );
       }
     } else if (activityType != B02ActivityType.legacy) {
       throw StateError(
-        'Scheduled ${activityType.dbValue} activity uses its typed activity flow and cannot open the legacy strength player.',
+        'This activity uses its own activity flow and cannot be opened here.',
       );
     }
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -710,9 +711,5 @@ class ActiveProgramManagementSurface extends StatelessWidget {
 }
 
 String _routinePlanLifecycleMessage(ProgramLifecycleException error) {
-  if (error.code == 'blocked') return error.message;
-  if (error.code == 'no_active_plan') {
-    return 'This plan is no longer active. Return to Training to choose what is next.';
-  }
-  return 'Plan action unavailable. Try again.';
+  return ProductFailurePresentation.fromError(error).message;
 }

@@ -6,10 +6,12 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_count_label.dart';
+import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/colors.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/repositories/program_activation_coordinator.dart';
 import '../../data/repositories/program_repository.dart';
+import '../../data/repositories/workout_repository.dart';
 
 /// Screen for reviewing program graph, selecting start local date and timezone, and publishing/activating.
 class ProgramReviewScreen extends ConsumerStatefulWidget {
@@ -148,6 +150,27 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
 
   Future<bool> _confirmPlanSwitchIfNeeded(ProgramDetailAggregate detail) async {
     try {
+      final workoutRepo = ref.read(workoutRepositoryProvider);
+      final activeDraft = await workoutRepo.getActiveDraft();
+      if (activeDraft != null) {
+        if (!mounted) return false;
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Workout in progress'),
+            content: Text(
+              'You have an active workout in progress (${activeDraft.routineName}). Resolve it before activating a new plan.',
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return false;
+      }
       final dates = ref.read(localScheduleDateServiceProvider);
       final timezoneId = await ref
           .read(localTimezoneServiceProvider)
@@ -415,9 +438,5 @@ class _ProgramReviewScreenState extends ConsumerState<ProgramReviewScreen> {
 }
 
 String _activationFailureMessage(Object error) {
-  if (error is ActivationRejectedException &&
-      error.message.contains('existing workout draft')) {
-    return 'Finish or discard your current workout before activating this program.';
-  }
-  return 'The program could not be activated. Your plan is still available to review and retry.';
+  return ProductFailurePresentation.fromError(error).message;
 }

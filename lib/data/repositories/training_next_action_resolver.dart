@@ -12,6 +12,7 @@ class TrainingNextActionResolution {
     required this.localDate,
     required this.activeProgramVersionId,
     required this.activeDraft,
+    required this.hasActiveDraft,
     this.activeDraftReadAvailable = true,
     required this.currentOccurrence,
     required this.todayOccurrence,
@@ -23,6 +24,11 @@ class TrainingNextActionResolution {
 
   final String localDate;
   final String? activeProgramVersionId;
+  /// True means the durable draft read found a draft, including one this
+  /// surface cannot resume itself. It is separate from [activeDraft] so a
+  /// competing activity draft can still block Start without becoming a
+  /// misleading Resume action.
+  final bool hasActiveDraft;
   final WorkoutDraft? activeDraft;
 
   /// False means B02 could not establish whether an active draft exists.
@@ -96,25 +102,45 @@ TrainingNextActionResolution resolveTrainingNextAction({
             .toList(growable: false);
 
   final ordered = [...activeOccurrences]..sort(_compareOccurrences);
-  final actionable = ordered
-      .where(
-        (item) =>
-            _isActionableOccurrence(item, allowInProgress: activeDraft != null),
-      )
-      .toList(growable: false);
+  // A draft read is part of the guard, not just a Resume decoration. If the
+  // read is unavailable, do not expose any scheduled Start/Resume action
+  // until the caller can establish whether another draft owns the session.
+  final actionable = activeDraftReadAvailable
+      ? ordered
+            .where(_isActionableOccurrence)
+            .toList(growable: false)
+      : const <CalendarOccurrenceReadItem>[];
 
   CalendarOccurrenceReadItem? linkedToDraft;
   final scheduledDraftId = activeDraft?.scheduledOccurrenceId;
   if (scheduledDraftId != null) {
     for (final item in activeOccurrences) {
-      if (item.occurrence.id == scheduledDraftId) {
+      // A draft may only resume the canonical occurrence while it is
+      // in-progress. A terminal row paired with a lingering draft is a
+      // contradictory state; do not turn it into a Resume action.
+      if (item.occurrence.id == scheduledDraftId &&
+          item.occurrence.status == 'inProgress') {
         linkedToDraft = item;
         break;
       }
     }
   }
 
-  final current = linkedToDraft;
+  // An in-progress occurrence without a readable matching draft is a
+  // recovery state. Keep its identity visible so callers can route to the
+  // canonical recovery path, but never downgrade it to generic Start.
+  final current = activeDraftReadAvailable
+      ? linkedToDraft ??
+          _firstWhere(
+            ordered,
+            (item) => item.occurrence.status == 'inProgress',
+          )
+      : null;
+  final resumableDraft = activeDraft != null &&
+          isTrainingResumableDraft(activeDraft) &&
+          (scheduledDraftId == null || linkedToDraft != null)
+      ? activeDraft
+      : null;
   final today = _firstWhere(
     actionable,
     (item) => item.occurrence.effectiveLocalDate == localDate,
@@ -151,7 +177,8 @@ TrainingNextActionResolution resolveTrainingNextAction({
   return TrainingNextActionResolution(
     localDate: localDate,
     activeProgramVersionId: activeVersionId,
-    activeDraft: activeDraft,
+    activeDraft: resumableDraft,
+    hasActiveDraft: activeDraft != null,
     activeDraftReadAvailable: activeDraftReadAvailable,
     currentOccurrence: current,
     todayOccurrence: today,
@@ -162,14 +189,11 @@ TrainingNextActionResolution resolveTrainingNextAction({
   );
 }
 
-bool _isActionableOccurrence(
-  CalendarOccurrenceReadItem item, {
-  required bool allowInProgress,
-}) {
+bool _isActionableOccurrence(CalendarOccurrenceReadItem item) {
   final status = item.occurrence.status;
   return status == 'planned' ||
       status == 'rescheduled' ||
-      (allowInProgress && status == 'inProgress');
+      status == 'inProgress';
 }
 
 /// The current Training/Today surfaces can resume the two persisted workout
@@ -178,7 +202,7 @@ bool _isActionableOccurrence(
 /// drafts remain owned by their existing activity surface and must not make
 /// these two surfaces disagree about a strength Resume action.
 bool isTrainingResumableDraft(WorkoutDraft draft) =>
-    draft.activityType == 'strength';
+    draft.activityType == 'strength' || draft.activityType == 'legacy';
 
 CalendarOccurrenceReadItem? _firstWhere(
   Iterable<CalendarOccurrenceReadItem> items,

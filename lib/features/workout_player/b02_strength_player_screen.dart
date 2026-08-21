@@ -620,7 +620,9 @@ class _B02StrengthPlayerScreenState
     final reps = int.tryParse(_reps[slot.id] ?? '');
     if (reps == null || reps < 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter positive actual repetitions.')),
+        const SnackBar(
+          content: Text('Enter your completed reps to log this set.'),
+        ),
       );
       return;
     }
