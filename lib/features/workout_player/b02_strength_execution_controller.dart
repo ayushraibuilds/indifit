@@ -8,6 +8,7 @@ import '../../core/utils/app_logger.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import '../../data/repositories/calendar_repository.dart';
+import '../../data/services/b02_execution_progression.dart';
 import '../../data/services/b02_rest_recommendation_service.dart';
 import '../../data/services/b02_strength_execution_draft_service.dart';
 import '../exercise_picker/exercise_picker_models.dart';
@@ -278,7 +279,15 @@ class B02StrengthExecutionController
             : slot.prescriptionId,
         useSlotPrescription: current.occurrenceId != null,
       );
-      await saveDraft(next);
+      final progressed =
+          current.occurrenceId != null && role == B02SetRole.working
+          ? B02ExecutionProgression.advanceAfterCompletedSlot(
+              state: next,
+              slots: state.slots,
+              current: slot,
+            )
+          : next;
+      await saveDraft(progressed);
     } catch (error) {
       _setFailure(error, current);
     }
@@ -291,6 +300,7 @@ class B02StrengthExecutionController
     double? loadKg,
     B02LoadBasis? actualLoadBasis,
     int? rpe,
+    B02TechniqueFields? technique,
   }) async {
     final current = state.launch;
     if (current == null) {
@@ -310,6 +320,7 @@ class B02StrengthExecutionController
         loadKg: loadKg,
         actualLoadBasis: actualLoadBasis,
         rpe: rpe,
+        technique: technique,
       );
       return await saveDraft(next);
     } catch (error) {
@@ -360,7 +371,14 @@ class B02StrengthExecutionController
         slot: slot,
         reason: reason,
       );
-      await saveDraft(next);
+      final progressed = current.occurrenceId != null
+          ? B02ExecutionProgression.advanceAfterSkippedSlot(
+              state: next,
+              slots: state.slots,
+              current: slot,
+            )
+          : next;
+      await saveDraft(progressed);
     } catch (error) {
       _setFailure(error, current);
     }

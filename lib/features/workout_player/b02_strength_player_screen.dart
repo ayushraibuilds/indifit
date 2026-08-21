@@ -13,13 +13,17 @@ import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/models/b02_previous_performance_models.dart';
+import '../../data/models/b02_rich_set_helpers.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
+import '../../data/services/b02_execution_progression.dart';
 import '../exercise_picker/exercise_picker.dart';
 import 'b02_previous_performance_integration.dart';
 import 'b02_strength_execution_controller.dart';
 import 'b02_workout_elapsed.dart';
 import 'quick_workout_screen.dart';
 import 'widgets/b02_compact_set_table.dart';
+import 'widgets/b02_execution_advanced_controls.dart';
+import 'widgets/b02_execution_semantics.dart';
 import 'widgets/r07c_workout_presentation.dart';
 import 'workout_execution_context.dart';
 import 'workout_execution_route.dart';
@@ -50,6 +54,7 @@ class _B02StrengthPlayerScreenState
   final _repControllers = <String, TextEditingController>{};
   final _loadControllers = <String, TextEditingController>{};
   final _rpes = <String, String>{};
+  final _pendingTechniques = <String, B02TechniqueFields>{};
   final _mutatingSetIds = <String>{};
   final _inputIdentities = <String, _B02InputIdentity>{};
   final _loggedSetCounts = <String, int>{};
@@ -205,8 +210,13 @@ class _B02StrengthPlayerScreenState
         ),
       );
     }
+    final cursorSlot = B02ExecutionProgression.cursorSlot(
+      state: launch.state,
+      slots: slots,
+    );
+    final preferredSlotId = _selectedSlotId ?? cursorSlot?.id;
     final selected = slots.firstWhere(
-      (slot) => slot.id == (_selectedSlotId ?? slots.first.id),
+      (slot) => slot.id == (preferredSlotId ?? slots.first.id),
       orElse: () => slots.first,
     );
     _selectedSlotId ??= selected.id;
@@ -217,10 +227,16 @@ class _B02StrengthPlayerScreenState
         !isQuick && workingSetCount >= selected.plannedSets;
     final currentSet = workingSetCount + 1;
     final performedSets = _performedSets(launch.state, selected);
+    final groupSafe = _groupIntegrity(launch.state, selected, slots).isValid;
     _loggedSetCounts[selected.id] = performedSets.length;
     final actualExerciseId = _actualExerciseId(launch.state, selected);
     _syncInputIdentity(selected, actualExerciseId);
-    final previousKey = _previousPerformanceKey(launch.state, selected);
+    final pendingTechnique = _pendingTechniqueFor(selected, currentSet);
+    final previousKey = _previousPerformanceKey(
+      launch.state,
+      selected,
+      pendingTechnique,
+    );
     if (previousKey != null) {
       _schedulePreviousPerformanceLookup(previousKey);
     }
@@ -241,7 +257,7 @@ class _B02StrengthPlayerScreenState
                 : () => _overrideTarget(provider, selected),
           )
         : null;
-    final setLogging = hasOpenRest
+    final setLogging = hasOpenRest || !groupSafe
         ? null
         : _buildSetLoggingSlot(
             provider: provider,
@@ -251,6 +267,7 @@ class _B02StrengthPlayerScreenState
             currentSet: currentSet,
             performedSets: performedSets,
             isPlannedMode: execution is PlannedWorkoutExecutionContext,
+            pendingTechnique: pendingTechnique,
           );
     final primaryLabel = _warmup
         ? 'Log warm-up set'
@@ -267,6 +284,7 @@ class _B02StrengthPlayerScreenState
               onPressed:
                   ui.isBusy ||
                       _isSubmittingSet ||
+                      !groupSafe ||
                       !selected.hasCanonicalExercise ||
                       (!_warmup && exerciseComplete)
                   ? null
@@ -292,7 +310,7 @@ class _B02StrengthPlayerScreenState
         exerciseName: _actualExerciseName(launch.state, selected),
         elapsedState: launch.state,
         nowUtc: widget.nowUtc,
-        onActions: ui.isBusy
+        onActions: ui.isBusy || !groupSafe
             ? null
             : () => _showExerciseActions(provider, selected),
       ),
@@ -325,6 +343,7 @@ class _B02StrengthPlayerScreenState
         slots: slots,
         isQuick: isQuick,
         hasOpenRest: hasOpenRest,
+        groupSafe: groupSafe,
       ),
       completionSlot: SizedBox(
         width: double.infinity,
@@ -345,8 +364,17 @@ class _B02StrengthPlayerScreenState
     required int currentSet,
     required List<B02PerformedSet> performedSets,
     required bool isPlannedMode,
+    required B02TechniqueFields pendingTechnique,
   }) {
     final rpe = int.tryParse(_rpes[selected.id] ?? '');
+    final techniqueKey = _pendingTechniqueKey(
+      selected,
+      currentSet,
+      isWarmup: _warmup,
+    );
+    final prescribedTechnique = _warmup
+        ? null
+        : selected.techniqueForSet(currentSet - 1);
     return B02CompactSetTable(
       slot: selected,
       loggedSets: performedSets,
@@ -368,9 +396,21 @@ class _B02StrengthPlayerScreenState
       onEdit: (set) => unawaited(_editLoggedSet(provider, selected, set)),
       onDelete: (set) => unawaited(_deleteLoggedSet(provider, selected, set)),
       onAddSet: !isPlannedMode ? () => _prepareExtraSet(selected) : null,
-      moreContent: launch.state.warmupRecommendation == null
-          ? null
-          : _WarmupCard(
+      moreContent: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          B02ExecutionAdvancedControls(
+            initialValue: pendingTechnique,
+            prescribedValue: prescribedTechnique,
+            // The pending reps field is an editable actual, not a frozen
+            // prescription header. Segment totals are checked at log time.
+            headerReps: null,
+            onChanged: (value) =>
+                setState(() => _pendingTechniques[techniqueKey] = value),
+          ),
+          if (launch.state.warmupRecommendation != null) ...[
+            const SizedBox(height: 8),
+            _WarmupCard(
               recommendation: launch.state.warmupRecommendation!,
               onAccept: ui.isBusy
                   ? null
@@ -389,6 +429,9 @@ class _B02StrengthPlayerScreenState
                       launch.state.warmupRecommendation!,
                     ),
             ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -401,6 +444,7 @@ class _B02StrengthPlayerScreenState
     required List<B02StrengthExecutionSlot> slots,
     required bool isQuick,
     required bool hasOpenRest,
+    required bool groupSafe,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -417,13 +461,15 @@ class _B02StrengthPlayerScreenState
               label: 'Add exercise',
               icon: Icons.playlist_add_rounded,
               emphasis: B05ActionEmphasis.secondary,
-              onPressed: ui.isBusy ? null : () => _openExercisePicker(provider),
+              onPressed: ui.isBusy || !groupSafe
+                  ? null
+                  : () => _openExercisePicker(provider),
             ),
           ] else
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
-                onPressed: ui.isBusy
+                onPressed: ui.isBusy || !groupSafe
                     ? null
                     : () => ref.read(provider.notifier).skipSlot(selected),
                 icon: const Icon(Icons.skip_next_rounded),
@@ -446,7 +492,7 @@ class _B02StrengthPlayerScreenState
           ],
         ),
         const SizedBox(height: 12),
-        _GroupProgressCard(launch: launch, slots: slots),
+        _GroupProgressCard(launch: launch, slots: slots, selected: selected),
       ],
     );
   }
@@ -479,6 +525,28 @@ class _B02StrengthPlayerScreenState
       if (direct || sameFrozenSlot) return exercise;
     }
     return null;
+  }
+
+  B02GroupExecutionIntegrity _groupIntegrity(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+    Iterable<B02StrengthExecutionSlot> slots,
+  ) {
+    final currentPosition = B02GroupExecutionIntegrity.checkCurrentPosition(
+      state: state,
+      slots: slots,
+    );
+    if (!currentPosition.isValid) return currentPosition;
+    final groupId = slot.groupId;
+    if (groupId == null) return const B02GroupExecutionIntegrity.valid();
+    for (final group in state.groups) {
+      if (group.id == groupId) {
+        return B02GroupExecutionIntegrity.check(group: group, slots: slots);
+      }
+    }
+    return const B02GroupExecutionIntegrity.invalid(
+      'This grouped workout detail is unavailable right now.',
+    );
   }
 
   String _loadLabel(B02LoadBasis? basis) => switch (basis) {
@@ -582,6 +650,7 @@ class _B02StrengthPlayerScreenState
         oldLoad?.dispose();
       });
       _rpes.remove(slot.id);
+      _pendingTechniques.removeWhere((key, _) => key.startsWith('${slot.id}:'));
       _editedInputFields.removeWhere((field) => field.slotId == slot.id);
     }
     _inputIdentities[slot.id] = next;
@@ -594,6 +663,7 @@ class _B02StrengthPlayerScreenState
   B02PreviousPerformanceRequestKey? _previousPerformanceKey(
     B02ExecutionDraftState state,
     B02StrengthExecutionSlot slot,
+    B02TechniqueFields technique,
   ) {
     final actualExerciseId = _actualExerciseId(state, slot)?.trim();
     if (actualExerciseId == null || actualExerciseId.isEmpty) return null;
@@ -609,8 +679,41 @@ class _B02StrengthPlayerScreenState
       actualExerciseId: actualExerciseId,
       role: _warmup ? B02SetRole.warmup : B02SetRole.working,
       loadBasis: loadBasis,
-      effortMode: slot.effortMode,
-      endedAtFailure: slot.endedAtFailure,
+      effortMode: technique.effortMode,
+      endedAtFailure: technique.endedAtFailure,
+      assistanceMode: technique.assistanceMode,
+      assistanceKg: technique.assistanceKg,
+      tempoEccentricSeconds: technique.tempoEccentricSeconds,
+      tempoBottomPauseSeconds: technique.tempoBottomPauseSeconds,
+      tempoConcentricSeconds: technique.tempoConcentricSeconds,
+      tempoLockoutPauseSeconds: technique.tempoLockoutPauseSeconds,
+      pausedRepPosition: technique.pausedRepPosition,
+      pausedRepSeconds: technique.pausedRepSeconds,
+      hasTechniqueSegments: technique.segments.isNotEmpty,
+    );
+  }
+
+  String _pendingTechniqueKey(
+    B02StrengthExecutionSlot slot,
+    int currentSet, {
+    required bool isWarmup,
+  }) => '${slot.id}:$currentSet:${isWarmup ? 'warmup' : 'working'}';
+
+  B02TechniqueFields _pendingTechniqueFor(
+    B02StrengthExecutionSlot slot,
+    int currentSet,
+  ) {
+    final key = _pendingTechniqueKey(slot, currentSet, isWarmup: _warmup);
+    final prescriptionOrdinal = slot.setPrescriptionOrdinal ?? currentSet - 1;
+    return _pendingTechniques.putIfAbsent(
+      key,
+      () => _warmup
+          ? B02TechniqueFields()
+          : slot.techniqueForSet(prescriptionOrdinal) ??
+                B02TechniqueFields(
+                  effortMode: slot.effortMode,
+                  endedAtFailure: slot.endedAtFailure,
+                ),
     );
   }
 
@@ -624,6 +727,15 @@ class _B02StrengthPlayerScreenState
         loadBasis: key.loadBasis,
         effortMode: key.effortMode,
         endedAtFailure: key.endedAtFailure,
+        assistanceMode: key.assistanceMode,
+        assistanceKg: key.assistanceKg,
+        tempoEccentricSeconds: key.tempoEccentricSeconds,
+        tempoBottomPauseSeconds: key.tempoBottomPauseSeconds,
+        tempoConcentricSeconds: key.tempoConcentricSeconds,
+        tempoLockoutPauseSeconds: key.tempoLockoutPauseSeconds,
+        pausedRepPosition: key.pausedRepPosition,
+        pausedRepSeconds: key.pausedRepSeconds,
+        hasTechniqueSegments: key.hasTechniqueSegments,
       ),
       asOfUtc: (widget.nowUtc?.call() ?? DateTime.now()).toUtc(),
     );
@@ -703,15 +815,11 @@ class _B02StrengthPlayerScreenState
 
   static String _groupContext(B02StrengthExecutionSlot slot) {
     if (slot.groupType == null) return 'Standalone exercise';
-    final type = switch (slot.groupType!) {
-      B02GroupType.superset => 'Superset',
-      B02GroupType.circuit => 'Circuit',
-      B02GroupType.giantSet => 'Giant set',
-    };
+    final type = b02ExecutionGroupTypeLabel(slot.groupType!);
     final name = slot.groupLabel?.trim().isNotEmpty == true
         ? slot.groupLabel!.trim()
         : type;
-    return '$name · Round ${(slot.roundOrdinal ?? 0) + 1} · Exercise ${(slot.memberOrdinal ?? 0) + 1}';
+    return '$name · Round ${(slot.roundOrdinal ?? 0) + 1} · Member ${(slot.memberOrdinal ?? 0) + 1}';
   }
 
   Widget _buildRestCard(
@@ -746,6 +854,7 @@ class _B02StrengthPlayerScreenState
 
   Future<void> _record(dynamic provider, B02StrengthExecutionSlot slot) async {
     if (_isSubmittingSet) return;
+    final roleWasWarmup = _warmup;
     final reps = int.tryParse(_repControllerFor(slot).text);
     if (reps == null || reps < 1) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -753,6 +862,19 @@ class _B02StrengthPlayerScreenState
           content: Text('Enter your completed reps to log this set.'),
         ),
       );
+      return;
+    }
+    final currentLaunch = launchForProvider(provider);
+    final currentSet = currentLaunch == null
+        ? 1
+        : _workingSetCount(currentLaunch.state, slot) + 1;
+    final technique = _pendingTechniqueFor(slot, currentSet);
+    try {
+      B02RichSetValidator.validateTechnique(technique, headerReps: reps);
+    } on B02ValidationException catch (error) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
       return;
     }
     setState(() => _isSubmittingSet = true);
@@ -764,7 +886,8 @@ class _B02StrengthPlayerScreenState
         loadKg: double.tryParse(_loadControllerFor(slot).text),
         actualLoadBasis: slot.targetLoadBasis,
         rpe: int.tryParse(_rpes[slot.id] ?? ''),
-        role: _warmup ? B02SetRole.warmup : B02SetRole.working,
+        role: roleWasWarmup ? B02SetRole.warmup : B02SetRole.working,
+        technique: technique,
       );
       if (!mounted) return;
       final saved = ref.read(provider);
@@ -773,6 +896,17 @@ class _B02StrengthPlayerScreenState
         unawaited(IndiFitHaptics.confirmation());
         if (!_warmup) {
           await controller.beginRest(slot);
+        }
+        final afterSave = ref.read(provider);
+        final cursorLaunch = afterSave.launch;
+        final cursor = cursorLaunch == null
+            ? null
+            : B02ExecutionProgression.cursorSlot(
+                state: cursorLaunch.state,
+                slots: afterSave.slots,
+              );
+        if (mounted && cursor != null) {
+          setState(() => _selectedSlotId = cursor.id);
         }
         final currentLaunch = launchForProvider(provider);
         final currentExecution = currentLaunch == null
@@ -783,6 +917,9 @@ class _B02StrengthPlayerScreenState
             _repControllerFor(slot).text = slot.targetRepsMin?.toString() ?? '';
             _rpes[slot.id] = '';
             _warmup = false;
+            _pendingTechniques.remove(
+              _pendingTechniqueKey(slot, currentSet, isWarmup: roleWasWarmup),
+            );
           });
         }
       }
@@ -842,6 +979,8 @@ class _B02StrengthPlayerScreenState
           int? rpe = set.actualRpe;
           String? repsError;
           String? loadError;
+          String? techniqueError;
+          var technique = set.technique;
           final canEditReps = set.technique.segments.isEmpty;
           return StatefulBuilder(
             builder: (context, setModalState) {
@@ -863,8 +1002,22 @@ class _B02StrengthPlayerScreenState
                   });
                   return;
                 }
+                try {
+                  B02RichSetValidator.validateTechnique(
+                    technique,
+                    headerReps: reps,
+                  );
+                } on B02ValidationException catch (error) {
+                  setModalState(() => techniqueError = error.message);
+                  return;
+                }
                 Navigator.of(sheetContext).pop(
-                  _B02LoggedSetEditValues(reps: reps!, loadKg: load, rpe: rpe),
+                  _B02LoggedSetEditValues(
+                    reps: reps!,
+                    loadKg: load,
+                    rpe: rpe,
+                    technique: technique,
+                  ),
                 );
               }
 
@@ -941,6 +1094,25 @@ class _B02StrengthPlayerScreenState
                         ],
                         onChanged: (value) => setModalState(() => rpe = value),
                       ),
+                      const SizedBox(height: 12),
+                      B02ExecutionAdvancedControls(
+                        initialValue: technique,
+                        headerReps: int.tryParse(repsController.text),
+                        onChanged: (value) => setModalState(() {
+                          technique = value;
+                          techniqueError = null;
+                        }),
+                      ),
+                      if (techniqueError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            techniqueError!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -983,6 +1155,7 @@ class _B02StrengthPlayerScreenState
             loadKg: result.loadKg,
             actualLoadBasis: loadBasis,
             rpe: result.rpe,
+            technique: result.technique,
           );
       if (saved && mounted) {
         showIndiFitSuccessFeedback(context, 'Set updated');
@@ -1348,11 +1521,42 @@ class _B02StrengthPlayerScreenState
 class _GroupProgressCard extends StatelessWidget {
   final B02StrengthExecutionLaunch launch;
   final List<B02StrengthExecutionSlot> slots;
+  final B02StrengthExecutionSlot selected;
 
-  const _GroupProgressCard({required this.launch, required this.slots});
+  const _GroupProgressCard({
+    required this.launch,
+    required this.slots,
+    required this.selected,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (launch.state.groups.isEmpty && selected.groupId == null) {
+      final completed = launch.state.performedExercises
+          .where((exercise) => exercise.status == 'completed')
+          .length;
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Workout progress',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 6),
+              Text('$completed of ${slots.length} exercises complete'),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      );
+    }
+    final cursorIntegrity = B02GroupExecutionIntegrity.checkCurrentPosition(
+      state: launch.state,
+      slots: slots,
+    );
     final completed = launch.state.performedExercises
         .where((exercise) => exercise.status == 'completed')
         .length;
@@ -1368,23 +1572,142 @@ class _GroupProgressCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text('$completed of ${slots.length} exercises complete'),
-            const SizedBox(height: 10),
-            for (final group in launch.state.groups) Text(_groupLabel(group)),
+            if (!cursorIntegrity.isValid)
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.info_outline_rounded),
+                title: Text('Grouped workout unavailable'),
+                subtitle: Text(
+                  'This grouped workout detail is unavailable right now.',
+                ),
+              ),
+            if (selected.groupId != null &&
+                !launch.state.groups.any(
+                  (group) => group.id == selected.groupId,
+                ))
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.info_outline_rounded),
+                title: Text('Grouped workout unavailable'),
+                subtitle: Text(
+                  'This grouped workout detail is unavailable right now.',
+                ),
+              ),
+            for (final group in launch.state.groups) ...[
+              const SizedBox(height: 10),
+              _buildGroup(context, group),
+            ],
           ],
         ),
       ),
     );
   }
 
-  String _groupLabel(B02ExerciseGroup group) {
-    final name =
-        group.label ??
-        switch (group.groupType) {
-          B02GroupType.superset => 'Superset',
-          B02GroupType.circuit => 'Circuit',
-          B02GroupType.giantSet => 'Giant set',
-        };
-    return '$name · ${group.roundCount} ${group.roundCount == 1 ? 'round' : 'rounds'} · ${group.members.length} ${group.members.length == 1 ? 'exercise' : 'exercises'}';
+  Widget _buildGroup(BuildContext context, B02ExerciseGroup group) {
+    final integrity = B02GroupExecutionIntegrity.check(
+      group: group,
+      slots: slots,
+    );
+    if (!integrity.isValid) {
+      return Semantics(
+        container: true,
+        label: 'Grouped workout detail unavailable',
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.info_outline_rounded),
+          title: const Text('Grouped workout unavailable'),
+          subtitle: Text(integrity.consumerMessage!),
+        ),
+      );
+    }
+    final name = group.label?.trim().isNotEmpty == true
+        ? group.label!.trim()
+        : b02ExecutionGroupTypeLabel(group.groupType);
+    final groupSlots = slots.where((slot) => slot.groupId == group.id);
+    final completeCount = launch.state.performedExercises
+        .where(
+          (exercise) =>
+              exercise.performedExerciseGroupId == group.id &&
+              exercise.status == 'completed',
+        )
+        .length;
+    final expected = group.roundCount * group.members.length;
+    final current = _canonicalCurrentSlot(group);
+    final next = current == null ? null : _nextSlot(group, groupSlots, current);
+    return Semantics(
+      container: true,
+      label:
+          '$name, $completeCount of $expected grouped exercises complete'
+          '${current == null ? '' : ', current ${current.exerciseNameSnapshot}'}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$name · ${group.roundCount} ${group.roundCount == 1 ? 'round' : 'rounds'}',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 2),
+          Text('$completeCount of $expected exercise slots complete'),
+          if (current != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Current: ${current.exerciseNameSnapshot} · Round ${(current.roundOrdinal ?? 0) + 1}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+          if (next != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Next: ${next.exerciseNameSnapshot}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  B02StrengthExecutionSlot? _canonicalCurrentSlot(B02ExerciseGroup group) {
+    final state = launch.state;
+    if (state.currentGroupId != group.id ||
+        state.currentRoundOrdinal == null ||
+        state.currentMemberOrdinal == null) {
+      return null;
+    }
+    for (final slot in slots) {
+      if (slot.groupId == group.id &&
+          slot.roundOrdinal == state.currentRoundOrdinal &&
+          slot.memberOrdinal == state.currentMemberOrdinal) {
+        return slot;
+      }
+    }
+    return null;
+  }
+
+  B02StrengthExecutionSlot? _nextSlot(
+    B02ExerciseGroup group,
+    Iterable<B02StrengthExecutionSlot> groupSlots,
+    B02StrengthExecutionSlot current,
+  ) {
+    final roundSlots = b02GroupRoundSlots(
+      slots: groupSlots,
+      groupId: group.id,
+      roundOrdinal: current.roundOrdinal ?? 0,
+    );
+    final currentIndex = roundSlots.indexWhere(
+      (slot) => slot.memberOrdinal == current.memberOrdinal,
+    );
+    if (currentIndex >= 0 && currentIndex + 1 < roundSlots.length) {
+      return roundSlots[currentIndex + 1];
+    }
+    final nextRound = (current.roundOrdinal ?? 0) + 1;
+    if (nextRound >= group.roundCount) return null;
+    final nextRoundSlots = b02GroupRoundSlots(
+      slots: groupSlots,
+      groupId: group.id,
+      roundOrdinal: nextRound,
+    );
+    return nextRoundSlots.isEmpty ? null : nextRoundSlots.first;
   }
 }
 
@@ -1393,11 +1716,13 @@ class _B02LoggedSetEditValues {
     required this.reps,
     required this.loadKg,
     required this.rpe,
+    required this.technique,
   });
 
   final int reps;
   final double? loadKg;
   final int? rpe;
+  final B02TechniqueFields technique;
 }
 
 @immutable
@@ -1550,7 +1875,10 @@ class _R07CExerciseStrip extends StatelessWidget {
     final complete = state.performedExercises.any(
       (exercise) =>
           (exercise.id == 'performed:${slot.id}' ||
-              exercise.sourceExercisePrescriptionId == slot.prescriptionId) &&
+              (exercise.sourceExercisePrescriptionId == slot.prescriptionId &&
+                  exercise.performedExerciseGroupId == slot.groupId &&
+                  exercise.groupRoundOrdinal == slot.roundOrdinal &&
+                  exercise.groupMemberOrdinal == slot.memberOrdinal)) &&
           exercise.status == 'completed',
     );
     final label = slot.exerciseNameSnapshot.trim().isEmpty

@@ -16,6 +16,15 @@ class B02PreviousPerformanceRequestKey {
     required this.loadBasis,
     required this.effortMode,
     required this.endedAtFailure,
+    this.assistanceMode,
+    this.assistanceKg,
+    this.tempoEccentricSeconds,
+    this.tempoBottomPauseSeconds,
+    this.tempoConcentricSeconds,
+    this.tempoLockoutPauseSeconds,
+    this.pausedRepPosition,
+    this.pausedRepSeconds,
+    this.hasTechniqueSegments = false,
   });
 
   final String slotId;
@@ -24,6 +33,15 @@ class B02PreviousPerformanceRequestKey {
   final B02LoadBasis loadBasis;
   final B02EffortMode effortMode;
   final bool endedAtFailure;
+  final B02AssistanceMode? assistanceMode;
+  final double? assistanceKg;
+  final int? tempoEccentricSeconds;
+  final int? tempoBottomPauseSeconds;
+  final int? tempoConcentricSeconds;
+  final int? tempoLockoutPauseSeconds;
+  final B02PausedRepPosition? pausedRepPosition;
+  final int? pausedRepSeconds;
+  final bool hasTechniqueSegments;
 
   @override
   bool operator ==(Object other) {
@@ -33,7 +51,16 @@ class B02PreviousPerformanceRequestKey {
         other.role == role &&
         other.loadBasis == loadBasis &&
         other.effortMode == effortMode &&
-        other.endedAtFailure == endedAtFailure;
+        other.endedAtFailure == endedAtFailure &&
+        other.assistanceMode == assistanceMode &&
+        _sameDouble(other.assistanceKg, assistanceKg) &&
+        other.tempoEccentricSeconds == tempoEccentricSeconds &&
+        other.tempoBottomPauseSeconds == tempoBottomPauseSeconds &&
+        other.tempoConcentricSeconds == tempoConcentricSeconds &&
+        other.tempoLockoutPauseSeconds == tempoLockoutPauseSeconds &&
+        other.pausedRepPosition == pausedRepPosition &&
+        other.pausedRepSeconds == pausedRepSeconds &&
+        other.hasTechniqueSegments == hasTechniqueSegments;
   }
 
   @override
@@ -44,7 +71,21 @@ class B02PreviousPerformanceRequestKey {
     loadBasis,
     effortMode,
     endedAtFailure,
+    assistanceMode,
+    assistanceKg,
+    tempoEccentricSeconds,
+    tempoBottomPauseSeconds,
+    tempoConcentricSeconds,
+    tempoLockoutPauseSeconds,
+    pausedRepPosition,
+    pausedRepSeconds,
+    hasTechniqueSegments,
   );
+}
+
+bool _sameDouble(double? left, double? right) {
+  if (left == null || right == null) return left == right;
+  return (left - right).abs() < 0.000001;
 }
 
 /// The two editable fields that can receive a factual B.3 safe prefill.
