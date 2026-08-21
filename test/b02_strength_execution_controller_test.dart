@@ -79,7 +79,7 @@ void main() {
       expect(controller.state.launch!.state.elapsedSeconds, 65);
 
       now = now.add(const Duration(minutes: 20));
-      controller.resumeElapsed();
+      await controller.resumeElapsed();
       now = now.add(const Duration(seconds: 10));
       await controller.saveDraft(controller.state.launch!.state);
       expect(controller.state.launch!.state.elapsedSeconds, 75);

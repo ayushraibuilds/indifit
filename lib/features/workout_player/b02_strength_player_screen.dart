@@ -13,6 +13,7 @@ import '../../data/database/app_database.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_strength_execution_repository.dart';
 import 'b02_strength_execution_controller.dart';
+import 'b02_workout_elapsed.dart';
 import 'quick_workout_screen.dart';
 import 'widgets/r07c_workout_presentation.dart';
 
@@ -20,8 +21,9 @@ import 'widgets/r07c_workout_presentation.dart';
 /// successor controller; the widget only collects input and presents state.
 class B02StrengthPlayerScreen extends ConsumerStatefulWidget {
   final B02StrengthExecutionLaunch launch;
+  final DateTime Function()? nowUtc;
 
-  const B02StrengthPlayerScreen({super.key, required this.launch});
+  const B02StrengthPlayerScreen({super.key, required this.launch, this.nowUtc});
 
   @override
   ConsumerState<B02StrengthPlayerScreen> createState() =>
@@ -39,6 +41,8 @@ class _B02StrengthPlayerScreenState
   final _substitutionNames = <String, String?>{};
   bool _warmup = false;
   var _isSubmittingSet = false;
+  var _isClosing = false;
+  var _allowPop = false;
 
   @override
   void initState() {
@@ -68,7 +72,7 @@ class _B02StrengthPlayerScreenState
       b02StrengthExecutionScreenControllerProvider(widget.launch).notifier,
     );
     if (state == AppLifecycleState.resumed) {
-      controller.resumeElapsed();
+      unawaited(controller.resumeElapsed());
     } else if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
@@ -83,34 +87,41 @@ class _B02StrengthPlayerScreenState
     );
     final ui = ref.watch(provider);
     final launch = ui.launch ?? widget.launch;
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: 'Close workout',
-          onPressed: ui.isBusy ? null : () => _closeWorkout(provider),
-          icon: const Icon(Icons.close_rounded),
-        ),
-        title: Text(launch.state.routineName),
-        actions: [
-          PopupMenuButton<String>(
-            tooltip: 'Workout options',
-            enabled: !ui.isBusy,
-            onSelected: (value) {
-              switch (value) {
-                case 'review':
-                  unawaited(_openSummary(provider));
-                case 'discard':
-                  _discard(provider);
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'review', child: Text('Review workout')),
-              PopupMenuItem(value: 'discard', child: Text('Discard draft')),
-            ],
+    return PopScope(
+      canPop: _allowPop,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _isClosing) return;
+        unawaited(_closeWorkout(provider));
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            tooltip: 'Close workout',
+            onPressed: ui.isBusy ? null : () => _closeWorkout(provider),
+            icon: const Icon(Icons.close_rounded),
           ),
-        ],
+          title: Text(launch.state.routineName),
+          actions: [
+            PopupMenuButton<String>(
+              tooltip: 'Workout options',
+              enabled: !ui.isBusy,
+              onSelected: (value) {
+                switch (value) {
+                  case 'review':
+                    unawaited(_openSummary(provider));
+                  case 'discard':
+                    _discard(provider);
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'review', child: Text('Review workout')),
+                PopupMenuItem(value: 'discard', child: Text('Discard draft')),
+              ],
+            ),
+          ],
+        ),
+        body: _buildBody(context, provider, ui, launch),
       ),
-      body: _buildBody(context, provider, ui, launch),
     );
   }
 
@@ -199,7 +210,8 @@ class _B02StrengthPlayerScreenState
               ? null
               : _groupContext(selected),
           exerciseName: _actualExerciseName(launch.state, selected),
-          elapsedSeconds: launch.state.elapsedSeconds,
+          elapsedState: launch.state,
+          nowUtc: widget.nowUtc,
           onActions: ui.isBusy
               ? null
               : () => _showExerciseActions(provider, selected),
@@ -791,32 +803,42 @@ class _B02StrengthPlayerScreenState
     final launch = ref.read(provider).launch;
     if (launch == null) return;
     await context.push('/b02-strength-summary', extra: {'launch': launch});
-    if (mounted) controller.resumeElapsed();
+    if (mounted) unawaited(controller.resumeElapsed());
   }
 
   Future<void> _closeWorkout(dynamic provider) async {
-    final close = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Save and close workout?'),
-        content: const Text(
-          'Your sets and elapsed workout time will be saved so you can resume later.',
+    if (_isClosing) return;
+    _isClosing = true;
+    try {
+      final close = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Save and close workout?'),
+          content: const Text(
+            'Your sets and elapsed workout time will be saved so you can resume later.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Keep training'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Save and close'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Keep training'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Save and close'),
-          ),
-        ],
-      ),
-    );
-    if (close != true || !mounted) return;
-    await ref.read(provider.notifier).pauseElapsed();
-    if (mounted) context.pop();
+      );
+      if (close != true || !mounted) return;
+      final paused = await ref.read(provider.notifier).pauseElapsed();
+      if (!paused || !mounted) return;
+      setState(() => _allowPop = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.pop();
+      });
+    } finally {
+      if (!_allowPop) _isClosing = false;
+    }
   }
 
   Future<void> _overrideTarget(
@@ -985,7 +1007,8 @@ class _R07CExecutionHeader extends StatelessWidget {
     required this.exerciseComplete,
     required this.groupContext,
     required this.exerciseName,
-    required this.elapsedSeconds,
+    required this.elapsedState,
+    required this.nowUtc,
     required this.onActions,
   });
 
@@ -997,7 +1020,8 @@ class _R07CExecutionHeader extends StatelessWidget {
   final bool exerciseComplete;
   final String? groupContext;
   final String exerciseName;
-  final int elapsedSeconds;
+  final B02ExecutionDraftState elapsedState;
+  final DateTime Function()? nowUtc;
   final VoidCallback? onActions;
 
   @override
@@ -1031,8 +1055,11 @@ class _R07CExecutionHeader extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    _formatElapsed(elapsedSeconds),
+                  B02LiveElapsedText(
+                    accumulatedSeconds: elapsedState.elapsedSeconds,
+                    activeSegmentStartedAtUtc:
+                        elapsedState.activeSegmentStartedAtUtc,
+                    nowUtc: nowUtc ?? _systemNowUtc,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                 ],
@@ -1059,11 +1086,7 @@ class _R07CExecutionHeader extends StatelessWidget {
     );
   }
 
-  static String _formatElapsed(int seconds) {
-    final minutes = seconds ~/ 60;
-    final remainder = seconds % 60;
-    return '$minutes:${remainder.toString().padLeft(2, '0')}';
-  }
+  static DateTime _systemNowUtc() => DateTime.now().toUtc();
 }
 
 class _R07CExerciseStrip extends StatelessWidget {

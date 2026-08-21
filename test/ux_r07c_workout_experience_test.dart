@@ -296,7 +296,10 @@ Future<void> _pumpPlayer(
             textScaler: TextScaler.linear(textScale),
             disableAnimations: true,
           ),
-          child: B02StrengthPlayerScreen(launch: launch),
+          child: B02StrengthPlayerScreen(
+            launch: launch,
+            nowUtc: () => DateTime.utc(2026, 8, 13, 8),
+          ),
         ),
       ),
     ),

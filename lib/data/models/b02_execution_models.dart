@@ -377,6 +377,16 @@ int? _optionalInt(Object? raw, String field) {
   return _requiredInt(raw, field);
 }
 
+DateTime? _optionalUtcDateTime(Object? raw, String field) {
+  if (raw == null) return null;
+  final value = _requiredString(raw, field);
+  final parsed = DateTime.tryParse(value);
+  if (parsed == null) {
+    throw B02ValidationException('$field must be an ISO-8601 date.');
+  }
+  return parsed.toUtc();
+}
+
 double _requiredDouble(Object? raw, String field) {
   if (raw is! num) {
     throw B02ValidationException('$field must be a number.');
@@ -2336,12 +2346,20 @@ class B02ExerciseExecutionPreference {
 
 class B02ExecutionDraftState {
   static const int schemaVersion = 2;
+  static const Object _unset = Object();
 
   final String snapshotId;
   final int snapshotVersion;
   final B02ActivityType activityType;
   final String routineName;
   final int elapsedSeconds;
+
+  /// The start of the currently active foreground segment, if any.
+  ///
+  /// This is deliberately part of the durable execution state rather than a
+  /// controller-only stopwatch. A null value means the draft is paused or is
+  /// otherwise not accruing foreground time.
+  final DateTime? activeSegmentStartedAtUtc;
   final int? currentGroupOrdinal;
   final String? currentGroupId;
   final int? currentRoundOrdinal;
@@ -2364,6 +2382,7 @@ class B02ExecutionDraftState {
     required this.activityType,
     required this.routineName,
     required this.elapsedSeconds,
+    DateTime? activeSegmentStartedAtUtc,
     this.currentGroupOrdinal,
     this.currentGroupId,
     this.currentRoundOrdinal,
@@ -2379,7 +2398,8 @@ class B02ExecutionDraftState {
     this.warmupSlotId,
     this.cardioDetail,
     this.mobilityDetail,
-  }) : targetRecommendations = Map.unmodifiable(targetRecommendations),
+  }) : activeSegmentStartedAtUtc = activeSegmentStartedAtUtc?.toUtc(),
+       targetRecommendations = Map.unmodifiable(targetRecommendations),
        targetOverrides = Map.unmodifiable(targetOverrides) {
     _requiredString(snapshotId, 'snapshot id');
     _atLeast(snapshotVersion, 1, 'snapshot version');
@@ -2509,6 +2529,10 @@ class B02ExecutionDraftState {
       activityType: B02ActivityType.parse(json['activityType']),
       routineName: _requiredString(json['routineName'], 'routine name'),
       elapsedSeconds: _requiredInt(json['elapsedSeconds'], 'elapsed seconds'),
+      activeSegmentStartedAtUtc: _optionalUtcDateTime(
+        json['activeSegmentStartedAtUtc'],
+        'active segment start',
+      ),
       currentGroupOrdinal: _optionalInt(
         json['currentGroupOrdinal'],
         'current group ordinal',
@@ -2547,6 +2571,7 @@ class B02ExecutionDraftState {
 
   B02ExecutionDraftState copyWith({
     int? elapsedSeconds,
+    Object? activeSegmentStartedAtUtc = _unset,
     int? currentGroupOrdinal,
     String? currentGroupId,
     int? currentRoundOrdinal,
@@ -2568,6 +2593,9 @@ class B02ExecutionDraftState {
       activityType: activityType,
       routineName: routineName,
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
+      activeSegmentStartedAtUtc: identical(activeSegmentStartedAtUtc, _unset)
+          ? this.activeSegmentStartedAtUtc
+          : (activeSegmentStartedAtUtc as DateTime?)?.toUtc(),
       currentGroupOrdinal: currentGroupOrdinal ?? this.currentGroupOrdinal,
       currentGroupId: currentGroupId ?? this.currentGroupId,
       currentRoundOrdinal: currentRoundOrdinal ?? this.currentRoundOrdinal,
@@ -2595,6 +2623,10 @@ class B02ExecutionDraftState {
     'activityType': activityType.dbValue,
     'routineName': routineName,
     'elapsedSeconds': elapsedSeconds,
+    if (activeSegmentStartedAtUtc != null)
+      'activeSegmentStartedAtUtc': activeSegmentStartedAtUtc!
+          .toUtc()
+          .toIso8601String(),
     if (currentGroupOrdinal != null) 'currentGroupOrdinal': currentGroupOrdinal,
     if (currentGroupId != null) 'currentGroupId': currentGroupId,
     if (currentRoundOrdinal != null) 'currentRoundOrdinal': currentRoundOrdinal,

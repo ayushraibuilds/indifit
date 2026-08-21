@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
@@ -13,6 +15,13 @@ import '../../data/services/b02_strength_execution_draft_service.dart';
 /// failure never becomes a fake completed/ready state and a recovered draft is
 /// retained so the caller can retry without losing offline work.
 enum B02StrengthExecutionStatus { loading, ready, partial, failure, recovery }
+
+typedef _B02CompletionRequestKey = ({
+  int? draftId,
+  CompletionKind completionKind,
+  String? reason,
+  int? completedAtMicroseconds,
+});
 
 class B02StrengthExecutionUiState {
   final B02StrengthExecutionStatus status;
@@ -57,7 +66,13 @@ class B02StrengthExecutionController
   final B02StrengthExecutionDraftService _draftService;
   final B02RestDraftCoordinator _restCoordinator;
   final DateTime Function() _nowUtc;
-  DateTime? _activeStartedAtUtc;
+  Future<bool>? _finalizationInFlight;
+  _B02CompletionRequestKey? _finalizationRequestKey;
+  Future<void> _draftWriteTail = Future<void>.value();
+  B02ExecutionDraftState? _pendingPauseState;
+  int? _pendingPauseDraftId;
+  var _timingRevision = 0;
+  var _completionStarted = false;
 
   B02StrengthExecutionController(
     this._adapter, {
@@ -75,9 +90,7 @@ class B02StrengthExecutionController
                  status: B02StrengthExecutionStatus.ready,
                  launch: initialLaunch,
                ),
-       ) {
-    _activeStartedAtUtc = _nowUtc().toUtc();
-  }
+       );
 
   static DateTime _systemNowUtc() => DateTime.now().toUtc();
 
@@ -91,6 +104,7 @@ class B02StrengthExecutionController
         occurrenceId: occurrenceId,
         commandId: commandId,
         confirmedOutsideEffectiveDate: confirmedOutsideEffectiveDate,
+        nowUtc: _nowUtc().toUtc(),
       ),
     );
   }
@@ -111,11 +125,21 @@ class B02StrengthExecutionController
         executionSnapshotJson: executionSnapshotJson,
         groups: groups,
         snapshotId: snapshotId,
+        nowUtc: _nowUtc().toUtc(),
       ),
     );
   }
 
-  Future<void> saveDraft(B02ExecutionDraftState draft) async {
+  Future<bool> saveDraft(B02ExecutionDraftState draft) {
+    return _saveDraft(draft, allowDuringCompletion: false);
+  }
+
+  Future<bool> _saveDraft(
+    B02ExecutionDraftState draft, {
+    required bool allowDuringCompletion,
+    bool useLatestState = false,
+    int? expectedTimingRevision,
+  }) {
     final current = state.launch;
     if (current == null) {
       state = const B02StrengthExecutionUiState(
@@ -123,24 +147,60 @@ class B02StrengthExecutionController
         errorMessage:
             'This workout draft is unavailable. Recover it or start over.',
       );
-      return;
+      return Future<bool>.value(false);
     }
-    state = state.copyWith(
-      status: B02StrengthExecutionStatus.loading,
-      clearError: true,
-    );
-    try {
-      final durableDraft = _stampElapsed(draft);
-      await _adapter.saveDraft(draftId: current.draftId, state: durableDraft);
-      if (!mounted) return;
-      state = state.copyWith(
-        status: B02StrengthExecutionStatus.partial,
-        launch: current.copyWith(state: durableDraft),
-        clearError: true,
-      );
-    } catch (error) {
-      _setFailure(error, current);
+    if (_completionStarted && !allowDuringCompletion) {
+      return Future<bool>.value(false);
     }
+    final requestRevision = _timingRevision;
+    final queuedBeforeCompletion = !_completionStarted;
+    return _enqueueDraftWrite(() async {
+      if (expectedTimingRevision != null &&
+          expectedTimingRevision != _timingRevision) {
+        return true;
+      }
+      final latest = state.launch;
+      if (latest == null || latest.draftId != current.draftId) {
+        return false;
+      }
+      if (_completionStarted &&
+          !allowDuringCompletion &&
+          !queuedBeforeCompletion) {
+        return false;
+      }
+      if (mounted) {
+        state = state.copyWith(
+          status: B02StrengthExecutionStatus.loading,
+          clearError: true,
+        );
+      }
+      try {
+        final candidate = useLatestState
+            ? latest.state
+            : requestRevision == _timingRevision
+            ? draft
+            : draft.copyWith(
+                elapsedSeconds: latest.state.elapsedSeconds,
+                activeSegmentStartedAtUtc:
+                    latest.state.activeSegmentStartedAtUtc,
+              );
+        final durableDraft = _stampElapsed(
+          candidate,
+          nowUtc: _nowUtc().toUtc(),
+        );
+        await _adapter.saveDraft(draftId: latest.draftId, state: durableDraft);
+        if (!mounted) return true;
+        state = state.copyWith(
+          status: B02StrengthExecutionStatus.partial,
+          launch: latest.copyWith(state: durableDraft),
+          clearError: true,
+        );
+        return true;
+      } catch (error) {
+        _setFailure(error, latest);
+        return false;
+      }
+    });
   }
 
   Future<void> loadSlots() async {
@@ -162,10 +222,14 @@ class B02StrengthExecutionController
     );
     try {
       final prepared = await _adapter.prepareExecution(current);
+      final activeState = await _ensureActiveSegment(
+        launch: current,
+        state: prepared.state,
+      );
       if (!mounted) return;
       state = state.copyWith(
         status: previousStatus,
-        launch: current.copyWith(state: prepared.state),
+        launch: current.copyWith(state: activeState),
         slots: prepared.slots,
       );
     } catch (error) {
@@ -532,9 +596,54 @@ class B02StrengthExecutionController
     CompletionKind completionKind = CompletionKind.full,
     String? reason,
     DateTime? completedAtUtc,
+  }) {
+    final requestKey = (
+      draftId: state.launch?.draftId,
+      completionKind: completionKind,
+      reason: reason?.trim(),
+      completedAtMicroseconds: completedAtUtc?.toUtc().microsecondsSinceEpoch,
+    );
+    final inFlight = _finalizationInFlight;
+    if (inFlight != null) {
+      if (_finalizationRequestKey == requestKey) return inFlight;
+      return Future<bool>.value(false);
+    }
+
+    final operation = _finalizeInternal(
+      commandId: commandId,
+      completionKind: completionKind,
+      reason: reason,
+      completedAtUtc: completedAtUtc,
+    );
+    _finalizationInFlight = operation;
+    _finalizationRequestKey = requestKey;
+    unawaited(
+      operation.then<void>(
+        (_) {
+          if (identical(_finalizationInFlight, operation)) {
+            _finalizationInFlight = null;
+            _finalizationRequestKey = null;
+          }
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          if (identical(_finalizationInFlight, operation)) {
+            _finalizationInFlight = null;
+            _finalizationRequestKey = null;
+          }
+        },
+      ),
+    );
+    return operation;
+  }
+
+  Future<bool> _finalizeInternal({
+    required String commandId,
+    required CompletionKind completionKind,
+    required String? reason,
+    required DateTime? completedAtUtc,
   }) async {
-    final current = state.launch;
-    if (current == null) {
+    final requested = state.launch;
+    if (requested == null) {
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.recovery,
         errorMessage:
@@ -542,13 +651,42 @@ class B02StrengthExecutionController
       );
       return false;
     }
+    _completionStarted = true;
     state = state.copyWith(
       status: B02StrengthExecutionStatus.loading,
       clearError: true,
     );
+    var current = requested;
     try {
-      final finalState = _stampElapsed(current.state);
-      await _adapter.saveDraft(draftId: current.draftId, state: finalState);
+      // Completion closes mutation intake above, then waits for every draft
+      // write accepted before that boundary. Snapshot only after those writes
+      // have updated the same launch so a rapid log-then-finish cannot persist
+      // an older state over the newest set.
+      await _draftWriteTail;
+      final latest = state.launch;
+      if (latest == null || latest.draftId != requested.draftId) {
+        throw const B02StrengthExecutionRecoveryException(
+          'The workout draft changed before completion could begin.',
+        );
+      }
+      current = latest;
+      if (mounted) {
+        state = state.copyWith(
+          status: B02StrengthExecutionStatus.loading,
+          clearError: true,
+        );
+      }
+      final finalState = _stampElapsed(
+        current.state,
+        nowUtc: _nowUtc().toUtc(),
+      ).copyWith(activeSegmentStartedAtUtc: null);
+      try {
+        await _saveDraft(finalState, allowDuringCompletion: true);
+      } catch (_) {
+        // A concurrent/late caller may observe the draft after the first
+        // completion deleted it. Let the repository replay its durable
+        // completion marker before surfacing a failure.
+      }
       await _adapter.finalizeDraft(
         draftId: current.draftId,
         commandId: commandId,
@@ -561,7 +699,6 @@ class B02StrengthExecutionController
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
       );
-      _activeStartedAtUtc = null;
       return true;
     } on B02StrengthExecutionRecoveryException catch (error, stackTrace) {
       _logFinalizationFailure(
@@ -571,7 +708,8 @@ class B02StrengthExecutionController
         commandId: commandId,
         completionKind: completionKind,
       );
-      _setFailure(error, current, recovery: true);
+      _setFailure(error, state.launch ?? current, recovery: true);
+      _completionStarted = false;
       return false;
     } catch (error, stackTrace) {
       _logFinalizationFailure(
@@ -581,7 +719,8 @@ class B02StrengthExecutionController
         commandId: commandId,
         completionKind: completionKind,
       );
-      _setFailure(error, current);
+      _setFailure(error, state.launch ?? current);
+      _completionStarted = false;
       return false;
     }
   }
@@ -617,7 +756,6 @@ class B02StrengthExecutionController
       state = const B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
       );
-      _activeStartedAtUtc = null;
     } catch (error) {
       _setFailure(error, current);
     }
@@ -628,13 +766,16 @@ class B02StrengthExecutionController
     try {
       final launch = await _adapter.readDraft(draftId);
       final prepared = await _adapter.prepareExecution(launch);
+      final activeState = await _ensureActiveSegment(
+        launch: launch,
+        state: prepared.state,
+      );
       if (!mounted) return;
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
-        launch: launch.copyWith(state: prepared.state),
+        launch: launch.copyWith(state: activeState),
         slots: prepared.slots,
       );
-      _activeStartedAtUtc = _nowUtc().toUtc();
     } catch (error) {
       _setFailure(error, null, recovery: true);
     }
@@ -651,13 +792,16 @@ class B02StrengthExecutionController
     try {
       final launch = await operation();
       final prepared = await _adapter.prepareExecution(launch);
+      final activeState = await _ensureActiveSegment(
+        launch: launch,
+        state: prepared.state,
+      );
       if (!mounted) return;
       state = B02StrengthExecutionUiState(
         status: B02StrengthExecutionStatus.ready,
-        launch: launch.copyWith(state: prepared.state),
+        launch: launch.copyWith(state: activeState),
         slots: prepared.slots,
       );
-      _activeStartedAtUtc = _nowUtc().toUtc();
     } on B02StrengthExecutionRecoveryException catch (error) {
       _setFailure(error, prior, recovery: true);
     } catch (error) {
@@ -666,28 +810,137 @@ class B02StrengthExecutionController
   }
 
   /// Persists active wall-clock time before the player leaves the foreground.
-  Future<void> pauseElapsed() async {
+  Future<bool> pauseElapsed() async {
+    if (_completionStarted) return true;
     final current = state.launch;
-    if (current == null || _activeStartedAtUtc == null) return;
-    await saveDraft(current.state);
-    _activeStartedAtUtc = null;
-  }
+    if (current == null) return true;
 
-  /// Starts a fresh foreground interval without counting background time.
-  void resumeElapsed() {
-    if (state.launch != null && _activeStartedAtUtc == null) {
-      _activeStartedAtUtc = _nowUtc().toUtc();
+    final pendingPause = _pendingPauseState;
+    if (pendingPause != null && _pendingPauseDraftId == current.draftId) {
+      final revision = ++_timingRevision;
+      final retryState = current.state.copyWith(
+        elapsedSeconds: pendingPause.elapsedSeconds,
+        activeSegmentStartedAtUtc: null,
+      );
+      _pendingPauseState = retryState;
+      state = state.copyWith(
+        launch: current.copyWith(state: retryState),
+        clearError: true,
+      );
+      final saved = await _saveDraft(
+        retryState,
+        allowDuringCompletion: false,
+        useLatestState: true,
+        expectedTimingRevision: revision,
+      );
+      if (saved && revision == _timingRevision) {
+        _pendingPauseState = null;
+        _pendingPauseDraftId = null;
+      }
+      return saved;
     }
+    if (_pendingPauseDraftId != null &&
+        _pendingPauseDraftId != current.draftId) {
+      _pendingPauseState = null;
+      _pendingPauseDraftId = null;
+    }
+    if (current.state.activeSegmentStartedAtUtc == null) {
+      return true;
+    }
+    final revision = ++_timingRevision;
+    final paused = _stampElapsed(
+      current.state,
+      nowUtc: _nowUtc().toUtc(),
+    ).copyWith(activeSegmentStartedAtUtc: null);
+    state = state.copyWith(
+      launch: current.copyWith(state: paused),
+      clearError: true,
+    );
+    _pendingPauseState = paused;
+    _pendingPauseDraftId = current.draftId;
+    final saved = await _saveDraft(
+      paused,
+      allowDuringCompletion: false,
+      useLatestState: true,
+      expectedTimingRevision: revision,
+    );
+    if (saved && revision == _timingRevision) {
+      _pendingPauseState = null;
+      _pendingPauseDraftId = null;
+    }
+    return saved;
   }
 
-  B02ExecutionDraftState _stampElapsed(B02ExecutionDraftState draft) {
-    final started = _activeStartedAtUtc;
+  /// Starts and persists a fresh foreground interval without counting
+  /// background time. Repeated lifecycle notifications are harmless.
+  Future<bool> resumeElapsed() async {
+    if (_completionStarted) return true;
+    final current = state.launch;
+    if (current == null || current.state.activeSegmentStartedAtUtc != null) {
+      return true;
+    }
+    final revision = ++_timingRevision;
+    final activeLaunch = current.copyWith(
+      state: current.state.copyWith(
+        activeSegmentStartedAtUtc: _nowUtc().toUtc(),
+      ),
+    );
+    // Update the in-memory authority before awaiting SQLite so a lifecycle
+    // callback and the next user action cannot observe a stale paused state.
+    state = state.copyWith(launch: activeLaunch, clearError: true);
+    final saved = await _saveDraft(
+      activeLaunch.state,
+      allowDuringCompletion: false,
+      useLatestState: true,
+      expectedTimingRevision: revision,
+    );
+    if (saved && revision == _timingRevision) {
+      _pendingPauseState = null;
+      _pendingPauseDraftId = null;
+    }
+    if (!saved && mounted && revision == _timingRevision) {
+      state = state.copyWith(launch: current);
+      if (_pendingPauseDraftId == current.draftId) {
+        _pendingPauseState = current.state;
+      }
+    }
+    return saved;
+  }
+
+  Future<B02ExecutionDraftState> _ensureActiveSegment({
+    required B02StrengthExecutionLaunch launch,
+    required B02ExecutionDraftState state,
+  }) async {
+    if (state.activeSegmentStartedAtUtc != null) return state;
+    final active = state.copyWith(activeSegmentStartedAtUtc: _nowUtc().toUtc());
+    await _adapter.saveDraft(draftId: launch.draftId, state: active);
+    return active;
+  }
+
+  B02ExecutionDraftState _stampElapsed(
+    B02ExecutionDraftState draft, {
+    required DateTime nowUtc,
+  }) {
+    final started = draft.activeSegmentStartedAtUtc;
     if (started == null) return draft;
-    final now = _nowUtc().toUtc();
+    final now = nowUtc.toUtc();
     final added = now.difference(started).inSeconds;
-    _activeStartedAtUtc = now;
     if (added <= 0) return draft;
-    return draft.copyWith(elapsedSeconds: draft.elapsedSeconds + added);
+    return draft.copyWith(
+      elapsedSeconds: draft.elapsedSeconds + added,
+      // Keep any fractional remainder in the active segment instead of
+      // discarding up to a second at every durable save boundary.
+      activeSegmentStartedAtUtc: started.add(Duration(seconds: added)),
+    );
+  }
+
+  Future<T> _enqueueDraftWrite<T>(Future<T> Function() operation) {
+    final next = _draftWriteTail.then<T>((_) => operation());
+    _draftWriteTail = next.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stackTrace) {},
+    );
+    return next;
   }
 
   void _setFailure(

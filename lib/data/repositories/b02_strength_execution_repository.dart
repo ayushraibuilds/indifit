@@ -82,6 +82,7 @@ class StrengthExecutionRepository {
   final EquipmentProfileRepository _equipmentRepo;
   final ExercisePreferenceRepository _preferenceRepo;
   final B02WorkoutPreparationOrchestrator _preparation;
+  final Map<int, Future<void>> _draftMutationTails = {};
 
   StrengthExecutionRepository({
     required AppDatabase db,
@@ -103,6 +104,23 @@ class StrengthExecutionRepository {
              evidenceRepository: B02TargetEvidenceRepository(db),
              nowUtc: nowUtc,
            );
+
+  /// Serializes mutations for one durable draft across controllers that share
+  /// this repository instance. This protects provider recreation: a pending
+  /// lifecycle save from a disposed controller cannot overtake a newer
+  /// controller's save or completion request.
+  Future<T> _serializeDraftMutation<T>(
+    int draftId,
+    Future<T> Function() operation,
+  ) {
+    final previous = _draftMutationTails[draftId] ?? Future<void>.value();
+    final next = previous.then<T>((_) => operation());
+    _draftMutationTails[draftId] = next.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stackTrace) {},
+    );
+    return next;
+  }
 
   Future<B02StrengthExecutionCoverage> checkScheduledCoverage(
     String occurrenceId,
@@ -167,6 +185,7 @@ class StrengthExecutionRepository {
     required String occurrenceId,
     required String commandId,
     bool confirmedOutsideEffectiveDate = false,
+    DateTime? nowUtc,
   }) async {
     final occurrence = await _calendarRepo.getOccurrence(occurrenceId);
     if (occurrence == null) {
@@ -197,6 +216,7 @@ class StrengthExecutionRepository {
       return _upgradeOrReadScheduledDraft(
         occurrenceId: occurrenceId,
         snapshotJson: snapshot,
+        nowUtc: nowUtc,
       );
     });
   }
@@ -283,6 +303,7 @@ class StrengthExecutionRepository {
                     activityType: B02ActivityType.strength,
                     routineName: cleanName,
                     elapsedSeconds: 0,
+                    activeSegmentStartedAtUtc: now,
                     currentExerciseOrdinal: 0,
                     currentSetOrdinal: 0,
                     groups: validatedGroups,
@@ -308,6 +329,25 @@ class StrengthExecutionRepository {
   /// mutable exercise list still lives beside the B02 draft and its performed
   /// sets are finalized by the same canonical session writer.
   Future<B02StrengthExecutionLaunch> addUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String exerciseId,
+    required String exerciseName,
+    int plannedSets = 1,
+    String repsRange = '1-20',
+  }) {
+    return _serializeDraftMutation(
+      launch.draftId,
+      () => _addUnscheduledExercise(
+        launch: launch,
+        exerciseId: exerciseId,
+        exerciseName: exerciseName,
+        plannedSets: plannedSets,
+        repsRange: repsRange,
+      ),
+    );
+  }
+
+  Future<B02StrengthExecutionLaunch> _addUnscheduledExercise({
     required B02StrengthExecutionLaunch launch,
     required String exerciseId,
     required String exerciseName,
@@ -367,6 +407,19 @@ class StrengthExecutionRepository {
   /// exercise with history is never silently destroyed; it simply stops being
   /// an active, selectable slot for the remainder of the draft.
   Future<B02StrengthExecutionLaunch> removeUnscheduledExercise({
+    required B02StrengthExecutionLaunch launch,
+    required String prescriptionId,
+  }) {
+    return _serializeDraftMutation(
+      launch.draftId,
+      () => _removeUnscheduledExercise(
+        launch: launch,
+        prescriptionId: prescriptionId,
+      ),
+    );
+  }
+
+  Future<B02StrengthExecutionLaunch> _removeUnscheduledExercise({
     required B02StrengthExecutionLaunch launch,
     required String prescriptionId,
   }) async {
@@ -765,6 +818,17 @@ class StrengthExecutionRepository {
     required int draftId,
     required B02ExecutionDraftState state,
     DateTime? nowUtc,
+  }) {
+    return _serializeDraftMutation(
+      draftId,
+      () => _saveDraft(draftId: draftId, state: state, nowUtc: nowUtc),
+    );
+  }
+
+  Future<void> _saveDraft({
+    required int draftId,
+    required B02ExecutionDraftState state,
+    DateTime? nowUtc,
   }) async {
     if (state.activityType != B02ActivityType.strength) {
       throw const B02StrengthExecutionException(
@@ -825,6 +889,27 @@ class StrengthExecutionRepository {
     CompletionKind completionKind = CompletionKind.full,
     String? reason,
     DateTime? completedAtUtc,
+  }) {
+    return _serializeDraftMutation(
+      draftId,
+      () => _finalizeDraft(
+        draftId: draftId,
+        commandId: commandId,
+        state: state,
+        completionKind: completionKind,
+        reason: reason,
+        completedAtUtc: completedAtUtc,
+      ),
+    );
+  }
+
+  Future<int> _finalizeDraft({
+    required int draftId,
+    required String commandId,
+    required B02ExecutionDraftState state,
+    CompletionKind completionKind = CompletionKind.full,
+    String? reason,
+    DateTime? completedAtUtc,
   }) async {
     if (commandId.trim().isEmpty) {
       throw ArgumentError.value(commandId, 'commandId', 'Must not be blank.');
@@ -836,10 +921,14 @@ class StrengthExecutionRepository {
       completedAtUtc: completedAtUtc,
     );
     final completionMarker = _completionMarker(
+      draftId: draftId,
+      payload: payload,
+    );
+    final completionMarkerPrefix = _completionMarkerPrefix(draftId);
+    final legacyCompletionMarker = _legacyCompletionMarker(
       commandId: commandId,
       payload: payload,
     );
-    final completionMarkerPrefix = _completionMarkerPrefix(commandId);
     return _db.transaction(() async {
       final markerSession =
           await (_db.select(_db.workoutSessions)
@@ -852,6 +941,21 @@ class StrengthExecutionRepository {
           );
         }
         return markerSession.id;
+      }
+      // Retain replay compatibility with sessions written before R08A.3
+      // switched the marker from a screen command to the durable draft ID.
+      final legacyMarkerSession =
+          await (_db.select(_db.workoutSessions)
+                ..where((table) => table.uuid.equals(legacyCompletionMarker)))
+              .getSingleOrNull();
+      if (legacyMarkerSession != null) {
+        if (legacyMarkerSession.activityType !=
+            B02ActivityType.strength.dbValue) {
+          throw const B02StrengthExecutionFinalizationException(
+            'Completion command marker belongs to a non-strength session.',
+          );
+        }
+        return legacyMarkerSession.id;
       }
       final conflictingMarker =
           await (_db.select(_db.workoutSessions)
@@ -867,13 +971,12 @@ class StrengthExecutionRepository {
       )..where((table) => table.id.equals(draftId))).getSingleOrNull();
       final occurrenceId = draft?.scheduledOccurrenceId;
       final existing = occurrenceId == null
-          ? await (_db.select(_db.occurrenceEvents)
-                  ..where((table) => table.commandId.equals(commandId)))
-                .getSingleOrNull()
+          ? null
           : await (_db.select(_db.occurrenceEvents)..where(
                   (table) =>
                       table.occurrenceId.equals(occurrenceId) &
-                      table.commandId.equals(commandId),
+                      table.commandId.equals(commandId) &
+                      table.eventType.isIn(['completed', 'partiallyCompleted']),
                 ))
                 .getSingleOrNull();
       if (existing != null) {
@@ -971,6 +1074,13 @@ class StrengthExecutionRepository {
   }
 
   Future<void> discardDraft({required int draftId, String? commandId}) async {
+    return _serializeDraftMutation(
+      draftId,
+      () => _discardDraft(draftId: draftId, commandId: commandId),
+    );
+  }
+
+  Future<void> _discardDraft({required int draftId, String? commandId}) async {
     await _db.transaction(() async {
       final draft = await (_db.select(
         _db.workoutDrafts,
@@ -1003,6 +1113,7 @@ class StrengthExecutionRepository {
   Future<B02StrengthExecutionLaunch> _upgradeOrReadScheduledDraft({
     required String occurrenceId,
     required String snapshotJson,
+    DateTime? nowUtc,
   }) async {
     final draft =
         await (_db.select(_db.workoutDrafts)..where(
@@ -1024,6 +1135,7 @@ class StrengthExecutionRepository {
     final state = _stateFromSnapshot(
       snapshotJson: snapshotJson,
       snapshotId: occurrenceId,
+      activeSegmentStartedAtUtc: (nowUtc ?? _nowUtc()).toUtc(),
     );
     final changed =
         await (_db.update(
@@ -1090,6 +1202,7 @@ class StrengthExecutionRepository {
   B02ExecutionDraftState _stateFromSnapshot({
     required String snapshotJson,
     required String snapshotId,
+    DateTime? activeSegmentStartedAtUtc,
   }) {
     final snapshot = _decodeSnapshot(snapshotJson);
     final routineName = snapshot['routineName'];
@@ -1117,6 +1230,7 @@ class StrengthExecutionRepository {
       activityType: B02ActivityType.strength,
       routineName: routineName.trim(),
       elapsedSeconds: 0,
+      activeSegmentStartedAtUtc: activeSegmentStartedAtUtc,
       currentExerciseOrdinal: 0,
       currentSetOrdinal: 0,
       groups: groups,
@@ -1592,14 +1706,25 @@ class StrengthExecutionRepository {
     'completedAtUtc': completedAtUtc?.toUtc().toIso8601String(),
   });
 
-  static String _completionMarkerPrefix(String commandId) =>
-      'b02-completion:${base64Url.encode(utf8.encode(commandId))}:';
+  /// The draft ID is the durable identity of an active B02 execution. The
+  /// payload hash rejects a different completion request while allowing a
+  /// provider/controller reconstruction to replay the same logical finish
+  /// with a fresh screen command ID.
+  static String _completionMarkerPrefix(int draftId) =>
+      'b02-draft-completion:$draftId:';
 
   static String _completionMarker({
+    required int draftId,
+    required String payload,
+  }) =>
+      '${_completionMarkerPrefix(draftId)}'
+      '${sha256.convert(utf8.encode(payload))}';
+
+  static String _legacyCompletionMarker({
     required String commandId,
     required String payload,
   }) =>
-      '${_completionMarkerPrefix(commandId)}'
+      'b02-completion:${base64Url.encode(utf8.encode(commandId))}:'
       '${sha256.convert(utf8.encode(payload))}';
 
   static double _calculateVolume(B02ExecutionDraftState state) {
@@ -1707,10 +1832,12 @@ class StrengthExecutionCompatibilityAdapter {
     required String occurrenceId,
     required String commandId,
     bool confirmedOutsideEffectiveDate = false,
+    DateTime? nowUtc,
   }) => _repository.startScheduledOccurrence(
     occurrenceId: occurrenceId,
     commandId: commandId,
     confirmedOutsideEffectiveDate: confirmedOutsideEffectiveDate,
+    nowUtc: nowUtc,
   );
 
   Future<B02StrengthExecutionLaunch> resumeScheduledOccurrence(
@@ -1733,11 +1860,13 @@ class StrengthExecutionCompatibilityAdapter {
     required String executionSnapshotJson,
     Iterable<B02ExerciseGroup> groups = const [],
     String? snapshotId,
+    DateTime? nowUtc,
   }) => _repository.startUnscheduledDraft(
     routineName: routineName,
     executionSnapshotJson: executionSnapshotJson,
     groups: groups,
     snapshotId: snapshotId,
+    nowUtc: nowUtc,
   );
 
   Future<B02StrengthExecutionLaunch> addUnscheduledExercise({

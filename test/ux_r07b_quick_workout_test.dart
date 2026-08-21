@@ -19,6 +19,8 @@ import 'package:indifit/features/workout_player/b02_strength_player_screen.dart'
 import 'package:indifit/features/workout_player/b02_strength_summary_screen.dart';
 import 'package:indifit/features/workout_player/quick_workout_screen.dart';
 
+DateTime _testNowUtc() => DateTime.utc(2026, 8, 10, 8);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -74,6 +76,7 @@ void main() {
     final controller = B02StrengthExecutionController(
       StrengthExecutionCompatibilityAdapter(executions),
       initialLaunch: launch,
+      nowUtc: _testNowUtc,
     );
     await controller.loadSlots();
     return controller;
@@ -381,7 +384,10 @@ void main() {
             theme: AppTheme.lightTheme,
             home: MediaQuery(
               data: MediaQueryData(textScaler: TextScaler.linear(matrix.$2)),
-              child: B02StrengthPlayerScreen(launch: launch),
+              child: B02StrengthPlayerScreen(
+                launch: launch,
+                nowUtc: _testNowUtc,
+              ),
             ),
           ),
         ),
@@ -423,7 +429,7 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
-          home: B02StrengthPlayerScreen(launch: launch),
+          home: B02StrengthPlayerScreen(launch: launch, nowUtc: _testNowUtc),
         ),
       ),
     );
@@ -484,7 +490,10 @@ void main() {
           theme: AppTheme.darkTheme,
           home: MediaQuery(
             data: const MediaQueryData(textScaler: TextScaler.linear(2)),
-            child: B02StrengthPlayerScreen(launch: recovered),
+            child: B02StrengthPlayerScreen(
+              launch: recovered,
+              nowUtc: _testNowUtc,
+            ),
           ),
         ),
       ),
